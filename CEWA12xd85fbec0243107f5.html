@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CEWA Mock Exam 12 — SPACEZ Exam Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#111111;--surface:#1a1a1a;--border:#2e2e2e;
+  --lime:#c8f135;--text:#f0f0f0;--muted:#777;--radius:14px;
+  --red:#ff4d4d;--green:#4dff91;--yellow:#ffd84d;--blue:#4d9fff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans Thai',sans-serif;min-height:100vh;font-size:15px;line-height:1.6}
+a{color:var(--lime);text-decoration:none}
+
+@keyframes rgb-shift{
+  0%{color:#ff3b3b}16%{color:#ff9900}33%{color:#c8f135}
+  50%{color:#00e5ff}66%{color:#a855f7}83%{color:#ff3b8e}100%{color:#ff3b3b}
+}
+.logo-spacez{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:1.5rem;letter-spacing:3px;animation:rgb-shift 4s linear infinite}
+.logo-sub{font-size:.7rem;letter-spacing:4px;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;margin-top:2px}
+
+.screen{display:none;padding:2rem 1.2rem;max-width:820px;margin:0 auto}
+.screen.active{display:block}
+
+#screen-select{text-align:center}
+.select-header{margin-bottom:2.4rem}
+.select-header h1{font-size:1.35rem;font-weight:700;margin:.5rem 0 .3rem}
+.select-header p{color:var(--muted);font-size:.85rem}
+.variant-cards{display:grid;grid-template-columns:1fr;gap:1rem;max-width:520px;margin:0 auto}
+.vcard{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:1.4rem 1.6rem;cursor:pointer;text-align:left;transition:border-color .18s,transform .15s}
+.vcard:hover{border-color:var(--lime);transform:translateY(-2px)}
+.vcard-label{font-family:'IBM Plex Mono',monospace;font-size:.7rem;letter-spacing:2px;color:var(--lime);text-transform:uppercase;margin-bottom:.4rem}
+.vcard-title{font-weight:600;font-size:1rem;margin-bottom:.35rem}
+.vcard-meta{font-size:.8rem;color:var(--muted)}
+.vcard-badge{display:inline-block;font-size:.68rem;font-family:'IBM Plex Mono',monospace;background:#222;border:1px solid var(--border);border-radius:6px;padding:2px 8px;margin-top:.5rem;color:var(--muted)}
+
+#hud-timer{position:fixed;top:1rem;right:1rem;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:.42rem .9rem;font-family:'IBM Plex Mono',monospace;font-size:1rem;font-weight:500;color:var(--lime);z-index:999;display:none;letter-spacing:1px}
+#hud-timer.warn{color:var(--yellow);border-color:var(--yellow)}
+#hud-timer.danger{color:var(--red);border-color:var(--red);animation:pulse .7s ease-in-out infinite alternate}
+@keyframes pulse{from{opacity:1}to{opacity:.45}}
+
+#screen-exam .exam-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.6rem;flex-wrap:wrap;gap:.6rem}
+.exam-title{font-size:.75rem;font-family:'IBM Plex Mono',monospace;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
+.progress-bar-wrap{height:4px;background:var(--border);border-radius:4px;margin-bottom:1.4rem;overflow:hidden}
+.progress-bar-inner{height:100%;background:var(--lime);border-radius:4px;transition:width .3s}
+.q-counter{font-family:'IBM Plex Mono',monospace;font-size:.82rem;color:var(--muted)}
+
+.q-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:1.5rem 1.6rem;margin-bottom:1.2rem}
+.q-num{font-family:'IBM Plex Mono',monospace;font-size:.7rem;letter-spacing:2px;color:var(--lime);text-transform:uppercase;margin-bottom:.6rem}
+.q-text{font-size:1rem;font-weight:500;line-height:1.65;margin-bottom:1.2rem}
+.q-type-hint{font-size:.72rem;color:var(--muted);font-style:italic;margin-bottom:.9rem}
+
+.choices{display:flex;flex-direction:column;gap:.6rem}
+.choice{display:flex;align-items:flex-start;gap:.8rem;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:.8rem 1rem;cursor:pointer;transition:border-color .16s,background .16s}
+.choice:hover{border-color:#444}
+.choice.selected{border-color:var(--lime);background:#161f04}
+.choice-letter{font-family:'IBM Plex Mono',monospace;font-size:.8rem;font-weight:600;color:var(--muted);flex-shrink:0;width:18px;padding-top:1px}
+.choice.selected .choice-letter{color:var(--lime)}
+.choice-text{font-size:.92rem;line-height:1.55}
+
+.choice-check{flex-shrink:0;width:18px;height:18px;border:1.5px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.75rem;margin-top:1px;transition:all .15s}
+.choice.selected .choice-check{background:var(--lime);border-color:var(--lime);color:#111;font-weight:700}
+
+.exam-nav{display:flex;gap:.8rem;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-top:1rem}
+.btn{font-family:'IBM Plex Sans Thai',sans-serif;font-size:.88rem;font-weight:600;border:none;border-radius:9px;padding:.6rem 1.3rem;cursor:pointer;transition:opacity .15s}
+.btn:disabled{opacity:.3;cursor:not-allowed}
+.btn-ghost{background:var(--surface);border:1.5px solid var(--border);color:var(--text)}
+.btn-ghost:hover:not(:disabled){border-color:#555}
+.btn-lime{background:var(--lime);color:#111}
+.btn-lime:hover:not(:disabled){opacity:.85}
+.btn-red{background:var(--red);color:#fff}
+.btn-blue{background:var(--blue);color:#fff}
+
+.result-header{text-align:center;margin-bottom:2rem}
+.score-ring{display:inline-flex;flex-direction:column;align-items:center;background:var(--surface);border:2px solid var(--border);border-radius:50%;width:130px;height:130px;justify-content:center;margin:1rem auto 1.2rem}
+.score-pct{font-family:'IBM Plex Mono',monospace;font-size:2rem;font-weight:600}
+.score-frac{font-size:.75rem;color:var(--muted);font-family:'IBM Plex Mono',monospace}
+.grade-badge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:.85rem;letter-spacing:3px;font-weight:600;padding:.4rem 1.2rem;border-radius:8px;text-transform:uppercase;margin:.5rem 0}
+.result-actions{display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap;margin-top:1.2rem}
+
+.acc-section-title{font-family:'IBM Plex Mono',monospace;font-size:.7rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin:1.8rem 0 .6rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+.acc-item{border:1.5px solid var(--border);border-radius:var(--radius);margin-bottom:.6rem;overflow:hidden}
+.acc-header{display:flex;align-items:center;gap:.7rem;padding:.75rem 1rem;cursor:pointer;background:var(--surface);transition:background .15s}
+.acc-header:hover{background:#202020}
+.acc-status{flex-shrink:0;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700}
+.acc-status.correct{background:var(--green);color:#111}
+.acc-status.wrong{background:var(--red);color:#fff}
+.acc-q-preview{font-size:.85rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acc-toggle-icon{font-family:'IBM Plex Mono',monospace;font-size:.85rem;color:var(--muted);flex-shrink:0}
+.acc-body{display:none;padding:1rem 1.1rem;background:var(--bg);border-top:1px solid var(--border)}
+.acc-body.open{display:block}
+.acc-choices-review{display:flex;flex-direction:column;gap:.4rem;margin-bottom:.9rem}
+.acc-choice-row{display:flex;gap:.6rem;align-items:flex-start;font-size:.85rem;padding:.35rem .55rem;border-radius:7px}
+.acc-choice-row.is-correct{background:#0d2210;color:var(--green)}
+.acc-choice-row.is-wrong-pick{background:#250a0a;color:var(--red)}
+.acc-choice-row .cl{font-family:'IBM Plex Mono',monospace;font-size:.75rem;font-weight:600;flex-shrink:0;width:16px}
+.lang-toggle{display:flex;gap:.3rem;margin-bottom:.6rem}
+.lang-btn{font-family:'IBM Plex Mono',monospace;font-size:.68rem;font-weight:600;letter-spacing:1px;padding:.25rem .65rem;border-radius:5px;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .14s}
+.lang-btn.active{border-color:var(--lime);color:var(--lime)}
+.exp-text{font-size:.85rem;line-height:1.65;color:#ccc}
+.exp-text.hidden{display:none}
+
+@media(max-width:540px){
+  .screen{padding:1.2rem .9rem}
+  .score-ring{width:110px;height:110px}
+  .score-pct{font-size:1.7rem}
+}
+
+/* ── custom modal (replaces native confirm(), which several
+   mobile in-app browsers/webviews silently block) ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:1200;padding:1.2rem}
+.modal-overlay.active{display:flex}
+.modal-box{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:1.5rem 1.6rem;max-width:380px;width:100%;text-align:center}
+.modal-text{font-size:.92rem;line-height:1.6;margin-bottom:1.3rem}
+.modal-actions{display:flex;gap:.7rem;justify-content:center}
+</style>
+</head>
+<body>
+
+<div id="screen-select" class="screen active">
+  <div class="select-header">
+    <div class="logo-spacez">SPACEZ</div>
+    <div class="logo-sub">Exam Hub</div>
+    <h1>CEWA Mock Exam 12</h1>
+    <p>Certified Elliott Wave Analyst · Select a variant to begin</p>
+  </div>
+  <div class="variant-cards">
+    <div class="vcard" data-v="v1" onclick="startVariant(this)">
+      <div class="vcard-label">Variant 1</div>
+      <div class="vcard-title">Elliott Wave Analyst — Level I</div>
+      <div class="vcard-meta">50 Questions · 45 Minutes · Single Best Answer</div>
+      <span class="vcard-badge">Impulse · Corrective · Fibonacci · Degrees · Guidelines</span>
+    </div>
+    <div class="vcard" data-v="v2" onclick="startVariant(this)">
+      <div class="vcard-label">Variant 2 · Level II Part 1</div>
+      <div class="vcard-title">Elliott Wave Analyst — Level II, Part 1</div>
+      <div class="vcard-meta">20 Questions · 45 Minutes · Single Best Answer</div>
+      <span class="vcard-badge">Complex Corrections · Projections · Advanced Relationships</span>
+    </div>
+    <div class="vcard" data-v="v3" onclick="startVariant(this)">
+      <div class="vcard-label">Variant 3 · Level II Part 2</div>
+      <div class="vcard-title">Elliott Wave Analyst — Level II, Part 2</div>
+      <div class="vcard-meta">20 Questions · 45 Minutes · Multiple Correct Responses</div>
+      <span class="vcard-badge">Application · Analysis · Multi-select</span>
+    </div>
+  </div>
+</div>
+
+<div id="hud-timer">00:00</div>
+
+<div id="screen-exam" class="screen">
+  <div class="exam-topbar">
+    <div class="exam-title" id="exam-title-label"></div>
+    <div class="q-counter" id="q-counter"></div>
+  </div>
+  <div class="progress-bar-wrap"><div class="progress-bar-inner" id="progress-bar"></div></div>
+  <div id="question-area"></div>
+  <div class="exam-nav">
+    <button class="btn btn-ghost" id="btn-prev" onclick="navQ(-1)">← Prev</button>
+    <button class="btn btn-ghost" id="btn-flag" onclick="flagQ()">🚩 Flag</button>
+    <button class="btn btn-lime" id="btn-next" onclick="navQ(1)">Next →</button>
+    <button class="btn btn-red" id="btn-submit" onclick="confirmSubmit()" style="display:none">Submit Exam</button>
+  </div>
+</div>
+
+<div id="screen-result" class="screen">
+  <div class="result-header">
+    <div class="logo-spacez" style="font-size:1.1rem">SPACEZ</div>
+    <h2 style="margin:.8rem 0 .3rem;font-size:1.2rem" id="result-variant-label"></h2>
+    <div class="score-ring">
+      <span class="score-pct" id="result-pct"></span>
+      <span class="score-frac" id="result-frac"></span>
+    </div>
+    <div class="grade-badge" id="result-grade"></div>
+  </div>
+  <div class="result-actions">
+    <button class="btn btn-ghost" onclick="goSelect()">← Change Variant</button>
+    <button class="btn btn-lime" onclick="retake()">Retake This Variant</button>
+  </div>
+  <div id="results-accordion"></div>
+</div>
+
+<div class="modal-overlay" id="submit-modal">
+  <div class="modal-box">
+    <div class="modal-text" id="submit-modal-text">Submit your exam now?</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeSubmitModal()">Cancel</button>
+      <button class="btn btn-lime" onclick="doSubmitFromModal()">Submit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const variants = {
+  v1:{label:'Variant 1 · CEWA Level I',title:'Elliott Wave Analyst — Level I',totalQ:50,minutes:45,type:'single'},
+  v2:{label:'Variant 2 · Level II Part 1',title:'Elliott Wave Analyst — Level II, Part 1',totalQ:20,minutes:45,type:'single'},
+  v3:{label:'Variant 3 · Level II Part 2',title:'Elliott Wave Analyst — Level II, Part 2',totalQ:20,minutes:45,type:'multi'}
+};
+
+const QB = {
+v1:[
+{id:'v1q01',text:'According to the Elliott Wave Principle, which statement about Wave 2 is definitively correct?',
+choices:[
+{id:'v1q01a',letter:'a',text:'Wave 2 may enter Wave 1\'s price territory as long as it does not close below Wave 1\'s origin on a closing basis'},
+{id:'v1q01b',letter:'b',text:'Wave 2 must not retrace more than 100% of Wave 1 in price; doing so invalidates the impulse label'},
+{id:'v1q01c',letter:'c',text:'Wave 2 typically retraces between 100% and 138.2% of Wave 1 in strong trending markets'},
+{id:'v1q01d',letter:'d',text:'Wave 2 is always a simple zigzag and retraces no more than 61.8% of Wave 1 in all cases'}
+],correct:['b'],
+expEn:'Wave 2 never retraces more than 100% of Wave 1 — this is one of the three cardinal rules. Option A is wrong: the rule is about price range, not just closing prices. Option C directly violates the rule. Option D incorrectly states Wave 2 is always a zigzag and caps the retracement at 61.8%.',
+expTh:'คลื่น 2 ห้ามย้อนกลับเกิน 100% ของคลื่น 1 ซึ่งเป็นหนึ่งใน 3 กฎหลัก ตัวเลือก A ผิดเพราะกฎครอบคลุมทั้งช่วงราคา ไม่ใช่แค่ราคาปิด ตัวเลือก C ละเมิดกฎโดยตรง ตัวเลือก D ผิดทั้งที่ระบุว่าคลื่น 2 เป็น zigzag เสมอและจำกัดการย้อนกลับที่ 61.8%'},
+
+{id:'v1q02',text:'The overlap rule requires that Wave 4 not enter Wave 1\'s price territory. In which situation is an exception explicitly permitted?',
+choices:[
+{id:'v1q02a',letter:'a',text:'When Wave 3 extends to more than 161.8% of Wave 1, the overlap rule is suspended for that sequence'},
+{id:'v1q02b',letter:'b',text:'In commodity markets, the overlap rule is relaxed while it remains strict in equity markets'},
+{id:'v1q02c',letter:'c',text:'When Wave 4 retraces exactly 50% of Wave 3, the overlap is considered acceptable'},
+{id:'v1q02d',letter:'d',text:'In a leading or ending diagonal, Waves 1 and 4 are permitted to overlap in price territory'}
+],correct:['d'],
+expEn:'The only recognized exception to the Wave 4 overlap rule is within diagonal triangles (leading or ending), where overlapping between Waves 1 and 4 is an expected structural feature. Options A, B, and C describe conditions that do not create valid exceptions.',
+expTh:'ข้อยกเว้นเดียวที่ยอมรับสำหรับกฎการซ้อนทับของคลื่น 4 คือในรูปแบบ diagonal triangle (leading หรือ ending) ซึ่งการซ้อนทับระหว่างคลื่น 1 และ 4 เป็นลักษณะโครงสร้างที่คาดไว้ ตัวเลือก A, B และ C ล้วนไม่ใช่ข้อยกเว้นที่ถูกต้อง'},
+
+{id:'v1q03',text:'Which of the following is an absolute rule governing Wave 3 in a standard impulse wave?',
+choices:[
+{id:'v1q03a',letter:'a',text:'Wave 3 can never be the shortest wave among Waves 1, 3, and 5 measured by price distance'},
+{id:'v1q03b',letter:'b',text:'Wave 3 must always be the longest wave and must exceed 161.8% of Wave 1'},
+{id:'v1q03c',letter:'c',text:'Wave 3 must extend to at least 100% of the combined length of Waves 1 and 2'},
+{id:'v1q03d',letter:'d',text:'Wave 3 must always subdivide into five clearly identifiable sub-waves on every time frame'}
+],correct:['a'],
+expEn:'The cardinal rule is that Wave 3 can never be the shortest of Waves 1, 3, and 5. Option B is wrong — Wave 3 must not be the shortest, but it does not have to be the longest; Wave 1 or Wave 5 can be longest. Options C and D describe guidelines or conditions, not absolute rules.',
+expTh:'กฎพื้นฐานคือ คลื่น 3 ห้ามเป็นคลื่นที่สั้นที่สุดในบรรดาคลื่น 1, 3 และ 5 ตัวเลือก B ผิดเพราะคลื่น 3 ไม่จำเป็นต้องยาวที่สุดและไม่ต้องถึง 161.8% เสมอ ตัวเลือก C และ D เป็นแนวทาง ไม่ใช่กฎตายตัว'},
+
+{id:'v1q04',text:'What Fibonacci retracement level is most commonly associated with Wave 2 corrections in Elliott Wave analysis?',
+choices:[
+{id:'v1q04a',letter:'a',text:'23.6%'},
+{id:'v1q04b',letter:'b',text:'38.2%'},
+{id:'v1q04c',letter:'c',text:'61.8%'},
+{id:'v1q04d',letter:'d',text:'78.6%'}
+],correct:['c'],
+expEn:'Wave 2 tends to retrace deeply — most commonly to the 61.8% Fibonacci level. It can also reach 78.6% or even approach 100%. The 23.6% and 38.2% levels are more typical of Wave 4 shallow corrections.',
+expTh:'คลื่น 2 มักย้อนกลับลึก โดยระดับที่พบบ่อยที่สุดคือ 61.8% ตาม Fibonacci และอาจถึง 78.6% หรือใกล้ 100% ระดับ 23.6% และ 38.2% มักเป็นของคลื่น 4 ที่ย้อนกลับตื้น'},
+
+{id:'v1q05',text:'When an impulse wave has an extension in Wave 3, which two waves tend to exhibit a Fibonacci equality relationship?',
+choices:[
+{id:'v1q05a',letter:'a',text:'Waves 1 and 4'},
+{id:'v1q05b',letter:'b',text:'Waves 1 and 5'},
+{id:'v1q05c',letter:'c',text:'Waves 2 and 4'},
+{id:'v1q05d',letter:'d',text:'Waves 3 and 5'}
+],correct:['b'],
+expEn:'When Wave 3 extends, Waves 1 and 5 often become equal in length, or Wave 5 equals 61.8% of Wave 1. This is one of the most useful Fibonacci relationships for projecting Wave 5 targets. Waves 2 and 4 are corrective and do not share this motive equality.',
+expTh:'เมื่อคลื่น 3 ยืดตัว คลื่น 1 และ 5 มักมีความยาวเท่ากัน หรือคลื่น 5 มีความยาว 61.8% ของคลื่น 1 นี่เป็นความสัมพันธ์ Fibonacci ที่มีประโยชน์มากในการคาดการณ์เป้าหมายคลื่น 5 คลื่น 2 และ 4 เป็นคลื่น corrective จึงไม่มีความสัมพันธ์แบบนี้'},
+
+{id:'v1q06',text:'A complete motive wave at any degree of trend consists of how many waves total?',
+choices:[
+{id:'v1q06a',letter:'a',text:'3 waves'},
+{id:'v1q06b',letter:'b',text:'4 waves'},
+{id:'v1q06c',letter:'c',text:'6 waves'},
+{id:'v1q06d',letter:'d',text:'5 waves'}
+],correct:['d'],
+expEn:'An impulse (motive) wave always consists of five waves — three in the direction of the trend (1, 3, 5) and two counter-trend corrections (2, 4). This is the fundamental building block of the Wave Principle at every degree.',
+expTh:'คลื่น impulse (motive) ประกอบด้วยห้าคลื่นเสมอ — สามคลื่นในทิศทางเทรนด์ (1, 3, 5) และสองคลื่น correction (2, 4) นี่คือโครงสร้างพื้นฐานของ Wave Principle ในทุกระดับ degree'},
+
+{id:'v1q07',text:'A zigzag correction is classified by which internal wave structure?',
+choices:[
+{id:'v1q07a',letter:'a',text:'A sharp correction labeled 5-3-5 (Wave A in five waves, Wave B in three, Wave C in five)'},
+{id:'v1q07b',letter:'b',text:'A sideways correction labeled 3-3-5 (Wave A in three, Wave B in three, Wave C in five)'},
+{id:'v1q07c',letter:'c',text:'A complex correction labeled 3-3-3 (each sub-wave in three waves)'},
+{id:'v1q07d',letter:'d',text:'A running correction labeled 5-3-3 (Wave A in five, Wave B in three, Wave C in three)'}
+],correct:['a'],
+expEn:'A zigzag is a 5-3-5 structure: Wave A subdivides into five waves, Wave B into three, and Wave C into five. This makes it a "sharp" correction that moves strongly against the prior trend. The 3-3-5 structure belongs to a flat correction.',
+expTh:'Zigzag มีโครงสร้าง 5-3-5: คลื่น A แบ่งย่อยเป็น 5 คลื่น คลื่น B เป็น 3 คลื่น และคลื่น C เป็น 5 คลื่น ทำให้เป็น correction แบบ sharp ที่เคลื่อนที่อย่างแข็งแกร่งต้านเทรนด์ก่อนหน้า โครงสร้าง 3-3-5 เป็นของ flat correction'},
+
+{id:'v1q08',text:'In a regular flat correction, approximately how far does Wave B retrace relative to Wave A?',
+choices:[
+{id:'v1q08a',letter:'a',text:'50%–61.8% of Wave A'},
+{id:'v1q08b',letter:'b',text:'More than 100% of Wave A, making a new extreme'},
+{id:'v1q08c',letter:'c',text:'Approximately 90%–100% of Wave A, ending near the beginning of Wave A'},
+{id:'v1q08d',letter:'d',text:'123.6%–138.2% of Wave A in all cases'}
+],correct:['c'],
+expEn:'In a regular (common) flat, Wave B retraces approximately 90%–100% of Wave A, ending close to but not exceeding Wave A\'s starting point. An expanded flat has a B wave that exceeds 100% of Wave A. Option A is too shallow for a flat\'s B wave.',
+expTh:'ใน flat ปกติ (regular flat) คลื่น B ย้อนกลับประมาณ 90%–100% ของคลื่น A โดยสิ้นสุดใกล้กับจุดเริ่มต้นของคลื่น A expanded flat มีคลื่น B ที่เกิน 100% ของคลื่น A ตัวเลือก A ตื้นเกินไปสำหรับคลื่น B ของ flat'},
+
+{id:'v1q09',text:'In the standard Elliott Wave degree hierarchy, which degree falls immediately above the Minor degree?',
+choices:[
+{id:'v1q09a',letter:'a',text:'Minuette'},
+{id:'v1q09b',letter:'b',text:'Intermediate'},
+{id:'v1q09c',letter:'c',text:'Primary'},
+{id:'v1q09d',letter:'d',text:'Cycle'}
+],correct:['b'],
+expEn:'The degree hierarchy from smallest to largest is: Sub-Minuette, Minuette, Minute, Minor, Intermediate, Primary, Cycle, Supercycle, Grand Supercycle. Intermediate is one degree above Minor. Minuette is two degrees below Minor.',
+expTh:'ลำดับ degree จากเล็กไปใหญ่คือ: Sub-Minuette, Minuette, Minute, Minor, Intermediate, Primary, Cycle, Supercycle, Grand Supercycle ดังนั้น Intermediate อยู่สูงกว่า Minor หนึ่งระดับ ส่วน Minuette อยู่ต่ำกว่า Minor สองระดับ'},
+
+{id:'v1q10',text:'The Guideline of Alternation states that if Wave 2 is a sharp, deep correction such as a zigzag, Wave 4 will most likely be:',
+choices:[
+{id:'v1q10a',letter:'a',text:'A sideways, complex correction such as a flat, triangle, or multi-three'},
+{id:'v1q10b',letter:'b',text:'Another deep, sharp zigzag correction'},
+{id:'v1q10c',letter:'c',text:'A running flat that moves briefly in the trend direction'},
+{id:'v1q10d',letter:'d',text:'An expanded flat with a Wave B that exceeds the origin of Wave A'}
+],correct:['a'],
+expEn:'The Guideline of Alternation predicts that consecutive corrective waves within an impulse will differ in form, depth, or complexity. If Wave 2 is sharp and deep (zigzag), Wave 4 tends to be sideways and complex (flat, triangle, or double/triple three). They alternate — rarely are both the same type.',
+expTh:'หลักการ Alternation ทำนายว่าคลื่น correction สองคลื่นติดกันในภายใน impulse จะแตกต่างกันในรูปแบบ ความลึก หรือความซับซ้อน หากคลื่น 2 เป็น zigzag ที่ลึกและชัน คลื่น 4 มักเป็น flat, triangle หรือ double/triple three ที่ไหลไปทางข้าง'},
+
+{id:'v1q11',text:'An ending diagonal most commonly appears in which wave position within a larger structure?',
+choices:[
+{id:'v1q11a',letter:'a',text:'Wave 1 of a new impulse'},
+{id:'v1q11b',letter:'b',text:'Wave 3 of an impulse, when Wave 3 is extending'},
+{id:'v1q11c',letter:'c',text:'Wave A of a standard zigzag correction'},
+{id:'v1q11d',letter:'d',text:'Wave 5 of an impulse or Wave C of a corrective ABC structure'}
+],correct:['d'],
+expEn:'An ending diagonal signals exhaustion at the end of a move. It appears in Wave 5 of an impulse or in Wave C of a zigzag or flat. A leading diagonal (different pattern) appears in Wave 1 or Wave A. Ending diagonals do not appear in Wave 3.',
+expTh:'Ending diagonal บ่งบอกถึงความหมดแรงของตลาด ณ จุดสิ้นสุดของการเคลื่อนไหว โดยปรากฏในคลื่น 5 ของ impulse หรือคลื่น C ของ zigzag หรือ flat Leading diagonal (รูปแบบต่างออกไป) ปรากฏในคลื่น 1 หรือคลื่น A ไม่ใช่คลื่น 3'},
+
+{id:'v1q12',text:'A leading diagonal differs from an ending diagonal in which key structural way?',
+choices:[
+{id:'v1q12a',letter:'a',text:'A leading diagonal has non-overlapping sub-waves, whereas an ending diagonal always overlaps'},
+{id:'v1q12b',letter:'b',text:'A leading diagonal only appears in Wave C, whereas an ending diagonal appears in Wave 5'},
+{id:'v1q12c',letter:'c',text:'A leading diagonal\'s odd-numbered sub-waves can subdivide into five waves (5-3-5-3-5), whereas an ending diagonal is always 3-3-3-3-3'},
+{id:'v1q12d',letter:'d',text:'A leading diagonal always has an expanding channel, whereas an ending diagonal always has a contracting channel'}
+],correct:['c'],
+expEn:'In a leading diagonal, sub-waves 1, 3, and 5 each subdivide into five waves (making it 5-3-5-3-5), or sometimes into three waves. An ending diagonal always has a 3-3-3-3-3 structure. Both types have converging (contracting) trendlines in their most common form. Option B has the positions reversed.',
+expTh:'ใน leading diagonal คลื่นย่อย 1, 3 และ 5 สามารถแบ่งย่อยได้เป็น 5 คลื่น (ทำให้เป็น 5-3-5-3-5) ในขณะที่ ending diagonal มีโครงสร้าง 3-3-3-3-3 เสมอ ทั้งสองแบบมักมี trendlines ที่บรรจบกัน ตัวเลือก B มีตำแหน่งสลับกัน'},
+
+{id:'v1q13',text:'Which description best characterizes the typical personality of Wave 5?',
+choices:[
+{id:'v1q13a',letter:'a',text:'Broad market participation with the highest volume of the entire impulse move'},
+{id:'v1q13b',letter:'b',text:'Narrowing breadth and often waning momentum compared to Wave 3, sometimes failing to reach new extremes'},
+{id:'v1q13c',letter:'c',text:'Driven by fundamental news events that immediately cause a trend reversal'},
+{id:'v1q13d',letter:'d',text:'Always the most subdivided and internally complex wave in the sequence'}
+],correct:['b'],
+expEn:'Wave 5 typically shows less strength than Wave 3 — narrower breadth, lower volume, and diverging momentum indicators are common. Fifth waves sometimes "truncate," failing to exceed the end of Wave 3. Option A better describes Wave 3. Options C and D are not standard Wave 5 characteristics.',
+expTh:'คลื่น 5 มักแสดงความแข็งแกร่งน้อยกว่าคลื่น 3 — breadth แคบลง ปริมาณการซื้อขายต่ำกว่า และ momentum indicators มักแสดง divergence บางครั้งคลื่น 5 อาจ truncate ไม่เกินจุดสิ้นสุดของคลื่น 3 ตัวเลือก A เหมาะกับคลื่น 3 มากกว่า'},
+
+{id:'v1q14',text:'Which type of triangle has both boundary trendlines converging, with each successive sub-wave retracing less than the previous one?',
+choices:[
+{id:'v1q14a',letter:'a',text:'Contracting (symmetrical) triangle'},
+{id:'v1q14b',letter:'b',text:'Expanding triangle'},
+{id:'v1q14c',letter:'c',text:'Barrier triangle'},
+{id:'v1q14d',letter:'d',text:'Running triangle'}
+],correct:['a'],
+expEn:'A contracting (symmetrical) triangle has both the upper (A-C-E) and lower (B-D) trendlines converging toward an apex, with each sub-wave shorter than the previous. An expanding triangle has diverging trendlines. A barrier triangle has one approximately horizontal line. A running triangle moves in the direction of the trend.',
+expTh:'Contracting (symmetrical) triangle มี trendline ทั้งบน (A-C-E) และล่าง (B-D) บรรจบกันที่จุดสูงสุด โดยแต่ละคลื่นย่อยสั้นกว่าคลื่นก่อน Expanding triangle มี trendline แยกออก Barrier triangle มีเส้นด้านหนึ่งเกือบแนวนอน'},
+
+{id:'v1q15',text:'A horizontal triangle correction always contains how many sub-waves in total?',
+choices:[
+{id:'v1q15a',letter:'a',text:'3'},
+{id:'v1q15b',letter:'b',text:'4'},
+{id:'v1q15c',letter:'c',text:'6'},
+{id:'v1q15d',letter:'d',text:'5'}
+],correct:['d'],
+expEn:'A horizontal triangle always contains exactly five sub-waves labeled A-B-C-D-E. Each sub-wave itself subdivides into three waves, making the full triangle a 3-3-3-3-3 structure. This five-wave count is what distinguishes it from simpler corrections.',
+expTh:'Triangle แนวนอนมีคลื่นย่อย 5 คลื่นเสมอ โดยลาเบล A-B-C-D-E และแต่ละคลื่นย่อยแบ่งย่อยเป็น 3 คลื่น ทำให้ triangle ทั้งหมดมีโครงสร้าง 3-3-3-3-3 การนับ 5 คลื่นนี้คือสิ่งที่แยก triangle จาก correction รูปแบบอื่น'},
+{id:'v1q16',text:'Wave 1 is often the most difficult wave to identify in real time. What is the primary reason for this difficulty?',
+choices:[
+{id:'v1q16a',letter:'a',text:'Wave 1 always starts from a complex corrective structure that makes its origin unclear'},
+{id:'v1q16b',letter:'b',text:'Wave 1 tends to be the shortest wave, making it easy to overlook against larger moves'},
+{id:'v1q16c',letter:'c',text:'Wave 1 can appear to be merely a corrective ABC bounce within the prior downtrend, making it look like a counter-trend move'},
+{id:'v1q16d',letter:'d',text:'Wave 1 is always followed by a Wave 2 so deep it typically erases the evidence of Wave 1'}
+],correct:['c'],
+expEn:'Wave 1 often looks indistinguishable from a corrective bounce (A-B-C) within the previous trend. Analysts may label it as wave C of a prior correction rather than Wave 1 of a new impulse. This is the key reason it is hard to identify before Wave 3 confirms the new trend.',
+expTh:'คลื่น 1 มักดูเหมือนเป็นการเด้งกลับแบบ correction (A-B-C) ในเทรนด์เดิม นักวิเคราะห์อาจลาเบลว่าเป็นคลื่น C ของ correction ก่อนหน้าแทนที่จะเป็นคลื่น 1 ของ impulse ใหม่ ทำให้ยากที่จะระบุก่อนที่คลื่น 3 จะยืนยันเทรนด์ใหม่'},
+
+{id:'v1q17',text:'When Wave 3 is the extended wave in an impulse, what Fibonacci multiple of Wave 1 does it most commonly reach?',
+choices:[
+{id:'v1q17a',letter:'a',text:'100% of Wave 1'},
+{id:'v1q17b',letter:'b',text:'161.8% of Wave 1'},
+{id:'v1q17c',letter:'c',text:'200% of Wave 1'},
+{id:'v1q17d',letter:'d',text:'261.8% of Wave 1'}
+],correct:['b'],
+expEn:'A Wave 3 extension most commonly reaches 161.8% of Wave 1 (the golden ratio multiple). It can also extend to 261.8% or 423.6% in powerful trends. 100% would merely equal Wave 1 in length, and 200% is less typical than 161.8%.',
+expTh:'คลื่น 3 ที่ยืดตัวมักมีเป้าหมายที่ 161.8% ของคลื่น 1 (อัตราส่วน golden ratio) และอาจยืดตัวไปถึง 261.8% หรือ 423.6% ในเทรนด์ที่แข็งแกร่ง ระดับ 100% แค่เท่ากับคลื่น 1 และ 200% พบน้อยกว่า 161.8%'},
+
+{id:'v1q18',text:'In a complete five-wave impulse, which specific waves must each subdivide into five waves of lower degree?',
+choices:[
+{id:'v1q18a',letter:'a',text:'Waves 1, 3, and 5'},
+{id:'v1q18b',letter:'b',text:'Waves 2 and 4'},
+{id:'v1q18c',letter:'c',text:'All five waves equally'},
+{id:'v1q18d',letter:'d',text:'Only Waves 1 and 3, as Wave 5 may subdivide into three'}
+],correct:['a'],
+expEn:'In an impulse, the actionary waves (1, 3, and 5) each subdivide into five waves of lower degree. The corrective waves (2 and 4) each subdivide into three waves. This alternation of five-wave and three-wave structures at every degree is fundamental to the Elliott Wave Principle.',
+expTh:'ใน impulse คลื่น actionary (1, 3 และ 5) แต่ละคลื่นแบ่งย่อยเป็น 5 คลื่นในระดับ degree ที่ต่ำกว่า ส่วนคลื่น corrective (2 และ 4) แต่ละคลื่นแบ่งย่อยเป็น 3 คลื่น การสลับกันระหว่างโครงสร้าง 5 คลื่นและ 3 คลื่นในทุก degree เป็นพื้นฐานสำคัญของ Wave Principle'},
+
+{id:'v1q19',text:'In a zigzag correction (A-B-C) that follows a five-wave uptrend, what is the internal sub-wave structure of Wave A?',
+choices:[
+{id:'v1q19a',letter:'a',text:'Three waves (corrective ABC)'},
+{id:'v1q19b',letter:'b',text:'A single wave with no sub-divisions'},
+{id:'v1q19c',letter:'c',text:'Five waves as a contracting triangle'},
+{id:'v1q19d',letter:'d',text:'Five waves (impulse or diagonal)'}
+],correct:['d'],
+expEn:'In a zigzag, Wave A subdivides into five waves — this is the key difference from a flat correction where Wave A has only three sub-waves. Wave A of a zigzag is a motive wave in the corrective direction. This 5-3-5 structure is the defining characteristic of the zigzag pattern.',
+expTh:'ใน zigzag คลื่น A แบ่งย่อยเป็น 5 คลื่น นี่คือความแตกต่างหลักจาก flat correction ที่คลื่น A มีแค่ 3 คลื่นย่อย คลื่น A ของ zigzag เป็นคลื่น motive ในทิศทาง corrective โครงสร้าง 5-3-5 นี้คือลักษณะเฉพาะของรูปแบบ zigzag'},
+
+{id:'v1q20',text:'In an expanded (irregular) flat correction, how far does Wave B typically retrace relative to the start of Wave A?',
+choices:[
+{id:'v1q20a',letter:'a',text:'Exactly to the start of Wave A but no further'},
+{id:'v1q20b',letter:'b',text:'Between 50% and 90% of Wave A, ending well below its origin'},
+{id:'v1q20c',letter:'c',text:'More than 100% of Wave A, extending beyond the starting point of Wave A'},
+{id:'v1q20d',letter:'d',text:'Exactly 61.8% of Wave A in all expanded flat patterns'}
+],correct:['c'],
+expEn:'In an expanded flat, Wave B retraces more than 100% of Wave A, making a new extreme beyond Wave A\'s origin. This is what makes it "expanded." Wave C then exceeds the end of Wave A in the corrective direction. A regular flat has Wave B ending at approximately 90%–100% of Wave A.',
+expTh:'ใน expanded flat คลื่น B ย้อนกลับเกิน 100% ของคลื่น A โดยสร้างจุดสุดขีดใหม่เกินจุดเริ่มต้นของคลื่น A นี่คือเหตุผลที่เรียกว่า expanded จากนั้นคลื่น C จะเกินจุดสิ้นสุดของคลื่น A ในทิศทาง correction'},
+
+{id:'v1q21',text:'In a running flat correction, what specifically distinguishes Wave C from a regular flat\'s Wave C?',
+choices:[
+{id:'v1q21a',letter:'a',text:'Wave C extends strongly beyond 161.8% of Wave B'},
+{id:'v1q21b',letter:'b',text:'Wave C fails to reach the end of Wave A, leaving the overall correction net-positive relative to Wave A\'s start'},
+{id:'v1q21c',letter:'c',text:'Wave C takes the form of a diagonal triangle instead of a standard five-wave impulse'},
+{id:'v1q21d',letter:'d',text:'Wave C reverses the entire Wave A and Wave B, creating a new extreme in the trend direction'}
+],correct:['b'],
+expEn:'A running flat is characterized by Wave B exceeding the origin of Wave A and then Wave C failing to reach the low of Wave A. The net effect is that prices barely correct — the overall pattern moves in the direction of the larger trend. This occurs in very strong trending markets.',
+expTh:'Running flat มีลักษณะที่คลื่น B เกินจุดเริ่มต้นของคลื่น A และคลื่น C ไม่สามารถไปถึงจุดต่ำสุดของคลื่น A ผลสุทธิคือราคาแทบไม่ปรับตัว — รูปแบบโดยรวมเคลื่อนไปในทิศทางเทรนด์ใหญ่ ซึ่งเกิดขึ้นในตลาดที่มีเทรนด์แข็งแกร่งมาก'},
+
+{id:'v1q22',text:'A double three (double zigzag or other combination) complex correction is composed of which elements?',
+choices:[
+{id:'v1q22a',letter:'a',text:'Two corrective patterns (W and Y) connected by a three-wave intervening wave labeled X'},
+{id:'v1q22b',letter:'b',text:'Two impulse waves connected by a single corrective wave'},
+{id:'v1q22c',letter:'c',text:'Three simple zigzags connected by two X waves in a W-X-Y-X-Z pattern'},
+{id:'v1q22d',letter:'d',text:'Two zigzags placed directly adjacent without any intervening X wave'}
+],correct:['a'],
+expEn:'A double three consists of two corrective patterns (W and Y, which can be any corrective type — zigzag, flat, or triangle) joined by an X wave. The X wave itself is always a corrective structure (three waves). Option C describes a triple three (W-X-Y-X-Z). Option D omits the required X wave.',
+expTh:'Double three ประกอบด้วยรูปแบบ corrective สองอัน (W และ Y ซึ่งอาจเป็น zigzag, flat หรือ triangle) เชื่อมด้วยคลื่น X คลื่น X เองมีโครงสร้าง corrective (3 คลื่น) ตัวเลือก C อธิบาย triple three (W-X-Y-X-Z) ตัวเลือก D ขาดคลื่น X ที่จำเป็น'},
+
+{id:'v1q23',text:'In the Elliott Wave degree hierarchy, which is the LARGEST degree commonly labeled in long-term market analysis?',
+choices:[
+{id:'v1q23a',letter:'a',text:'Supercycle'},
+{id:'v1q23b',letter:'b',text:'Primary'},
+{id:'v1q23c',letter:'c',text:'Cycle'},
+{id:'v1q23d',letter:'d',text:'Grand Supercycle'}
+],correct:['d'],
+expEn:'The Grand Supercycle is the largest degree in standard Elliott Wave labeling, encompassing centuries of market data. Below it are Supercycle, Cycle, Primary, Intermediate, Minor, Minute, Minuette, and Sub-Minuette. Prechter and Frost identified Grand Supercycle waves spanning roughly 200+ years.',
+expTh:'Grand Supercycle เป็น degree ที่ใหญ่ที่สุดในการลาเบล Elliott Wave มาตรฐาน ครอบคลุมข้อมูลตลาดหลายศตวรรษ ต่ำกว่าลงมาคือ Supercycle, Cycle, Primary, Intermediate, Minor, Minute, Minuette และ Sub-Minuette'},
+
+{id:'v1q24',text:'What is the most commonly observed Fibonacci retracement level for Wave 4 corrections?',
+choices:[
+{id:'v1q24a',letter:'a',text:'61.8%'},
+{id:'v1q24b',letter:'b',text:'78.6%'},
+{id:'v1q24c',letter:'c',text:'38.2%'},
+{id:'v1q24d',letter:'d',text:'23.6%'}
+],correct:['c'],
+expEn:'Wave 4 typically retraces about 38.2% of Wave 3 — a shallower correction than Wave 2, consistent with the Guideline of Alternation (Wave 2 tends to be deep, Wave 4 tends to be shallow). The 61.8% and 78.6% levels are far more typical of Wave 2 retracements.',
+expTh:'คลื่น 4 มักย้อนกลับประมาณ 38.2% ของคลื่น 3 ซึ่งตื้นกว่าคลื่น 2 สอดคล้องกับ Guideline of Alternation (คลื่น 2 มักลึก คลื่น 4 มักตื้น) ระดับ 61.8% และ 78.6% เป็นของคลื่น 2 มากกว่า'},
+
+{id:'v1q25',text:'In Elliott\'s channel technique, after Waves 1 and 2 are complete, which two reference points form the initial base channel?',
+choices:[
+{id:'v1q25a',letter:'a',text:'The peak of Wave 1 and the peak of Wave 3'},
+{id:'v1q25b',letter:'b',text:'The origin of Wave 1 and the end of Wave 2'},
+{id:'v1q25c',letter:'c',text:'The end of Wave 1 and the start of Wave 3'},
+{id:'v1q25d',letter:'d',text:'The end of Wave 2 and the projected target for Wave 3'}
+],correct:['b'],
+expEn:'The base channel connects the origin of Wave 1 (Wave 0) and the end of Wave 2. A parallel line drawn from the peak of Wave 1 provides the upper boundary. This channel is used to project where Wave 3 may stall or find resistance. The channel is then adjusted after Wave 3 completes.',
+expTh:'Base channel เชื่อมจุดเริ่มต้นของคลื่น 1 (Wave 0) และจุดสิ้นสุดของคลื่น 2 เส้น parallel ที่ลากจากจุดสูงสุดของคลื่น 1 เป็นขอบบน ใช้คาดการณ์ว่าคลื่น 3 อาจหยุดหรือพบแรงต้านที่ใด จากนั้นปรับช่องหลังคลื่น 3 สมบูรณ์'},
+
+{id:'v1q26',text:'Within a contracting triangle, Wave E typically behaves in which way relative to the A-C trendline?',
+choices:[
+{id:'v1q26a',letter:'a',text:'Wave E usually falls short of or just touches the A-C trendline, sometimes with a brief "false break" that quickly reverses'},
+{id:'v1q26b',letter:'b',text:'Wave E always closes precisely on the A-C trendline with no variance'},
+{id:'v1q26c',letter:'c',text:'Wave E must significantly extend beyond the A-C trendline to confirm the triangle pattern'},
+{id:'v1q26d',letter:'d',text:'Wave E is always longer than Wave C but must be shorter than Wave A'}
+],correct:['a'],
+expEn:'Wave E commonly falls short of the A-C trendline, or it may slightly puncture it (false breakout) before reversing. It rarely closes far beyond the A-C line. After Wave E ends, the market typically thrusts powerfully out of the triangle in the direction of the preceding trend.',
+expTh:'คลื่น E มักไม่ถึง A-C trendline หรืออาจทะลุเล็กน้อย (false breakout) แล้วกลับตัว ไม่ค่อยปิดเกิน A-C line อย่างชัดเจน หลังคลื่น E จบ ตลาดมักเคลื่อนไหวอย่างแข็งแกร่งออกจาก triangle ในทิศทางเทรนด์ก่อนหน้า'},
+
+{id:'v1q27',text:'After a contracting triangle completes as Wave 4, the ensuing Wave 5 thrust is typically projected to reach approximately:',
+choices:[
+{id:'v1q27a',letter:'a',text:'161.8% of the entire triangle\'s length from the breakout point'},
+{id:'v1q27b',letter:'b',text:'100% extension of the longest sub-wave of the triangle'},
+{id:'v1q27c',letter:'c',text:'A 2.618 multiple of Wave E length from the breakout point'},
+{id:'v1q27d',letter:'d',text:'A distance approximately equal to the widest part of the triangle, added to the breakout point'}
+],correct:['d'],
+expEn:'The standard projection for the post-triangle thrust is that it will travel a distance roughly equal to the widest part (usually measured from Wave A\'s starting level to Wave B\'s endpoint) added to the triangle\'s apex/breakout point. This is sometimes called the "measuring principle" for triangles.',
+expTh:'การประมาณมาตรฐานสำหรับ thrust หลัง triangle คือมันจะเคลื่อนที่ระยะทางประมาณเท่ากับส่วนที่กว้างที่สุดของ triangle บวกกับจุดหักของ triangle นี้เรียกว่า "measuring principle" สำหรับ triangle'},
+
+{id:'v1q28',text:'In a double three (W-X-Y), the X wave that connects the two corrective components is itself:',
+choices:[
+{id:'v1q28a',letter:'a',text:'Always a simple three-wave zigzag'},
+{id:'v1q28b',letter:'b',text:'Always a triangle or flat'},
+{id:'v1q28c',letter:'c',text:'Any corrective wave structure — zigzag, flat, triangle, or even another multi-three'},
+{id:'v1q28d',letter:'d',text:'Always an impulse wave moving in the counter-corrective direction'}
+],correct:['c'],
+expEn:'The X wave is a corrective structure, but it can take the form of any corrective pattern: zigzag, flat, triangle, or even a double three itself. It is not restricted to one specific form. What defines it as X is its position as the connector between W and Y components, not its internal structure.',
+expTh:'คลื่น X เป็นโครงสร้าง corrective แต่สามารถเป็นรูปแบบ corrective ใดก็ได้: zigzag, flat, triangle หรือแม้แต่ double three อีกอัน ไม่ถูกจำกัดรูปแบบ สิ่งที่ทำให้มันเป็นคลื่น X คือตำแหน่งที่เป็นตัวเชื่อมระหว่าง W และ Y'},
+
+{id:'v1q29',text:'When no extension occurs in an impulse, Waves 1 and 5 often exhibit which Fibonacci relationship?',
+choices:[
+{id:'v1q29a',letter:'a',text:'Wave 5 = 161.8% of Wave 1'},
+{id:'v1q29b',letter:'b',text:'Wave 5 ≈ Wave 1 in price length (equality)'},
+{id:'v1q29c',letter:'c',text:'Wave 5 = 61.8% of Wave 1'},
+{id:'v1q29d',letter:'d',text:'Wave 5 = 261.8% of Wave 1'}
+],correct:['b'],
+expEn:'In non-extended impulses, Waves 1 and 5 tend toward equality in price length. This is one of the most frequently cited wave relationships and is particularly useful for projecting where Wave 5 will end. Wave 5 can also be 61.8% of Wave 1, but equality is the most common relationship.',
+expTh:'ใน impulse ที่ไม่มีการยืดตัว คลื่น 1 และ 5 มักมีความยาวเท่ากัน นี่คือความสัมพันธ์ระหว่างคลื่นที่อ้างถึงบ่อยที่สุดและมีประโยชน์มากในการคาดการณ์จุดสิ้นสุดของคลื่น 5 คลื่น 5 อาจเป็น 61.8% ของคลื่น 1 ได้เช่นกัน แต่ equality พบบ่อยกว่า'},
+
+{id:'v1q30',text:'Which of the following is correctly classified as a motive wave structure?',
+choices:[
+{id:'v1q30a',letter:'a',text:'An impulse wave — five waves moving in the direction of the one-larger-degree trend'},
+{id:'v1q30b',letter:'b',text:'A zigzag — a three-wave pattern moving against the prior trend'},
+{id:'v1q30c',letter:'c',text:'A flat — a 3-3-5 sideways correction'},
+{id:'v1q30d',letter:'d',text:'A triangle — a five-wave sideways corrective pattern'}
+],correct:['a'],
+expEn:'Motive waves move in the direction of the one-larger-degree trend and subdivide into five waves. They include standard impulses and diagonal triangles. Zigzags, flats, and triangles are all corrective patterns that move against or sideways to the larger trend.',
+expTh:'คลื่น motive เคลื่อนที่ในทิศทางของเทรนด์ใน degree ที่ใหญ่กว่า และแบ่งย่อยเป็น 5 คลื่น ได้แก่ impulse มาตรฐานและ diagonal triangle Zigzag, flat และ triangle ล้วนเป็น corrective pattern ที่เคลื่อนไหวต้านหรือข้างๆ เทรนด์ใหญ่'},
+{id:'v1q31',text:'Corrective waves travel in which direction relative to the one-larger-degree trend?',
+choices:[
+{id:'v1q31a',letter:'a',text:'In the same direction as the one-larger-degree trend'},
+{id:'v1q31b',letter:'b',text:'In both directions equally, netting out to zero'},
+{id:'v1q31c',letter:'c',text:'Only laterally — all corrections must be purely sideways'},
+{id:'v1q31d',letter:'d',text:'Against the one-larger-degree trend, or in a direction perpendicular to it'}
+],correct:['d'],
+expEn:'Corrective waves travel against or sideways to the one-larger-degree trend. In a bull market, corrections move down or sideways; in a bear market, they move up or sideways. Not all corrections are purely lateral — sharp corrections like zigzags move strongly against the trend.',
+expTh:'คลื่น corrective เคลื่อนที่ต้านหรือขนานกับเทรนด์ใน degree ที่ใหญ่กว่า ในตลาดกระทิง correction เคลื่อนลงหรือไปข้าง ในตลาดหมีเคลื่อนขึ้นหรือไปข้าง ไม่ใช่ทุก correction ที่จะเคลื่อนข้างๆ เพียงอย่างเดียว เช่น zigzag เคลื่อนอย่างแข็งแกร่งต้านเทรนด์'},
+
+{id:'v1q32',text:'Wave 3 is typically characterized by which combination of market behaviors?',
+choices:[
+{id:'v1q32a',letter:'a',text:'High volume but declining market breadth throughout the wave'},
+{id:'v1q32b',letter:'b',text:'Low volume and narrow market breadth with slow, choppy price action'},
+{id:'v1q32c',letter:'c',text:'Strong breadth, high volume, and the largest price move among all five impulse waves'},
+{id:'v1q32d',letter:'d',text:'Multiple false reversals and consolidation periods that frustrate trend followers'}
+],correct:['c'],
+expEn:'Wave 3 is the most powerful and dynamic wave. It produces the largest price move, the widest market breadth, and typically the highest volume of the entire impulse sequence. Momentum indicators such as RSI and MACD peak during Wave 3. Option D better describes Wave 4.',
+expTh:'คลื่น 3 เป็นคลื่นที่ทรงพลังและไดนามิกที่สุด สร้างการเคลื่อนไหวราคาที่ใหญ่ที่สุด market breadth ที่กว้างที่สุด และปริมาณการซื้อขายสูงสุดของ impulse ทั้งหมด ตัวชี้วัด momentum เช่น RSI และ MACD มักถึงจุดสูงสุดในคลื่น 3 ตัวเลือก D เหมาะกับคลื่น 4 มากกว่า'},
+
+{id:'v1q33',text:'If Wave 1 of a new uptrend is a leading diagonal, what does guideline suggest about the depth of the subsequent Wave 2?',
+choices:[
+{id:'v1q33a',letter:'a',text:'Wave 2 will be very shallow, retracing only about 23.6% of Wave 1'},
+{id:'v1q33b',letter:'b',text:'Wave 2 tends to be very deep, often retracing 61.8% to nearly 100% of Wave 1'},
+{id:'v1q33c',letter:'c',text:'Wave 2 will equal Wave 1 in time duration but not in price'},
+{id:'v1q33d',letter:'d',text:'Wave 2 always forms a flat correction when Wave 1 is a leading diagonal'}
+],correct:['b'],
+expEn:'When Wave 1 is a leading diagonal, Wave 2 that follows tends to be very deep — commonly retracing 61.8% to nearly the full length of Wave 1. This deep retracement tests whether the new trend is genuine and sets up the powerful Wave 3 that follows.',
+expTh:'เมื่อคลื่น 1 เป็น leading diagonal คลื่น 2 ที่ตามมามักลึกมาก โดยย้อนกลับ 61.8% ถึงเกือบเต็มความยาวของคลื่น 1 การย้อนกลับที่ลึกนี้ทดสอบว่าเทรนด์ใหม่แท้จริงหรือไม่ และเป็นการเตรียมพร้อมสำหรับคลื่น 3 ที่ทรงพลัง'},
+
+{id:'v1q34',text:'In a contracting ending diagonal, what is the internal sub-wave structure of each of the five waves?',
+choices:[
+{id:'v1q34a',letter:'a',text:'3-3-3-3-3: each of the five sub-waves subdivides into three waves'},
+{id:'v1q34b',letter:'b',text:'5-3-5-3-5: odd waves subdivide into five waves, even waves into three'},
+{id:'v1q34c',letter:'c',text:'5-5-5-3-3: only the first three waves subdivide into five waves'},
+{id:'v1q34d',letter:'d',text:'3-5-3-5-3: even waves subdivide into five waves, odd waves into three'}
+],correct:['a'],
+expEn:'An ending diagonal always has a 3-3-3-3-3 structure: every one of its five sub-waves subdivides into three waves. This is one of the most important structural tests. If any sub-wave appears to subdivide into five waves, the structure may be a leading diagonal or an impulse rather than an ending diagonal.',
+expTh:'Ending diagonal มีโครงสร้าง 3-3-3-3-3 เสมอ: คลื่นย่อยทั้ง 5 แต่ละคลื่นแบ่งย่อยเป็น 3 คลื่น นี่เป็นการทดสอบโครงสร้างที่สำคัญที่สุด หากคลื่นย่อยใดแบ่งย่อยได้เป็น 5 คลื่น โครงสร้างนั้นอาจเป็น leading diagonal หรือ impulse แทน'},
+
+{id:'v1q35',text:'When a contracting triangle appears as Wave 4 of an impulse, the five sub-waves within the triangle are labeled:',
+choices:[
+{id:'v1q35a',letter:'a',text:'1-2-3-4-5'},
+{id:'v1q35b',letter:'b',text:'W-X-Y-X-Z'},
+{id:'v1q35c',letter:'c',text:'A-B-C-D-E-F (six waves)'},
+{id:'v1q35d',letter:'d',text:'A-B-C-D-E (five waves)'}
+],correct:['d'],
+expEn:'Triangle sub-waves are always labeled A-B-C-D-E regardless of which wave position the triangle occupies. The impulse notation (1-2-3-4-5) applies only to impulse waves. W-X-Y-X-Z is for triple threes. The triangle has exactly five sub-waves, not six.',
+expTh:'คลื่นย่อยของ triangle ถูกลาเบลว่า A-B-C-D-E เสมอ ไม่ว่า triangle จะอยู่ในตำแหน่งใด การลาเบล impulse (1-2-3-4-5) ใช้กับ impulse เท่านั้น W-X-Y-X-Z เป็นของ triple three Triangle มีคลื่นย่อย 5 คลื่นพอดี ไม่ใช่ 6'},
+
+{id:'v1q36',text:'In Elliott Wave analysis, the ratio 0.618 (the Golden Ratio) is most fundamentally associated with which concept?',
+choices:[
+{id:'v1q36a',letter:'a',text:'The minimum extension multiple required for Wave 3 to confirm an impulse'},
+{id:'v1q36b',letter:'b',text:'The maximum retracement depth allowed for Wave 4'},
+{id:'v1q36c',letter:'c',text:'The universal ratio underlying all wave length and retracement relationships throughout nature and markets'},
+{id:'v1q36d',letter:'d',text:'The specific retracement depth that always defines Wave 2 in a bear market'}
+],correct:['c'],
+expEn:'0.618 is the Golden Ratio (phi), derived from the Fibonacci sequence. Elliott and Prechter emphasized that this ratio underlies the proportions of wave relationships at all degrees — not just as one specific retracement level, but as the foundational mathematical principle connecting all Elliott Wave relationships.',
+expTh:'0.618 คืออัตราส่วน Golden Ratio (phi) ที่ได้จากลำดับ Fibonacci Elliott และ Prechter เน้นว่าอัตราส่วนนี้อยู่เบื้องหลังสัดส่วนของความสัมพันธ์คลื่นในทุก degree — ไม่ใช่แค่ระดับ retracement เฉพาะ แต่เป็นหลักการทางคณิตศาสตร์พื้นฐานที่เชื่อมโยงความสัมพันธ์ Elliott Wave ทั้งหมด'},
+
+{id:'v1q37',text:'In a bear market, a five-wave impulse structure moves in which direction, and how is it organized?',
+choices:[
+{id:'v1q37a',letter:'a',text:'Downward, with three declining impulse waves (1, 3, 5) interspersed with two corrective upswings (2, 4)'},
+{id:'v1q37b',letter:'b',text:'Upward, because the primary trend is still bullish at a higher degree'},
+{id:'v1q37c',letter:'c',text:'Sideways, because bear markets always express as corrective structures'},
+{id:'v1q37d',letter:'d',text:'Downward but in three waves only, because bear markets produce only corrective patterns'}
+],correct:['a'],
+expEn:'In a bear market, the primary trend is downward, so the five-wave impulse points downward. Waves 1, 3, and 5 are declining (actionary), while Waves 2 and 4 are upward (corrective bounces). The Wave Principle applies equally to bull and bear market impulse waves.',
+expTh:'ในตลาดหมี เทรนด์หลักเป็นขาลง ดังนั้น impulse 5 คลื่นจึงชี้ลง คลื่น 1, 3 และ 5 ลดลง (actionary) ในขณะที่คลื่น 2 และ 4 เป็นการเด้งขึ้น (corrective) Wave Principle ใช้ได้เท่ากันทั้งในตลาดกระทิงและหมี'},
+
+{id:'v1q38',text:'After Wave 3 of an impulse completes, how does Elliott recommend adjusting the wave channel?',
+choices:[
+{id:'v1q38a',letter:'a',text:'Draw a new base line through the starts of Waves 1 and 3, then project the upper boundary parallel to it'},
+{id:'v1q38b',letter:'b',text:'Draw a line connecting the peaks of Waves 1 and 3, then draw a parallel line through the end of Wave 2 as the lower boundary'},
+{id:'v1q38c',letter:'c',text:'Draw a line through the end of Wave 3 and the end of Wave 4, extending forward as the main trend channel'},
+{id:'v1q38d',letter:'d',text:'Redraw the channel exclusively using the Wave 3 peak and the expected Wave 5 projection'}
+],correct:['b'],
+expEn:'After Wave 3 completes, the adjusted channel connects the peaks of Waves 1 and 3 (upper line), with the lower boundary drawn parallel through the end of Wave 2. This parallel lower boundary often provides support for Wave 4. After Wave 4, the channel is adjusted again using Wave 2 and Wave 4 lows.',
+expTh:'หลังคลื่น 3 สมบูรณ์ channel ที่ปรับแล้วเชื่อมจุดสูงสุดของคลื่น 1 และ 3 (เส้นบน) โดยมีขอบล่างลาก parallel ผ่านจุดสิ้นสุดของคลื่น 2 ขอบล่าง parallel นี้มักให้แนวรับสำหรับคลื่น 4 หลังคลื่น 4 จะปรับ channel อีกครั้งโดยใช้จุดต่ำของคลื่น 2 และ 4'},
+
+{id:'v1q39',text:'According to Prechter\'s socionomic theory, what is the relationship between social mood and market prices?',
+choices:[
+{id:'v1q39a',letter:'a',text:'Social mood reacts to news and economic events, which first cause market price changes'},
+{id:'v1q39b',letter:'b',text:'Social mood is determined by central bank monetary policy, which then influences market direction'},
+{id:'v1q39c',letter:'c',text:'Social mood follows a linear upward progression tied to GDP and productivity growth'},
+{id:'v1q39d',letter:'d',text:'Social mood drives market prices — the mood wave precedes and causes both market moves and social events, not the reverse'}
+],correct:['d'],
+expEn:'Socionomics proposes that social mood (measured by stock prices) is an endogenous, patterned process that precedes and causes events — not the other way around. News, earnings, and economic data do not drive prices; instead, a change in social mood causes both price changes and the events analysts often blame for them.',
+expTh:'Socionomics เสนอว่า social mood (วัดจากราคาหุ้น) เป็นกระบวนการที่เกิดจากภายใน มีรูปแบบ และนำหน้าเหตุการณ์ต่างๆ ไม่ใช่ในทางกลับกัน ข่าว กำไร และข้อมูลเศรษฐกิจไม่ได้ขับเคลื่อนราคา แต่การเปลี่ยนแปลงของ social mood ทำให้เกิดทั้งการเปลี่ยนแปลงราคาและเหตุการณ์ที่นักวิเคราะห์มักโทษ'},
+
+{id:'v1q40',text:'Which description best captures the typical personality of Wave 4?',
+choices:[
+{id:'v1q40a',letter:'a',text:'Wave 4 is always a simple zigzag retracing exactly to the 38.2% Fibonacci level'},
+{id:'v1q40b',letter:'b',text:'Wave 4 tends to be extremely deep, retracing more than 61.8% of Wave 3 in most cases'},
+{id:'v1q40c',letter:'c',text:'Wave 4 is often complex, sideways, and time-consuming — frustrating to traders who expect a clear pattern'},
+{id:'v1q40d',letter:'d',text:'Wave 4 always forms a triangle, building energy for the final Wave 5 thrust'}
+],correct:['c'],
+expEn:'Wave 4 tends to be the most complex and frustrating corrective wave in the impulse. It often takes the form of a flat, triangle, or double three and can consume considerable time without making much net progress in price. Traders who try to trade it frequently get whipsawed. Options A and D describe it too rigidly.',
+expTh:'คลื่น 4 มักเป็นคลื่น corrective ที่ซับซ้อนและน่าหงุดหงิดที่สุดใน impulse มักปรากฏในรูปแบบ flat, triangle หรือ double three และอาจใช้เวลานานโดยไม่เคลื่อนไหวราคามากนัก นักเทรดที่พยายามเทรดมักถูก whipsaw ตัวเลือก A และ D อธิบายด้วยกฎที่เข้มงวดเกินไป'},
+{id:'v1q41',text:'In Elliott Wave analysis, the ratio 1.618 (phi) most commonly describes which wave relationship?',
+choices:[
+{id:'v1q41a',letter:'a',text:'The proportion by which Wave 3 extends beyond Wave 1 in a typical impulse (Wave 3 = 1.618 × Wave 1)'},
+{id:'v1q41b',letter:'b',text:'The maximum retracement depth of Wave 2 measured against Wave 1'},
+{id:'v1q41c',letter:'c',text:'The extension of Wave C beyond Wave A in all zigzag corrections'},
+{id:'v1q41d',letter:'d',text:'The ratio of Wave B to Wave A in all regular flat corrections'}
+],correct:['a'],
+expEn:'The most common Wave 3 extension target is 1.618 times the length of Wave 1. This uses the golden ratio directly. Option B: 1.618 would exceed Wave 1, invalidating the count. Option C: Wave C equals Wave A in a simple zigzag, not 1.618 times. Option D does not describe flat Wave B relationships.',
+expTh:'เป้าหมายการยืดตัวของคลื่น 3 ที่พบบ่อยที่สุดคือ 1.618 เท่าของความยาวคลื่น 1 ซึ่งใช้ golden ratio โดยตรง ตัวเลือก B: 1.618 จะเกินคลื่น 1 ทำให้การนับผิด ตัวเลือก C: ใน zigzag ง่ายๆ คลื่น C เท่ากับคลื่น A ไม่ใช่ 1.618 เท่า'},
+
+{id:'v1q42',text:'A triangle correction most commonly appears in which wave position(s) within a larger pattern?',
+choices:[
+{id:'v1q42a',letter:'a',text:'Wave 1 or Wave A — at the start of a new move'},
+{id:'v1q42b',letter:'b',text:'Wave 4, Wave B, or Wave X — one wave before the final move in a sequence'},
+{id:'v1q42c',letter:'c',text:'Wave 3 or Wave C — at the most powerful part of a move'},
+{id:'v1q42d',letter:'d',text:'Wave 2 only — never in Wave 4 or Wave B'}
+],correct:['b'],
+expEn:'Triangles occur in Wave 4 (penultimate wave of an impulse), Wave B (penultimate wave of a correction), and Wave X (connector in a complex correction). They always appear as the next-to-last wave in a sequence, followed by one more thrust. They rarely if ever appear in Wave 1, Wave 3, Wave 2, or Wave C.',
+expTh:'Triangle ปรากฏในคลื่น 4 (คลื่นรองสุดท้ายของ impulse), คลื่น B (คลื่นรองสุดท้ายของ correction) และคลื่น X (ตัวเชื่อมใน complex correction) มักปรากฏเป็นคลื่นรองสุดท้ายในลำดับ ตามด้วย thrust อีกหนึ่งครั้ง ไม่ค่อยปรากฏในคลื่น 1, 3, 2 หรือ C'},
+
+{id:'v1q43',text:'An expanding diagonal (also called a reverse diagonal) is characterized by which structural feature?',
+choices:[
+{id:'v1q43a',letter:'a',text:'Converging trendlines with each successive sub-wave declining in length'},
+{id:'v1q43b',letter:'b',text:'Parallel trendlines with all five sub-waves of equal length'},
+{id:'v1q43c',letter:'c',text:'Converging trendlines where sub-waves form a 5-5-5-5-5 structure'},
+{id:'v1q43d',letter:'d',text:'Diverging trendlines where each successive sub-wave is longer than the previous one'}
+],correct:['d'],
+expEn:'An expanding diagonal has trendlines that diverge — each sub-wave (1 through 5) is longer than the one before it, and the boundary lines fan outward. This is the opposite of a contracting diagonal. The sub-wave structure is 3-3-3-3-3 for an ending type or 5-3-5-3-5 for a leading type.',
+expTh:'Expanding diagonal มี trendline ที่แยกออก — คลื่นย่อยแต่ละคลื่น (1 ถึง 5) ยาวกว่าคลื่นก่อน และเส้นขอบขยายออกไป นี่คือสิ่งตรงข้ามกับ contracting diagonal โครงสร้างคลื่นย่อยเป็น 3-3-3-3-3 สำหรับ ending type หรือ 5-3-5-3-5 สำหรับ leading type'},
+
+{id:'v1q44',text:'A double zigzag (W-X-Y where both W and Y are zigzags) most commonly appears in which wave position?',
+choices:[
+{id:'v1q44a',letter:'a',text:'Wave 5 of an impulse, replacing the final five-wave move'},
+{id:'v1q44b',letter:'b',text:'Wave B of a flat correction, to create an expanded flat'},
+{id:'v1q44c',letter:'c',text:'Wave 2 or Wave 4 of an impulse, and also in corrective waves A, B, or C'},
+{id:'v1q44d',letter:'d',text:'Wave E of a contracting triangle, as the final sub-wave'}
+],correct:['c'],
+expEn:'Double zigzags and double threes in general appear most commonly in Wave 2 or Wave 4 of an impulse, providing a complex sideways-to-sharp correction. They also appear in Wave A, B, or C of larger corrections. They do not substitute for Wave 5 impulses.',
+expTh:'Double zigzag และ double three โดยทั่วไปปรากฏบ่อยที่สุดในคลื่น 2 หรือ 4 ของ impulse ให้การ correction แบบซับซ้อน ยังปรากฏในคลื่น A, B หรือ C ของ correction ขนาดใหญ่ด้วย แต่ไม่ได้แทนที่ Wave 5 impulse'},
+
+{id:'v1q45',text:'In a five-wave impulse, the three "actionary" (motive) sub-waves that move in the direction of the trend are:',
+choices:[
+{id:'v1q45a',letter:'a',text:'Waves 1, 3, and 5'},
+{id:'v1q45b',letter:'b',text:'Waves 2, 3, and 4'},
+{id:'v1q45c',letter:'c',text:'Waves 1, 2, and 3'},
+{id:'v1q45d',letter:'d',text:'Waves 3, 4, and 5'}
+],correct:['a'],
+expEn:'Waves 1, 3, and 5 are the actionary waves — they move in the direction of the one-larger-degree trend and each subdivides into five waves. Waves 2 and 4 are the reactionary (corrective) waves — they move against the trend and subdivide into three waves.',
+expTh:'คลื่น 1, 3 และ 5 คือคลื่น actionary ที่เคลื่อนที่ในทิศทางเทรนด์ degree ใหญ่กว่า โดยแต่ละคลื่นแบ่งย่อยเป็น 5 คลื่น คลื่น 2 และ 4 คือคลื่น reactionary (corrective) ที่เคลื่อนต้านเทรนด์และแบ่งย่อยเป็น 3 คลื่น'},
+
+{id:'v1q46',text:'According to Elliott Wave guidelines, during which wave does trading volume typically reach its peak in an advancing market?',
+choices:[
+{id:'v1q46a',letter:'a',text:'Wave 1 — as the new trend begins with heavy enthusiasm'},
+{id:'v1q46b',letter:'b',text:'Wave 3 — or within the extended sub-waves if Wave 3 extends'},
+{id:'v1q46c',letter:'c',text:'Wave 4 — as traders take profits before the final push'},
+{id:'v1q46d',letter:'d',text:'Wave 5 — always, as a final blow-off top confirms the pattern'}
+],correct:['b'],
+expEn:'Volume typically peaks during Wave 3 in most bull markets, reflecting the broad participation and enthusiasm that characterize this wave. If Wave 3 extends, volume peaks within the extended portion. In Wave 5, volume often diverges (declines) relative to Wave 3, though it may spike briefly at the top.',
+expTh:'ปริมาณการซื้อขายมักพุ่งสูงสุดในคลื่น 3 ในตลาดกระทิงส่วนใหญ่ สะท้อนการมีส่วนร่วมอย่างกว้างขวางและความกระตือรือร้นที่เป็นลักษณะของคลื่นนี้ หากคลื่น 3 ยืดตัว ปริมาณจะพุ่งสูงสุดภายในส่วนที่ยืดออก ในคลื่น 5 ปริมาณมักแสดง divergence ลดลงเมื่อเทียบกับคลื่น 3'},
+
+{id:'v1q47',text:'In an irregular (expanded) flat correction, what is the internal structure of Wave B?',
+choices:[
+{id:'v1q47a',letter:'a',text:'Five waves subdividing like an impulse, moving beyond Wave A\'s origin'},
+{id:'v1q47b',letter:'b',text:'A triangle — three-wave structure forming a wedge pattern'},
+{id:'v1q47c',letter:'c',text:'A single unsubdivided wave in the trend direction'},
+{id:'v1q47d',letter:'d',text:'Three waves (corrective), retracing more than 100% of Wave A\'s length'}
+],correct:['d'],
+expEn:'Wave B in any flat (regular or expanded) always subdivides into three waves — it is a corrective structure. In an expanded flat, the three-wave Wave B goes beyond the starting point of Wave A, exceeding 100% of Wave A\'s length. Wave B is never an impulse (five-wave) structure in a flat.',
+expTh:'คลื่น B ในทุก flat (regular หรือ expanded) แบ่งย่อยเป็น 3 คลื่นเสมอ ซึ่งเป็นโครงสร้าง corrective ใน expanded flat คลื่น B สามคลื่นนี้ไปเกินจุดเริ่มต้นของคลื่น A เกิน 100% ของความยาวคลื่น A คลื่น B ไม่เคยเป็นโครงสร้าง impulse (5 คลื่น) ใน flat'},
+
+{id:'v1q48',text:'According to the Elliott Wave Principle, why are corrective waves generally harder to identify and analyze than motive waves?',
+choices:[
+{id:'v1q48a',letter:'a',text:'Corrective waves always form in five sub-waves, making them visually identical to motive waves'},
+{id:'v1q48b',letter:'b',text:'Corrective waves have no Fibonacci relationships, making them impossible to measure or project'},
+{id:'v1q48c',letter:'c',text:'Corrective waves exhibit more variety and are more subject to alternation, combination, and extension in form'},
+{id:'v1q48d',letter:'d',text:'Corrective waves always form in three sub-waves that look identical regardless of the pattern type'}
+],correct:['c'],
+expEn:'Frost and Prechter explicitly noted that corrective waves are harder to analyze because they come in far more varieties — zigzags, flats, triangles, double threes, triple threes, and combinations thereof — and they alternate in form, depth, and complexity. Motive waves follow a more predictable five-wave structure.',
+expTh:'Frost และ Prechter ระบุชัดเจนว่าคลื่น corrective ยากต่อการวิเคราะห์กว่าเพราะมีความหลากหลายมากกว่า — zigzag, flat, triangle, double three, triple three และการรวมกัน — และมีการสลับกันในรูปแบบ ความลึก และความซับซ้อน คลื่น motive มีโครงสร้าง 5 คลื่นที่คาดเดาได้มากกว่า'},
+
+{id:'v1q49',text:'When Wave 1 of an impulse extends (i.e., Wave 1 is the longest and most subdivided wave), which relationship do Waves 3 and 5 typically exhibit?',
+choices:[
+{id:'v1q49a',letter:'a',text:'Waves 3 and 5 tend to be approximately equal in length to each other'},
+{id:'v1q49b',letter:'b',text:'Both Wave 3 and Wave 5 are longer than the extended Wave 1'},
+{id:'v1q49c',letter:'c',text:'Both Wave 3 and Wave 5 are each 61.8% shorter than Wave 1 by definition'},
+{id:'v1q49d',letter:'d',text:'Wave 3 is exactly 61.8% of Wave 5 when Wave 1 is extended'}
+],correct:['a'],
+expEn:'When Wave 1 extends, the remaining two actionary waves (3 and 5) tend to be approximately equal in length — the same equality relationship that normally applies to Waves 1 and 5 when Wave 3 extends. This provides an important Fibonacci target for Wave 5 completion.',
+expTh:'เมื่อคลื่น 1 ยืดตัว คลื่น actionary ที่เหลือ (3 และ 5) มักมีความยาวเท่ากันโดยประมาณ — ความสัมพันธ์แบบ equality เดียวกับที่ปกติใช้กับคลื่น 1 และ 5 เมื่อคลื่น 3 ยืดตัว ทำให้มีเป้าหมาย Fibonacci ที่สำคัญสำหรับการสิ้นสุดของคลื่น 5'},
+
+{id:'v1q50',text:'In Elliott Wave degree labeling convention, how are Sub-Minuette degree waves typically labeled in text notation?',
+choices:[
+{id:'v1q50a',letter:'a',text:'Roman numerals in parentheses: (I), (II), (III), (IV), (V)'},
+{id:'v1q50b',letter:'b',text:'Small italic Roman numerals or circled Arabic numerals: i, ii, iii or ①②③'},
+{id:'v1q50c',letter:'c',text:'Capital letters: A, B, C for all sub-minuette waves'},
+{id:'v1q50d',letter:'d',text:'Subscript Arabic numerals: 1₁, 2₁, 3₁ to indicate sub-degree position'}
+],correct:['b'],
+expEn:'Sub-Minuette waves are labeled with small italic Roman numerals (i, ii, iii, iv, v) or circled Arabic numerals (① ② ③). Parenthetical Roman numerals like (I), (II) are used for Intermediate degree. The degree hierarchy has specific notation conventions that allow analysts to distinguish which degree of trend they are tracking.',
+expTh:'คลื่น Sub-Minuette ถูกลาเบลด้วย Roman numerals ตัวเอียงเล็ก (i, ii, iii, iv, v) หรือเลข Arabic ในวงกลม (① ② ③) Roman numerals ในวงเล็บเช่น (I), (II) ใช้สำหรับ Intermediate degree ลำดับชั้น degree มีสัญกรณ์เฉพาะที่ช่วยให้นักวิเคราะห์แยกแยะ degree ของเทรนด์ที่กำลังติดตาม'}
+],
+v2:[
+{id:'v2q01',text:'A "double three" complex correction is labeled W-X-Y. Which statement most accurately describes its structural requirement?',
+choices:[
+{id:'v2q01a',letter:'a',text:'W and Y must be different corrective pattern types to satisfy the alternation guideline'},
+{id:'v2q01b',letter:'b',text:'W, X, and Y are always the same corrective pattern type repeated three times'},
+{id:'v2q01c',letter:'c',text:'W and Y can be any corrective pattern, joined by X which is itself always a corrective (three-wave) structure'},
+{id:'v2q01d',letter:'d',text:'W and Y are impulse waves, with X as a corrective connector between them'}
+],correct:['c'],
+expEn:'In a double three, W and Y are the two component corrective patterns (they can be zigzags, flats, triangles, or even other multi-threes). X is the intervening connector wave, which is always corrective (three waves or a combination). W and Y do not have to alternate or be different types, though they often are.',
+expTh:'ใน double three, W และ Y คือรูปแบบ corrective สองอัน (อาจเป็น zigzag, flat, triangle หรือ multi-three อื่นๆ) X คือคลื่น connector ที่อยู่ตรงกลาง ซึ่งเป็น corrective เสมอ (3 คลื่นหรือการรวมกัน) W และ Y ไม่จำเป็นต้องสลับหรือต่างกัน แม้ว่าจะมักแตกต่างกัน'},
+
+{id:'v2q02',text:'A "triple three" complex correction contains how many component corrective patterns connected by X waves?',
+choices:[
+{id:'v2q02a',letter:'a',text:'Three'},
+{id:'v2q02b',letter:'b',text:'Two'},
+{id:'v2q02c',letter:'c',text:'Four'},
+{id:'v2q02d',letter:'d',text:'Five'}
+],correct:['a'],
+expEn:'A triple three (labeled W-X-Y-X-Z) contains three component corrective patterns (W, Y, and Z) connected by two X waves. It is the most complex standard correction in Elliott Wave theory. A double three has two components (W and Y) joined by one X wave.',
+expTh:'Triple three (ลาเบล W-X-Y-X-Z) ประกอบด้วยรูปแบบ corrective สามอัน (W, Y และ Z) เชื่อมด้วยคลื่น X สองอัน เป็น correction มาตรฐานที่ซับซ้อนที่สุดในทฤษฎี Elliott Wave Double three มีสองส่วน (W และ Y) เชื่อมด้วยคลื่น X หนึ่งอัน'},
+
+{id:'v2q03',text:'When both Waves 1 and 3 are known, how is Wave 5 most commonly projected in a non-extended impulse?',
+choices:[
+{id:'v2q03a',letter:'a',text:'Wave 5 = 100% of Wave 3 in length'},
+{id:'v2q03b',letter:'b',text:'Wave 5 = 261.8% of Wave 1, measured from Wave 4\'s end'},
+{id:'v2q03c',letter:'c',text:'Wave 5 = 100% of the combined distance from the start of Wave 1 to the end of Wave 3'},
+{id:'v2q03d',letter:'d',text:'Wave 5 ≈ Wave 1 in length, or equals 61.8% of the net distance from Wave 1\'s start through the end of Wave 3'}
+],correct:['d'],
+expEn:'Two common Wave 5 targets: (1) Wave 5 equals Wave 1 (the equality relationship when Wave 3 extends), and (2) Wave 5 equals 61.8% of the net distance from the origin of Wave 1 through Wave 3\'s end. Both use the Fibonacci framework and are measured from Wave 4\'s endpoint.',
+expTh:'เป้าหมายคลื่น 5 ที่พบบ่อยสองแบบ: (1) คลื่น 5 เท่ากับคลื่น 1 (ความสัมพันธ์แบบ equality เมื่อคลื่น 3 ยืดตัว) และ (2) คลื่น 5 เท่ากับ 61.8% ของระยะทางสุทธิจากต้นคลื่น 1 ถึงจุดสิ้นสุดของคลื่น 3 ทั้งสองใช้ Fibonacci และวัดจากจุดสิ้นสุดของคลื่น 4'},
+
+{id:'v2q04',text:'In a zigzag correction (A-B-C), Wave C has the same internal structure as which other wave within the same zigzag?',
+choices:[
+{id:'v2q04a',letter:'a',text:'Wave B of the same zigzag'},
+{id:'v2q04b',letter:'b',text:'Wave A of the same zigzag'},
+{id:'v2q04c',letter:'c',text:'Wave E if the zigzag appears within a larger triangle'},
+{id:'v2q04d',letter:'d',text:'Wave X in any surrounding double three structure'}
+],correct:['b'],
+expEn:'Both Wave A and Wave C in a zigzag subdivide into five waves — they share the same internal structure. This is a critical diagnostic: if either A or C appears to be only three waves, the pattern may be a flat rather than a zigzag. Wave B has three sub-waves, not five.',
+expTh:'ทั้งคลื่น A และคลื่น C ใน zigzag แบ่งย่อยเป็น 5 คลื่น มีโครงสร้างภายในเหมือนกัน นี่คือการวินิจฉัยที่สำคัญ: หาก A หรือ C ดูเหมือนมีเพียง 3 คลื่น รูปแบบอาจเป็น flat แทนที่จะเป็น zigzag คลื่น B มี 3 คลื่นย่อย ไม่ใช่ 5'},
+
+{id:'v2q05',text:'A running correction is best described by which combination of characteristics?',
+choices:[
+{id:'v2q05a',letter:'a',text:'Wave B ends at exactly the same level as the beginning of Wave A, creating a perfectly flat correction'},
+{id:'v2q05b',letter:'b',text:'Wave C is dramatically extended, reaching 261.8% of Wave A in the corrective direction'},
+{id:'v2q05c',letter:'c',text:'Wave B exceeds Wave A\'s origin (making a new extreme), and Wave C fails to fully retrace back to Wave A\'s endpoint'},
+{id:'v2q05d',letter:'d',text:'All sub-waves of the running correction move in the same direction as the prior trend'}
+],correct:['c'],
+expEn:'A running correction has two key features: Wave B extends beyond the origin of Wave A (a new extreme in the trend direction), and Wave C fails to reach the end of Wave A (it "runs" with the trend instead of fully correcting). The net result is minimal price correction, occurring in strong trend environments.',
+expTh:'Running correction มีลักษณะสำคัญสอง: คลื่น B ไปเกินจุดเริ่มต้นของคลื่น A (สร้างจุดสุดขีดใหม่ในทิศทางเทรนด์) และคลื่น C ไม่สามารถย้อนกลับไปถึงจุดสิ้นสุดของคลื่น A ได้ ผลสุทธิคือการ correction ราคาน้อยมาก เกิดขึ้นในสภาพแวดล้อมที่มีเทรนด์แข็งแกร่ง'},
+
+{id:'v2q06',text:'In a leading diagonal appearing as Wave 1, what are the possible internal sub-wave structures for the diagonal\'s own waves 1, 3, and 5?',
+choices:[
+{id:'v2q06a',letter:'a',text:'They can subdivide into either five waves (5-3-5-3-5) or three waves (3-3-3-3-3) depending on the market'},
+{id:'v2q06b',letter:'b',text:'They always subdivide into exactly five waves each, forming a 5-5-5-5-5 structure'},
+{id:'v2q06c',letter:'c',text:'Only Waves 2 and 4 of the diagonal subdivide into three waves; the others into five'},
+{id:'v2q06d',letter:'d',text:'All sub-waves always form triangles without exception in a leading diagonal'}
+],correct:['a'],
+expEn:'In a leading diagonal, the odd-numbered sub-waves (1, 3, and 5) may subdivide into either five waves (making the diagonal 5-3-5-3-5) or three waves (making it 3-3-3-3-3). Both are valid, which contrasts with an ending diagonal where 3-3-3-3-3 is the only valid structure. This flexibility can make leading diagonals harder to identify.',
+expTh:'ใน leading diagonal คลื่นย่อยลำดับคี่ (1, 3 และ 5) อาจแบ่งย่อยได้เป็น 5 คลื่น (ทำให้ diagonal เป็น 5-3-5-3-5) หรือ 3 คลื่น (ทำให้เป็น 3-3-3-3-3) ทั้งสองแบบถูกต้อง ต่างจาก ending diagonal ที่ 3-3-3-3-3 เป็นโครงสร้างเดียวที่ถูกต้อง ความยืดหยุ่นนี้ทำให้ leading diagonal ยากต่อการระบุ'},
+
+{id:'v2q07',text:'When a contracting triangle completes as Wave 4, the thrust of Wave 5 is typically projected by which method?',
+choices:[
+{id:'v2q07a',letter:'a',text:'Wave 5 will equal 161.8% of the triangle\'s longest sub-wave (Wave A)'},
+{id:'v2q07b',letter:'b',text:'Wave 5 will equal 100% of the net distance from the impulse\'s Wave 1 origin through Wave 3'},
+{id:'v2q07c',letter:'c',text:'Wave 5 is projected by multiplying Wave E by 2.618 from the breakout point'},
+{id:'v2q07d',letter:'d',text:'Wave 5 thrust is approximately equal to the widest part of the triangle, added to the apex breakout level'}
+],correct:['d'],
+expEn:'The measuring rule for post-triangle thrusts states that the thrust will travel a distance approximately equal to the widest part of the triangle (typically the height of Wave A). This distance is added to the breakout point (apex area). This method applies to the thrust following Wave 4 triangles in particular.',
+expTh:'กฎการวัดสำหรับ thrust หลัง triangle ระบุว่า thrust จะเคลื่อนที่ระยะทางประมาณเท่ากับส่วนที่กว้างที่สุดของ triangle (มักวัดจากความสูงของคลื่น A) ระยะทางนี้บวกกับจุดหัก (apex) นี่ใช้กับ thrust หลัง triangle ในคลื่น 4 โดยเฉพาะ'},
+
+{id:'v2q08',text:'Given the Guideline of Alternation, if Wave 2 is a deep zigzag retracing 78.6% of Wave 1, what does this predict for Wave 4?',
+choices:[
+{id:'v2q08a',letter:'a',text:'Wave 4 will also be a deep, sharp zigzag mirroring Wave 2\'s form'},
+{id:'v2q08b',letter:'b',text:'Wave 4 will be a sideways, complex pattern — likely a flat, triangle, or multi-three at a shallower level'},
+{id:'v2q08c',letter:'c',text:'Wave 4 must retrace exactly 38.2% of Wave 3 with no other possibilities'},
+{id:'v2q08d',letter:'d',text:'Wave 4 will be a running correction that barely retraces before the final Wave 5 begins'}
+],correct:['b'],
+expEn:'Alternation predicts contrast in form or depth between Wave 2 and Wave 4. A deep, sharp Wave 2 zigzag predicts that Wave 4 will be a sideways, complex structure (flat, triangle, or double/triple three) at a shallower retracement. The alternation in form is more reliable than predicting an exact Fibonacci level.',
+expTh:'หลัก Alternation ทำนายความแตกต่างในรูปแบบหรือความลึกระหว่างคลื่น 2 และ 4 คลื่น 2 zigzag ที่ลึกและชันทำนายว่าคลื่น 4 จะเป็นโครงสร้างข้างๆ ที่ซับซ้อน (flat, triangle หรือ double/triple three) ที่ระดับ retracement ตื้นกว่า การ alternation ในรูปแบบเชื่อถือได้มากกว่าการทำนายระดับ Fibonacci แน่นอน'},
+
+{id:'v2q09',text:'In an expanded flat correction, Wave C typically reaches at least what distance relative to Wave A\'s length?',
+choices:[
+{id:'v2q09a',letter:'a',text:'Wave C equals 61.8% of Wave A (falling short of Wave A\'s endpoint)'},
+{id:'v2q09b',letter:'b',text:'Wave C exactly equals Wave A in length'},
+{id:'v2q09c',letter:'c',text:'Wave C extends 100% to 138.2% (or more) beyond Wave A\'s endpoint, exceeding it in the corrective direction'},
+{id:'v2q09d',letter:'d',text:'Wave C is always 261.8% of Wave A in all expanded flat patterns'}
+],correct:['c'],
+expEn:'In an expanded flat, Wave C typically exceeds Wave A\'s endpoint in the corrective direction, often reaching 100%–138.2% or even 161.8% of Wave A\'s length measured from where Wave B ends. This creates a lower low (in a bear correction) than Wave A\'s low. Option A would make Wave C shorter than A, which describes a running flat.',
+expTh:'ใน expanded flat คลื่น C มักเกินจุดสิ้นสุดของคลื่น A ในทิศทาง correction โดยมักถึง 100%–138.2% หรือแม้แต่ 161.8% ของความยาวคลื่น A วัดจากที่คลื่น B สิ้นสุด ทำให้เกิดจุดต่ำใหม่ (ใน bear correction) ที่ต่ำกว่าจุดต่ำของคลื่น A ตัวเลือก A จะทำให้คลื่น C สั้นกว่า A ซึ่งเป็นลักษณะของ running flat'},
+
+{id:'v2q10',text:'When validating an Elliott Wave count, which sub-wave subdivision test must ALL waves of a motive impulse pass?',
+choices:[
+{id:'v2q10a',letter:'a',text:'Waves 1, 3, and 5 must each subdivide into five waves; Waves 2 and 4 must each subdivide into three waves'},
+{id:'v2q10b',letter:'b',text:'All five waves must each subdivide into three waves to confirm the corrective nature'},
+{id:'v2q10c',letter:'c',text:'Only Wave 3 needs to subdivide correctly; the others may take any sub-wave form'},
+{id:'v2q10d',letter:'d',text:'Waves must alternate between five-wave and three-wave subdivisions beginning from Wave 1'}
+],correct:['a'],
+expEn:'A valid impulse requires that the actionary waves (1, 3, 5) each subdivide into five waves and the corrective waves (2, 4) each subdivide into three waves. If any wave fails this test, the count must be reconsidered. This internal consistency test, along with the three cardinal rules, is how analysts confirm a valid impulse.',
+expTh:'Impulse ที่ถูกต้องต้องการให้คลื่น actionary (1, 3, 5) แต่ละอันแบ่งย่อยเป็น 5 คลื่น และคลื่น corrective (2, 4) แต่ละอันแบ่งย่อยเป็น 3 คลื่น หากคลื่นใดไม่ผ่านการทดสอบนี้ ต้องพิจารณาการนับใหม่ การทดสอบความสอดคล้องภายในนี้ร่วมกับกฎสามข้อเป็นวิธีที่นักวิเคราะห์ยืนยัน impulse ที่ถูกต้อง'},
+{id:'v2q11',text:'A Wave 3 that extends to 2.618 times Wave 1 in length is best described as which of the following?',
+choices:[
+{id:'v2q11a',letter:'a',text:'An invalid count — Wave 3 can only extend to a maximum of 1.618 times Wave 1'},
+{id:'v2q11b',letter:'b',text:'A bear market impulse pattern with inverted Fibonacci ratios'},
+{id:'v2q11c',letter:'c',text:'A disguised zigzag correction that must be relabeled'},
+{id:'v2q11d',letter:'d',text:'A strongly extended third wave — valid and potentially capable of extending to 4.236 times Wave 1'}
+],correct:['d'],
+expEn:'Wave 3 can extend to any multiple of Wave 1 along the Fibonacci sequence: 1.618, 2.618, 4.236, and so on. There is no upper cap. A 2.618 extension is a strongly extended but entirely valid Wave 3. The extension simply reflects an exceptionally powerful trend impulse in the market at that degree.',
+expTh:'คลื่น 3 สามารถยืดตัวได้ตามอัตราส่วน Fibonacci ใดก็ได้: 1.618, 2.618, 4.236 และต่อไปเรื่อยๆ ไม่มีขีดจำกัดสูงสุด การยืดตัว 2.618 เป็นคลื่น 3 ที่ยืดอย่างแข็งแกร่งแต่ถูกต้องสมบูรณ์ การยืดตัวเพียงสะท้อนถึง impulse เทรนด์ที่ทรงพลังผิดปกติในตลาด'},
+
+{id:'v2q12',text:'After a double three (W-X-Y) complex correction completes, what market behavior is typically expected?',
+choices:[
+{id:'v2q12a',letter:'a',text:'Formation of another X wave, expanding the correction into a triple three'},
+{id:'v2q12b',letter:'b',text:'Resumption of the one-larger-degree trend direction'},
+{id:'v2q12c',letter:'c',text:'A brief pause followed by a second double three in the opposite direction'},
+{id:'v2q12d',letter:'d',text:'An immediate, very strong impulse wave that doubles the size of the preceding trend'}
+],correct:['b'],
+expEn:'A double three is a complete corrective pattern at its degree. When it finishes, the one-larger-degree trend resumes — just as any correction is followed by a trend continuation. Whether that continuation is vigorous depends on the market context, wave position, and momentum, but the directional expectation is clear.',
+expTh:'Double three เป็นรูปแบบ corrective ที่สมบูรณ์ใน degree นั้น เมื่อสิ้นสุด เทรนด์ degree ใหญ่กว่าจะกลับมาดำเนินต่อ เช่นเดียวกับ correction ใดก็ตามที่ตามด้วยการต่อเนื่องของเทรนด์ ความแข็งแกร่งของการต่อเนื่องขึ้นอยู่กับบริบทตลาด ตำแหน่งคลื่น และ momentum'},
+
+{id:'v2q13',text:'As wave degree increases in the Elliott Wave hierarchy, what generally happens to the time duration of each wave?',
+choices:[
+{id:'v2q13a',letter:'a',text:'Time duration decreases proportionally according to the Fibonacci ratio 0.618'},
+{id:'v2q13b',letter:'b',text:'Time duration remains constant regardless of degree'},
+{id:'v2q13c',letter:'c',text:'Time duration generally increases as higher-degree waves take longer to complete'},
+{id:'v2q13d',letter:'d',text:'Time duration follows a fixed 3.618 multiplier between each successive degree'}
+],correct:['c'],
+expEn:'Higher-degree waves encompass longer time periods. A Grand Supercycle wave may span centuries, while a Sub-Minuette wave might complete in minutes. This fractal relationship means the same Wave Principle patterns appear across all time scales from intraday to multi-generational. There is no fixed multiplier between degrees.',
+expTh:'คลื่นระดับ degree สูงครอบคลุมช่วงเวลาที่ยาวกว่า คลื่น Grand Supercycle อาจใช้เวลาหลายศตวรรษ ในขณะที่คลื่น Sub-Minuette อาจสมบูรณ์ภายในไม่กี่นาที ความสัมพันธ์แบบ fractal นี้หมายความว่ารูปแบบ Wave Principle เดียวกันปรากฏในทุกช่วงเวลา ไม่มีตัวคูณคงที่ระหว่าง degree'},
+
+{id:'v2q14',text:'In Elliott Wave analysis, the Fibonacci ratio 0.382 appears most commonly in which context?',
+choices:[
+{id:'v2q14a',letter:'a',text:'Wave 4 retracements — a shallow correction after a strong Wave 3'},
+{id:'v2q14b',letter:'b',text:'Wave 2 retracements — a very deep correction after Wave 1'},
+{id:'v2q14c',letter:'c',text:'Wave B retracements in a flat, always ending at exactly 38.2% of Wave A'},
+{id:'v2q14d',letter:'d',text:'Wave C extensions beyond Wave A in all zigzag patterns'}
+],correct:['a'],
+expEn:'The 0.382 retracement is most commonly associated with Wave 4, consistent with the Guideline of Alternation — Wave 4 tends to be shallow (23.6%–38.2%) when Wave 2 has been deep. Wave 2 retracements are more typically at the 61.8%–78.6% levels. Wave B in a flat retraces 90%–100%+ of Wave A, not 38.2%.',
+expTh:'การ retracement 0.382 เชื่อมโยงกับคลื่น 4 มากที่สุด สอดคล้องกับ Guideline of Alternation — คลื่น 4 มักตื้น (23.6%–38.2%) เมื่อคลื่น 2 ลึก การ retracement ของคลื่น 2 มักอยู่ที่ 61.8%–78.6% คลื่น B ใน flat ย้อนกลับ 90%–100%+ ของคลื่น A ไม่ใช่ 38.2%'},
+
+{id:'v2q15',text:'After a complete five-wave bull market impulse, the corrective move that follows most commonly retraces to which level?',
+choices:[
+{id:'v2q15a',letter:'a',text:'100% of the entire five-wave impulse, returning to Wave 1\'s origin'},
+{id:'v2q15b',letter:'b',text:'Less than 23.6% of the five-wave impulse in most cases'},
+{id:'v2q15c',letter:'c',text:'Beyond 100% of the five-wave impulse, making a new low below the start'},
+{id:'v2q15d',letter:'d',text:'The price range of the previous Wave 4 of the completed impulse — the most common target for post-impulse corrections'}
+],correct:['d'],
+expEn:'After a five-wave impulse completes, the corrective wave that follows most commonly retraces to the range of the prior Wave 4 at one lower degree. This is one of the most reliable post-impulse price targets and is explicitly identified by Frost and Prechter as the typical retracement area.',
+expTh:'หลังจาก impulse 5 คลื่นสมบูรณ์ คลื่น corrective ที่ตามมามักย้อนกลับไปยังช่วงของคลื่น 4 ก่อนหน้าใน degree หนึ่งระดับต่ำกว่า นี่คือเป้าหมายราคาหลัง impulse ที่เชื่อถือได้มากที่สุดและถูก Frost และ Prechter ระบุไว้อย่างชัดเจนว่าเป็นพื้นที่ retracement ทั่วไป'},
+
+{id:'v2q16',text:'After an ending diagonal completes in Wave 5 (often with a "throw-over" of the upper channel), what typically follows?',
+choices:[
+{id:'v2q16a',letter:'a',text:'A brief pause followed by rapid continuation of the preceding trend'},
+{id:'v2q16b',letter:'b',text:'A sharp, swift reversal that retraces back at least to the origin of the ending diagonal'},
+{id:'v2q16c',letter:'c',text:'A sideways consolidation equal in duration to the entire diagonal\'s time'},
+{id:'v2q16d',letter:'d',text:'Formation of a second ending diagonal in the opposite direction before the full reversal begins'}
+],correct:['b'],
+expEn:'Ending diagonals signal exhaustion and climax. After completion — especially after a throw-over where price briefly exceeds the upper trendline before reversing — the market typically reverses sharply and quickly, retracing all the way back to at least the diagonal\'s origin (Wave 1 start). This can happen very quickly.',
+expTh:'Ending diagonal บ่งบอกถึงความหมดแรงและจุดสูงสุด หลังจากสมบูรณ์ โดยเฉพาะหลัง throw-over ที่ราคาเกิน trendline บนชั่วคราวก่อนกลับตัว ตลาดมักกลับตัวอย่างรวดเร็วและฉับพลัน ย้อนกลับอย่างน้อยถึงต้นกำเนิดของ diagonal (จุดเริ่มต้นคลื่น 1) และอาจเกิดขึ้นเร็วมาก'},
+
+{id:'v2q17',text:'In a zigzag correction (A-B-C), Wave C subdivides into five waves. What does this tell us about the nature of Wave C?',
+choices:[
+{id:'v2q17a',letter:'a',text:'Wave C is a corrective wave within a corrective wave, making it a second-level correction'},
+{id:'v2q17b',letter:'b',text:'Wave C is always exactly equal in length to Wave A due to Fibonacci equality'},
+{id:'v2q17c',letter:'c',text:'Wave C is a motive wave — a five-wave impulse or diagonal — moving in the direction of the larger correction'},
+{id:'v2q17d',letter:'d',text:'Wave C can be relabeled as a triangle in some instances because it contains five sub-waves'}
+],correct:['c'],
+expEn:'Wave C of a zigzag is a motive (five-wave) structure moving in the direction of the correction itself. In a bear market zigzag, Wave C is a five-wave impulse downward. This is why C waves are often powerful and hard to trade — they behave like small impulse waves with the full force of a motive structure.',
+expTh:'คลื่น C ของ zigzag เป็นโครงสร้าง motive (5 คลื่น) ที่เคลื่อนที่ในทิศทางของ correction เอง ใน zigzag ของตลาดหมี คลื่น C เป็น impulse ขาลง 5 คลื่น นี่คือเหตุผลที่คลื่น C มักทรงพลังและยากต่อการเทรด — ทำงานเหมือน impulse เล็กๆ ด้วยพลังเต็มของโครงสร้าง motive'},
+
+{id:'v2q18',text:'R.N. Elliott believed that the Fibonacci sequence underlies the Wave Principle. What was the primary basis for this belief?',
+choices:[
+{id:'v2q18a',letter:'a',text:'Nature and human crowd psychology both express the same mathematical growth ratios; since markets reflect collective human behavior, they follow these same ratios'},
+{id:'v2q18b',letter:'b',text:'Fibonacci numbers were specifically invented to describe stock market behavior in the 1920s'},
+{id:'v2q18c',letter:'c',text:'Elliott discovered the Fibonacci ratio 0.618 by analyzing U.S. stock price data between 1928 and 1935'},
+{id:'v2q18d',letter:'d',text:'Central banks use Fibonacci levels to set interest rate policy cycles, creating the observed market patterns'}
+],correct:['a'],
+expEn:'Elliott and later Prechter argued that Fibonacci proportions appear throughout nature (plant growth, shell spirals, human anatomy) because they represent natural growth and decay patterns. Since financial markets are a product of collective human behavior, they naturally express the same mathematical ratios in their price patterns.',
+expTh:'Elliott และต่อมา Prechter โต้แย้งว่าสัดส่วน Fibonacci ปรากฏทั่วธรรมชาติ (การเติบโตของพืช เปลือกหอยเกลียว กายวิภาคมนุษย์) เพราะเป็นรูปแบบการเติบโตและสลายตามธรรมชาติ เนื่องจากตลาดการเงินเป็นผลผลิตของพฤติกรรมมนุษย์โดยรวม จึงแสดงอัตราส่วนทางคณิตศาสตร์เดียวกันในรูปแบบราคา'},
+
+{id:'v2q19',text:'In an expanded flat, Wave B exceeds the starting point of Wave A. How is Wave B still classified, and what is its internal structure?',
+choices:[
+{id:'v2q19a',letter:'a',text:'Wave B becomes an impulse wave because it makes a new extreme beyond Wave A\'s origin'},
+{id:'v2q19b',letter:'b',text:'Wave B is invalid — no corrective wave may exceed the origin of the wave it follows'},
+{id:'v2q19c',letter:'c',text:'Wave B becomes a continuation wave and is relabeled as an impulse sub-wave'},
+{id:'v2q19d',letter:'d',text:'Wave B remains a corrective wave with a three-wave internal structure, even though it retraces more than 100% of Wave A'}
+],correct:['d'],
+expEn:'Exceeding 100% of Wave A in price does not change Wave B\'s corrective classification or internal structure. It is still a three-wave (corrective) structure. The depth of retracement does not determine whether a wave is motive or corrective — only its internal subdivision and position within the pattern do.',
+expTh:'การเกิน 100% ของคลื่น A ในราคาไม่เปลี่ยนการจัดประเภท corrective ของคลื่น B หรือโครงสร้างภายใน ยังคงเป็นโครงสร้าง 3 คลื่น (corrective) ความลึกของ retracement ไม่ได้กำหนดว่าคลื่นเป็น motive หรือ corrective — มีเพียงการแบ่งย่อยภายในและตำแหน่งภายในรูปแบบเท่านั้น'},
+
+{id:'v2q20',text:'Prechter\'s socionomic theory distinguishes financial markets from economic indicators by arguing what key point?',
+choices:[
+{id:'v2q20a',letter:'a',text:'Markets always lag the economy by a fixed 6–12 months, making economic data useful for forecasting markets'},
+{id:'v2q20b',letter:'b',text:'Market prices reflect social mood, which is an endogenous patterned process that precedes and influences economic events'},
+{id:'v2q20c',letter:'c',text:'Economic indicators such as GDP and employment data directly cause changes in market trend and Elliott Wave structure'},
+{id:'v2q20d',letter:'d',text:'Both markets and economic indicators are equally driven by the same external news events simultaneously'}
+],correct:['b'],
+expEn:'Socionomics argues that social mood — measured most precisely by stock price trends — is endogenous (self-generated) and fractal, patterned according to Elliott Wave structure. Changes in social mood precede economic events: bull markets predict prosperity, bear markets predict recession. The economy responds to mood, not the reverse.',
+expTh:'Socionomics โต้แย้งว่า social mood ซึ่งวัดได้แม่นยำที่สุดจากแนวโน้มราคาหุ้น เป็น endogenous (เกิดขึ้นเอง) และมีรูปแบบ fractal ตามโครงสร้าง Elliott Wave การเปลี่ยนแปลงของ social mood นำหน้าเหตุการณ์ทางเศรษฐกิจ: ตลาดกระทิงทำนายความเจริญ ตลาดหมีทำนายภาวะถดถอย เศรษฐกิจตอบสนองต่อ mood ไม่ใช่ในทางกลับกัน'}
+],
+v3:[
+{id:'v3q01',text:'A trader labels a 5-wave structure as an impulse. Which TWO conditions, if true simultaneously, would definitively invalidate the count?',
+choices:[
+{id:'v3q01a',letter:'a',text:'Wave 4 price territory overlaps with Wave 1 price territory in a non-diagonal context'},
+{id:'v3q01b',letter:'b',text:'Wave 3 is shorter than Wave 5 but still longer than Wave 1'},
+{id:'v3q01c',letter:'c',text:'Wave 2 retraces 105% of Wave 1, closing below the origin of Wave 1'},
+{id:'v3q01d',letter:'d',text:'Wave 4 retraces exactly 38.2% of Wave 3'}
+],correct:['a','c'],
+expEn:'Options A and C each independently violate a cardinal rule: A violates the Wave 4 overlap rule (no overlap with Wave 1 in standard impulses); C violates the Wave 2 rule (cannot retrace more than 100% of Wave 1). Option B does not violate any rule — Wave 3 must not be the shortest, but Wave 5 can be longer. Option D (38.2% Wave 4) is actually a common guideline-compliant retracement.',
+expTh:'ตัวเลือก A และ C แต่ละอันละเมิดกฎพื้นฐานอย่างอิสระ: A ละเมิดกฎการซ้อนทับของคลื่น 4 (ห้ามซ้อนทับกับคลื่น 1 ใน impulse ปกติ); C ละเมิดกฎคลื่น 2 (ห้าม retrace เกิน 100% ของคลื่น 1) ตัวเลือก B ไม่ละเมิดกฎใด คลื่น 3 ห้ามสั้นที่สุดแต่คลื่น 5 อาจยาวกว่า ตัวเลือก D (38.2% คลื่น 4) เป็น retracement ที่สอดคล้องกับ guideline ทั่วไป'},
+
+{id:'v3q02',text:'Which of the following are characteristics of a VALID contracting ending diagonal? (Select all that apply)',
+choices:[
+{id:'v3q02a',letter:'a',text:'Sub-waves 1, 3, and 5 each subdivide into five waves (5-3-5-3-5 structure)'},
+{id:'v3q02b',letter:'b',text:'All five sub-waves subdivide into three waves, creating a 3-3-3-3-3 structure'},
+{id:'v3q02c',letter:'c',text:'The trendlines connecting waves 1 and 3 (upper) and waves 2 and 4 (lower) diverge outward'},
+{id:'v3q02d',letter:'d',text:'The trendlines connecting waves 1 and 3 (upper) and waves 2 and 4 (lower) converge toward an apex'}
+],correct:['b','d'],
+expEn:'A contracting ending diagonal is defined by two features: (1) all five sub-waves subdivide into three waves each (3-3-3-3-3), and (2) both boundary trendlines converge toward an apex. Option A (5-3-5-3-5) describes a leading diagonal or an impulse. Option C (diverging trendlines) describes an expanding diagonal.',
+expTh:'Contracting ending diagonal ถูกกำหนดโดยสองลักษณะ: (1) คลื่นย่อยทั้ง 5 แบ่งย่อยเป็น 3 คลื่นแต่ละอัน (3-3-3-3-3) และ (2) trendline ขอบทั้งสองบรรจบกันที่ apex ตัวเลือก A (5-3-5-3-5) อธิบาย leading diagonal หรือ impulse ตัวเลือก C (trendline แยก) อธิบาย expanding diagonal'},
+
+{id:'v3q03',text:'Which statements about a contracting triangle appearing in Wave 4 position are CORRECT? (Select all that apply)',
+choices:[
+{id:'v3q03a',letter:'a',text:'Each of the five sub-waves (A through E) internally subdivides into three waves'},
+{id:'v3q03b',letter:'b',text:'The thrust (Wave 5) following the triangle is typically equal to the widest part of the triangle in price distance'},
+{id:'v3q03c',letter:'c',text:'Wave E of the triangle always closes significantly beyond the A-C trendline to confirm the breakout'},
+{id:'v3q03d',letter:'d',text:'The five sub-waves are labeled A-B-C-D-E regardless of the triangle\'s position in the larger structure'}
+],correct:['a','b','d'],
+expEn:'All three are correct: A — triangles are 3-3-3-3-3 internally; B — the thrust measurement rule; D — A-B-C-D-E labeling applies universally. Option C is wrong: Wave E typically falls short of or barely touches the A-C trendline — a significant close beyond it would be unusual and might indicate the structure is not a triangle.',
+expTh:'ทั้งสามถูกต้อง: A — triangle มีโครงสร้างภายใน 3-3-3-3-3; B — กฎการวัด thrust; D — การลาเบล A-B-C-D-E ใช้ทั่วไป ตัวเลือก C ผิด: คลื่น E มักไม่ถึงหรือแค่แตะ A-C trendline การปิดเกินอย่างมีนัยสำคัญจะผิดปกติและอาจบ่งชี้ว่าโครงสร้างไม่ใช่ triangle'},
+
+{id:'v3q04',text:'Which Fibonacci retracement levels are most commonly associated with Wave 2 corrections in an impulse? (Select all that apply)',
+choices:[
+{id:'v3q04a',letter:'a',text:'23.6%'},
+{id:'v3q04b',letter:'b',text:'61.8%'},
+{id:'v3q04c',letter:'c',text:'78.6%'},
+{id:'v3q04d',letter:'d',text:'38.2% — but never 61.8% in any impulse wave'}
+],correct:['b','c'],
+expEn:'Wave 2 corrections typically retrace deeply — most commonly at 61.8% or 78.6% of Wave 1. They can even approach 99% without violating the rule. The 23.6% level is too shallow for a typical Wave 2 and is more characteristic of Wave 4. Option D is wrong on both counts — Wave 2 commonly reaches 61.8%.',
+expTh:'คลื่น 2 มักย้อนกลับลึก โดยพบบ่อยที่สุดที่ 61.8% หรือ 78.6% ของคลื่น 1 และอาจใกล้ถึง 99% โดยไม่ละเมิดกฎ ระดับ 23.6% ตื้นเกินไปสำหรับคลื่น 2 ทั่วไปและเป็นลักษณะของคลื่น 4 มากกว่า ตัวเลือก D ผิดทั้งสองข้อ คลื่น 2 พบบ่อยที่ 61.8%'},
+
+{id:'v3q05',text:'Which characteristics correctly apply to a double three (W-X-Y) complex correction? (Select all that apply)',
+choices:[
+{id:'v3q05a',letter:'a',text:'The X wave connecting W and Y is itself always a corrective (non-motive) structure'},
+{id:'v3q05b',letter:'b',text:'Both W and Y must always be zigzags — no other pattern types are permitted'},
+{id:'v3q05c',letter:'c',text:'The overall net movement of the double three is typically sideways or modestly against the larger trend'},
+{id:'v3q05d',letter:'d',text:'W and Y components can each be any corrective pattern type — zigzag, flat, or triangle'}
+],correct:['a','c','d'],
+expEn:'Options A, C, and D are correct: X is always corrective (A); the pattern produces less net price movement than a simple correction, appearing sideways (C); W and Y can be any corrective type (D). Option B is wrong — W and Y can be zigzags, flats, triangles, or even multi-threes; they do not have to be zigzags.',
+expTh:'ตัวเลือก A, C และ D ถูกต้อง: X เป็น corrective เสมอ (A); รูปแบบสร้างการเคลื่อนไหวราคาสุทธิน้อยกว่า correction ง่ายๆ ดูเหมือนไปข้างๆ (C); W และ Y อาจเป็น corrective ประเภทใดก็ได้ (D) ตัวเลือก B ผิด W และ Y อาจเป็น zigzag, flat, triangle หรือ multi-three ไม่จำเป็นต้องเป็น zigzag'},
+
+{id:'v3q06',text:'Which statements about Wave 3 in a standard impulse are CORRECT according to the Elliott Wave Principle? (Select all that apply)',
+choices:[
+{id:'v3q06a',letter:'a',text:'Wave 3 can occasionally be the shortest impulse wave if both Waves 1 and 5 are substantially extended'},
+{id:'v3q06b',letter:'b',text:'Wave 3 is never the shortest wave among Waves 1, 3, and 5 — this is an absolute cardinal rule'},
+{id:'v3q06c',letter:'c',text:'Wave 3\'s internal structure always consists of three sub-waves in any valid impulse'},
+{id:'v3q06d',letter:'d',text:'Wave 3 is typically the most dynamic wave with the strongest price momentum, highest volume, and widest breadth'}
+],correct:['b','d'],
+expEn:'Option B states the cardinal rule correctly — it is absolute with no exceptions. Option D correctly describes Wave 3\'s market personality. Option A is wrong — the rule has no exceptions. Option C is wrong — Wave 3 subdivides into five waves (not three), as it is an actionary motive wave.',
+expTh:'ตัวเลือก B ระบุกฎพื้นฐานอย่างถูกต้อง ไม่มีข้อยกเว้น ตัวเลือก D อธิบาย personality ของคลื่น 3 ในตลาดได้ถูกต้อง ตัวเลือก A ผิด กฎนี้ไม่มีข้อยกเว้น ตัวเลือก C ผิด คลื่น 3 แบ่งย่อยเป็น 5 คลื่น (ไม่ใช่ 3) เนื่องจากเป็นคลื่น motive actionary'},
+
+{id:'v3q07',text:'Which statements about a zigzag (5-3-5) correction are CORRECT? (Select all that apply)',
+choices:[
+{id:'v3q07a',letter:'a',text:'Wave A in a zigzag subdivides into five waves'},
+{id:'v3q07b',letter:'b',text:'Wave B in a zigzag subdivides into five waves, just like Wave A'},
+{id:'v3q07c',letter:'c',text:'Wave C in a zigzag subdivides into five waves'},
+{id:'v3q07d',letter:'d',text:'Wave B in a zigzag is permitted to retrace more than 100% of Wave A'}
+],correct:['a','c'],
+expEn:'In a zigzag: Wave A = 5 waves (A); Wave B = 3 waves (not five — Option B is wrong); Wave C = 5 waves (C). Option D is wrong: if Wave B retraces more than 100% of Wave A, the structure is no longer a zigzag — it would be classified as an expanded flat. The 5-3-5 labeling is the diagnostic signature.',
+expTh:'ใน zigzag: คลื่น A = 5 คลื่น (A); คลื่น B = 3 คลื่น (ไม่ใช่ 5 ตัวเลือก B ผิด); คลื่น C = 5 คลื่น (C) ตัวเลือก D ผิด: หากคลื่น B retrace เกิน 100% ของคลื่น A โครงสร้างนั้นไม่ใช่ zigzag อีกต่อไป จะจัดเป็น expanded flat การลาเบล 5-3-5 คือลายเซ็นการวินิจฉัย'},
+
+{id:'v3q08',text:'According to the Guideline of Alternation, which of the following pairs represent valid alternation between Waves 2 and 4? (Select all that apply)',
+choices:[
+{id:'v3q08a',letter:'a',text:'Wave 2: regular flat (50% retracement); Wave 4: regular flat (38.2% retracement) — same form, different depth'},
+{id:'v3q08b',letter:'b',text:'Wave 2: deep zigzag (78.6%); Wave 4: shallow sideways flat (38.2%)'},
+{id:'v3q08c',letter:'c',text:'Wave 2: simple zigzag; Wave 4: complex double three or triple three'},
+{id:'v3q08d',letter:'d',text:'Wave 2: simple sharp zigzag; Wave 4: contracting triangle'}
+],correct:['b','c','d'],
+expEn:'Alternation means Waves 2 and 4 differ in form, depth, or complexity. Options B, C, and D each show meaningful alternation (depth + form; form complexity; sharp vs. sideways). Option A shows the same form (flat) with only a minor depth difference — that is the same pattern type repeated, not true alternation.',
+expTh:'Alternation หมายความว่าคลื่น 2 และ 4 แตกต่างกันในรูปแบบ ความลึก หรือความซับซ้อน ตัวเลือก B, C และ D แต่ละอันแสดง alternation ที่มีนัยสำคัญ ตัวเลือก A แสดงรูปแบบเดียวกัน (flat) โดยมีความลึกต่างกันเล็กน้อยเท่านั้น นั่นคือรูปแบบเดียวกันที่ซ้ำ ไม่ใช่ alternation แท้จริง'},
+
+{id:'v3q09',text:'Which statements correctly distinguish a leading diagonal from an ending diagonal? (Select all that apply)',
+choices:[
+{id:'v3q09a',letter:'a',text:'A leading diagonal can appear as Wave 1 of an impulse or Wave A of a zigzag correction'},
+{id:'v3q09b',letter:'b',text:'Both leading and ending diagonals always have an identical 3-3-3-3-3 internal sub-wave structure'},
+{id:'v3q09c',letter:'c',text:'An ending diagonal only appears in Wave 1 or Wave A positions'},
+{id:'v3q09d',letter:'d',text:'An ending diagonal appears in Wave 5 of an impulse or in Wave C of a zigzag or flat correction'}
+],correct:['a','d'],
+expEn:'A (leading diagonal in Wave 1 or Wave A) and D (ending diagonal in Wave 5 or Wave C) correctly state their respective positions. Option B is wrong — leading diagonals can be 5-3-5-3-5 or 3-3-3-3-3; only ending diagonals must be 3-3-3-3-3. Option C has the positions reversed — it describes an ending diagonal\'s non-position.',
+expTh:'A (leading diagonal ในคลื่น 1 หรือ A) และ D (ending diagonal ในคลื่น 5 หรือ C) ระบุตำแหน่งได้ถูกต้อง ตัวเลือก B ผิด leading diagonal อาจเป็น 5-3-5-3-5 หรือ 3-3-3-3-3 เฉพาะ ending diagonal เท่านั้นที่ต้องเป็น 3-3-3-3-3 ตัวเลือก C มีตำแหน่งสลับกัน'},
+
+{id:'v3q10',text:'Which Fibonacci relationships are commonly used to project the END of Wave 5 in a non-extended impulse? (Select all that apply)',
+choices:[
+{id:'v3q10a',letter:'a',text:'Wave 5 = 261.8% of Wave 1, measured from the end of Wave 4'},
+{id:'v3q10b',letter:'b',text:'Wave 5 ≈ 61.8% of the net distance from Wave 1\'s origin through the end of Wave 3, added to Wave 4\'s end'},
+{id:'v3q10c',letter:'c',text:'Wave 5 ≈ equal in length to Wave 1 (equality), measured from Wave 4\'s endpoint'},
+{id:'v3q10d',letter:'d',text:'Wave 5 = always exactly 100% of Wave 3 in all non-extended cases'}
+],correct:['b','c'],
+expEn:'Two standard Wave 5 projection methods for non-extended impulses: Wave 5 ≈ Wave 1 (equality) from Wave 4\'s end (C); and Wave 5 ≈ 61.8% of the Wave 1-through-3 net distance from Wave 4\'s end (B). Option A (261.8% of Wave 1) is a strong extension target, not the common non-extended case. Option D is false — Wave 5 is not always 100% of Wave 3.',
+expTh:'วิธีการประมาณคลื่น 5 มาตรฐานสองวิธีสำหรับ impulse ที่ไม่ยืดตัว: คลื่น 5 ≈ คลื่น 1 (equality) จากจุดสิ้นสุดคลื่น 4 (C); และคลื่น 5 ≈ 61.8% ของระยะทางสุทธิคลื่น 1 ถึง 3 จากจุดสิ้นสุดคลื่น 4 (B) ตัวเลือก A (261.8% ของคลื่น 1) เป็นเป้าหมายการยืดตัวแบบแข็งแกร่ง ไม่ใช่กรณีที่ไม่ยืดตัวทั่วไป ตัวเลือก D ผิด คลื่น 5 ไม่ได้เท่ากับ 100% ของคลื่น 3 เสมอ'},
+{id:'v3q11',text:'Which of the following are TRUE about an expanded (irregular) flat correction? (Select all that apply)',
+choices:[
+{id:'v3q11a',letter:'a',text:'Wave B retraces more than 100% of Wave A, making a new extreme beyond Wave A\'s starting point'},
+{id:'v3q11b',letter:'b',text:'Wave C extends beyond the endpoint of Wave A in the corrective direction'},
+{id:'v3q11c',letter:'c',text:'Wave A in an expanded flat subdivides into five waves like an impulse'},
+{id:'v3q11d',letter:'d',text:'Wave A subdivides into three waves, and Wave C subdivides into five waves'}
+],correct:['a','b','d'],
+expEn:'In an expanded flat: Wave B retraces more than 100% of Wave A (A — defining characteristic); Wave C goes beyond Wave A\'s end (B); Wave A is three waves, not five (Option C is wrong — a five-wave Wave A would suggest a zigzag, not a flat); Wave C is five waves (D). The 3-3-5 internal structure is key to all flat corrections.',
+expTh:'ใน expanded flat: คลื่น B retrace เกิน 100% ของคลื่น A (A — ลักษณะเฉพาะ); คลื่น C ไปเกินจุดสิ้นสุดของคลื่น A (B); คลื่น A มี 3 คลื่น ไม่ใช่ 5 (ตัวเลือก C ผิด คลื่น A ที่มี 5 คลื่นจะบ่งชี้ zigzag ไม่ใช่ flat); คลื่น C มี 5 คลื่น (D) โครงสร้างภายใน 3-3-5 เป็นกุญแจสำคัญของ flat correction ทุกประเภท'},
+
+{id:'v3q12',text:'After an ending diagonal completes in Wave 5 position, which conditions typically confirm the subsequent reversal? (Select all that apply)',
+choices:[
+{id:'v3q12a',letter:'a',text:'Price forms a symmetrical triangle immediately below the diagonal high, building energy for the reversal'},
+{id:'v3q12b',letter:'b',text:'Volume increases steadily throughout the ending diagonal\'s duration before the reversal'},
+{id:'v3q12c',letter:'c',text:'Price breaks swiftly below the lower trendline of the diagonal'},
+{id:'v3q12d',letter:'d',text:'Price retraces quickly to at least the origin of the ending diagonal (Wave 1 start of the diagonal)'}
+],correct:['c','d'],
+expEn:'After an ending diagonal, the confirmatory signals are: breaking below the lower diagonal trendline (C) and then retracing swiftly to at least the diagonal\'s Wave 1 start (D). Option A (triangle after the diagonal top) is not a typical confirmation pattern. Option B is wrong — volume often diminishes during ending diagonals (part of the exhaustion signal).',
+expTh:'หลัง ending diagonal สัญญาณยืนยันคือ: การทะลุต่ำกว่า trendline ล่างของ diagonal (C) และย้อนกลับอย่างรวดเร็วถึงจุดเริ่มต้นคลื่น 1 ของ diagonal อย่างน้อย (D) ตัวเลือก A (triangle หลังจุดสูงสุดของ diagonal) ไม่ใช่รูปแบบยืนยันทั่วไป ตัวเลือก B ผิด ปริมาณมักลดลงระหว่าง ending diagonal (ส่วนหนึ่งของสัญญาณหมดแรง)'},
+
+{id:'v3q13',text:'According to the Elliott Wave Principle as presented by Frost and Prechter, which statements are CORRECT? (Select all that apply)',
+choices:[
+{id:'v3q13a',letter:'a',text:'Markets move in repetitive, patterned waves that reflect the collective psychology of market participants'},
+{id:'v3q13b',letter:'b',text:'Elliott Wave patterns are exclusively applicable to stock markets and cannot be used for commodities or forex'},
+{id:'v3q13c',letter:'c',text:'Elliott Wave patterns are fractal — the same wave forms appear at all degrees of trend from minute-by-minute to century-long cycles'},
+{id:'v3q13d',letter:'d',text:'The Fibonacci sequence provides the mathematical framework that underlies the proportional relationships between wave lengths'}
+],correct:['a','c','d'],
+expEn:'All three (A, C, D) are core principles of the Elliott Wave Principle. Option B is explicitly wrong — Frost and Prechter applied the Wave Principle to stocks, commodities (gold, oil), currencies, and interest rates, demonstrating its universal applicability across financial markets.',
+expTh:'ทั้งสาม (A, C, D) เป็นหลักการหลักของ Elliott Wave Principle ตัวเลือก B ผิดอย่างชัดเจน Frost และ Prechter ประยุกต์ใช้ Wave Principle กับหุ้น สินค้าโภคภัณฑ์ (ทอง น้ำมัน) สกุลเงิน และอัตราดอกเบี้ย แสดงให้เห็นถึงการประยุกต์ใช้ที่เป็นสากลทั่วตลาดการเงิน'},
+
+{id:'v3q14',text:'Which statements correctly describe the price behavior and labeling of a "running triangle"? (Select all that apply)',
+choices:[
+{id:'v3q14a',letter:'a',text:'A running triangle still maintains the standard A-B-C-D-E labeling of any horizontal triangle'},
+{id:'v3q14b',letter:'b',text:'In a running triangle, Wave B exceeds the start of Wave A, unlike a typical contracting triangle'},
+{id:'v3q14c',letter:'c',text:'A running triangle has trendlines that always diverge rather than converge'},
+{id:'v3q14d',letter:'d',text:'A running triangle reflects a very strong underlying trend, similar in spirit to a running correction'}
+],correct:['a','b','d'],
+expEn:'A running triangle keeps the standard A-B-C-D-E label (A); it features a B wave that exceeds Wave A\'s origin, atypical for most triangles (B); and like running corrections generally, it signals strong trend conditions (D). Option C is wrong — a running triangle is still a form of contracting (or barrier) triangle, not an expanding one; its trendlines still generally converge.',
+expTh:'Running triangle ยังคงใช้ลาเบล A-B-C-D-E มาตรฐาน (A); มีคลื่น B ที่เกินจุดเริ่มต้นของคลื่น A ซึ่งผิดปกติสำหรับ triangle ส่วนใหญ่ (B); และเหมือน running correction ทั่วไป บ่งบอกถึงสภาวะเทรนด์ที่แข็งแกร่ง (D) ตัวเลือก C ผิด running triangle ยังเป็นรูปแบบของ contracting (หรือ barrier) triangle ไม่ใช่ expanding trendline ยังคงบรรจบกันโดยทั่วไป'},
+
+{id:'v3q15',text:'Which statements correctly describe the application of Elliott Wave channeling technique? (Select all that apply)',
+choices:[
+{id:'v3q15a',letter:'a',text:'The base channel is initially drawn using the origin of Wave 1 and the end of Wave 2'},
+{id:'v3q15b',letter:'b',text:'After Wave 3 completes, the channel is adjusted using the peaks of Waves 1 and 3, with a parallel line through Wave 2\'s end'},
+{id:'v3q15c',letter:'c',text:'If price fails to reach the upper channel line during Wave 5, it can signal a weak fifth wave or possible truncation'},
+{id:'v3q15d',letter:'d',text:'Channel lines are only useful for identifying Wave 1 and have no application once Wave 3 begins'}
+],correct:['a','b','c'],
+expEn:'A, B, and C all correctly describe legitimate uses of Elliott channeling. Option D is wrong — channeling is actively used and adjusted throughout the impulse, especially for projecting Wave 3 and Wave 5 targets and detecting weakness (like a failure to reach the channel line, signaling truncation).',
+expTh:'A, B และ C ล้วนอธิบายการใช้งาน Elliott channeling ที่ถูกต้อง ตัวเลือก D ผิด channeling ถูกใช้และปรับอย่างต่อเนื่องตลอด impulse โดยเฉพาะเพื่อคาดการณ์เป้าหมายคลื่น 3 และ 5 และตรวจจับความอ่อนแอ (เช่น การไม่ถึงเส้น channel ซึ่งบ่งบอกถึง truncation)'},
+
+{id:'v3q16',text:'Which of the following correctly describe valid scenarios for Wave 4 according to Elliott Wave rules and guidelines? (Select all that apply)',
+choices:[
+{id:'v3q16a',letter:'a',text:'Wave 4 retraces 38.2% of Wave 3 and does not overlap Wave 1\'s price territory'},
+{id:'v3q16b',letter:'b',text:'Wave 4 takes the form of a contracting triangle, signaling the impulse is nearing completion'},
+{id:'v3q16c',letter:'c',text:'Wave 4 overlaps Wave 1\'s price territory in a standard (non-diagonal) impulse'},
+{id:'v3q16d',letter:'d',text:'Wave 4 forms a complex double three, taking considerably longer in time than Wave 2'}
+],correct:['a','b','d'],
+expEn:'Options A, B, and D describe valid, rule-compliant Wave 4 scenarios. Option C is invalid — Wave 4 overlapping Wave 1 in a standard (non-diagonal) impulse violates the overlap rule and would invalidate the count, requiring relabeling.',
+expTh:'ตัวเลือก A, B และ D อธิบายสถานการณ์คลื่น 4 ที่ถูกต้องตามกฎ ตัวเลือก C ไม่ถูกต้อง การที่คลื่น 4 ซ้อนทับกับคลื่น 1 ใน impulse มาตรฐาน (ไม่ใช่ diagonal) ละเมิดกฎการซ้อนทับและจะทำให้การนับไม่ถูกต้อง ต้องลาเบลใหม่'},
+
+{id:'v3q17',text:'Which of the following statements about wave degree notation and hierarchy are CORRECT? (Select all that apply)',
+choices:[
+{id:'v3q17a',letter:'a',text:'Grand Supercycle is a higher degree than Supercycle, which is higher than Cycle'},
+{id:'v3q17b',letter:'b',text:'Primary degree waves are smaller in time scale than Minute degree waves'},
+{id:'v3q17c',letter:'c',text:'Intermediate degree sits between Minor and Primary in the standard hierarchy'},
+{id:'v3q17d',letter:'d',text:'The same five-wave/three-wave structural pattern repeats fractally at every degree'}
+],correct:['a','c','d'],
+expEn:'A, C, and D correctly describe the degree hierarchy and its fractal nature. Option B is wrong and reversed — Primary degree is much larger in time scale than Minute degree; the correct order from largest to smallest includes Primary well above Minute in the hierarchy.',
+expTh:'A, C และ D อธิบายลำดับชั้น degree และธรรมชาติแบบ fractal ได้ถูกต้อง ตัวเลือก B ผิดและสลับกัน Primary degree มีช่วงเวลาใหญ่กว่า Minute degree มาก ลำดับที่ถูกต้องจากใหญ่ไปเล็กมี Primary อยู่สูงกว่า Minute มาก'},
+
+{id:'v3q18',text:'Which of the following are valid reasons an analyst might reconsider or relabel an Elliott Wave count? (Select all that apply)',
+choices:[
+{id:'v3q18a',letter:'a',text:'A proposed Wave 4 overlaps Wave 1 in what was assumed to be a standard (non-diagonal) impulse'},
+{id:'v3q18b',letter:'b',text:'A proposed Wave 3 turns out to be the shortest of Waves 1, 3, and 5'},
+{id:'v3q18c',letter:'c',text:'A proposed Wave 5 fails to make a new price extreme beyond Wave 3 (truncation) without any prior weakening signals such as divergence'},
+{id:'v3q18d',letter:'d',text:'A proposed Wave 2 retraces 99% of Wave 1 but does not exceed its origin'}
+],correct:['a','b','c'],
+expEn:'A and B directly violate cardinal rules, requiring relabeling. C is correct because a credible truncation should be supported by prior warning signs (e.g., momentum divergence, narrowing breadth); an unexplained truncation invites scrutiny of the count. D is not a problem — 99% retracement without exceeding 100% is valid, however extreme.',
+expTh:'A และ B ละเมิดกฎพื้นฐานโดยตรง ต้องลาเบลใหม่ C ถูกต้องเพราะ truncation ที่น่าเชื่อถือควรมีสัญญาณเตือนล่วงหน้า (เช่น momentum divergence, breadth แคบลง) truncation ที่ไม่มีคำอธิบายควรถูกตรวจสอบการนับ D ไม่ใช่ปัญหา การ retrace 99% โดยไม่เกิน 100% ถูกต้อง แม้จะรุนแรง'},
+
+{id:'v3q19',text:'Which of the following correctly describe characteristics that distinguish Wave C of a zigzag from Wave C of a flat correction? (Select all that apply)',
+choices:[
+{id:'v3q19a',letter:'a',text:'In both a zigzag and a flat, Wave C always subdivides into five waves'},
+{id:'v3q19b',letter:'b',text:'In a zigzag, Wave A subdivides into five waves; in a flat, Wave A subdivides into three waves'},
+{id:'v3q19c',letter:'c',text:'In a flat, Wave B retraces a much larger percentage of Wave A (typically 90%+) than in a zigzag, where Wave B is often only 38.2%–61.8% of Wave A'},
+{id:'v3q19d',letter:'d',text:'Wave C in a flat is always shorter in price distance than Wave C in a zigzag, regardless of market conditions'}
+],correct:['a','b','c'],
+expEn:'A, B, and C are correct distinguishing features. Wave C subdivides into five waves in both pattern types (A); Wave A differs in sub-wave count between the two (B); Wave B retraces more deeply in a flat than typically in a zigzag (C). Option D is wrong — there is no rule fixing the relative length of Wave C between pattern types; it depends on market-specific price action.',
+expTh:'A, B และ C เป็นลักษณะที่แยกความแตกต่างได้ถูกต้อง คลื่น C แบ่งย่อยเป็น 5 คลื่นในทั้งสองรูปแบบ (A); คลื่น A มีจำนวนคลื่นย่อยต่างกันระหว่างสองรูปแบบ (B); คลื่น B retrace ลึกกว่าใน flat มากกว่าใน zigzag โดยทั่วไป (C) ตัวเลือก D ผิด ไม่มีกฎที่กำหนดความยาวสัมพัทธ์ของคลื่น C ระหว่างรูปแบบ ขึ้นอยู่กับการเคลื่อนไหวราคาเฉพาะตลาด'},
+
+{id:'v3q20',text:'Which of the following are accurate statements regarding Fibonacci price projections used in advanced Elliott Wave analysis? (Select all that apply)',
+choices:[
+{id:'v3q20a',letter:'a',text:'A Wave C in a zigzag is commonly projected to equal 100% or 161.8% of Wave A in length'},
+{id:'v3q20b',letter:'b',text:'A Wave 3 extension target of 261.8% of Wave 1 reflects an exceptionally strong impulse'},
+{id:'v3q20c',letter:'c',text:'Fibonacci price projections provide guaranteed, precise turning points that should override clear violations of cardinal wave rules'},
+{id:'v3q20d',letter:'d',text:'Multiple converging Fibonacci levels from different wave relationships increase analyst confidence in a price target zone'}
+],correct:['a','b','d'],
+expEn:'A, B, and D are correct: Wave C commonly equals 100% or 161.8% of Wave A (A); 261.8% is a valid strong Wave 3 extension (B); confluence of multiple Fibonacci levels strengthens a target zone\'s reliability (D). Option C is wrong — Fibonacci levels are probabilistic guidelines, not guarantees, and they never override the cardinal rules, which always take precedence in validating a wave count.',
+expTh:'A, B และ D ถูกต้อง: คลื่น C มักเท่ากับ 100% หรือ 161.8% ของคลื่น A (A); 261.8% เป็นเป้าหมายการยืดตัวคลื่น 3 ที่แข็งแกร่งและถูกต้อง (B); การบรรจบกันของหลายระดับ Fibonacci เสริมความน่าเชื่อถือของโซนเป้าหมาย (D) ตัวเลือก C ผิด ระดับ Fibonacci เป็นแนวทางเชิงความน่าจะเป็น ไม่ใช่การรับประกัน และไม่เคยอยู่เหนือกฎพื้นฐานซึ่งมีความสำคัญสูงสุดเสมอในการยืนยันการนับคลื่น'}
+]
+};
+</script>
+<script>
+/* ═══════════════════════════════════════
+   STATE
+═══════════════════════════════════════ */
+const state = {
+  variant: null,
+  questions: [],      // shuffled, deep-cloned working set
+  current: 0,
+  answers: {},         // qId -> array of selected choice letters
+  flagged: {},          // qId -> bool
+  startTime: null,
+  timerInterval: null,
+  secondsLeft: 0,
+  shuffled: false       // guards against re-shuffling on retake-within-session navigation
+};
+
+/* ═══════════════════════════════════════
+   FISHER-YATES SHUFFLE (deep-clone safe)
+   Bug fix: always deep-clone source objects before
+   shuffling so the original QB arrays are never mutated.
+   Repeated plays previously leaked shuffled state back
+   into QB, causing identical orderings on "retake".
+═══════════════════════════════════════ */
+function deepClone(obj){
+  return JSON.parse(JSON.stringify(obj));
+}
+function fisherYatesShuffle(arr){
+  const a = deepClone(arr);
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function shuffleChoices(question){
+  const q = deepClone(question);
+  q.choices = fisherYatesShuffle(q.choices);
+  return q;
+}
+
+/* ═══════════════════════════════════════
+   NAVIGATION BETWEEN SCREENS
+═══════════════════════════════════════ */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('hud-timer').style.display = (id==='screen-exam') ? 'block' : 'none';
+}
+
+function goSelect(){
+  clearInterval(state.timerInterval);
+  showScreen('screen-select');
+}
+
+/* ═══════════════════════════════════════
+   START / RETAKE A VARIANT
+   IMPORTANT: do NOT reset state.shuffled here on
+   every card click — only when genuinely starting
+   a fresh attempt. This was the bug in CEWA11 where
+   the variant-card click handler reset state.shuffled
+   = false even when re-entering an in-progress exam,
+   wiping out the user's shuffle order mid-session.
+═══════════════════════════════════════ */
+function startVariant(el){
+  const vKey = el.getAttribute('data-v');
+  beginAttempt(vKey);
+}
+function retake(){
+  beginAttempt(state.variant);
+}
+function beginAttempt(vKey){
+  state.variant = vKey;
+  state.answers = {};
+  state.flagged = {};
+  state.current = 0;
+  const source = QB[vKey];
+  state.questions = fisherYatesShuffle(source).map(shuffleChoices);
+  state.shuffled = true;
+  const cfg = variants[vKey];
+  state.secondsLeft = cfg.minutes*60;
+  document.getElementById('exam-title-label').textContent = cfg.label;
+  showScreen('screen-exam');
+  startTimer();
+  renderQuestion();
+}
+
+/* ═══════════════════════════════════════
+   TIMER
+═══════════════════════════════════════ */
+function startTimer(){
+  clearInterval(state.timerInterval);
+  updateTimerDisplay();
+  state.timerInterval = setInterval(()=>{
+    state.secondsLeft--;
+    updateTimerDisplay();
+    if(state.secondsLeft<=0){
+      clearInterval(state.timerInterval);
+      submitExam();
+    }
+  },1000);
+}
+function updateTimerDisplay(){
+  const m = Math.floor(state.secondsLeft/60);
+  const s = state.secondsLeft%60;
+  const el = document.getElementById('hud-timer');
+  el.textContent = String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  el.classList.remove('warn','danger');
+  if(state.secondsLeft<=300 && state.secondsLeft>60) el.classList.add('warn');
+  else if(state.secondsLeft<=60) el.classList.add('danger');
+}
+
+/* ═══════════════════════════════════════
+   RENDER CURRENT QUESTION
+   Uses data-* attributes (data-cid) + a single delegated
+   click handler instead of inline onclick with interpolated
+   strings. This avoids the single-quote-inside-single-quoted
+   JS string bug that previously broke onclick="selectChoice('...')"
+   whenever question or choice text itself contained an apostrophe.
+═══════════════════════════════════════ */
+function renderQuestion(){
+  const q = state.questions[state.current];
+  const cfg = variants[state.variant];
+  const isMulti = cfg.type==='multi';
+  const selected = state.answers[q.id] || [];
+
+  document.getElementById('q-counter').textContent = `Question ${state.current+1} / ${state.questions.length}`;
+  document.getElementById('progress-bar').style.width = ((state.current+1)/state.questions.length*100)+'%';
+
+  let html = `<div class="q-card">
+    <div class="q-num">${cfg.label} — Q${state.current+1}</div>
+    <div class="q-text">${escapeHtml(q.text)}</div>`;
+  if(isMulti) html += `<div class="q-type-hint">Select all that apply (multiple correct responses)</div>`;
+  html += `<div class="choices">`;
+  q.choices.forEach(c=>{
+    const isSel = selected.includes(c.letter);
+    html += `<div class="choice${isSel?' selected':''}" data-cid="${c.letter}" data-multi="${isMulti}">
+      ${isMulti
+        ? `<div class="choice-check">${isSel?'✓':''}</div>`
+        : `<div class="choice-letter">${c.letter.toUpperCase()}</div>`}
+      <div class="choice-text">${escapeHtml(c.text)}</div>
+    </div>`;
+  });
+  html += `</div></div>`;
+  document.getElementById('question-area').innerHTML = html;
+
+  document.querySelectorAll('.choice').forEach(el=>{
+    el.addEventListener('click', onChoiceClick);
+  });
+
+  document.getElementById('btn-prev').disabled = (state.current===0);
+  const isLast = state.current === state.questions.length-1;
+  document.getElementById('btn-next').style.display = isLast ? 'none' : 'inline-block';
+  document.getElementById('btn-submit').style.display = isLast ? 'inline-block' : 'none';
+
+  const flagBtn = document.getElementById('btn-flag');
+  flagBtn.style.borderColor = state.flagged[q.id] ? 'var(--yellow)' : '';
+  flagBtn.style.color = state.flagged[q.id] ? 'var(--yellow)' : '';
+}
+
+function onChoiceClick(e){
+  const el = e.currentTarget;
+  const letter = el.getAttribute('data-cid');
+  const isMulti = el.getAttribute('data-multi') === 'true';
+  const q = state.questions[state.current];
+  let sel = state.answers[q.id] || [];
+  if(isMulti){
+    if(sel.includes(letter)) sel = sel.filter(x=>x!==letter);
+    else sel = [...sel, letter];
+  } else {
+    sel = [letter];
+  }
+  state.answers[q.id] = sel;
+  renderQuestion();
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ═══════════════════════════════════════
+   NAV / FLAG
+═══════════════════════════════════════ */
+function navQ(dir){
+  const next = state.current + dir;
+  if(next<0 || next>=state.questions.length) return;
+  state.current = next;
+  renderQuestion();
+}
+function flagQ(){
+  const q = state.questions[state.current];
+  state.flagged[q.id] = !state.flagged[q.id];
+  renderQuestion();
+}
+
+/* ═══════════════════════════════════════
+   SUBMIT / SCORE / GRADE
+═══════════════════════════════════════ */
+function confirmSubmit(){
+  const unanswered = state.questions.filter(q=>!state.answers[q.id] || state.answers[q.id].length===0).length;
+  const msg = unanswered>0
+    ? `You have ${unanswered} unanswered question(s). Submit anyway?`
+    : 'Submit your exam now?';
+  document.getElementById('submit-modal-text').textContent = msg;
+  document.getElementById('submit-modal').classList.add('active');
+}
+function closeSubmitModal(){
+  document.getElementById('submit-modal').classList.remove('active');
+}
+function doSubmitFromModal(){
+  closeSubmitModal();
+  submitExam();
+}
+
+function arraysEqualAsSets(a,b){
+  if(a.length!==b.length) return false;
+  const sa = [...a].sort(), sb=[...b].sort();
+  return sa.every((v,i)=>v===sb[i]);
+}
+
+function submitExam(){
+  clearInterval(state.timerInterval);
+  let correctCount = 0;
+  state.questions.forEach(q=>{
+    const sel = state.answers[q.id] || [];
+    if(arraysEqualAsSets(sel, q.correct)) correctCount++;
+  });
+  const total = state.questions.length;
+  const pct = Math.round((correctCount/total)*100);
+  let grade, gradeColor;
+  if(pct>=90){grade='CEWA MASTER';gradeColor='var(--lime)';}
+  else if(pct>=80){grade='PASS';gradeColor='var(--green)';}
+  else {grade='FAIL';gradeColor='var(--red)';}
+
+  document.getElementById('result-variant-label').textContent = variants[state.variant].title;
+  document.getElementById('result-pct').textContent = pct+'%';
+  document.getElementById('result-pct').style.color = gradeColor;
+  document.getElementById('result-frac').textContent = `${correctCount} / ${total} correct`;
+  const gradeBadge = document.getElementById('result-grade');
+  gradeBadge.textContent = grade;
+  gradeBadge.style.background = gradeColor;
+  gradeBadge.style.color = (grade==='FAIL') ? '#fff' : '#111';
+
+  renderAccordion();
+  showScreen('screen-result');
+}
+
+/* ═══════════════════════════════════════
+   ACCORDION REVIEW (bilingual EN/TH)
+   Uses data-qidx + data-lang attributes with delegated
+   handlers rather than inline onclick with interpolated
+   question text, for the same reason as choice rendering.
+═══════════════════════════════════════ */
+function renderAccordion(){
+  let html = `<div class="acc-section-title">Review &amp; Explanations</div>`;
+  state.questions.forEach((q,idx)=>{
+    const sel = state.answers[q.id] || [];
+    const isCorrect = arraysEqualAsSets(sel, q.correct);
+    html += `<div class="acc-item">
+      <div class="acc-header" data-qidx="${idx}">
+        <div class="acc-status ${isCorrect?'correct':'wrong'}">${isCorrect?'✓':'✕'}</div>
+        <div class="acc-q-preview">Q${idx+1}. ${escapeHtml(q.text)}</div>
+        <div class="acc-toggle-icon">▾</div>
+      </div>
+      <div class="acc-body" id="acc-body-${idx}">
+        <div class="acc-choices-review">`;
+    q.choices.forEach(c=>{
+      const wasPicked = sel.includes(c.letter);
+      const isRight = q.correct.includes(c.letter);
+      let cls='';
+      if(isRight) cls='is-correct';
+      else if(wasPicked && !isRight) cls='is-wrong-pick';
+      html += `<div class="acc-choice-row ${cls}">
+        <div class="cl">${c.letter.toUpperCase()}${wasPicked?' •':''}</div>
+        <div>${escapeHtml(c.text)}</div>
+      </div>`;
+    });
+    html += `</div>
+        <div class="lang-toggle">
+          <button class="lang-btn active" data-qidx="${idx}" data-lang="en">EN</button>
+          <button class="lang-btn" data-qidx="${idx}" data-lang="th">TH</button>
+        </div>
+        <div class="exp-text" id="exp-en-${idx}">${escapeHtml(q.expEn)}</div>
+        <div class="exp-text hidden" id="exp-th-${idx}">${escapeHtml(q.expTh)}</div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('results-accordion').innerHTML = html;
+
+  document.querySelectorAll('.acc-header').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const idx = el.getAttribute('data-qidx');
+      const body = document.getElementById('acc-body-'+idx);
+      body.classList.toggle('open');
+    });
+  });
+  document.querySelectorAll('.lang-btn').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const idx = el.getAttribute('data-qidx');
+      const lang = el.getAttribute('data-lang');
+      el.parentElement.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('exp-en-'+idx).classList.toggle('hidden', lang!=='en');
+      document.getElementById('exp-th-'+idx).classList.toggle('hidden', lang!=='th');
+    });
+  });
+}
+</script>
+</body>
+</html>

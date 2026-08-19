@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>CEWA21 — SPACEZ Exam Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+:root{
+  --bg:#0b0f19;
+  --surface:rgba(26,32,48,0.75);
+  --surface-hover:rgba(38,47,71,0.85);
+  --border:rgba(255,255,255,0.1);
+  --lime:#c8f135;
+  --lime-glow:rgba(200,241,53,0.35);
+  --text:#f0f4f8;
+  --muted:#8c9ba5;
+  --radius:16px;
+  --red:#ff4d4d;
+  --green:#4dff91;
+  --yellow:#ffd84d;
+  --blue:#4d9fff;
+  --font-main:'Inter',system-ui,-apple-system,sans-serif;
+  --font-thai:'Noto Sans Thai','Inter',system-ui,sans-serif;
+  --backdrop-blur:blur(12px);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-main);
+  min-height:100vh;
+  overflow-x:hidden;
+  position:relative;
+  line-height:1.55;
+}
+.th{font-family:var(--font-thai);}
+#bg-canvas{position:fixed; inset:0; width:100%; height:100%; z-index:0; opacity:0.55; pointer-events:none;}
+#confetti-canvas{position:fixed; inset:0; width:100%; height:100%; z-index:9999; pointer-events:none;}
+#app{position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column;}
+
+/* ---------- Layout shells ---------- */
+.screen{display:none; flex:1; width:100%; flex-direction:column; align-items:center; padding:32px 16px 80px;}
+.screen.active{display:flex;}
+.wrap{width:100%; max-width:920px; margin:0 auto;}
+
+/* ---------- Glass surface ---------- */
+.glass{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  backdrop-filter:var(--backdrop-blur);
+  -webkit-backdrop-filter:var(--backdrop-blur);
+  box-shadow:0 8px 32px rgba(0,0,0,0.35);
+}
+
+/* ---------- Header / Hero ---------- */
+.hero{text-align:center; padding:28px 20px 8px;}
+.hero .brand{
+  font-weight:800; letter-spacing:0.14em; font-size:clamp(28px,6vw,44px);
+  background:linear-gradient(120deg,var(--lime) 0%, var(--blue) 55%, var(--lime) 100%);
+  background-size:220% auto;
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  animation:shine 6s linear infinite;
+}
+@keyframes shine{ to{ background-position:220% center; } }
+.hero h1{font-size:clamp(18px,3.2vw,24px); font-weight:600; margin-top:6px; color:var(--text);}
+.hero p{color:var(--muted); font-size:14px; margin-top:6px;}
+.hero p.th{font-size:14px;}
+
+/* ---------- Variant cards ---------- */
+.card-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px; margin-top:24px;}
+.variant-card{
+  padding:22px; cursor:pointer; position:relative; overflow:hidden;
+  transition:transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+  opacity:0; transform:translateY(24px);
+}
+.variant-card:hover{ transform:translateY(-4px); border-color:var(--lime-glow); box-shadow:0 12px 40px rgba(200,241,53,0.12), 0 8px 32px rgba(0,0,0,0.35); background:var(--surface-hover); }
+.variant-card .tag{ display:inline-block; font-size:11px; letter-spacing:.08em; color:var(--bg); background:var(--lime); padding:3px 10px; border-radius:99px; font-weight:700; }
+.variant-card h3{ font-size:20px; margin-top:14px; font-weight:700; }
+.variant-card .meta{ margin-top:10px; display:flex; gap:14px; color:var(--muted); font-size:13px; flex-wrap:wrap;}
+.variant-card .meta span{ display:flex; align-items:center; gap:5px;}
+.variant-card .topics{ margin-top:12px; color:var(--muted); font-size:13px; }
+.variant-card .resume-pill{ margin-top:12px; display:inline-block; font-size:11px; color:var(--yellow); border:1px solid var(--yellow); padding:2px 8px; border-radius:99px; }
+.variant-card .go-btn{ margin-top:16px; width:100%; padding:11px; border-radius:10px; border:1px solid var(--lime-glow); background:transparent; color:var(--lime); font-weight:700; font-family:var(--font-main); cursor:pointer; transition:background .2s, color .2s;}
+.variant-card .go-btn:hover{ background:var(--lime); color:var(--bg); }
+
+/* ---------- HUD timer ---------- */
+#hud{
+  position:fixed; top:16px; right:16px; z-index:50;
+  padding:10px 16px; display:flex; align-items:center; gap:10px;
+  font-variant-numeric:tabular-nums; font-weight:700; font-size:18px;
+}
+#hud .dot{ width:8px; height:8px; border-radius:50%; background:var(--lime); }
+#hud.warn{ color:var(--yellow); border-color:rgba(255,216,77,0.4); }
+#hud.warn .dot{ background:var(--yellow); }
+#hud.danger{ color:var(--red); border-color:rgba(255,77,77,0.5); animation:pulse-red 1s ease-in-out infinite; }
+#hud.danger .dot{ background:var(--red); }
+@keyframes pulse-red{ 0%,100%{ box-shadow:0 0 0 0 rgba(255,77,77,0.5);} 50%{ box-shadow:0 0 0 8px rgba(255,77,77,0);} }
+
+/* ---------- Exam screen ---------- */
+.exam-topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px;}
+.exam-topbar .label{ font-weight:700; letter-spacing:.05em; }
+.progress-track{ width:100%; height:6px; background:rgba(255,255,255,0.08); border-radius:99px; overflow:hidden; margin-bottom:22px;}
+.progress-fill{ height:100%; background:linear-gradient(90deg,var(--blue),var(--lime)); width:0%; transition:width .4s ease; }
+.q-card{ padding:26px; margin-bottom:20px; }
+.q-card .q-index{ color:var(--lime); font-weight:700; font-size:13px; letter-spacing:.08em; margin-bottom:10px; }
+.q-card .q-text{ font-size:18px; line-height:1.5; font-weight:500; }
+.q-card .q-hint{ margin-top:8px; font-size:12.5px; color:var(--muted); }
+.choices{ margin-top:20px; display:flex; flex-direction:column; gap:10px; }
+.choice{
+  display:flex; align-items:flex-start; gap:12px; padding:14px 16px; border-radius:12px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.02); cursor:pointer;
+  transition:border-color .15s, background .15s, transform .1s;
+}
+.choice:hover{ border-color:var(--lime-glow); background:rgba(200,241,53,0.05); }
+.choice:active{ transform:scale(0.995); }
+.choice.selected{ border-color:var(--lime); background:rgba(200,241,53,0.10); box-shadow:0 0 0 1px var(--lime-glow) inset; }
+.choice .letter{
+  flex:0 0 auto; width:28px; height:28px; border-radius:8px; border:1px solid var(--border);
+  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:var(--muted);
+}
+.choice.selected .letter{ border-color:var(--lime); color:var(--lime); }
+.choice .ctext{ font-size:15px; padding-top:3px; }
+.nav-row{ display:flex; justify-content:space-between; gap:12px; margin-top:8px; }
+.btn{ padding:12px 20px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,0.03); color:var(--text); font-family:var(--font-main); font-weight:600; cursor:pointer; transition:background .15s, border-color .15s;}
+.btn:hover{ background:rgba(255,255,255,0.08); }
+.btn:disabled{ opacity:0.35; cursor:not-allowed; }
+.btn-primary{ background:var(--lime); color:var(--bg); border-color:var(--lime); }
+.btn-primary:hover{ background:#d9ff5c; }
+.btn-danger{ border-color:rgba(255,77,77,0.4); color:var(--red); }
+.btn-danger:hover{ background:rgba(255,77,77,0.08); }
+
+/* ---------- Question jump grid ---------- */
+.jumpgrid{ display:flex; flex-wrap:wrap; gap:6px; margin:18px 0; }
+.jumpgrid .jbtn{
+  width:32px; height:32px; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,0.02);
+  color:var(--muted); font-size:12px; display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.jumpgrid .jbtn.answered{ border-color:var(--blue); color:var(--blue); }
+.jumpgrid .jbtn.current{ border-color:var(--lime); color:var(--lime); background:rgba(200,241,53,0.1);}
+
+/* ---------- Results ---------- */
+.results-hero{ text-align:center; padding:20px; }
+.ring-wrap{ position:relative; width:220px; height:220px; margin:10px auto; }
+.ring-wrap svg{ transform:rotate(-90deg); }
+.ring-track{ fill:none; stroke:rgba(255,255,255,0.08); stroke-width:14; }
+.ring-fill{ fill:none; stroke-width:14; stroke-linecap:round; transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1); }
+.ring-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.ring-center .pct{ font-size:38px; font-weight:800; }
+.ring-center .frac{ font-size:13px; color:var(--muted); margin-top:2px; }
+.grade-badge{ display:inline-block; margin-top:14px; padding:8px 22px; border-radius:99px; font-weight:800; letter-spacing:.06em; font-size:15px; }
+.grade-badge.fail{ background:rgba(255,77,77,0.15); color:var(--red); border:1px solid rgba(255,77,77,0.4); }
+.grade-badge.pass{ background:rgba(200,241,53,0.15); color:var(--lime); border:1px solid var(--lime-glow); }
+.grade-badge.master{ background:rgba(77,255,145,0.15); color:var(--green); border:1px solid rgba(77,255,145,0.4); }
+.results-actions{ display:flex; gap:12px; justify-content:center; margin-top:22px; flex-wrap:wrap; }
+
+/* ---------- Review accordion ---------- */
+.review-toolbar{ display:flex; justify-content:space-between; align-items:center; margin:28px 0 14px; flex-wrap:wrap; gap:10px;}
+.lang-toggle{ display:flex; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.lang-toggle button{ padding:8px 16px; background:transparent; border:none; color:var(--muted); font-family:var(--font-main); font-weight:600; cursor:pointer; font-size:13px;}
+.lang-toggle button.active{ background:var(--lime); color:var(--bg); }
+.review-item{ margin-bottom:10px; overflow:hidden; }
+.review-head{ padding:16px 18px; display:flex; align-items:center; gap:12px; cursor:pointer; }
+.review-head .ri-status{ flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;}
+.review-head .ri-status.correct{ background:rgba(77,255,145,0.15); color:var(--green); }
+.review-head .ri-status.wrong{ background:rgba(255,77,77,0.15); color:var(--red); }
+.review-head .ri-qtext{ flex:1; font-size:14.5px; }
+.review-head .chev{ color:var(--muted); transition:transform .2s; flex:0 0 auto;}
+.review-item.open .chev{ transform:rotate(180deg); }
+.review-body{ max-height:0; overflow:hidden; transition:max-height .3s ease; padding:0 18px; }
+.review-item.open .review-body{ max-height:1400px; padding:0 18px 18px; }
+.review-body .row{ margin-top:10px; font-size:14px; }
+.review-body .row .lab{ color:var(--muted); font-size:12px; letter-spacing:.05em; margin-bottom:3px; }
+.review-body .ans-pill{ display:inline-block; padding:3px 10px; border-radius:99px; font-size:12.5px; margin:2px 4px 2px 0; border:1px solid var(--border); }
+.review-body .ans-pill.correct{ border-color:rgba(77,255,145,0.5); color:var(--green); }
+.review-body .ans-pill.wrong{ border-color:rgba(255,77,77,0.5); color:var(--red); }
+.review-body .exp-box{ margin-top:8px; padding:12px 14px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid var(--border); font-size:14px; line-height:1.6;}
+
+/* ---------- Custom modal ---------- */
+#modal-overlay{ position:fixed; inset:0; background:rgba(6,8,14,0.72); backdrop-filter:blur(4px); z-index:200; display:none; align-items:center; justify-content:center; padding:20px;}
+#modal-overlay.active{ display:flex; }
+#modal-box{ max-width:420px; width:100%; padding:26px; text-align:center; }
+#modal-box h4{ font-size:18px; margin-bottom:10px; }
+#modal-box p{ color:var(--muted); font-size:14.5px; line-height:1.6; }
+#modal-box .modal-actions{ display:flex; gap:10px; margin-top:22px; justify-content:center; }
+
+footer.foot{ text-align:center; color:var(--muted); font-size:12px; padding:24px; }
+
+@media (max-width:640px){
+  .ring-wrap{ width:180px; height:180px;}
+  .q-card{ padding:20px; }
+  #hud{ font-size:15px; padding:8px 12px; }
+}
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; }
+}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<canvas id="confetti-canvas"></canvas>
+
+<div id="app">
+
+  <!-- ============ START SCREEN ============ -->
+  <section id="screen-start" class="screen active">
+    <div class="wrap">
+      <div class="hero">
+        <div class="brand">SPACEZ</div>
+        <h1>CEWA Mock Exam 21</h1>
+        <p>Wave Personality, Extensions &amp; Complex Corrective Structures</p>
+        <p class="th">อุปนิสัยคลื่น การยืดตัว และโครงสร้างปรับฐานเชิงซ้อน</p>
+      </div>
+      <div class="card-grid" id="variant-cards"></div>
+    </div>
+    <footer class="foot">CEWA Mock Exam Series · SPACEZ Exam Hub · Frost &amp; Prechter Standard</footer>
+  </section>
+
+  <!-- ============ EXAM SCREEN ============ -->
+  <section id="screen-exam" class="screen">
+    <div class="wrap">
+      <div class="exam-topbar">
+        <div class="label" id="exam-label"></div>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="jumpgrid" id="jumpgrid"></div>
+      <div class="glass q-card" id="q-card">
+        <div class="q-index" id="q-index"></div>
+        <div class="q-text" id="q-text"></div>
+        <div class="q-hint" id="q-hint"></div>
+        <div class="choices" id="choices"></div>
+      </div>
+      <div class="nav-row">
+        <button class="btn" id="btn-prev" data-action="prev">← ก่อนหน้า</button>
+        <button class="btn btn-danger" id="btn-submit" data-action="request-submit">ส่งคำตอบ</button>
+        <button class="btn btn-primary" id="btn-next" data-action="next">ถัดไป →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RESULTS SCREEN ============ -->
+  <section id="screen-results" class="screen">
+    <div class="wrap">
+      <div class="glass results-hero">
+        <div class="ring-wrap">
+          <svg viewBox="0 0 220 220" width="220" height="220">
+            <circle class="ring-track" cx="110" cy="110" r="94"></circle>
+            <circle class="ring-fill" id="ring-fill" cx="110" cy="110" r="94"></circle>
+          </svg>
+          <div class="ring-center">
+            <div class="pct" id="result-pct">0%</div>
+            <div class="frac" id="result-frac">0 / 0</div>
+          </div>
+        </div>
+        <div class="grade-badge" id="grade-badge">—</div>
+        <div class="results-actions">
+          <button class="btn" data-action="go-home">กลับหน้าหลัก</button>
+          <button class="btn btn-primary" data-action="retake">ทำข้อสอบชุดนี้อีกครั้ง</button>
+        </div>
+      </div>
+
+      <div class="review-toolbar">
+        <h3>เฉลยและคำอธิบาย · Answer Review</h3>
+        <div class="lang-toggle" id="lang-toggle">
+          <button data-lang="en" class="active">EN</button>
+          <button data-lang="th">TH</button>
+        </div>
+      </div>
+      <div id="review-list"></div>
+    </div>
+  </section>
+
+</div>
+
+<!-- HUD timer (only shown during exam) -->
+<div id="hud" class="glass" style="display:none;">
+  <span class="dot"></span><span id="hud-time">45:00</span>
+</div>
+
+<!-- Custom modal (replaces window.confirm) -->
+<div id="modal-overlay">
+  <div class="glass" id="modal-box">
+    <h4 id="modal-title">ยืนยัน</h4>
+    <p id="modal-msg"></p>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-cancel">ยกเลิก</button>
+      <button class="btn btn-primary" data-action="modal-confirm">ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.__CEWA21_DATA__ = {
+  examTitle: "CEWA Mock Exam 21",
+  subtitleEn: "Wave Personality, Extensions &amp; Complex Corrective Structures",
+  subtitleTh: "อุปนิสัยคลื่น การยืดตัว และโครงสร้างปรับฐานเชิงซ้อน",
+  variants: {
+    v1: { key:"v1", label:"CEWA I", labelTh:"ระดับที่ 1", timeMin:45, type:"single",
+          topicsEn:"Impulse waves, corrective structures, Fibonacci, wave degrees, guidelines",
+          topicsTh:"คลื่นแรงผลัก, โครงสร้างปรับฐาน, ฟีโบนักชี, องศาคลื่น, แนวทางปฏิบัติ",
+          questions: [{"id": "v1q01", "text": "In a standard Elliott impulse wave, how many sub-waves compose the completed sequence in the direction of the larger trend?", "choices": [{"id": "v1q01c_a", "letter": "a", "text": "Five sub-waves (1-2-3-4-5)"}, {"id": "v1q01c_b", "letter": "b", "text": "Eight sub-waves"}, {"id": "v1q01c_c", "letter": "c", "text": "Seven sub-waves"}, {"id": "v1q01c_d", "letter": "d", "text": "Three sub-waves"}], "correct": ["a"], "expEn": "Motive (impulse) waves always subdivide into five waves — three actionary waves (1, 3, 5) and two corrective waves (2, 4) — moving in the direction of the trend one degree higher.", "expTh": "คลื่นแรงผลัก (motive/impulse) จะแบ่งย่อยเป็น 5 คลื่นเสมอ คือคลื่นเคลื่อนไหวตามเทรนด์ 3 คลื่น (1, 3, 5) และคลื่นปรับฐาน 2 คลื่น (2, 4) โดยเคลื่อนไปในทิศทางเดียวกับเทรนด์ใหญ่ที่องศาสูงกว่า"}, {"id": "v1q02", "text": "Which statement correctly describes the rule governing Wave 2's retracement of Wave 1?", "choices": [{"id": "v1q02c_a", "letter": "a", "text": "Wave 2 can never retrace beyond the starting point (origin) of Wave 1"}, {"id": "v1q02c_b", "letter": "b", "text": "Wave 2 must retrace at least 50% of Wave 1"}, {"id": "v1q02c_c", "letter": "c", "text": "Wave 2 can never exceed the price length of Wave 1"}, {"id": "v1q02c_d", "letter": "d", "text": "Wave 2 must always be shorter in time than Wave 4"}], "correct": ["a"], "expEn": "This is one of the three inviolable rules. If price moves beyond wave 1's origin, the count is invalid and must be relabeled.", "expTh": "นี่คือหนึ่งในสามกฎเหล็กของ Elliott Wave หากราคาย้อนกลับเลยจุดเริ่มต้นของคลื่น 1 การนับคลื่นนั้นถือว่าผิดพลาดและต้องปรับป้ายใหม่"}, {"id": "v1q03", "text": "Among the three actionary waves (1, 3, 5) in an impulse, which one can never be the shortest?", "choices": [{"id": "v1q03c_a", "letter": "a", "text": "Wave 5"}, {"id": "v1q03c_b", "letter": "b", "text": "Wave 1"}, {"id": "v1q03c_c", "letter": "c", "text": "None — all three must always be equal in length"}, {"id": "v1q03c_d", "letter": "d", "text": "Wave 3"}], "correct": ["d"], "expEn": "Wave 3 is never the shortest of the three actionary waves; it is frequently the longest, especially in stock market impulses.", "expTh": "คลื่น 3 จะไม่มีวันเป็นคลื่นที่สั้นที่สุดในบรรดาคลื่นเคลื่อนไหวตามเทรนด์ทั้งสาม (1, 3, 5) และมักเป็นคลื่นที่ยาวที่สุดโดยเฉพาะในดัชนีหุ้น"}, {"id": "v1q04", "text": "The 'no overlap' rule in a standard (non-diagonal) impulse in a non-leveraged cash market states that:", "choices": [{"id": "v1q04c_a", "letter": "a", "text": "Wave 4 may not enter the price territory of Wave 1"}, {"id": "v1q04c_b", "letter": "b", "text": "Wave 2 may not enter the price territory of Wave 4"}, {"id": "v1q04c_c", "letter": "c", "text": "Wave 5 may not enter the price territory of Wave 3"}, {"id": "v1q04c_d", "letter": "d", "text": "Wave 1 may not enter the price territory of Wave 3"}], "correct": ["a"], "expEn": "In standard, non-diagonal impulses within non-leveraged cash markets, wave 4 must not overlap wave 1's price territory — a core structural rule (diagonals are the recognized exception).", "expTh": "ในคลื่นแรงผลักมาตรฐานที่ไม่ใช่ diagonal และในตลาดเงินสดที่ไม่มีเลเวอเรจ คลื่น 4 ต้องไม่ทับซ้อนกับช่วงราคาของคลื่น 1 ซึ่งถือเป็นกฎโครงสร้างหลัก (diagonal เป็นข้อยกเว้นที่ยอมรับได้)"}, {"id": "v1q05", "text": "Which waves in a five-wave impulse move in the same direction as the larger trend (actionary/motive waves)?", "choices": [{"id": "v1q05c_a", "letter": "a", "text": "Waves 3, 4, and 5"}, {"id": "v1q05c_b", "letter": "b", "text": "Waves 1, 2, and 3"}, {"id": "v1q05c_c", "letter": "c", "text": "Waves 2 and 4"}, {"id": "v1q05c_d", "letter": "d", "text": "Waves 1, 3, and 5"}], "correct": ["d"], "expEn": "Waves 1, 3, and 5 are the actionary, trend-following waves; waves 2 and 4 are corrective interruptions against the trend.", "expTh": "คลื่น 1, 3 และ 5 คือคลื่นที่เคลื่อนไปตามทิศทางเทรนด์ใหญ่ ส่วนคลื่น 2 และ 4 เป็นคลื่นปรับฐานที่สวนทางเทรนด์ชั่วคราว"}, {"id": "v1q06", "text": "Waves 2 and 4 within an impulse are best described as:", "choices": [{"id": "v1q06c_a", "letter": "a", "text": "Corrective waves that interrupt the underlying trend"}, {"id": "v1q06c_b", "letter": "b", "text": "Waves that must always be equal in length"}, {"id": "v1q06c_c", "letter": "c", "text": "Motive waves that extend the trend"}, {"id": "v1q06c_d", "letter": "d", "text": "Diagonal triangles exclusively"}], "correct": ["a"], "expEn": "Waves 2 and 4 correct the preceding actionary wave and, per the alternation guideline, typically differ from one another in form (sharp vs. sideways).", "expTh": "คลื่น 2 และ 4 เป็นคลื่นปรับฐานที่แก้ไขคลื่นเคลื่อนไหวก่อนหน้า และตามหลัก alternation มักมีรูปแบบต่างกัน เช่น รูปแบบหนึ่งรุนแรงอีกรูปแบบหนึ่งเคลื่อนไหวออกด้านข้าง"}, {"id": "v1q07", "text": "When Wave 3 is the extended wave in an impulse, which price relationship is commonly observed?", "choices": [{"id": "v1q07c_a", "letter": "a", "text": "Wave 3 shows no measurable Fibonacci relationship to Wave 1"}, {"id": "v1q07c_b", "letter": "b", "text": "Wave 3 is often approximately 1.618 times the length of Wave 1"}, {"id": "v1q07c_c", "letter": "c", "text": "Wave 3 is always shorter than Wave 2"}, {"id": "v1q07c_d", "letter": "d", "text": "Wave 3 always equals Wave 1 exactly"}], "correct": ["b"], "expEn": "When wave 3 extends — the most common extension in equity indices — its length frequently approximates 1.618 (or 2.618) times wave 1.", "expTh": "เมื่อคลื่น 3 เป็นคลื่นที่ยืดตัว ซึ่งพบบ่อยที่สุดในดัชนีหุ้น ความยาวของคลื่น 3 มักใกล้เคียง 1.618 เท่า (หรือ 2.618 เท่า) ของคลื่น 1"}, {"id": "v1q08", "text": "In a standard impulse wave, which sub-waves themselves subdivide into five smaller waves?", "choices": [{"id": "v1q08c_a", "letter": "a", "text": "Waves 1, 3, and 5"}, {"id": "v1q08c_b", "letter": "b", "text": "All five waves equally"}, {"id": "v1q08c_c", "letter": "c", "text": "Waves 2 and 4"}, {"id": "v1q08c_d", "letter": "d", "text": "Only Wave 3"}], "correct": ["a"], "expEn": "The actionary waves (1, 3, 5) subdivide into five sub-waves of one lower degree, while the corrective waves (2, 4) subdivide into three (or a variation such as a flat or triangle).", "expTh": "คลื่นเคลื่อนไหวตามเทรนด์ (1, 3, 5) จะแบ่งย่อยเป็น 5 คลื่นย่อยในองศาที่ต่ำกว่า ส่วนคลื่นปรับฐาน (2, 4) จะแบ่งย่อยเป็น 3 คลื่น หรือรูปแบบอื่น เช่น แฟลตหรือสามเหลี่ยม"}, {"id": "v1q09", "text": "A diagonal triangle variation of the impulse differs from a standard impulse mainly because:", "choices": [{"id": "v1q09c_a", "letter": "a", "text": "It can never occur at the wave 5 or wave C position"}, {"id": "v1q09c_b", "letter": "b", "text": "Wave 4 is permitted to overlap the price territory of Wave 1"}, {"id": "v1q09c_c", "letter": "c", "text": "It contains only three waves in total"}, {"id": "v1q09c_d", "letter": "d", "text": "Wave 3 must be the shortest wave"}], "correct": ["b"], "expEn": "Diagonal triangles are the one motive-wave pattern where overlap between waves 1 and 4 is allowed, reflecting a wedge-shaped, converging structure.", "expTh": "สามเหลี่ยมทแยง (diagonal) เป็นรูปแบบคลื่นแรงผลักแบบเดียวที่อนุญาตให้คลื่น 1 และคลื่น 4 ทับซ้อนกันได้ สะท้อนโครงสร้างรูปลิ่มที่บีบตัวเข้าหากัน"}, {"id": "v1q10", "text": "Which of the following is generally true about Wave 1 within an impulse?", "choices": [{"id": "v1q10c_a", "letter": "a", "text": "Wave 1 never subdivides into smaller waves"}, {"id": "v1q10c_b", "letter": "b", "text": "Wave 1 is frequently the shortest actionary wave and is often mistaken for a corrective move against the prior trend"}, {"id": "v1q10c_c", "letter": "c", "text": "Wave 1 must retrace 100% of the prior trend"}, {"id": "v1q10c_d", "letter": "d", "text": "Wave 1 is always the longest actionary wave"}], "correct": ["b"], "expEn": "Wave 1 often appears corrective in character to most observers and tends to be the shortest of the motive waves, since broad sentiment has not yet shifted.", "expTh": "คลื่น 1 มักดูเหมือนเป็นคลื่นปรับฐานในสายตาผู้สังเกตส่วนใหญ่ และมักเป็นคลื่นเคลื่อนไหวที่สั้นที่สุด เพราะความเชื่อมั่นของตลาดในวงกว้างยังไม่เปลี่ยนทิศทาง"}, {"id": "v1q11", "text": "What is the internal wave structure of a zigzag correction?", "choices": [{"id": "v1q11c_a", "letter": "a", "text": "5-3-3"}, {"id": "v1q11c_b", "letter": "b", "text": "3-3-3"}, {"id": "v1q11c_c", "letter": "c", "text": "3-3-5"}, {"id": "v1q11c_d", "letter": "d", "text": "5-3-5 (Wave A: five, Wave B: three, Wave C: five)"}], "correct": ["d"], "expEn": "A zigzag subdivides A(5)-B(3)-C(5) and is typically sharp, retracing a substantial portion of the prior impulse in the opposite direction.", "expTh": "ซิกแซกแบ่งย่อยเป็น A(5)-B(3)-C(5) และมักเป็นรูปแบบที่รุนแรง ย่อตัวสวนทางคลื่นแรงผลักก่อนหน้าในสัดส่วนที่มาก"}, {"id": "v1q12", "text": "In a regular flat correction, which relationship typically holds among Waves A, B, and C?", "choices": [{"id": "v1q12c_a", "letter": "a", "text": "Wave B retraces roughly 90-100% of Wave A, and Wave C is approximately equal in length to Wave A"}, {"id": "v1q12c_b", "letter": "b", "text": "Wave A is always the longest of the three waves"}, {"id": "v1q12c_c", "letter": "c", "text": "Wave C is always shorter than Wave B"}, {"id": "v1q12c_d", "letter": "d", "text": "Wave B always exceeds the starting point of Wave A"}], "correct": ["a"], "expEn": "In a regular flat, B nearly fully retraces A (about 90-100%), and C is similar in length to A, giving the pattern its sideways, flat appearance.", "expTh": "ในแฟลตแบบปกติ คลื่น B จะย่อตัวกลับเกือบเท่าคลื่น A (ประมาณ 90-100%) และคลื่น C มีความยาวใกล้เคียงกับคลื่น A ทำให้โครงสร้างดูเคลื่อนไหวออกด้านข้าง"}, {"id": "v1q13", "text": "An expanded (irregular) flat correction is distinguished by which feature?", "choices": [{"id": "v1q13c_a", "letter": "a", "text": "The pattern has only three sub-waves with no further subdivision at all"}, {"id": "v1q13c_b", "letter": "b", "text": "Wave B moves beyond the starting point of Wave A, and Wave C extends beyond the ending point of Wave A"}, {"id": "v1q13c_c", "letter": "c", "text": "Wave C is always shorter than Wave A"}, {"id": "v1q13c_d", "letter": "d", "text": "Wave B never exceeds the length of Wave A"}], "correct": ["b"], "expEn": "In an expanded flat, B travels past the origin of A, and C travels beyond the terminus of A, making the whole structure larger than a regular flat.", "expTh": "ในแฟลตแบบขยาย (expanded flat) คลื่น B จะเคลื่อนเลยจุดเริ่มต้นของคลื่น A และคลื่น C จะเคลื่อนเลยจุดสิ้นสุดของคลื่น A ทำให้โครงสร้างโดยรวมใหญ่กว่าแฟลตปกติ"}, {"id": "v1q14", "text": "A 'running flat' correction is characterized by which behavior?", "choices": [{"id": "v1q14c_a", "letter": "a", "text": "Wave B always retraces less than 50% of Wave A"}, {"id": "v1q14c_b", "letter": "b", "text": "It can only occur at the Wave 4 position"}, {"id": "v1q14c_c", "letter": "c", "text": "Wave C always exceeds Wave A by 161.8%"}, {"id": "v1q14c_d", "letter": "d", "text": "Wave C fails to travel the full length of Wave A, falling short of the prior price extreme"}], "correct": ["d"], "expEn": "A running flat reflects strong underlying trend force — wave C falls short of fully retracing, signaling that the next impulse is likely to be powerful.", "expTh": "running flat สะท้อนแรงเทรนด์ที่แข็งแกร่งอยู่เบื้องหลัง เพราะคลื่น C ไม่สามารถย่อตัวได้ครบตามคลื่น A ซึ่งมักเป็นสัญญาณว่าคลื่นแรงผลักถัดไปจะมีพลังมาก"}, {"id": "v1q15", "text": "Contracting triangles subdivide into how many overlapping legs, and what is each leg's typical internal structure?", "choices": [{"id": "v1q15c_a", "letter": "a", "text": "Three legs, each a five-wave structure"}, {"id": "v1q15c_b", "letter": "b", "text": "Seven legs of mixed structure"}, {"id": "v1q15c_c", "letter": "c", "text": "Five legs, labeled A-B-C-D-E, each normally a three-wave (corrective) structure"}, {"id": "v1q15c_d", "letter": "d", "text": "Nine legs of mixed structure"}], "correct": ["c"], "expEn": "Triangles (contracting, expanding, and barrier) have five overlapping legs, A through E, each of which is normally itself a three-wave corrective structure.", "expTh": "สามเหลี่ยม (ทั้งแบบหด, ขยาย และ barrier) มีขา 5 ขาที่ทับซ้อนกัน ตั้งแต่ A ถึง E โดยแต่ละขามักเป็นโครงสร้างปรับฐาน 3 คลื่นย่อย"}, {"id": "v1q16", "text": "In a contracting triangle, how do successive legs (A, B, C, D, E) generally behave?", "choices": [{"id": "v1q16c_a", "letter": "a", "text": "Legs alternate unpredictably between five-wave and three-wave subdivisions"}, {"id": "v1q16c_b", "letter": "b", "text": "Each successive leg becomes progressively larger"}, {"id": "v1q16c_c", "letter": "c", "text": "Each leg must retrace exactly 61.8% of the prior leg"}, {"id": "v1q16c_d", "letter": "d", "text": "Each successive leg becomes progressively smaller in price range, converging toward an apex"}], "correct": ["d"], "expEn": "A contracting triangle's boundary trendlines converge because each leg travels a shorter distance than the one before it, producing the wedge-like shape.", "expTh": "เส้นแนวโน้มขอบของสามเหลี่ยมแบบหดตัวจะบีบเข้าหากัน เพราะแต่ละขาเคลื่อนที่ในระยะทางสั้นกว่าขาก่อนหน้า ทำให้เกิดรูปทรงคล้ายลิ่ม"}, {"id": "v1q17", "text": "In which structural positions do triangles most commonly appear?", "choices": [{"id": "v1q17c_a", "letter": "a", "text": "As Wave 4 of an impulse, or as Wave B/X of a larger correction"}, {"id": "v1q17c_b", "letter": "b", "text": "Triangles never appear within corrective structures"}, {"id": "v1q17c_c", "letter": "c", "text": "Only as Wave 5 of an impulse"}, {"id": "v1q17c_d", "letter": "d", "text": "Only as Wave 1 of an impulse"}], "correct": ["a"], "expEn": "Triangles most frequently occur as wave 4, as the B wave of a larger correction, or as the final X-wave separator prior to a thrust — rarely at wave 2.", "expTh": "สามเหลี่ยมมักปรากฏเป็นคลื่น 4 ของคลื่นแรงผลัก หรือเป็นคลื่น B/X ของโครงสร้างปรับฐานที่ใหญ่กว่า และพบได้น้อยมากในตำแหน่งคลื่น 2"}, {"id": "v1q18", "text": "What typically happens immediately after a triangle pattern completes?", "choices": [{"id": "v1q18c_a", "letter": "a", "text": "Another triangle of equal size immediately forms"}, {"id": "v1q18c_b", "letter": "b", "text": "A sharp 'thrust' move occurs whose length approximates the widest leg of the triangle"}, {"id": "v1q18c_c", "letter": "c", "text": "A prolonged sideways consolidation with no clear direction"}, {"id": "v1q18c_d", "letter": "d", "text": "An immediate trend reversal of much larger degree"}], "correct": ["b"], "expEn": "Triangles resolve with a thrust in the direction of the wave that preceded the triangle, and the thrust's length is often approximated by the triangle's widest leg (usually A or B).", "expTh": "สามเหลี่ยมมักจบลงด้วยการพุ่งตัว (thrust) ไปในทิศทางเดียวกับคลื่นก่อนหน้าสามเหลี่ยม และความยาวของการพุ่งตัวมักใกล้เคียงกับขาที่กว้างที่สุดของสามเหลี่ยม (มักเป็นขา A หรือ B)"}, {"id": "v1q19", "text": "A double three or triple three correction is composed of which elements?", "choices": [{"id": "v1q19c_a", "letter": "a", "text": "Three consecutive zigzags with no connecting waves"}, {"id": "v1q19c_b", "letter": "b", "text": "A single flat followed directly by a triangle with no X wave between them"}, {"id": "v1q19c_c", "letter": "c", "text": "Two or three simple corrective patterns joined by connector waves labeled X"}, {"id": "v1q19c_d", "letter": "d", "text": "Two impulse waves joined by a single wave 4"}], "correct": ["c"], "expEn": "Combination corrections link simple corrective structures (zigzags, flats, triangles) via one or more X waves, producing an extended, moderately trending or sideways correction.", "expTh": "โครงสร้างคอมบิเนชัน (double three หรือ triple three) เชื่อมโยงคลื่นปรับฐานแบบง่าย (ซิกแซก, แฟลต, สามเหลี่ยม) เข้าด้วยกันด้วยคลื่น X หนึ่งคลื่นขึ้นไป ทำให้เกิดการปรับฐานที่ยืดเยื้อและมักเคลื่อนไหวออกด้านข้าง"}, {"id": "v1q20", "text": "Compared with motive waves, corrective waves generally behave in which way?", "choices": [{"id": "v1q20c_a", "letter": "a", "text": "They always subdivide into exactly five waves"}, {"id": "v1q20c_b", "letter": "b", "text": "They move with the trend of one larger degree"}, {"id": "v1q20c_c", "letter": "c", "text": "They never retrace any portion of the prior wave"}, {"id": "v1q20c_d", "letter": "d", "text": "They move against the trend of one larger degree and typically subdivide into three waves (or variations such as 3-3-5)"}], "correct": ["d"], "expEn": "Correctives move counter to the larger trend, and their internal structure is most often threefold, with triangles and combinations as elaborations of that basic theme.", "expTh": "คลื่นปรับฐานเคลื่อนสวนทางกับเทรนด์องศาที่ใหญ่กว่า และโครงสร้างภายในมักเป็นแบบ 3 คลื่นเป็นหลัก โดยสามเหลี่ยมและคอมบิเนชันคือรูปแบบต่อยอดจากแนวคิดพื้นฐานนี้"}, {"id": "v1q21", "text": "Which Fibonacci ratio is most commonly associated with a Wave 2 retracement of Wave 1?", "choices": [{"id": "v1q21c_a", "letter": "a", "text": "1.618 times Wave 1"}, {"id": "v1q21c_b", "letter": "b", "text": "0.618 (61.8%) of Wave 1"}, {"id": "v1q21c_c", "letter": "c", "text": "2.618 times Wave 1"}, {"id": "v1q21c_d", "letter": "d", "text": "Exactly 0.236 of Wave 1, with no other ratio possible"}], "correct": ["b"], "expEn": "Wave 2 frequently retraces a deep 61.8% of wave 1 (sometimes 50% or even close to 78.6%), though it may never retrace a full 100%.", "expTh": "คลื่น 2 มักย่อตัวลึกถึง 61.8% ของคลื่น 1 (บางครั้งอาจเป็น 50% หรือใกล้เคียง 78.6%) แต่ต้องไม่ย่อตัวครบ 100% เด็ดขาด"}, {"id": "v1q22", "text": "When Wave 3 is the extended wave, which Fibonacci extension target is commonly used for Wave 3's length?", "choices": [{"id": "v1q22c_a", "letter": "a", "text": "4.236 times the length of Wave 1"}, {"id": "v1q22c_b", "letter": "b", "text": "Exactly equal to Wave 1"}, {"id": "v1q22c_c", "letter": "c", "text": "1.618 times the length of Wave 1"}, {"id": "v1q22c_d", "letter": "d", "text": "0.382 times the length of Wave 1"}], "correct": ["c"], "expEn": "When wave 3 extends beyond wave 1 — the most common extension pattern — 161.8% of wave 1's length is a frequently observed Fibonacci projection for wave 3.", "expTh": "เมื่อคลื่น 3 ยืดตัวเกินคลื่น 1 ซึ่งเป็นรูปแบบการยืดตัวที่พบบ่อยที่สุด เป้าหมาย 161.8% ของความยาวคลื่น 1 มักถูกใช้เป็นเป้าหมายฟีโบนักชีของคลื่น 3"}, {"id": "v1q23", "text": "When Wave 3 is extended, which Fibonacci relationship is commonly cited for Wave 4's retracement?", "choices": [{"id": "v1q23c_a", "letter": "a", "text": "Wave 4 is always exactly equal to Wave 2 in price length"}, {"id": "v1q23c_b", "letter": "b", "text": "There is never a Fibonacci relationship linking Wave 4 to Wave 3"}, {"id": "v1q23c_c", "letter": "c", "text": "Wave 4 must always equal Wave 1 in time duration"}, {"id": "v1q23c_d", "letter": "d", "text": "Wave 4 often retraces about 38.2% of Wave 3"}], "correct": ["d"], "expEn": "A common guideline is that wave 4 often retraces close to 38.2% of wave 3, while waves 2 and 4 tend to display alternating (differing) depth and character relative to each other.", "expTh": "แนวทางที่พบบ่อยคือคลื่น 4 มักย่อตัวประมาณ 38.2% ของคลื่น 3 และคลื่น 2 กับคลื่น 4 มักมีความลึกและรูปแบบที่แตกต่างกันตามหลัก alternation"}, {"id": "v1q24", "text": "The 'wave equality' guideline most often applies to which pair of waves?", "choices": [{"id": "v1q24c_a", "letter": "a", "text": "Wave A and Wave B in every flat correction"}, {"id": "v1q24c_b", "letter": "b", "text": "Wave 1 and Wave 3, always without exception"}, {"id": "v1q24c_c", "letter": "c", "text": "Wave 2 and Wave 4, always without exception"}, {"id": "v1q24c_d", "letter": "d", "text": "Wave 1 and Wave 5, particularly when Wave 3 is the extended wave"}], "correct": ["d"], "expEn": "When wave 3 is extended — the most common case — waves 1 and 5 tend toward equality in length, or wave 5 relates to wave 1 by a ratio such as 0.618 or 1.618.", "expTh": "เมื่อคลื่น 3 เป็นคลื่นที่ยืดตัว ซึ่งเป็นกรณีที่พบบ่อยที่สุด คลื่น 1 และคลื่น 5 มักมีแนวโน้มยาวใกล้เคียงกัน หรือคลื่น 5 สัมพันธ์กับคลื่น 1 ด้วยอัตราส่วนเช่น 0.618 หรือ 1.618"}, {"id": "v1q25", "text": "In a zigzag correction, which Fibonacci relationship is often used to project the length of Wave C relative to Wave A?", "choices": [{"id": "v1q25c_a", "letter": "a", "text": "Wave C often equals 1.0 or 1.618 times the length of Wave A"}, {"id": "v1q25c_b", "letter": "b", "text": "Wave C shows no Fibonacci relationship to Wave A whatsoever"}, {"id": "v1q25c_c", "letter": "c", "text": "Wave C is always exactly 2.618 times Wave A"}, {"id": "v1q25c_d", "letter": "d", "text": "Wave C always equals 0.236 times Wave A"}], "correct": ["a"], "expEn": "In zigzags, C frequently equals A (100%) or extends to 161.8% of A, especially when wave C itself is impulsive and forceful.", "expTh": "ในซิกแซก คลื่น C มักมีความยาวเท่ากับคลื่น A (100%) หรือขยายไปถึง 161.8% ของคลื่น A โดยเฉพาะเมื่อคลื่น C เองมีลักษณะเป็นคลื่นแรงผลักที่ทรงพลัง"}, {"id": "v1q26", "text": "Dividing a number in the Fibonacci sequence by the number two places to its right yields approximately which ratio?", "choices": [{"id": "v1q26c_a", "letter": "a", "text": "Approximately 0.786"}, {"id": "v1q26c_b", "letter": "b", "text": "Approximately 0.618"}, {"id": "v1q26c_c", "letter": "c", "text": "Approximately 0.382"}, {"id": "v1q26c_d", "letter": "d", "text": "Approximately 1.618"}], "correct": ["c"], "expEn": "Dividing a Fibonacci number by the number two positions later in the sequence converges toward approximately 0.382, one of the core ratios used in retracement analysis.", "expTh": "การนำตัวเลขในลำดับฟีโบนักชีหารด้วยตัวเลขที่อยู่ห่างออกไปสองตำแหน่งจะได้ค่าประมาณ 0.382 ซึ่งเป็นหนึ่งในอัตราส่วนหลักที่ใช้ในการวิเคราะห์การย่อตัว"}, {"id": "v1q27", "text": "The golden ratio, 1.618 (phi), is derived from the Fibonacci sequence by which operation?", "choices": [{"id": "v1q27c_a", "letter": "a", "text": "Subtracting two consecutive Fibonacci numbers from each other"}, {"id": "v1q27c_b", "letter": "b", "text": "Dividing a number by the number three positions prior"}, {"id": "v1q27c_c", "letter": "c", "text": "Dividing a number in the sequence by the number immediately preceding it, as the sequence progresses"}, {"id": "v1q27c_d", "letter": "d", "text": "Multiplying any two consecutive Fibonacci numbers together"}], "correct": ["c"], "expEn": "As the Fibonacci sequence progresses, the ratio of a term to the one immediately preceding it converges on 1.618, known as phi or the golden ratio.", "expTh": "เมื่อลำดับฟีโบนักชีดำเนินไป อัตราส่วนของตัวเลขหนึ่งต่อตัวเลขก่อนหน้าจะลู่เข้าสู่ค่า 1.618 ซึ่งรู้จักกันในชื่อ phi หรืออัตราส่วนทองคำ"}, {"id": "v1q28", "text": "Which Fibonacci retracement level is most commonly associated with a relatively shallow Wave 4 correction?", "choices": [{"id": "v1q28c_a", "letter": "a", "text": "100%"}, {"id": "v1q28c_b", "letter": "b", "text": "38.2%"}, {"id": "v1q28c_c", "letter": "c", "text": "78.6%"}, {"id": "v1q28c_d", "letter": "d", "text": "61.8%"}], "correct": ["b"], "expEn": "Wave 4 corrections are often shallower than wave 2, frequently retracing near 38.2% of wave 3, consistent with the alternation guideline regarding retracement depth.", "expTh": "คลื่น 4 มักย่อตัวตื้นกว่าคลื่น 2 โดยมักย่อตัวใกล้ 38.2% ของคลื่น 3 ซึ่งสอดคล้องกับหลัก alternation ในด้านความลึกของการย่อตัว"}, {"id": "v1q29", "text": "In Elliott Wave practice, what is the primary purpose of Fibonacci time analysis?", "choices": [{"id": "v1q29c_a", "letter": "a", "text": "To replace price-based wave counting entirely"}, {"id": "v1q29c_b", "letter": "b", "text": "To estimate probable time windows for turning points, as a secondary tool alongside price-based wave counts"}, {"id": "v1q29c_c", "letter": "c", "text": "To guarantee the exact calendar date of a trend reversal"}, {"id": "v1q29c_d", "letter": "d", "text": "To determine with certainty which wave is extended"}], "correct": ["b"], "expEn": "Fibonacci time ratios can highlight windows where a turn is more probable, but they are supplementary and considerably less reliable than the price-based rules and guidelines.", "expTh": "อัตราส่วนฟีโบนักชีด้านเวลาสามารถบ่งชี้ช่วงเวลาที่มีโอกาสเกิดจุดกลับตัวได้ แต่เป็นเพียงเครื่องมือเสริม และมีความน่าเชื่อถือต่ำกว่ากฎและแนวทางที่อิงจากราคาอย่างมาก"}, {"id": "v1q30", "text": "When Wave 5 (rather than Wave 3) is the extended wave, which Fibonacci relationship is more commonly observed?", "choices": [{"id": "v1q30c_a", "letter": "a", "text": "No Fibonacci relationship is possible in this scenario"}, {"id": "v1q30c_b", "letter": "b", "text": "Wave 1 automatically becomes the longest wave by definition"}, {"id": "v1q30c_c", "letter": "c", "text": "Wave 5's length often relates to the net travel of Waves 1 through 3 by a ratio such as 0.618 or 1.618"}, {"id": "v1q30c_d", "letter": "d", "text": "Wave 5 always equals Wave 3 exactly"}], "correct": ["c"], "expEn": "When wave 5 extends, its length is commonly measured as a Fibonacci multiple of the net distance traveled from the start of wave 1 to the end of wave 3.", "expTh": "เมื่อคลื่น 5 เป็นคลื่นที่ยืดตัว ความยาวของคลื่น 5 มักถูกวัดเป็นสัดส่วนฟีโบนักชีของระยะทางสุทธิตั้งแต่จุดเริ่มต้นคลื่น 1 จนถึงจุดสิ้นสุดคลื่น 3"}, {"id": "v1q31", "text": "In the standard Elliott Wave degree hierarchy (largest to smallest), which degree comes immediately after 'Grand Supercycle'?", "choices": [{"id": "v1q31c_a", "letter": "a", "text": "Primary"}, {"id": "v1q31c_b", "letter": "b", "text": "Cycle"}, {"id": "v1q31c_c", "letter": "c", "text": "Supercycle"}, {"id": "v1q31c_d", "letter": "d", "text": "Intermediate"}], "correct": ["c"], "expEn": "Frost & Prechter's nomenclature runs Grand Supercycle, Supercycle, Cycle, Primary, Intermediate, Minor, Minute, Minuette, Subminuette — each subdividing the degree above it.", "expTh": "ระบบชื่อองศาคลื่นของ Frost & Prechter เรียงจาก Grand Supercycle, Supercycle, Cycle, Primary, Intermediate, Minor, Minute, Minuette, Subminuette โดยแต่ละองศาจะแบ่งย่อยจากองศาที่ใหญ่กว่าถัดไป"}, {"id": "v1q32", "text": "Which wave degree is smaller than 'Minute' but larger than 'Subminuette'?", "choices": [{"id": "v1q32c_a", "letter": "a", "text": "Minuette"}, {"id": "v1q32c_b", "letter": "b", "text": "Primary"}, {"id": "v1q32c_c", "letter": "c", "text": "Minor"}, {"id": "v1q32c_d", "letter": "d", "text": "Intermediate"}], "correct": ["a"], "expEn": "The descending sequence after Minor is Minute, Minuette, then Subminuette — Minuette sits directly between Minute and Subminuette.", "expTh": "ลำดับองศาที่เล็กลงหลัง Minor คือ Minute, Minuette และ Subminuette ตามลำดับ โดย Minuette อยู่ระหว่าง Minute และ Subminuette"}, {"id": "v1q33", "text": "Why is consistent wave-degree labeling important in Elliott Wave analysis?", "choices": [{"id": "v1q33c_a", "letter": "a", "text": "It preserves the correct nesting relationship between waves of different sizes, preventing mislabeled counts"}, {"id": "v1q33c_b", "letter": "b", "text": "It has no analytical importance and is purely cosmetic"}, {"id": "v1q33c_c", "letter": "c", "text": "It replaces the need to apply the wave 2 and wave 4 rules"}, {"id": "v1q33c_d", "letter": "d", "text": "It fixes the exact numerical price target regardless of structure"}], "correct": ["a"], "expEn": "Proper degree labeling ensures a five-wave Minor impulse is correctly recognized as one leg of a larger Intermediate wave, keeping the fractal count internally consistent.", "expTh": "การติดป้ายองศาคลื่นอย่างถูกต้องทำให้คลื่นแรงผลัก 5 คลื่นในองศา Minor ถูกจดจำได้อย่างถูกต้องว่าเป็นส่วนหนึ่งของคลื่นองศา Intermediate ที่ใหญ่กว่า ทำให้การนับคลื่นแบบ fractal มีความสอดคล้องภายใน"}, {"id": "v1q34", "text": "Elliott Wave structures are described as 'fractal' primarily because:", "choices": [{"id": "v1q34c_a", "letter": "a", "text": "Each degree uses a completely different pattern than the degree above or below it"}, {"id": "v1q34c_b", "letter": "b", "text": "Only the largest degree, Grand Supercycle, displays any recognizable wave pattern"}, {"id": "v1q34c_c", "letter": "c", "text": "Fractal behavior applies only to corrective waves, never to impulses"}, {"id": "v1q34c_d", "letter": "d", "text": "The same 5-3 wave patterns repeat at every degree, from the largest scale down to the smallest"}], "correct": ["d"], "expEn": "Elliott's model is self-similar: an Intermediate impulse is built from Minor impulses and corrections, which are in turn built from Minute waves, and so on down the scale.", "expTh": "โมเดลของ Elliott มีลักษณะคล้ายตัวเองในทุกระดับ (self-similar) กล่าวคือคลื่นแรงผลักองศา Intermediate ประกอบขึ้นจากคลื่นองศา Minor ซึ่งประกอบขึ้นจากคลื่นองศา Minute ต่อไปเรื่อยๆ"}, {"id": "v1q35", "text": "A Minor-degree impulse wave is normally composed of sub-waves belonging to which degree?", "choices": [{"id": "v1q35c_a", "letter": "a", "text": "Intermediate"}, {"id": "v1q35c_b", "letter": "b", "text": "Cycle"}, {"id": "v1q35c_c", "letter": "c", "text": "Minute"}, {"id": "v1q35c_d", "letter": "d", "text": "Primary"}], "correct": ["c"], "expEn": "Each impulse subdivides into five waves of the next smaller degree; a Minor wave's five legs are therefore Minute-degree waves.", "expTh": "คลื่นแรงผลักแต่ละคลื่นจะแบ่งย่อยเป็น 5 คลื่นในองศาที่เล็กลงหนึ่งขั้น ดังนั้นคลื่นองศา Minor 5 ขาจึงประกอบด้วยคลื่นองศา Minute"}, {"id": "v1q36", "text": "Which labeling convention is conventionally used for motive (impulse) waves within a given degree?", "choices": [{"id": "v1q36c_a", "letter": "a", "text": "Greek letters exclusively at every degree"}, {"id": "v1q36c_b", "letter": "b", "text": "Numbers (1, 2, 3, 4, 5)"}, {"id": "v1q36c_c", "letter": "c", "text": "Roman numerals exclusively at every degree"}, {"id": "v1q36c_d", "letter": "d", "text": "Letters (A, B, C)"}], "correct": ["b"], "expEn": "Motive waves are conventionally numbered 1 through 5, while corrective waves use letters (A, B, C, or A-B-C-D-E for triangles); notation style (circles, boxes) often varies by degree.", "expTh": "คลื่นแรงผลักมักติดป้ายด้วยตัวเลข 1 ถึง 5 ตามธรรมเนียม ส่วนคลื่นปรับฐานใช้ตัวอักษร A, B, C (หรือ A-B-C-D-E สำหรับสามเหลี่ยม) โดยรูปแบบสัญลักษณ์ เช่น วงกลมหรือกล่อง มักแตกต่างกันไปตามองศา"}, {"id": "v1q37", "text": "Which sequence correctly orders three consecutive wave degrees from largest to smallest?", "choices": [{"id": "v1q37c_a", "letter": "a", "text": "Cycle, Primary, Supercycle"}, {"id": "v1q37c_b", "letter": "b", "text": "Minor, Intermediate, Primary"}, {"id": "v1q37c_c", "letter": "c", "text": "Primary, Intermediate, Minor"}, {"id": "v1q37c_d", "letter": "d", "text": "Intermediate, Primary, Cycle"}], "correct": ["c"], "expEn": "The standard hierarchy runs ...Cycle, Primary, Intermediate, Minor, Minute..., so Primary is larger than Intermediate, which is larger than Minor.", "expTh": "ลำดับชั้นมาตรฐานเรียงจาก ...Cycle, Primary, Intermediate, Minor, Minute... ดังนั้น Primary จึงใหญ่กว่า Intermediate และ Intermediate ใหญ่กว่า Minor"}, {"id": "v1q38", "text": "Why might an analyst intentionally count from a lower degree before committing to a higher-degree wave label?", "choices": [{"id": "v1q38c_a", "letter": "a", "text": "To confirm the internal 5-3 subdivisions are structurally valid before assigning a higher-degree wave number with confidence"}, {"id": "v1q38c_b", "letter": "b", "text": "Because higher-degree waves are exempt from the standard Elliott rules"}, {"id": "v1q38c_c", "letter": "c", "text": "Because lower-degree counts are always more reliable regardless of context"}, {"id": "v1q38c_d", "letter": "d", "text": "Because degree has no bearing on how rules like wave 2 or wave 4 are applied"}], "correct": ["a"], "expEn": "Since Elliott rules (e.g., wave 2 retracement, no-overlap) must hold at every degree, verifying the smaller subdivisions first helps confirm that a larger-degree label is structurally valid.", "expTh": "เนื่องจากกฎของ Elliott (เช่น การย่อตัวของคลื่น 2, การไม่ทับซ้อนของคลื่น 4) ต้องเป็นจริงในทุกองศา การตรวจสอบคลื่นย่อยองศาเล็กก่อนจะช่วยยืนยันว่าป้ายคลื่นองศาใหญ่กว่านั้นถูกต้องตามโครงสร้าง"}, {"id": "v1q39", "text": "In Frost & Prechter's nomenclature, which wave degree sits directly above 'Cycle' and directly below 'Grand Supercycle'?", "choices": [{"id": "v1q39c_a", "letter": "a", "text": "Primary"}, {"id": "v1q39c_b", "letter": "b", "text": "Millennium"}, {"id": "v1q39c_c", "letter": "c", "text": "Intermediate"}, {"id": "v1q39c_d", "letter": "d", "text": "Supercycle"}], "correct": ["d"], "expEn": "The hierarchy places Supercycle directly above Cycle and directly below Grand Supercycle in Frost & Prechter's standard nine-degree naming system.", "expTh": "ในระบบชื่อองศาคลื่น 9 ระดับมาตรฐานของ Frost & Prechter องศา Supercycle อยู่เหนือ Cycle และอยู่ต่ำกว่า Grand Supercycle"}, {"id": "v1q40", "text": "A common source of analytical error related to wave degree is:", "choices": [{"id": "v1q40c_a", "letter": "a", "text": "Mislabeling a wave of one degree as belonging to a different degree, causing inconsistent rule application"}, {"id": "v1q40c_b", "letter": "b", "text": "Applying the alternation guideline to corrective waves"}, {"id": "v1q40c_c", "letter": "c", "text": "Using Fibonacci ratios at more than one degree simultaneously"}, {"id": "v1q40c_d", "letter": "d", "text": "Observing that motive waves subdivide into five waves"}], "correct": ["a"], "expEn": "Because rules such as the wave 4 no-overlap constraint must hold at the degree being labeled, misassigning degree can make an otherwise valid count appear to violate the rules, or vice versa.", "expTh": "เนื่องจากกฎ เช่น การไม่ทับซ้อนของคลื่น 4 ต้องเป็นจริงในองศาที่กำลังติดป้ายอยู่ การกำหนดองศาผิดพลาดอาจทำให้การนับคลื่นที่ถูกต้องดูเหมือนผิดกฎ หรือในทางกลับกัน"}, {"id": "v1q41", "text": "The guideline of 'alternation' generally suggests that:", "choices": [{"id": "v1q41c_a", "letter": "a", "text": "Wave 2 must always be sharp and Wave 4 must always be sideways, with no exceptions"}, {"id": "v1q41c_b", "letter": "b", "text": "If Wave 2 is a sharp correction, Wave 4 is likely to be a sideways (flat or triangle-type) correction, or vice versa"}, {"id": "v1q41c_c", "letter": "c", "text": "Alternation applies only to impulse Waves 1 and 3"}, {"id": "v1q41c_d", "letter": "d", "text": "Wave 2 and Wave 4 must always be identical in form"}], "correct": ["b"], "expEn": "Alternation is a guideline, not a rule — it suggests corrective waves 2 and 4 will differ in character (sharp vs. sideways) to add variety, though exceptions do occur.", "expTh": "Alternation เป็นแนวทาง (guideline) ไม่ใช่กฎเหล็ก โดยบ่งชี้ว่าคลื่นปรับฐาน 2 และ 4 มักมีลักษณะต่างกัน (รุนแรงกับเคลื่อนไหวด้านข้าง) เพื่อเพิ่มความหลากหลาย แม้จะมีข้อยกเว้นเกิดขึ้นได้"}, {"id": "v1q42", "text": "Which statement best reflects the guideline concerning Wave 5's typical minimum reach relative to Wave 3?", "choices": [{"id": "v1q42c_a", "letter": "a", "text": "Wave 5 never displays any Fibonacci relationship to prior waves"}, {"id": "v1q42c_b", "letter": "b", "text": "Wave 5 must always be exactly equal in length to Wave 1"}, {"id": "v1q42c_c", "letter": "c", "text": "Wave 5 typically travels beyond Wave 3's endpoint, though it can occasionally fall short (truncate) in weak trends"}, {"id": "v1q42c_d", "letter": "d", "text": "Wave 5 is strictly prohibited from ever exceeding Wave 3's endpoint"}], "correct": ["c"], "expEn": "While no rule fixes wave 5's minimum length, it typically extends beyond wave 3's endpoint, except in a truncated fifth, which is a recognized (if less common) structural variation.", "expTh": "แม้จะไม่มีกฎตายตัวกำหนดความยาวขั้นต่ำของคลื่น 5 แต่โดยทั่วไปคลื่น 5 มักเคลื่อนเลยจุดสิ้นสุดของคลื่น 3 ยกเว้นกรณี truncated fifth ซึ่งเป็นรูปแบบที่ยอมรับได้แม้จะพบไม่บ่อยนัก"}, {"id": "v1q43", "text": "What is the purpose of the 'channeling' technique in Elliott Wave analysis?", "choices": [{"id": "v1q43c_a", "letter": "a", "text": "To eliminate the need for Fibonacci analysis entirely"}, {"id": "v1q43c_b", "letter": "b", "text": "To determine wave degree with absolute certainty"}, {"id": "v1q43c_c", "letter": "c", "text": "To prove that a wave count is correct beyond any doubt"}, {"id": "v1q43c_d", "letter": "d", "text": "To draw trendlines connecting wave endpoints, estimating the boundaries and likely termination zone of the next wave"}], "correct": ["d"], "expEn": "A channel is typically drawn using the endpoints of waves 2 and 4 as a base line, with a line parallel to it drawn off wave 3, offering a visual guideline for where wave 5 may terminate.", "expTh": "ช่องแนวโน้ม (channel) มักลากโดยใช้จุดสิ้นสุดของคลื่น 2 และ 4 เป็นเส้นฐาน แล้วลากเส้นขนานผ่านจุดสิ้นสุดของคลื่น 3 เพื่อเป็นแนวทางว่าคลื่น 5 อาจจบลงที่บริเวณใด"}, {"id": "v1q44", "text": "Which guideline is commonly cited regarding trading volume during a healthy Wave 3?", "choices": [{"id": "v1q44c_a", "letter": "a", "text": "Volume should always be lowest during Wave 3"}, {"id": "v1q44c_b", "letter": "b", "text": "Volume tends to be heaviest during Wave 3, the strongest of the actionary waves"}, {"id": "v1q44c_c", "letter": "c", "text": "Volume has no relationship to any wave under Elliott Wave theory"}, {"id": "v1q44c_d", "letter": "d", "text": "Volume is always heaviest during Wave 4"}], "correct": ["b"], "expEn": "Since wave 3 usually represents the most powerful and widely recognized move in the sequence, expanding volume during wave 3 is a commonly cited, though not infallible, supporting guideline.", "expTh": "เนื่องจากคลื่น 3 มักเป็นการเคลื่อนไหวที่ทรงพลังและได้รับการยอมรับในวงกว้างที่สุดในลำดับคลื่น ปริมาณการซื้อขายที่ขยายตัวในช่วงคลื่น 3 จึงเป็นแนวทางสนับสนุนที่มักถูกอ้างถึง แม้จะไม่ใช่กฎที่แน่นอนเสมอไป"}, {"id": "v1q45", "text": "The concept of 'wave personality' in Elliott Wave analysis refers to:", "choices": [{"id": "v1q45c_a", "letter": "a", "text": "A rule that overrides the wave 2 retracement rule"}, {"id": "v1q45c_b", "letter": "b", "text": "The typical character, sentiment, and market behavior associated with each numbered/lettered wave position"}, {"id": "v1q45c_c", "letter": "c", "text": "A method used exclusively to determine wave degree"}, {"id": "v1q45c_d", "letter": "d", "text": "The exact price target of each wave, calculated purely from Fibonacci ratios"}], "correct": ["b"], "expEn": "Each wave position (1 through 5, A through C) tends to display recognizable characteristics — e.g., wave 3 is often powerful and widely recognized — that aid subjective confirmation of a proposed count.", "expTh": "แต่ละตำแหน่งคลื่น (1 ถึง 5, A ถึง C) มักมีลักษณะเฉพาะที่จดจำได้ เช่น คลื่น 3 มักทรงพลังและเป็นที่ยอมรับในวงกว้าง ซึ่งช่วยยืนยันการนับคลื่นในเชิงอัตวิสัยได้"}, {"id": "v1q46", "text": "Which of the following is a guideline rather than an inviolable rule in Elliott Wave analysis?", "choices": [{"id": "v1q46c_a", "letter": "a", "text": "Wave 3 cannot be the shortest of Waves 1, 3, and 5"}, {"id": "v1q46c_b", "letter": "b", "text": "Wave 4 cannot overlap Wave 1's price territory in a standard, non-diagonal impulse"}, {"id": "v1q46c_c", "letter": "c", "text": "Wave 4 will often retrace roughly 38.2% of Wave 3"}, {"id": "v1q46c_d", "letter": "d", "text": "Wave 2 cannot retrace more than 100% of Wave 1"}], "correct": ["c"], "expEn": "Retracement depth (such as the 38.2% tendency) is a guideline that can vary from case to case, whereas the wave 2, wave 3, and wave 4 overlap constraints are treated as firm structural rules.", "expTh": "ความลึกของการย่อตัว เช่น แนวโน้ม 38.2% เป็นเพียงแนวทางที่อาจแตกต่างกันไปในแต่ละกรณี ในขณะที่ข้อจำกัดเรื่องคลื่น 2, คลื่น 3 และการทับซ้อนของคลื่น 4 ถือเป็นกฎโครงสร้างที่แน่นอน"}, {"id": "v1q47", "text": "Beyond differing in form (sharp vs. sideways), the alternation guideline between Wave 2 and Wave 4 also frequently extends to:", "choices": [{"id": "v1q47c_a", "letter": "a", "text": "A strict requirement that Wave 2 must always take longer than Wave 4"}, {"id": "v1q47c_b", "letter": "b", "text": "Differences in the time duration each correction takes to complete"}, {"id": "v1q47c_c", "letter": "c", "text": "The complete elimination of triangles as a possible Wave 4 form"}, {"id": "v1q47c_d", "letter": "d", "text": "A rule that forces both waves to be zigzags"}], "correct": ["b"], "expEn": "Beyond just corrective form, alternation is often observed in the time each correction takes, adding another dimension to the guideline beyond shape alone.", "expTh": "นอกเหนือจากรูปแบบของคลื่นปรับฐานแล้ว หลัก alternation ยังมักปรากฏในด้านระยะเวลาที่แต่ละคลื่นปรับฐานใช้ในการสร้างตัว ซึ่งเป็นอีกมิติหนึ่งของแนวทางนี้นอกเหนือจากรูปทรง"}, {"id": "v1q48", "text": "Which statement correctly reflects proper use of the 'guideline of equality' between Wave 1 and Wave 5?", "choices": [{"id": "v1q48c_a", "letter": "a", "text": "It requires Wave 1 and Wave 5 to have identical time duration as well as price length"}, {"id": "v1q48c_b", "letter": "b", "text": "It is an unbreakable rule that invalidates any count where Wave 1 and Wave 5 differ in length"}, {"id": "v1q48c_c", "letter": "c", "text": "It applies only when Wave 1, rather than Wave 3, is the extended wave"}, {"id": "v1q48c_d", "letter": "d", "text": "It is a helpful tendency, especially when Wave 3 is extended, rather than a strict structural requirement"}], "correct": ["d"], "expEn": "Being a guideline, wave 1/wave 5 equality is a useful tendency for gauging price targets, but deviations are common and do not by themselves invalidate an otherwise valid wave count.", "expTh": "เนื่องจากเป็นเพียงแนวทาง ความเท่ากันของคลื่น 1 และคลื่น 5 จึงเป็นแนวโน้มที่มีประโยชน์ในการประเมินเป้าหมายราคา แต่ความแตกต่างที่เกิดขึ้นเป็นเรื่องปกติและไม่ได้ทำให้การนับคลื่นที่ถูกต้องผิดไปแต่อย่างใด"}, {"id": "v1q49", "text": "Which of the following is generally treated as a rule, rather than a mere guideline, within the Elliott Wave Principle?", "choices": [{"id": "v1q49c_a", "letter": "a", "text": "Trading volume typically peaks during Wave 3"}, {"id": "v1q49c_b", "letter": "b", "text": "Wave 4 corrections tend to be sideways if Wave 2 was sharp"}, {"id": "v1q49c_c", "letter": "c", "text": "Wave 2 never retraces more than 100% of Wave 1"}, {"id": "v1q49c_d", "letter": "d", "text": "Wave 5 usually exceeds the endpoint of Wave 3"}], "correct": ["c"], "expEn": "The three core structural constraints — wave 2 not exceeding a 100% retracement, wave 3 never the shortest actionary wave, and wave 4 not overlapping wave 1 — are the recognized rules; everything else is a guideline.", "expTh": "ข้อจำกัดโครงสร้างหลักสามข้อ ได้แก่ คลื่น 2 ต้องไม่ย่อตัวเกิน 100%, คลื่น 3 ต้องไม่เป็นคลื่นเคลื่อนไหวที่สั้นที่สุด และคลื่น 4 ต้องไม่ทับซ้อนคลื่น 1 ถือเป็นกฎหลักที่ยอมรับ ส่วนที่เหลือทั้งหมดเป็นเพียงแนวทาง"}, {"id": "v1q50", "text": "Why does the Elliott Wave Principle distinguish between 'rules' and 'guidelines'?", "choices": [{"id": "v1q50c_a", "letter": "a", "text": "Rules must always hold for a wave count to be considered valid, while guidelines describe common tendencies that may have exceptions"}, {"id": "v1q50c_b", "letter": "b", "text": "Rules apply only to corrective waves, while guidelines apply only to impulse waves"}, {"id": "v1q50c_c", "letter": "c", "text": "Rules and guidelines are interchangeable terms with no practical difference"}, {"id": "v1q50c_d", "letter": "d", "text": "Guidelines are stricter than rules and therefore override them"}], "correct": ["a"], "expEn": "This distinction lets analysts apply firm structural checks (rules) to eliminate invalid counts while treating softer tendencies (guidelines) as supporting, rather than decisive, evidence.", "expTh": "การแบ่งแยกนี้ช่วยให้นักวิเคราะห์ใช้การตรวจสอบโครงสร้างที่แน่นอน (กฎ) เพื่อตัดการนับคลื่นที่ผิดพลาดออกไป ในขณะที่ปฏิบัติต่อแนวโน้มที่อ่อนกว่า (แนวทาง) เป็นเพียงหลักฐานสนับสนุน ไม่ใช่ข้อสรุปเด็ดขาด"}] },
+    v2: { key:"v2", label:"Level II · Part 1", labelTh:"ระดับที่ 2 · ตอนที่ 1", timeMin:45, type:"single",
+          topicsEn:"Wave personality, extensions, truncation, diagonal triangles",
+          topicsTh:"บุคลิกคลื่น, การยืดตัว, truncation, สามเหลี่ยมทแยง",
+          questions: [{"id": "v2q01", "text": "Which best describes the typical personality of Wave 1 in an impulse?", "choices": [{"id": "v2q01c_a", "letter": "a", "text": "It is always the longest wave and carries the heaviest volume"}, {"id": "v2q01c_b", "letter": "b", "text": "It is marked by extreme euphoria and speculative excess"}, {"id": "v2q01c_c", "letter": "c", "text": "It is universally recognized in real time as the start of a powerful new trend"}, {"id": "v2q01c_d", "letter": "d", "text": "It often appears corrective or tentative, driven by a minority of participants sensing an early change in trend"}], "correct": ["d"], "expEn": "Wave 1 typically unfolds against a backdrop of prevailing sentiment from the prior trend, so few participants recognize it as a genuine trend change while it is forming.", "expTh": "คลื่น 1 มักเกิดขึ้นท่ามกลางความเชื่อมั่นของตลาดที่ยังคงเอนเอียงไปทางเทรนด์เดิม จึงมีผู้เข้าใจว่าเป็นการเปลี่ยนเทรนด์จริงเพียงส่วนน้อยขณะที่คลื่นกำลังก่อตัว"}, {"id": "v2q02", "text": "Which statement best captures the typical personality of Wave 2?", "choices": [{"id": "v2q02c_a", "letter": "a", "text": "It always rallies beyond the starting point of Wave 1"}, {"id": "v2q02c_b", "letter": "b", "text": "It often retraces deeply and convincingly enough that many observers believe the prior trend has resumed"}, {"id": "v2q02c_c", "letter": "c", "text": "It is guaranteed to be sideways price action only"}, {"id": "v2q02c_d", "letter": "d", "text": "It is marked by extremely high volume that exceeds Wave 1"}], "correct": ["b"], "expEn": "Wave 2 often retraces deeply and convincingly, leading many market participants to conclude the old trend is back in force, even though it cannot fully retrace wave 1.", "expTh": "คลื่น 2 มักย่อตัวลึกและน่าเชื่อถือ จนผู้เล่นส่วนใหญ่คิดว่าเทรนด์เดิมกลับมาแล้ว ทั้งที่จริงแล้วคลื่น 2 ไม่สามารถย่อตัวกลับได้ครบ 100% ของคลื่น 1"}, {"id": "v2q03", "text": "Which personality trait is most closely associated with Wave 3?", "choices": [{"id": "v2q03c_a", "letter": "a", "text": "It is always corrective in its internal structure"}, {"id": "v2q03c_b", "letter": "b", "text": "It is the weakest and narrowest wave in the entire sequence"}, {"id": "v2q03c_c", "letter": "c", "text": "It is universally the shortest wave in both price and time"}, {"id": "v2q03c_d", "letter": "d", "text": "Strong, broad participation as the trend becomes widely recognized; it is often the longest and most powerful wave"}], "correct": ["d"], "expEn": "Wave 3 is typically forceful and obvious, attracting the greatest participation and frequently producing gaps, breakaways, and pronounced sub-wave extensions.", "expTh": "คลื่น 3 มักมีพลังและชัดเจนที่สุด ดึงดูดผู้เข้าร่วมตลาดจำนวนมากที่สุด และมักเกิด gap หรือการทะลุแนวต้าน/แนวรับสำคัญ รวมถึงคลื่นย่อยที่ยืดตัวอย่างเด่นชัด"}, {"id": "v2q04", "text": "Which market character does Wave 4 typically reflect?", "choices": [{"id": "v2q04c_a", "letter": "a", "text": "A wave associated exclusively with panic-driven capitulation"}, {"id": "v2q04c_b", "letter": "b", "text": "The strongest trending move within the entire five-wave sequence"}, {"id": "v2q04c_c", "letter": "c", "text": "A corrective, often complex or time-consuming consolidation that follows the strength of Wave 3"}, {"id": "v2q04c_d", "letter": "d", "text": "A wave that always overlaps Wave 1 in a standard, non-diagonal impulse"}], "correct": ["c"], "expEn": "After the strength of wave 3, wave 4 typically corrects in a more time-consuming, complex, or comparatively shallow fashion, frequently alternating in form with wave 2.", "expTh": "หลังจากพลังของคลื่น 3 คลื่น 4 มักปรับฐานในลักษณะที่ใช้เวลานาน ซับซ้อน หรือย่อตัวตื้นกว่า และมักมีรูปแบบสลับกับคลื่น 2 ตามหลัก alternation"}, {"id": "v2q05", "text": "Wave 5 personality, particularly in equity markets, is often marked by which characteristic?", "choices": [{"id": "v2q05c_a", "letter": "a", "text": "Narrower participation than Wave 3, sometimes accompanied by divergences in momentum indicators"}, {"id": "v2q05c_b", "letter": "b", "text": "The complete absence of any possible Fibonacci relationship to prior waves"}, {"id": "v2q05c_c", "letter": "c", "text": "Guaranteed truncation in every single instance"}, {"id": "v2q05c_d", "letter": "d", "text": "Universally greater breadth and volume than Wave 3 in every market"}], "correct": ["a"], "expEn": "Wave 5 advances are frequently narrower in participation than wave 3, and technical divergences (e.g., in momentum oscillators) are a commonly cited, though not universal, personality trait.", "expTh": "การขึ้นของคลื่น 5 มักมีความกว้างของการมีส่วนร่วมของตลาดน้อยกว่าคลื่น 3 และมักเกิด divergence ในอินดิเคเตอร์โมเมนตัม ซึ่งเป็นลักษณะที่พบบ่อยแม้จะไม่ใช่กฎตายตัว"}, {"id": "v2q06", "text": "Which of the three actionary waves (1, 3, or 5) most frequently becomes the 'extended' wave, particularly in equity indices?", "choices": [{"id": "v2q06c_a", "letter": "a", "text": "Wave 3"}, {"id": "v2q06c_b", "letter": "b", "text": "Extension occurs with roughly equal frequency across all three waves"}, {"id": "v2q06c_c", "letter": "c", "text": "Wave 1"}, {"id": "v2q06c_d", "letter": "d", "text": "Wave 5"}], "correct": ["a"], "expEn": "Wave 3 is the most commonly extended wave in stock market impulses, though wave 5 extensions are common in commodities and wave 1 extensions occur less frequently overall.", "expTh": "คลื่น 3 เป็นคลื่นที่ยืดตัวบ่อยที่สุดในคลื่นแรงผลักของตลาดหุ้น ในขณะที่การยืดตัวของคลื่น 5 พบได้บ่อยในตลาดสินค้าโภคภัณฑ์ ส่วนการยืดตัวของคลื่น 1 พบได้น้อยกว่าโดยรวม"}, {"id": "v2q07", "text": "How is an 'extended' wave best defined?", "choices": [{"id": "v2q07c_a", "letter": "a", "text": "A wave that violates the no-overlap rule between Wave 4 and Wave 1"}, {"id": "v2q07c_b", "letter": "b", "text": "A corrective wave that becomes unusually long in time only"}, {"id": "v2q07c_c", "letter": "c", "text": "An actionary wave that subdivides so prominently that its five sub-waves become comparable in scale to the rest of the overall sequence"}, {"id": "v2q07c_d", "letter": "d", "text": "Any wave that simply exceeds the price length of the prior wave"}], "correct": ["c"], "expEn": "Extension refers to an elongated, clearly subdivided actionary wave whose own five sub-waves become nearly equivalent in magnitude to the whole larger five-wave sequence.", "expTh": "การยืดตัว (extension) หมายถึงคลื่นเคลื่อนไหวที่ยืดยาวและแบ่งย่อยได้ชัดเจน จนคลื่นย่อยทั้งห้าของมันมีขนาดใกล้เคียงกับคลื่นแรงผลักหลักทั้งชุด"}, {"id": "v2q08", "text": "When Wave 1 is the extended wave (a comparatively uncommon scenario), what is a typical characteristic of Waves 3 and 5?", "choices": [{"id": "v2q08c_a", "letter": "a", "text": "Waves 3 and 5 tend to approach equality in length relative to each other"}, {"id": "v2q08c_b", "letter": "b", "text": "Wave 2 must then retrace more than 100% of Wave 1"}, {"id": "v2q08c_c", "letter": "c", "text": "Completing Wave 5 becomes structurally impossible"}, {"id": "v2q08c_d", "letter": "d", "text": "Wave 3 must then become the shortest wave, breaking the no-shortest-wave rule"}], "correct": ["a"], "expEn": "When the first wave extends, waves 3 and 5 often approach equality with each other, mirroring the equality guideline that normally applies between waves 1 and 5.", "expTh": "เมื่อคลื่น 1 เป็นคลื่นที่ยืดตัว คลื่น 3 และคลื่น 5 มักมีแนวโน้มยาวใกล้เคียงกัน สะท้อนหลักความเท่ากันที่ปกติจะใช้กับคลื่น 1 และคลื่น 5"}, {"id": "v2q09", "text": "What is a 'double extension'?", "choices": [{"id": "v2q09c_a", "letter": "a", "text": "A sub-wave within an already extended wave itself extends further, producing an unusually elongated overall move"}, {"id": "v2q09c_b", "letter": "b", "text": "A correction following the impulse that extends beyond a 100% retracement"}, {"id": "v2q09c_c", "letter": "c", "text": "Two separate impulse waves of the same degree occurring back-to-back with no intervening correction"}, {"id": "v2q09c_d", "letter": "d", "text": "A situation where Wave 2 and Wave 4 both extend simultaneously"}], "correct": ["a"], "expEn": "Occasionally a wave within an extended wave (for example, wave 3 of wave 3) extends again, compounding the elongation and often producing extreme Fibonacci-multiple price moves.", "expTh": "บางครั้งคลื่นย่อยภายในคลื่นที่ยืดตัวอยู่แล้ว (เช่น คลื่น 3 ของคลื่น 3) จะยืดตัวซ้ำอีกครั้ง ทำให้การเคลื่อนไหวยืดยาวยิ่งขึ้นและมักเกิดการเคลื่อนไหวของราคาในสัดส่วนฟีโบนักชีที่รุนแรง"}, {"id": "v2q10", "text": "Why are extended waves particularly useful to an analyst?", "choices": [{"id": "v2q10c_a", "letter": "a", "text": "Because they guarantee the market will reverse immediately after the extension completes"}, {"id": "v2q10c_b", "letter": "b", "text": "Because they help identify which wave is likely to display the clearest five-wave subdivision for counting purposes"}, {"id": "v2q10c_c", "letter": "c", "text": "Because they prove a wave count can never contain more than one extension"}, {"id": "v2q10c_d", "letter": "d", "text": "Because they eliminate the need to apply the no-overlap rule"}], "correct": ["b"], "expEn": "Because an extended wave shows its five sub-waves clearly, it is often the easiest wave in the sequence to subdivide with confidence, which aids overall wave count identification.", "expTh": "เนื่องจากคลื่นที่ยืดตัวแสดงคลื่นย่อยทั้งห้าอย่างชัดเจน จึงมักเป็นคลื่นที่ง่ายที่สุดในลำดับที่จะแบ่งย่อยได้อย่างมั่นใจ ซึ่งช่วยในการระบุการนับคลื่นโดยรวม"}, {"id": "v2q11", "text": "A 'truncated fifth' (fifth wave failure) occurs when:", "choices": [{"id": "v2q11c_a", "letter": "a", "text": "Wave 5 subdivides into three waves instead of the usual five"}, {"id": "v2q11c_b", "letter": "b", "text": "Wave 5 fails to move beyond the price extreme reached by Wave 3"}, {"id": "v2q11c_c", "letter": "c", "text": "Wave 5 retraces more than 100% of Wave 4"}, {"id": "v2q11c_d", "letter": "d", "text": "Wave 5 always exceeds Wave 3 by at least 61.8%"}], "correct": ["b"], "expEn": "In a truncated fifth, the final actionary wave falls just short of surpassing wave 3's extreme, often occurring after an unusually powerful wave 3 and signaling underlying weakness.", "expTh": "ใน truncated fifth คลื่นเคลื่อนไหวสุดท้ายไม่สามารถทะลุจุดสุดขั้วของคลื่น 3 ได้ ซึ่งมักเกิดขึ้นหลังจากคลื่น 3 ที่ทรงพลังผิดปกติ และเป็นสัญญาณของความอ่อนแอที่ซ่อนอยู่"}, {"id": "v2q12", "text": "Truncated fifth waves most commonly occur following which market condition?", "choices": [{"id": "v2q12c_a", "letter": "a", "text": "Any Wave 2 that retraces more than 90% of Wave 1"}, {"id": "v2q12c_b", "letter": "b", "text": "An unusually weak Wave 1"}, {"id": "v2q12c_c", "letter": "c", "text": "A Wave 4 that overlaps Wave 1"}, {"id": "v2q12c_d", "letter": "d", "text": "An extremely strong Wave 3, which leaves little remaining momentum for Wave 5 to make new price extremes"}], "correct": ["d"], "expEn": "Because wave 3 in a truncation scenario is typically very powerful, the subsequent wave 5 often lacks sufficient strength to exceed it, resulting in the shortfall pattern.", "expTh": "เนื่องจากคลื่น 3 ในสถานการณ์ที่เกิด truncation มักทรงพลังมาก คลื่น 5 ที่ตามมามักไม่มีแรงเพียงพอที่จะทะลุคลื่น 3 ได้ ส่งผลให้เกิดรูปแบบที่คลื่น 5 สั้นกว่าที่ควร"}, {"id": "v2q13", "text": "Which technical clue often helps confirm a suspected truncated fifth wave in real time?", "choices": [{"id": "v2q13c_a", "letter": "a", "text": "A retracement that moves below the starting point of Wave 1"}, {"id": "v2q13c_b", "letter": "b", "text": "A sudden overlap between Wave 1 and Wave 4"}, {"id": "v2q13c_c", "letter": "c", "text": "Divergence in volume and/or momentum indicators as price approaches, but fails to exceed, the Wave 3 high"}, {"id": "v2q13c_d", "letter": "d", "text": "A five-wave subdivision appearing within Wave 2"}], "correct": ["c"], "expEn": "Analysts often watch for weakening volume or bearish/bullish momentum divergence as the fifth wave approaches the third wave's extreme without exceeding it, supporting a truncation interpretation.", "expTh": "นักวิเคราะห์มักสังเกตปริมาณการซื้อขายที่อ่อนแรงลง หรือ divergence ของโมเมนตัม ขณะที่คลื่น 5 เข้าใกล้จุดสุดขั้วของคลื่น 3 แต่ไม่สามารถทะลุไปได้ ซึ่งสนับสนุนการตีความว่าเป็น truncation"}, {"id": "v2q14", "text": "How should a truncated fifth wave be best classified within Elliott Wave theory?", "choices": [{"id": "v2q14c_a", "letter": "a", "text": "A pattern that can only occur at Grand Supercycle degree"}, {"id": "v2q14c_b", "letter": "b", "text": "A pattern that always requires Wave 5 to overlap Wave 1"}, {"id": "v2q14c_c", "letter": "c", "text": "A violation of a core Elliott Wave rule that invalidates the entire count"}, {"id": "v2q14c_d", "letter": "d", "text": "A recognized but less common structural variation of the standard impulse, not a violation of any core rule"}], "correct": ["d"], "expEn": "Truncation does not break any of the three inviolable rules — it is simply an accepted structural variation, most often seen after very strong third waves.", "expTh": "Truncation ไม่ได้ละเมิดกฎเหล็กทั้งสามข้อของ Elliott Wave แต่เป็นเพียงรูปแบบโครงสร้างที่ได้รับการยอมรับ ซึ่งมักพบหลังจากคลื่น 3 ที่ทรงพลังมาก"}, {"id": "v2q15", "text": "If Wave 5 truncates, what does this typically suggest about the trend one degree higher?", "choices": [{"id": "v2q15c_a", "letter": "a", "text": "It guarantees an immediate resumption of the same trend at a larger degree"}, {"id": "v2q15c_b", "letter": "b", "text": "The underlying larger-degree trend may be nearing exhaustion, often preceding a substantial reversal"}, {"id": "v2q15c_c", "letter": "c", "text": "There is no implication whatsoever for higher-degree structure"}, {"id": "v2q15c_d", "letter": "d", "text": "The next impulse of the same degree is guaranteed to extend"}], "correct": ["b"], "expEn": "A truncated fifth is often read as an important warning sign that the larger-degree trend is losing force and that a meaningful reversal may follow.", "expTh": "Truncated fifth มักถูกตีความว่าเป็นสัญญาณเตือนสำคัญว่าเทรนด์องศาที่ใหญ่กว่ากำลังหมดแรง และอาจตามมาด้วยการกลับตัวที่มีนัยสำคัญ"}, {"id": "v2q16", "text": "In which structural position does an 'ending diagonal' typically occur?", "choices": [{"id": "v2q16c_a", "letter": "a", "text": "Only as Wave 2 of a correction"}, {"id": "v2q16c_b", "letter": "b", "text": "Only as Wave 1 of an impulse"}, {"id": "v2q16c_c", "letter": "c", "text": "As Wave 5 of an impulse, or as Wave C of a correction"}, {"id": "v2q16c_d", "letter": "d", "text": "It never occurs at the end of a larger pattern"}], "correct": ["c"], "expEn": "Ending diagonals appear when a move is running out of steam at the conclusion of a larger pattern, most often as wave 5 of an impulse or wave C of a zigzag or flat.", "expTh": "Ending diagonal มักปรากฏเมื่อการเคลื่อนไหวเริ่มหมดแรงในช่วงท้ายของโครงสร้างที่ใหญ่กว่า โดยมักพบเป็นคลื่น 5 ของคลื่นแรงผลัก หรือคลื่น C ของซิกแซกหรือแฟลต"}, {"id": "v2q17", "text": "Which structural feature most distinguishes a diagonal triangle from a standard impulse?", "choices": [{"id": "v2q17c_a", "letter": "a", "text": "Diagonal triangles are always larger in price range than the trend preceding them"}, {"id": "v2q17c_b", "letter": "b", "text": "Wave 4 is permitted to overlap Wave 1's territory, and each leg of an ending diagonal often subdivides into three waves rather than five"}, {"id": "v2q17c_c", "letter": "c", "text": "Diagonal triangles cannot occur at any recognized wave position"}, {"id": "v2q17c_d", "letter": "d", "text": "Diagonal triangles never subdivide into a total of five waves"}], "correct": ["b"], "expEn": "Diagonals are wedge-shaped, five-wave patterns where overlap is allowed, and in an ending diagonal each of the five legs typically subdivides into three, unlike a standard impulse's 5-3-5-3-5 structure.", "expTh": "Diagonal เป็นรูปแบบคลื่น 5 คลื่นทรงลิ่มที่อนุญาตให้เกิดการทับซ้อนได้ และใน ending diagonal แต่ละขาทั้งห้ามักแบ่งย่อยเป็น 3 คลื่น ต่างจากคลื่นแรงผลักมาตรฐานที่เป็น 5-3-5-3-5"}, {"id": "v2q18", "text": "A 'leading diagonal' is most likely to appear in which structural position?", "choices": [{"id": "v2q18c_a", "letter": "a", "text": "As Wave 1 of an impulse, or as Wave A of a zigzag"}, {"id": "v2q18c_b", "letter": "b", "text": "Only as Wave 3 of an impulse"}, {"id": "v2q18c_c", "letter": "c", "text": "Only as Wave 4 of an impulse"}, {"id": "v2q18c_d", "letter": "d", "text": "Only as Wave 5 of an impulse"}], "correct": ["a"], "expEn": "Leading diagonals occur at the start of a move — typically wave 1 of an impulse or wave A of a zigzag — signaling that a new trend is beginning somewhat tentatively, with overlap and a wedge shape.", "expTh": "Leading diagonal มักเกิดขึ้นในช่วงเริ่มต้นของการเคลื่อนไหว โดยทั่วไปเป็นคลื่น 1 ของคลื่นแรงผลัก หรือคลื่น A ของซิกแซก ซึ่งบ่งชี้ว่าเทรนด์ใหม่กำลังเริ่มต้นอย่างไม่มั่นใจนัก พร้อมโครงสร้างทับซ้อนและรูปทรงลิ่ม"}, {"id": "v2q19", "text": "What is a 'throw-over' in the context of an ending diagonal triangle?", "choices": [{"id": "v2q19c_a", "letter": "a", "text": "A pattern that can only occur within a Wave 4 triangle"}, {"id": "v2q19c_b", "letter": "b", "text": "A synonym for Wave 2 retracing 100% of Wave 1"}, {"id": "v2q19c_c", "letter": "c", "text": "A requirement that Wave 3 exceed Wave 1 by exactly 261.8%"}, {"id": "v2q19c_d", "letter": "d", "text": "A brief overshoot of Wave 5 beyond the wedge's upper (or lower) boundary trendline just before a sharp reversal"}], "correct": ["d"], "expEn": "As price nears the diagonal's apex, wave 5 sometimes briefly pierces the converging boundary trendline (a throw-over) shortly before the pattern completes and reverses sharply.", "expTh": "เมื่อราคาเข้าใกล้จุดยอดของ diagonal คลื่น 5 บางครั้งจะทะลุเส้นแนวโน้มขอบที่บีบเข้าหากันเล็กน้อย (throw-over) ก่อนที่รูปแบบจะจบลงและกลับตัวอย่างรุนแรง"}, {"id": "v2q20", "text": "Compared with a standard impulse, price action within an ending diagonal is generally contained by which structure?", "choices": [{"id": "v2q20c_a", "letter": "a", "text": "Expanding trendlines with no overlap permitted between any waves"}, {"id": "v2q20c_b", "letter": "b", "text": "A structure identical in every respect to a standard five-wave impulse"}, {"id": "v2q20c_c", "letter": "c", "text": "Converging, wedge-shaped trendlines with overlapping waves"}, {"id": "v2q20c_d", "letter": "d", "text": "A pattern observable only at Grand Supercycle degree"}], "correct": ["c"], "expEn": "The defining visual feature of an ending diagonal is its converging wedge shape, produced by the permitted overlap between waves 1 and 4, unlike the parallel or expanding channel of a standard impulse.", "expTh": "ลักษณะเด่นของ ending diagonal คือรูปทรงลิ่มที่บีบเข้าหากัน ซึ่งเกิดจากการทับซ้อนที่อนุญาตระหว่างคลื่น 1 และคลื่น 4 ต่างจากช่องแนวโน้มแบบขนานหรือขยายตัวของคลื่นแรงผลักมาตรฐาน"}] },
+    v3: { key:"v3", label:"Level II · Part 2", labelTh:"ระดับที่ 2 · ตอนที่ 2", timeMin:45, type:"multi",
+          topicsEn:"Complex combinations, channeling, Fibonacci confluence (applied analysis)",
+          topicsTh:"คอมบิเนชันซับซ้อน, การลากช่องแนวโน้ม, Fibonacci confluence (ประยุกต์ใช้)",
+          questions: [{"id": "v3q01", "text": "Regarding a double three correction (e.g., Flat-X-Zigzag), which of the following statements are correct? (Select 2-3)", "choices": [{"id": "v3q01c_a", "letter": "a", "text": "The pattern is composed of two distinct corrective structures joined by an X wave"}, {"id": "v3q01c_b", "letter": "b", "text": "The X wave is itself a corrective wave and can take various forms, including a zigzag or a triangle"}, {"id": "v3q01c_c", "letter": "c", "text": "The overall combination is classified as a corrective structure, not a motive one"}, {"id": "v3q01c_d", "letter": "d", "text": "A double three must always end with a triangle as its second component structure"}], "correct": ["a", "b", "c"], "expEn": "Combinations link two (or three) simple corrective patterns via an X wave, which is itself corrective and can vary in form; the whole combination remains corrective in nature, not motive. There is no requirement that the pattern end in a triangle.", "expTh": "โครงสร้างคอมบิเนชันเชื่อมโยงคลื่นปรับฐานแบบง่ายสองชุด (หรือสามชุด) เข้าด้วยกันผ่านคลื่น X ซึ่งตัวคลื่น X เองก็เป็นคลื่นปรับฐานและมีรูปแบบได้หลากหลาย และภาพรวมของคอมบิเนชันยังคงเป็นคลื่นปรับฐาน ไม่ใช่คลื่นแรงผลัก อีกทั้งไม่มีข้อบังคับว่าต้องจบด้วยสามเหลี่ยมเสมอไป"}, {"id": "v3q02", "text": "When drawing a standard Elliott channel using Waves 2 and 4 of an impulse, which statements are correct? (Select 2-3)", "choices": [{"id": "v3q02c_a", "letter": "a", "text": "The base trendline connects the endpoints of Wave 2 and Wave 4"}, {"id": "v3q02c_b", "letter": "b", "text": "Wave 5 often terminates near or at the upper (or lower) parallel channel line, providing a useful target guideline"}, {"id": "v3q02c_c", "letter": "c", "text": "A parallel line is drawn through the endpoint of Wave 3, offset from the base trendline"}, {"id": "v3q02c_d", "letter": "d", "text": "The channel guarantees the exact price at which Wave 5 will terminate"}], "correct": ["a", "b", "c"], "expEn": "Standard channeling connects the endpoints of waves 2 and 4 as a base line and draws a parallel line off wave 3; wave 5 frequently ends near this parallel line, which is a helpful guideline but never a guaranteed price.", "expTh": "การลากช่องแนวโน้มมาตรฐานเชื่อมจุดสิ้นสุดของคลื่น 2 และคลื่น 4 เป็นเส้นฐาน แล้วลากเส้นขนานผ่านจุดสิ้นสุดของคลื่น 3 โดยคลื่น 5 มักจบใกล้เส้นขนานนี้ ซึ่งเป็นแนวทางที่มีประโยชน์แต่ไม่ใช่ราคาที่รับประกันแน่นอน"}, {"id": "v3q03", "text": "Regarding a triple three correction, which of the following statements are correct? (Select 2-3)", "choices": [{"id": "v3q03c_a", "letter": "a", "text": "Each of the three component structures must be a zigzag"}, {"id": "v3q03c_b", "letter": "b", "text": "Triple threes are relatively rare compared to double threes"}, {"id": "v3q03c_c", "letter": "c", "text": "Triple threes must always end with a contracting triangle as the final structure"}, {"id": "v3q03c_d", "letter": "d", "text": "It contains three simple corrective patterns connected by two X waves"}], "correct": ["b", "d"], "expEn": "A triple three links three simple corrective patterns with two X waves; the component patterns may be zigzags, flats, or triangles, and no fixed final-structure requirement exists. Triple threes are observed less often than the simpler double three.", "expTh": "Triple three เชื่อมโยงคลื่นปรับฐานแบบง่ายสามชุดด้วยคลื่น X สองคลื่น โดยแต่ละองค์ประกอบอาจเป็นซิกแซก แฟลต หรือสามเหลี่ยมก็ได้ ไม่มีข้อบังคับตายตัวว่าโครงสร้างสุดท้ายต้องเป็นรูปแบบใด และ triple three พบได้น้อยกว่า double three ที่เรียบง่ายกว่า"}, {"id": "v3q04", "text": "Which practices are appropriate when applying Fibonacci confluence analysis to identify a probable reversal zone? (Select 2-3)", "choices": [{"id": "v3q04c_a", "letter": "a", "text": "Using only a single Fibonacci ratio from a single wave and treating that level in isolation as a guaranteed reversal point"}, {"id": "v3q04c_b", "letter": "b", "text": "Overlapping a Wave C = Wave A projection with a 61.8% retracement of the prior impulse to find a converging price cluster"}, {"id": "v3q04c_c", "letter": "c", "text": "Combining retracement levels from one wave relationship with extension levels from a related wave to locate a tighter target zone"}, {"id": "v3q04c_d", "letter": "d", "text": "Extending the confluence check across at least two different wave relationships rather than relying on a single projection"}], "correct": ["b", "c", "d"], "expEn": "Confluence analysis strengthens a target zone by overlapping multiple independent Fibonacci relationships; relying on one isolated ratio from a single wave provides much weaker evidence.", "expTh": "การวิเคราะห์ confluence จะเพิ่มความน่าเชื่อถือของโซนเป้าหมายด้วยการซ้อนทับความสัมพันธ์ฟีโบนักชีที่เป็นอิสระต่อกันหลายชุด การอิงกับอัตราส่วนเดียวจากคลื่นเดียวโดยลำพังจึงให้หลักฐานที่อ่อนกว่ามาก"}, {"id": "v3q05", "text": "Regarding an 'X wave' within a corrective combination, which statements are correct? (Select 2-3)", "choices": [{"id": "v3q05c_a", "letter": "a", "text": "It is itself a corrective wave that separates two or more simple corrective patterns"}, {"id": "v3q05c_b", "letter": "b", "text": "Its direction runs counter to the corrective structures it separates, i.e., it moves back toward the direction of the larger trend"}, {"id": "v3q05c_c", "letter": "c", "text": "It must always take the form of a triangle"}, {"id": "v3q05c_d", "letter": "d", "text": "It always retraces less than 38.2% of the pattern that preceded it"}], "correct": ["a", "b"], "expEn": "An X wave is a corrective wave that connects simple corrective patterns and moves opposite to them (back toward the larger trend); its depth can vary widely, and it is not restricted to any single pattern type such as a triangle.", "expTh": "คลื่น X เป็นคลื่นปรับฐานที่เชื่อมโยงคลื่นปรับฐานแบบง่ายเข้าด้วยกัน และเคลื่อนที่สวนทางกับคลื่นเหล่านั้น (กลับไปในทิศทางเทรนด์ใหญ่) โดยความลึกของคลื่น X แปรผันได้มาก และไม่จำเป็นต้องเป็นรูปแบบสามเหลี่ยมเสมอไป"}, {"id": "v3q06", "text": "When using a logarithmic (percentage) price scale versus an arithmetic scale for channeling large-degree waves, which statements are correct? (Select 2-3)", "choices": [{"id": "v3q06c_a", "letter": "a", "text": "A log scale is generally preferred for wave analysis over long time spans or where price changes are proportionally large"}, {"id": "v3q06c_b", "letter": "b", "text": "Elliott Wave rules such as the no-overlap rule change depending on which price scale is used"}, {"id": "v3q06c_c", "letter": "c", "text": "An arithmetic scale can distort the apparent shape of trendlines when price ranges span multiple magnitudes"}, {"id": "v3q06c_d", "letter": "d", "text": "Because trendline angles can differ between scales, analysts should recheck channel validity when switching from arithmetic to log scale, or vice versa"}], "correct": ["a", "c", "d"], "expEn": "Log scale is preferred for long-term or large-percentage moves because arithmetic scale can visually distort trendline angles; channels should be rechecked when switching scales, but the underlying Elliott rules themselves do not change with scale.", "expTh": "สเกลแบบ log เหมาะกับการวิเคราะห์คลื่นที่มีช่วงเวลานานหรือการเปลี่ยนแปลงราคาตามสัดส่วนที่มาก เพราะสเกลแบบเลขคณิตอาจบิดเบือนมุมของเส้นแนวโน้ม ควรตรวจสอบช่องแนวโน้มใหม่เมื่อเปลี่ยนสเกล แต่กฎของ Elliott Wave เองไม่เปลี่ยนแปลงตามสเกลที่ใช้"}, {"id": "v3q07", "text": "Regarding a 'running' correction (where the correction fails to make significant net progress against the prior trend), which observations are valid? (Select 2-3)", "choices": [{"id": "v3q07c_a", "letter": "a", "text": "It typically appears when the corrective structure sits at a fourth-wave position within a strongly trending market"}, {"id": "v3q07c_b", "letter": "b", "text": "It always signals an imminent trend reversal of the larger degree"}, {"id": "v3q07c_c", "letter": "c", "text": "The running characteristic is a feature only of multi-pattern combinations, never of a single simple correction like a running flat"}, {"id": "v3q07c_d", "letter": "d", "text": "It suggests the larger trend is strong and the correction remains largely sideways relative to its price origin"}], "correct": ["a", "d"], "expEn": "A running correction reflects strong underlying trend force and commonly occurs as wave 4 in a powerful trend; a running flat is itself a simple example of this behavior, and it does not by itself signal an imminent larger-degree reversal.", "expTh": "การปรับฐานแบบ running สะท้อนแรงเทรนด์ที่แข็งแกร่งอยู่เบื้องหลัง และมักพบเป็นคลื่น 4 ในเทรนด์ที่มีพลังมาก โดย running flat เองก็เป็นตัวอย่างของพฤติกรรมนี้ในรูปแบบคลื่นเดี่ยวได้เช่นกัน และไม่ได้เป็นสัญญาณบ่งชี้การกลับตัวขององศาใหญ่ในทันที"}, {"id": "v3q08", "text": "Which practices are valid when using Fibonacci ratios to analyze Wave 4 in relation to an extended Wave 3? (Select 2-3)", "choices": [{"id": "v3q08c_a", "letter": "a", "text": "Projecting Wave 4's likely retracement at approximately 38.2% of Wave 3"}, {"id": "v3q08c_b", "letter": "b", "text": "Checking whether Wave 4's extreme falls within the price territory of Wave 1, which would violate the no-overlap rule"}, {"id": "v3q08c_c", "letter": "c", "text": "Assuming Wave 4 must always take the form of a triangle whenever Wave 2 was a zigzag"}, {"id": "v3q08c_d", "letter": "d", "text": "Comparing Wave 4's time duration to Wave 2's duration as a secondary alternation check"}], "correct": ["a", "b", "d"], "expEn": "Common practice includes projecting a 38.2% retracement for wave 4, checking for a no-overlap violation against wave 1, and comparing wave 2/wave 4 durations; alternation is only a guideline, so wave 4's form is not fixed by wave 2's form.", "expTh": "แนวปฏิบัติทั่วไปได้แก่การประเมินการย่อตัวของคลื่น 4 ที่ราว 38.2% การตรวจสอบว่าคลื่น 4 ทับซ้อนคลื่น 1 หรือไม่ และการเปรียบเทียบระยะเวลาของคลื่น 2 กับคลื่น 4 แต่เนื่องจาก alternation เป็นเพียงแนวทาง รูปแบบของคลื่น 4 จึงไม่ได้ถูกกำหนดตายตัวจากรูปแบบของคลื่น 2"}, {"id": "v3q09", "text": "When two independent, valid wave counts (a primary and an alternate) both satisfy the three core Elliott rules on the same chart, which practices are appropriate? (Select 2-3)", "choices": [{"id": "v3q09c_a", "letter": "a", "text": "Discarding both counts entirely simply because they disagree on the current wave position"}, {"id": "v3q09c_b", "letter": "b", "text": "Maintaining both counts and monitoring which invalidation level is breached first"}, {"id": "v3q09c_c", "letter": "c", "text": "Assigning higher confidence to the count best supported by guidelines such as channeling, Fibonacci confluence, and wave personality"}, {"id": "v3q09c_d", "letter": "d", "text": "Documenting the specific price level that would invalidate each count so it is clear in advance which one would be discarded first"}], "correct": ["b", "c", "d"], "expEn": "Good practice is to hold both valid counts, weigh them using supporting guidelines, and pre-define invalidation levels for each; disagreement between two structurally valid counts is normal and not a reason to discard both.", "expTh": "แนวปฏิบัติที่ดีคือการเก็บทั้งสองแนวคิดที่ยังสมเหตุสมผลไว้ ให้น้ำหนักตามแนวทางสนับสนุนต่างๆ และกำหนดระดับราคาที่จะทำให้แต่ละแนวคิดเป็นโมฆะไว้ล่วงหน้า การที่แนวคิดสองแบบที่ถูกต้องตามโครงสร้างขัดแย้งกันเป็นเรื่องปกติ ไม่ใช่เหตุผลที่จะทิ้งทั้งสองแนวคิด"}, {"id": "v3q10", "text": "Regarding channeling technique applied to a Wave 4 triangle, which statements are correct? (Select 2-3)", "choices": [{"id": "v3q10c_a", "letter": "a", "text": "The triangle's boundary trendlines are irrelevant to estimating the subsequent thrust"}, {"id": "v3q10c_b", "letter": "b", "text": "A thrust target can be estimated by projecting the width of the triangle's widest leg from the breakout point"}, {"id": "v3q10c_c", "letter": "c", "text": "Triangles must always expand rather than contract when appearing at the Wave 4 position"}, {"id": "v3q10c_d", "letter": "d", "text": "Trendlines are drawn connecting the A-C and B-D endpoints to visualize the converging structure"}], "correct": ["b", "d"], "expEn": "Triangle boundaries are drawn A-C and B-D, and the post-triangle thrust is commonly estimated using the triangle's widest leg; contracting triangles (not expanding) are the most common form at wave 4.", "expTh": "เส้นขอบของสามเหลี่ยมลากผ่านจุด A-C และ B-D และการพุ่งตัวหลังสามเหลี่ยมมักประเมินจากความกว้างของขาที่กว้างที่สุด โดยสามเหลี่ยมแบบหดตัว (ไม่ใช่แบบขยาย) เป็นรูปแบบที่พบบ่อยที่สุดในตำแหน่งคลื่น 4"}, {"id": "v3q11", "text": "Which statements correctly describe alternation as applied across corrective combinations? (Select 2-3)", "choices": [{"id": "v3q11c_a", "letter": "a", "text": "Alternation guarantees that the second structure in a combination will always be shorter in time than the first"}, {"id": "v3q11c_b", "letter": "b", "text": "Alternation can also manifest in complexity, with a simpler correction potentially alternating with a more complex one"}, {"id": "v3q11c_c", "letter": "c", "text": "Alternation is a rule that, if violated, automatically invalidates a wave count"}, {"id": "v3q11c_d", "letter": "d", "text": "Alternation may appear in the difference between the first and second (or third) simple pattern within a combination, e.g., a flat followed by a zigzag"}], "correct": ["b", "d"], "expEn": "Alternation within combinations can show up as differing pattern types or differing complexity between component structures, but as a guideline it has no strict enforcement and does not fix relative time duration.", "expTh": "Alternation ในโครงสร้างคอมบิเนชันอาจปรากฏในรูปแบบที่แตกต่างกันหรือความซับซ้อนที่ต่างกันระหว่างองค์ประกอบ แต่เนื่องจากเป็นเพียงแนวทาง จึงไม่มีการบังคับที่ตายตัวและไม่ได้กำหนดระยะเวลาสัมพัทธ์ที่แน่นอน"}, {"id": "v3q12", "text": "As a Wave 5 diagonal triangle nears its apex, which observations support using Fibonacci confluence to locate a reversal target? (Select 2-3)", "choices": [{"id": "v3q12c_a", "letter": "a", "text": "Disregarding trendline convergence entirely since diagonals have no meaningfully defined boundaries"}, {"id": "v3q12c_b", "letter": "b", "text": "Overlapping a projected Wave 5 = Wave 1 relationship, common in diagonals, with the intersection of the converging trendlines"}, {"id": "v3q12c_c", "letter": "c", "text": "Confirming that the projected target aligns with a prior significant support or resistance level from a larger degree"}, {"id": "v3q12c_d", "letter": "d", "text": "Assuming the diagonal can never throw-over its trendline, so any close outside it immediately invalidates the pattern"}], "correct": ["b", "c"], "expEn": "Useful confluence checks include overlapping the common wave 5 = wave 1 diagonal relationship with the trendline apex and confirming alignment with prior significant support/resistance; a brief throw-over beyond the trendline is a recognized diagonal characteristic, not an automatic invalidation.", "expTh": "การตรวจสอบ confluence ที่มีประโยชน์ได้แก่การซ้อนทับความสัมพันธ์คลื่น 5 เท่ากับคลื่น 1 ซึ่งพบบ่อยใน diagonal เข้ากับจุดตัดของเส้นแนวโน้มที่บีบเข้าหากัน และการยืนยันว่าตรงกับแนวรับ/แนวต้านสำคัญจากองศาที่ใหญ่กว่า ส่วนการทะลุเส้นแนวโน้มเล็กน้อย (throw-over) เป็นลักษณะที่ยอมรับได้ของ diagonal ไม่ใช่สิ่งที่ทำให้รูปแบบเป็นโมฆะทันที"}, {"id": "v3q13", "text": "When applying multi-degree wave labeling to a Primary-degree correction composed of Intermediate-degree waves, which practices are correct? (Select 2-3)", "choices": [{"id": "v3q13c_a", "letter": "a", "text": "Degree labels can be assigned arbitrarily as long as the overall correction eventually ends in three waves"}, {"id": "v3q13c_b", "letter": "b", "text": "Each Intermediate wave within the correction should itself satisfy the rules appropriate to its own wave type (impulse or corrective)"}, {"id": "v3q13c_c", "letter": "c", "text": "Fibonacci relationships can be checked both within the Intermediate-degree sub-waves and across the whole Primary-degree structure"}, {"id": "v3q13c_d", "letter": "d", "text": "A Primary-degree correction can be composed of Intermediate-degree structures that are themselves combinations, flats, zigzags, or triangles"}], "correct": ["b", "c", "d"], "expEn": "Multi-degree analysis requires each sub-wave to independently satisfy its own structural rules, allows Fibonacci checks at multiple degrees, and permits any recognized corrective form at the Intermediate level; degree labeling is never arbitrary.", "expTh": "การวิเคราะห์หลายองศาต้องให้คลื่นย่อยแต่ละคลื่นเป็นไปตามกฎโครงสร้างของตัวเองอย่างอิสระ สามารถตรวจสอบความสัมพันธ์ฟีโบนักชีได้ในหลายองศา และอนุญาตให้องศา Intermediate เป็นรูปแบบปรับฐานที่ได้รับการยอมรับใดก็ได้ การติดป้ายองศาจึงไม่สามารถกำหนดขึ้นเองตามใจชอบได้"}, {"id": "v3q14", "text": "Which practices are valid when distinguishing a genuine Wave B within a flat correction from the start of a new impulsive Wave 1? (Select 2-3)", "choices": [{"id": "v3q14c_a", "letter": "a", "text": "Ignoring volume and momentum characteristics, since they never provide useful confirmation in this context"}, {"id": "v3q14c_b", "letter": "b", "text": "Examining whether the move retraces a proportion consistent with flat-type corrections, roughly 90% or more of the prior A wave"}, {"id": "v3q14c_c", "letter": "c", "text": "Checking whether the move subdivides into three waves (favoring a corrective B wave) versus five waves (favoring an impulsive Wave 1)"}, {"id": "v3q14c_d", "letter": "d", "text": "Assuming any upward move following a decline must automatically be Wave B, without checking its internal structure"}], "correct": ["b", "c"], "expEn": "Distinguishing a B wave from a new Wave 1 relies on checking internal subdivision (three vs. five waves) and retracement depth typical of flats; volume and momentum can provide useful secondary confirmation and should not be ignored.", "expTh": "การแยกแยะคลื่น B ออกจากคลื่น 1 ใหม่อาศัยการตรวจสอบการแบ่งย่อยภายใน (สามคลื่นหรือห้าคลื่น) และความลึกของการย่อตัวที่สอดคล้องกับแฟลต ส่วนปริมาณการซื้อขายและโมเมนตัมสามารถใช้เป็นหลักฐานสนับสนุนรองที่มีประโยชน์ ไม่ควรละเลย"}, {"id": "v3q15", "text": "Which statements about combining channeling and Fibonacci extension analysis for Wave 3 targets are correct? (Select 2-3)", "choices": [{"id": "v3q15c_a", "letter": "a", "text": "Channeling and Fibonacci extension analysis cannot be used together because they rely on incompatible price scales"}, {"id": "v3q15c_b", "letter": "b", "text": "A parallel channel drawn off Waves 1 and 2 can help visualize where Wave 3 may accelerate away from the channel during extension"}, {"id": "v3q15c_c", "letter": "c", "text": "If Wave 3 breaks decisively above an upper channel line drawn from Waves 1-2, this can support an extended Wave 3 interpretation"}, {"id": "v3q15c_d", "letter": "d", "text": "A 161.8% extension of Wave 1, measured from the end of Wave 2, is a commonly used Wave 3 price target"}], "correct": ["b", "c", "d"], "expEn": "Channeling and Fibonacci extension are complementary tools that are commonly combined: a channel drawn from waves 1-2 helps visualize acceleration, a decisive break above it supports extension, and 161.8% of wave 1 is a common target — the two techniques use the same price scale and are not incompatible.", "expTh": "การลากช่องแนวโน้มและการวิเคราะห์ส่วนขยายฟีโบนักชีเป็นเครื่องมือที่ใช้ร่วมกันได้อย่างเสริมกัน โดยช่องแนวโน้มที่ลากจากคลื่น 1-2 ช่วยให้เห็นการเร่งตัว การทะลุช่องอย่างชัดเจนสนับสนุนการตีความว่าคลื่น 3 กำลังยืดตัว และเป้าหมาย 161.8% ของคลื่น 1 เป็นเป้าหมายที่นิยมใช้ ทั้งสองเทคนิคใช้สเกลราคาเดียวกันจึงไม่ได้ขัดแย้งกันแต่อย่างใด"}, {"id": "v3q16", "text": "Regarding the classification of a 'barrier triangle,' which statements are correct? (Select 2-3)", "choices": [{"id": "v3q16c_a", "letter": "a", "text": "It can only occur at the Wave 2 position, never at Wave 4 or Wave B"}, {"id": "v3q16c_b", "letter": "b", "text": "It still subdivides into five overlapping legs, A through E, like other triangle types"}, {"id": "v3q16c_c", "letter": "c", "text": "Its resolution (thrust) does not need to relate to the width of the triangle"}, {"id": "v3q16c_d", "letter": "d", "text": "It is a variation of a contracting triangle where one boundary trendline is essentially flat or horizontal"}], "correct": ["b", "d"], "expEn": "A barrier triangle is a contracting-triangle variant with one flat boundary and the standard five-leg A-E structure; it can appear at wave 4, wave B, or wave X, not only wave 2, and its thrust is still commonly estimated from the triangle's width.", "expTh": "Barrier triangle เป็นรูปแบบย่อยของสามเหลี่ยมแบบหดตัวที่มีเส้นขอบด้านหนึ่งเกือบราบ และยังคงมีโครงสร้างขา A ถึง E ทั้งห้าขาตามมาตรฐาน โดยสามารถปรากฏได้ทั้งที่คลื่น 4, คลื่น B หรือคลื่น X ไม่ใช่เฉพาะคลื่น 2 เท่านั้น และการพุ่งตัวหลังจบรูปแบบก็ยังคงประเมินจากความกว้างของสามเหลี่ยมได้เช่นเดิม"}, {"id": "v3q17", "text": "When a suspected Wave 4 diagonal correction overlaps a prior Wave 1's price territory, which practices are appropriate? (Select 2-3)", "choices": [{"id": "v3q17c_a", "letter": "a", "text": "Concluding immediately that the entire wave count must be discarded due to the overlap, without checking for a diagonal"}, {"id": "v3q17c_b", "letter": "b", "text": "Checking whether price action elsewhere confirms wedge-shaped, converging trendlines consistent with a diagonal"}, {"id": "v3q17c_c", "letter": "c", "text": "Ignoring the overlap entirely, since it can never carry any analytical significance"}, {"id": "v3q17c_d", "letter": "d", "text": "Recognizing that overlap here does not necessarily invalidate the count, since diagonals permit Wave 1/Wave 4 overlap"}], "correct": ["b", "d"], "expEn": "Overlap alone is not disqualifying if a diagonal structure is confirmed by wedge-shaped, converging trendlines; overlap should still be investigated rather than dismissed, since it can indicate either a diagonal or a genuinely invalid count.", "expTh": "การทับซ้อนเพียงอย่างเดียวไม่ได้ทำให้การนับคลื่นผิดพลาดเสมอไป หากสามารถยืนยันโครงสร้าง diagonal ได้จากเส้นแนวโน้มที่บีบเข้าหากันเป็นรูปลิ่ม อย่างไรก็ตาม การทับซ้อนควรถูกตรวจสอบอย่างละเอียด ไม่ควรมองข้าม เพราะอาจบ่งชี้ได้ทั้งรูปแบบ diagonal หรือการนับคลื่นที่ผิดพลาดจริง"}, {"id": "v3q18", "text": "When two X waves separate three simple corrective patterns (a triple three), which statements are valid? (Select 2-3)", "choices": [{"id": "v3q18c_a", "letter": "a", "text": "The three simple patterns joined together must all be corrective structures, never motive impulses"}, {"id": "v3q18c_b", "letter": "b", "text": "The overall triple three is more time-consuming than a single simple correction of the same degree"}, {"id": "v3q18c_c", "letter": "c", "text": "A triple three must include at least one triangle among its three component structures"}, {"id": "v3q18c_d", "letter": "d", "text": "Each of the two X waves is itself a corrective structure with its own internal subdivisions"}], "correct": ["a", "b", "d"], "expEn": "A triple three's two X waves are themselves corrective with internal structure, the overall pattern takes longer to complete than a simple correction, and all joined components must be corrective in nature; there is no requirement that a triangle appear among them.", "expTh": "คลื่น X ทั้งสองใน triple three เองก็เป็นคลื่นปรับฐานที่มีโครงสร้างภายใน โครงสร้างโดยรวมใช้เวลานานกว่าคลื่นปรับฐานแบบง่ายในองศาเดียวกัน และองค์ประกอบทั้งสามที่เชื่อมกันต้องเป็นคลื่นปรับฐานทั้งหมด ไม่ใช่คลื่นแรงผลัก โดยไม่มีข้อบังคับว่าต้องมีสามเหลี่ยมปรากฏอยู่ด้วย"}, {"id": "v3q19", "text": "When applying channeling to help identify a probable Wave 5 truncation, which observations are useful? (Select 2-3)", "choices": [{"id": "v3q19c_a", "letter": "a", "text": "Observing weakening momentum or volume as price nears the channel boundary without exceeding the Wave 3 extreme"}, {"id": "v3q19c_b", "letter": "b", "text": "Watching for price to approach, but fail to close beyond, both the Wave 3 extreme and the relevant parallel channel line"}, {"id": "v3q19c_c", "letter": "c", "text": "Assuming truncation can be identified purely from time duration, without reference to price behavior at the channel or Wave 3 level"}, {"id": "v3q19c_d", "letter": "d", "text": "Concluding truncation occurred only after price has already reversed by more than 61.8% of the entire wave sequence"}], "correct": ["a", "b"], "expEn": "Truncation is best confirmed by observing price fail to exceed both the wave 3 extreme and the channel boundary, along with weakening volume/momentum; it is identified at the point of failure to exceed wave 3, not by the size of a subsequent reversal.", "expTh": "Truncation ได้รับการยืนยันได้ดีที่สุดจากการสังเกตว่าราคาไม่สามารถทะลุทั้งจุดสุดขั้วของคลื่น 3 และเส้นขอบช่องแนวโน้มได้ พร้อมกับปริมาณการซื้อขายหรือโมเมนตัมที่อ่อนแรงลง โดยจุดที่ระบุ truncation คือจุดที่ไม่สามารถทะลุคลื่น 3 ได้ ไม่ใช่ขนาดของการกลับตัวที่เกิดขึ้นภายหลัง"}, {"id": "v3q20", "text": "When Fibonacci retracement, extension, and channeling tools disagree on a target zone for the end of a correction, which practices reflect best practice? (Select 2-3)", "choices": [{"id": "v3q20c_a", "letter": "a", "text": "Giving more analytical weight to the zone where multiple independent tools converge (confluence) rather than any single tool in isolation"}, {"id": "v3q20c_b", "letter": "b", "text": "Always following the Fibonacci extension level over channeling or retracement analysis in every case, regardless of context"}, {"id": "v3q20c_c", "letter": "c", "text": "Treating disagreement among the tools as proof that Elliott Wave analysis cannot be applied to the chart at all"}, {"id": "v3q20c_d", "letter": "d", "text": "Maintaining flexibility in the wave count and watching for confirming price or momentum signals as the market approaches candidate zones"}], "correct": ["a", "d"], "expEn": "Best practice weighs confluence zones more heavily and stays flexible while awaiting confirmation, rather than mechanically favoring one tool in all cases or abandoning the analysis outright when tools disagree.", "expTh": "แนวปฏิบัติที่ดีคือการให้น้ำหนักกับโซนที่เครื่องมือหลายชนิดซ้อนทับกัน (confluence) มากกว่า และรักษาความยืดหยุ่นของการนับคลื่นพร้อมรอสัญญาณยืนยันจากราคาหรือโมเมนตัม แทนที่จะยึดเครื่องมือใดเครื่องมือหนึ่งตายตัวในทุกกรณี หรือละทิ้งการวิเคราะห์ทั้งหมดเพียงเพราะเครื่องมือให้ผลไม่ตรงกัน"}] },
+  }
+};
+</script>
+<script>
+(function(){
+"use strict";
+
+var DATA = window.__CEWA21_DATA__;
+var LS_PREFIX = "cewa21_";
+
+/* ============================================================
+   Mulberry32 seeded PRNG + deep-clone Fisher-Yates shuffle
+   (functional requirement: never mutate the original question bank)
+   ============================================================ */
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function deepClone(obj){ return JSON.parse(JSON.stringify(obj)); }
+function seededShuffle(array, rng){
+  var a = deepClone(array);
+  for(var i = a.length - 1; i > 0; i--){
+    var j = Math.floor(rng() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+  }
+  return a;
+}
+
+/* ============================================================
+   Canvas particle background (subtle, non-distracting)
+   ============================================================ */
+(function bgParticles(){
+  var canvas = document.getElementById("bg-canvas");
+  var ctx = canvas.getContext("2d");
+  var particles = [];
+  var W, H;
+  function resize(){
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  window.addEventListener("resize", resize);
+  resize();
+  var count = Math.min(70, Math.floor((W*H)/22000));
+  for(var i=0;i<count;i++){
+    particles.push({
+      x: Math.random()*W, y: Math.random()*H,
+      vx: (Math.random()-0.5)*0.15, vy: (Math.random()-0.5)*0.15,
+      r: Math.random()*1.6 + 0.4,
+      hue: Math.random() < 0.5 ? "200,241,53" : "77,159,255",
+      a: Math.random()*0.35 + 0.08
+    });
+  }
+  function tick(){
+    ctx.clearRect(0,0,W,H);
+    for(var i=0;i<particles.length;i++){
+      var p = particles[i];
+      p.x += p.vx; p.y += p.vy;
+      if(p.x < 0) p.x = W; if(p.x > W) p.x = 0;
+      if(p.y < 0) p.y = H; if(p.y > H) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fillStyle = "rgba("+p.hue+","+p.a+")";
+      ctx.fill();
+    }
+    // faint connecting lines for nearby particles
+    for(var i=0;i<particles.length;i++){
+      for(var j=i+1;j<particles.length;j++){
+        var dx = particles[i].x-particles[j].x, dy = particles[i].y-particles[j].y;
+        var dist = Math.sqrt(dx*dx+dy*dy);
+        if(dist < 110){
+          ctx.strokeStyle = "rgba(140,155,165,"+(0.06*(1-dist/110))+")";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+/* ============================================================
+   Confetti (canvas) on PASS / CEWA MASTER
+   ============================================================ */
+function fireConfetti(){
+  var canvas = document.getElementById("confetti-canvas");
+  var ctx = canvas.getContext("2d");
+  var W = canvas.width = window.innerWidth;
+  var H = canvas.height = window.innerHeight;
+  var colors = ["#c8f135", "#4dff91", "#4d9fff", "#ffd84d", "#ffffff"];
+  var pieces = [];
+  for(var i=0;i<160;i++){
+    pieces.push({
+      x: Math.random()*W, y: -20 - Math.random()*H*0.5,
+      w: 5+Math.random()*6, h: 8+Math.random()*8,
+      vx: (Math.random()-0.5)*3, vy: 2+Math.random()*3.5,
+      rot: Math.random()*360, vr: (Math.random()-0.5)*10,
+      color: colors[Math.floor(Math.random()*colors.length)],
+      life: 0
+    });
+  }
+  var maxLife = 220;
+  function tick(){
+    ctx.clearRect(0,0,W,H);
+    var alive = false;
+    for(var i=0;i<pieces.length;i++){
+      var p = pieces[i];
+      p.life++;
+      if(p.life > maxLife) continue;
+      alive = true;
+      p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.vy += 0.02;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = Math.max(0, 1 - p.life/maxLife);
+      ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      ctx.restore();
+    }
+    if(alive) requestAnimationFrame(tick);
+    else ctx.clearRect(0,0,W,H);
+  }
+  tick();
+}
+
+/* ============================================================
+   Custom modal (replaces window.confirm — required for LINE/
+   in-app browser compatibility on Android)
+   ============================================================ */
+var modalResolve = null;
+function showModal(title, msg, confirmLabel, cancelLabel){
+  var overlay = document.getElementById("modal-overlay");
+  document.getElementById("modal-title").textContent = title;
+  document.getElementById("modal-msg").textContent = msg;
+  var confirmBtn = document.querySelector('#modal-box [data-action="modal-confirm"]');
+  var cancelBtn = document.querySelector('#modal-box [data-action="modal-cancel"]');
+  confirmBtn.textContent = confirmLabel || "ยืนยัน";
+  cancelBtn.style.display = cancelLabel === null ? "none" : "inline-block";
+  cancelBtn.textContent = cancelLabel || "ยกเลิก";
+  overlay.classList.add("active");
+  return new Promise(function(resolve){ modalResolve = resolve; });
+}
+function hideModal(result){
+  document.getElementById("modal-overlay").classList.remove("active");
+  if(modalResolve){ modalResolve(result); modalResolve = null; }
+}
+
+/* ============================================================
+   Application state
+   ============================================================ */
+var state = {
+  screen: "start",
+  variantKey: null,
+  variant: null,
+  order: [],          // shuffled+cloned question array for this attempt
+  answers: {},        // qid -> array of selected letters
+  currentIndex: 0,
+  remainingSeconds: 0,
+  timerId: null,
+  lang: "en",
+  results: null
+};
+
+function storageKey(variantKey){ return LS_PREFIX + "progress_" + variantKey; }
+
+function saveProgress(){
+  if(!state.variantKey) return;
+  try{
+    localStorage.setItem(storageKey(state.variantKey), JSON.stringify({
+      order: state.order,
+      answers: state.answers,
+      currentIndex: state.currentIndex,
+      remainingSeconds: state.remainingSeconds,
+      ts: Date.now()
+    }));
+  }catch(e){ /* storage unavailable — fail silently, exam still works in-memory */ }
+}
+function loadProgress(variantKey){
+  try{
+    var raw = localStorage.getItem(storageKey(variantKey));
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function clearProgress(variantKey){
+  try{ localStorage.removeItem(storageKey(variantKey)); }catch(e){}
+}
+
+/* ============================================================
+   Rendering: Start screen
+   ============================================================ */
+function renderStart(){
+  document.getElementById("exam-title-slot");
+  var titleEl = document.querySelector("#screen-start h1");
+  if(titleEl) titleEl.textContent = DATA.examTitle;
+  var subEn = document.querySelectorAll("#screen-start p")[0];
+  var subTh = document.querySelectorAll("#screen-start p")[1];
+  if(subEn) subEn.textContent = DATA.subtitleEn;
+  if(subTh) subTh.textContent = DATA.subtitleTh;
+
+  var grid = document.getElementById("variant-cards");
+  grid.innerHTML = "";
+  ["v1","v2","v3"].forEach(function(key){
+    var v = DATA.variants[key];
+    var saved = loadProgress(key);
+    var card = document.createElement("div");
+    card.className = "glass variant-card";
+    card.setAttribute("data-action", "select-variant");
+    card.setAttribute("data-variant", key);
+    var typeLabel = v.type === "multi" ? "Multi-select (เลือก 2-3 ข้อ)" : "Single best answer";
+    card.innerHTML =
+      '<span class="tag">' + v.label + '</span>' +
+      '<h3>' + v.labelTh + '</h3>' +
+      '<div class="meta">' +
+        '<span>📝 ' + v.questions.length + ' ข้อ</span>' +
+        '<span>⏱ ' + v.timeMin + ' นาที</span>' +
+        '<span>' + typeLabel + '</span>' +
+      '</div>' +
+      '<div class="topics">' + v.topicsTh + '</div>' +
+      (saved ? '<div class="resume-pill">มีความคืบหน้าค้างอยู่ · Resume available</div>' : '') +
+      '<button class="go-btn" data-action="select-variant" data-variant="' + key + '">เริ่มทำข้อสอบ →</button>';
+    grid.appendChild(card);
+  });
+
+  if(window.gsap){
+    gsap.to(".variant-card", {opacity:1, y:0, duration:0.55, stagger:0.12, ease:"power2.out"});
+  } else {
+    document.querySelectorAll(".variant-card").forEach(function(c){ c.style.opacity=1; c.style.transform="translateY(0)"; });
+  }
+}
+
+/* ============================================================
+   Exam flow
+   ============================================================ */
+function startVariant(key, resume){
+  var v = DATA.variants[key];
+  state.variantKey = key;
+  state.variant = v;
+  state.lang = "en";
+
+  var saved = resume ? loadProgress(key) : null;
+  if(saved){
+    state.order = saved.order;
+    state.answers = saved.answers;
+    state.currentIndex = saved.currentIndex;
+    state.remainingSeconds = saved.remainingSeconds;
+  } else {
+    var seed = (Date.now() ^ Math.floor(Math.random()*1e9)) >>> 0;
+    var rng = mulberry32(seed);
+    // deep clone + shuffle question order, and deep clone + shuffle each question's choices
+    var shuffledQuestions = seededShuffle(v.questions, rng);
+    shuffledQuestions = shuffledQuestions.map(function(q){
+      var qc = deepClone(q);
+      qc.choices = seededShuffle(qc.choices, rng);
+      return qc;
+    });
+    state.order = shuffledQuestions;
+    state.answers = {};
+    state.currentIndex = 0;
+    state.remainingSeconds = v.timeMin * 60;
+    clearProgress(key);
+  }
+
+  goToScreen("exam");
+  document.getElementById("hud").style.display = "flex";
+  renderExamTopbar();
+  renderJumpGrid();
+  renderQuestion();
+  startTimer();
+}
+
+function renderExamTopbar(){
+  var v = state.variant;
+  document.getElementById("exam-label").textContent = DATA.examTitle + " · " + v.label + " (" + v.labelTh + ")";
+}
+
+function renderJumpGrid(){
+  var grid = document.getElementById("jumpgrid");
+  grid.innerHTML = "";
+  state.order.forEach(function(q, idx){
+    var b = document.createElement("div");
+    b.className = "jbtn" + (state.answers[q.id] && state.answers[q.id].length ? " answered" : "") + (idx === state.currentIndex ? " current" : "");
+    b.textContent = (idx+1);
+    b.setAttribute("data-action", "jump-to");
+    b.setAttribute("data-index", idx);
+    grid.appendChild(b);
+  });
+}
+
+function renderQuestion(){
+  var q = state.order[state.currentIndex];
+  var total = state.order.length;
+  document.getElementById("q-index").textContent = "Question " + (state.currentIndex+1) + " / " + total;
+  document.getElementById("q-text").textContent = q.text;
+  document.getElementById("q-hint").textContent = state.variant.type === "multi" ? "เลือกคำตอบที่ถูกต้อง 2-3 ข้อ · Select 2-3 correct answers" : "เลือกคำตอบที่ถูกต้องที่สุดเพียงข้อเดียว · Select the single best answer";
+
+  var choicesEl = document.getElementById("choices");
+  choicesEl.innerHTML = "";
+  var selected = state.answers[q.id] || [];
+  q.choices.forEach(function(c){
+    var div = document.createElement("div");
+    div.className = "choice" + (selected.indexOf(c.letter) > -1 ? " selected" : "");
+    div.setAttribute("data-action", "select-choice");
+    div.setAttribute("data-letter", c.letter);
+    div.innerHTML = '<span class="letter">' + c.letter.toUpperCase() + '</span><span class="ctext">' + escapeHtml(c.text) + '</span>';
+    choicesEl.appendChild(div);
+  });
+
+  document.getElementById("progress-fill").style.width = (((state.currentIndex+1)/total)*100) + "%";
+  document.getElementById("btn-prev").disabled = state.currentIndex === 0;
+  document.getElementById("btn-next").textContent = state.currentIndex === total-1 ? "เสร็จสิ้น →" : "ถัดไป →";
+
+  renderJumpGrid();
+
+  if(window.gsap){
+    gsap.fromTo("#q-card", {opacity:0, y:16}, {opacity:1, y:0, duration:0.35, ease:"power2.out"});
+  }
+}
+
+function toggleChoice(letter){
+  var q = state.order[state.currentIndex];
+  var isMulti = state.variant.type === "multi";
+  var current = state.answers[q.id] || [];
+  if(isMulti){
+    var idx = current.indexOf(letter);
+    if(idx > -1){ current.splice(idx,1); } else { current.push(letter); }
+  } else {
+    current = [letter];
+  }
+  state.answers[q.id] = current;
+  saveProgress();
+  renderQuestion();
+}
+
+function goNext(){
+  var total = state.order.length;
+  if(state.currentIndex < total-1){
+    state.currentIndex++;
+    saveProgress();
+    renderQuestion();
+  } else {
+    requestSubmit();
+  }
+}
+function goPrev(){
+  if(state.currentIndex > 0){
+    state.currentIndex--;
+    saveProgress();
+    renderQuestion();
+  }
+}
+function jumpTo(idx){
+  state.currentIndex = idx;
+  saveProgress();
+  renderQuestion();
+}
+
+/* ---------- Timer ---------- */
+function startTimer(){
+  updateHud();
+  if(state.timerId) clearInterval(state.timerId);
+  state.timerId = setInterval(function(){
+    state.remainingSeconds--;
+    if(state.remainingSeconds <= 0){
+      state.remainingSeconds = 0;
+      updateHud();
+      clearInterval(state.timerId);
+      showModal("หมดเวลา · Time's up", "เวลาทำข้อสอบหมดแล้ว ระบบจะส่งคำตอบให้อัตโนมัติ", "ดูผลคะแนน", null).then(function(){
+        finishExam();
+      });
+      return;
+    }
+    updateHud();
+    if(state.remainingSeconds % 5 === 0) saveProgress();
+  }, 1000);
+}
+function updateHud(){
+  var hud = document.getElementById("hud");
+  var m = Math.floor(state.remainingSeconds/60);
+  var s = state.remainingSeconds%60;
+  document.getElementById("hud-time").textContent = (m<10?"0":"")+m + ":" + (s<10?"0":"")+s;
+  hud.classList.remove("warn","danger");
+  if(state.remainingSeconds <= 60) hud.classList.add("danger");
+  else if(state.remainingSeconds <= 300) hud.classList.add("warn");
+}
+
+/* ---------- Submit / grading ---------- */
+function requestSubmit(){
+  var total = state.order.length;
+  var answeredCount = Object.keys(state.answers).filter(function(k){ return state.answers[k] && state.answers[k].length; }).length;
+  var unanswered = total - answeredCount;
+  var msg = unanswered > 0
+    ? "คุณยังตอบไม่ครบ " + unanswered + " ข้อ ต้องการส่งคำตอบตอนนี้เลยหรือไม่?"
+    : "ต้องการส่งคำตอบและดูผลคะแนนหรือไม่?";
+  showModal("ยืนยันการส่งคำตอบ · Submit exam?", msg, "ส่งคำตอบ", "ทำต่อ").then(function(ok){
+    if(ok) finishExam();
+  });
+}
+
+function arraysEqual(a,b){
+  if(a.length !== b.length) return false;
+  var sa = a.slice().sort(), sb = b.slice().sort();
+  for(var i=0;i<sa.length;i++){ if(sa[i]!==sb[i]) return false; }
+  return true;
+}
+
+function finishExam(){
+  if(state.timerId) clearInterval(state.timerId);
+  document.getElementById("hud").style.display = "none";
+
+  var correctCount = 0;
+  var reviewData = state.order.map(function(q){
+    var userAns = state.answers[q.id] || [];
+    var isCorrect = arraysEqual(userAns, q.correct);
+    if(isCorrect) correctCount++;
+    return { q: q, userAns: userAns, isCorrect: isCorrect };
+  });
+
+  var total = state.order.length;
+  var pct = total ? Math.round((correctCount/total)*100) : 0;
+  var tier = pct >= 90 ? "master" : (pct >= 80 ? "pass" : "fail");
+
+  state.results = { correctCount: correctCount, total: total, pct: pct, tier: tier, review: reviewData };
+  clearProgress(state.variantKey);
+  goToScreen("results");
+  renderResults();
+}
+
+/* ============================================================
+   Results screen
+   ============================================================ */
+function renderResults(){
+  var r = state.results;
+  document.getElementById("result-pct").textContent = r.pct + "%";
+  document.getElementById("result-frac").textContent = r.correctCount + " / " + r.total;
+
+  var badge = document.getElementById("grade-badge");
+  badge.className = "grade-badge " + r.tier;
+  badge.textContent = r.tier === "master" ? "CEWA MASTER" : (r.tier === "pass" ? "PASS" : "FAIL");
+
+  var ring = document.getElementById("ring-fill");
+  var circumference = 2 * Math.PI * 94;
+  ring.style.stroke = r.tier === "fail" ? "var(--red)" : (r.tier === "pass" ? "var(--lime)" : "var(--green)");
+  ring.style.strokeDasharray = circumference;
+  ring.style.strokeDashoffset = circumference;
+  requestAnimationFrame(function(){
+    setTimeout(function(){
+      ring.style.strokeDashoffset = circumference * (1 - r.pct/100);
+    }, 60);
+  });
+
+  if(r.tier === "pass" || r.tier === "master"){
+    setTimeout(fireConfetti, 400);
+  }
+
+  renderReviewList();
+}
+
+function renderReviewList(){
+  var list = document.getElementById("review-list");
+  list.innerHTML = "";
+  state.results.review.forEach(function(item, idx){
+    var q = item.q;
+    var div = document.createElement("div");
+    div.className = "glass review-item";
+    div.setAttribute("data-action", "toggle-review");
+    div.setAttribute("data-index", idx);
+
+    var userLetters = item.userAns.length ? item.userAns.map(function(l){return l.toUpperCase();}).join(", ") : "—";
+    var correctLetters = q.correct.map(function(l){return l.toUpperCase();}).join(", ");
+
+    var choiceLookup = {};
+    q.choices.forEach(function(c){ choiceLookup[c.letter] = c.text; });
+
+    var userPillsHtml = item.userAns.length ? item.userAns.map(function(l){
+      return '<span class="ans-pill ' + (q.correct.indexOf(l)>-1 ? "correct":"wrong") + '">' + l.toUpperCase() + '. ' + escapeHtml(choiceLookup[l]) + '</span>';
+    }).join("") : '<span class="ans-pill wrong">ไม่ได้ตอบ · No answer</span>';
+
+    var correctPillsHtml = q.correct.map(function(l){
+      return '<span class="ans-pill correct">' + l.toUpperCase() + '. ' + escapeHtml(choiceLookup[l]) + '</span>';
+    }).join("");
+
+    div.innerHTML =
+      '<div class="review-head">' +
+        '<span class="ri-status ' + (item.isCorrect?"correct":"wrong") + '">' + (item.isCorrect?"✓":"✕") + '</span>' +
+        '<span class="ri-qtext">' + (idx+1) + '. ' + escapeHtml(q.text) + '</span>' +
+        '<span class="chev">▾</span>' +
+      '</div>' +
+      '<div class="review-body">' +
+        '<div class="row"><div class="lab">คำตอบของคุณ · Your answer</div>' + userPillsHtml + '</div>' +
+        '<div class="row"><div class="lab">คำตอบที่ถูกต้อง · Correct answer</div>' + correctPillsHtml + '</div>' +
+        '<div class="row"><div class="lab">คำอธิบาย · Explanation (' + (state.lang==='en'?'EN':'TH') + ')</div>' +
+          '<div class="exp-box ' + (state.lang==='th'?'th':'') + '" data-exp-en="' + escapeAttr(q.expEn) + '" data-exp-th="' + escapeAttr(q.expTh) + '">' + escapeHtml(state.lang==='en'?q.expEn:q.expTh) + '</div>' +
+        '</div>' +
+      '</div>';
+    list.appendChild(div);
+  });
+}
+function escapeHtml(s){
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+function escapeAttr(s){
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function setReviewLang(lang){
+  state.lang = lang;
+  document.querySelectorAll("#lang-toggle button").forEach(function(b){
+    b.classList.toggle("active", b.getAttribute("data-lang") === lang);
+  });
+  document.querySelectorAll(".exp-box").forEach(function(box){
+    var txt = lang === "en" ? box.getAttribute("data-exp-en") : box.getAttribute("data-exp-th");
+    box.textContent = txt;
+    box.classList.toggle("th", lang === "th");
+  });
+  // update the small language label per row
+  document.querySelectorAll(".review-body .row:nth-child(3) .lab").forEach(function(lab){
+    lab.textContent = "คำอธิบาย · Explanation (" + (lang==='en'?'EN':'TH') + ")";
+  });
+}
+
+/* ============================================================
+   Screen switching
+   ============================================================ */
+function goToScreen(name){
+  state.screen = name;
+  document.querySelectorAll(".screen").forEach(function(s){ s.classList.remove("active"); });
+  document.getElementById("screen-" + name).classList.add("active");
+  window.scrollTo({top:0, behavior:"smooth"});
+  if(name === "start"){
+    document.getElementById("hud").style.display = "none";
+    renderStart();
+  }
+}
+
+/* ============================================================
+   Event delegation (data-* attributes — no inline onclick args)
+   ============================================================ */
+document.addEventListener("click", function(e){
+  var el = e.target.closest("[data-action]");
+  if(!el) return;
+  var action = el.getAttribute("data-action");
+
+  switch(action){
+    case "select-variant": {
+      var key = el.getAttribute("data-variant");
+      var saved = loadProgress(key);
+      if(saved){
+        showModal("พบความคืบหน้าเดิม · Resume progress?", "พบข้อมูลการทำข้อสอบชุดนี้ค้างอยู่ ต้องการทำต่อจากเดิม หรือเริ่มใหม่?", "ทำต่อ", "เริ่มใหม่").then(function(resume){
+          if(resume){ startVariant(key, true); }
+          else { clearProgress(key); startVariant(key, false); }
+        });
+      } else {
+        startVariant(key, false);
+      }
+      break;
+    }
+    case "select-choice":
+      toggleChoice(el.getAttribute("data-letter"));
+      break;
+    case "next": goNext(); break;
+    case "prev": goPrev(); break;
+    case "jump-to": jumpTo(parseInt(el.getAttribute("data-index"),10)); break;
+    case "request-submit": requestSubmit(); break;
+    case "go-home":
+      showModal("ออกจากข้อสอบ · Leave exam?", "ผลคะแนนของรอบนี้จะไม่ถูกบันทึกหลังจากนี้ ต้องการกลับหน้าหลักหรือไม่?", "กลับหน้าหลัก", "อยู่ต่อ").then(function(ok){
+        if(ok) goToScreen("start");
+      });
+      break;
+    case "retake":
+      startVariant(state.variantKey, false);
+      break;
+    case "toggle-review": {
+      var item = el.closest(".review-item");
+      item.classList.toggle("open");
+      break;
+    }
+    case "modal-confirm": hideModal(true); break;
+    case "modal-cancel": hideModal(false); break;
+  }
+
+  if(el.hasAttribute("data-lang")){
+    setReviewLang(el.getAttribute("data-lang"));
+  }
+});
+
+/* Warn before accidental tab close mid-exam */
+window.addEventListener("beforeunload", function(e){
+  if(state.screen === "exam"){
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
+
+/* ============================================================
+   Boot
+   ============================================================ */
+renderStart();
+
+})();
+
+</script>
+</body>
+</html>

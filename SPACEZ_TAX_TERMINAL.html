@@ -1,0 +1,3067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPACEZ TAX TERMINAL — Thai Personal Income Tax Explained & Calculated</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --bg:#080808;
+    --neon:#ccff00;
+    --neon-2:#00ff66;
+    --red:#ff3b4e;
+    --amber:#ffb020;
+    --white:#f4f6f1;
+    --grey:#8b9186;
+    --grey-dim:#54594f;
+    --glass:rgba(255,255,255,0.035);
+    --border:rgba(204,255,0,0.18);
+    --border-dim:rgba(255,255,255,0.09);
+    --sans:'Inter','Noto Sans Thai',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --mono:'IBM Plex Mono','Noto Sans Thai','Fira Code',ui-monospace,monospace;
+    --radius:14px;
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:
+      radial-gradient(ellipse 80% 45% at 50% -5%, rgba(204,255,0,0.07), transparent 60%),
+      var(--bg);
+    color:var(--white);
+    font-family:var(--sans);
+    line-height:1.55;
+    overflow-x:hidden;
+    position:relative;
+  }
+
+  ::selection{background:var(--neon);color:#080808;}
+
+  a{color:inherit;}
+  button{font:inherit;color:inherit;background:none;border:none;}
+  button:focus-visible, a:focus-visible{outline:2px solid var(--neon);outline-offset:3px;}
+
+  /* ---------- background texture ---------- */
+  .grid-overlay{
+    position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:
+      linear-gradient(rgba(160,255,160,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(160,255,160,0.05) 1px, transparent 1px);
+    background-size:46px 46px;
+    -webkit-mask-image:radial-gradient(circle at 50% 20%, black, transparent 78%);
+    mask-image:radial-gradient(circle at 50% 20%, black, transparent 78%);
+  }
+  .scanline{
+    position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.4;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,0.018) 0px, transparent 1px, transparent 3px);
+  }
+
+  
+/* ---------- keyframes ---------- */
+  @keyframes blink{0%,49%{opacity:1;}50%,100%{opacity:0;}}
+  @keyframes tickerScroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+  @keyframes dashDraw{to{stroke-dashoffset:0;}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes dotPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.4);}}
+
+  
+/* ---------- top fixed header ---------- */
+  .top-fixed{position:fixed;top:0;left:0;right:0;z-index:50;}
+  .nav{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 32px;gap:18px;
+    background:rgba(8,8,8,0.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--border-dim);
+  }
+  .logo{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-weight:600;font-size:15px;letter-spacing:.5px;flex-shrink:0;}
+  .logo-blip{width:9px;height:9px;background:var(--neon);box-shadow:0 0 12px var(--neon);animation:blink 1.5s infinite steps(1);}
+  .logo-sub{color:var(--grey-dim);font-weight:400;font-size:12px;letter-spacing:1px;margin-left:2px;}
+  .nav-links-wrap{flex:1 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;}
+  .nav-links-wrap::-webkit-scrollbar{display:none;}
+  .nav-links{display:flex;align-items:center;gap:26px;font-family:var(--mono);font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;width:max-content;}
+  .nav-links a{text-decoration:none;color:var(--grey);position:relative;padding-bottom:4px;transition:color .25s;}
+  .nav-links a::after{content:'';position:absolute;left:0;bottom:0;width:0;height:1px;background:var(--neon);box-shadow:0 0 8px var(--neon);transition:width .25s;}
+  .nav-links a:hover{color:var(--neon);}
+  .nav-links a:hover::after{width:100%;}
+
+  .lang-toggle{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;letter-spacing:1px;border:1px solid var(--border-dim);border-radius:20px;padding:7px 14px;cursor:pointer;background:var(--glass);transition:border-color .25s,box-shadow .25s;flex-shrink:0;}
+  .lang-toggle:hover{border-color:var(--neon);box-shadow:0 0 14px rgba(204,255,0,0.18);}
+  .lt-option{color:var(--grey);transition:color .25s;}
+  .lt-option.active{color:var(--neon);text-shadow:0 0 8px rgba(204,255,0,.4);}
+  .lt-sep{color:var(--grey-dim);}
+
+  .ticker-bar{overflow:hidden;padding:9px 0;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border-dim);}
+  .ticker-track{display:inline-block;white-space:nowrap;animation:tickerScroll 34s linear infinite;}
+  .ticker-item{display:inline-flex;align-items:center;gap:7px;margin-right:38px;font-family:var(--mono);font-size:12px;letter-spacing:.4px;color:var(--grey);}
+  .ticker-item b{color:var(--white);font-weight:600;}
+  .ticker-item .up{color:var(--neon-2);}
+  .ticker-item .down{color:var(--red);}
+
+  
+/* ---------- shared section shell ---------- */
+  section{padding:130px 32px;max-width:1280px;margin:0 auto;position:relative;z-index:2;}
+  .section-head{max-width:760px;margin-bottom:64px;}
+  .eyebrow{font-family:var(--mono);color:var(--neon);font-size:12.5px;letter-spacing:3px;text-transform:uppercase;display:flex;align-items:center;gap:10px;margin-bottom:18px;}
+  .eyebrow .cursor{width:7px;height:15px;background:var(--neon);animation:blink 1s infinite steps(1);flex-shrink:0;}
+  .section-head h2{font-weight:800;font-size:clamp(2rem,4.4vw,3.1rem);text-transform:uppercase;letter-spacing:-.5px;line-height:1.15;}
+  .section-head .rule{height:1px;background:linear-gradient(90deg,var(--border),transparent);margin-top:30px;}
+  .section-head p.lede{margin-top:20px;color:var(--grey);font-size:1rem;max-width:640px;}
+
+  .reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease;}
+  .reveal.in-view{opacity:1;transform:translateY(0);}
+
+  
+/* ---------- hero ---------- */
+  .hero{min-height:94vh;display:flex;flex-direction:column;justify-content:center;padding-top:180px;}
+  .hero-inner{max-width:760px;}
+  .hero h1{font-weight:900;font-size:clamp(2.5rem,6.6vw,5rem);line-height:1.05;letter-spacing:-1.5px;text-transform:uppercase;animation:fadeUp .8s ease .1s both;}
+  .hero h1 span.accent{color:var(--neon);text-shadow:0 0 34px rgba(204,255,0,0.35);}
+  .hero p.sub{margin-top:26px;max-width:560px;color:var(--grey);font-size:1.05rem;animation:fadeUp .8s ease .25s both;}
+  .hero-cta{display:flex;gap:16px;margin-top:42px;flex-wrap:wrap;animation:fadeUp .8s ease .4s both;}
+  .btn{font-family:var(--mono);font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;padding:16px 30px;border-radius:2px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:10px;transition:all .25s;}
+  .btn-primary{background:var(--neon);color:#080808;font-weight:700;}
+  .btn-primary:hover{box-shadow:0 0 28px rgba(204,255,0,0.55);transform:translateY(-2px);}
+  .btn-outline{border:1px solid var(--border);color:var(--white);}
+  .btn-outline:hover{border-color:var(--neon);color:var(--neon);box-shadow:0 0 20px rgba(204,255,0,0.2);}
+
+  .hero-stats{display:flex;gap:12px;margin-top:60px;flex-wrap:wrap;animation:fadeUp .8s ease .55s both;}
+  .stat-chip{font-family:var(--mono);font-size:11.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--grey);border:1px solid var(--border-dim);padding:10px 16px;border-radius:20px;display:flex;align-items:center;gap:8px;background:var(--glass);}
+  .stat-chip .dot{width:6px;height:6px;border-radius:50%;background:var(--neon-2);box-shadow:0 0 8px var(--neon-2);animation:dotPulse 2.2s ease-in-out infinite;flex-shrink:0;}
+
+  .hero-chart{position:absolute;right:32px;top:52%;transform:translateY(-50%);width:36%;max-width:480px;opacity:.55;pointer-events:none;}
+  .hero-chart path.spark{fill:none;stroke:var(--neon);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  .hero-chart path.hero-area{stroke:none;}
+  .hero-chart circle.hero-dot{fill:var(--neon);filter:drop-shadow(0 0 9px var(--neon));animation:glowPulse 1.6s ease-in-out infinite;}
+  .hero-chart circle.hero-ring{fill:none;stroke:var(--neon);stroke-width:1.2;opacity:.55;animation:ringPulse 2.2s ease-out infinite;}
+  @media(max-width:980px){.hero-chart{display:none;}}
+
+  
+/* ---------- glossary ---------- */
+  .glossary-list{border:1px solid var(--border-dim);border-radius:var(--radius);overflow:hidden;background:var(--glass);}
+  .term-row{border-bottom:1px solid var(--border-dim);}
+  .term-row:last-child{border-bottom:none;}
+  .term-row summary{list-style:none;display:flex;align-items:center;gap:22px;padding:26px 30px;cursor:pointer;}
+  .term-row summary::-webkit-details-marker{display:none;}
+  .term-idx{font-family:var(--mono);color:var(--grey-dim);font-size:12px;width:22px;flex-shrink:0;}
+  .term-tag{font-family:var(--mono);color:var(--neon);font-weight:600;font-size:15px;min-width:96px;text-shadow:0 0 10px rgba(204,255,0,0.22);}
+  .term-name{font-weight:600;font-size:15px;flex:1;transition:color .2s;}
+  .term-row summary:hover .term-name{color:var(--neon);}
+  .chevron{width:9px;height:9px;border-right:2px solid var(--grey);border-bottom:2px solid var(--grey);transform:rotate(45deg);transition:transform .3s,border-color .3s;flex-shrink:0;}
+  .term-row[open] .chevron{transform:rotate(-135deg);border-color:var(--neon);}
+  .term-content-wrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s ease;}
+  .term-row[open] .term-content-wrap{grid-template-rows:1fr;}
+  .term-content-inner{overflow:hidden;}
+  .term-content-inner p{padding:0 30px 28px 74px;color:var(--grey);max-width:640px;font-size:14px;}
+
+  @media(max-width:600px){
+    .term-row summary{gap:14px;padding:20px 18px;}
+    .term-tag{min-width:74px;font-size:13px;}
+    .term-content-inner p{padding:0 18px 22px 58px;}
+  }
+
+  
+/* ---------- calculator tools (position sizing / wealth builder) ---------- */
+  .calc-grid{display:grid;grid-template-columns:minmax(0,420px) 1fr;gap:24px;align-items:start;}
+  @media(max-width:900px){.calc-grid{grid-template-columns:1fr;}}
+
+  .calc-panel{background:var(--glass);border:1px solid var(--border-dim);border-radius:var(--radius);padding:38px;position:relative;overflow:hidden;}
+  .calc-panel::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--neon);box-shadow:0 0 12px var(--neon);}
+  .calc-panel .tag{font-family:var(--mono);color:var(--neon);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:24px;display:block;}
+  .calc-field{margin-bottom:18px;}
+  .calc-field:last-of-type{margin-bottom:0;}
+  .calc-field label{display:block;font-family:var(--mono);font-size:11px;color:var(--grey);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
+  .calc-input{font-family:var(--mono);font-size:14px;color:var(--white);background:rgba(255,255,255,0.03);border:1px solid var(--border-dim);border-radius:8px;padding:13px 14px;outline:none;transition:border-color .2s;width:100%;}
+  .calc-input::placeholder{color:var(--grey-dim);}
+  .calc-input:focus{border-color:var(--neon);}
+  .calc-btn-row{margin-top:26px;}
+  .calc-btn-row .btn{width:100%;justify-content:center;}
+  .calc-error{margin-top:14px;font-family:var(--mono);font-size:12px;color:var(--red);min-height:16px;}
+
+  .calc-results{display:flex;flex-direction:column;gap:16px;}
+  .calc-placeholder{font-family:var(--mono);font-size:13px;color:var(--grey-dim);padding:52px 24px;text-align:center;border:1px dashed var(--border-dim);border-radius:var(--radius);}
+
+  .result-card{background:var(--glass);border:1px solid var(--border-dim);border-radius:var(--radius);padding:30px 32px;position:relative;overflow:hidden;transition:border-color .3s,transform .3s;}
+  .result-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;background:var(--neon-2);box-shadow:0 0 10px var(--neon-2);}
+  .result-card.dim::before{background:var(--border-dim);box-shadow:none;}
+  .result-card:hover{transform:translateY(-2px);}
+  .result-card .rc-label{font-family:var(--mono);font-size:11px;color:var(--grey);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px;}
+  .result-card .rc-value{font-family:var(--mono);font-weight:700;font-size:clamp(1.5rem,3vw,2.2rem);color:var(--neon-2);text-shadow:0 0 14px rgba(0,255,102,0.25);letter-spacing:-.5px;}
+  .result-card .rc-value.amber{color:var(--amber);text-shadow:0 0 14px rgba(255,176,32,0.25);}
+  .result-card .rc-value.red{color:var(--red);text-shadow:0 0 14px rgba(255,59,78,0.25);}
+  .result-card .rc-sub{margin-top:10px;font-size:12px;color:var(--grey-dim);line-height:1.5;}
+
+  .req-mark{color:var(--red);margin-left:3px;}
+  .opt-tag{color:var(--grey-dim);font-style:italic;font-weight:400;text-transform:none;letter-spacing:0;margin-left:8px;font-size:10px;}
+  .calc-hint{margin-top:7px;font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);line-height:1.45;}
+
+  .real-compare{display:flex;flex-direction:column;gap:10px;margin-top:18px;}
+  .real-compare-row{display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:11px;}
+  .real-compare-row .rc-tag{width:64px;flex-shrink:0;color:var(--grey);letter-spacing:1px;}
+  .real-compare-track{flex:1;height:10px;border-radius:6px;background:rgba(255,255,255,0.04);border:1px solid var(--border-dim);overflow:hidden;}
+  .real-compare-fill{height:100%;transition:width .8s ease;}
+  .real-compare-fill.nominal{background:var(--grey-dim);}
+  .real-compare-fill.real{background:var(--amber);box-shadow:0 0 10px rgba(255,176,32,.45) inset;}
+  .real-compare-row .rc-num{flex-shrink:0;color:var(--white);min-width:88px;text-align:right;}
+
+  /* wealth builder chart + bar */
+  .wealth-chart-wrap{margin-top:22px;}
+  .wealth-svg{width:100%;height:110px;display:block;}
+  .wealth-svg path.area{opacity:0;animation:areaFade 1.3s ease forwards 1.1s;}
+  .wealth-svg path.line{fill:none;stroke:var(--neon-2);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;filter:drop-shadow(0 0 6px var(--neon-2));}
+  .wealth-svg .wipe-rect{width:300px;animation:wealthWipe 2.7s cubic-bezier(.10,.72,.20,1) forwards;}
+  .wealth-svg circle.tip{fill:var(--neon-2);opacity:0;filter:drop-shadow(0 0 8px var(--neon-2));animation:fadeIn .5s ease forwards 2.45s, glowPulse 1.7s ease-in-out infinite 2.95s;}
+  .wealth-bar{display:flex;height:14px;border-radius:8px;overflow:hidden;margin-top:18px;border:1px solid var(--border-dim);}
+  .wealth-bar-seg{height:100%;transition:width .8s ease;}
+  .wealth-bar-seg.contrib{background:var(--grey-dim);}
+  .wealth-bar-seg.growth{background:var(--neon-2);box-shadow:0 0 12px rgba(0,255,102,.4) inset;}
+  .wealth-legend2{display:flex;gap:20px;margin-top:14px;font-family:var(--mono);font-size:11.5px;color:var(--grey);flex-wrap:wrap;}
+  .wealth-legend2 span.leg-item{display:inline-flex;align-items:center;gap:7px;}
+  .wealth-legend2 .swatch{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
+  .wealth-legend2 .swatch.contrib{background:var(--grey-dim);}
+  .wealth-legend2 .swatch.growth{background:var(--neon-2);box-shadow:0 0 6px var(--neon-2);}
+
+  @media(max-width:700px){.calc-panel{padding:26px 22px;} .result-card{padding:24px 22px;}}
+
+  
+/* ---------- currency converter ---------- */
+  .calc-select{appearance:none;-webkit-appearance:none;-moz-appearance:none;cursor:pointer;padding-right:38px;
+    background-image:linear-gradient(45deg,transparent 50%,var(--grey) 50%),linear-gradient(135deg,var(--grey) 50%,transparent 50%);
+    background-position:calc(100% - 19px) calc(50% - 2px),calc(100% - 14px) calc(50% - 2px);
+    background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+    transition:border-color .2s,background-image .2s;}
+  .calc-select:hover{border-color:var(--border);
+    background-image:linear-gradient(45deg,transparent 50%,var(--neon) 50%),linear-gradient(135deg,var(--neon) 50%,transparent 50%);}
+  .calc-select option{background:#0d0d0d;color:var(--white);}
+
+  .fx-pair{display:flex;flex-direction:column;gap:6px;}
+  .fx-pair .calc-field{margin-bottom:0;}
+  .fx-swap-row{display:flex;align-items:center;gap:14px;margin:4px 0;}
+  .fx-swap-line{flex:1;height:1px;background:var(--border-dim);}
+  .fx-swap{width:46px;height:46px;flex-shrink:0;border:1px solid var(--border-dim);border-radius:8px;background:var(--glass);
+    color:var(--grey);font-family:var(--mono);font-size:18px;line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:border-color .25s,color .25s,box-shadow .25s,transform .25s,background-color .25s;}
+  .fx-swap:hover{border-color:var(--neon);color:var(--neon);background:rgba(204,255,0,.07);box-shadow:0 0 20px rgba(204,255,0,.28);transform:translateY(-2px);}
+  .fx-swap:active{transform:translateY(0) scale(.92);}
+  .fx-swap .fx-swap-icon{display:block;transition:transform .4s cubic-bezier(.22,1,.36,1);}
+  .fx-swap:hover .fx-swap-icon{transform:rotate(180deg);}
+  .fx-swap.spin .fx-swap-icon{animation:fxSpin .55s cubic-bezier(.22,1,.36,1);}
+  @keyframes fxSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+
+  .fx-rate-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .fx-rate-pair{font-family:var(--mono);font-size:10.5px;letter-spacing:.5px;color:var(--neon-2);text-transform:none;}
+  .fx-rate-pair.custom{color:var(--amber);}
+  .fx-reset{font-family:var(--mono);font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--grey-dim);
+    cursor:pointer;margin-top:9px;padding:0;border-bottom:1px dashed var(--grey-dim);transition:color .25s,border-color .25s;}
+  .fx-reset:hover{color:var(--neon);border-color:var(--neon);}
+
+  .fx-out{transition:text-shadow .3s;}
+  .fx-out.counting{animation:fxGlow .55s ease-in-out infinite;}
+  @keyframes fxGlow{0%,100%{text-shadow:0 0 14px rgba(0,255,102,0.25);}50%{text-shadow:0 0 26px rgba(0,255,102,0.7);}}
+  .fx-flow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px;font-family:var(--mono);font-size:12.5px;color:var(--grey);}
+  .fx-flow .fx-chip{border:1px solid var(--border-dim);border-radius:20px;padding:6px 13px;background:rgba(255,255,255,.03);color:var(--white);letter-spacing:.5px;}
+  .fx-flow .fx-arrow{color:var(--neon);letter-spacing:2px;}
+  .fx-rate-rows{display:flex;flex-direction:column;gap:11px;}
+  .fx-rate-row{display:flex;align-items:baseline;justify-content:space-between;gap:14px;font-family:var(--mono);font-size:13px;
+    border-bottom:1px dashed var(--border-dim);padding-bottom:9px;}
+  .fx-rate-row:last-child{border-bottom:none;padding-bottom:0;}
+  .fx-rate-row .fxr-key{color:var(--grey);font-size:11px;letter-spacing:1px;text-transform:uppercase;}
+  .fx-rate-row .fxr-val{color:var(--white);text-align:right;}
+  .fx-src-tag{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10.5px;letter-spacing:1px;
+    text-transform:uppercase;padding:5px 11px;border-radius:20px;border:1px solid var(--border-dim);margin-bottom:14px;}
+  .fx-src-tag .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+  .fx-src-tag.ref{color:var(--grey);}
+  .fx-src-tag.ref .dot{background:var(--grey-dim);}
+  .fx-src-tag.custom{color:var(--amber);border-color:rgba(255,176,32,.4);}
+  .fx-src-tag.custom .dot{background:var(--amber);box-shadow:0 0 8px var(--amber);}
+
+  @media(max-width:560px){
+    .fx-swap:hover{transform:none;}
+  }
+
+  
+/* ---------- terminal quiz ---------- */
+  .quiz-score-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:32px;font-family:var(--mono);font-size:12.5px;color:var(--grey);letter-spacing:.5px;}
+  .quiz-score-bar b{color:var(--neon);font-size:15px;}
+  .quiz-list{display:flex;flex-direction:column;gap:22px;}
+  .quiz-card{background:var(--glass);border:1px solid var(--border-dim);border-radius:var(--radius);padding:30px 32px;}
+  .quiz-q{font-family:var(--mono);font-size:11px;color:var(--neon);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;}
+  .quiz-q-text{font-size:16px;font-weight:600;margin-bottom:20px;line-height:1.5;}
+  .quiz-options{display:flex;flex-direction:column;gap:10px;}
+  .quiz-opt{text-align:left;font-family:var(--mono);font-size:13px;color:var(--white);background:rgba(255,255,255,.02);border:1px solid var(--border-dim);border-radius:8px;padding:14px 16px;cursor:pointer;transition:all .2s;}
+  .quiz-opt:hover:not(:disabled){border-color:var(--neon);color:var(--neon);}
+  .quiz-opt:disabled{cursor:default;}
+  .quiz-opt.correct{border-color:var(--neon-2);background:rgba(0,255,102,0.1);color:var(--neon-2);box-shadow:0 0 16px rgba(0,255,102,.2);}
+  .quiz-opt.incorrect{border-color:var(--red);background:rgba(255,59,78,0.1);color:var(--red);box-shadow:0 0 16px rgba(255,59,78,.2);}
+  .quiz-feedback{margin-top:16px;font-family:var(--mono);font-size:12.5px;letter-spacing:.3px;}
+  .quiz-feedback.correct{color:var(--neon-2);}
+  .quiz-feedback.incorrect{color:var(--red);}
+
+  @media(max-width:700px){.quiz-card{padding:24px 22px;}}
+
+  
+/* ---------- footer ---------- */
+  footer{
+    padding:50px 32px;border-top:1px solid var(--border-dim);
+    font-family:var(--mono);font-size:12px;color:var(--grey-dim);
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;
+    max-width:1280px;margin:0 auto;position:relative;z-index:2;
+  }
+
+  #basics, #income, #formula, #brackets, #allowances, #calc, #filing, #quiz{scroll-margin-top:120px;}
+
+  @media(max-width:700px){
+    .nav{padding:14px 18px;gap:10px;}
+    .nav-links{gap:16px;font-size:11px;}
+    .ticker-bar{padding:7px 0;}
+    .hero{padding-top:150px;}
+    section{padding:90px 22px;}
+  }
+
+  /* ================= LIVE MOTION LAYER ================= */
+  @keyframes glowPulse{0%,100%{opacity:1;}50%{opacity:.38;}}
+  @keyframes ringPulse{0%{opacity:.5;transform:scale(.4);}70%,100%{opacity:0;transform:scale(1.9);}}
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+  @keyframes areaFade{from{opacity:0;}to{opacity:.55;}}
+  @keyframes wealthWipe{from{width:0px;}to{width:300px;}}
+  @keyframes arrowUp{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+  @keyframes arrowDown{0%,100%{transform:translateY(0);}50%{transform:translateY(4px);}}
+  @keyframes diaSpin{0%,100%{transform:rotate(0deg) scale(1);opacity:1;}50%{transform:rotate(45deg) scale(1.18);opacity:.65;}}
+  @keyframes cardIn{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+
+  
+/* ---------- glossary: expanded body + animated metric infographics ---------- */
+  .term-body{
+    display:grid;grid-template-columns:minmax(0,1fr) minmax(0,318px);
+    gap:30px;padding:2px 30px 30px 74px;align-items:start;
+  }
+  .term-body p{padding:0;color:var(--grey);font-size:14px;max-width:none;line-height:1.72;}
+  .term-body .term-def{margin-bottom:16px;}
+  .term-formula{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-bottom:13px;}
+  .tf-label{
+    font-family:var(--mono);font-size:9px;letter-spacing:1.4px;text-transform:uppercase;
+    color:var(--grey-dim);border:1px solid var(--border-dim);border-radius:4px;padding:3px 7px;flex-shrink:0;
+  }
+  .term-formula code{
+    font-family:var(--mono);font-size:12px;color:var(--neon);
+    background:rgba(204,255,0,.055);border:1px solid var(--border);
+    border-radius:6px;padding:5px 10px;line-height:1.45;
+  }
+  .term-body .term-example{
+    font-family:var(--mono);font-size:11.5px;color:var(--grey-dim);
+    border-left:2px solid rgba(204,255,0,.3);padding:1px 0 1px 12px;line-height:1.7;
+  }
+
+  .term-viz{
+    background:rgba(255,255,255,.022);border:1px solid var(--border-dim);
+    border-radius:12px;padding:14px 14px 13px;position:relative;overflow:hidden;
+  }
+  .term-viz::after{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(255,255,255,.017) 0px,transparent 1px,transparent 3px);
+  }
+  .tv-head{
+    display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:9px;
+    letter-spacing:1.2px;text-transform:uppercase;color:var(--grey-dim);
+    margin-bottom:11px;line-height:1.4;
+  }
+  .tv-live{
+    width:5px;height:5px;border-radius:50%;background:var(--neon);
+    box-shadow:0 0 7px var(--neon);animation:tvBlip 1.9s ease-in-out infinite;flex-shrink:0;
+  }
+  @keyframes tvBlip{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.22;transform:scale(.7);}}
+  .tv-svg{display:block;width:100%;height:auto;overflow:hidden;}
+  .tv-read{
+    display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    margin-top:11px;padding-top:10px;border-top:1px solid var(--border-dim);
+  }
+  .tv-num{
+    font-family:var(--mono);font-size:19px;font-weight:700;line-height:1;flex-shrink:0;
+    color:var(--neon);text-shadow:0 0 12px rgba(204,255,0,.28);transition:color .45s,text-shadow .45s;
+  }
+  .tv-num.good{color:var(--neon-2);text-shadow:0 0 12px rgba(0,255,102,.3);}
+  .tv-num.warn{color:var(--amber);text-shadow:0 0 12px rgba(255,176,32,.3);}
+  .tv-num.bad{color:var(--red);text-shadow:0 0 12px rgba(255,59,78,.3);}
+  .tv-tag{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.9px;text-transform:uppercase;
+    color:var(--grey);text-align:right;line-height:1.35;transition:color .45s;
+  }
+  .tv-sub{
+    font-family:var(--mono);font-size:9.5px;color:var(--grey-dim);
+    margin-top:7px;letter-spacing:.3px;line-height:1.6;
+  }
+
+  @media(max-width:900px){
+    .term-body{grid-template-columns:1fr;gap:22px;}
+    .term-viz{max-width:420px;}
+  }
+  @media(max-width:600px){
+    .term-body{padding:2px 18px 24px 58px;}
+    .term-body p{font-size:13.5px;}
+    .term-viz{max-width:none;}
+  }
+  @media(max-width:430px){
+    .term-body{padding:2px 16px 22px 16px;}
+  }
+
+
+  
+/* ---------- quiz gate + progress + result ---------- */
+  .quiz-gate{
+    border:1px solid var(--border-dim);border-radius:var(--radius);
+    background:
+      radial-gradient(ellipse 70% 120% at 50% 0%, rgba(204,255,0,.07), transparent 70%),
+      var(--glass);
+    padding:52px 40px;text-align:center;position:relative;overflow:hidden;
+  }
+  .quiz-gate::before{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(255,255,255,.015) 0px,transparent 1px,transparent 3px);
+  }
+  .qg-inner{position:relative;max-width:520px;margin:0 auto;}
+  .qg-count{
+    display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:2px;
+    color:var(--neon);border:1px solid var(--border);border-radius:20px;
+    padding:6px 16px;margin-bottom:18px;text-shadow:0 0 10px rgba(204,255,0,.3);
+  }
+  .qg-note{color:var(--grey);font-size:14px;line-height:1.7;margin-bottom:26px;}
+  #quizStartBtn{min-width:220px;justify-content:center;}
+
+  .quiz-body-in{animation:quizIn .45s ease both;}
+  @keyframes quizIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+
+  .quiz-progress{
+    flex:1;min-width:120px;height:4px;border-radius:3px;
+    background:rgba(255,255,255,.07);overflow:hidden;
+  }
+  .qp-fill{display:block;height:100%;width:0%;background:var(--neon);
+    box-shadow:0 0 10px var(--neon);transition:width .45s cubic-bezier(.4,0,.2,1);}
+
+  .quiz-result{
+    margin-top:26px;border:1px solid var(--border-dim);border-radius:var(--radius);
+    padding:26px 30px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+    background:var(--glass);animation:quizIn .45s ease both;
+  }
+  .quiz-result .qr-grade{
+    font-family:var(--mono);font-weight:700;font-size:15px;letter-spacing:2px;
+    border:1px solid currentColor;border-radius:6px;padding:7px 14px;flex-shrink:0;
+  }
+  .quiz-result .qr-text{color:var(--grey);font-size:14px;line-height:1.6;}
+  .quiz-result.band-master .qr-grade{color:var(--neon);box-shadow:0 0 18px rgba(204,255,0,.25);}
+  .quiz-result.band-pass   .qr-grade{color:var(--neon-2);box-shadow:0 0 18px rgba(0,255,102,.2);}
+  .quiz-result.band-retry  .qr-grade{color:var(--amber);box-shadow:0 0 18px rgba(255,176,32,.2);}
+
+  @media(max-width:700px){
+    .quiz-gate{padding:38px 22px;}
+    .quiz-progress{order:3;width:100%;flex-basis:100%;}
+  }
+
+
+  
+  /* ---------- tax: data tables ---------- */
+  .tax-table-wrap{border:1px solid var(--border-dim);border-radius:var(--radius);background:var(--glass);overflow-x:auto;}
+  table.tax-table{width:100%;border-collapse:collapse;font-size:14px;min-width:560px;}
+  table.tax-table th,table.tax-table td{padding:16px 20px;text-align:left;border-bottom:1px solid var(--border-dim);}
+  table.tax-table thead th{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;
+    color:var(--grey);background:rgba(255,255,255,.025);white-space:nowrap;
+  }
+  table.tax-table tbody tr:last-child td{border-bottom:none;}
+  table.tax-table tbody tr{transition:background-color .2s;}
+  table.tax-table tbody tr:hover{background:rgba(204,255,0,.035);}
+  table.tax-table td.mono{font-family:var(--mono);white-space:nowrap;}
+  table.tax-table td.rate{font-family:var(--mono);font-weight:700;color:var(--neon);text-shadow:0 0 10px rgba(204,255,0,.25);}
+  table.tax-table td.rate.zero{color:var(--neon-2);text-shadow:0 0 10px rgba(0,255,102,.25);}
+  table.tax-table td.rate.high{color:var(--red);text-shadow:0 0 10px rgba(255,59,78,.25);}
+  table.tax-table td.dim{color:var(--grey);font-size:13px;}
+  .tbl-note{margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--grey-dim);line-height:1.6;}
+
+  /* ---------- tax: concept cards ---------- */
+  .concept-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  @media(max-width:1000px){.concept-grid{grid-template-columns:1fr;}}
+  .concept-card{
+    background:var(--glass);border:1px solid var(--border-dim);border-radius:var(--radius);
+    padding:30px 28px;position:relative;overflow:hidden;transition:border-color .3s,transform .3s;
+  }
+  .concept-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;
+    background:var(--neon);box-shadow:0 0 10px var(--neon);}
+  .concept-card:hover{transform:translateY(-3px);border-color:var(--border);}
+  .cn-tag{font-family:var(--mono);font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--grey-dim);}
+  .concept-card h3{font-size:1.05rem;font-weight:700;margin:10px 0 12px;letter-spacing:-.2px;}
+  .concept-card p{color:var(--grey);font-size:13.5px;line-height:1.72;margin-bottom:20px;}
+
+  /* ---------- tax: formula flow ---------- */
+  .flow-panel{
+    background:var(--glass);border:1px solid var(--border-dim);border-radius:var(--radius);
+    padding:34px 30px 26px;position:relative;overflow:hidden;
+  }
+  .flow-panel::after{content:'';position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(255,255,255,.015) 0px,transparent 1px,transparent 3px);}
+  .flow-svg{display:block;width:100%;height:auto;overflow:visible;}
+  .flow-steps{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:26px;}
+  @media(max-width:900px){.flow-steps{grid-template-columns:1fr 1fr;}}
+  @media(max-width:520px){.flow-steps{grid-template-columns:1fr;}}
+  .flow-step{border:1px solid var(--border-dim);border-radius:10px;padding:16px 16px 18px;background:rgba(255,255,255,.02);}
+  .flow-step .fs-n{font-family:var(--mono);font-size:10px;letter-spacing:1.4px;color:var(--neon);margin-bottom:8px;}
+  .flow-step .fs-t{font-size:13px;font-weight:600;margin-bottom:7px;line-height:1.4;}
+  .flow-step .fs-d{font-size:12px;color:var(--grey);line-height:1.6;}
+
+  /* ---------- tax: bracket explorer ---------- */
+  .bx-panel{background:var(--glass);border:1px solid var(--border-dim);border-radius:var(--radius);padding:34px 32px;margin-top:26px;}
+  .bx-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px;}
+  .bx-label{font-family:var(--mono);font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--grey);}
+  .bx-value{font-family:var(--mono);font-weight:700;font-size:clamp(1.3rem,3vw,1.9rem);color:var(--neon);text-shadow:0 0 16px rgba(204,255,0,.3);}
+  input[type=range].bx-range{
+    -webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:4px;
+    background:linear-gradient(90deg,var(--neon) 0%,var(--neon) var(--pct,30%),rgba(255,255,255,.09) var(--pct,30%));
+    outline:none;cursor:pointer;margin:6px 0 4px;
+  }
+  input[type=range].bx-range::-webkit-slider-thumb{
+    -webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#080808;
+    border:2px solid var(--neon);box-shadow:0 0 14px rgba(204,255,0,.55);cursor:pointer;
+  }
+  input[type=range].bx-range::-moz-range-thumb{
+    width:18px;height:18px;border-radius:50%;background:#080808;
+    border:2px solid var(--neon);box-shadow:0 0 14px rgba(204,255,0,.55);cursor:pointer;
+  }
+  .bx-scale{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--grey-dim);margin-bottom:24px;}
+  .bx-stack{display:flex;height:34px;border-radius:8px;overflow:hidden;border:1px solid var(--border-dim);background:rgba(255,255,255,.02);}
+  .bx-seg{height:100%;transition:width .35s cubic-bezier(.4,0,.2,1);position:relative;}
+  .bx-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+  .bx-chip{
+    display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10.5px;
+    letter-spacing:.5px;color:var(--grey);border:1px solid var(--border-dim);border-radius:20px;padding:5px 11px;
+    transition:color .25s,border-color .25s,opacity .25s;opacity:.45;
+  }
+  .bx-chip.on{opacity:1;color:var(--white);border-color:var(--border);}
+  .bx-chip .sw{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
+  .bx-out{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px;}
+  @media(max-width:640px){.bx-out{grid-template-columns:1fr;}}
+  .bx-out-card{border:1px solid var(--border-dim);border-radius:10px;padding:18px 20px;background:rgba(255,255,255,.02);}
+  .bx-out-card .bo-l{font-family:var(--mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--grey);margin-bottom:9px;}
+  .bx-out-card .bo-v{font-family:var(--mono);font-weight:700;font-size:1.35rem;color:var(--neon-2);text-shadow:0 0 12px rgba(0,255,102,.25);}
+  .bx-out-card .bo-v.amber{color:var(--amber);text-shadow:0 0 12px rgba(255,176,32,.25);}
+  .bx-out-card .bo-v.white{color:var(--white);text-shadow:none;}
+
+  /* ---------- tax: calculator additions ---------- */
+  .calc-two{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:520px){.calc-two{grid-template-columns:1fr;}}
+  .calc-sep{
+    margin:26px 0 18px;font-family:var(--mono);font-size:10px;letter-spacing:1.6px;text-transform:uppercase;
+    color:var(--neon);display:flex;align-items:center;gap:11px;
+  }
+  .calc-sep::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent);}
+  .cur-row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;}
+  .cur-row .calc-field{flex:1;min-width:130px;margin-bottom:0;}
+  .cur-note{
+    margin-top:12px;font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);line-height:1.55;
+    border-left:2px solid var(--border-dim);padding-left:11px;
+  }
+  .cur-note b{color:var(--amber);font-weight:600;}
+
+  .tax-break{margin-top:6px;}
+  .tb-row{
+    display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:11.5px;
+    padding:9px 0;border-bottom:1px dashed var(--border-dim);
+  }
+  .tb-row:last-child{border-bottom:none;}
+  .tb-row .tb-band{width:104px;flex-shrink:0;color:var(--grey);letter-spacing:.4px;}
+  .tb-row .tb-rate{width:40px;flex-shrink:0;color:var(--neon);font-weight:700;text-align:right;}
+  .tb-track{display:block;flex:1;height:9px;border-radius:5px;background:rgba(255,255,255,.05);overflow:hidden;min-width:40px;}
+  .tb-fill{display:block;height:100%;width:0;background:var(--neon);box-shadow:0 0 8px rgba(204,255,0,.5) inset;transition:width .7s cubic-bezier(.4,0,.2,1);}
+  .tb-row.idle .tb-rate{color:var(--grey-dim);}
+  .tb-row.idle .tb-fill{background:var(--grey-dim);box-shadow:none;}
+  .tb-row .tb-amt{width:92px;flex-shrink:0;text-align:right;color:var(--white);}
+  @media(max-width:560px){
+    .tb-row{flex-wrap:wrap;gap:8px;}
+    .tb-row .tb-band{width:auto;flex:1;}
+    .tb-track{flex-basis:100%;order:5;}
+  }
+
+  .summary-rows{display:flex;flex-direction:column;gap:0;margin-top:4px;}
+  .sum-row{
+    display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+    font-family:var(--mono);font-size:12.5px;padding:11px 0;border-bottom:1px dashed var(--border-dim);
+  }
+  .sum-row:last-child{border-bottom:none;}
+  .sum-row .sr-k{color:var(--grey);font-size:11px;letter-spacing:.8px;text-transform:uppercase;}
+  .sum-row .sr-v{color:var(--white);text-align:right;white-space:nowrap;}
+  .sum-row.minus .sr-v{color:var(--amber);}
+  .sum-row.total{border-top:1px solid var(--border);margin-top:6px;padding-top:14px;}
+  .sum-row.total .sr-k{color:var(--neon);}
+  .sum-row.total .sr-v{color:var(--neon);font-weight:700;font-size:15px;}
+  .sr-alt{display:block;color:var(--grey-dim);font-size:10.5px;margin-top:3px;}
+
+  /* ---------- tax: filing timeline ---------- */
+  .timeline{position:relative;padding-left:34px;}
+  .timeline::before{content:'';position:absolute;left:9px;top:6px;bottom:6px;width:1px;
+    background:linear-gradient(180deg,var(--neon),var(--border-dim));}
+  .tl-item{position:relative;padding-bottom:34px;}
+  .tl-item:last-child{padding-bottom:0;}
+  .tl-item::before{
+    content:'';position:absolute;left:-30px;top:5px;width:11px;height:11px;border-radius:50%;
+    background:#080808;border:2px solid var(--neon);box-shadow:0 0 12px rgba(204,255,0,.5);
+  }
+  .tl-date{font-family:var(--mono);font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:var(--neon);margin-bottom:7px;}
+  .tl-item h4{font-size:15px;font-weight:700;margin-bottom:8px;}
+  .tl-item p{color:var(--grey);font-size:13.5px;line-height:1.7;max-width:620px;}
+  .tl-item.warn::before{border-color:var(--red);box-shadow:0 0 12px rgba(255,59,78,.5);}
+  .tl-item.warn .tl-date{color:var(--red);}
+
+  /* ---------- tax: disclaimer ---------- */
+  .tax-disclaimer{
+    margin-top:26px;border:1px solid rgba(255,176,32,.3);border-radius:var(--radius);
+    background:rgba(255,176,32,.05);padding:22px 26px;
+    font-size:13px;color:var(--grey);line-height:1.75;
+  }
+  .tax-disclaimer b{color:var(--amber);}
+
+</style>
+</head>
+<body>
+<div class="grid-overlay"></div>
+<div class="scanline"></div>
+<div class="top-fixed">
+  <nav class="nav">
+    <div class="logo"><span class="logo-blip"></span>SPACEZ TAX<span class="logo-sub">// TERMINAL</span></div>
+    <div class="nav-links-wrap">
+      <div class="nav-links">
+        <a href="#basics" data-i18n="nav.basics">How It Works</a>
+        <a href="#income" data-i18n="nav.income">Income Types</a>
+        <a href="#formula" data-i18n="nav.formula">The Formula</a>
+        <a href="#brackets" data-i18n="nav.brackets">Tax Brackets</a>
+        <a href="#allowances" data-i18n="nav.allow">Deductions</a>
+        <a href="#calc" data-i18n="nav.calc">Calculator</a>
+        <a href="#filing" data-i18n="nav.filing">Filing</a>
+        <a href="#quiz" data-i18n="nav.quiz">Quiz</a>
+      </div>
+    </div>
+    <button type="button" id="langToggle" class="lang-toggle" aria-label="Toggle language / สลับภาษา">
+      <span class="lt-option active" data-lang="en">EN</span><span class="lt-sep">/</span><span class="lt-option" data-lang="th">TH</span>
+    </button>
+  </nav>
+  <div class="ticker-bar">
+    <div class="ticker-track" id="tickerTrack"></div>
+  </div>
+</div>
+
+
+<!-- ================= HERO ================= -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="cursor"></span><span data-i18n="hero.eyebrow">Thai Personal Income Tax · Learn Then Calculate</span></div>
+    <h1><span data-i18n="hero.h1a">Nobody Taxes</span><br><span class="accent" data-i18n="hero.h1b">Your Whole Salary.</span></h1>
+    <p class="sub" data-i18n="hero.sub">Thai income tax is not one rate on everything you earn. It is a stack of steps applied to what is left after expenses and allowances — and most people pay a far lower effective rate than the bracket they think they are in. Learn the mechanics first, then run your own numbers.</p>
+    <div class="hero-cta">
+      <a href="#basics" class="btn btn-primary" data-i18n="hero.cta1">Start With The Basics →</a>
+      <a href="#calc" class="btn btn-outline" data-i18n="hero.cta2">Jump To Calculator</a>
+    </div>
+    <div class="hero-stats">
+      <span class="stat-chip"><span class="dot"></span><span data-i18n="hero.chip1">First ฿150,000 taxed at 0%</span></span>
+      <span class="stat-chip"><span class="dot"></span><span data-i18n="hero.chip2">8 progressive steps · 0% to 35%</span></span>
+      <span class="stat-chip"><span class="dot"></span><span data-i18n="hero.chip3">EN / TH · currency switchable</span></span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 01 BASICS ================= -->
+<section id="basics">
+  <div class="section-head reveal">
+    <div class="eyebrow"><span class="cursor"></span><span data-i18n="basics.eyebrow">01 How It Works</span></div>
+    <h2 data-i18n="basics.title">Three Things Almost Everyone Gets Wrong</h2>
+    <p class="lede" data-i18n="basics.lede">Before any calculator is useful, three ideas have to click into place — because almost every panic about "moving into a higher tax bracket" comes from misunderstanding one of them.</p>
+    <div class="rule"></div>
+  </div>
+
+  <div class="concept-grid reveal">
+    <div class="concept-card">
+      <span class="cn-tag" data-i18n="basics.c1.tag">STEPS, NOT ONE RATE</span>
+      <h3 data-i18n="basics.c1.h">Progressive By Design</h3>
+      <p data-i18n="basics.c1.p">Thailand taxes income in slices. The first ฿150,000 of net income is taxed at nothing at all, the next ฿150,000 at 5%, and so on up to 35%. Crossing into a higher bracket never re-taxes the money below it — only the portion sitting inside that step pays the higher rate. This is why your effective rate, the number that actually leaves your bank account, is always lower than the bracket you have reached.</p>
+      <div class="term-viz" data-viz="progressive">
+        <div class="tv-head"><span class="tv-live"></span><span data-el="cap">live</span></div>
+        <svg class="tv-svg" viewBox="0 0 300 104" aria-hidden="true">
+          <g data-el="bars"></g>
+          <rect data-el="fill" x="12" y="94" width="0" height="4" rx="2" fill="#ccff00" opacity="0.85"/>
+          <path data-el="mline" d="" stroke="#ff3b4e" stroke-width="1.2" stroke-dasharray="5 4" fill="none" opacity="0.8"/>
+          <path data-el="eline" d="" stroke="#00ff66" stroke-width="1.6" fill="none" opacity="0.9"/>
+          <g font-family="IBM Plex Mono, monospace" font-size="8">
+            <rect x="12" y="6" width="9" height="2" fill="#ff3b4e"/><text x="26" y="10" fill="#ff3b4e">MARGINAL</text>
+            <rect x="96" y="6" width="9" height="2" fill="#00ff66"/><text x="110" y="10" fill="#00ff66">EFFECTIVE</text>
+          </g>
+        </svg>
+        <div class="tv-read"><span class="tv-num" data-el="num">--</span><span class="tv-tag" data-el="tag">--</span></div>
+        <div class="tv-sub" data-el="sub">--</div>
+      </div>
+    </div>
+    <div class="concept-card">
+      <span class="cn-tag" data-i18n="basics.c2.tag">THE 180-DAY LINE</span>
+      <h3 data-i18n="basics.c2.h">Are You A Tax Resident?</h3>
+      <p data-i18n="basics.c2.p">Anyone physically present in Thailand for 180 days or more within a single calendar year is a Thai tax resident, regardless of nationality or visa type. Residents are taxable on Thai-sourced income and on foreign income they bring into the country. Stay under 180 days and only Thai-sourced income is in scope. The count resets every 1 January, and the days do not need to be consecutive.</p>
+      <div class="term-viz" data-viz="resident">
+        <div class="tv-head"><span class="tv-live"></span><span data-el="cap">live</span></div>
+        <svg class="tv-svg" viewBox="0 0 300 104" aria-hidden="true">
+          <g data-el="dots"></g>
+          <path data-el="mark" d="M156,10 L156,94" stroke="#ccff00" stroke-width="1.6" stroke-dasharray="4 3"/>
+          <text x="12" y="12" font-family="IBM Plex Mono, monospace" font-size="8" fill="#54594f">1 JAN</text>
+          <text x="288" y="12" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="8" fill="#54594f">31 DEC</text>
+        </svg>
+        <div class="tv-read"><span class="tv-num" data-el="num">--</span><span class="tv-tag" data-el="tag">--</span></div>
+        <div class="tv-sub" data-el="sub">--</div>
+      </div>
+    </div>
+    <div class="concept-card">
+      <span class="cn-tag" data-i18n="basics.c3.tag">WITHHOLDING IS A DEPOSIT</span>
+      <h3 data-i18n="basics.c3.h">Your Payslip Is Only An Estimate</h3>
+      <p data-i18n="basics.c3.p">The tax your employer withholds each month is an estimate built from a forecast of your annual income. It does not know about the insurance you bought in December, the parents you support, or the bonus that never came. Filing is the moment the estimate is reconciled against reality — which is exactly why people who never file often leave a refund sitting unclaimed at the Revenue Department.</p>
+      <div class="term-viz" data-viz="wht">
+        <div class="tv-head"><span class="tv-live"></span><span data-el="cap">live</span></div>
+        <svg class="tv-svg" viewBox="0 0 300 104" aria-hidden="true">
+          <line x1="12" y1="56" x2="288" y2="56" stroke="rgba(255,255,255,0.12)"/>
+          <g data-el="slices"></g>
+          <rect data-el="diff" x="12" y="74" width="0" height="16" rx="3" fill="rgba(0,255,102,.35)"/>
+          <rect data-el="bar" x="12" y="74" width="0" height="16" rx="3" fill="rgba(204,255,0,.55)"/>
+          <text x="12" y="102" font-family="IBM Plex Mono, monospace" font-size="8" fill="#54594f">WITHHELD VS ACTUAL</text>
+        </svg>
+        <div class="tv-read"><span class="tv-num" data-el="num">--</span><span class="tv-tag" data-el="tag">--</span></div>
+        <div class="tv-sub" data-el="sub">--</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 02 INCOME TYPES ================= -->
+<section id="income">
+  <div class="section-head reveal">
+    <div class="eyebrow"><span class="cursor"></span><span data-i18n="income.eyebrow">02 Income Types</span></div>
+    <h2 data-i18n="income.title">Not All Income Is Deducted The Same Way</h2>
+    <p class="lede" data-i18n="income.lede">The Revenue Code sorts income into eight categories, and each one carries its own expense-deduction rule. A salaried employee and a freelance architect earning the identical amount will end up with very different taxable income, purely because of which box their money falls into.</p>
+    <div class="rule"></div>
+  </div>
+  <div class="tax-table-wrap reveal">
+    <table class="tax-table">
+      <thead><tr><th>Section</th><th>What it covers</th><th>Expense deduction</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="mono rate">40(1)</td>
+          <td><b data-i18n="inc0.n">Salary & wages</b><br><span class="dim" data-i18n="inc0.d">Employment income, bonuses, allowances, and benefits in kind from an employer.</span></td>
+          <td class="mono dim" data-i18n="inc0.e">50%, max ฿100,000</td>
+        </tr>
+        <tr>
+          <td class="mono rate">40(2)</td>
+          <td><b data-i18n="inc1.n">Hire of work / agency fees</b><br><span class="dim" data-i18n="inc1.d">Commissions, brokerage, meeting fees, and one-off service payments outside an employment contract.</span></td>
+          <td class="mono dim" data-i18n="inc1.e">50%, max ฿100,000 (shared with 40(1))</td>
+        </tr>
+        <tr>
+          <td class="mono rate">40(3)</td>
+          <td><b data-i18n="inc2.n">Royalties & goodwill</b><br><span class="dim" data-i18n="inc2.d">Copyright, patents, franchise fees, and annuity-type payments from intellectual property.</span></td>
+          <td class="mono dim" data-i18n="inc2.e">50% for copyright, max ฿100,000</td>
+        </tr>
+        <tr>
+          <td class="mono rate">40(4)</td>
+          <td><b data-i18n="inc3.n">Interest & dividends</b><br><span class="dim" data-i18n="inc3.d">Bank interest, bond coupons, dividends, and capital gains treated as assessable income.</span></td>
+          <td class="mono dim" data-i18n="inc3.e">No expense deduction</td>
+        </tr>
+        <tr>
+          <td class="mono rate">40(5)</td>
+          <td><b data-i18n="inc4.n">Rental income</b><br><span class="dim" data-i18n="inc4.d">Rent from property, vehicles, and other assets you let out to someone else.</span></td>
+          <td class="mono dim" data-i18n="inc4.e">10–30% flat, or actual cost</td>
+        </tr>
+        <tr>
+          <td class="mono rate">40(6)</td>
+          <td><b data-i18n="inc5.n">Liberal professions</b><br><span class="dim" data-i18n="inc5.d">Law, medicine, engineering, architecture, accountancy, and fine arts practised independently.</span></td>
+          <td class="mono dim" data-i18n="inc5.e">30% flat (60% for medicine), or actual</td>
+        </tr>
+        <tr>
+          <td class="mono rate">40(7)</td>
+          <td><b data-i18n="inc6.n">Contract work with materials</b><br><span class="dim" data-i18n="inc6.d">Turnkey contracting where you supply both the labour and the essential materials.</span></td>
+          <td class="mono dim" data-i18n="inc6.e">60% flat, or actual cost</td>
+        </tr>
+        <tr>
+          <td class="mono rate">40(8)</td>
+          <td><b data-i18n="inc7.n">Business, trade & everything else</b><br><span class="dim" data-i18n="inc7.d">Shops, online selling, agriculture, transport, entertainment, and any income not covered above.</span></td>
+          <td class="mono dim" data-i18n="inc7.e">40–60% flat by activity, or actual</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-note" data-i18n="income.note">Where a category allows either a flat percentage or actual documented cost, you may choose whichever is higher — but "actual cost" requires evidence you can produce if audited. Rates for 40(5) through 40(8) vary by the specific activity; the ranges above are the common bands.</p>
+</section>
+
+<!-- ================= 03 FORMULA ================= -->
+<section id="formula">
+  <div class="section-head reveal">
+    <div class="eyebrow"><span class="cursor"></span><span data-i18n="formula.eyebrow">03 The Formula</span></div>
+    <h2 data-i18n="formula.title">Five Subtractions, Then A Staircase</h2>
+    <p class="lede" data-i18n="formula.lede">The whole system fits on one line: income, minus expenses, minus allowances, equals net income — and only that last number ever meets the tax table. Watch a ฿900,000 salary walk through it.</p>
+    <div class="rule"></div>
+  </div>
+  <div class="flow-panel reveal" data-viz="flow">
+    <div class="tv-head"><span class="tv-live"></span><span data-el="cap">live</span></div>
+    <svg class="flow-svg" viewBox="0 0 900 236" aria-hidden="true">
+    <text data-el="l_gross" x="212" y="29" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" fill="#8b9186">--</text>
+    <rect x="222" y="14" width="580" height="22" rx="4" fill="rgba(255,255,255,0.028)"/>
+    <rect data-el="b_gross" x="222" y="14" width="0" height="22" rx="4" fill="#ccff00" opacity="0.5"/>
+    <text data-el="v_gross" x="234" y="29" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="#f4f6f1">--</text>
+    <text data-el="l_expense" x="212" y="73" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" fill="#8b9186">--</text>
+    <rect x="222" y="58" width="580" height="22" rx="4" fill="rgba(255,255,255,0.028)"/>
+    <rect data-el="b_expense" x="222" y="58" width="0" height="22" rx="4" fill="#ffb020" opacity="0.5"/>
+    <text data-el="v_expense" x="234" y="73" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="#f4f6f1">--</text>
+    <text data-el="l_allow" x="212" y="117" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" fill="#8b9186">--</text>
+    <rect x="222" y="102" width="580" height="22" rx="4" fill="rgba(255,255,255,0.028)"/>
+    <rect data-el="b_allow" x="222" y="102" width="0" height="22" rx="4" fill="#ffb020" opacity="0.5"/>
+    <text data-el="v_allow" x="234" y="117" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="#f4f6f1">--</text>
+    <text data-el="l_net" x="212" y="161" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" fill="#8b9186">--</text>
+    <rect x="222" y="146" width="580" height="22" rx="4" fill="rgba(255,255,255,0.028)"/>
+    <rect data-el="b_net" x="222" y="146" width="0" height="22" rx="4" fill="#00ff66" opacity="0.5"/>
+    <text data-el="v_net" x="234" y="161" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="#f4f6f1">--</text>
+    <text data-el="l_tax" x="212" y="205" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" fill="#8b9186">--</text>
+    <rect x="222" y="190" width="580" height="22" rx="4" fill="rgba(255,255,255,0.028)"/>
+    <rect data-el="b_tax" x="222" y="190" width="0" height="22" rx="4" fill="#ff3b4e" opacity="0.5"/>
+    <text data-el="v_tax" x="234" y="205" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="#f4f6f1">--</text>
+    </svg>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="fs-n">STEP 01</div>
+        <div class="fs-t" data-i18n="fs.gross.t">Add up every baht</div>
+        <div class="fs-d" data-i18n="fs.gross.d">Salary, bonus, freelance fees, rent, interest — everything assessable for the calendar year.</div>
+      </div>
+      <div class="flow-step">
+        <div class="fs-n">STEP 02</div>
+        <div class="fs-t" data-i18n="fs.expense.t">Subtract expenses</div>
+        <div class="fs-d" data-i18n="fs.expense.d">The rule depends on the income category — salary gets 50% capped at ฿100,000.</div>
+      </div>
+      <div class="flow-step">
+        <div class="fs-n">STEP 03</div>
+        <div class="fs-t" data-i18n="fs.allow.t">Subtract allowances</div>
+        <div class="fs-d" data-i18n="fs.allow.d">Personal, family, insurance, retirement funds, mortgage interest, donations.</div>
+      </div>
+      <div class="flow-step">
+        <div class="fs-n">STEP 04</div>
+        <div class="fs-t" data-i18n="fs.net.t">That is net income</div>
+        <div class="fs-d" data-i18n="fs.net.d">The only number the tax table ever looks at. Not your salary — this.</div>
+      </div>
+      <div class="flow-step">
+        <div class="fs-n">STEP 05</div>
+        <div class="fs-t" data-i18n="fs.tax.t">Run it up the steps</div>
+        <div class="fs-d" data-i18n="fs.tax.d">Apply each bracket rate to only the slice of income that sits inside it, then add them up.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 04 BRACKETS ================= -->
+<section id="brackets">
+  <div class="section-head reveal">
+    <div class="eyebrow"><span class="cursor"></span><span data-i18n="brackets.eyebrow">04 Tax Brackets</span></div>
+    <h2 data-i18n="brackets.title">Eight Steps From Zero To Thirty-Five</h2>
+    <p class="lede" data-i18n="brackets.lede">These rates apply to net taxable income — the figure left after every expense and allowance has already been removed. Drag the slider to watch how one income splits itself across the steps.</p>
+    <div class="rule"></div>
+  </div>
+  <div class="tax-table-wrap reveal">
+    <table class="tax-table">
+      <thead><tr><th>Net income (THB)</th><th>Rate</th><th>Max tax in this step</th><th>Cumulative tax at top of step</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="mono">0 – 150,000</td>
+          <td class="rate zero">0%</td>
+          <td class="mono dim">฿0</td>
+          <td class="mono dim">฿0</td>
+        </tr>
+        <tr>
+          <td class="mono">150,001 – 300,000</td>
+          <td class="rate ">5%</td>
+          <td class="mono dim">฿7,500</td>
+          <td class="mono dim">฿7,500</td>
+        </tr>
+        <tr>
+          <td class="mono">300,001 – 500,000</td>
+          <td class="rate ">10%</td>
+          <td class="mono dim">฿20,000</td>
+          <td class="mono dim">฿27,500</td>
+        </tr>
+        <tr>
+          <td class="mono">500,001 – 750,000</td>
+          <td class="rate ">15%</td>
+          <td class="mono dim">฿37,500</td>
+          <td class="mono dim">฿65,000</td>
+        </tr>
+        <tr>
+          <td class="mono">750,001 – 1,000,000</td>
+          <td class="rate ">20%</td>
+          <td class="mono dim">฿50,000</td>
+          <td class="mono dim">฿115,000</td>
+        </tr>
+        <tr>
+          <td class="mono">1,000,001 – 2,000,000</td>
+          <td class="rate ">25%</td>
+          <td class="mono dim">฿250,000</td>
+          <td class="mono dim">฿365,000</td>
+        </tr>
+        <tr>
+          <td class="mono">2,000,001 – 5,000,000</td>
+          <td class="rate high">30%</td>
+          <td class="mono dim">฿900,000</td>
+          <td class="mono dim">฿1,265,000</td>
+        </tr>
+        <tr>
+          <td class="mono">5,000,001 +</td>
+          <td class="rate high">35%</td>
+          <td class="mono dim">—</td>
+          <td class="mono dim">—</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="bx-panel reveal">
+    <div class="bx-head">
+      <span class="bx-label" data-i18n="bx.label">Net taxable income</span>
+      <span class="bx-value" id="bxNet">฿500,000</span>
+    </div>
+    <input type="range" class="bx-range" id="bxRange" min="0" max="6000000" step="10000" value="500000"
+           aria-label="Net taxable income">
+    <div class="bx-scale"><span>฿0</span><span>฿1.5M</span><span>฿3M</span><span>฿4.5M</span><span>฿6M</span></div>
+    <div class="bx-stack" id="bxStack"><div class="bx-seg" data-seg="0" style="width:0%;background:#00ff66"></div><div class="bx-seg" data-seg="1" style="width:0%;background:#8fdc4b"></div><div class="bx-seg" data-seg="2" style="width:0%;background:#ccff00"></div><div class="bx-seg" data-seg="3" style="width:0%;background:#e2e034"></div><div class="bx-seg" data-seg="4" style="width:0%;background:#ffb020"></div><div class="bx-seg" data-seg="5" style="width:0%;background:#ff8a2b"></div><div class="bx-seg" data-seg="6" style="width:0%;background:#ff5c3a"></div><div class="bx-seg" data-seg="7" style="width:0%;background:#ff3b4e"></div></div>
+    <div class="bx-legend" id="bxLegend"><span class="bx-chip" data-band="0"><span class="sw" style="background:#00ff66"></span>0%</span><span class="bx-chip" data-band="1"><span class="sw" style="background:#8fdc4b"></span>5%</span><span class="bx-chip" data-band="2"><span class="sw" style="background:#ccff00"></span>10%</span><span class="bx-chip" data-band="3"><span class="sw" style="background:#e2e034"></span>15%</span><span class="bx-chip" data-band="4"><span class="sw" style="background:#ffb020"></span>20%</span><span class="bx-chip" data-band="5"><span class="sw" style="background:#ff8a2b"></span>25%</span><span class="bx-chip" data-band="6"><span class="sw" style="background:#ff5c3a"></span>30%</span><span class="bx-chip" data-band="7"><span class="sw" style="background:#ff3b4e"></span>35%</span></div>
+    <div class="bx-out">
+      <div class="bx-out-card"><div class="bo-l" data-i18n="bx.tax">Total tax due</div><div class="bo-v" id="bxTax">฿0</div></div>
+      <div class="bx-out-card"><div class="bo-l" data-i18n="bx.eff">Effective rate</div><div class="bo-v amber" id="bxEff">0.0%</div></div>
+      <div class="bx-out-card"><div class="bo-l" data-i18n="bx.marg">Marginal rate (top step)</div><div class="bo-v white" id="bxMarg">0%</div></div>
+    </div>
+    <p class="tbl-note" data-i18n="bx.note">Notice how far apart the two numbers stay. Someone with ฿2,000,000 of net income sits in the 25% bracket but pays an effective rate closer to 18% — because the first ฿150,000 was free, the next slice was 5%, and so on all the way up.</p>
+  </div>
+</section>
+
+<!-- ================= 05 ALLOWANCES ================= -->
+<section id="allowances">
+  <div class="section-head reveal">
+    <div class="eyebrow"><span class="cursor"></span><span data-i18n="allow.eyebrow">11 Deductions & Allowances</span></div>
+    <h2 data-i18n="allow.title">Every Baht You Are Allowed To Remove First</h2>
+    <p class="lede" data-i18n="allow.lede">Allowances are subtracted before the tax table ever sees your income, so each one shifts a slice of money out of your top bracket. Tap any row to open it — every panel is live, and shows what happens when you hit the ceiling.</p>
+    <div class="rule"></div>
+  </div>
+  <div class="glossary-list reveal">
+    <details class="term-row" open>
+      <summary>
+        <span class="term-idx">01</span>
+        <span class="term-tag">BASE</span>
+        <span class="term-name" data-i18n="al.personal.name">Personal Allowance</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="term-content-wrap"><div class="term-content-inner">
+        <div class="term-body">
+          <div class="term-text">
+            <p class="term-def" data-i18n="al.personal.def">Every individual filer gets ฿60,000 removed from their income before the tax table is applied, with no receipt, no condition and no application required. A married couple filing jointly gets ฿120,000 between them. It is the single most reliable deduction in the entire code, and it is also why anyone whose net income lands under ฿210,000 after the expense deduction typically owes nothing at all.</p>
+            <div class="term-formula">
+              <span class="tf-label" data-i18n="al.limitLabel">Limit</span>
+              <code>฿60,000</code>
+            </div>
+          </div>
+          <div class="term-viz" data-viz="al_personal">
+            <div class="tv-head"><span class="tv-live"></span><span data-el="cap">live</span></div>
+            <svg class="tv-svg" viewBox="0 0 276 76" aria-hidden="true">
+              <rect data-el="glow" x="52" y="16" width="172" height="44" rx="10" fill="#ccff00" opacity="0.2"/>
+              <rect data-el="box" x="52" y="16" width="172" height="44" rx="10" fill="rgba(204,255,0,0.08)" stroke="#ccff00" stroke-width="2"/>
+              <text x="138" y="44" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="17" font-weight="700" fill="#ccff00">฿60,000</text>
+            </svg>
+            <div class="tv-read"><span class="tv-num" data-el="num">--</span><span class="tv-tag" data-el="tag">--</span></div>
+            <div class="tv-sub" data-el="sub">--</div>
+          </div>
+        </div>
+      </div></div>
+    </details>
+
+    <details class="term-row">
+      <summary>
+        <span class="term-idx">02</span>
+        <span class="term-tag">EXP</span>
+        <span class="term-name" data-i18n="al.expense.name">Standard Expense Deduction</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="term-content-wrap"><div class="term-content-inner">
+        <div class="term-body">
+          <div class="term-text">
+            <p class="term-def" data-i18n="al.expense.def">Before any allowance is even considered, salaried income has 50% of it removed as a standard expense — but that half is hard-capped at ฿100,000. In practice this means the deduction grows with your salary only until you reach ฿200,000 a year, and after that it is frozen forever at ฿100,000. Someone earning ฿2 million gets exactly the same ฿100,000 as someone earning ฿200,000, which is why the effective burden rises faster than people expect once salaries pass that threshold.</p>
+            <div class="term-formula">
+              <span class="tf-label" data-i18n="al.limitLabel">Limit</span>
+              <code>50% / ฿100,000</code>
+            </div>
+          </div>
+          <div class="term-viz" data-viz="al_expense">
+            <div class="tv-head"><span class="tv-live"></span><span data-el="cap">live</span></div>
+            <svg class="tv-svg" viewBox="0 0 276 88" aria-hidden="true">
+              <text x="12" y="14" font-family="IBM Plex Mono, monospace" font-size="8.5" fill="#8b9186">ANNUAL SALARY</text>
+              <rect x="12" y="20" width="250" height="16" rx="4" fill="rgba(255,255,255,0.04)"/>
+              <rect data-el="inc" x="12" y="20" width="0" height="16" rx="4" fill="rgba(255,255,255,0.22)"/>
+              <text x="12" y="58" font-family="IBM Plex Mono, monospace" font-size="8.5" fill="#8b9186">DEDUCTIBLE HALF</text>
+              <rect x="12" y="64" width="250" height="16" rx="4" fill="rgba(255,255,255,0.04)"/>
+              <rect data-el="ded" x="12" y="64" width="0" height="16" rx="4" fill="rgba(204,255,0,0.55)"/>
+              <line data-el="capline" x1="262" y1="60" x2="262" y2="84" stroke="#ffb020" stroke-width="2" opacity="0.4"/>
+            </svg>
+            <div class="tv-read"><span class="tv-num" data-el="num">--</span><span class="tv-tag" data-el="tag">--</span></div>
+            <div class="tv-sub" data-el="sub">--</div>
+          </div>
+        </div>
+      </div></div>
+    </details>
+
+    <details class="term-row">
+      <summary>
+        <span class="term-idx">03</span>
+        <span class="term-tag">FAM</span>
+        <span class="term-name" data-i18n="al.family.name">Spouse, Children & Parents</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="term-content-wrap"><div class="term-content-inner">
+        <div class="term-body">
+          <div class="term-text">
+            <p class="term-def" data-i18n="al.family.def">A spouse with no income of their own is worth ฿60,000. Each legitimate child is worth ฿30,000, rising to ฿60,000 for a second or later child born from 2018 onward. Each parent aged 60 or over whom you genuinely support is worth ฿30,000, up to four parents counting your spouse's — but only if that parent's own annual income stays under ฿30,000, and only one child may claim any given parent. This last condition is the one families most often trip over, because siblings frequently claim the same parent without realising it.</p>
+            <div class="term-formula">
+              <span class="tf-label" data-i18n="al.limitLabel">Limit</span>
+              <code>฿30,000 – ฿60,000 each</code>
+            </div>
+          </div>
+          <div class="term-viz" data-viz="al_family">
+            <div class="tv-head"><span class="tv-live"></span><span data-el="cap">live</span></div>
+            <svg class="tv-svg" viewBox="0 0 276 92" aria-hidden="true">
+              <g font-family="IBM Plex Mono, monospace" font-size="8.5" fill="#8b9186">
+                <text data-el="l_spouse" x="12" y="20">SPOUSE</text>
+                <text data-el="l_child" x="12" y="48">CHILDREN</text>
+                <text data-el="l_parent" x="12" y="76">PARENTS</text>
+              </g>
+              <rect data-el="b_spouse" x="66" y="10" width="0" height="14" rx="3" fill="rgba(204,255,0,0.5)"/>
+              <rect data-el="b_child" x="66" y="38" width="0" height="14" rx="3" fill="rgba(204,255,0,0.5)"/>
+              <rect data-el="b_parent" x="66" y="66" width="0" height="14" rx="3" fill="rgba(204,255,0,0.5)"/>
+              <text data-el="v_spouse" x="264" y="21" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="#f4f6f1">--</text>
+              <text data-el="v_child" x="264" y="49" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="#f4f6f1">--</text>
+              <text data-el="v_parent" x="264" y="77" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="#f4f6f1">--</text>
+            </svg>
+            <div class="tv-read"><span class="tv-num" data-el="num">--</span><span class="tv-tag" data-el="tag">--</span></div>
+            <div class="tv-sub" data-el="sub">--</div>
+          </div>
+        </div>
+      </div></div>
+    </details>
+
+    <details class="term-row">
+      <summary>
+        <span class="term-idx">04</span>
+        <span class="term-tag">INS</span>
+        <span class="term-name" data-i18n="al.insurance.name">Life & Health Insurance</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="term-content-wrap"><div class="term-content-inner">
+        <div class="term-body">
+          <div class="term-text">
+            <p class="term-def" data-i18n="al.insurance.def">Life insurance premiums on policies of ten years or longer, plus your own health insurance premiums, share a single ฿100,000 ceiling — and within that ceiling the health portion alone cannot exceed ฿25,000. Health insurance premiums paid for your parents sit outside this pot with their own ฿15,000 limit, and unlike the parent allowance, that one does not require the parent to be over 60. Buying ฿180,000 of life cover in December does not produce ฿180,000 of deduction; the extra ฿80,000 simply does nothing for your tax at all.</p>
+            <div class="term-formula">
+              <span class="tf-label" data-i18n="al.limitLabel">Limit</span>
+              <code>shared ฿100,000</code>
+            </div>
+          </div>
+          <div class="term-viz" data-viz="al_insurance">
+            <div class="tv-head"><span class="tv-live"></span><span data-el="cap">live</span></div>
+            <svg class="tv-svg" viewBox="0 0 276 76" aria-hidden="true">
+              <rect x="12" y="26" width="250" height="24" rx="5" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.09)"/>
+              <rect data-el="health" x="12" y="26" width="0" height="24" fill="rgba(0,255,102,0.45)"/>
+              <rect data-el="life" x="12" y="26" width="0" height="24" fill="rgba(204,255,0,0.5)"/>
+              <line data-el="capline" x1="262" y1="20" x2="262" y2="56" stroke="#ffb020" stroke-width="2" opacity="0.4"/>
+              <g font-family="IBM Plex Mono, monospace" font-size="8" fill="#54594f">
+                <rect x="12" y="62" width="7" height="7" fill="rgba(0,255,102,0.7)"/><text x="24" y="69">HEALTH ฿25K</text>
+                <rect x="120" y="62" width="7" height="7" fill="#ccff00"/><text x="132" y="69">LIFE — SHARED ฿100K</text>
+              </g>
+            </svg>
+            <div class="tv-read"><span class="tv-num" data-el="num">--</span><span class="tv-tag" data-el="tag">--</span></div>
+            <div class="tv-sub" data-el="sub">--</div>
+          </div>
+        </div>
+      </div></div>
+    </details>
+
+    <details class="term-row">
+      <summary>
+        <span class="term-idx">05</span>
+        <span class="term-tag">RETIRE</span>
+        <span class="term-name" data-i18n="al.retire.name">Retirement Savings</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="term-content-wrap"><div class="term-content-inner">
+        <div class="term-body">
+          <div class="term-text">
+            <p class="term-def" data-i18n="al.retire.def">Provident fund contributions, RMF units, government pension fund savings and pension-type life insurance all pour into one shared bucket capped at ฿500,000 a year. Each has its own inner limit as well — provident fund at 15% of wages, RMF at 30% of assessable income, pension insurance at 15% of income and no more than ฿200,000 — but the combined ceiling is the one that bites. Buying the maximum of each individually is the classic mistake: the total is still cut back to ฿500,000, and the excess is locked up in long-hold products for no tax benefit whatsoever.</p>
+            <div class="term-formula">
+              <span class="tf-label" data-i18n="al.limitLabel">Limit</span>
+              <code>combined ฿500,000</code>
+            </div>
+          </div>
+          <div class="term-viz" data-viz="al_retire">
+            <div class="tv-head"><span class="tv-live"></span><span data-el="cap">live</span></div>
+            <svg class="tv-svg" viewBox="0 0 276 76" aria-hidden="true">
+              <rect x="12" y="26" width="250" height="24" rx="5" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.09)"/>
+              <rect data-el="s_pvd" x="12" y="26" width="0" height="24" fill="rgba(0,255,102,0.45)"/>
+              <rect data-el="s_rmf" x="12" y="26" width="0" height="24" fill="rgba(204,255,0,0.5)"/>
+              <rect data-el="s_pension" x="12" y="26" width="0" height="24" fill="rgba(255,176,32,0.5)"/>
+              <line data-el="capline" x1="262" y1="20" x2="262" y2="56" stroke="#ffb020" stroke-width="2" opacity="0.4"/>
+              <g font-family="IBM Plex Mono, monospace" font-size="8" fill="#54594f">
+                <rect x="12" y="62" width="7" height="7" fill="rgba(0,255,102,0.7)"/><text x="23" y="69">PVD</text>
+                <rect x="70" y="62" width="7" height="7" fill="#ccff00"/><text x="81" y="69">RMF</text>
+                <rect x="132" y="62" width="7" height="7" fill="#ffb020"/><text x="143" y="69">PENSION — TOTAL ฿500K</text>
+              </g>
+            </svg>
+            <div class="tv-read"><span class="tv-num" data-el="num">--</span><span class="tv-tag" data-el="tag">--</span></div>
+            <div class="tv-sub" data-el="sub">--</div>
+          </div>
+        </div>
+      </div></div>
+    </details>
+
+    <details class="term-row">
+      <summary>
+        <span class="term-idx">06</span>
+        <span class="term-tag">ESG</span>
+        <span class="term-name" data-i18n="al.esg.name">Thai ESG Funds</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="term-content-wrap"><div class="term-content-inner">
+        <div class="term-body">
+          <div class="term-text">
+            <p class="term-def" data-i18n="al.esg.def">Thai ESG units get their own bucket entirely separate from the ฿500,000 retirement ceiling, worth up to 30% of assessable income and capped at ฿300,000. For someone already maxing out their provident fund and RMF, this is effectively the only remaining room to buy more deduction. The trade-off is the holding period and the narrower universe of eligible funds, so the tax saving has to be weighed against the investment being locked and less diversified than a general portfolio.</p>
+            <div class="term-formula">
+              <span class="tf-label" data-i18n="al.limitLabel">Limit</span>
+              <code>up to ฿300,000</code>
+            </div>
+          </div>
+          <div class="term-viz" data-viz="al_esg">
+            <div class="tv-head"><span class="tv-live"></span><span data-el="cap">live</span></div>
+            <svg class="tv-svg" viewBox="0 0 276 76" aria-hidden="true">
+              <rect x="12" y="26" width="240" height="24" rx="5" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.09)"/>
+              <rect data-el="fill" x="12" y="26" width="0" height="24" rx="5" fill="rgba(204,255,0,0.55)"/>
+              <line data-el="capline" x1="252" y1="20" x2="252" y2="56" stroke="#ffb020" stroke-width="2" opacity="0.4"/>
+              <text data-el="lcap" x="252" y="14" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="8.5" fill="#ffb020">CAP</text>
+              <text x="12" y="66" font-family="IBM Plex Mono, monospace" font-size="8" fill="#54594f">THAI ESG · 30% OF INCOME</text>
+            </svg>
+            <div class="tv-read"><span class="tv-num" data-el="num">--</span><span class="tv-tag" data-el="tag">--</span></div>
+            <div class="tv-sub" data-el="sub">--</div>
+          </div>
+        </div>
+      </div></div>
+    </details>
+
+    <details class="term-row">
+      <summary>
+        <span class="term-idx">07</span>
+        <span class="term-tag">SSO</span>
+        <span class="term-name" data-i18n="al.sso.name">Social Security Contributions</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="term-content-wrap"><div class="term-content-inner">
+        <div class="term-body">
+          <div class="term-text">
+            <p class="term-def" data-i18n="al.sso.def">The 5% deducted from your payslip each month for social security is capped at ฿750, which adds up to ฿9,000 across a full year, and every baht of it is deductible. You paid it without choosing to, so there is nothing to buy and nothing to plan — but it still has to be typed into the return, and the figure appears on the 50 Tavi certificate your employer issues. Contribution rates are occasionally adjusted by ministerial announcement, so confirm the year's actual ceiling rather than assuming ฿9,000 forever.</p>
+            <div class="term-formula">
+              <span class="tf-label" data-i18n="al.limitLabel">Limit</span>
+              <code>up to ฿9,000</code>
+            </div>
+          </div>
+          <div class="term-viz" data-viz="al_sso">
+            <div class="tv-head"><span class="tv-live"></span><span data-el="cap">live</span></div>
+            <svg class="tv-svg" viewBox="0 0 276 76" aria-hidden="true">
+              <g data-el="coins"></g>
+              <rect x="12" y="52" width="250" height="12" rx="6" fill="rgba(255,255,255,0.04)"/>
+              <rect data-el="bar" x="12" y="52" width="0" height="12" rx="6" fill="rgba(204,255,0,0.55)"/>
+              <text x="12" y="14" font-family="IBM Plex Mono, monospace" font-size="8" fill="#54594f">JAN — DEC</text>
+            </svg>
+            <div class="tv-read"><span class="tv-num" data-el="num">--</span><span class="tv-tag" data-el="tag">--</span></div>
+            <div class="tv-sub" data-el="sub">--</div>
+          </div>
+        </div>
+      </div></div>
+    </details>
+
+    <details class="term-row">
+      <summary>
+        <span class="term-idx">08</span>
+        <span class="term-tag">HOME</span>
+        <span class="term-name" data-i18n="al.home.name">Home Loan Interest</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="term-content-wrap"><div class="term-content-inner">
+        <div class="term-body">
+          <div class="term-text">
+            <p class="term-def" data-i18n="al.home.def">Only the interest portion of your mortgage payments is deductible, up to ฿100,000 a year, and the loan must be secured against a residence in Thailand. The principal repayment — usually the larger half of each instalment — does nothing for your tax. Your bank issues an annual interest certificate with the exact deductible figure, so there is no need to guess or add up statements. If two people jointly hold one loan, the ฿100,000 is split between them rather than doubled.</p>
+            <div class="term-formula">
+              <span class="tf-label" data-i18n="al.limitLabel">Limit</span>
+              <code>up to ฿100,000</code>
+            </div>
+          </div>
+          <div class="term-viz" data-viz="al_home">
+            <div class="tv-head"><span class="tv-live"></span><span data-el="cap">live</span></div>
+            <svg class="tv-svg" viewBox="0 0 276 76" aria-hidden="true">
+              <rect x="12" y="26" width="240" height="24" rx="5" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.09)"/>
+              <rect data-el="fill" x="12" y="26" width="0" height="24" rx="5" fill="rgba(204,255,0,0.55)"/>
+              <line data-el="capline" x1="252" y1="20" x2="252" y2="56" stroke="#ffb020" stroke-width="2" opacity="0.4"/>
+              <text data-el="lcap" x="252" y="14" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="8.5" fill="#ffb020">CAP</text>
+              <text x="12" y="66" font-family="IBM Plex Mono, monospace" font-size="8" fill="#54594f">MORTGAGE INTEREST PAID</text>
+            </svg>
+            <div class="tv-read"><span class="tv-num" data-el="num">--</span><span class="tv-tag" data-el="tag">--</span></div>
+            <div class="tv-sub" data-el="sub">--</div>
+          </div>
+        </div>
+      </div></div>
+    </details>
+
+    <details class="term-row">
+      <summary>
+        <span class="term-idx">09</span>
+        <span class="term-tag">GIVE</span>
+        <span class="term-name" data-i18n="al.donate.name">Donations</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="term-content-wrap"><div class="term-content-inner">
+        <div class="term-body">
+          <div class="term-text">
+            <p class="term-def" data-i18n="al.donate.def">General donations to approved charities are deductible at face value, while donations to registered educational institutions, public hospitals and recognised sports bodies count at double the amount you actually gave. Either way the total is capped at 10% of income after all other deductions have been taken — so the cap moves depending on everything else you claimed. Donations to political parties sit in their own small ฿10,000 pot. Keep the official receipt with the recipient's tax ID on it; a bank transfer slip alone is usually not enough.</p>
+            <div class="term-formula">
+              <span class="tf-label" data-i18n="al.limitLabel">Limit</span>
+              <code>10% of income · 2× for some</code>
+            </div>
+          </div>
+          <div class="term-viz" data-viz="al_donate">
+            <div class="tv-head"><span class="tv-live"></span><span data-el="cap">live</span></div>
+            <svg class="tv-svg" viewBox="0 0 276 76" aria-hidden="true">
+              <rect x="12" y="26" width="250" height="24" rx="5" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.09)"/>
+              <rect data-el="boost" x="12" y="26" width="0" height="24" rx="5" fill="#00ff66" opacity="0"/>
+              <rect data-el="base" x="12" y="26" width="0" height="24" rx="5" fill="rgba(204,255,0,0.55)"/>
+              <line data-el="capline" x1="262" y1="20" x2="262" y2="56" stroke="#ffb020" stroke-width="2" opacity="0.4"/>
+              <text data-el="lcap" x="262" y="14" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="8.5" fill="#ffb020">10% CAP</text>
+              <text x="12" y="68" font-family="IBM Plex Mono, monospace" font-size="8" fill="#54594f">DONATION COUNTED</text>
+            </svg>
+            <div class="tv-read"><span class="tv-num" data-el="num">--</span><span class="tv-tag" data-el="tag">--</span></div>
+            <div class="tv-sub" data-el="sub">--</div>
+          </div>
+        </div>
+      </div></div>
+    </details>
+
+    <details class="term-row">
+      <summary>
+        <span class="term-idx">10</span>
+        <span class="term-tag">STIM</span>
+        <span class="term-name" data-i18n="al.stimulus.name">Stimulus Schemes</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="term-content-wrap"><div class="term-content-inner">
+        <div class="term-body">
+          <div class="term-text">
+            <p class="term-def" data-i18n="al.stimulus.def">Every year or two the government attaches a shopping-based deduction to the tax code — Easy E-Receipt, domestic travel schemes, and similar campaigns — usually worth up to ฿50,000 and running only for a narrow window of a few weeks. These are the most volatile line in the entire return: the amount, the eligible goods and the dates change with each announcement, and a scheme that existed last year may simply not exist this year. Treat any figure you remember from a previous filing as out of date until you have checked the current announcement.</p>
+            <div class="term-formula">
+              <span class="tf-label" data-i18n="al.limitLabel">Limit</span>
+              <code>varies · often ฿50,000</code>
+            </div>
+          </div>
+          <div class="term-viz" data-viz="al_stimulus">
+            <div class="tv-head"><span class="tv-live"></span><span data-el="cap">live</span></div>
+            <svg class="tv-svg" viewBox="0 0 276 76" aria-hidden="true">
+              <rect x="12" y="26" width="240" height="24" rx="5" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.09)"/>
+              <rect data-el="fill" x="12" y="26" width="0" height="24" rx="5" fill="rgba(204,255,0,0.55)"/>
+              <line data-el="capline" x1="252" y1="20" x2="252" y2="56" stroke="#ffb020" stroke-width="2" opacity="0.4"/>
+              <text data-el="lcap" x="252" y="14" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="8.5" fill="#ffb020">CAP</text>
+              <text x="12" y="66" font-family="IBM Plex Mono, monospace" font-size="8" fill="#54594f">E-RECEIPT SPENDING</text>
+            </svg>
+            <div class="tv-read"><span class="tv-num" data-el="num">--</span><span class="tv-tag" data-el="tag">--</span></div>
+            <div class="tv-sub" data-el="sub">--</div>
+          </div>
+        </div>
+      </div></div>
+    </details>
+
+    <details class="term-row">
+      <summary>
+        <span class="term-idx">11</span>
+        <span class="term-tag">VALUE</span>
+        <span class="term-name" data-i18n="al.saving.name">What A Deduction Is Actually Worth</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="term-content-wrap"><div class="term-content-inner">
+        <div class="term-body">
+          <div class="term-text">
+            <p class="term-def" data-i18n="al.saving.def">This is the single most misunderstood point in tax planning. A ฿100,000 deduction does not give you ฿100,000 back — it removes ฿100,000 from the income being taxed, so what you actually save is ฿100,000 multiplied by your marginal rate. At the 5% step that is ฿5,000; at the 35% step it is ฿35,000. Spending ฿100,000 on an investment product you did not want, in order to save ฿5,000, is a losing trade. The higher your bracket, the more genuine leverage deductions give you, which is why deduction-driven purchases make sense for high earners and rarely for anyone near the bottom of the table.</p>
+            <div class="term-formula">
+              <span class="tf-label" data-i18n="al.limitLabel">Limit</span>
+              <code>deduction × your top rate</code>
+            </div>
+          </div>
+          <div class="term-viz" data-viz="al_saving">
+            <div class="tv-head"><span class="tv-live"></span><span data-el="cap">live</span></div>
+            <svg class="tv-svg" viewBox="0 0 276 106" aria-hidden="true">
+              <line x1="12" y1="88" x2="264" y2="88" stroke="rgba(255,255,255,0.12)"/>
+              <g data-el="bars"></g>
+            </svg>
+            <div class="tv-read"><span class="tv-num" data-el="num">--</span><span class="tv-tag" data-el="tag">--</span></div>
+            <div class="tv-sub" data-el="sub">--</div>
+          </div>
+        </div>
+      </div></div>
+    </details>
+  </div>
+  <div class="tax-disclaimer reveal"><div data-i18n="allow.disclaimer">Figures shown reflect the rules commonly applied for the 2568 (2025) tax year, filed in early 2026. Caps, eligibility and stimulus schemes are revised by ministerial announcement and can change between filing seasons — always confirm against the Revenue Department before you rely on a number here.</div></div>
+</section>
+
+<!-- ================= 06 CALCULATOR ================= -->
+<section id="calc">
+  <div class="section-head reveal">
+    <div class="eyebrow"><span class="cursor"></span><span data-i18n="calc.eyebrow">06 Calculator</span></div>
+    <h2 data-i18n="calc.title">Run Your Own Numbers</h2>
+    <p class="lede" data-i18n="calc.lede">Fill in what applies to you and leave the rest blank. Every field accepts the currency you pick below — the tool converts to baht, applies the Thai brackets, and shows the result in both.</p>
+    <div class="rule"></div>
+  </div>
+  <div class="calc-grid reveal">
+    <div class="calc-panel">
+      <span class="tag" data-i18n="calc.tag">// Personal Income Tax</span>
+
+      <div class="calc-sep"><span data-i18n="calc.curSep">CURRENCY</span></div>
+      <div class="cur-row">
+        <div class="calc-field">
+          <label for="curSelect" data-i18n="calc.curLabel">Enter amounts in</label>
+          <select id="curSelect" class="calc-input calc-select"></select>
+        </div>
+        <div class="calc-field">
+          <label for="curRate" data-i18n="calc.rateLabel">THB per unit</label>
+          <input type="number" id="curRate" class="calc-input" step="any" min="0">
+        </div>
+      </div>
+      <div class="cur-note" id="curNote"></div>
+
+      <div class="calc-sep"><span data-i18n="calc.sep1">INCOME</span></div>
+      <div class="calc-field">
+        <label for="f_salary" data-i18n="calc.salary.l">Annual salary & bonus</label>
+        <input type="number" id="f_salary" class="calc-input" min="0" step="any" placeholder="600000" inputmode="decimal">
+        <div class="calc-hint" data-i18n="calc.salary.h">Gross, before any tax is withheld — section 40(1).</div>
+      </div>
+      <div class="calc-field">
+        <label for="f_other" data-i18n="calc.other.l">Other assessable income</label>
+        <input type="number" id="f_other" class="calc-input" min="0" step="any" placeholder="0" inputmode="decimal">
+        <div class="calc-hint" data-i18n="calc.other.h">Freelance fees, rent, interest. A flat 50% expense (max ฿100,000, shared) is applied to this and salary together.</div>
+      </div>
+      <div class="calc-sep"><span data-i18n="calc.sep2">FAMILY</span></div>
+      <div class="calc-field">
+        <label for="f_spouse" data-i18n="calc.spouse.l">Spouse with no income</label>
+        <input type="number" id="f_spouse" class="calc-input" min="0" step="any" placeholder="0" inputmode="decimal">
+        <div class="calc-hint" data-i18n="calc.spouse.h">Enter 1 to claim ฿60,000, or 0.</div>
+      </div>
+      <div class="calc-field">
+        <label for="f_children" data-i18n="calc.children.l">Number of children</label>
+        <input type="number" id="f_children" class="calc-input" min="0" step="any" placeholder="0" inputmode="decimal">
+        <div class="calc-hint" data-i18n="calc.children.h">฿30,000 each. Second and later children born from 2018 are worth ฿60,000 — add them separately below.</div>
+      </div>
+      <div class="calc-field">
+        <label for="f_children2" data-i18n="calc.children2.l">Of those, born 2018 or later (2nd child onward)</label>
+        <input type="number" id="f_children2" class="calc-input" min="0" step="any" placeholder="0" inputmode="decimal">
+        <div class="calc-hint" data-i18n="calc.children2.h">These get ฿60,000 instead of ฿30,000.</div>
+      </div>
+      <div class="calc-field">
+        <label for="f_parents" data-i18n="calc.parents.l">Parents supported (aged 60+)</label>
+        <input type="number" id="f_parents" class="calc-input" min="0" step="any" placeholder="0" inputmode="decimal">
+        <div class="calc-hint" data-i18n="calc.parents.h">฿30,000 each, maximum 4 including your spouse’s parents.</div>
+      </div>
+      <div class="calc-sep"><span data-i18n="calc.sep3">INSURANCE & SAVINGS</span></div>
+      <div class="calc-field">
+        <label for="f_sso" data-i18n="calc.sso.l">Social security paid</label>
+        <input type="number" id="f_sso" class="calc-input" min="0" step="any" placeholder="9000" inputmode="decimal">
+        <div class="calc-hint" data-i18n="calc.sso.h">Capped at ฿9,000 a year.</div>
+      </div>
+      <div class="calc-field">
+        <label for="f_lifeins" data-i18n="calc.lifeins.l">Life + own health insurance</label>
+        <input type="number" id="f_lifeins" class="calc-input" min="0" step="any" placeholder="0" inputmode="decimal">
+        <div class="calc-hint" data-i18n="calc.lifeins.h">Shared ฿100,000 ceiling; the health part alone cannot exceed ฿25,000.</div>
+      </div>
+      <div class="calc-field">
+        <label for="f_parentins" data-i18n="calc.parentins.l">Parents’ health insurance</label>
+        <input type="number" id="f_parentins" class="calc-input" min="0" step="any" placeholder="0" inputmode="decimal">
+        <div class="calc-hint" data-i18n="calc.parentins.h">Capped at ฿15,000.</div>
+      </div>
+      <div class="calc-field">
+        <label for="f_retire" data-i18n="calc.retire.l">PVD + RMF + pension insurance</label>
+        <input type="number" id="f_retire" class="calc-input" min="0" step="any" placeholder="0" inputmode="decimal">
+        <div class="calc-hint" data-i18n="calc.retire.h">Combined ceiling ฿500,000 a year.</div>
+      </div>
+      <div class="calc-field">
+        <label for="f_esg" data-i18n="calc.esg.l">Thai ESG funds</label>
+        <input type="number" id="f_esg" class="calc-input" min="0" step="any" placeholder="0" inputmode="decimal">
+        <div class="calc-hint" data-i18n="calc.esg.h">Up to 30% of income, capped at ฿300,000 — separate bucket.</div>
+      </div>
+      <div class="calc-sep"><span data-i18n="calc.sep4">OTHER DEDUCTIONS</span></div>
+      <div class="calc-field">
+        <label for="f_mortgage" data-i18n="calc.mortgage.l">Home loan interest paid</label>
+        <input type="number" id="f_mortgage" class="calc-input" min="0" step="any" placeholder="0" inputmode="decimal">
+        <div class="calc-hint" data-i18n="calc.mortgage.h">Interest only, capped at ฿100,000.</div>
+      </div>
+      <div class="calc-field">
+        <label for="f_donation" data-i18n="calc.donation.l">Donations (general)</label>
+        <input type="number" id="f_donation" class="calc-input" min="0" step="any" placeholder="0" inputmode="decimal">
+        <div class="calc-hint" data-i18n="calc.donation.h">Capped at 10% of income after all other deductions.</div>
+      </div>
+      <div class="calc-field">
+        <label for="f_donation2" data-i18n="calc.donation2.l">Donations to education / hospitals / sport</label>
+        <input type="number" id="f_donation2" class="calc-input" min="0" step="any" placeholder="0" inputmode="decimal">
+        <div class="calc-hint" data-i18n="calc.donation2.h">Counted at double, inside the same 10% cap.</div>
+      </div>
+      <div class="calc-field">
+        <label for="f_stimulus" data-i18n="calc.stimulus.l">Stimulus scheme spending</label>
+        <input type="number" id="f_stimulus" class="calc-input" min="0" step="any" placeholder="0" inputmode="decimal">
+        <div class="calc-hint" data-i18n="calc.stimulus.h">Easy E-Receipt and similar. Capped at ฿50,000 here.</div>
+      </div>
+      <div class="calc-sep"><span data-i18n="calc.sep5">ALREADY PAID</span></div>
+      <div class="calc-field">
+        <label for="f_withheld" data-i18n="calc.withheld.l">Tax already withheld this year</label>
+        <input type="number" id="f_withheld" class="calc-input" min="0" step="any" placeholder="0" inputmode="decimal">
+        <div class="calc-hint" data-i18n="calc.withheld.h">From your 50 Tavi certificate. Used to work out refund or balance owing.</div>
+      </div>
+
+      <div class="calc-btn-row">
+        <button type="button" class="btn btn-primary" id="calcBtn" data-i18n="calc.btn">Calculate Tax →</button>
+      </div>
+      <div class="calc-error" id="calcError"></div>
+      <button type="button" class="fx-reset" id="calcReset" data-i18n="calc.reset">Reset all fields</button>
+    </div>
+
+    <div class="calc-results" id="calcResults">
+      <div class="calc-placeholder" id="calcPlaceholder" data-i18n="calc.placeholder">Enter your income on the left and press Calculate. Nothing is stored or sent anywhere — the whole calculation happens inside this page.</div>
+    </div>
+  </div>
+  <div class="tax-disclaimer reveal"><div data-i18n="calc.disclaimer">This is an educational estimator, not tax advice and not a filing. It applies the standard salaried expense deduction and the common allowance caps, but it cannot know about joint-filing elections, separate 40(5)–40(8) expense methods, foreign tax credits, treaty relief, or scheme-specific conditions. For anything with money at stake, confirm with the Revenue Department or a licensed Thai tax adviser.</div></div>
+</section>
+
+<!-- ================= 07 FILING ================= -->
+<section id="filing">
+  <div class="section-head reveal">
+    <div class="eyebrow"><span class="cursor"></span><span data-i18n="filing.eyebrow">07 Filing</span></div>
+    <h2 data-i18n="filing.title">The Calendar That Actually Matters</h2>
+    <p class="lede" data-i18n="filing.lede">Knowing the number is only half of it. The deductible purchase has to happen inside the tax year, and the return has to arrive inside the filing window — miss either one and the saving evaporates.</p>
+    <div class="rule"></div>
+  </div>
+  <div class="timeline reveal">
+    <div class="tl-item">
+      <div class="tl-date" data-i18n="tl0.d">1 JAN – 31 DEC</div>
+      <h4 data-i18n="tl0.h">The tax year itself</h4>
+      <p data-i18n="tl0.p">Thailand uses the calendar year with no exceptions for individuals. Everything you earn and every deductible thing you buy has to fall inside these dates — a fund unit purchased on 2 January belongs to next year’s return, not this one.</p>
+    </div>
+    <div class="tl-item">
+      <div class="tl-date" data-i18n="tl1.d">JANUARY</div>
+      <h4 data-i18n="tl1.h">Your employer issues the 50 Tavi</h4>
+      <p data-i18n="tl1.p">The withholding tax certificate lists your gross pay for the year, the tax already withheld, and your social security contributions. Almost every number the return asks for is printed on this one sheet, so nothing else needs to be reconstructed from payslips.</p>
+    </div>
+    <div class="tl-item">
+      <div class="tl-date" data-i18n="tl2.d">1 JAN – 31 MAR</div>
+      <h4 data-i18n="tl2.h">Filing window · ภ.ง.ด.91 or ภ.ง.ด.90</h4>
+      <p data-i18n="tl2.p">Use ภ.ง.ด.91 if salary is your only income, and ภ.ง.ด.90 if you also have freelance fees, rent, dividends or business income. Filing on paper at a Revenue office closes on 31 March.</p>
+    </div>
+    <div class="tl-item">
+      <div class="tl-date" data-i18n="tl3.d">EARLY APRIL</div>
+      <h4 data-i18n="tl3.h">E-filing extension</h4>
+      <p data-i18n="tl3.p">Filing online through the Revenue Department’s system normally carries an extension of roughly a week past the paper deadline. The exact date is announced each year, so check it rather than assuming — the extension is a concession, not a right.</p>
+    </div>
+    <div class="tl-item">
+      <div class="tl-date" data-i18n="tl4.d">SEPTEMBER</div>
+      <h4 data-i18n="tl4.h">Half-year return, if it applies</h4>
+      <p data-i18n="tl4.p">People with income under sections 40(5) to 40(8) — rent, professions, contracting, business — file ภ.ง.ด.94 for the first half of the year by the end of September. Anything paid then is credited against the annual return.</p>
+    </div>
+    <div class="tl-item warn">
+      <div class="tl-date" data-i18n="tl5.d">AFTER THE DEADLINE</div>
+      <h4 data-i18n="tl5.h">Surcharge and fines</h4>
+      <p data-i18n="tl5.p">Late payment attracts a surcharge accruing monthly on the tax owed, plus a separate fine for filing late at all. Filing late but owing nothing still exposes you to the fine, which is why a nil return is worth submitting even when the calculator says zero.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 08 QUIZ ================= -->
+<section id="quiz">
+  <div class="section-head reveal">
+    <div class="eyebrow"><span class="cursor"></span><span data-i18n="quiz.eyebrow">Knowledge Check</span></div>
+    <h2 data-i18n="quiz.title">Tax Terminal Quiz</h2>
+    <p class="lede" data-i18n="quiz.lede">Ten questions drawn from every section above. Nothing appears until you start.</p>
+    <div class="rule"></div>
+  </div>
+  <div class="quiz-gate reveal" id="quizGate">
+    <div class="qg-inner">
+      <span class="qg-count" data-i18n="quiz.gateCount">10 QUESTIONS</span>
+      <p class="qg-note" data-i18n="quiz.gateNote">Brackets, expense deductions, allowance ceilings, residency and filing forms — ten questions to check whether it actually stuck.</p>
+      <button type="button" class="btn btn-primary" id="quizStartBtn" data-i18n="quiz.startBtn">Start Quiz →</button>
+    </div>
+  </div>
+
+  <div id="quizBody" hidden>
+    <div class="quiz-score-bar">
+      <span><span data-i18n="quiz.scoreLabel">Score</span>: <b id="quizScoreText">0 / 10</b></span>
+      <span class="quiz-progress"><span class="qp-fill" id="quizProgress"></span></span>
+      <button type="button" class="btn btn-outline" id="quizRetryBtn" data-i18n="quiz.retryBtn">Retry Quiz</button>
+    </div>
+    <div class="quiz-list" id="quizList"></div>
+    <div class="quiz-result" id="quizResult" hidden>
+      <span class="qr-grade" id="quizGrade">--</span>
+      <span class="qr-text" id="quizResultText">--</span>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span data-i18n="footer.line1">SPACEZ TAX TERMINAL © 2026 — Educational Use Only</span>
+  <span data-i18n="footer.line2">Not Tax Advice. Always Confirm With The Revenue Department.</span>
+</footer>
+
+<script>
+  /* ============ i18n ============ */
+  const translations = {
+    en: {
+      'al.donate.def':'General donations to approved charities are deductible at face value, while donations to registered educational institutions, public hospitals and recognised sports bodies count at double the amount you actually gave. Either way the total is capped at 10% of income after all other deductions have been taken — so the cap moves depending on everything else you claimed. Donations to political parties sit in their own small ฿10,000 pot. Keep the official receipt with the recipient\'s tax ID on it; a bank transfer slip alone is usually not enough.',
+      'al.donate.name':'Donations',
+      'al.esg.def':'Thai ESG units get their own bucket entirely separate from the ฿500,000 retirement ceiling, worth up to 30% of assessable income and capped at ฿300,000. For someone already maxing out their provident fund and RMF, this is effectively the only remaining room to buy more deduction. The trade-off is the holding period and the narrower universe of eligible funds, so the tax saving has to be weighed against the investment being locked and less diversified than a general portfolio.',
+      'al.esg.name':'Thai ESG Funds',
+      'al.expense.def':'Before any allowance is even considered, salaried income has 50% of it removed as a standard expense — but that half is hard-capped at ฿100,000. In practice this means the deduction grows with your salary only until you reach ฿200,000 a year, and after that it is frozen forever at ฿100,000. Someone earning ฿2 million gets exactly the same ฿100,000 as someone earning ฿200,000, which is why the effective burden rises faster than people expect once salaries pass that threshold.',
+      'al.expense.name':'Standard Expense Deduction',
+      'al.family.def':'A spouse with no income of their own is worth ฿60,000. Each legitimate child is worth ฿30,000, rising to ฿60,000 for a second or later child born from 2018 onward. Each parent aged 60 or over whom you genuinely support is worth ฿30,000, up to four parents counting your spouse\'s — but only if that parent\'s own annual income stays under ฿30,000, and only one child may claim any given parent. This last condition is the one families most often trip over, because siblings frequently claim the same parent without realising it.',
+      'al.family.name':'Spouse, Children & Parents',
+      'al.home.def':'Only the interest portion of your mortgage payments is deductible, up to ฿100,000 a year, and the loan must be secured against a residence in Thailand. The principal repayment — usually the larger half of each instalment — does nothing for your tax. Your bank issues an annual interest certificate with the exact deductible figure, so there is no need to guess or add up statements. If two people jointly hold one loan, the ฿100,000 is split between them rather than doubled.',
+      'al.home.name':'Home Loan Interest',
+      'al.insurance.def':'Life insurance premiums on policies of ten years or longer, plus your own health insurance premiums, share a single ฿100,000 ceiling — and within that ceiling the health portion alone cannot exceed ฿25,000. Health insurance premiums paid for your parents sit outside this pot with their own ฿15,000 limit, and unlike the parent allowance, that one does not require the parent to be over 60. Buying ฿180,000 of life cover in December does not produce ฿180,000 of deduction; the extra ฿80,000 simply does nothing for your tax at all.',
+      'al.insurance.name':'Life & Health Insurance',
+      'al.limitLabel':'Limit',
+      'al.personal.def':'Every individual filer gets ฿60,000 removed from their income before the tax table is applied, with no receipt, no condition and no application required. A married couple filing jointly gets ฿120,000 between them. It is the single most reliable deduction in the entire code, and it is also why anyone whose net income lands under ฿210,000 after the expense deduction typically owes nothing at all.',
+      'al.personal.name':'Personal Allowance',
+      'al.retire.def':'Provident fund contributions, RMF units, government pension fund savings and pension-type life insurance all pour into one shared bucket capped at ฿500,000 a year. Each has its own inner limit as well — provident fund at 15% of wages, RMF at 30% of assessable income, pension insurance at 15% of income and no more than ฿200,000 — but the combined ceiling is the one that bites. Buying the maximum of each individually is the classic mistake: the total is still cut back to ฿500,000, and the excess is locked up in long-hold products for no tax benefit whatsoever.',
+      'al.retire.name':'Retirement Savings',
+      'al.saving.def':'This is the single most misunderstood point in tax planning. A ฿100,000 deduction does not give you ฿100,000 back — it removes ฿100,000 from the income being taxed, so what you actually save is ฿100,000 multiplied by your marginal rate. At the 5% step that is ฿5,000; at the 35% step it is ฿35,000. Spending ฿100,000 on an investment product you did not want, in order to save ฿5,000, is a losing trade. The higher your bracket, the more genuine leverage deductions give you, which is why deduction-driven purchases make sense for high earners and rarely for anyone near the bottom of the table.',
+      'al.saving.name':'What A Deduction Is Actually Worth',
+      'al.sso.def':'The 5% deducted from your payslip each month for social security is capped at ฿750, which adds up to ฿9,000 across a full year, and every baht of it is deductible. You paid it without choosing to, so there is nothing to buy and nothing to plan — but it still has to be typed into the return, and the figure appears on the 50 Tavi certificate your employer issues. Contribution rates are occasionally adjusted by ministerial announcement, so confirm the year\'s actual ceiling rather than assuming ฿9,000 forever.',
+      'al.sso.name':'Social Security Contributions',
+      'al.stimulus.def':'Every year or two the government attaches a shopping-based deduction to the tax code — Easy E-Receipt, domestic travel schemes, and similar campaigns — usually worth up to ฿50,000 and running only for a narrow window of a few weeks. These are the most volatile line in the entire return: the amount, the eligible goods and the dates change with each announcement, and a scheme that existed last year may simply not exist this year. Treat any figure you remember from a previous filing as out of date until you have checked the current announcement.',
+      'al.stimulus.name':'Stimulus Schemes',
+      'allow.disclaimer':'Figures shown reflect the rules commonly applied for the 2568 (2025) tax year, filed in early 2026. Caps, eligibility and stimulus schemes are revised by ministerial announcement and can change between filing seasons — always confirm against the Revenue Department before you rely on a number here.',
+      'allow.eyebrow':'11 Deductions & Allowances',
+      'allow.lede':'Allowances are subtracted before the tax table ever sees your income, so each one shifts a slice of money out of your top bracket. Tap any row to open it — every panel is live, and shows what happens when you hit the ceiling.',
+      'allow.title':'Every Baht You Are Allowed To Remove First',
+      'basics.c1.h':'Progressive By Design',
+      'basics.c1.p':'Thailand taxes income in slices. The first ฿150,000 of net income is taxed at nothing at all, the next ฿150,000 at 5%, and so on up to 35%. Crossing into a higher bracket never re-taxes the money below it — only the portion sitting inside that step pays the higher rate. This is why your effective rate, the number that actually leaves your bank account, is always lower than the bracket you have reached.',
+      'basics.c1.tag':'STEPS, NOT ONE RATE',
+      'basics.c2.h':'Are You A Tax Resident?',
+      'basics.c2.p':'Anyone physically present in Thailand for 180 days or more within a single calendar year is a Thai tax resident, regardless of nationality or visa type. Residents are taxable on Thai-sourced income and on foreign income they bring into the country. Stay under 180 days and only Thai-sourced income is in scope. The count resets every 1 January, and the days do not need to be consecutive.',
+      'basics.c2.tag':'THE 180-DAY LINE',
+      'basics.c3.h':'Your Payslip Is Only An Estimate',
+      'basics.c3.p':'The tax your employer withholds each month is an estimate built from a forecast of your annual income. It does not know about the insurance you bought in December, the parents you support, or the bonus that never came. Filing is the moment the estimate is reconciled against reality — which is exactly why people who never file often leave a refund sitting unclaimed at the Revenue Department.',
+      'basics.c3.tag':'WITHHOLDING IS A DEPOSIT',
+      'basics.eyebrow':'01 How It Works',
+      'basics.lede':'Before any calculator is useful, three ideas have to click into place — because almost every panic about "moving into a higher tax bracket" comes from misunderstanding one of them.',
+      'basics.title':'Three Things Almost Everyone Gets Wrong',
+      'brackets.eyebrow':'04 Tax Brackets',
+      'brackets.lede':'These rates apply to net taxable income — the figure left after every expense and allowance has already been removed. Drag the slider to watch how one income splits itself across the steps.',
+      'brackets.th1':'Net income (THB)',
+      'brackets.th2':'Rate',
+      'brackets.th3':'Max tax in this step',
+      'brackets.th4':'Cumulative tax at top of step',
+      'brackets.title':'Eight Steps From Zero To Thirty-Five',
+      'bx.eff':'Effective rate',
+      'bx.label':'Net taxable income',
+      'bx.marg':'Marginal rate (top step)',
+      'bx.note':'Notice how far apart the two numbers stay. Someone with ฿2,000,000 of net income sits in the 25% bracket but pays an effective rate closer to 18% — because the first ฿150,000 was free, the next slice was 5%, and so on all the way up.',
+      'bx.tax':'Total tax due',
+      'calc.btn':'Calculate Tax →',
+      'calc.children.h':'฿30,000 each. Second and later children born from 2018 are worth ฿60,000 — add them separately below.',
+      'calc.children.l':'Number of children',
+      'calc.children2.h':'These get ฿60,000 instead of ฿30,000.',
+      'calc.children2.l':'Of those, born 2018 or later (2nd child onward)',
+      'calc.curLabel':'Enter amounts in',
+      'calc.curSep':'CURRENCY',
+      'calc.disclaimer':'This is an educational estimator, not tax advice and not a filing. It applies the standard salaried expense deduction and the common allowance caps, but it cannot know about joint-filing elections, separate 40(5)–40(8) expense methods, foreign tax credits, treaty relief, or scheme-specific conditions. For anything with money at stake, confirm with the Revenue Department or a licensed Thai tax adviser.',
+      'calc.donation.h':'Capped at 10% of income after all other deductions.',
+      'calc.donation.l':'Donations (general)',
+      'calc.donation2.h':'Counted at double, inside the same 10% cap.',
+      'calc.donation2.l':'Donations to education / hospitals / sport',
+      'calc.err.invalid':'Enter valid, non-negative numbers.',
+      'calc.err.noIncome':'Enter at least some income to calculate.',
+      'calc.err.rate':'Exchange rate must be greater than zero.',
+      'calc.esg.h':'Up to 30% of income, capped at ฿300,000 — separate bucket.',
+      'calc.esg.l':'Thai ESG funds',
+      'calc.eyebrow':'06 Calculator',
+      'calc.lede':'Fill in what applies to you and leave the rest blank. Every field accepts the currency you pick below — the tool converts to baht, applies the Thai brackets, and shows the result in both.',
+      'calc.lifeins.h':'Shared ฿100,000 ceiling; the health part alone cannot exceed ฿25,000.',
+      'calc.lifeins.l':'Life + own health insurance',
+      'calc.mortgage.h':'Interest only, capped at ฿100,000.',
+      'calc.mortgage.l':'Home loan interest paid',
+      'calc.other.h':'Freelance fees, rent, interest. A flat 50% expense (max ฿100,000, shared) is applied to this and salary together.',
+      'calc.other.l':'Other assessable income',
+      'calc.parentins.h':'Capped at ฿15,000.',
+      'calc.parentins.l':'Parents’ health insurance',
+      'calc.parents.h':'฿30,000 each, maximum 4 including your spouse’s parents.',
+      'calc.parents.l':'Parents supported (aged 60+)',
+      'calc.placeholder':'Enter your income on the left and press Calculate. Nothing is stored or sent anywhere — the whole calculation happens inside this page.',
+      'calc.rateLabel':'THB per unit',
+      'calc.reset':'Reset all fields',
+      'calc.retire.h':'Combined ceiling ฿500,000 a year.',
+      'calc.retire.l':'PVD + RMF + pension insurance',
+      'calc.salary.h':'Gross, before any tax is withheld — section 40(1).',
+      'calc.salary.l':'Annual salary & bonus',
+      'calc.sep1':'INCOME',
+      'calc.sep2':'FAMILY',
+      'calc.sep3':'INSURANCE & SAVINGS',
+      'calc.sep4':'OTHER DEDUCTIONS',
+      'calc.sep5':'ALREADY PAID',
+      'calc.spouse.h':'Enter 1 to claim ฿60,000, or 0.',
+      'calc.spouse.l':'Spouse with no income',
+      'calc.sso.h':'Capped at ฿9,000 a year.',
+      'calc.sso.l':'Social security paid',
+      'calc.stimulus.h':'Easy E-Receipt and similar. Capped at ฿50,000 here.',
+      'calc.stimulus.l':'Stimulus scheme spending',
+      'calc.tag':'// Personal Income Tax',
+      'calc.title':'Run Your Own Numbers',
+      'calc.withheld.h':'From your 50 Tavi certificate. Used to work out refund or balance owing.',
+      'calc.withheld.l':'Tax already withheld this year',
+      'cur.noteCustom':'Using your custom rate.',
+      'cur.noteRef':'Reference rate — static, not live. Edit it to match your own rate.',
+      'cur.noteThb':'Thai baht — no conversion applied.',
+      'filing.eyebrow':'07 Filing',
+      'filing.lede':'Knowing the number is only half of it. The deductible purchase has to happen inside the tax year, and the return has to arrive inside the filing window — miss either one and the saving evaporates.',
+      'filing.title':'The Calendar That Actually Matters',
+      'footer.line1':'SPACEZ TAX TERMINAL © 2026 — Educational Use Only',
+      'footer.line2':'Not Tax Advice. Always Confirm With The Revenue Department.',
+      'formula.eyebrow':'03 The Formula',
+      'formula.lede':'The whole system fits on one line: income, minus expenses, minus allowances, equals net income — and only that last number ever meets the tax table. Watch a ฿900,000 salary walk through it.',
+      'formula.title':'Five Subtractions, Then A Staircase',
+      'fs.allow.d':'Personal, family, insurance, retirement funds, mortgage interest, donations.',
+      'fs.allow.t':'Subtract allowances',
+      'fs.expense.d':'The rule depends on the income category — salary gets 50% capped at ฿100,000.',
+      'fs.expense.t':'Subtract expenses',
+      'fs.gross.d':'Salary, bonus, freelance fees, rent, interest — everything assessable for the calendar year.',
+      'fs.gross.t':'Add up every baht',
+      'fs.net.d':'The only number the tax table ever looks at. Not your salary — this.',
+      'fs.net.t':'That is net income',
+      'fs.tax.d':'Apply each bracket rate to only the slice of income that sits inside it, then add them up.',
+      'fs.tax.t':'Run it up the steps',
+      'hero.chip1':'First ฿150,000 taxed at 0%',
+      'hero.chip2':'8 progressive steps · 0% to 35%',
+      'hero.chip3':'EN / TH · currency switchable',
+      'hero.cta1':'Start With The Basics →',
+      'hero.cta2':'Jump To Calculator',
+      'hero.eyebrow':'Thai Personal Income Tax · Learn Then Calculate',
+      'hero.h1a':'Nobody Taxes',
+      'hero.h1b':'Your Whole Salary.',
+      'hero.sub':'Thai income tax is not one rate on everything you earn. It is a stack of steps applied to what is left after expenses and allowances — and most people pay a far lower effective rate than the bracket they think they are in. Learn the mechanics first, then run your own numbers.',
+      'inc0.d':'Employment income, bonuses, allowances, and benefits in kind from an employer.',
+      'inc0.e':'50%, max ฿100,000',
+      'inc0.n':'Salary & wages',
+      'inc1.d':'Commissions, brokerage, meeting fees, and one-off service payments outside an employment contract.',
+      'inc1.e':'50%, max ฿100,000 (shared with 40(1))',
+      'inc1.n':'Hire of work / agency fees',
+      'inc2.d':'Copyright, patents, franchise fees, and annuity-type payments from intellectual property.',
+      'inc2.e':'50% for copyright, max ฿100,000',
+      'inc2.n':'Royalties & goodwill',
+      'inc3.d':'Bank interest, bond coupons, dividends, and capital gains treated as assessable income.',
+      'inc3.e':'No expense deduction',
+      'inc3.n':'Interest & dividends',
+      'inc4.d':'Rent from property, vehicles, and other assets you let out to someone else.',
+      'inc4.e':'10–30% flat, or actual cost',
+      'inc4.n':'Rental income',
+      'inc5.d':'Law, medicine, engineering, architecture, accountancy, and fine arts practised independently.',
+      'inc5.e':'30% flat (60% for medicine), or actual',
+      'inc5.n':'Liberal professions',
+      'inc6.d':'Turnkey contracting where you supply both the labour and the essential materials.',
+      'inc6.e':'60% flat, or actual cost',
+      'inc6.n':'Contract work with materials',
+      'inc7.d':'Shops, online selling, agriculture, transport, entertainment, and any income not covered above.',
+      'inc7.e':'40–60% flat by activity, or actual',
+      'inc7.n':'Business, trade & everything else',
+      'income.eyebrow':'02 Income Types',
+      'income.lede':'The Revenue Code sorts income into eight categories, and each one carries its own expense-deduction rule. A salaried employee and a freelance architect earning the identical amount will end up with very different taxable income, purely because of which box their money falls into.',
+      'income.note':'Where a category allows either a flat percentage or actual documented cost, you may choose whichever is higher — but "actual cost" requires evidence you can produce if audited. Rates for 40(5) through 40(8) vary by the specific activity; the ranges above are the common bands.',
+      'income.th1':'Section',
+      'income.th2':'What it covers',
+      'income.th3':'Expense deduction',
+      'income.title':'Not All Income Is Deducted The Same Way',
+      'nav.allow':'Deductions',
+      'nav.basics':'How It Works',
+      'nav.brackets':'Tax Brackets',
+      'nav.calc':'Calculator',
+      'nav.filing':'Filing',
+      'nav.formula':'The Formula',
+      'nav.income':'Income Types',
+      'nav.quiz':'Quiz',
+      'quiz.correct':'Correct.',
+      'quiz.eyebrow':'Knowledge Check',
+      'quiz.gateCount':'10 QUESTIONS',
+      'quiz.gateNote':'Brackets, expense deductions, allowance ceilings, residency and filing forms — ten questions to check whether it actually stuck.',
+      'quiz.grade.master':'MASTER',
+      'quiz.grade.pass':'PASS',
+      'quiz.grade.retry':'REVIEW',
+      'quiz.incorrect':'Not quite — the highlighted option was correct.',
+      'quiz.lede':'Ten questions drawn from every section above. Nothing appears until you start.',
+      'quiz.questionLabel':'Question',
+      'quiz.result.master':'{score} out of {total}. You understand the mechanics properly, not just the headline rate.',
+      'quiz.result.pass':'{score} out of {total}. Solid grasp — revisit the sections you missed and run it again.',
+      'quiz.result.retry':'{score} out of {total}. Worth another pass through the formula and allowance sections.',
+      'quiz.retryBtn':'Retry Quiz',
+      'quiz.scoreLabel':'Score',
+      'quiz.startBtn':'Start Quiz →',
+      'quiz.title':'Tax Terminal Quiz',
+      'res.breakdown':'Where the tax comes from',
+      'res.capped':'Some entries were reduced to their legal ceiling.',
+      'res.effective':'Effective rate on total income',
+      'res.gapNote':'Your top bracket is {marg}, but only the slice of income inside that step pays it — everything below is taxed at the lower steps, which is why the rate you actually pay is {eff}.',
+      'res.inBaht':'in THB',
+      'res.marginal':'Your top bracket',
+      'res.monthly':'Works out to per month',
+      'res.noTax':'No tax due',
+      'res.noTaxSub':'Net income lands inside the ฿150,000 zero-rate step. Filing a nil return is still recommended.',
+      'res.owing':'Still to pay',
+      'res.refund':'Refund due to you',
+      'res.settled':'Withholding matched exactly',
+      'res.sum.allow':'Less allowances',
+      'res.sum.expense':'Less standard expenses',
+      'res.sum.income':'Total assessable income',
+      'res.sum.net':'Net taxable income',
+      'res.summary':'How the net income was reached',
+      'res.taxDue':'Tax due for the year',
+      'tl0.d':'1 JAN – 31 DEC',
+      'tl0.h':'The tax year itself',
+      'tl0.p':'Thailand uses the calendar year with no exceptions for individuals. Everything you earn and every deductible thing you buy has to fall inside these dates — a fund unit purchased on 2 January belongs to next year’s return, not this one.',
+      'tl1.d':'JANUARY',
+      'tl1.h':'Your employer issues the 50 Tavi',
+      'tl1.p':'The withholding tax certificate lists your gross pay for the year, the tax already withheld, and your social security contributions. Almost every number the return asks for is printed on this one sheet, so nothing else needs to be reconstructed from payslips.',
+      'tl2.d':'1 JAN – 31 MAR',
+      'tl2.h':'Filing window · ภ.ง.ด.91 or ภ.ง.ด.90',
+      'tl2.p':'Use ภ.ง.ด.91 if salary is your only income, and ภ.ง.ด.90 if you also have freelance fees, rent, dividends or business income. Filing on paper at a Revenue office closes on 31 March.',
+      'tl3.d':'EARLY APRIL',
+      'tl3.h':'E-filing extension',
+      'tl3.p':'Filing online through the Revenue Department’s system normally carries an extension of roughly a week past the paper deadline. The exact date is announced each year, so check it rather than assuming — the extension is a concession, not a right.',
+      'tl4.d':'SEPTEMBER',
+      'tl4.h':'Half-year return, if it applies',
+      'tl4.p':'People with income under sections 40(5) to 40(8) — rent, professions, contracting, business — file ภ.ง.ด.94 for the first half of the year by the end of September. Anything paid then is credited against the annual return.',
+      'tl5.d':'AFTER THE DEADLINE',
+      'tl5.h':'Surcharge and fines',
+      'tl5.p':'Late payment attracts a surcharge accruing monthly on the tax owed, plus a separate fine for filing late at all. Filing late but owing nothing still exposes you to the fine, which is why a nil return is worth submitting even when the calculator says zero.',
+    },
+    th: {
+      'al.donate.def':'เงินบริจาคทั่วไปให้องค์กรที่ได้รับการรับรอง หักได้ตามยอดที่จ่ายจริง ส่วนเงินบริจาคให้สถานศึกษาที่ขึ้นทะเบียน โรงพยาบาลของรัฐ และองค์กรกีฬาที่ได้รับการรับรอง นับได้สองเท่าของยอดที่จ่ายจริง ไม่ว่าจะกรณีใด ยอดรวมถูกจำกัดไว้ที่ 10% ของเงินได้หลังหักค่าลดหย่อนอื่นทั้งหมดแล้ว เพดานนี้จึงขยับตามสิ่งอื่นที่คุณใช้สิทธิไปด้วย ส่วนเงินบริจาคให้พรรคการเมืองมีกระปุกเล็กของตัวเองที่ 10,000 บาท ให้เก็บใบเสร็จตัวจริงที่มีเลขประจำตัวผู้เสียภาษีของผู้รับไว้ เพราะสลิปโอนเงินอย่างเดียวมักไม่พอ',
+      'al.donate.name':'เงินบริจาค',
+      'al.esg.def':'หน่วยลงทุน Thai ESG มีกระปุกของตัวเองที่แยกออกจากเพดานเกษียณ 500,000 บาทโดยสิ้นเชิง ลดหย่อนได้สูงสุด 30% ของเงินได้พึงประเมิน และไม่เกิน 300,000 บาท สำหรับคนที่ใช้สิทธิกองทุนสำรองเลี้ยงชีพและ RMF เต็มเพดานแล้ว นี่คือพื้นที่เดียวที่เหลืออยู่ให้ซื้อลดหย่อนเพิ่ม สิ่งที่ต้องแลกคือระยะเวลาถือครองและตัวเลือกกองทุนที่แคบกว่า ดังนั้นต้องชั่งน้ำหนักระหว่างภาษีที่ประหยัดได้ กับเงินลงทุนที่ถูกล็อกและกระจายความเสี่ยงได้น้อยกว่าพอร์ตทั่วไป',
+      'al.esg.name':'กองทุนไทยเพื่อความยั่งยืน (Thai ESG)',
+      'al.expense.def':'ก่อนจะพิจารณาค่าลดหย่อนใดๆ เงินได้ประเภทเงินเดือนจะถูกหักค่าใช้จ่ายมาตรฐาน 50% ออกไปก่อน แต่ครึ่งนั้นถูกจำกัดเพดานตายตัวไว้ที่ 100,000 บาท ในทางปฏิบัติแปลว่าค่าใช้จ่ายจะโตตามเงินเดือนเฉพาะจนถึงปีละ 200,000 บาทเท่านั้น หลังจากนั้นจะค้างอยู่ที่ 100,000 ตลอดไป คนที่มีรายได้ 2 ล้านได้หัก 100,000 เท่ากับคนที่มีรายได้ 200,000 เป๊ะๆ ซึ่งเป็นเหตุผลที่ภาระภาษีจริงเพิ่มเร็วกว่าที่หลายคนคาดเมื่อเงินเดือนผ่านจุดนั้นไป',
+      'al.expense.name':'การหักค่าใช้จ่ายมาตรฐาน',
+      'al.family.def':'คู่สมรสที่ไม่มีเงินได้ของตัวเองลดหย่อนได้ 60,000 บาท บุตรชอบด้วยกฎหมายคนละ 30,000 บาท และเพิ่มเป็น 60,000 บาทสำหรับบุตรคนที่สองขึ้นไปที่เกิดตั้งแต่ปี 2561 ส่วนบิดามารดาอายุ 60 ปีขึ้นไปที่คุณเลี้ยงดูจริง ลดหย่อนได้คนละ 30,000 บาท สูงสุดสี่คนเมื่อรวมของคู่สมรส แต่ต้องเป็นกรณีที่ท่านมีเงินได้ไม่เกินปีละ 30,000 บาท และบุตรได้เพียงคนเดียวเท่านั้นที่ใช้สิทธิพ่อแม่คนนั้นได้ เงื่อนไขข้อหลังนี้คือจุดที่ครอบครัวพลาดกันบ่อยที่สุด เพราะพี่น้องมักใช้สิทธิพ่อแม่คนเดียวกันโดยไม่รู้ตัว',
+      'al.family.name':'คู่สมรส บุตร และบิดามารดา',
+      'al.home.def':'เฉพาะส่วนที่เป็นดอกเบี้ยของค่างวดผ่อนบ้านเท่านั้นที่หักลดหย่อนได้ สูงสุดปีละ 100,000 บาท และเงินกู้ต้องมีที่อยู่อาศัยในประเทศไทยเป็นหลักประกัน ส่วนเงินต้นซึ่งมักเป็นสัดส่วนที่ใหญ่กว่าในแต่ละงวด ไม่มีผลต่อภาษีเลย ธนาคารจะออกหนังสือรับรองดอกเบี้ยประจำปีที่ระบุยอดที่ลดหย่อนได้ชัดเจน จึงไม่ต้องเดาหรือมานั่งบวกจากใบแจ้งยอดเอง ถ้ากู้ร่วมกันสองคน วงเงิน 100,000 บาทจะถูกแบ่งกัน ไม่ใช่ได้คนละก้อน',
+      'al.home.name':'ดอกเบี้ยเงินกู้ซื้อที่อยู่อาศัย',
+      'al.insurance.def':'เบี้ยประกันชีวิตของกรมธรรม์ที่มีระยะเวลาตั้งแต่สิบปีขึ้นไป รวมกับเบี้ยประกันสุขภาพของตัวเอง ใช้เพดานร่วมกันที่ 100,000 บาท และภายในเพดานนั้น ส่วนที่เป็นประกันสุขภาพต้องไม่เกิน 25,000 บาท ส่วนเบี้ยประกันสุขภาพที่จ่ายให้บิดามารดาอยู่นอกกระปุกนี้ มีเพดานของตัวเองที่ 15,000 บาท และต่างจากค่าลดหย่อนบิดามารดาตรงที่ไม่ได้กำหนดว่าท่านต้องอายุเกิน 60 ปี การซื้อประกันชีวิตเพิ่ม 180,000 บาทตอนธันวาคม ไม่ได้ทำให้ลดหย่อนได้ 180,000 บาท เพราะส่วนที่เกิน 80,000 บาทนั้นไม่มีผลต่อภาษีของคุณเลย',
+      'al.insurance.name':'ประกันชีวิตและประกันสุขภาพ',
+      'al.limitLabel':'เพดาน',
+      'al.personal.def':'ผู้ยื่นภาษีทุกคนได้หัก 60,000 บาทออกจากเงินได้ก่อนจะเข้าตารางภาษี โดยไม่ต้องมีใบเสร็จ ไม่มีเงื่อนไข และไม่ต้องยื่นขอ คู่สมรสที่ยื่นรวมกันจะได้รวม 120,000 บาท นี่คือค่าลดหย่อนที่แน่นอนที่สุดในประมวลรัษฎากรทั้งฉบับ และเป็นเหตุผลว่าทำไมคนที่มีเงินได้สุทธิต่ำกว่าประมาณ 210,000 บาทหลังหักค่าใช้จ่าย มักไม่ต้องเสียภาษีเลย',
+      'al.personal.name':'ค่าลดหย่อนส่วนตัว',
+      'al.retire.def':'เงินสะสมกองทุนสำรองเลี้ยงชีพ หน่วยลงทุน RMF เงินสะสม กบข. และประกันชีวิตแบบบำนาญ ทั้งหมดไหลลงกระปุกใบเดียวกันที่มีเพดานรวมปีละ 500,000 บาท แต่ละตัวยังมีเพดานย่อยของตัวเองด้วย กองทุนสำรองเลี้ยงชีพ 15% ของค่าจ้าง RMF 30% ของเงินได้พึงประเมิน ประกันบำนาญ 15% ของเงินได้และไม่เกิน 200,000 บาท แต่เพดานรวมคือตัวที่กัดจริง การซื้อเต็มเพดานย่อยของทุกตัวคือความผิดพลาดคลาสสิก เพราะยอดรวมจะถูกตัดกลับมาเหลือ 500,000 อยู่ดี และส่วนที่เกินก็ถูกล็อกไว้ในผลิตภัณฑ์ระยะยาวโดยไม่ได้ประโยชน์ทางภาษีเลย',
+      'al.retire.name':'การออมเพื่อเกษียณ',
+      'al.saving.def':'นี่คือจุดที่ถูกเข้าใจผิดมากที่สุดในการวางแผนภาษี ค่าลดหย่อน 100,000 บาท ไม่ได้ทำให้คุณได้เงินคืน 100,000 บาท แต่มันตัด 100,000 บาทออกจากเงินได้ที่ถูกนำไปคิดภาษี สิ่งที่คุณประหยัดได้จริงจึงเท่ากับ 100,000 คูณด้วยอัตราภาษีขั้นสูงสุดของคุณ ถ้าอยู่ขั้น 5% ก็ประหยัดได้ 5,000 บาท ถ้าอยู่ขั้น 35% ก็ 35,000 บาท การควักเงิน 100,000 บาทซื้อผลิตภัณฑ์ลงทุนที่คุณไม่ได้อยากได้ เพื่อประหยัดภาษี 5,000 บาท คือดีลที่ขาดทุน ยิ่งคุณอยู่ขั้นสูงเท่าไหร่ ค่าลดหย่อนยิ่งมีพลังจริงมากขึ้น นี่คือเหตุผลที่การซื้อของเพื่อลดหย่อนสมเหตุสมผลกับคนรายได้สูง และแทบไม่คุ้มเลยสำหรับคนที่อยู่ท้ายตาราง',
+      'al.saving.name':'ค่าลดหย่อนมีมูลค่าจริงเท่าไหร่',
+      'al.sso.def':'เงิน 5% ที่ถูกหักจากสลิปเงินเดือนทุกเดือนเข้ากองทุนประกันสังคม มีเพดานเดือนละ 750 บาท รวมทั้งปีเป็น 9,000 บาท และหักลดหย่อนได้ทุกบาท คุณจ่ายไปโดยไม่ได้เลือก จึงไม่มีอะไรต้องซื้อและไม่มีอะไรต้องวางแผน แต่ก็ยังต้องกรอกลงในแบบยื่นอยู่ดี ตัวเลขนี้ปรากฏอยู่ในหนังสือรับรองการหักภาษี ณ ที่จ่าย (50 ทวิ) ที่นายจ้างออกให้ อัตราเงินสมทบมีการปรับตามประกาศกระทรวงเป็นครั้งคราว จึงควรเช็กเพดานจริงของปีนั้น แทนที่จะคิดว่าเป็น 9,000 บาทตลอดไป',
+      'al.sso.name':'เงินสมทบประกันสังคม',
+      'al.stimulus.def':'ทุกๆ หนึ่งถึงสองปี รัฐบาลมักออกมาตรการลดหย่อนจากการใช้จ่ายเพิ่มเข้ามาในระบบภาษี เช่น Easy E-Receipt โครงการกระตุ้นการท่องเที่ยวในประเทศ และแคมเปญลักษณะเดียวกัน โดยทั่วไปให้สิทธิสูงสุดราว 50,000 บาท และเปิดให้ใช้เพียงช่วงสั้นๆ ไม่กี่สัปดาห์ นี่คือรายการที่เปลี่ยนแปลงมากที่สุดในแบบยื่นทั้งฉบับ ทั้งวงเงิน ประเภทสินค้าที่เข้าเงื่อนไข และช่วงเวลา เปลี่ยนไปทุกครั้งที่มีประกาศใหม่ และมาตรการที่มีเมื่อปีที่แล้วอาจไม่มีในปีนี้เลย ให้ถือว่าตัวเลขที่คุณจำได้จากการยื่นครั้งก่อนล้าสมัยไว้ก่อน จนกว่าจะได้เช็กประกาศฉบับปัจจุบัน',
+      'al.stimulus.name':'มาตรการกระตุ้นเศรษฐกิจ',
+      'allow.disclaimer':'ตัวเลขที่แสดงอ้างอิงหลักเกณฑ์ที่ใช้กันทั่วไปสำหรับปีภาษี 2568 ซึ่งยื่นในช่วงต้นปี 2569 เพดาน เงื่อนไขการใช้สิทธิ และมาตรการกระตุ้นเศรษฐกิจ ถูกปรับด้วยประกาศกระทรวงและเปลี่ยนแปลงได้ระหว่างฤดูยื่นภาษีแต่ละปี ควรตรวจสอบกับกรมสรรพากรทุกครั้งก่อนนำตัวเลขจากที่นี่ไปใช้จริง',
+      'allow.eyebrow':'11 ค่าลดหย่อนและค่าใช้จ่าย',
+      'allow.lede':'ค่าลดหย่อนถูกหักออกก่อนที่ตารางภาษีจะได้เห็นเงินได้ของคุณ ทุกรายการจึงย้ายเงินก้อนหนึ่งออกจากขั้นภาษีที่สูงที่สุดของคุณ แตะที่แถวไหนก็ได้เพื่อเปิดดู ทุกภาพเคลื่อนไหวจริง และแสดงให้เห็นว่าเกิดอะไรขึ้นเมื่อชนเพดาน',
+      'allow.title':'ทุกบาทที่คุณมีสิทธิหักออกก่อน',
+      'basics.c1.h':'ระบบขั้นบันไดโดยออกแบบ',
+      'basics.c1.p':'ประเทศไทยเก็บภาษีเงินได้แบบแบ่งเป็นชั้นๆ เงินได้สุทธิ 150,000 บาทแรกไม่เสียภาษีเลย อีก 150,000 บาทถัดไปเสีย 5% ไล่ขึ้นไปเรื่อยๆ จนถึง 35% การที่รายได้ขยับข้ามไปขั้นที่สูงขึ้นไม่ได้ทำให้เงินก้อนที่อยู่ขั้นล่างถูกเก็บใหม่ มีเพียงส่วนที่อยู่ในขั้นนั้นเท่านั้นที่เสียในอัตราสูงขึ้น นี่คือเหตุผลที่อัตราภาษีจริงที่หายไปจากบัญชีคุณ ต่ำกว่าขั้นสูงสุดที่คุณไปถึงเสมอ',
+      'basics.c1.tag':'เป็นขั้นบันได ไม่ใช่อัตราเดียว',
+      'basics.c2.h':'คุณเป็นผู้มีถิ่นที่อยู่ทางภาษีไหม',
+      'basics.c2.p':'ใครก็ตามที่อยู่ในประเทศไทยรวมกันตั้งแต่ 180 วันขึ้นไปภายในหนึ่งปีปฏิทิน ถือเป็นผู้มีถิ่นที่อยู่ทางภาษีของไทย ไม่ว่าจะสัญชาติใดหรือถือวีซ่าประเภทไหน ผู้มีถิ่นที่อยู่ต้องเสียภาษีจากเงินได้ที่เกิดในไทย และเงินได้จากต่างประเทศที่นำเข้ามาในประเทศ ถ้าอยู่ไม่ถึง 180 วัน จะเสียภาษีเฉพาะเงินได้ที่เกิดในไทยเท่านั้น การนับเริ่มใหม่ทุกวันที่ 1 มกราคม และไม่จำเป็นต้องอยู่ติดต่อกัน',
+      'basics.c2.tag':'เส้นแบ่ง 180 วัน',
+      'basics.c3.h':'ยอดในสลิปเป็นแค่ตัวเลขประมาณการ',
+      'basics.c3.p':'ภาษีที่นายจ้างหักจากคุณทุกเดือนเป็นเพียงการประมาณการ ที่คำนวณจากรายได้ทั้งปีที่คาดว่าจะได้ ระบบนั้นไม่รู้ว่าคุณซื้อประกันตอนธันวาคม ไม่รู้ว่าคุณเลี้ยงดูพ่อแม่ และไม่รู้ว่าโบนัสที่คาดไว้ไม่ได้ออก การยื่นภาษีคือจังหวะที่ตัวเลขประมาณการถูกนำมาเทียบกับความจริง ซึ่งเป็นเหตุผลว่าทำไมคนที่ไม่เคยยื่น มักมีเงินคืนภาษีค้างอยู่ที่กรมสรรพากรโดยไม่รู้ตัว',
+      'basics.c3.tag':'ภาษีหัก ณ ที่จ่ายคือเงินมัดจำ',
+      'basics.eyebrow':'01 หลักการทำงาน',
+      'basics.lede':'ก่อนที่เครื่องคำนวณจะมีประโยชน์ ต้องเข้าใจสามเรื่องนี้ให้ชัดก่อน เพราะความตกใจเรื่อง "รายได้ขยับไปขั้นภาษีที่สูงขึ้น" เกือบทั้งหมด มาจากการเข้าใจผิดในเรื่องใดเรื่องหนึ่งใน���ามข้อนี้',
+      'basics.title':'สามเรื่องที่เกือบทุกคนเข้าใจผิด',
+      'brackets.eyebrow':'04 ขั้นบันไดภาษี',
+      'brackets.lede':'อัตราเหล่านี้ใช้กับเงินได้สุทธิ ซึ่งเป็นตัวเลขที่เหลือหลังหักค่าใช้จ่ายและค่าลดหย่อนออกไปหมดแล้ว ลองลากแถบเลื่อนเพื่อดูว่าเงินได้ก้อนเดียวถูกแบ่งไปตามขั้นต่างๆ อย่างไร',
+      'brackets.th1':'เงินได้สุทธิ (บาท)',
+      'brackets.th2':'อัตรา',
+      'brackets.th3':'ภาษีสูงสุดในขั้นนี้',
+      'brackets.th4':'ภาษีสะสมเมื่อเต็มขั้น',
+      'brackets.title':'แปดขั้น จากศูนย์ถึงสามสิบห้า',
+      'bx.eff':'อัตราภาษีที่จ่ายจริง',
+      'bx.label':'เงินได้สุทธิ',
+      'bx.marg':'อัตราขั้นสูงสุดที่ไปถึง',
+      'bx.note':'สังเกตว่าตัวเลขสองตัวนี้ห่างกันมาก คนที่มีเงินได้สุทธิ 2,000,000 บาท อยู่ในขั้น 25% แต่จ่ายจริงประมาณ 18% เท่านั้น เพราะ 150,000 บาทแรกไม่เสียภาษี ก้อนถัดไปเสีย 5% และไล่ขึ้นไปแบบนี้ทีละขั้น',
+      'bx.tax':'ภาษีที่ต้องจ่ายทั้งหมด',
+      'calc.btn':'คำนวณภาษี →',
+      'calc.children.h':'คนละ 30,000 บาท บุตรคนที่สองขึ้นไปที่เกิดตั้งแต่ปี 2561 ได้ 60,000 ให้ใส่แยกในช่องถัดไป',
+      'calc.children.l':'จำนวนบุตร',
+      'calc.children2.h':'กลุ่มนี้ได้ 60,000 บาทแทน 30,000 บาท',
+      'calc.children2.l':'ในจำนวนนั้น เป็นบุตรคนที่ 2 ขึ้นไปที่เกิดตั้งแต่ปี 2561',
+      'calc.curLabel':'กรอกตัวเลขเป็นสกุล',
+      'calc.curSep':'สกุลเงิน',
+      'calc.disclaimer':'นี่คือเครื่องมือประมาณการเพื่อการเรียนรู้ ไม่ใช่คำแนะนำทางภาษีและไม่ใช่การยื่นแบบ ระบบใช้การหักค่าใช้จ่ายมาตรฐานแบบเงินเดือนและเพดานค่าลดหย่อนที่ใช้กันทั่วไป แต่ไม่สามารถรู้เรื่องการเลือกยื่นรวมกับคู่สมรส วิธีหักค่าใช้จ่ายเฉพาะของเงินได้ประเภท 40(5)–40(8) เครดิตภาษีต่างประเทศ อนุสัญญาภาษีซ้อน หรือเงื่อนไขเฉพาะของแต่ละมาตรการได้ เรื่องที่มีเงินเป็นเดิมพัน ควรตรวจสอบกับกรมสรรพากรหรือที่ปรึกษาภาษีที่มีใบอนุญาต',
+      'calc.donation.h':'เพดาน 10% ของเงินได้หลังหักค่าลดหย่อนอื่นทั้งหมด',
+      'calc.donation.l':'เงินบริจาค (ทั่วไป)',
+      'calc.donation2.h':'นับ 2 เท่า แต่อยู่ในเพดาน 10% เดียวกัน',
+      'calc.donation2.l':'บริจาคเพื่อการศึกษา / โรงพยาบาลรัฐ / กีฬา',
+      'calc.err.invalid':'กรุณากรอกตัวเลขที่ถูกต้องและไม่ติดลบ',
+      'calc.err.noIncome':'กรุณากรอกเงินได้อย่างน้อยหนึ่งช่องเพื่อคำนวณ',
+      'calc.err.rate':'อัตราแลกเปลี่ยนต้องมากกว่าศูนย์',
+      'calc.esg.h':'สูงสุด 30% ของเงินได้ ไม่เกิน 300,000 บาท เป็นกระปุกแยก',
+      'calc.esg.l':'กองทุน Thai ESG',
+      'calc.eyebrow':'06 เครื่องคำนวณ',
+      'calc.lede':'กรอกเฉพาะช่องที่ตรงกับคุณ ที่เหลือเว้นว่างไว้ได้ ทุกช่องรับตัวเลขในสกุลเงินที่คุณเลือกด้านล่าง ระบบจะแปลงเป็นเงินบาท คำนวณตามขั้นภาษีไทย แล้วแสดงผลทั้งสองสกุล',
+      'calc.lifeins.h':'ใช้เพดานร่วมกัน 100,000 บาท และส่วนที่เป็นประกันสุขภาพต้องไม่เกิน 25,000 บาท',
+      'calc.lifeins.l':'ประกันชีวิต + ประกันสุขภาพตนเอง',
+      'calc.mortgage.h':'เฉพาะดอกเบี้ย เพดาน 100,000 บาท',
+      'calc.mortgage.l':'ดอกเบี้ยเงินกู้ซื้อบ้านที่จ่าย',
+      'calc.other.h':'ค่าจ้างฟรีแลนซ์ ค่าเช่า ดอกเบี้ย ระบบจะหักค่าใช้จ่ายเหมา 50% ไม่เกิน 100,000 รวมกับเงินเดือน',
+      'calc.other.l':'เงินได้อื่นที่ต้องเสียภาษี',
+      'calc.parentins.h':'เพดาน 15,000 บาท',
+      'calc.parentins.l':'ประกันสุขภาพบิดามารดา',
+      'calc.parents.h':'คนละ 30,000 บาท สูงสุด 4 คน รวมพ่อแม่ของคู่สมรส',
+      'calc.parents.l':'บิดามารดาที่อุปการะ (อายุ 60 ปีขึ้นไป)',
+      'calc.placeholder':'กรอกเงินได้ทางด้านซ้ายแล้วกดคำนวณ ไม่มีการเก็บหรือส่งข้อมูลไปที่ใด การคำนวณทั้งหมดเกิดขึ้นภายในหน้านี้เท่านั้น',
+      'calc.rateLabel':'บาทต่อ 1 หน่วย',
+      'calc.reset':'ล้างข้อมูลทุกช่อง',
+      'calc.retire.h':'เพดานรวมปีละ 500,000 บาท',
+      'calc.retire.l':'PVD + RMF + ประกันบำนาญ',
+      'calc.salary.h':'ยอดรวมก่อนถูกหักภาษี ตามมาตรา 40(1)',
+      'calc.salary.l':'เงินเดือนและโบนัสทั้งปี',
+      'calc.sep1':'เงินได้',
+      'calc.sep2':'ครอบครัว',
+      'calc.sep3':'ประกันและการออม',
+      'calc.sep4':'ค่าลดหย่อนอื่น',
+      'calc.sep5':'ที่จ่ายไปแล้ว',
+      'calc.spouse.h':'ใส่ 1 เพื่อใช้สิทธิ 60,000 บาท หรือใส่ 0',
+      'calc.spouse.l':'คู่สมรสที่ไม่มีเงินได้',
+      'calc.sso.h':'เพดานปีละ 9,000 บาท',
+      'calc.sso.l':'เงินสมทบประกันสังคมที่จ่าย',
+      'calc.stimulus.h':'Easy E-Receipt และมาตรการคล้ายกัน ในที่นี้ใช้เพดาน 50,000 บาท',
+      'calc.stimulus.l':'ค่าใช้จ่ายตามมาตรการรัฐ',
+      'calc.tag':'// ภาษีเงินได้บุคคลธรรมดา',
+      'calc.title':'ลองคำนวณตัวเลขของคุณเอง',
+      'calc.withheld.h':'ดูจากหนังสือรับรองการหักภาษี ณ ที่จ่าย (50 ทวิ) ใช้คำนวณว่าจะได้คืนหรือต้องจ่ายเพิ่ม',
+      'calc.withheld.l':'ภาษีหัก ณ ที่จ่ายที่ถูกหักไปแล้วปีนี้',
+      'cur.noteCustom':'กำลังใช้อัตราที่คุณกำหนดเอง',
+      'cur.noteRef':'อัตราอ้างอิงแบบคงที่ ไม่ใช่เรตสด แก้ไขให้ตรงกับเรตของคุณได้',
+      'cur.noteThb':'เงินบาทไทย ไม่มีการแปลงค่า',
+      'filing.eyebrow':'07 การยื่นภาษี',
+      'filing.lede':'รู้ตัวเลขเป็นแค่ครึ่งเดียว การซื้อของเพื่อลดหย่อนต้องเกิดขึ้นภายในปีภาษี และแบบยื่นต้องถึงมือสรรพากรภายในช่วงเวลาที่กำหนด พลาดข้อใดข้อหนึ่ง เงินที่จะประหยัดได้ก็หายไปทันที',
+      'filing.title':'ปฏิทินที่ต้องจำจริงๆ',
+      'footer.line1':'SPACEZ TAX TERMINAL © 2026 — เพื่อการศึกษาเท่านั้น',
+      'footer.line2':'ไม่ใช่คำแนะนำทางภาษี ควรตรวจสอบกับกรมสรรพากรเสมอ',
+      'formula.eyebrow':'03 สูตรคำนวณ',
+      'formula.lede':'ทั้งระบบสรุปได้ในบรรทัดเดียว เงินได้ ลบค่าใช้จ่าย ลบค่าลดหย่อน เท่ากับเงินได้สุทธิ และมีเพียงตัวเลขสุดท้ายเท่านั้นที่ได้เจอกับตารางภาษี ลองดูเงินเดือนปีละ 900,000 บาท เดินผ่านขั้นตอนทั้งหมด',
+      'formula.title':'ลบห้าครั้ง แล้วไล่ขั้นบันได',
+      'fs.allow.d':'ส่วนตัว ครอบครัว ประกัน กองทุนเกษียณ ดอกเบี้ยบ้าน และเงินบริจาค',
+      'fs.allow.t':'หักค่าลดหย่อน',
+      'fs.expense.d':'กฎขึ้นกับประเภทเงินได้ เงินเดือนหักได้ 50% แต่ไม่เกิน 100,000 บาท',
+      'fs.expense.t':'หักค่าใช้จ่าย',
+      'fs.gross.d':'เงินเดือน โบนัส ค่าจ้างฟรีแลนซ์ ค่าเช่า ดอกเบี้ย ทุกอย่างที่เป็นเงินได้พึงประเมินในปีปฏิทินนั้น',
+      'fs.gross.t':'รวมเงินได้ทุกบาท',
+      'fs.net.d':'ตัวเลขเดียวที่ตารางภาษีมองเห็น ไม่ใช่เงินเดือนของคุณ แต่คือตัวนี้',
+      'fs.net.t':'นี่คือเงินได้สุทธิ',
+      'fs.tax.d':'เอาอัตราของแต่ละขั้นไปคูณเฉพาะส่วนของเงินได้ที่อยู่ในขั้นนั้น แล้วบวกรวมกัน',
+      'fs.tax.t':'ไล่ขึ้นขั้นบันได',
+      'hero.chip1':'150,000 บาทแรก อัตรา 0%',
+      'hero.chip2':'8 ขั้นบันได · 0% ถึง 35%',
+      'hero.chip3':'ไทย / อังกฤษ · เลือกสกุลเงินได้',
+      'hero.cta1':'เริ่มจากพื้นฐาน →',
+      'hero.cta2':'ข้ามไปเครื่องคำนวณ',
+      'hero.eyebrow':'ภาษีเงินได้บุคคลธรรมดา · เข้าใจก่อน แล้วค่อยคำนวณ',
+      'hero.h1a':'ไม่มีใครเก็บภาษี',
+      'hero.h1b':'จากเงินเดือนทั้งก้อน',
+      'hero.sub':'ภาษีเงินได้ของไทยไม่ได้คิดอัตราเดียวจากเงินที่คุณหาได้ทั้งหมด แต่เป็นขั้นบันไดที่คิดจากเงินที่เหลือหลังหักค่าใช้จ่ายและค่าลดหย่อนแล้ว และคนส่วนใหญ่จ่ายจริงในอัตราที่ต่ำกว่าขั้นที่ตัวเองคิดไว้มาก มาเข้าใจกลไกก่อน แล้วค่อยลองคำนวณตัวเลขของคุณเอง',
+      'inc0.d':'เงินได้จากการจ้างแรงงาน โบนัส เบี้ยเลี้ยง และประโยชน์ที่นายจ้างให้เป็นสิ่งของ',
+      'inc0.e':'50% ไม่เกิน 100,000',
+      'inc0.n':'เงินเดือนและค่าจ้าง',
+      'inc1.d':'ค่านายหน้า ค่าคอมมิชชั่น เบี้ยประชุม และค่าบริการครั้งคราวที่ไม่ได้อยู่ในสัญญาจ้างแรงงาน',
+      'inc1.e':'50% ไม่เกิน 100,000 (รวมกับ 40(1))',
+      'inc1.n':'ค่าจ้างทำงานให้ / ค่านายหน้า',
+      'inc2.d':'ค่าลิขสิทธิ์ สิทธิบัตร ค่าแฟรนไชส์ และเงินได้ลักษณะรายปีจากทรัพย์สินทางปัญญา',
+      'inc2.e':'ลิขสิทธิ์หัก 50% ไม่เกิน 100,000',
+      'inc2.n':'ค่าลิขสิทธิ์และค่าความนิยม',
+      'inc3.d':'ดอกเบี้ยเงินฝาก ดอกเบี้ยหุ้นกู้ เงินปันผล และผลประโยชน์ที่ถือเป็นเงินได้พึงประเมิน',
+      'inc3.e':'หักค่าใช้จ่ายไม่ได้',
+      'inc3.n':'ดอกเบี้ยและเงินปันผล',
+      'inc4.d':'ค่าเช่าจากอสังหาริมทรัพย์ ยานพาหนะ และทรัพย์สินอื่นที่คุณให้ผู้อื่นเช่า',
+      'inc4.e':'เหมา 10–30% หรือหักตามจริง',
+      'inc4.n':'ค่าเช่าทรัพย์สิน',
+      'inc5.d':'กฎหมาย การประกอบโรคศิลปะ วิศวกรรม สถาปัตยกรรม การบัญชี และประณีตศิลปกรรม ที่ประกอบอาชีพอิสระ',
+      'inc5.e':'เหมา 30% (การประกอบโรคศิลปะ 60%) หรือตามจริง',
+      'inc5.n':'วิชาชีพอิสระ',
+      'inc6.d':'งานรับเหมาที่คุณจัดหาทั้งแรงงานและสัมภาระสำคัญเอง',
+      'inc6.e':'เหมา 60% หรือหักตามจริง',
+      'inc6.n':'รับเหมาที่ผู้รับเหมาจัดหาสัมภาระ',
+      'inc7.d':'ร้านค้า ขายของออนไลน์ เกษตรกรรม ขนส่ง การแสดง และเงินได้อื่นที่ไม่เข้าประเภทข้างต้น',
+      'inc7.e':'เหมา 40–60% ตามประเภทกิจการ หรือหักตามจริง',
+      'inc7.n':'ธุรกิจ พาณิชย์ และอื่นๆ',
+      'income.eyebrow':'02 ประเภทเงินได้',
+      'income.lede':'ประมวลรัษฎากรแบ่งเงินได้ออกเป็นแปดประเภท และแต่ละประเภทมีกฎการหักค่าใช้จ่ายของตัวเอง พนักงานเงินเดือนกับสถาปนิกฟรีแลนซ์ที่มีรายได้เท่ากันเป๊ะ จะจบลงด้วยเงินได้สุทธิที่ต่างกันมาก เพียงเพราะเงินของพวกเขาตกอยู่ในช่องคนละช่องเท่านั้น',
+      'income.note':'ประเภทเงินได้ที่ให้เลือกได้ระหว่างหักเหมาเป็นเปอร์เซ็นต์กับหักตามจริง คุณเลือกวิธีที่ได้มากกว่าได้ แต่การ "หักตามจริง" ต้องมีหลักฐานที่แสดงได้เมื่อถูกตรวจสอบ อัตราของ 40(5) ถึง 40(8) ต่างกันไปตามลักษณะกิจการ ตัวเลขข้างต้นเป็นช่วงที่พบบ่อย',
+      'income.th1':'มาตรา',
+      'income.th2':'ครอบคลุมอะไรบ้าง',
+      'income.th3':'การหักค่าใช้จ่าย',
+      'income.title':'เงินได้แต่ละประเภท หักค่าใช้จ่ายไม่เหมือนกัน',
+      'nav.allow':'ค่าลดหย่อน',
+      'nav.basics':'หลักการ',
+      'nav.brackets':'ขั้นบันไดภาษี',
+      'nav.calc':'เครื่องคำนวณ',
+      'nav.filing':'การยื่นภาษี',
+      'nav.formula':'สูตรคำนวณ',
+      'nav.income':'ประเภทเงินได้',
+      'nav.quiz':'แบบทดสอบ',
+      'quiz.correct':'ถูกต้อง',
+      'quiz.eyebrow':'ทดสอบความเข้าใจ',
+      'quiz.gateCount':'10 คำถาม',
+      'quiz.gateNote':'ขั้นภาษี การหักค่าใช้จ่าย เพดานค่าลดหย่อน ถิ่นที่อยู่ทางภาษี และแบบยื่น สิบคำถามเพื่อเช็กว่าคุณเข้าใจจริงหรือยัง',
+      'quiz.grade.master':'ยอดเยี่ยม',
+      'quiz.grade.pass':'ผ่าน',
+      'quiz.grade.retry':'ทบทวน',
+      'quiz.incorrect':'ยังไม่ถูก ตัวเลือกที่ไฮไลต์คือคำตอบที่ถูกต้อง',
+      'quiz.lede':'สิบคำถามจากทุกหัวข้อด้านบน จะยังไม่แสดงอะไรจนกว่าคุณจะกดเริ่ม',
+      'quiz.questionLabel':'คำถามที่',
+      'quiz.result.master':'ได้ {score} จาก {total} คุณเข้าใจกลไกจริงๆ ไม่ใช่แค่จำอัตราภาษี',
+      'quiz.result.pass':'ได้ {score} จาก {total} เข้าใจดีในระดับหนึ่ง ลองกลับไปอ่านหัวข้อที่ตอบผิดแล้วทำใหม่',
+      'quiz.result.retry':'ได้ {score} จาก {total} แนะนำให้กลับไปอ่านหัวข้อสูตรคำนวณและค่าลดหย่อนอีกรอบ',
+      'quiz.retryBtn':'ทำใหม่อีกครั้ง',
+      'quiz.scoreLabel':'คะแนน',
+      'quiz.startBtn':'เริ่มทำแบบทดสอบ →',
+      'quiz.title':'แบบทดสอบภาษี',
+      'res.breakdown':'ภาษีมาจากขั้นไหนบ้าง',
+      'res.capped':'บางรายการถูกปรับลดลงมาที่เพดานตามกฎหมาย',
+      'res.effective':'อัตราภาษีจริงเทียบเงินได้ทั้งหมด',
+      'res.gapNote':'ขั้นสูงสุดของคุณคือ {marg} แต่มีเพียงส่วนของเงินได้ที่อยู่ในขั้นนั้นที่เสียในอัตรานี้ ส่วนที่อยู่ต่ำกว่าเสียตามขั้นล่างลงไป นี่คือเหตุผลที่อัตราที่คุณจ่ายจริงอยู่ที่ {eff}',
+      'res.inBaht':'เป็นเงินบาท',
+      'res.marginal':'ขั้นสูงสุดของคุณ',
+      'res.monthly':'เฉลี่ยต่อเดือน',
+      'res.noTax':'ไม่ต้องเสียภาษี',
+      'res.noTaxSub':'เงินได้สุทธิอยู่ในขั้น 150,000 บาทแรกซึ่งอัตรา 0% แต่ยังแนะนำให้ยื่นแบบไว้อยู่ดี',
+      'res.owing':'ต้องจ่ายเพิ่ม',
+      'res.refund':'เงินภาษีที่จะได้คืน',
+      'res.settled':'ภาษีหัก ณ ที่จ่ายพอดี',
+      'res.sum.allow':'หัก ค่าลดหย่อน',
+      'res.sum.expense':'หัก ค่าใช้จ่าย',
+      'res.sum.income':'เงินได้พึงประเมินรวม',
+      'res.sum.net':'เงินได้สุทธิ',
+      'res.summary':'เงินได้สุทธิคำนวณมาอย่างไร',
+      'res.taxDue':'ภาษีที่ต้องจ่ายทั้งปี',
+      'tl0.d':'1 ม.ค. – 31 ธ.ค.',
+      'tl0.h':'ตัวปีภาษี',
+      'tl0.p':'ประเทศไทยใช้ปีปฏิทินเป็นปีภาษีโดยไม่มีข้อยกเว้นสำหรับบุคคลธรรมดา ทุกอย่างที่คุณหาได้และทุกอย่างที่ซื้อเพื่อลดหย่อน ต้องอยู่ภายในช่วงวันนี้ หน่วยลงทุนที่ซื้อวันที่ 2 มกราคม จะไปอยู่ในแบบยื่นของปีถัดไป ไม่ใช่ปีนี้',
+      'tl1.d':'มกราคม',
+      'tl1.h':'นายจ้างออกหนังสือ 50 ทวิ',
+      'tl1.p':'หนังสือรับรองการหักภาษี ณ ที่จ่าย จะระบุรายได้รวมทั้งปี ภาษีที่ถูกหักไปแล้ว และเงินสมทบประกันสังคม ตัวเลขเกือบทั้งหมดที่แบบยื่นถามหาอยู่ในกระดาษแผ่นเดียวนี้ จึงไม่ต้องไปไล่รวมจากสลิปเงินเดือนอีก',
+      'tl2.d':'1 ม.ค. – 31 มี.ค.',
+      'tl2.h':'ช่วงยื่นแบบ · ภ.ง.ด.91 หรือ ภ.ง.ด.90',
+      'tl2.p':'ใช้ ภ.ง.ด.91 ถ้ามีเฉพาะเงินเดือนอย่างเดียว และใช้ ภ.ง.ด.90 ถ้ามีค่าจ้างฟรีแลนซ์ ค่าเช่า เงินปันผล หรือรายได้จากธุรกิจด้วย การยื่นแบบกระดาษที่สำนักงานสรรพากรปิดรับวันที่ 31 มีนาคม',
+      'tl3.d':'ต้นเดือนเมษายน',
+      'tl3.h':'ขยายเวลาสำหรับการยื่นออนไลน์',
+      'tl3.p':'การยื่นออนไลน์ผ่านระบบของกรมสรรพากรมักได้ขยายเวลาออกไปราวหนึ่งสัปดาห์จากกำหนดของแบบกระดาษ วันที่แน่นอนประกาศใหม่ทุกปี จึงควรเช็กก่อน อย่าคิดเอาเอง เพราะการขยายเวลาเป็นการผ่อนผัน ไม่ใช่สิทธิ',
+      'tl4.d':'กันยายน',
+      'tl4.h':'แบบยื่นครึ่งปี ถ้าเข้าเงื่อนไข',
+      'tl4.p':'ผู้มีเงินได้ตามมาตรา 40(5) ถึง 40(8) ได้แก่ ค่าเช่า วิชาชีพอิสระ งานรับเหมา และธุรกิจ ต้องยื่น ภ.ง.ด.94 สำหรับครึ่งปีแรกภายในสิ้นเดือนกันยายน ภาษีที่จ่ายตอนนั้นจะถูกนำไปเครดิตกับแบบยื่นประจำปี',
+      'tl5.d':'หลังพ้นกำหนด',
+      'tl5.h':'เงินเพิ่มและค่าปรับ',
+      'tl5.p':'การชำระภาษีล่าช้าจะมีเงินเพิ่มคิดเป็นรายเดือนจากยอดภาษีที่ค้าง บวกกับค่าปรับจากการยื่นแบบล่าช้าอีกส่วนหนึ่ง แม้ยื่นช้าแต่ไม่มีภาษีต้องจ่าย ก็ยังเสี่ยงโดนค่าปรับอยู่ดี นี่คือเหตุผลที่ควรยื่นแบบไว้แม้เครื่องคำนวณจะบอกว่าเป็นศูนย์',
+    }
+  };
+  let currentLang = 'en';
+
+  function applyLang(lang){
+    currentLang = lang;
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-i18n]').forEach(function(el){
+      const v = translations[lang][el.dataset.i18n];
+      if(v === undefined) return;
+      if(el.hasAttribute('data-i18n-html')) el.innerHTML = v; else el.textContent = v;
+    });
+    document.querySelectorAll('.lt-option').forEach(function(o){
+      o.classList.toggle('active', o.dataset.lang === lang);
+    });
+    renderCurrencyOptions();
+    updateCurrencyNote();
+    renderBracketExplorer();
+    renderTaxResults(lastResult);
+    if(!document.getElementById('quizBody').hidden){ renderQuiz(); updateQuizScore(); }
+  }
+
+  /* Thai and English copy are never the same length, so re-labelling the page
+     silently changes the height of everything above you. Pin the block you are
+     actually looking at, swap the language, then correct the scroll by exactly
+     the amount it moved — you end up staring at the same paragraph. */
+  const ANCHOR_SEL = '.concept-card,.flow-step,.term-row,.tl-item,.bx-panel,.calc-panel,' +
+                     '.result-card,.quiz-card,.tax-disclaimer,.section-head,.tax-table tbody tr';
+  function pickAnchor(){
+    const vh = window.innerHeight || 800;
+    const nodes = document.querySelectorAll(ANCHOR_SEL);
+    for(let i = 0; i < nodes.length; i++){
+      const r = nodes[i].getBoundingClientRect();
+      if(r.height > 0 && r.bottom > 8 && r.top < vh - 8) return { el:nodes[i], top:r.top };
+    }
+    const secs = document.querySelectorAll('section');
+    for(let i = 0; i < secs.length; i++){
+      const r = secs[i].getBoundingClientRect();
+      if(r.bottom > 0 && r.top < vh) return { el:secs[i], top:r.top };
+    }
+    return null;
+  }
+
+  document.getElementById('langToggle').addEventListener('click', function(){
+    const anchor = pickAnchor();
+    applyLang(currentLang === 'en' ? 'th' : 'en');
+    if(!anchor) return;
+    const delta = anchor.el.getBoundingClientRect().top - anchor.top;
+    if(Math.abs(delta) < 1) return;
+    const root = document.documentElement;
+    const prev = root.style.scrollBehavior;
+    root.style.scrollBehavior = 'auto';
+    window.scrollBy(0, delta);
+    root.style.scrollBehavior = prev;
+  });
+
+  /* ============ scroll reveal ============ */
+  if('IntersectionObserver' in window){
+    const io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ e.target.classList.add('in-view'); io.unobserve(e.target); }
+      });
+    }, { threshold:0.12, rootMargin:'0px 0px -40px 0px' });
+    document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  } else {
+    document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in-view'); });
+  }
+
+  /* ============ ticker ============ */
+  const TICKER = [
+    ['FIRST ฿150,000', '0%', 'up'],
+    ['150K – 300K', '5%', 'up'],
+    ['300K – 500K', '10%', 'up'],
+    ['500K – 750K', '15%', 'flat'],
+    ['750K – 1M', '20%', 'flat'],
+    ['1M – 2M', '25%', 'down'],
+    ['2M – 5M', '30%', 'down'],
+    ['ABOVE 5M', '35%', 'down'],
+    ['PERSONAL ALLOWANCE', '฿60,000', 'up'],
+    ['EXPENSE CAP', '฿100,000', 'up'],
+    ['RETIREMENT CAP', '฿500,000', 'up'],
+    ['THAI ESG', '฿300,000', 'up'],
+    ['SOCIAL SECURITY', '฿9,000', 'up'],
+    ['FILING DEADLINE', '31 MAR', 'down']
+  ];
+  function renderTicker(){
+    const items = TICKER.map(function(x){
+      const cls = x[2] === 'up' ? 'up' : x[2] === 'down' ? 'down' : '';
+      return '<span class="ticker-item"><b>' + x[0] + '</b> <span class="' + cls + '">' + x[1] + '</span></span>';
+    }).join('');
+    document.getElementById('tickerTrack').innerHTML = items + items;
+  }
+
+  /* ============ tax engine ============ */
+  const BRACKETS = [
+    { lo:0,       hi:150000,   rate:0.00 },
+    { lo:150000,  hi:300000,   rate:0.05 },
+    { lo:300000,  hi:500000,   rate:0.10 },
+    { lo:500000,  hi:750000,   rate:0.15 },
+    { lo:750000,  hi:1000000,  rate:0.20 },
+    { lo:1000000, hi:2000000,  rate:0.25 },
+    { lo:2000000, hi:5000000,  rate:0.30 },
+    { lo:5000000, hi:Infinity, rate:0.35 }
+  ];
+  const BAND_COLORS = ["#00ff66", "#8fdc4b", "#ccff00", "#e2e034", "#ffb020", "#ff8a2b", "#ff5c3a", "#ff3b4e"];
+
+  function bandSplit(net){
+    return BRACKETS.map(function(b){
+      const amt = Math.max(0, Math.min(net, b.hi) - b.lo);
+      return { lo:b.lo, hi:b.hi, rate:b.rate, amount:amt, tax:amt * b.rate };
+    });
+  }
+  function taxOn(net){
+    return bandSplit(net).reduce(function(s, b){ return s + b.tax; }, 0);
+  }
+  function marginalRate(net){
+    let r = 0;
+    BRACKETS.forEach(function(b){ if(net > b.lo) r = b.rate; });
+    return r;
+  }
+  function bandLabel(b){
+    const f = function(n){ return n >= 1000000 ? (n / 1000000) + 'M' : (n / 1000) + 'K'; };
+    if(b.hi === Infinity) return f(b.lo) + '+';
+    return (b.lo === 0 ? '0' : f(b.lo)) + ' – ' + f(b.hi);
+  }
+
+  /* ============ currency ============ */
+  const CURRENCIES = [
+    { code:'THB', thb:1,        en:'Thai Baht',        th:'บาทไทย' },
+    { code:'USD', thb:36.50,    en:'US Dollar',        th:'ดอลลาร์สหรัฐ' },
+    { code:'EUR', thb:39.50,    en:'Euro',             th:'ยูโร' },
+    { code:'GBP', thb:46.20,    en:'British Pound',    th:'ปอนด์สเตอร์ลิง' },
+    { code:'JPY', thb:0.2350,   en:'Japanese Yen',     th:'เยนญี่ปุ่น' },
+    { code:'CNY', thb:5.050,    en:'Chinese Yuan',     th:'หยวนจีน' },
+    { code:'SGD', thb:27.20,    en:'Singapore Dollar', th:'ดอลลาร์สิงคโปร์' },
+    { code:'AUD', thb:23.80,    en:'Australian Dollar',th:'ดอลลาร์ออสเตรเลีย' },
+    { code:'HKD', thb:4.680,    en:'Hong Kong Dollar', th:'ดอลลาร์ฮ่องกง' },
+    { code:'KRW', thb:0.02620,  en:'Korean Won',       th:'วอนเกาหลี' },
+    { code:'MYR', thb:8.150,    en:'Malaysian Ringgit',th:'ริงกิตมาเลเซีย' },
+    { code:'TWD', thb:1.130,    en:'Taiwan Dollar',    th:'ดอลลาร์ไต้หวัน' },
+    { code:'INR', thb:0.4200,   en:'Indian Rupee',     th:'รูปีอินเดีย' },
+    { code:'CHF', thb:41.00,    en:'Swiss Franc',      th:'ฟรังก์สวิส' },
+    { code:'CAD', thb:26.50,    en:'Canadian Dollar',  th:'ดอลลาร์แคนาดา' },
+    { code:'VND', thb:0.001430, en:'Vietnamese Dong',  th:'ดองเวียดนาม' },
+    { code:'PHP', thb:0.6300,   en:'Philippine Peso',  th:'เปโซฟิลิปปินส์' },
+    { code:'IDR', thb:0.002230, en:'Indonesian Rupiah',th:'รูเปียห์อินโดนีเซีย' }
+  ];
+  let curCode = 'THB';
+  function curDef(code){
+    for(let i = 0; i < CURRENCIES.length; i++){ if(CURRENCIES[i].code === code) return CURRENCIES[i]; }
+    return CURRENCIES[0];
+  }
+  function activeRate(){
+    const v = parseFloat(document.getElementById('curRate').value);
+    return (isFinite(v) && v > 0) ? v : curDef(curCode).thb;
+  }
+  function renderCurrencyOptions(){
+    const sel = document.getElementById('curSelect');
+    sel.innerHTML = CURRENCIES.map(function(c){
+      return '<option value="' + c.code + '">' + c.code + ' · ' + (currentLang === 'en' ? c.en : c.th) + '</option>';
+    }).join('');
+    sel.value = curCode;
+  }
+  function updateCurrencyNote(){
+    const note = document.getElementById('curNote');
+    const rateBox = document.getElementById('curRate');
+    const def = curDef(curCode);
+    if(curCode === 'THB'){
+      rateBox.value = 1;
+      rateBox.disabled = true;
+      note.textContent = translations[currentLang]['cur.noteThb'];
+      return;
+    }
+    rateBox.disabled = false;
+    const typed = parseFloat(rateBox.value);
+    const custom = isFinite(typed) && typed > 0 && Math.abs(typed - def.thb) > 1e-9;
+    note.innerHTML = '<b>1 ' + def.code + ' = ' + activeRate() + ' THB</b> — ' +
+      translations[currentLang][custom ? 'cur.noteCustom' : 'cur.noteRef'];
+  }
+  document.getElementById('curSelect').addEventListener('change', function(e){
+    curCode = e.target.value;
+    document.getElementById('curRate').value = curDef(curCode).thb;
+    updateCurrencyNote();
+    if(lastResult) runCalc();
+  });
+  document.getElementById('curRate').addEventListener('input', function(){
+    updateCurrencyNote();
+  });
+
+  /* ============ formatting ============ */
+  function fmtTHB(n){
+    return '฿' + Math.round(n).toLocaleString('en-US');
+  }
+  function fmtCur(thb){
+    if(curCode === 'THB') return fmtTHB(thb);
+    const v = thb / activeRate();
+    const dp = Math.abs(v) >= 1000 ? 0 : 2;
+    return curCode + ' ' + v.toLocaleString('en-US', { minimumFractionDigits:dp, maximumFractionDigits:dp });
+  }
+  function dual(thb){
+    if(curCode === 'THB') return fmtTHB(thb);
+    return fmtCur(thb) + '<span class="sr-alt">' + fmtTHB(thb) + ' ' + translations[currentLang]['res.inBaht'] + '</span>';
+  }
+
+  /* ============ bracket explorer ============ */
+  function renderBracketExplorer(){
+    const range = document.getElementById('bxRange');
+    const net = parseFloat(range.value) || 0;
+    range.style.setProperty('--pct', (net / parseFloat(range.max) * 100).toFixed(1) + '%');
+    document.getElementById('bxNet').textContent = fmtTHB(net);
+
+    const bands = bandSplit(net);
+    const total = net || 1;
+    bands.forEach(function(b, i){
+      const seg = document.querySelector('[data-seg="' + i + '"]');
+      if(seg) seg.style.width = (b.amount / total * 100).toFixed(2) + '%';
+      const chip = document.querySelector('[data-band="' + i + '"]');
+      if(chip) chip.classList.toggle('on', b.amount > 0);
+    });
+
+    const tax = taxOn(net);
+    document.getElementById('bxTax').textContent = fmtTHB(tax);
+    document.getElementById('bxEff').textContent = (net > 0 ? (tax / net * 100) : 0).toFixed(1) + '%';
+    document.getElementById('bxMarg').textContent = (marginalRate(net) * 100).toFixed(0) + '%';
+  }
+  document.getElementById('bxRange').addEventListener('input', renderBracketExplorer);
+
+  /* ============ calculator ============ */
+  const FIELD_IDS = ['salary','other','spouse','children','children2','parents','sso','lifeins',
+                     'parentins','retire','esg','mortgage','donation','donation2','stimulus','withheld'];
+  let lastResult = null;
+
+  function readField(id){
+    const raw = document.getElementById('f_' + id).value.trim();
+    if(raw === '') return 0;
+    const v = parseFloat(raw);
+    return isFinite(v) ? v : NaN;
+  }
+
+  function computeTax(v){
+    /* v holds every input already converted to THB */
+    const income = v.salary + v.other;
+    const expense = Math.min(income * 0.5, 100000);
+
+    const capped = [];
+    function cap(value, ceiling, key){
+      if(value > ceiling){ capped.push(key); return ceiling; }
+      return value;
+    }
+
+    const a = {};
+    a.personal = 60000;
+    a.spouse = Math.min(Math.round(v.spouse), 1) * 60000;
+
+    const kids2 = Math.min(v.children2, v.children);
+    const kids1 = Math.max(0, v.children - kids2);
+    a.children = kids1 * 30000 + kids2 * 60000;
+
+    a.parents = Math.min(Math.round(v.parents), 4) * 30000;
+    a.sso = cap(v.sso, 9000, 'sso');
+    a.lifeins = cap(v.lifeins, 100000, 'lifeins');
+    a.parentins = cap(v.parentins, 15000, 'parentins');
+    a.retire = cap(v.retire, 500000, 'retire');
+    a.esg = cap(v.esg, Math.min(300000, income * 0.30), 'esg');
+    a.mortgage = cap(v.mortgage, 100000, 'mortgage');
+    a.stimulus = cap(v.stimulus, 50000, 'stimulus');
+
+    let allowBeforeDonation = 0;
+    for(const k in a){ allowBeforeDonation += a[k]; }
+
+    /* donations are capped at 10% of income after every other deduction */
+    const donationBase = Math.max(0, income - expense - allowBeforeDonation);
+    const donationClaim = v.donation + v.donation2 * 2;
+    a.donation = Math.min(donationClaim, donationBase * 0.10);
+    if(donationClaim > a.donation + 0.5) capped.push('donation');
+
+    const allowances = allowBeforeDonation + a.donation;
+    const net = Math.max(0, income - expense - allowances);
+    const bands = bandSplit(net);
+    const tax = bands.reduce(function(s, b){ return s + b.tax; }, 0);
+
+    return {
+      income:income, expense:expense, allowances:allowances, net:net,
+      bands:bands, tax:tax,
+      effective: income > 0 ? tax / income : 0,
+      marginal: marginalRate(net),
+      withheld: v.withheld,
+      balance: v.withheld - tax,
+      capped:capped
+    };
+  }
+
+  function runCalc(){
+    const err = document.getElementById('calcError');
+    err.textContent = '';
+
+    const rate = parseFloat(document.getElementById('curRate').value);
+    if(curCode !== 'THB' && (!isFinite(rate) || rate <= 0)){
+      err.textContent = translations[currentLang]['calc.err.rate'];
+      return;
+    }
+    const mult = curCode === 'THB' ? 1 : activeRate();
+
+    const raw = {};
+    for(let i = 0; i < FIELD_IDS.length; i++){
+      const id = FIELD_IDS[i];
+      const x = readField(id);
+      if(isNaN(x) || x < 0){
+        err.textContent = translations[currentLang]['calc.err.invalid'];
+        return;
+      }
+      /* counts stay as counts; money converts */
+      const isCount = (id === 'spouse' || id === 'children' || id === 'children2' || id === 'parents');
+      raw[id] = isCount ? x : x * mult;
+    }
+    if(raw.salary + raw.other <= 0){
+      err.textContent = translations[currentLang]['calc.err.noIncome'];
+      return;
+    }
+
+    lastResult = computeTax(raw);
+    renderTaxResults(lastResult);
+  }
+
+  function renderTaxResults(r){
+    const box = document.getElementById('calcResults');
+    if(!r){
+      box.innerHTML = '<div class="calc-placeholder" data-i18n="calc.placeholder">' +
+        translations[currentLang]['calc.placeholder'] + '</div>';
+      return;
+    }
+    const T = translations[currentLang];
+
+    const bandRows = r.bands.map(function(b){
+      const share = r.tax > 0 ? b.tax / r.tax * 100 : 0;
+      return '<div class="tb-row' + (b.amount > 0 ? '' : ' idle') + '">' +
+        '<span class="tb-band">' + bandLabel(b) + '</span>' +
+        '<span class="tb-rate">' + (b.rate * 100).toFixed(0) + '%</span>' +
+        '<span class="tb-track"><span class="tb-fill" style="width:' + share.toFixed(1) + '%"></span></span>' +
+        '<span class="tb-amt">' + fmtTHB(b.tax) + '</span>' +
+      '</div>';
+    }).join('');
+
+    const zero = r.tax <= 0.5;
+    const balCls = r.balance > 0.5 ? '' : r.balance < -0.5 ? 'red' : 'amber';
+    const balLabel = r.balance > 0.5 ? T['res.refund'] : r.balance < -0.5 ? T['res.owing'] : T['res.settled'];
+
+    box.innerHTML =
+      '<div class="result-card">' +
+        '<div class="rc-label">' + T['res.taxDue'] + '</div>' +
+        '<div class="rc-value' + (zero ? '' : ' amber') + '">' + fmtCur(r.tax) + '</div>' +
+        '<div class="rc-sub">' + (zero ? T['res.noTaxSub']
+          : (curCode === 'THB' ? '' : fmtTHB(r.tax) + ' ' + T['res.inBaht'] + ' · ') +
+            T['res.monthly'] + ' ' + fmtCur(r.tax / 12)) + '</div>' +
+      '</div>' +
+
+      '<div class="result-card dim">' +
+        '<div class="rc-label">' + T['res.summary'] + '</div>' +
+        '<div class="summary-rows">' +
+          '<div class="sum-row"><span class="sr-k">' + T['res.sum.income'] + '</span><span class="sr-v">' + dual(r.income) + '</span></div>' +
+          '<div class="sum-row minus"><span class="sr-k">' + T['res.sum.expense'] + '</span><span class="sr-v">− ' + dual(r.expense) + '</span></div>' +
+          '<div class="sum-row minus"><span class="sr-k">' + T['res.sum.allow'] + '</span><span class="sr-v">− ' + dual(r.allowances) + '</span></div>' +
+          '<div class="sum-row total"><span class="sr-k">' + T['res.sum.net'] + '</span><span class="sr-v">' + dual(r.net) + '</span></div>' +
+        '</div>' +
+        (r.capped.length ? '<div class="rc-sub">' + T['res.capped'] + '</div>' : '') +
+      '</div>' +
+
+      '<div class="result-card dim">' +
+        '<div class="rc-label">' + T['res.breakdown'] + '</div>' +
+        '<div class="tax-break">' + bandRows + '</div>' +
+      '</div>' +
+
+      '<div class="result-card dim">' +
+        '<div class="rc-label">' + T['res.effective'] + '</div>' +
+        '<div class="rc-value">' + (r.effective * 100).toFixed(2) + '%</div>' +
+        '<div class="rc-sub">' + T['res.gapNote']
+            .replace('{marg}', (r.marginal * 100).toFixed(0) + '%')
+            .replace('{eff}', (r.effective * 100).toFixed(2) + '%') + '</div>' +
+      '</div>' +
+
+      '<div class="result-card">' +
+        '<div class="rc-label">' + balLabel + '</div>' +
+        '<div class="rc-value ' + balCls + '">' + fmtCur(Math.abs(r.balance)) + '</div>' +
+      '</div>';
+  }
+
+  document.getElementById('calcBtn').addEventListener('click', runCalc);
+  document.getElementById('calcReset').addEventListener('click', function(){
+    FIELD_IDS.forEach(function(id){ document.getElementById('f_' + id).value = ''; });
+    lastResult = null;
+    document.getElementById('calcError').textContent = '';
+    renderTaxResults(null);
+  });
+  document.querySelectorAll('.calc-panel input[type=number]').forEach(function(el){
+    el.addEventListener('keydown', function(e){ if(e.key === 'Enter') runCalc(); });
+  });
+
+  /* ============ quiz ============ */
+  const quizQuestions = [
+    {
+      q_en:'Your net income rises from ฿490,000 to ฿510,000, crossing into the 15% bracket. What happens to the tax on the first ฿490,000?', q_th:'เงินได้สุทธิของคุณเพิ่มจาก 490,000 เป็น 510,000 บาท ข้ามไปขั้น 15% ภาษีของเงิน 490,000 บาทก้อนแรกจะเป็นอย่างไร?',
+      options_en:['It is all re-taxed at 15%','Nothing — it stays taxed at the lower steps','It is refunded','It moves to 35%'],
+      options_th:['ถูกคิดใหม่ทั้งก้อนที่ 15%','ไม่มีอะไรเปลี่ยน ยังเสียตามขั้นเดิม','ได้คืนทั้งหมด','ขยับไปเป็น 35%'],
+      correct:1
+    },
+    {
+      q_en:'How much of a ฿2,000,000 salary can be deducted as standard expenses?', q_th:'เงินเดือนปีละ 2,000,000 บาท หักค่าใช้จ่ายมาตรฐานได้เท่าไหร่?',
+      options_en:['฿1,000,000','฿200,000','฿100,000','Nothing'],
+      options_th:['1,000,000 บาท','200,000 บาท','100,000 บาท','หักไม่ได้เลย'],
+      correct:2
+    },
+    {
+      q_en:'You are in the 20% bracket and buy ฿100,000 of RMF. How much tax do you actually save?', q_th:'คุณอยู่ในขั้น 20% และซื้อ RMF 100,000 บาท จะประหยัดภาษีได้จริงเท่าไหร่?',
+      options_en:['฿100,000','฿20,000','฿35,000','Nothing until you sell'],
+      options_th:['100,000 บาท','20,000 บาท','35,000 บาท','ยังไม่ได้จนกว่าจะขาย'],
+      correct:1
+    },
+    {
+      q_en:'How many days in Thailand make you a Thai tax resident for the year?', q_th:'อยู่ในประเทศไทยกี่วันจึงถือเป็นผู้มีถิ่นที่อยู่ทางภาษีของปีนั้น?',
+      options_en:['90 days','120 days','180 days','365 days'],
+      options_th:['90 วัน','120 วัน','180 วัน','365 วัน'],
+      correct:2
+    },
+    {
+      q_en:'Life insurance and your own health insurance share which ceiling?', q_th:'ประกันชีวิตกับประกันสุขภาพของตัวเอง ใช้เพดานร่วมกันเท่าไหร่?',
+      options_en:['฿25,000','฿100,000','฿300,000','They are separate'],
+      options_th:['25,000 บาท','100,000 บาท','300,000 บาท','แยกกันคนละเพดาน'],
+      correct:1
+    },
+    {
+      q_en:'Provident fund, RMF and pension insurance are capped at what combined amount?', q_th:'กองทุนสำรองเลี้ยงชีพ RMF และประกันบำนาญ มีเพดานรวมกันเท่าไหร่?',
+      options_en:['฿200,000','฿300,000','฿500,000','No combined cap'],
+      options_th:['200,000 บาท','300,000 บาท','500,000 บาท','ไม่มีเพดานรวม'],
+      correct:2
+    },
+    {
+      q_en:'You only have salary income. Which form do you file?', q_th:'คุณมีแต่เงินได้จากเงินเดือนอย่างเดียว ต้องยื่นแบบไหน?',
+      options_en:['ภ.ง.ด.90','ภ.ง.ด.91','ภ.ง.ด.94','ภ.พ.30'],
+      options_th:['ภ.ง.ด.90','ภ.ง.ด.91','ภ.ง.ด.94','ภ.พ.30'],
+      correct:1
+    },
+    {
+      q_en:'Which mortgage payment component is deductible?', q_th:'ค่างวดผ่อนบ้านส่วนไหนที่หักลดหย่อนได้?',
+      options_en:['The principal','The interest','Both','Neither'],
+      options_th:['เงินต้น','ดอกเบี้ย','ทั้งสองส่วน','ไม่ได้ทั้งคู่'],
+      correct:1
+    },
+    {
+      q_en:'A donation to a registered public hospital counts at what value?', q_th:'เงินบริจาคให้โรงพยาบาลรัฐที่ขึ้นทะเบียน นับเป็นเท่าไหร่?',
+      options_en:['Half the amount','Face value','Double the amount','Not deductible'],
+      options_th:['ครึ่งหนึ่งของยอดที่จ่าย','ตามยอดที่จ่ายจริง','สองเท่าของยอดที่จ่าย','ลดหย่อนไม่ได้'],
+      correct:2
+    },
+    {
+      q_en:'Your employer withheld more tax than you actually owe. What happens?', q_th:'นายจ้างหักภาษีคุณไว้มากกว่าที่ต้องจ่ายจริง จะเกิดอะไรขึ้น?',
+      options_en:['You lose the difference','You can claim it back by filing','It carries to next year automatically','It becomes a fine'],
+      options_th:['เงินส่วนต่างนั้นหายไปเลย','ขอคืนได้โดยการยื่นแบบ','ยกยอดไปปีหน้าอัตโนมัติ','กลายเป็นค่าปรับ'],
+      correct:1
+    }
+  ];
+  let quizState = quizQuestions.map(function(){ return { answered:false, selected:null }; });
+
+  function renderQuiz(){
+    const list = document.getElementById('quizList');
+    const T = translations[currentLang];
+    list.innerHTML = quizQuestions.map(function(q, qi){
+      const st = quizState[qi];
+      const opts = (currentLang === 'en' ? q.options_en : q.options_th).map(function(opt, oi){
+        let cls = 'quiz-opt';
+        if(st.answered){
+          if(oi === q.correct) cls += ' correct';
+          else if(oi === st.selected) cls += ' incorrect';
+        }
+        return '<button type="button" class="' + cls + '" data-qi="' + qi + '" data-oi="' + oi + '"' +
+               (st.answered ? ' disabled' : '') + '>' + opt + '</button>';
+      }).join('');
+      let fb = '';
+      if(st.answered){
+        const ok = st.selected === q.correct;
+        fb = '<div class="quiz-feedback ' + (ok ? 'correct' : 'incorrect') + '">' +
+             T[ok ? 'quiz.correct' : 'quiz.incorrect'] + '</div>';
+      }
+      return '<div class="quiz-card">' +
+        '<div class="quiz-q">' + T['quiz.questionLabel'] + ' ' + (qi + 1) + '</div>' +
+        '<div class="quiz-q-text">' + (currentLang === 'en' ? q.q_en : q.q_th) + '</div>' +
+        '<div class="quiz-options">' + opts + '</div>' + fb + '</div>';
+    }).join('');
+
+    list.querySelectorAll('.quiz-opt').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        const qi = parseInt(btn.dataset.qi, 10);
+        if(quizState[qi].answered) return;
+        quizState[qi].answered = true;
+        quizState[qi].selected = parseInt(btn.dataset.oi, 10);
+        renderQuiz();
+        updateQuizScore();
+      });
+    });
+  }
+
+  function updateQuizScore(){
+    const total = quizQuestions.length;
+    const done = quizState.filter(function(s){ return s.answered; }).length;
+    const score = quizState.filter(function(s, i){ return s.answered && s.selected === quizQuestions[i].correct; }).length;
+    document.getElementById('quizScoreText').textContent = score + ' / ' + total;
+    document.getElementById('quizProgress').style.width = (done / total * 100).toFixed(1) + '%';
+
+    const box = document.getElementById('quizResult');
+    if(done < total){ box.hidden = true; return; }
+    const pct = score / total * 100;
+    const band = pct >= 90 ? 'master' : pct >= 70 ? 'pass' : 'retry';
+    box.hidden = false;
+    box.className = 'quiz-result band-' + band;
+    document.getElementById('quizGrade').textContent = translations[currentLang]['quiz.grade.' + band];
+    document.getElementById('quizResultText').textContent =
+      translations[currentLang]['quiz.result.' + band].replace('{score}', score).replace('{total}', total);
+  }
+
+  document.getElementById('quizStartBtn').addEventListener('click', function(){
+    document.getElementById('quizGate').hidden = true;
+    const body = document.getElementById('quizBody');
+    body.hidden = false;
+    body.classList.add('quiz-body-in');
+    renderQuiz();
+    updateQuizScore();
+  });
+  document.getElementById('quizRetryBtn').addEventListener('click', function(){
+    quizState = quizQuestions.map(function(){ return { answered:false, selected:null }; });
+    renderQuiz();
+    updateQuizScore();
+  });
+
+  /* ============ init ============ */
+  renderTicker();
+  document.getElementById('curRate').value = 1;
+  applyLang('en');
+</script>
+
+<script>
+/* ============================================================================
+   SPACEZ TAX TERMINAL — animated infographic engine
+   Own rAF loop, own IntersectionObserver gate, repaints on language switch,
+   settles to a readable static frame under prefers-reduced-motion.
+   ============================================================================ */
+(function(){
+  'use strict';
+
+  var nodes = document.querySelectorAll('[data-viz]');
+  if(!nodes.length) return;
+
+  var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var NS = 'http://www.w3.org/2000/svg';
+
+  function L(en, th){ return document.documentElement.lang === 'th' ? th : en; }
+  function q(root, name){ return root.querySelector('[data-el="' + name + '"]'); }
+  function ease(cur, tgt, dt, k){ return cur + (tgt - cur) * (1 - Math.exp(-(k || 5) * dt)); }
+  function clamp(v, a, b){ return Math.min(b, Math.max(a, v)); }
+  function mk(tag, attrs){
+    var e = document.createElementNS(NS, tag);
+    for(var k in attrs){ if(Object.prototype.hasOwnProperty.call(attrs, k)) e.setAttribute(k, attrs[k]); }
+    return e;
+  }
+  function baht(n){
+    return '฿' + Math.round(n).toLocaleString('en-US');
+  }
+  function shortBaht(n){
+    if(n >= 1000000) return '฿' + (n / 1000000).toFixed(n % 1000000 === 0 ? 0 : 1) + 'M';
+    if(n >= 1000) return '฿' + Math.round(n / 1000) + 'K';
+    return '฿' + Math.round(n);
+  }
+
+  var B = {};
+
+  /* ============================ 01 · CONCEPTS ============================ */
+
+  /* progressive staircase — marginal vs effective */
+  B.progressive = function(r){
+    var bars = q(r,'bars'), fill = q(r,'fill'), mline = q(r,'mline'), eline = q(r,'eline'),
+        cap = q(r,'cap'), num = q(r,'num'), tag = q(r,'tag'), sub = q(r,'sub');
+    var EDGES = [0,150000,300000,500000,750000,1000000,2000000,5000000,6500000];
+    var RATES = [0,0.05,0.10,0.15,0.20,0.25,0.30,0.35];
+    var W = 276, X0 = 12, TOP = 20, BOT = 92, MAXI = 6500000;
+    var SW = W / RATES.length;          /* one equal-width step per bracket */
+    var seg = [];
+    for(var i = 0; i < RATES.length; i++){
+      var h = Math.max(2, RATES[i] / 0.35 * (BOT - TOP));
+      seg.push(mk('rect',{ x:(X0 + i * SW).toFixed(1), y:(BOT - h).toFixed(1),
+                           width:(SW - 1.4).toFixed(1), height:h.toFixed(1),
+                           rx:1.5, fill:'rgba(255,255,255,.07)' }));
+      bars.appendChild(seg[i]);
+    }
+    var inc = 0, dir = 1;
+    function taxOf(net){
+      var tx = 0;
+      for(var k = 0; k < RATES.length; k++){
+        if(net <= EDGES[k]) break;
+        tx += (Math.min(net, EDGES[k+1]) - EDGES[k]) * RATES[k];
+      }
+      return tx;
+    }
+    return {
+      step:function(dt){
+        inc += dir * dt * 900000;
+        if(inc > MAXI){ inc = MAXI; dir = -1; }
+        if(inc < 0){ inc = 0; dir = 1; }
+      },
+      paint:function(){
+        var marg = 0, steps = 0;
+        for(var k = 0; k < RATES.length; k++){
+          var on = inc > EDGES[k];
+          seg[k].setAttribute('fill', on ? 'rgba(204,255,0,.55)' : 'rgba(255,255,255,.07)');
+          if(on){
+            marg = RATES[k];
+            steps = k + Math.min(1, (inc - EDGES[k]) / (EDGES[k+1] - EDGES[k]));
+          }
+        }
+        var w = steps * SW;
+        fill.setAttribute('width', Math.max(0, w).toFixed(1));
+        var eff = inc > 0 ? taxOf(inc) / inc : 0;
+        var my = BOT - marg / 0.35 * (BOT - TOP);
+        var ey = BOT - eff / 0.35 * (BOT - TOP);
+        mline.setAttribute('d','M' + X0 + ',' + my.toFixed(1) + ' L' + (X0 + W) + ',' + my.toFixed(1));
+        eline.setAttribute('d','M' + X0 + ',' + ey.toFixed(1) + ' L' + (X0 + W) + ',' + ey.toFixed(1));
+        num.textContent = (eff * 100).toFixed(1) + '%';
+        num.className = 'tv-num ' + (eff > 0.2 ? 'bad' : eff > 0.1 ? 'warn' : 'good');
+        tag.textContent = L('EFFECTIVE RATE','อัตราภาษีที่จ่ายจริง');
+        sub.textContent = L('Net income ' + shortBaht(inc) + ' · top bracket ' + (marg*100).toFixed(0) + '%',
+                            'เงินได้สุทธิ ' + shortBaht(inc) + ' · ขั้นบนสุด ' + (marg*100).toFixed(0) + '%');
+        cap.textContent = L('Only the slice inside each step is taxed','เก็บภาษีเฉพาะส่วนที่อยู่ในแต่ละขั้น');
+      }
+    };
+  };
+
+  /* 180-day residency counter */
+  B.resident = function(r){
+    var dots = q(r,'dots'), mark = q(r,'mark'),
+        cap = q(r,'cap'), num = q(r,'num'), tag = q(r,'tag'), sub = q(r,'sub');
+    var COLS = 30, ROWS = 8, cells = [];
+    for(var row = 0; row < ROWS; row++){
+      for(var col = 0; col < COLS; col++){
+        var c = mk('rect',{ x:(12 + col*9.3).toFixed(1), y:(18 + row*9).toFixed(1),
+                            width:6.6, height:6.4, rx:1.4, fill:'rgba(255,255,255,.07)' });
+        dots.appendChild(c); cells.push(c);
+      }
+    }
+    var days = 0, dir = 1;
+    return {
+      step:function(dt){
+        days += dir * dt * 120;
+        if(days > 300){ days = 300; dir = -1; }
+        if(days < 40){ days = 40; dir = 1; }
+      },
+      paint:function(){
+        var lit = Math.round(days / 365 * cells.length);
+        var resident = days >= 180;
+        for(var k = 0; k < cells.length; k++){
+          cells[k].setAttribute('fill', k < lit
+            ? (resident ? 'rgba(204,255,0,.75)' : 'rgba(255,176,32,.6)')
+            : 'rgba(255,255,255,.07)');
+        }
+        var mx = 12 + (180 / 365) * (COLS * 9.3);
+        mark.setAttribute('d','M' + mx.toFixed(1) + ',10 L' + mx.toFixed(1) + ',94');
+        num.textContent = Math.round(days) + L(' d',' วัน');
+        num.className = 'tv-num ' + (resident ? '' : 'warn');
+        tag.textContent = resident ? L('THAI TAX RESIDENT','ผู้มีถิ่นที่อยู่ทางภาษี') : L('NON-RESIDENT','ไม่ใช่ผู้มีถิ่นที่อยู่');
+        sub.textContent = L('The line sits at 180 days in one calendar year.','เส้นแบ่งอยู่ที่ 180 วันในหนึ่งปีปฏิทิน');
+        cap.textContent = L('Days spent in Thailand this year','จำนวนวันที่อยู่ในไทยปีนี้');
+      }
+    };
+  };
+
+  /* withholding tax vs the real bill */
+  B.wht = function(r){
+    var slices = q(r,'slices'), bar = q(r,'bar'), diff = q(r,'diff'),
+        cap = q(r,'cap'), num = q(r,'num'), tag = q(r,'tag'), sub = q(r,'sub');
+    var months = [];
+    for(var m = 0; m < 12; m++){
+      var rc = mk('rect',{ x:(12 + m*23).toFixed(1), y:56, width:17, height:0, rx:2, fill:'rgba(255,176,32,.55)' });
+      slices.appendChild(rc); months.push(rc);
+    }
+    var cyc = 0, over = true;
+    return {
+      step:function(dt){ cyc += dt; if(cyc > 6.5){ cyc = 0; over = !over; } },
+      paint:function(){
+        var prog = clamp(cyc / 3.4, 0, 1);
+        var lit = prog * 12;
+        for(var m = 0; m < 12; m++){
+          var f = clamp(lit - m, 0, 1);
+          months[m].setAttribute('height', (f * 26).toFixed(1));
+          months[m].setAttribute('y', (56 - f * 26).toFixed(1));
+        }
+        var withheld = over ? 62000 : 31000, actual = 45000;
+        var wpx = clamp(withheld / 70000, 0, 1) * 276;
+        var apx = clamp(actual / 70000, 0, 1) * 276;
+        bar.setAttribute('width', apx.toFixed(1));
+        diff.setAttribute('x', Math.min(wpx, apx).toFixed(1) === '0' ? 12 : (12 + Math.min(wpx, apx)).toFixed(1));
+        diff.setAttribute('width', Math.abs(wpx - apx).toFixed(1));
+        diff.setAttribute('fill', over ? 'rgba(0,255,102,.35)' : 'rgba(255,59,78,.35)');
+        var gap = withheld - actual;
+        num.textContent = (gap >= 0 ? '+' : '−') + baht(Math.abs(gap));
+        num.className = 'tv-num ' + (gap >= 0 ? 'good' : 'bad');
+        tag.textContent = gap >= 0 ? L('REFUND DUE','ได้เงินคืน') : L('BALANCE TO PAY','ต้องจ่ายเพิ่ม');
+        sub.textContent = L('Monthly withholding is only an estimate — filing settles it.','ภาษีหัก ณ ที่จ่ายรายเดือนเป็นแค่การประมาณ การยื่นคือการเคลียร์ยอดจริง');
+        cap.textContent = L('12 months withheld vs the real bill','หัก 12 เดือน เทียบยอดจริง');
+      }
+    };
+  };
+
+  /* ============================ 03 · THE FORMULA ============================ */
+  B.flow = function(r){
+    var cap = q(r,'cap');
+    var STEPS = ['gross','expense','allow','net','tax'];
+    var els = STEPS.map(function(s){ return { bar:q(r,'b_'+s), lbl:q(r,'l_'+s), val:q(r,'v_'+s) }; });
+    var GROSS = 900000, EXPENSE = 100000, ALLOW = 190000;
+    var NET = GROSS - EXPENSE - ALLOW;
+    function taxOf(net){
+      var E = [0,150000,300000,500000,750000,1000000,2000000,5000000,1e15];
+      var R = [0,0.05,0.10,0.15,0.20,0.25,0.30,0.35], tx = 0;
+      for(var k = 0; k < R.length; k++){
+        if(net <= E[k]) break;
+        tx += (Math.min(net, E[k+1]) - E[k]) * R[k];
+      }
+      return tx;
+    }
+    var TAX = taxOf(NET);
+    var VALUES = [GROSS, EXPENSE, ALLOW, NET, TAX];
+    var SIGN = ['', '−\u2009', '−\u2009', '', ''];
+    var LABELS = [
+      ['TOTAL ASSESSABLE INCOME','เงินได้พึงประเมินทั้งปี'],
+      ['LESS EXPENSE DEDUCTION','หัก ค่าใช้จ่าย'],
+      ['LESS ALLOWANCES','หัก ค่าลดหย่อน'],
+      ['= NET TAXABLE INCOME','= เงินได้สุทธิ'],
+      ['= TAX DUE','= ภาษีที่ต้องจ่าย']
+    ];
+    var MAXW = 560, cyc = 0;
+    return {
+      step:function(dt){ cyc += dt; if(cyc > 9) cyc = 0; },
+      paint:function(){
+        for(var i = 0; i < els.length; i++){
+          var p = clamp((cyc - i * 0.75) / 1.1, 0, 1);
+          var eased = 1 - Math.pow(1 - p, 3);
+          var w = Math.max(VALUES[i] > 0 ? 5 : 0, VALUES[i] / GROSS * MAXW * eased);
+          els[i].bar.setAttribute('width', w.toFixed(1));
+          els[i].bar.setAttribute('opacity', (0.25 + 0.75 * eased).toFixed(2));
+          els[i].lbl.textContent = L(LABELS[i][0], LABELS[i][1]);
+          els[i].val.textContent = p > 0.05 ? SIGN[i] + baht(VALUES[i] * eased) : '';
+          els[i].val.setAttribute('x', (222 + w + 12).toFixed(1));
+        }
+        if(cap) cap.textContent = L('Worked example · salary ' + baht(GROSS) + ' a year',
+                                    'ตัวอย่าง · เงินเดือนรวมทั้งปี ' + baht(GROSS));
+      }
+    };
+  };
+
+  /* ============================ 05 · ALLOWANCES ============================ */
+
+  /* a reusable "tank filling to a cap" visual */
+  function tank(r, opts){
+    var fill = q(r,'fill'), capLine = q(r,'capline'), lblCap = q(r,'lcap'),
+        cap = q(r,'cap'), num = q(r,'num'), tag = q(r,'tag'), sub = q(r,'sub');
+    var cur = 0, dir = 1;
+    return {
+      step:function(dt){
+        cur += dir * dt * opts.max * 0.42;
+        if(cur > opts.max * 1.35){ cur = opts.max * 1.35; dir = -1; }
+        if(cur < 0){ cur = 0; dir = 1; }
+      },
+      paint:function(){
+        var used = Math.min(cur, opts.max);
+        var w = used / opts.max * 240;
+        var over = cur > opts.max;
+        fill.setAttribute('width', Math.max(0, w).toFixed(1));
+        fill.setAttribute('fill', over ? 'rgba(255,176,32,.6)' : 'rgba(204,255,0,.55)');
+        capLine.setAttribute('opacity', over ? '1' : '0.45');
+        lblCap.textContent = L('CAP ' + shortBaht(opts.max), 'เพดาน ' + shortBaht(opts.max));
+        num.textContent = baht(used);
+        num.className = 'tv-num ' + (over ? 'warn' : '');
+        tag.textContent = over ? L('CAPPED OUT','ชนเพดานแล้ว') : L('CLAIMABLE','ใช้สิทธิได้');
+        sub.textContent = over ? L(opts.overEn, opts.overTh) : L(opts.subEn, opts.subTh);
+        cap.textContent = L(opts.capEn, opts.capTh);
+      }
+    };
+  }
+
+  B.al_personal = function(r){
+    var cap = q(r,'cap'), num = q(r,'num'), tag = q(r,'tag'), sub = q(r,'sub');
+    var box = q(r,'box'), glow = q(r,'glow');
+    var t0 = 0;
+    return {
+      step:function(dt){ t0 += dt; },
+      paint:function(){
+        var pulse = 0.5 + 0.5 * Math.sin(t0 * 1.6);
+        glow.setAttribute('opacity', (0.15 + pulse * 0.35).toFixed(2));
+        box.setAttribute('stroke-width', (1.6 + pulse * 0.9).toFixed(2));
+        num.textContent = baht(60000);
+        num.className = 'tv-num';
+        tag.textContent = L('EVERY FILER','ได้ทุกคน');
+        sub.textContent = L('No receipt, no condition — it is simply granted.','ไม่ต้องมีใบเสร็จ ไม่มีเงื่อนไข ได้เลยอัตโนมัติ');
+        cap.textContent = L('Automatic personal allowance','ค่าลดหย่อนส่วนตัวอัตโนมัติ');
+      }
+    };
+  };
+
+  B.al_expense = function(r){
+    var inc = q(r,'inc'), ded = q(r,'ded'), capline = q(r,'capline'),
+        cap = q(r,'cap'), num = q(r,'num'), tag = q(r,'tag'), sub = q(r,'sub');
+    var salary = 0, dir = 1, MAXS = 500000;
+    return {
+      step:function(dt){
+        salary += dir * dt * 190000;
+        if(salary > MAXS){ salary = MAXS; dir = -1; }
+        if(salary < 0){ salary = 0; dir = 1; }
+      },
+      paint:function(){
+        var raw = salary * 0.5, allowed = Math.min(raw, 100000);
+        inc.setAttribute('width', (salary / MAXS * 250).toFixed(1));
+        ded.setAttribute('width', (allowed / 100000 * 250).toFixed(1));
+        var hit = raw >= 100000;
+        ded.setAttribute('fill', hit ? 'rgba(255,176,32,.6)' : 'rgba(204,255,0,.55)');
+        capline.setAttribute('opacity', hit ? '1' : '0.4');
+        num.textContent = baht(allowed);
+        num.className = 'tv-num ' + (hit ? 'warn' : '');
+        tag.textContent = hit ? L('FLAT ฿100,000 CAP','ชนเพดาน 100,000') : L('50% OF SALARY','50% ของเงินเดือน');
+        sub.textContent = L('Salary ' + baht(salary) + ' → half, capped at ฿100,000.',
+                            'เงินเดือน ' + baht(salary) + ' → หักครึ่ง แต่ไม่เกิน 100,000');
+        cap.textContent = L('Standard expense deduction','การหักค่าใช้จ่ายมาตรฐาน');
+      }
+    };
+  };
+
+  B.al_family = function(r){
+    var rows = ['spouse','child','parent'].map(function(k){
+      return { bar:q(r,'b_'+k), val:q(r,'v_'+k), lbl:q(r,'l_'+k) };
+    });
+    var cap = q(r,'cap'), num = q(r,'num'), tag = q(r,'tag'), sub = q(r,'sub');
+    var CONF = [
+      { max:60000,  en:'SPOUSE', th:'คู่สมรส' },
+      { max:120000, en:'CHILDREN', th:'บุตร' },
+      { max:120000, en:'PARENTS', th:'บิดามารดา' }
+    ];
+    var cur = [0,0,0], cyc = 0;
+    return {
+      step:function(dt){
+        cyc += dt; if(cyc > 7) cyc = 0;
+        for(var i = 0; i < 3; i++){
+          var p = clamp((cyc - i * 0.8) / 1.4, 0, 1);
+          cur[i] = CONF[i].max * p;
+        }
+      },
+      paint:function(){
+        var total = 0;
+        for(var i = 0; i < 3; i++){
+          total += cur[i];
+          rows[i].bar.setAttribute('width', (cur[i] / 120000 * 148).toFixed(1));
+          rows[i].val.textContent = shortBaht(cur[i]);
+          rows[i].lbl.textContent = L(CONF[i].en, CONF[i].th);
+        }
+        num.textContent = baht(total);
+        num.className = 'tv-num';
+        tag.textContent = L('FAMILY ALLOWANCES','ลดหย่อนครอบครัว');
+        sub.textContent = L('Spouse ฿60K · child ฿30K each · parent ฿30K each.','คู่สมรส 60K · บุตรคนละ 30K · พ่อแม่คนละ 30K');
+        cap.textContent = L('Who else you support','คุณดูแลใครอยู่บ้าง');
+      }
+    };
+  };
+
+  B.al_insurance = function(r){
+    var life = q(r,'life'), health = q(r,'health'), capline = q(r,'capline'),
+        cap = q(r,'cap'), num = q(r,'num'), tag = q(r,'tag'), sub = q(r,'sub');
+    var cyc = 0;
+    return {
+      step:function(dt){ cyc += dt; if(cyc > 7) cyc = 0; },
+      paint:function(){
+        var pH = clamp(cyc / 2.2, 0, 1), pL = clamp((cyc - 1.6) / 2.6, 0, 1);
+        var h = 25000 * pH, l = Math.min(85000 * pL, 100000 - h);
+        var W = 250;
+        health.setAttribute('width', (h / 100000 * W).toFixed(1));
+        life.setAttribute('x', (12 + h / 100000 * W).toFixed(1));
+        life.setAttribute('width', (Math.max(0, l) / 100000 * W).toFixed(1));
+        var total = h + Math.max(0, l);
+        var full = total > 99000;
+        capline.setAttribute('opacity', full ? '1' : '0.4');
+        num.textContent = baht(total);
+        num.className = 'tv-num ' + (full ? 'warn' : '');
+        tag.textContent = full ? L('SHARED CAP REACHED','เต็มเพดานรวม') : L('LIFE + HEALTH','ชีวิต + สุขภาพ');
+        sub.textContent = L('Health tops out at ฿25,000 inside the shared ฿100,000.','สุขภาพใช้ได้สูงสุด 25,000 ภายในเพดานรวม 100,000');
+        cap.textContent = L('Two premiums, one ceiling','เบี้ยสองแบบ เพดานเดียว');
+      }
+    };
+  };
+
+  B.al_retire = function(r){
+    var segs = ['pvd','rmf','pension'].map(function(k){ return q(r,'s_'+k); });
+    var capline = q(r,'capline'),
+        cap = q(r,'cap'), num = q(r,'num'), tag = q(r,'tag'), sub = q(r,'sub');
+    var MAX = 500000, W = 250, cyc = 0;
+    var PARTS = [200000, 180000, 160000];
+    return {
+      step:function(dt){ cyc += dt; if(cyc > 8) cyc = 0; },
+      paint:function(){
+        var x = 12, used = 0;
+        for(var i = 0; i < 3; i++){
+          var p = clamp((cyc - i * 1.1) / 1.5, 0, 1);
+          var want = PARTS[i] * p;
+          var room = Math.max(0, MAX - used);
+          var got = Math.min(want, room);
+          segs[i].setAttribute('x', x.toFixed(1));
+          segs[i].setAttribute('width', (got / MAX * W).toFixed(1));
+          x += got / MAX * W;
+          used += got;
+        }
+        var full = used > MAX * 0.99;
+        capline.setAttribute('opacity', full ? '1' : '0.4');
+        num.textContent = baht(used);
+        num.className = 'tv-num ' + (full ? 'warn' : '');
+        tag.textContent = full ? L('COMBINED CAP HIT','ชนเพดานรวม') : L('RETIREMENT BUCKET','กระปุกเกษียณ');
+        sub.textContent = L('PVD + RMF + pension insurance share one ฿500,000 ceiling.','PVD + RMF + ประกันบำนาญ ใช้เพดานรวมกัน 500,000');
+        cap.textContent = L('Three products, one shared limit','สามผลิตภัณฑ์ ใช้เพดานร่วมกัน');
+      }
+    };
+  };
+
+  B.al_esg = function(r){
+    return tank(r, { max:300000,
+      capEn:'A separate savings bucket', capTh:'กระปุกออมอีกใบที่แยกต่างหาก',
+      subEn:'Up to 30% of income, and separate from the ฿500,000 bucket.', subTh:'ได้ถึง 30% ของเงินได้ และแยกจากเพดาน 500,000',
+      overEn:'Anything above ฿300,000 gives you nothing back.', overTh:'ส่วนที่เกิน 300,000 ใช้ลดหย่อนไม่ได้เลย' });
+  };
+
+  B.al_home = function(r){
+    return tank(r, { max:100000,
+      capEn:'Mortgage interest, not principal', capTh:'เฉพาะดอกเบี้ยบ้าน ไม่ใช่เงินต้น',
+      subEn:'Only the interest portion of the repayment counts.', subTh:'นับเฉพาะส่วนที่เป็นดอกเบี้ยของค่างวดเท่านั้น',
+      overEn:'Interest above ฿100,000 a year is not deductible.', overTh:'ดอกเบี้ยส่วนที่เกิน 100,000 ต่อปี ลดหย่อนไม่ได้' });
+  };
+
+  B.al_sso = function(r){
+    var coins = q(r,'coins'), bar = q(r,'bar'),
+        cap = q(r,'cap'), num = q(r,'num'), tag = q(r,'tag'), sub = q(r,'sub');
+    var dots = [];
+    for(var m = 0; m < 12; m++){
+      var c = mk('circle',{ cx:(22 + m*22).toFixed(1), cy:34, r:6.5,
+                            fill:'rgba(255,255,255,.08)', stroke:'rgba(255,255,255,.16)', 'stroke-width':1.2 });
+      coins.appendChild(c); dots.push(c);
+    }
+    var cyc = 0;
+    return {
+      step:function(dt){ cyc += dt; if(cyc > 6.5) cyc = 0; },
+      paint:function(){
+        var lit = clamp(cyc / 4, 0, 1) * 12;
+        for(var m = 0; m < 12; m++){
+          var on = m < lit;
+          dots[m].setAttribute('fill', on ? 'rgba(204,255,0,.45)' : 'rgba(255,255,255,.08)');
+          dots[m].setAttribute('stroke', on ? '#ccff00' : 'rgba(255,255,255,.16)');
+        }
+        var total = Math.min(12, lit) * 750;
+        bar.setAttribute('width', (total / 9000 * 250).toFixed(1));
+        num.textContent = baht(total);
+        num.className = 'tv-num';
+        tag.textContent = L('฿750 × 12 MONTHS','เดือนละ 750 × 12');
+        sub.textContent = L('Already taken from your payslip — just declare it.','ถูกหักจากสลิปเงินเดือนไปแล้ว แค่กรอกไปในแบบยื่น');
+        cap.textContent = L('Social security contributions','เงินสมทบประกันสังคม');
+      }
+    };
+  };
+
+  B.al_donate = function(r){
+    var base = q(r,'base'), boost = q(r,'boost'), capline = q(r,'capline'),
+        cap = q(r,'cap'), num = q(r,'num'), tag = q(r,'tag'), sub = q(r,'sub');
+    var cyc = 0, doubled = false;
+    return {
+      step:function(dt){ cyc += dt; if(cyc > 5){ cyc = 0; doubled = !doubled; } },
+      paint:function(){
+        var p = clamp(cyc / 2.6, 0, 1);
+        var given = 30000 * p;
+        var counted = doubled ? given * 2 : given;
+        var CAPV = 71000;
+        var shown = Math.min(counted, CAPV);
+        base.setAttribute('width', (Math.min(given, CAPV) / CAPV * 250).toFixed(1));
+        boost.setAttribute('width', (shown / CAPV * 250).toFixed(1));
+        boost.setAttribute('opacity', doubled ? '0.55' : '0');
+        capline.setAttribute('opacity', shown >= CAPV * 0.99 ? '1' : '0.4');
+        num.textContent = baht(shown);
+        num.className = 'tv-num ' + (doubled ? 'good' : '');
+        tag.textContent = doubled ? L('COUNTS DOUBLE','นับ 2 เท่า') : L('COUNTS ONCE','นับตามจริง');
+        sub.textContent = doubled
+          ? L('Schools, hospitals and sport bodies count twice.','บริจาคให้สถานศึกษา โรงพยาบาลรัฐ และกีฬา นับ 2 เท่า')
+          : L('General charities count at face value.','บริจาคทั่วไปนับตามยอดที่จ่ายจริง');
+        cap.textContent = L('Donations, capped at 10% of income','เงินบริจาค เพดาน 10% ของเงินได้');
+      }
+    };
+  };
+
+  B.al_stimulus = function(r){
+    return tank(r, { max:50000,
+      capEn:'Government stimulus schemes', capTh:'มาตรการกระตุ้นเศรษฐกิจของรัฐ',
+      subEn:'Short-lived and re-announced each year — always check the window.', subTh:'มีอายุสั้นและประกาศใหม่ทุกปี ต้องเช็กช่วงเวลาเสมอ',
+      overEn:'Spending past the cap earns no extra deduction.', overTh:'ใช้จ่ายเกินเพดานแล้วไม่ได้ลดหย่อนเพิ่ม' });
+  };
+
+  B.al_saving = function(r){
+    var bars = q(r,'bars'), cap = q(r,'cap'), num = q(r,'num'), tag = q(r,'tag'), sub = q(r,'sub');
+    var RATES = [0.05,0.10,0.15,0.20,0.25,0.30,0.35], rects = [], labs = [];
+    for(var i = 0; i < RATES.length; i++){
+      var rc = mk('rect',{ x:(14 + i*39).toFixed(1), y:88, width:26, height:0, rx:2, fill:'rgba(204,255,0,.5)' });
+      bars.appendChild(rc); rects.push(rc);
+      var tx = mk('text',{ x:(27 + i*39).toFixed(1), y:100, 'text-anchor':'middle',
+                           'font-family':'IBM Plex Mono, monospace', 'font-size':7.5, fill:'#54594f' });
+      tx.textContent = (RATES[i]*100) + '%';
+      bars.appendChild(tx); labs.push(tx);
+    }
+    var idx = 0, acc = 0, grow = 0;
+    return {
+      step:function(dt){
+        acc += dt; grow = Math.min(1, grow + dt * 1.6);
+        if(acc > 2.2){ acc = 0; idx = (idx + 1) % RATES.length; }
+      },
+      paint:function(){
+        var DED = 100000;
+        for(var i = 0; i < RATES.length; i++){
+          var h = RATES[i] / 0.35 * 68 * grow;
+          rects[i].setAttribute('y', (88 - h).toFixed(1));
+          rects[i].setAttribute('height', h.toFixed(1));
+          rects[i].setAttribute('fill', i === idx ? 'rgba(204,255,0,.9)' : 'rgba(204,255,0,.22)');
+        }
+        num.textContent = baht(DED * RATES[idx]);
+        num.className = 'tv-num';
+        tag.textContent = L('SAVED AT ' + (RATES[idx]*100).toFixed(0) + '%','ประหยัดที่ขั้น ' + (RATES[idx]*100).toFixed(0) + '%');
+        sub.textContent = L('A ฿100,000 deduction is worth your top rate, not 100%.','ลดหย่อน 100,000 บาท มีค่าเท่ากับอัตราขั้นบนสุดของคุณ ไม่ใช่ 100%');
+        cap.textContent = L('What ฿100,000 of deduction is really worth','ลดหย่อน 100,000 บาท มีค่าจริงเท่าไหร่');
+      }
+    };
+  };
+
+  /* ============================ scheduler ============================ */
+  var live = [], all = [];
+  var seen = (typeof WeakSet === 'function') ? new WeakSet() : null;
+  var vio = (seen && 'IntersectionObserver' in window) ? new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting) seen.add(e.target); else seen.delete(e.target); });
+  }, { threshold: 0.01 }) : null;
+
+  function visible(el){
+    if(!vio) return true;
+    if(!seen.has(el)) return false;
+    var d = el.closest ? el.closest('details') : null;
+    return !d || d.open;
+  }
+
+  Array.prototype.forEach.call(nodes, function(node){
+    var build = B[node.getAttribute('data-viz')];
+    if(!build) return;
+    var api;
+    try { api = build(node); } catch(err){ return; }
+    if(!api) return;
+    if(reduce){
+      for(var k = 0; k < 140; k++){ if(api.step) api.step(0.05, k * 0.05); }
+      if(api.paint) api.paint(0.05, 7);
+      all.push({ api:api, t:7 });
+      return;
+    }
+    if(api.paint) api.paint(0.016, 0);
+    if(vio) vio.observe(node);
+    var item = { node:node, api:api, t:0 };
+    live.push(item); all.push(item);
+  });
+
+  if(typeof MutationObserver === 'function'){
+    new MutationObserver(function(){
+      for(var k = 0; k < all.length; k++){
+        if(all[k].api.paint) all[k].api.paint(0.016, all[k].t);
+      }
+    }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+  }
+
+  if(!live.length) return;
+
+  var last = 0;
+  function loop(ts){
+    requestAnimationFrame(loop);
+    if(!last){ last = ts; return; }
+    var dt = Math.min(0.05, (ts - last) / 1000);
+    last = ts;
+    if(document.hidden) return;
+    for(var k = 0; k < live.length; k++){
+      var it = live[k];
+      if(!visible(it.node)) continue;
+      it.t += dt;
+      if(it.api.step)  it.api.step(dt, it.t);
+      if(it.api.paint) it.api.paint(dt, it.t);
+    }
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+
+</body>
+</html>
