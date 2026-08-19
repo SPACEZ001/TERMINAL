@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPACEZ · Secure Passphrase Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#111111;
+    --surface:#1a1a1a;
+    --border:#2e2e2e;
+    --lime:#c8f135;
+    --text:#f0f0f0;
+    --muted:#777;
+    --radius:14px;
+    --red:#ff4d4d;
+    --green:#4dff91;
+    --yellow:#ffd84d;
+    --blue:#4d9fff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans Thai', sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:32px 16px 80px;
+  }
+  .wrap { width:100%; max-width:640px; }
+
+  .brand {
+    display:flex; align-items:center; gap:10px; margin-bottom:28px;
+  }
+  .brand .dot {
+    width:10px; height:10px; border-radius:50%;
+    background:linear-gradient(135deg, var(--lime), var(--blue), var(--red), var(--yellow));
+    background-size:300% 300%;
+    animation:rgbShift 4s ease infinite;
+  }
+  @keyframes rgbShift {
+    0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%}
+  }
+  .brand span { font-family:'IBM Plex Mono', monospace; font-size:13px; letter-spacing:.12em; color:var(--muted); text-transform:uppercase; }
+
+  h1 { font-size:22px; margin:0 0 4px; font-weight:700; }
+  .sub { color:var(--muted); font-size:14px; margin:0 0 24px; line-height:1.6; }
+
+  .warning {
+    background:rgba(255,77,77,0.08);
+    border:1px solid rgba(255,77,77,0.35);
+    border-radius:var(--radius);
+    padding:16px 18px;
+    margin-bottom:24px;
+    font-size:13.5px;
+    line-height:1.7;
+  }
+  .warning strong { color:var(--red); display:block; margin-bottom:6px; font-size:14px; }
+  .warning ul { margin:8px 0 0; padding-left:18px; }
+  .warning li { margin-bottom:4px; }
+
+  .card {
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:22px;
+    margin-bottom:16px;
+  }
+  .row { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .row:last-child { margin-bottom:0; }
+  label { font-size:13.5px; color:var(--text); }
+  .hint { color:var(--muted); font-size:12px; margin-top:2px; }
+
+  input[type=range] { width:140px; accent-color:var(--lime); }
+  .len-val { font-family:'IBM Plex Mono', monospace; color:var(--lime); font-weight:600; width:32px; text-align:right; display:inline-block; }
+
+  .toggles { display:flex; flex-wrap:wrap; gap:8px; }
+  .toggle {
+    border:1px solid var(--border);
+    background:#151515;
+    border-radius:999px;
+    padding:7px 14px;
+    font-size:12.5px;
+    cursor:pointer;
+    user-select:none;
+    color:var(--muted);
+    transition:all .15s ease;
+  }
+  .toggle.active { border-color:var(--lime); color:var(--lime); background:rgba(200,241,53,0.08); }
+
+  .output-box {
+    background:#0c0c0c;
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:20px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:15px;
+    line-height:1.7;
+    word-break:break-all;
+    min-height:64px;
+    color:var(--lime);
+    margin-bottom:14px;
+  }
+  .output-box.empty { color:var(--muted); font-size:13px; }
+
+  .actions { display:flex; gap:10px; }
+  button {
+    font-family:'IBM Plex Sans Thai', sans-serif;
+    font-size:14px;
+    font-weight:600;
+    border-radius:10px;
+    padding:12px 18px;
+    border:none;
+    cursor:pointer;
+    flex:1;
+    transition:opacity .15s ease, transform .1s ease;
+  }
+  button:active { transform:scale(0.98); }
+  .btn-primary { background:var(--lime); color:#111; }
+  .btn-primary:hover { opacity:0.9; }
+  .btn-ghost { background:transparent; border:1px solid var(--border); color:var(--text); }
+  .btn-ghost:hover { border-color:var(--muted); }
+
+  .toast {
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:var(--lime); color:#111; padding:10px 20px; border-radius:999px;
+    font-size:13px; font-weight:600; opacity:0; pointer-events:none;
+    transition:opacity .2s ease;
+  }
+  .toast.show { opacity:1; }
+
+  .footer-note { color:var(--muted); font-size:12px; text-align:center; margin-top:18px; line-height:1.7; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand"><div class="dot"></div><span>SPACEZ · Utility</span></div>
+
+  <h1>Secure Passphrase Generator</h1>
+  <p class="sub">สร้างพาสเฟสแบบสุ่มสำหรับใช้เป็นชั้นป้องกันเพิ่มเติมของ wallet (เช่น "คำที่ 25" ที่ใช้คู่กับ seed phrase 24 คำ) — ค่าที่ได้เป็นข้อความอิสระ ไม่ใช่คำจาก wordlist ของ BIP39</p>
+
+  <div class="warning">
+    <strong>⚠ อ่านก่อนใช้งาน</strong>
+    หน้านี้ทำงานในเบราว์เซอร์ล้วน ๆ (ไม่มีการส่งข้อมูลออกไปที่ไหน ไม่มีการบันทึกค่า) แต่ถึงอย่างนั้น:
+    <ul>
+      <li>ถ้า wallet มีมูลค่าสูงมาก แนะนำให้สร้าง passphrase แบบออฟไลน์บนอุปกรณ์ air-gapped หรือใช้ฟีเจอร์ในตัวของ hardware wallet โดยตรง จะปลอดภัยกว่าการพึ่งเบราว์เซอร์</li>
+      <li>อย่าคัดลอกไปวางในแอปแชท คลาวด์โน้ต หรือที่เก็บรหัสผ่านที่ sync ออนไลน์</li>
+      <li>จดใส่กระดาษ/แผ่นโลหะแล้วเก็บออฟไลน์ ปิดหน้านี้และล้างค่าทันทีหลังจดเสร็จ</li>
+      <li>ปิด Wi-Fi ระหว่างสร้าง ถ้าเป็นไปได้ เพื่อลดความเสี่ยงจาก extension/มัลแวร์ในเบราว์เซอร์</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>ความยาว</label>
+        <div class="hint">ตัวอักษร</div>
+      </div>
+      <div>
+        <input type="range" id="lenSlider" min="20" max="99" value="50">
+        <span class="len-val" id="lenVal">50</span>
+      </div>
+    </div>
+    <div class="row" style="align-items:flex-start;">
+      <label style="padding-top:6px;">ชุดตัวอักษร</label>
+      <div class="toggles" id="toggles">
+        <div class="toggle active" data-set="upper">A–Z</div>
+        <div class="toggle active" data-set="lower">a–z</div>
+        <div class="toggle active" data-set="digits">0–9</div>
+        <div class="toggle active" data-set="symbols">!@#$%</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="output-box empty" id="output">ยังไม่ได้สร้าง — กด "สร้างพาสเฟส" ด้านล่าง</div>
+
+  <div class="actions">
+    <button class="btn-primary" id="genBtn">สร้างพาสเฟส</button>
+    <button class="btn-ghost" id="copyBtn">คัดลอก</button>
+    <button class="btn-ghost" id="clearBtn">ล้างค่า</button>
+  </div>
+
+  <p class="footer-note">สร้างด้วย window.crypto.getRandomValues() (CSPRNG) — ไม่ใช่ seeded PRNG แบบที่ใช้สลับข้อสอบ · ไม่มีการเก็บค่าไว้ที่ไหนหลังปิดหน้านี้</p>
+
+</div>
+
+<div class="toast" id="toast">คัดลอกแล้ว</div>
+
+<script>
+  const CHARSETS = {
+    upper: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    lower: 'abcdefghijklmnopqrstuvwxyz',
+    digits: '0123456789',
+    symbols: '!@#$%^&*()-_=+[]{}<>?/.,~'
+  };
+
+  const activeSets = new Set(['upper','lower','digits','symbols']);
+
+  document.querySelectorAll('.toggle').forEach(function(el){
+    el.addEventListener('click', function(){
+      const key = el.getAttribute('data-set');
+      if (activeSets.has(key)) {
+        if (activeSets.size === 1) return; // keep at least one set active
+        activeSets.delete(key);
+        el.classList.remove('active');
+      } else {
+        activeSets.add(key);
+        el.classList.add('active');
+      }
+    });
+  });
+
+  const lenSlider = document.getElementById('lenSlider');
+  const lenVal = document.getElementById('lenVal');
+  lenSlider.addEventListener('input', function(){
+    lenVal.textContent = lenSlider.value;
+  });
+
+  function secureRandomString(length, charset) {
+    // Rejection sampling to avoid modulo bias
+    const result = [];
+    const max = 256 - (256 % charset.length);
+    const buf = new Uint8Array(1);
+    while (result.length < length) {
+      window.crypto.getRandomValues(buf);
+      if (buf[0] < max) {
+        result.push(charset[buf[0] % charset.length]);
+      }
+    }
+    return result.join('');
+  }
+
+  const outputBox = document.getElementById('output');
+
+  document.getElementById('genBtn').addEventListener('click', function(){
+    let charset = '';
+    activeSets.forEach(function(k){ charset += CHARSETS[k]; });
+    if (!charset) return;
+    const length = parseInt(lenSlider.value, 10);
+    const passphrase = secureRandomString(length, charset);
+    outputBox.textContent = passphrase;
+    outputBox.classList.remove('empty');
+  });
+
+  document.getElementById('copyBtn').addEventListener('click', function(){
+    const text = outputBox.textContent;
+    if (outputBox.classList.contains('empty') || !text) return;
+    navigator.clipboard.writeText(text).then(function(){
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(function(){ toast.classList.remove('show'); }, 1500);
+    });
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', function(){
+    outputBox.textContent = 'ยังไม่ได้สร้าง — กด "สร้างพาสเฟส" ด้านล่าง';
+    outputBox.classList.add('empty');
+  });
+</script>
+</body>
+</html>

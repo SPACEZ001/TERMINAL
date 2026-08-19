@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CEWA Mock Exam Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg-void: #060608;
+    --bg-deep: #0d0d10;
+    --bg-card: #13131a;
+    --bg-surface: #1a1a24;
+    --bg-lift: #21212e;
+    --border: rgba(0, 242, 254, 0.12);
+    --border-bright: rgba(0, 242, 254, 0.35);
+    --cyan: #00f2fe;
+    --cyan-dim: rgba(0, 242, 254, 0.55);
+    --cyan-glow: rgba(0, 242, 254, 0.15);
+    --blue: #4facfe;
+    --text-primary: #f0f0f5;
+    --text-secondary: #9898b0;
+    --text-dim: #555568;
+    --white: #ffffff;
+    --green: #00e5a0;
+    --red: #ff4d6d;
+    --amber: #ffb830;
+    --radius: 12px;
+    --radius-lg: 18px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg-void);
+    color: var(--text-primary);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── GRID BACKGROUND ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,242,254,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,242,254,0.025) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── RADIAL ORBS ── */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px; left: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(0,242,254,0.055) 0%, transparent 65%);
+    pointer-events: none;
+    z-index: 0;
+    animation: orbDrift 18s ease-in-out infinite alternate;
+  }
+
+  @keyframes orbDrift {
+    0%   { transform: translate(0,0); }
+    100% { transform: translate(120px, 80px); }
+  }
+
+  .app-wrapper {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    width: 100%;
+    max-width: 1100px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--cyan);
+    text-transform: uppercase;
+  }
+
+  .logo span { color: var(--text-dim); }
+
+  .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── SECTIONS ── */
+  .section {
+    display: none;
+    width: 100%;
+    max-width: 900px;
+    padding: 40px 32px 80px;
+    flex-direction: column;
+    align-items: center;
+  }
+  .section.active { display: flex; }
+
+  /* ── HOME ── */
+  .home-hero {
+    text-align: center;
+    padding: 60px 0 48px;
+    position: relative;
+  }
+
+  .home-hero::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(0,242,254,0.06) 0%, transparent 65%);
+    transform: translate(-50%,-50%);
+    pointer-events: none;
+  }
+
+  .cert-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-bright);
+    border-radius: 999px;
+    padding: 6px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--cyan);
+    letter-spacing: 0.12em;
+    margin-bottom: 32px;
+    text-transform: uppercase;
+  }
+
+  .cert-label::before {
+    content: '';
+    width: 7px; height: 7px;
+    background: var(--cyan);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--cyan);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .main-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 6vw, 62px);
+    font-weight: 800;
+    line-height: 1.05;
+    color: var(--white);
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+
+  .main-title span {
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--blue) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    color: var(--text-secondary);
+    font-size: 15px;
+    font-weight: 300;
+    max-width: 520px;
+    margin: 0 auto 52px;
+    line-height: 1.7;
+  }
+
+  /* ── EXAM CARDS ── */
+  .exam-cards {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    width: 100%;
+    max-width: 620px;
+  }
+
+  .exam-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px 28px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .exam-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0,242,254,0.04) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+
+  .exam-card:hover { border-color: var(--border-bright); transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,242,254,0.08); }
+  .exam-card:hover::before { opacity: 1; }
+  .exam-card:active { transform: translateY(0); }
+
+  .card-left { display: flex; align-items: center; gap: 16px; }
+
+  .card-icon {
+    width: 46px; height: 46px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-bright);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--cyan);
+    flex-shrink: 0;
+  }
+
+  .card-info .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 4px;
+  }
+
+  .card-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+  }
+
+  .card-meta span { color: var(--cyan-dim); }
+
+  .card-arrow {
+    width: 32px; height: 32px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim);
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .exam-card:hover .card-arrow { border-color: var(--cyan); color: var(--cyan); }
+
+  /* ── INFO STRIP ── */
+  .info-strip {
+    display: flex;
+    gap: 24px;
+    margin-top: 40px;
+    padding: 18px 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 620px;
+  }
+
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .info-dot { width: 6px; height: 6px; background: var(--cyan); border-radius: 50%; flex-shrink: 0; }
+
+  /* ── EXAM SCREEN ── */
+  .exam-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .exam-title-block {}
+  .exam-title-block h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--white);
+  }
+  .exam-title-block p { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* ── TIMER ── */
+  .timer-block {
+    background: var(--bg-card);
+    border: 1px solid var(--border-bright);
+    border-radius: var(--radius);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .timer-icon { color: var(--cyan); font-size: 14px; }
+
+  #timerDisplay {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--cyan);
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 16px rgba(0,242,254,0.5);
+    min-width: 68px;
+    text-align: center;
+  }
+
+  #timerDisplay.warning { color: var(--amber); text-shadow: 0 0 16px rgba(255,184,48,0.5); }
+  #timerDisplay.danger  { color: var(--red);   text-shadow: 0 0 16px rgba(255,77,109,0.5); animation: timerFlash 0.8s ease-in-out infinite; }
+
+  @keyframes timerFlash { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+  /* ── PROGRESS ── */
+  .progress-bar-wrap {
+    width: 100%;
+    height: 3px;
+    background: var(--bg-surface);
+    border-radius: 99px;
+    margin-bottom: 32px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan) 0%, var(--blue) 100%);
+    border-radius: 99px;
+    transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 0 0 12px var(--cyan-dim);
+  }
+
+  .progress-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: right;
+    margin-bottom: 8px;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── QUESTION CARD ── */
+  .question-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+    width: 100%;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+    position: relative;
+  }
+
+  .question-card.answered { border-color: rgba(0,242,254,0.22); }
+
+  .q-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--cyan);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .q-number::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .q-text {
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text-primary);
+    margin-bottom: 22px;
+    font-weight: 400;
+  }
+
+  /* ── OPTIONS ── */
+  .options-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .option-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--bg-surface);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.18s;
+    position: relative;
+  }
+
+  .option-label:hover { background: var(--bg-lift); border-color: var(--border); }
+
+  .option-label input[type="radio"],
+  .option-label input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    border: 2px solid var(--text-dim);
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 1px;
+    cursor: pointer;
+    transition: all 0.18s;
+    position: relative;
+  }
+
+  .option-label input[type="checkbox"] { border-radius: 5px; }
+
+  .option-label input[type="radio"]:checked,
+  .option-label input[type="checkbox"]:checked {
+    border-color: var(--cyan);
+    background: var(--cyan);
+    box-shadow: 0 0 0 3px rgba(0,242,254,0.15);
+  }
+
+  .option-label input[type="radio"]:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 7px; height: 7px;
+    background: var(--bg-void);
+    border-radius: 50%;
+  }
+
+  .option-label input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    font-size: 11px;
+    color: var(--bg-void);
+    font-weight: 800;
+  }
+
+  .option-label:has(input:checked) {
+    background: rgba(0,242,254,0.06);
+    border-color: rgba(0,242,254,0.3);
+  }
+
+  .option-text {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+    transition: color 0.18s;
+  }
+
+  .option-label:has(input:checked) .option-text { color: var(--text-primary); }
+
+  /* ── MULTI BADGE ── */
+  .multi-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(79,172,254,0.12);
+    border: 1px solid rgba(79,172,254,0.3);
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--blue);
+    letter-spacing: 0.08em;
+    margin-bottom: 24px;
+    width: fit-content;
+  }
+
+  /* ── SUBMIT BUTTON ── */
+  .submit-btn {
+    margin-top: 32px;
+    padding: 16px 48px;
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--blue) 100%);
+    border: none;
+    border-radius: 999px;
+    color: var(--bg-void);
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s;
+    box-shadow: 0 0 30px rgba(0,242,254,0.25), 0 4px 20px rgba(0,0,0,0.4);
+    align-self: center;
+  }
+
+  .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 0 50px rgba(0,242,254,0.4), 0 8px 30px rgba(0,0,0,0.4); }
+  .submit-btn:active { transform: translateY(0); }
+
+  /* ── RESULTS ── */
+  .results-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 60px 32px 80px;
+    width: 100%;
+    max-width: 700px;
+  }
+
+  .result-orb {
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 36px;
+    position: relative;
+  }
+
+  .result-orb::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    background: conic-gradient(var(--score-color, var(--cyan)) var(--score-deg, 0deg), var(--bg-surface) 0deg);
+    z-index: 0;
+  }
+
+  .result-orb::after {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: var(--bg-deep);
+    z-index: 1;
+  }
+
+  .orb-inner {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .score-pct {
+    font-family: 'Syne', sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--white);
+    line-height: 1;
+  }
+
+  .score-fraction {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    margin-top: 4px;
+  }
+
+  .result-verdict {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(24px, 5vw, 40px);
+    font-weight: 800;
+    margin-bottom: 12px;
+    letter-spacing: -0.01em;
+  }
+
+  .result-sub {
+    font-size: 15px;
+    color: var(--text-secondary);
+    margin-bottom: 40px;
+    line-height: 1.6;
+    max-width: 420px;
+  }
+
+  .result-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    width: 100%;
+    max-width: 480px;
+    margin-bottom: 40px;
+  }
+
+  .stat-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+
+  .stat-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--white);
+  }
+
+  .stat-lbl {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    margin-top: 4px;
+    text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .back-btn {
+    padding: 14px 40px;
+    background: transparent;
+    border: 1px solid var(--border-bright);
+    border-radius: 999px;
+    color: var(--cyan);
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+
+  .back-btn:hover { background: var(--cyan-glow); box-shadow: 0 0 30px rgba(0,242,254,0.15); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-void); }
+  ::-webkit-scrollbar-thumb { background: var(--bg-surface); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .topbar { padding: 16px 20px; }
+    .section { padding: 32px 20px 60px; }
+    .question-card { padding: 20px 18px; }
+    .result-stats { grid-template-columns: 1fr 1fr; }
+    .info-strip { flex-direction: column; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="app-wrapper">
+
+  <!-- TOPBAR -->
+  <nav class="topbar">
+    <div class="logo">CEWA <span>// PORTAL</span></div>
+    <div class="badge">Elliott Wave International — Standard</div>
+  </nav>
+
+  <!-- ═══════════════════════════════ HOME ═══════════════════════════════ -->
+  <section class="section active" id="homeSection">
+    <div class="home-hero">
+      <div class="cert-label">Certified Elliott Wave Analyst</div>
+      <h1 class="main-title">CEWA MOCK<br/><span>EXAM PORTAL</span></h1>
+      <p class="subtitle">Prepare for the official EWI certification with rigorously structured practice exams following Frost &amp; Prechter standards.</p>
+    </div>
+
+    <div class="exam-cards">
+      <div class="exam-card" onclick="startExam('cewa1')">
+        <div class="card-left">
+          <div class="card-icon">I</div>
+          <div class="card-info">
+            <div class="card-title">Start CEWA I</div>
+            <div class="card-meta"><span>50 Questions</span> · Single Answer · <span>60 Minutes</span></div>
+          </div>
+        </div>
+        <div class="card-arrow">&#8594;</div>
+      </div>
+
+      <div class="exam-card" onclick="startExam('cewa2p1')">
+        <div class="card-left">
+          <div class="card-icon">II·1</div>
+          <div class="card-info">
+            <div class="card-title">Start CEWA II — Part 1</div>
+            <div class="card-meta"><span>20 Questions</span> · Single Answer · <span>45 Minutes</span></div>
+          </div>
+        </div>
+        <div class="card-arrow">&#8594;</div>
+      </div>
+
+      <div class="exam-card" onclick="startExam('cewa2p2')">
+        <div class="card-left">
+          <div class="card-icon">II·2</div>
+          <div class="card-info">
+            <div class="card-title">Start CEWA II — Part 2</div>
+            <div class="card-meta"><span>20 Questions</span> · Multiple Answers · <span>45 Minutes</span></div>
+          </div>
+        </div>
+        <div class="card-arrow">&#8594;</div>
+      </div>
+    </div>
+
+    <div class="info-strip">
+      <div class="info-item"><div class="info-dot"></div> Pass threshold: 80%</div>
+      <div class="info-item"><div class="info-dot"></div> Master level: 90%+</div>
+      <div class="info-item"><div class="info-dot"></div> Auto-submit on timeout</div>
+      <div class="info-item"><div class="info-dot"></div> Frost &amp; Prechter standards</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════ EXAM ════════════════════════════════ -->
+  <section class="section" id="examSection">
+    <div class="exam-header">
+      <div class="exam-title-block">
+        <h2 id="examTitle">CEWA I</h2>
+        <p id="examSubtitle">50 questions · Single best answer</p>
+      </div>
+      <div class="timer-block">
+        <span class="timer-icon">◷</span>
+        <div id="timerDisplay">60:00</div>
+      </div>
+    </div>
+
+    <div class="progress-label" id="progressLabel">0 / 50 answered</div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+    </div>
+
+    <div id="questionsContainer"></div>
+
+    <button class="submit-btn" onclick="submitExam()">SUBMIT EXAM</button>
+  </section>
+
+  <!-- ═══════════════════════════════ RESULTS ══════════════════════════════ -->
+  <section class="section" id="resultsSection">
+    <div class="results-container">
+      <div class="result-orb" id="resultOrb" style="--score-deg:0deg;--score-color:#00f2fe">
+        <div class="orb-inner">
+          <div class="score-pct" id="scorePct">0%</div>
+          <div class="score-fraction" id="scoreFraction">0/0</div>
+        </div>
+      </div>
+      <div class="result-verdict" id="resultVerdict">—</div>
+      <div class="result-sub" id="resultSub">—</div>
+      <div class="result-stats">
+        <div class="stat-box"><div class="stat-val" id="statCorrect">0</div><div class="stat-lbl">Correct</div></div>
+        <div class="stat-box"><div class="stat-val" id="statWrong">0</div><div class="stat-lbl">Wrong</div></div>
+        <div class="stat-box"><div class="stat-val" id="statSkipped">0</div><div class="stat-lbl">Skipped</div></div>
+      </div>
+      <button class="back-btn" onclick="goHome()">&#8592; RETURN TO PORTAL</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════════
+// QUESTION BANK
+// ══════════════════════════════════════════════════════════════════════════════
+
+const Q_CEWA1 = [
+  {q:"How many waves make up a complete Elliott Wave motive (impulse) structure?",o:["3","5","8","13"],a:1},
+  {q:"In a standard impulse wave, which sub-wave CANNOT be the shortest?",o:["Wave 1","Wave 3","Wave 5","Wave 4"],a:1},
+  {q:"What is the minimum retracement for Wave 2 according to strict Elliott Wave rules?",o:["23.6% of Wave 1","38.2% of Wave 1","It must not retrace 100% of Wave 1","50% of Wave 1"],a:2},
+  {q:"A corrective wave pattern consisting of a 3-3-5 structure is called a:",o:["Zigzag","Flat","Triangle","Double Three"],a:1},
+  {q:"In a zigzag correction (5-3-5), which wave label is assigned to the three sub-waves?",o:["1-2-3","A-B-C","W-X-Y","P-Q-R"],a:1},
+  {q:"Wave 4 of an impulse is NOT allowed to overlap with:",o:["Wave 3 territory","Wave 2 territory","Wave 1 price territory","Wave 5 territory"],a:2},
+  {q:"The most common Fibonacci ratio that Wave 3 extends to relative to Wave 1 is:",o:["0.618 × Wave 1","1.618 × Wave 1","2.618 × Wave 1","0.382 × Wave 1"],a:1},
+  {q:"Which wave in an impulse is most commonly the extended wave?",o:["Wave 1","Wave 2","Wave 3","Wave 5"],a:2},
+  {q:"A diagonal triangle that forms in the Wave 5 or Wave C position is called a(n):",o:["Leading Diagonal","Ending Diagonal","Contracting Triangle","Expanding Triangle"],a:1},
+  {q:"In an ending diagonal, the internal wave structure is:",o:["5-3-5-3-5","3-3-3-3-3","5-5-5-5-5","3-5-3-5-3"],a:1},
+  {q:"A regular flat correction has which B-wave characteristic?",o:["B-wave ends below start of A","B-wave ends approximately at the start of A","B-wave ends significantly above start of A","B-wave retraces exactly 61.8% of A"],a:1},
+  {q:"In an 'expanded flat,' Wave B:",o:["Fails to reach the origin of A","Reaches at least 100% of A","Exceeds the origin of Wave A by a significant margin","Equals exactly the length of Wave A"],a:2},
+  {q:"Which corrective pattern is bound by two converging trendlines and consists of five overlapping waves?",o:["Flat","Zigzag","Triangle","Double Zigzag"],a:2},
+  {q:"The five waves of a triangle are labeled:",o:["A-B-C-D-E","1-2-3-4-5","W-X-Y-X-Z","P-Q-R-S-T"],a:0},
+  {q:"What is the total wave count of a Grand Supercycle degree in a full bull market?",o:["5","8","13","34"],a:1},
+  {q:"The Fibonacci number sequence begins:",o:["1,2,3,5,8,13","0,1,1,2,3,5","1,1,2,3,5,8","2,3,5,8,13,21"],a:1},
+  {q:"The ratio of any Fibonacci number to the next higher Fibonacci number approaches:",o:["1.618","0.618","2.618","0.382"],a:1},
+  {q:"In Elliott Wave Theory, the term 'alternation' refers to:",o:["Waves alternating in degree","The tendency for corrective waves to differ in form or complexity","The alternating direction of impulse waves","Price and time alternation in Fibonacci ratios"],a:1},
+  {q:"If Wave 2 is a simple zigzag, the guideline of alternation suggests Wave 4 will most likely be:",o:["A steeper zigzag","A flat, triangle, or complex correction","An extended impulse","An ending diagonal"],a:1},
+  {q:"In Frost & Prechter's work, the 'personality' of Wave 3 is typically described as:",o:["Hesitant and corrective","The most powerful and broadest wave","Tricky and often diagonal","Shallow and sideways"],a:1},
+  {q:"Wave 5 of an impulse often shows which characteristic relative to Wave 3?",o:["Volume higher than Wave 3 throughout","Narrowing breadth and often divergence with momentum oscillators","Always shorter than Wave 1","Always longer than Wave 3"],a:1},
+  {q:"A 'truncated' or 'failed' Fifth Wave is one that:",o:["Extends beyond 1.618 × Wave 1","Does not exceed the price level of Wave 3 end","Has fewer than five sub-waves","Retraces more than 100% of Wave 4"],a:1},
+  {q:"In a triangle, the 'thrust' after wave E completes typically travels a distance equal to:",o:["50% of triangle width","The widest part of the triangle","2× the triangle width","0.618× the triangle width"],a:1},
+  {q:"Which wave degree is LARGER than Cycle but SMALLER than Grand Supercycle?",o:["Primary","Supercycle","Minute","Minuette"],a:1},
+  {q:"In Elliott notation, Primary degree waves are labeled with:",o:["Roman numerals in circles: ①②③","Arabic numbers: 1,2,3","Capital letters: A,B,C","Lowercase letters: a,b,c"],a:0},
+  {q:"The smallest wave degree that R.N. Elliott originally identified and named was:",o:["Subminuette","Minuette","Micro","Sub-micro"],a:1},
+  {q:"What is the term for a combination of two corrective patterns separated by an X-wave?",o:["Complex flat","Double Three","Compound correction","Nested correction"],a:1},
+  {q:"Which statement about Wave 1 personality is most accurate?",o:["Fundamentals are clearly bullish and news is positive","Often barely distinguishable from a correction; fundamentals still bearish","Volume is the highest of the entire impulse","Analysts universally identify it as a new bull market"],a:1},
+  {q:"The Elliott Wave principle was first published by R.N. Elliott in:",o:["1929","1938","1946","1954"],a:1},
+  {q:"What is the Fibonacci ratio used to project a common Wave 5 target relative to Wave 1?",o:["2.618","1.618","0.618","Equal length to Wave 1"],a:3},
+  {q:"In a corrective A-B-C zigzag, the internal structure of Wave A is:",o:["3 waves","5 waves","4 waves","7 waves"],a:1},
+  {q:"In a corrective A-B-C zigzag, the internal structure of Wave B is:",o:["5 waves","3 waves","7 waves","1 wave"],a:1},
+  {q:"A double zigzag is labeled:",o:["A-B-C-D-E","W-X-Y","A-B-C-X-A-B-C","M-N-O"],a:1},
+  {q:"Which rule absolutely CANNOT be violated in any valid Elliott Wave count?",o:["Wave 3 is the longest","Wave 2 must retrace at least 38.2%","Wave 4 does not overlap Wave 1 price territory (in a non-diagonal)","Wave 5 must be shorter than Wave 3"],a:2},
+  {q:"In an expanding triangle, each successive wave is:",o:["Shorter than the previous","Longer than the previous","Equal in length to the previous","Random in length"],a:1},
+  {q:"A 'running flat' is characterized by a Wave B that:",o:["Falls far short of Wave A origin","Ends just below Wave A origin","Significantly exceeds the Wave A origin, and Wave C falls short of Wave A end","Retraces exactly 100% of Wave A"],a:2},
+  {q:"The 'golden ratio' (phi) is approximately:",o:["1.414","1.618","2.718","3.141"],a:1},
+  {q:"The ratio 0.382 is derived from:",o:["1 minus 0.618","0.618 squared","1 divided by 2.618","0.618 divided by 1.618"],a:0},
+  {q:"Which phrase best describes the 'Wave Principle' as defined by Frost & Prechter?",o:["A moving average crossover system","A catalog of patterns through which mass psychology trends and reverses","A pure Fibonacci mathematics formula","An interest-rate-based economic cycle"],a:1},
+  {q:"In the context of the Wave Principle, 'degree' refers to:",o:["The angle of the trendline","The relative size of the wave","The Fibonacci ratio applied","The volume of the move"],a:1},
+  {q:"The 'channeling technique' in Elliott Wave Theory involves:",o:["Drawing Bollinger Bands","Drawing trendlines along the ends of waves to project targets","Using Fibonacci fans","Plotting moving average channels"],a:1},
+  {q:"Wave 2 of an impulse commonly retraces what percentage of Wave 1?",o:["23.6%","38.2%–61.8%","76.4%","100%"],a:1},
+  {q:"The internal structure of a corrective triangle wave is always:",o:["Motive (5-wave)","Corrective (3-wave)","Either 3 or 5 waves","Fixed at 7 waves"],a:1},
+  {q:"Which of the following is TRUE regarding a leading diagonal in Wave 1 position?",o:["Sub-waves are 3-3-3-3-3","It always appears in Wave C","Sub-waves can be 5-3-5-3-5 or 3-3-3-3-3","Wave 4 never overlaps Wave 1"],a:2},
+  {q:"What happens to wave count hierarchy in 'extension'?",o:["Two waves become one","One wave subdivides and shows five sub-waves at the same degree","The degree label changes","The extension adds two extra waves at the higher degree"],a:1},
+  {q:"In Elliott Wave, 'impulse' is another term for:",o:["Any upward movement","A motive wave of 5 sub-waves that is NOT a diagonal","A corrective rally","A 3-wave counter-trend move"],a:1},
+  {q:"Which Fibonacci ratio is used most frequently for Wave 4 retrace targets?",o:["23.6%","38.2%","61.8%","76.4%"],a:1},
+  {q:"The Elliott Wave Principle book by Frost & Prechter was first published in:",o:["1967","1978","1984","1990"],a:1},
+  {q:"The concept that stock market history repeats itself in wave patterns reflects which underlying idea?",o:["Technical analysis lagging indicators","Fractal nature of human social mood and mass psychology","Random walk hypothesis","Efficient market theory"],a:1},
+  {q:"In a bearish impulse (five waves down), the corrective waves are:",o:["Waves 1, 3, and 5","Waves 2 and 4","All five waves","None of the above"],a:1},
+];
+
+const Q_CEWA2P1 = [
+  {q:"In an impulse with Wave 3 extension, the typical relationship between extended Wave 3 and Wave 1 is:",o:["1.000× Wave 1","1.618× Wave 1 or greater","0.618× Wave 1","2.000× Wave 1 exactly"],a:1},
+  {q:"An 'inter-market' top scenario often features a Wave 5 that exhibits:",o:["Strong breadth expansion","Negative divergence on momentum oscillators and decreasing volume","A gap on the first day up","A Wave 3 extension"],a:1},
+  {q:"Which statement is TRUE regarding the Wave 4 guideline of 'previous Wave 4 of one lesser degree'?",o:["Wave 4 must end exactly at the prior Wave 4 low","Wave 4 will often find support or resistance near the territory of the prior fourth wave of one lesser degree","This applies only to daily charts","It is a hard rule, not a guideline"],a:1},
+  {q:"In a contracting diagonal (ending), the internal trendlines:",o:["Diverge from each other","Converge toward an apex","Remain parallel","The upper line is flat while the lower rises"],a:1},
+  {q:"Which corrective pattern cannot appear as a stand-alone correction in Wave 2 position?",o:["Zigzag","Flat","Triangle","Combination (double/triple three)"],a:2},
+  {q:"In Prechter's Socionomics theory, social mood is considered to be:",o:["A lagging indicator derived from economic data","The cause of social events, not an effect of them","Directly controlled by central bank policy","A reflection of corporate earnings cycles"],a:1},
+  {q:"A 'running triangle' differs from a regular triangle in that:",o:["It has only four waves","Wave B extends far beyond the start of Wave A","Wave E ends above the start of Wave A (in a bull market)","All sub-waves are motive in structure"],a:2},
+  {q:"The most complex corrective structure allowed under strict EWI rules is:",o:["Double Three","Triple Three","Quadruple Three","Double Zigzag"],a:1},
+  {q:"When counting waves on multiple time frames, the principle that governs consistency is called:",o:["Channeling","Fibonacci alternation","The Rule of Degrees","Self-similarity / fractal structure"],a:3},
+  {q:"A 'non-limiting' triangle in Elliott Wave Theory is one that:",o:["Can only appear as Wave B","Can appear as Waves 4, B, or X but not as Wave 2","May appear in both motive and corrective positions as per some modern practitioners","Cannot be followed by a thrust"],a:1},
+  {q:"In a third wave of a third wave (iii of 3), what market condition is MOST likely?",o:["Slow grinding movement with high volume","Explosive, vertical-like move with broad market participation","Sideways consolidation","A series of gaps downward only"],a:1},
+  {q:"The Elliott Wave concept of 'throw-over' refers to:",o:["A Wave 3 exceeding the upper channel line","A Wave 5 or Wave C breaking beyond the ending diagonal boundary before reversing","A Wave 2 retracing all of Wave 1","A Wave B returning to the origin of Wave A"],a:1},
+  {q:"Under strict Frost & Prechter rules, what must be true about all five waves of an impulse?",o:["All five waves must be the same length","Waves 1, 3, and 5 are motive; Waves 2 and 4 are corrective","All five waves must be motive in structure","Wave 3 must always be the longest"],a:1},
+  {q:"In a bearish market, a five-wave decline is followed by a three-wave advance. What wave degree relationship does this reflect?",o:["Primary impulse followed by a Cycle correction","The five-wave decline is an impulse; the three-wave advance is a correction","A double bottom pattern","The market has completed an ending diagonal"],a:1},
+  {q:"The 'market personality' of Wave B in a flat is best described as:",o:["Strong, broad participation move","Tricky, choppy, and deceptive; lacks conviction and often retraces almost fully","Clear directional trend with high volume","A brief, fast move"],a:1},
+  {q:"Which Fibonacci relationship most commonly defines the relationship between Wave A and Wave C in a zigzag?",o:["C = 1.618 × A","C = A (equality)","C = 0.618 × A","C = 2.618 × A"],a:1},
+  {q:"When two of the three motive waves in an impulse are equal in length, it is MOST likely that the equal waves are:",o:["Waves 1 and 5","Waves 3 and 5","Waves 1 and 3","Waves 3 and 4"],a:0},
+  {q:"An 'X wave' in a combination pattern is classified as:",o:["A motive wave","A minor correction separating two simple corrective patterns","An extension of the preceding corrective wave","A non-tradeable structure"],a:1},
+  {q:"In the hierarchy of Frost & Prechter wave degrees from largest to smallest, which is CORRECT?",o:["Grand Supercycle > Supercycle > Cycle > Primary > Intermediate > Minor > Minute > Minuette > Subminuette","Supercycle > Grand Supercycle > Cycle > Primary","Grand Supercycle > Cycle > Supercycle > Primary","Primary > Intermediate > Cycle > Supercycle"],a:0},
+  {q:"In a diagonal triangle, which rule distinguishes a 'leading' from an 'ending' diagonal?",o:["Leading diagonals appear only in Wave 5; ending diagonals only in Wave 1","Leading diagonals may have sub-waves of 5-3-5-3-5; ending diagonals always have 3-3-3-3-3","The wave position (Wave 1 or A = leading; Wave 5 or C = ending) is the primary distinction","All diagonals have identical internal structures"],a:2},
+];
+
+const Q_CEWA2P2 = [
+  {q:"Which of the following are absolute, inviolable RULES of Elliott Wave Theory (as defined by Frost & Prechter)? Select ALL that apply.",o:["Wave 2 never retraces more than 100% of Wave 1","Wave 3 is never the shortest motive wave","Wave 4 never enters Wave 1 price territory (in a non-diagonal impulse)","Wave 5 must be shorter than Wave 3"],a:[0,1,2]},
+  {q:"Which wave characteristics are associated with Wave 3 of an impulse? Select ALL that apply.",o:["Often the longest motive wave","Typically the most dynamic and broad-participation wave","Most commonly shows a positive momentum divergence at its end","Volume is usually the highest during Wave 3","Can be identified by accelerating breadth"],a:[0,1,3,4]},
+  {q:"Which of the following corrective patterns consist of EXACTLY three sub-waves (A-B-C)? Select ALL that apply.",o:["Zigzag","Flat","Triangle","Running Correction"],a:[0,1,3]},
+  {q:"Which statements about a CONTRACTING TRIANGLE are correct? Select ALL that apply.",o:["All five waves (A-B-C-D-E) are corrective in structure","Wave E always closes beyond wave C","Trendlines connecting waves A-C and B-D converge toward an apex","It is followed by a thrust in the direction prior to the triangle","Wave B is always the longest sub-wave"],a:[0,2,3]},
+  {q:"Regarding the Fibonacci sequence and Elliott Wave, which statements are TRUE? Select ALL that apply.",o:["The ratio of consecutive Fibonacci numbers approaches phi (1.618)","The ratio 0.618 equals 1 divided by phi","Common retracement levels (38.2%, 50%, 61.8%) are all derived from Fibonacci relationships","5 motive waves + 3 corrective waves = 8 total waves, all Fibonacci numbers","The Wave Principle states wave counts must always equal exact Fibonacci numbers"],a:[0,1,2,3]},
+  {q:"Which of the following are TRUE about a ZIGZAG (5-3-5) correction? Select ALL that apply.",o:["Sub-wave A is a five-wave motive structure","Sub-wave B is a three-wave corrective structure","Sub-wave C is a five-wave motive structure","Wave B can retrace up to 100% of Wave A","A zigzag is the sharpest corrective pattern"],a:[0,1,2,4]},
+  {q:"Which statements accurately describe WAVE 5 TRUNCATION? Select ALL that apply.",o:["Wave 5 fails to exceed the price extreme of Wave 3","It is a rare phenomenon and usually follows an extraordinarily powerful Wave 3","A truncated Wave 5 signals strong counter-trend forces are building","It can only occur in motive waves, not in diagonals","It is very bearish (in a bull market) as it often precedes a severe reversal"],a:[0,1,2,4]},
+  {q:"Select ALL characteristics that distinguish an ENDING DIAGONAL from a standard impulse:",o:["All sub-waves are three-wave corrective structures","Trendlines converge (contracting) toward an apex","Wave 4 overlaps Wave 1 price territory","It only appears as Wave 5 or Wave C","After completion, prices typically reverse sharply and quickly"],a:[0,1,2,3,4]},
+  {q:"Which of the following are TRUE regarding the GUIDELINE OF ALTERNATION? Select ALL that apply.",o:["If Wave 2 is sharp (zigzag), Wave 4 tends to be sideways (flat/triangle)","If Wave 2 is a flat, Wave 4 tends to be a zigzag","Alternation also applies to the complexity of corrective waves","Alternation is a strict rule that cannot be violated","Alternation can occur in time as well as form"],a:[0,1,2,4]},
+  {q:"Regarding WAVE 2 of an impulse, which are correct? Select ALL that apply.",o:["It can retrace up to 99% of Wave 1 and remain valid","It must be a corrective structure (A-B-C)","The most common retracement levels are 50%, 61.8%, and 76.4%","Wave 2 can never be a triangle","It is often a zigzag correction"],a:[0,1,2,4]},
+  {q:"Which statements about the DOUBLE THREE combination pattern are TRUE? Select ALL that apply.",o:["It is labeled W-X-Y","The X-wave separates two simple corrective patterns","The X-wave itself must be a zigzag","The overall structure is more sideways and time-consuming than a single zigzag","It can include a mix of corrective patterns such as flat + triangle"],a:[0,1,3,4]},
+  {q:"In the context of WAVE DEGREES (from Frost & Prechter), select ALL TRUE statements:",o:["Grand Supercycle is the largest degree in their classification","Each wave degree contains sub-waves of the next smaller degree","Degree is determined by both price and time relative to surrounding waves","Subminuette is the smallest named degree in Frost & Prechter","There are exactly 9 named degrees in the F&P hierarchy"],a:[0,1,2,3,4]},
+  {q:"Which of the following are characteristics of a FLAT correction? Select ALL that apply.",o:["The sub-wave structure is 3-3-5","Wave B reaches approximately the start of Wave A","Wave C is typically a five-wave structure","Wave B must be more than 90% of Wave A to qualify as a flat","It is generally less steep than a zigzag"],a:[0,1,2,4]},
+  {q:"Select ALL aspects of LEADING DIAGONAL structure that are CORRECT:",o:["Leading diagonals can have sub-waves structured as 5-3-5-3-5","Leading diagonals can also have sub-waves structured as 3-3-3-3-3","Leading diagonals appear only in Wave 1 or Wave A positions","Wave 4 overlaps Wave 1 in a leading diagonal","A leading diagonal is always followed by a retracement of at least 50%"],a:[0,1,2,3,4]},
+  {q:"Regarding Fibonacci TIME relationships in Elliott Wave, which statements are TRUE? Select ALL that apply.",o:["Fibonacci time ratios can be applied to project duration of future waves","The duration of Wave 2 often relates to Wave 1 by a Fibonacci ratio","Time analysis in EWT is considered a guideline, not a rule","Fibonacci time counts are used to corroborate wave structure analysis","Time analysis alone is sufficient to confirm an Elliott Wave count"],a:[0,1,2,3]},
+  {q:"Which of these correctly describe characteristics of the WAVE PRINCIPLE regarding mass psychology? Select ALL that apply.",o:["The Wave Principle posits that social mood moves in waves of optimism and pessimism","Impulse waves move in the direction of the larger trend, reflecting the dominant social mood","Corrective waves represent counter-trend moves, reflecting temporary social mood reversal","Economic news and fundamentals CAUSE the wave patterns to form","Wave patterns reflect the inherent fractal nature of social mood"],a:[0,1,2,4]},
+  {q:"For a valid CONTRACTING TRIANGLE under strict EWI rules, select ALL TRUE requirements:",o:["Each successive wave must be shorter than the preceding same-direction wave (A > C > E and B > D)","All sub-waves are corrective three-wave structures","The triangle can appear in Wave 2 position","Wave E can end outside the A-C trendline in some cases (throw-under)","The thrust after completion typically equals the widest part of the triangle"],a:[0,1,3,4]},
+  {q:"Which statements are TRUE about FIBONACCI RETRACEMENT in wave analysis? Select ALL that apply.",o:["Wave 2 most commonly retraces 50%-61.8% of Wave 1","Wave 4 most commonly retraces 38.2% of Wave 3","A Wave 2 retracing 99% of Wave 1 would technically still be valid","The 78.6% level is the square root of 0.618","These retracement levels serve as guidelines, not absolute rules"],a:[0,1,2,4]},
+  {q:"Select ALL TRUE statements regarding the application of CHANNEL LINES in Elliott Wave analysis:",o:["A base channel is drawn connecting the origin of Wave 1 and the end of Wave 2, parallel to a line along the end of Wave 1","After Wave 3 ends, the channel is redrawn connecting the ends of Waves 2 and 4","Wave 5 often ends at or near the upper channel line in a bull market","The channel technique helps confirm or project wave targets","The final channel is drawn connecting ends of Waves 1 and 3, with a parallel from end of Wave 2"],a:[0,1,2,3,4]},
+  {q:"Regarding EXPANDED FLAT corrections, which of the following are TRUE? Select ALL that apply.",o:["Wave B exceeds the origin of Wave A by a significant margin","Wave C must be at least equal to, or greater than, Wave A in length","Wave C typically ends beyond the end of Wave A","The pattern is labeled A-B-C with a 3-3-5 structure","An expanded flat is considered more bearish (in a bull market) than a regular flat"],a:[0,1,2,3,4]},
+];
+
+// ══════════════════════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════════════════════
+
+let currentExam = null;
+let timerInterval = null;
+let secondsLeft = 0;
+let totalQuestions = 0;
+
+const EXAMS = {
+  cewa1:   { title: 'CEWA I',           subtitle: '50 questions · Single best answer',                 time: 3600, questions: Q_CEWA1,   multi: false },
+  cewa2p1: { title: 'CEWA II — Part 1', subtitle: '20 questions · Single best answer · Advanced',      time: 2700, questions: Q_CEWA2P1, multi: false },
+  cewa2p2: { title: 'CEWA II — Part 2', subtitle: '20 questions · Multiple-response · Expert Level',   time: 2700, questions: Q_CEWA2P2, multi: true  },
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════════════════════════
+
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goHome() {
+  clearInterval(timerInterval);
+  showSection('homeSection');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// START EXAM
+// ══════════════════════════════════════════════════════════════════════════════
+
+function startExam(examKey) {
+  currentExam = examKey;
+  const exam = EXAMS[examKey];
+  totalQuestions = exam.questions.length;
+
+  document.getElementById('examTitle').textContent    = exam.title;
+  document.getElementById('examSubtitle').textContent = exam.subtitle;
+  document.getElementById('progressLabel').textContent = `0 / ${totalQuestions} answered`;
+  document.getElementById('progressBar').style.width  = '0%';
+
+  renderQuestions(exam.questions, exam.multi);
+  startTimer(exam.time);
+  showSection('examSection');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// RENDER QUESTIONS
+// ══════════════════════════════════════════════════════════════════════════════
+
+function renderQuestions(questions, isMulti) {
+  const container = document.getElementById('questionsContainer');
+  container.innerHTML = '';
+
+  if (isMulti) {
+    const badge = document.createElement('div');
+    badge.className = 'multi-badge';
+    badge.innerHTML = '&#9744; SELECT ALL CORRECT ANSWERS — MULTIPLE RESPONSE';
+    container.appendChild(badge);
+  }
+
+  questions.forEach((q, i) => {
+    const card = document.createElement('div');
+    card.className = 'question-card';
+    card.id = `qcard-${i}`;
+
+    const numEl = document.createElement('div');
+    numEl.className = 'q-number';
+    numEl.textContent = `Q${String(i + 1).padStart(2, '0')}`;
+    card.appendChild(numEl);
+
+    const qText = document.createElement('div');
+    qText.className = 'q-text';
+    qText.textContent = q.q;
+    card.appendChild(qText);
+
+    const optList = document.createElement('div');
+    optList.className = 'options-list';
+
+    q.o.forEach((opt, j) => {
+      const label = document.createElement('label');
+      label.className = 'option-label';
+
+      const input = document.createElement('input');
+      input.type = isMulti ? 'checkbox' : 'radio';
+      input.name = `q${i}`;
+      input.value = j;
+      input.addEventListener('change', () => updateProgress(questions, isMulti));
+
+      const span = document.createElement('span');
+      span.className = 'option-text';
+      span.textContent = `${['A','B','C','D','E'][j]}.  ${opt}`;
+
+      label.appendChild(input);
+      label.appendChild(span);
+      optList.appendChild(label);
+    });
+
+    card.appendChild(optList);
+    container.appendChild(card);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PROGRESS TRACKER
+// ══════════════════════════════════════════════════════════════════════════════
+
+function updateProgress(questions, isMulti) {
+  let answered = 0;
+  questions.forEach((q, i) => {
+    if (isMulti) {
+      const checked = document.querySelectorAll(`input[name="q${i}"]:checked`);
+      if (checked.length > 0) {
+        answered++;
+        document.getElementById(`qcard-${i}`).classList.add('answered');
+      } else {
+        document.getElementById(`qcard-${i}`).classList.remove('answered');
+      }
+    } else {
+      const checked = document.querySelector(`input[name="q${i}"]:checked`);
+      if (checked) {
+        answered++;
+        document.getElementById(`qcard-${i}`).classList.add('answered');
+      } else {
+        document.getElementById(`qcard-${i}`).classList.remove('answered');
+      }
+    }
+  });
+
+  const total = questions.length;
+  const pct   = (answered / total) * 100;
+  document.getElementById('progressBar').style.width  = pct + '%';
+  document.getElementById('progressLabel').textContent = `${answered} / ${total} answered`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TIMER
+// ══════════════════════════════════════════════════════════════════════════════
+
+function startTimer(seconds) {
+  clearInterval(timerInterval);
+  secondsLeft = seconds;
+  updateTimerDisplay();
+
+  timerInterval = setInterval(() => {
+    secondsLeft--;
+    updateTimerDisplay();
+    if (secondsLeft <= 0) {
+      clearInterval(timerInterval);
+      submitExam(true);
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(secondsLeft / 60);
+  const s = secondsLeft % 60;
+  const el = document.getElementById('timerDisplay');
+  el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  el.classList.remove('warning','danger');
+  if (secondsLeft <= 120 && secondsLeft > 60) el.classList.add('warning');
+  if (secondsLeft <= 60)  el.classList.add('danger');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GRADE
+// ══════════════════════════════════════════════════════════════════════════════
+
+function submitExam(autoSubmit = false) {
+  clearInterval(timerInterval);
+
+  const exam = EXAMS[currentExam];
+  const questions = exam.questions;
+  const isMulti   = exam.multi;
+
+  let correct = 0;
+  let skipped = 0;
+
+  questions.forEach((q, i) => {
+    if (isMulti) {
+      const selected  = Array.from(document.querySelectorAll(`input[name="q${i}"]:checked`)).map(el => Number(el.value));
+      const correct_a = Array.isArray(q.a) ? q.a : [q.a];
+      if (selected.length === 0) { skipped++; return; }
+      const isRight = correct_a.length === selected.length &&
+                      correct_a.every(v => selected.includes(v));
+      if (isRight) correct++;
+    } else {
+      const sel = document.querySelector(`input[name="q${i}"]:checked`);
+      if (!sel) { skipped++; return; }
+      if (Number(sel.value) === q.a) correct++;
+    }
+  });
+
+  const total   = questions.length;
+  const wrong   = total - correct - skipped;
+  const pct     = Math.round((correct / total) * 100);
+  const deg     = Math.round((pct / 100) * 360);
+
+  let verdict, sub, color;
+  if (pct >= 90) {
+    verdict = '🏆 CEWA MASTER';
+    sub     = 'Outstanding performance! You have demonstrated expert-level mastery of Elliott Wave Theory.';
+    color   = '#00f2fe';
+  } else if (pct >= 80) {
+    verdict = '✅ PASS';
+    sub     = 'Congratulations! You have passed and demonstrated solid competency in Elliott Wave Analysis.';
+    color   = '#00e5a0';
+  } else {
+    verdict = '✗ FAIL';
+    sub     = 'Below passing threshold. Review Frost & Prechter\'s "Elliott Wave Principle" and try again.';
+    color   = '#ff4d6d';
+  }
+
+  document.getElementById('scorePct').textContent          = pct + '%';
+  document.getElementById('scoreFraction').textContent     = `${correct} / ${total}`;
+  document.getElementById('resultVerdict').textContent     = verdict;
+  document.getElementById('resultVerdict').style.color     = color;
+  document.getElementById('resultSub').textContent         = sub;
+  document.getElementById('statCorrect').textContent       = correct;
+  document.getElementById('statWrong').textContent         = wrong;
+  document.getElementById('statSkipped').textContent       = skipped;
+  document.getElementById('resultOrb').style.setProperty('--score-deg',   deg + 'deg');
+  document.getElementById('resultOrb').style.setProperty('--score-color', color);
+
+  showSection('resultsSection');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

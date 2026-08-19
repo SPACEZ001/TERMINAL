@@ -1,0 +1,2550 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SPACEZ TERMINAL</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:      #111111;
+      --surface: #1a1a1a;
+      --border:  #2e2e2e;
+      --lime:    #c8f135;
+      --cyan:    #22d3ee;
+      --red:     #ff5f57;
+      --text:    #f0f0f0;
+      --muted:   #777;
+      --radius:  14px;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans Thai', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ══ พื้นหลัง: กราฟหุ้นวิ่งแบบจาง ══ */
+    #bgChart {
+      position: fixed; inset: 0;
+      width: 100%; height: 100%;
+      z-index: 0; pointer-events: none;
+      opacity: 0.55;
+    }
+    #bgVignette {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(200,241,53,0.05), transparent 60%),
+        radial-gradient(ellipse at 50% 100%, rgba(34,211,238,0.045), transparent 60%);
+    }
+
+    /* ── Overlay & Drawer ── */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 90;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .overlay.open { opacity: 1; pointer-events: all; }
+
+    .drawer {
+      position: fixed; top: 0; right: 0;
+      width: min(320px, 88vw); height: 100vh;
+      background: #161616;
+      border-left: 1px solid var(--border);
+      z-index: 100;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+      display: flex; flex-direction: column;
+      overflow-y: auto;
+    }
+    .drawer.open { transform: translateX(0); }
+
+    .drawer-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .drawer-title { font-weight: 700; font-size: 1rem; }
+    .close-btn {
+      width: 32px; height: 32px;
+      background: #222; border: 1px solid var(--border);
+      border-radius: 8px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; color: var(--muted);
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .close-btn:hover { color: var(--text); border-color: var(--lime); }
+
+    .drawer-tabs {
+      display: flex; gap: 6px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .dtab {
+      flex: 1; padding: 8px 0;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'IBM Plex Sans Thai', sans-serif;
+      font-size: 0.8rem; font-weight: 600;
+      color: var(--muted); cursor: pointer;
+      transition: all 0.15s; text-align: center;
+    }
+    .dtab.active { background: var(--lime); color: #111; border-color: var(--lime); }
+    .dtab:hover:not(.active) { border-color: var(--lime); color: var(--text); }
+
+    .dpage { display: none; padding: 20px 18px 30px; flex-direction: column; gap: 14px; }
+    .dpage.active { display: flex; }
+
+    .about-avatar {
+      width: 64px; height: 64px;
+      background: var(--lime); border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 700; font-size: 1.6rem; color: #111;
+      align-self: center; margin-bottom: 4px;
+    }
+    .about-name { text-align: center; font-weight: 700; font-size: 1.1rem; }
+    .about-desc { text-align: center; font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
+    .info-row {
+      display: flex; align-items: center; gap: 10px;
+      background: #222; border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 14px;
+    }
+    .info-icon { font-size: 1.1rem; flex-shrink: 0; }
+    .info-label { font-size: 0.7rem; color: var(--muted); margin-bottom: 2px; }
+    .info-val { font-size: 0.88rem; font-weight: 600; }
+
+    .field-label { font-size: 0.75rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
+    .field-group { display: flex; flex-direction: column; }
+    input, textarea {
+      background: #222; border: 1px solid var(--border);
+      border-radius: 10px; padding: 11px 14px;
+      color: var(--text); font-family: 'IBM Plex Sans Thai', sans-serif;
+      font-size: 0.88rem; outline: none;
+      transition: border-color 0.15s; width: 100%;
+    }
+    input:focus, textarea:focus { border-color: var(--lime); }
+    textarea { resize: none; height: 90px; }
+    .send-btn {
+      background: var(--lime); color: #111;
+      border: none; border-radius: 10px;
+      padding: 12px; font-weight: 700; font-size: 0.9rem;
+      cursor: pointer; transition: background 0.15s;
+      font-family: 'IBM Plex Sans Thai', sans-serif;
+    }
+    .send-btn:hover { background: #d8ff45; }
+    .success-msg {
+      display: none; text-align: center;
+      background: #1a2a0a; border: 1px solid var(--lime);
+      border-radius: 10px; padding: 12px;
+      font-size: 0.85rem; color: var(--lime);
+    }
+
+    /* ══ ปุ่มศูนย์รวมคอนแทค (Link Hub) ══ */
+    .hub-sep {
+      display: flex; align-items: center; gap: 10px;
+      color: var(--muted); font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .hub-sep::before, .hub-sep::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+    }
+    .btn-hub {
+      position: relative; overflow: hidden;
+      display: flex; align-items: center; gap: 12px;
+      background: linear-gradient(135deg, #15200a 0%, #0d1f1c 100%);
+      border: 1.5px solid var(--lime);
+      border-radius: 12px; padding: 13px 15px;
+      text-decoration: none; color: var(--lime);
+      font-weight: 700; font-size: 0.9rem;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.25s ease;
+    }
+    .btn-hub:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(200,241,53,0.28); }
+    .btn-hub::before {
+      content: ''; position: absolute; inset: 0; z-index: 0;
+      background: linear-gradient(90deg, transparent, rgba(200,241,53,0.20), transparent);
+      transform: translateX(-120%);
+      animation: pfShimmer 3.4s ease-in-out infinite;
+    }
+    .btn-hub > * { position: relative; z-index: 1; }
+    .hub-ico {
+      width: 34px; height: 34px; flex-shrink: 0;
+      border-radius: 9px; background: rgba(200,241,53,0.12);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .hub-txt { display: flex; flex-direction: column; gap: 1px; flex: 1; }
+    .hub-txt .t { font-size: 0.9rem; }
+    .hub-txt .s {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.63rem; color: var(--muted); font-weight: 500;
+      letter-spacing: 0.06em;
+    }
+    .hub-arrow { font-size: 1rem; animation: hubArrow 1.6s ease-in-out infinite; }
+    @keyframes hubArrow { 0%,100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+
+    .hub-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .hub-mini {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      background: #222; border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 4px;
+      text-decoration: none; color: var(--muted);
+      font-size: 0.6rem; font-weight: 600;
+      transition: all 0.18s;
+    }
+    .hub-mini:hover { border-color: var(--lime); color: var(--lime); transform: translateY(-2px); }
+    .hub-mini .em { font-size: 1.1rem; }
+
+    /* ── Main ── */
+    .main {
+      position: relative; z-index: 2;
+      display: flex; flex-direction: column;
+      align-items: center;
+      padding-bottom: 60px;
+    }
+    .topbar {
+      width: 100%;
+      background: rgba(22,22,22,0.86);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 20px;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .logo-badge {
+      width: 34px; height: 34px;
+      background: var(--lime); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 700; font-size: 1rem; color: #111; flex-shrink: 0;
+      box-shadow: 0 0 0 0 rgba(200,241,53,0.5);
+      animation: badgePulse 3s ease-in-out infinite;
+    }
+    @keyframes badgePulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(200,241,53,0.45); }
+      60%     { box-shadow: 0 0 0 10px rgba(200,241,53,0); }
+    }
+    .logo-text { font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; }
+    .logo-sub  { font-size: 0.8rem; color: var(--muted); margin-left: 2px; flex: 1; }
+    .hamburger {
+      width: 36px; height: 36px;
+      background: #222; border: 1px solid var(--border);
+      border-radius: 9px; cursor: pointer;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 5px;
+      transition: border-color 0.15s; flex-shrink: 0;
+    }
+    .hamburger:hover { border-color: var(--lime); }
+    .hamburger span {
+      display: block; width: 16px; height: 2px;
+      background: var(--text); border-radius: 2px;
+      transition: background 0.15s;
+    }
+    .hamburger:hover span { background: var(--lime); }
+
+    /* ══ Ticker วิ่ง ══ */
+    .ticker {
+      width: 100%;
+      background: rgba(13,13,13,0.75);
+      border-bottom: 1px solid var(--border);
+      overflow: hidden; white-space: nowrap;
+      padding: 7px 0;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem; letter-spacing: 0.04em;
+      -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+              mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    }
+    .ticker-track { display: inline-block; animation: tickerRun 28s linear infinite; }
+    .ticker:hover .ticker-track { animation-play-state: paused; }
+    @keyframes tickerRun { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    .tk { display: inline-flex; align-items: center; gap: 6px; padding: 0 16px; color: var(--muted); }
+    .tk b { color: var(--text); font-weight: 700; }
+    .tk .up   { color: var(--lime); }
+    .tk .down { color: var(--red); }
+
+    .section-label {
+      width: 100%; max-width: 860px;
+      padding: 24px 20px 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.72rem; font-weight: 700;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--lime);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .section-label .count {
+      background: #222; border: 1px solid var(--border);
+      border-radius: 6px; padding: 2px 10px;
+      font-size: 0.68rem; color: var(--muted);
+    }
+
+    /* ── Grid ── */
+    .grid {
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      width: 100%; max-width: 860px;
+      padding: 0 20px;
+    }
+
+    /* ── Card ── */
+    .card {
+      position: relative;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      text-decoration: none; color: inherit;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      transition: border-color 0.18s, transform 0.15s, box-shadow 0.25s;
+      outline: none;
+    }
+    .card:hover, .card:focus {
+      border-color: var(--lime);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.55), 0 0 0 1px rgba(200,241,53,0.18);
+    }
+    .card-preview {
+      position: relative;
+      background: #0d0d0d;
+      aspect-ratio: 16 / 9;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    /* กริดจาง ๆ ในพื้นที่พรีวิว */
+    .card-preview::before {
+      content: ''; position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 16px 16px;
+    }
+    /* แสงกวาดตอน hover */
+    .card-preview::after {
+      content: ''; position: absolute; top: 0; bottom: 0; width: 45%; z-index: 2;
+      background: linear-gradient(90deg, transparent, rgba(200,241,53,0.14), transparent);
+      transform: translateX(-160%); pointer-events: none;
+    }
+    .card:hover .card-preview::after { animation: previewSweep 0.9s ease forwards; }
+    @keyframes previewSweep { to { transform: translateX(360%); } }
+
+    .browser-mock {
+      position: relative; z-index: 1;
+      width: 84%; background: #1c1c1c;
+      border-radius: 6px; overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .card:hover .browser-mock, .card:focus .browser-mock {
+      transform: translateY(-2px) scale(1.035);
+      box-shadow: 0 10px 26px rgba(0,0,0,0.65);
+    }
+    .browser-bar {
+      background: #2a2a2a; padding: 5px 8px;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .dot { width: 6px; height: 6px; border-radius: 50%; transition: box-shadow 0.2s; }
+    .dot.r { background: #ff5f57; }
+    .dot.y { background: #febc2e; }
+    .dot.g { background: #28c840; }
+    .card:hover .dot.r { box-shadow: 0 0 7px #ff5f57; }
+    .card:hover .dot.y { box-shadow: 0 0 7px #febc2e; animation: dotBlink 1.1s ease-in-out infinite 0.15s; }
+    .card:hover .dot.g { box-shadow: 0 0 7px #28c840; animation: dotBlink 1.1s ease-in-out infinite 0.3s; }
+    @keyframes dotBlink { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+    .browser-url {
+      flex: 1; margin-left: 4px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.42rem; color: #666;
+      letter-spacing: 0.05em;
+      white-space: nowrap; overflow: hidden;
+    }
+    .live-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--lime); flex-shrink: 0;
+      animation: liveBlink 1.4s ease-in-out infinite;
+    }
+    @keyframes liveBlink {
+      0%,100% { opacity: 1; box-shadow: 0 0 6px rgba(200,241,53,0.9); }
+      50%     { opacity: 0.25; box-shadow: 0 0 0 rgba(200,241,53,0); }
+    }
+
+    .browser-content {
+      position: relative;
+      height: 52px; background: #131313;
+      overflow: hidden;
+    }
+    .spark { display: block; width: 100%; height: 100%; }
+
+    /* เส้นกราฟวาดตัวเอง */
+    .spark .gl { stroke: rgba(255,255,255,0.05); stroke-width: 0.5; }
+    .spark .vol { transform-origin: center bottom; transform-box: fill-box; animation: volGrow 0.6s cubic-bezier(.2,.8,.3,1) both; }
+    @keyframes volGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+    .spark .area { opacity: 0; animation: areaIn 0.9s ease 0.25s forwards; }
+    @keyframes areaIn { to { opacity: 1; } }
+    .spark .line {
+      fill: none; stroke-width: 1.6;
+      stroke-linecap: round; stroke-linejoin: round;
+      stroke-dasharray: 1; stroke-dashoffset: 1;
+      animation: sparkDraw 1.15s cubic-bezier(.35,.9,.35,1) forwards;
+    }
+    @keyframes sparkDraw { to { stroke-dashoffset: 0; } }
+    .spark .tip { opacity: 0; animation: tipIn 0.4s ease 1.05s forwards; }
+    @keyframes tipIn { to { opacity: 1; } }
+    .spark .ring {
+      transform-box: fill-box; transform-origin: center;
+      opacity: 0; animation: ringPulse 1.8s ease-out 1.1s infinite;
+    }
+    @keyframes ringPulse {
+      0%   { transform: scale(0.4); opacity: 0.9; }
+      100% { transform: scale(3.2); opacity: 0; }
+    }
+    .spark .scan {
+      opacity: 0;
+    }
+    .card:hover .spark .scan { animation: scanMove 1.2s linear infinite; }
+    @keyframes scanMove {
+      0%   { transform: translateX(0); opacity: 0.55; }
+      100% { transform: translateX(120px); opacity: 0; }
+    }
+
+    .card-body { padding: 11px 13px 13px; display: flex; flex-direction: column; gap: 3px; }
+    .card-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+    .card-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1rem; font-weight: 700; color: var(--text);
+    }
+    .card-chg {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem; font-weight: 700;
+      padding: 2px 7px; border-radius: 5px;
+      border: 1px solid transparent; white-space: nowrap;
+    }
+    .card-chg.up   { color: var(--lime); background: rgba(200,241,53,0.10); border-color: rgba(200,241,53,0.28); }
+    .card-chg.down { color: var(--red);  background: rgba(255,95,87,0.10);  border-color: rgba(255,95,87,0.28); }
+    .card-sub { font-size: 0.75rem; color: var(--muted); }
+
+    /* แถบความคืบหน้าเล็ก ๆ ใต้การ์ด */
+    .card-meter { height: 2px; width: 100%; background: #222; overflow: hidden; }
+    .card-meter i {
+      display: block; height: 100%; width: 0;
+      background: linear-gradient(90deg, var(--lime), var(--cyan));
+      transition: width 0.5s ease;
+    }
+    .card:hover .card-meter i { width: 100%; }
+
+    /* ── RGB Glow: brand text + card hover text ── */
+    @keyframes spacezFlow {
+      0%   { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+    @keyframes spacezGlow {
+      0%, 100% { text-shadow: 0 0 6px rgba(74,222,128,.45), 0 0 14px rgba(34,211,238,.35), 0 0 26px rgba(192,132,252,.3); }
+      50%      { text-shadow: 0 0 10px rgba(74,222,128,.75), 0 0 22px rgba(34,211,238,.6), 0 0 40px rgba(192,132,252,.5); }
+    }
+    .logo-text,
+    .card:hover .card-title,
+    .card:focus .card-title,
+    .card:hover .card-sub,
+    .card:focus .card-sub {
+      background: linear-gradient(90deg, #4ade80, #22d3ee, #818cf8, #c084fc, #4ade80, #22d3ee, #818cf8, #c084fc);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+      animation: spacezFlow 6s linear infinite, spacezGlow 3s ease-in-out infinite;
+    }
+
+    /* ── Actions ── */
+    .actions {
+      width: 100%; max-width: 860px;
+      padding: 14px 20px 0;
+      display: flex; gap: 12px;
+    }
+    @media (max-width: 520px) { .actions { flex-direction: column; } }
+
+    .btn-primary {
+      flex: 1; background: var(--lime); color: #111;
+      border: none; border-radius: 10px; padding: 14px;
+      font-family: 'IBM Plex Sans Thai', sans-serif;
+      font-weight: 700; font-size: 0.95rem; cursor: pointer;
+      text-decoration: none; text-align: center; display: block;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover { background: #d8ff45; }
+    .btn-ghost {
+      flex: 1; background: transparent; color: var(--muted);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 14px; font-family: 'IBM Plex Sans Thai', sans-serif;
+      font-weight: 600; font-size: 0.95rem;
+      text-align: center; cursor: pointer;
+      text-decoration: none; display: block;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-ghost:hover { border-color: var(--lime); color: var(--text); }
+
+    /* ── Passphrase Random Button ── */
+    .btn-passphrase {
+      position: relative; flex: 1; overflow: hidden;
+      background: linear-gradient(135deg, #16210a, #12241f);
+      border: 1.5px solid var(--lime); border-radius: 10px;
+      padding: 14px;
+      font-family: 'IBM Plex Sans Thai', sans-serif;
+      font-weight: 700; font-size: 0.95rem;
+      color: var(--lime);
+      text-decoration: none;
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+      transition: transform 0.18s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .btn-passphrase:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 26px rgba(200,241,53,0.3);
+      border-color: #d8ff45;
+    }
+    .btn-passphrase:active { transform: translateY(0); }
+    .btn-passphrase::before {
+      content: ''; position: absolute; inset: 0; z-index: 0;
+      background: linear-gradient(90deg, transparent, rgba(200,241,53,0.22), transparent);
+      transform: translateX(-120%);
+      animation: pfShimmer 3.2s ease-in-out infinite;
+    }
+    @keyframes pfShimmer {
+      0%   { transform: translateX(-120%); }
+      55%, 100% { transform: translateX(120%); }
+    }
+    .pf-icon {
+      font-size: 1.05rem; z-index: 1;
+      animation: pfPulse 2.2s ease-in-out infinite;
+    }
+    .pf-text { z-index: 1; }
+    @keyframes pfPulse {
+      0%, 100% { filter: drop-shadow(0 0 0 rgba(200,241,53,0)); }
+      50%      { filter: drop-shadow(0 0 7px rgba(200,241,53,0.85)); }
+    }
+
+    /* ══ ปุ่มระบบสแกนหุ้น (เรดาร์) ══ */
+    .btn-scan {
+      position: relative; flex: 1; overflow: hidden;
+      background: linear-gradient(135deg, #0a1a1f 0%, #101425 100%);
+      border: 1.5px solid rgba(34,211,238,0.55);
+      border-radius: 10px; padding: 11px 14px;
+      text-decoration: none; color: var(--cyan);
+      display: flex; align-items: center; gap: 11px;
+      font-family: 'IBM Plex Sans Thai', sans-serif;
+      transition: transform 0.18s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .btn-scan:hover {
+      transform: translateY(-2px);
+      border-color: var(--cyan);
+      box-shadow: 0 8px 26px rgba(34,211,238,0.28);
+    }
+    .btn-scan:active { transform: translateY(0); }
+    .btn-scan::before {
+      content: ''; position: absolute; inset: 0; z-index: 0;
+      background: linear-gradient(90deg, transparent, rgba(34,211,238,0.18), transparent);
+      transform: translateX(-120%);
+      animation: pfShimmer 3.8s ease-in-out infinite 0.4s;
+    }
+    /* กราฟจาง ๆ วิ่งในปุ่ม */
+    .btn-scan .btn-bgline {
+      position: absolute; inset: 0; z-index: 0; opacity: 0.35;
+      pointer-events: none;
+    }
+    .btn-scan > .scan-ico, .btn-scan > .btn-txt { position: relative; z-index: 1; }
+    .btn-scan .btn-bgline polyline {
+      stroke-dasharray: 230; stroke-dashoffset: 230;
+      animation: scanLineDraw 4.5s ease-in-out infinite;
+    }
+    @keyframes scanLineDraw {
+      0%   { stroke-dashoffset: 230; }
+      45%  { stroke-dashoffset: 0; }
+      100% { stroke-dashoffset: -230; }
+    }
+    .scan-ico { width: 34px; height: 34px; flex-shrink: 0; }
+    .radar-sweep { transform-box: fill-box; transform-origin: 50% 50%; animation: radarSpin 2.6s linear infinite; }
+    @keyframes radarSpin { to { transform: rotate(360deg); } }
+    .blip { animation: blipFade 2.6s ease-in-out infinite; }
+    .blip.b2 { animation-delay: 0.9s; }
+    .blip.b3 { animation-delay: 1.7s; }
+    @keyframes blipFade { 0%,100% { opacity: 0.15; r: 1.2; } 25% { opacity: 1; } }
+
+    .btn-txt { display: flex; flex-direction: column; gap: 1px; text-align: left; flex: 1; }
+    .btn-txt .t { font-weight: 700; font-size: 0.93rem; color: var(--text); }
+    .btn-txt .s {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem; letter-spacing: 0.08em; color: var(--muted);
+    }
+    .btn-scan:hover .btn-txt .t { color: var(--cyan); }
+
+    /* ══ ปุ่มสุ่มข้อสอบ (อินโฟกราฟิก) ══ */
+    .random-wrap { width: 100%; max-width: 860px; padding: 14px 20px 0; }
+    .btn-random {
+      position: relative; overflow: hidden;
+      width: 100%;
+      background: linear-gradient(135deg, #171c0c 0%, #131313 55%, #0d1a1c 100%);
+      border: 1.5px solid var(--border); border-radius: 12px;
+      padding: 12px 16px; color: var(--text);
+      font-family: 'IBM Plex Sans Thai', sans-serif;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 12px;
+      transition: border-color 0.2s, box-shadow 0.25s, transform 0.18s;
+    }
+    .btn-random:hover {
+      border-color: var(--lime); transform: translateY(-2px);
+      box-shadow: 0 8px 26px rgba(200,241,53,0.22);
+    }
+    .btn-random:active { transform: translateY(0); }
+    .btn-random::after {
+      content: ''; position: absolute; inset: 0; z-index: 0;
+      background: linear-gradient(90deg, transparent 0%, rgba(200,241,53,0.12) 50%, transparent 100%);
+      transform: translateX(-100%);
+    }
+    .btn-random:hover::after { animation: shimmer 0.7s ease forwards; }
+    @keyframes shimmer { to { transform: translateX(100%); } }
+    .btn-random > * { position: relative; z-index: 1; }
+
+    .rnd-ico { width: 38px; height: 38px; flex-shrink: 0; }
+    .rnd-ring { transform-box: fill-box; transform-origin: 50% 50%; animation: rndRing 6s linear infinite; }
+    @keyframes rndRing { to { transform: rotate(360deg); } }
+    .rnd-bar { transform-box: fill-box; transform-origin: center bottom; animation: rndBar 1.8s ease-in-out infinite; }
+    .rnd-bar.b2 { animation-delay: 0.25s; }
+    .rnd-bar.b3 { animation-delay: 0.5s; }
+    .rnd-bar.b4 { animation-delay: 0.75s; }
+    @keyframes rndBar {
+      0%,100% { transform: scaleY(0.45); }
+      50%     { transform: scaleY(1); }
+    }
+    .rnd-spark { animation: rndSpark 2.4s ease-in-out infinite; }
+    @keyframes rndSpark { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+    .btn-random.rolling { border-color: var(--lime); box-shadow: 0 0 30px rgba(200,241,53,0.3); }
+    .btn-random.rolling .rnd-ring { animation-duration: 0.6s; }
+    .btn-random.rolling .rnd-bar  { animation-duration: 0.35s; }
+    .btn-random.rolling .btn-txt .t { color: var(--lime); }
+    .btn-random:hover .btn-txt .t { color: var(--lime); }
+
+    /* ══ ปุ่มคำนวณภาษี ══ */
+    .tax-wrap { width: 100%; max-width: 860px; padding: 12px 20px 0; }
+    .btn-tax {
+      position: relative; overflow: hidden;
+      width: 100%;
+      background: linear-gradient(135deg, #101c22 0%, #131313 50%, #1c1608 100%);
+      border: 1.5px solid rgba(34,211,238,0.45);
+      border-radius: 12px; padding: 12px 16px;
+      text-decoration: none;
+      display: flex; align-items: center; gap: 12px;
+      font-family: 'IBM Plex Sans Thai', sans-serif;
+      transition: border-color 0.2s, box-shadow 0.25s, transform 0.18s;
+    }
+    .btn-tax:hover {
+      border-color: var(--cyan); transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(34,211,238,0.25);
+    }
+    .btn-tax:active { transform: translateY(0); }
+    .btn-tax::before {
+      content: ''; position: absolute; inset: 0; z-index: 0;
+      background: linear-gradient(90deg, transparent, rgba(34,211,238,0.16), transparent);
+      transform: translateX(-120%);
+      animation: pfShimmer 4.2s ease-in-out infinite 1s;
+    }
+    .btn-tax > * { position: relative; z-index: 1; }
+    .tax-ico { width: 38px; height: 38px; flex-shrink: 0; }
+    .tax-coin { transform-box: fill-box; transform-origin: center; animation: taxCoin 3.2s ease-in-out infinite; }
+    @keyframes taxCoin {
+      0%,100% { transform: translateY(0) scale(1); }
+      50%     { transform: translateY(-2px) scale(1.06); }
+    }
+    .tax-bar { transform-box: fill-box; transform-origin: center bottom; animation: taxBar 2.2s ease-in-out infinite; }
+    .tax-bar.t2 { animation-delay: 0.3s; }
+    .tax-bar.t3 { animation-delay: 0.6s; }
+    @keyframes taxBar { 0%,100% { transform: scaleY(0.5); } 50% { transform: scaleY(1); } }
+    .tax-pct { animation: rndSpark 2s ease-in-out infinite; }
+    .btn-tax:hover .btn-txt .t { color: var(--cyan); }
+    .tax-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.6rem; font-weight: 700;
+      color: var(--cyan); background: rgba(34,211,238,0.10);
+      border: 1px solid rgba(34,211,238,0.3);
+      border-radius: 5px; padding: 3px 8px;
+      flex-shrink: 0;
+    }
+
+    @keyframes flashCard {
+      0%   { border-color: var(--lime); box-shadow: 0 0 0 0 rgba(200,241,53,0.6); }
+      50%  { border-color: var(--lime); box-shadow: 0 0 0 10px rgba(200,241,53,0); }
+      100% { border-color: var(--lime); box-shadow: none; }
+    }
+    .card.picked { animation: flashCard 0.7s ease 2; border-color: var(--lime); }
+
+    @keyframes cardFadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card.anim { animation: cardFadeIn 0.45s ease both; }
+
+    /* ── Pagination ── */
+    .pagination {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px;
+      width: 100%; max-width: 860px;
+      padding: 16px 20px 0;
+    }
+    .page-btn {
+      width: 40px; height: 40px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 700; font-size: 0.9rem;
+      color: var(--muted); cursor: pointer;
+      transition: all 0.18s;
+    }
+    .pagination { flex-wrap: wrap; }
+    .page-btn:hover:not(.active):not(:disabled) { border-color: var(--lime); color: var(--text); }
+    .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .page-btn.nav { font-size: 1.1rem; line-height: 1; }
+    .page-gap { color: var(--muted); font-family: 'IBM Plex Mono', monospace; padding: 0 2px; }
+    @media (max-width: 520px) {
+      .page-btn { width: 34px; height: 34px; font-size: 0.8rem; }
+      .pagination { gap: 5px; }
+    }
+
+    /* ══ ตัวเลือกการสุ่ม ══ */
+    .roll-opts {
+      margin-top: 10px;
+      background: rgba(255,255,255,0.022);
+      border: 1px solid var(--border);
+      border-radius: 12px; padding: 10px 12px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .ro-head {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .ro-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em;
+      color: var(--muted); text-transform: uppercase; margin-right: 2px;
+    }
+    .ro-modes { display: flex; gap: 6px; flex: 1; }
+    .ro {
+      flex: 1; padding: 7px 4px;
+      background: transparent; border: 1px solid var(--border);
+      border-radius: 9px;
+      font-family: 'IBM Plex Sans Thai', sans-serif;
+      font-size: 0.74rem; font-weight: 600; color: var(--muted);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .ro:hover:not(.active) { border-color: var(--lime); color: var(--text); }
+    .ro.active {
+      background: rgba(200,241,53,0.12); border-color: var(--lime); color: var(--lime);
+    }
+    .ro-range {
+      display: none; align-items: center; gap: 8px; flex-wrap: wrap;
+      padding-top: 9px; border-top: 1px dashed var(--border);
+    }
+    .ro-range.show { display: flex; }
+    .ro-unit { display: flex; gap: 4px; }
+    .ru {
+      padding: 6px 11px; background: transparent;
+      border: 1px solid var(--border); border-radius: 8px;
+      font-family: 'IBM Plex Sans Thai', sans-serif;
+      font-size: 0.72rem; font-weight: 600; color: var(--muted);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .ru.active { background: var(--cyan); border-color: var(--cyan); color: #06202a; }
+    .ro-range input {
+      width: 74px; padding: 7px 9px; text-align: center;
+      background: #191919; border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text);
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem;
+    }
+    .ro-range input:focus { border-color: var(--lime); }
+    .ro-dash { color: var(--muted); font-size: 0.9rem; }
+    .ro-info {
+      flex: 1 1 100%;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem; color: var(--muted);
+    }
+    .ro-info b { color: var(--lime); font-weight: 700; }
+    .ro-info.warn b { color: var(--red); }
+    .page-btn.active {
+      background: var(--lime); color: #111; border-color: var(--lime);
+      box-shadow: 0 4px 16px rgba(200,241,53,0.3);
+    }
+
+    .roll-overlay {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200; pointer-events: none;
+      opacity: 0; transition: opacity 0.2s;
+      background: rgba(0,0,0,0.35); backdrop-filter: blur(2px);
+    }
+    .roll-overlay.show { opacity: 1; }
+    .roll-pill {
+      background: #111; border: 2px solid var(--lime);
+      border-radius: 20px; padding: 18px 40px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 2rem; font-weight: 700; color: var(--lime);
+      box-shadow: 0 0 40px rgba(200,241,53,0.3);
+    }
+    .roll-pill.locked { animation: rollLock 0.5s cubic-bezier(.2,1.6,.4,1); }
+    @keyframes rollLock {
+      0%   { transform: scale(1); }
+      45%  { transform: scale(1.18); box-shadow: 0 0 70px rgba(200,241,53,0.6); }
+      100% { transform: scale(1); }
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; left: 50%; bottom: 28px;
+      transform: translate(-50%, 20px);
+      background: #1c1c1c; border: 1px solid var(--lime);
+      color: var(--text); border-radius: 12px;
+      padding: 12px 18px; font-size: 0.85rem;
+      z-index: 300; opacity: 0; pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      max-width: 88vw; text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    /* ══════════════ ACCESS GATE (หน้าล็อกอินใหม่) ══════════════ */
+    #lockScreen {
+      position: fixed; inset: 0; z-index: 9999;
+      background:
+        radial-gradient(ellipse at 20% 15%, rgba(200,241,53,0.07), transparent 55%),
+        radial-gradient(ellipse at 85% 85%, rgba(34,211,238,0.07), transparent 55%),
+        rgba(8,9,11,0.94);
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 20px;
+      overflow-y: auto;
+      transition: opacity 0.45s ease, visibility 0.45s ease;
+    }
+    #lockScreen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    #lockScreen::before {
+      content: '';
+      position: absolute; inset: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(200,241,53,0.030) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(200,241,53,0.030) 1px, transparent 1px);
+      background-size: 44px 44px;
+      animation: gridPulse 4s ease-in-out infinite alternate;
+    }
+    /* เส้นสแกนวิ่งลงทั้งจอ */
+    #lockScreen::after {
+      content: '';
+      position: absolute; left: 0; right: 0; height: 140px; top: -140px;
+      pointer-events: none;
+      background: linear-gradient(180deg, transparent, rgba(200,241,53,0.055), transparent);
+      animation: gateScan 7s linear infinite;
+    }
+    @keyframes gateScan { to { top: 110%; } }
+    @keyframes gridPulse { from { opacity: 0.45; } to { opacity: 1; } }
+
+    .lock-shell {
+      position: relative; z-index: 1; margin: auto;
+      display: grid; grid-template-columns: 1fr;
+      gap: 16px; width: min(880px, 100%);
+      align-items: stretch;
+      animation: gateIn 0.6s cubic-bezier(.2,.9,.3,1) both;
+    }
+    @keyframes gateIn { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: none; } }
+    @media (min-width: 860px) { .lock-shell { grid-template-columns: 1.05fr 0.95fr; } }
+
+    /* ── แผงอินโฟกราฟิก ── */
+    .lock-info {
+      background: linear-gradient(155deg, #121611 0%, #101315 55%, #0d1418 100%);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px 20px 16px;
+      display: flex; flex-direction: column; gap: 14px;
+      overflow: hidden; position: relative;
+    }
+    .lock-info::before {
+      content: ''; position: absolute; top: -40%; left: -30%;
+      width: 70%; height: 180%;
+      background: radial-gradient(circle, rgba(200,241,53,0.09), transparent 65%);
+      animation: infoGlow 8s ease-in-out infinite alternate;
+    }
+    @keyframes infoGlow { to { transform: translate(60%, 12%); } }
+    .li-head { display: flex; align-items: center; justify-content: space-between; position: relative; }
+    .li-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.66rem; font-weight: 700;
+      letter-spacing: 0.16em; text-transform: uppercase; color: var(--lime);
+    }
+    .li-live {
+      display: flex; align-items: center; gap: 6px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.6rem; color: var(--muted);
+    }
+    .li-live i {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--lime);
+      display: block; animation: liveBlink 1.4s ease-in-out infinite;
+    }
+    .li-shield { position: relative; width: 100%; display: flex; justify-content: center; }
+    .li-shield svg { display: block; width: 100%; max-width: 260px; height: auto; }
+    .sh-ring {
+      transform-box: fill-box; transform-origin: center;
+      animation: shRing 9s linear infinite;
+    }
+    .sh-ring.rev { animation: shRing 13s linear infinite reverse; }
+    @keyframes shRing { to { transform: rotate(360deg); } }
+    .sh-body {
+      stroke-dasharray: 1; stroke-dashoffset: 1;
+      animation: sparkDraw 1.6s ease 0.15s forwards;
+    }
+    .sh-scan { animation: shScan 2.8s ease-in-out infinite; }
+    @keyframes shScan {
+      0%   { transform: translateY(-26px); opacity: 0; }
+      12%  { opacity: 1; }
+      88%  { opacity: 1; }
+      100% { transform: translateY(26px); opacity: 0; }
+    }
+    .sh-lock { opacity: 0; animation: tipIn 0.5s ease 1.3s forwards; }
+    .sh-pulse {
+      transform-box: fill-box; transform-origin: center;
+      opacity: 0; animation: ringPulse 2.6s ease-out 1.6s infinite;
+    }
+    .sh-node { animation: shNode 2.4s ease-in-out infinite; }
+    .sh-node.n2 { animation-delay: 0.5s; }
+    .sh-node.n3 { animation-delay: 1s; }
+    .sh-node.n4 { animation-delay: 1.5s; }
+    @keyframes shNode { 0%,100% { opacity: 0.2; } 50% { opacity: 1; } }
+
+    /* แถวสถานะระบบ */
+    .li-rows { display: flex; flex-direction: column; gap: 6px; position: relative; }
+    .li-row {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid var(--border);
+      border-radius: 9px; padding: 7px 10px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem;
+      letter-spacing: 0.05em;
+      animation: rowIn 0.5s ease both;
+    }
+    .li-row:nth-child(1) { animation-delay: 0.15s; }
+    .li-row:nth-child(2) { animation-delay: 0.28s; }
+    .li-row:nth-child(3) { animation-delay: 0.41s; }
+    .li-row:nth-child(4) { animation-delay: 0.54s; }
+    @keyframes rowIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+    .li-row .k { color: var(--muted); flex: 1; }
+    .li-row .v { color: var(--text); font-weight: 700; }
+    .li-row .ok { color: var(--lime); }
+    .li-row .cy { color: var(--cyan); }
+    .li-row .dot-ok {
+      width: 5px; height: 5px; border-radius: 50%; background: var(--lime);
+      box-shadow: 0 0 6px rgba(200,241,53,0.8);
+      animation: liveBlink 2s ease-in-out infinite;
+    }
+
+    /* คอนโซล log */
+    .li-console {
+      background: #0b0d0c; border: 1px solid var(--border);
+      border-radius: 11px; padding: 10px 12px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem;
+      line-height: 1.85; color: #6f7a66;
+      min-height: 76px; position: relative; overflow: hidden;
+    }
+    .li-console .ln { white-space: nowrap; overflow: hidden; }
+    .li-console .ok { color: var(--lime); }
+    .li-console .wa { color: #febc2e; }
+    .li-console .cy { color: var(--cyan); }
+    .li-console .cur {
+      display: inline-block; width: 6px; height: 9px;
+      background: var(--lime); vertical-align: -1px;
+      animation: curBlink 1s steps(1) infinite;
+    }
+    @keyframes curBlink { 50% { opacity: 0; } }
+
+    .li-bars { display: flex; flex-direction: column; gap: 7px; position: relative; }
+    .li-bar-row { display: flex; align-items: center; gap: 8px; }
+    .li-bar-row .lbl {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.58rem; color: var(--muted); width: 74px; flex-shrink: 0;
+      letter-spacing: 0.04em;
+    }
+    .li-track { flex: 1; height: 5px; border-radius: 4px; background: #1e1e1e; overflow: hidden; }
+    .li-fill {
+      display: block; height: 100%; width: 0; border-radius: 4px;
+      background: linear-gradient(90deg, var(--lime), var(--cyan));
+      animation: barFill 1.4s cubic-bezier(.2,.9,.3,1) forwards;
+    }
+    @keyframes barFill { to { width: var(--w, 60%); } }
+    .li-bar-row .pct {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.58rem; color: var(--muted); width: 34px; text-align: right;
+    }
+
+    /* ── การ์ดใส่รหัส ── */
+    .lock-card {
+      position: relative;
+      background: #141414;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px 22px 22px;
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(200,241,53,0.05);
+    }
+    .lock-logo { display: flex; align-items: center; gap: 11px; align-self: center; }
+    .lock-badge {
+      width: 44px; height: 44px;
+      background: var(--lime); border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 700; font-size: 1.3rem; color: #111;
+      animation: badgePulse 3s ease-in-out infinite;
+    }
+    .lock-logo-text { display: flex; flex-direction: column; gap: 1px; }
+    .lock-logo-text .name {
+      font-weight: 700; font-size: 1.1rem; letter-spacing: -0.01em; color: var(--text);
+    }
+    .lock-logo-text .sub {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem; color: var(--muted); letter-spacing: 0.16em; text-transform: uppercase;
+    }
+    .lock-divider {
+      width: 100%; height: 1px;
+      background: linear-gradient(90deg, transparent, #2e2e2e, transparent);
+    }
+    .lock-status {
+      display: flex; align-items: center; gap: 8px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem; letter-spacing: 0.1em; color: var(--muted);
+    }
+    .lock-status i {
+      width: 6px; height: 6px; border-radius: 50%; background: #febc2e;
+      animation: liveBlink 1.6s ease-in-out infinite;
+    }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+
+    .lock-error {
+      font-size: 0.78rem; color: #ff4444; min-height: 1.1em;
+      text-align: center; transition: opacity 0.2s;
+    }
+    .lock-error.hidden { opacity: 0; }
+    .lock-btn {
+      width: 100%; max-width: 300px;
+      background: var(--lime); color: #111;
+      border: none; border-radius: 12px;
+      padding: 14px;
+      font-family: 'IBM Plex Sans Thai', sans-serif;
+      font-weight: 700; font-size: 0.95rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+      transition: background 0.15s, box-shadow 0.15s, transform 0.1s, opacity 0.2s;
+      box-shadow: 0 4px 22px rgba(200,241,53,0.22);
+    }
+    .lock-btn:hover:not(:disabled) {
+      background: #d8ff45; box-shadow: 0 6px 30px rgba(200,241,53,0.36); transform: translateY(-1px);
+    }
+    .lock-btn:active:not(:disabled) { transform: translateY(0); }
+    .lock-btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+    .lock-btn .spin {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid rgba(17,17,17,0.3); border-top-color: #111;
+      display: none; animation: spinner 0.7s linear infinite;
+    }
+    .lock-btn.busy .spin { display: block; }
+    @keyframes spinner { to { transform: rotate(360deg); } }
+
+    .tier-hint {
+      display: flex; gap: 8px; width: 100%; max-width: 300px;
+    }
+    .tier-chip {
+      flex: 1; text-align: center;
+      border-radius: 10px; padding: 8px 6px;
+      border: 1px dashed var(--border);
+      font-size: 0.62rem; color: var(--muted); line-height: 1.5;
+    }
+    .tier-chip b {
+      display: block; font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem; letter-spacing: 0.08em;
+    }
+    .tier-chip.basic b { color: #febc2e; }
+    .tier-chip.full b  { color: var(--lime); }
+
+    /* ══════════════ VAULT GATE — ช่องรหัสผ่านโหมดปกติ ══════════════ */
+    .gate-pane { width: 100%; display: none; flex-direction: column; align-items: center; gap: 13px; }
+    .gate-pane.active { display: flex; animation: paneIn 0.35s cubic-bezier(.2,.9,.3,1) both; }
+    @keyframes paneIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+    .pw-wrap { position: relative; width: 100%; max-width: 300px; }
+    .pw-input {
+      width: 100%; background: #1c1c1c;
+      border: 1px solid var(--border); border-radius: 12px;
+      padding: 14px 44px 14px 14px; color: var(--text);
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.95rem; letter-spacing: 0.08em;
+      outline: none; transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+    .pw-input:focus { border-color: var(--lime); background: #1f2412; box-shadow: 0 0 0 3px rgba(200,241,53,0.12); }
+    .pw-input::placeholder { letter-spacing: normal; color: #565656; font-family: 'IBM Plex Sans Thai', sans-serif; }
+    .pw-eye {
+      position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+      width: 34px; height: 34px; background: transparent; border: none;
+      cursor: pointer; color: var(--muted); font-size: 0.95rem; line-height: 1;
+      border-radius: 8px; transition: color 0.15s, background 0.15s;
+    }
+    .pw-eye:hover { color: var(--lime); background: rgba(200,241,53,0.08); }
+
+    .ghost-btn {
+      width: 100%; max-width: 300px;
+      background: transparent; border: 1px solid var(--border); border-radius: 12px;
+      padding: 11px; color: var(--cyan);
+      font-family: 'IBM Plex Sans Thai', sans-serif; font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+    }
+    .ghost-btn:hover { border-color: var(--cyan); background: rgba(34,211,238,0.08); transform: translateY(-1px); }
+    .lock-card.shake { animation: shake 0.42s ease; }
+
+    /* ══ โหมดขั้นสูง: รหัสผ่าน 50 ช่อง ══ */
+    body.adv-mode .lock-info { display: none; }
+    body.adv-mode .lock-shell { grid-template-columns: 1fr; width: min(700px, 100%); }
+    @media (min-width: 860px) { body.adv-mode .lock-shell { grid-template-columns: 1fr; } }
+
+    .adv-head { width: 100%; display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
+    .adv-t {
+      display: block; font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.82rem; font-weight: 700; color: var(--lime); letter-spacing: 0.12em;
+    }
+    .adv-s {
+      display: block; font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.58rem; color: var(--muted); letter-spacing: 0.1em; margin-top: 2px;
+    }
+    .adv-count { font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; color: var(--muted); white-space: nowrap; }
+    .adv-count b { color: var(--lime); font-size: 0.95rem; }
+    .adv-prog { width: 100%; height: 4px; border-radius: 4px; background: #1e1e1e; overflow: hidden; }
+    .adv-prog i {
+      display: block; height: 100%; width: 0;
+      background: linear-gradient(90deg, var(--lime), var(--cyan));
+      transition: width 0.28s cubic-bezier(.2,.9,.3,1);
+    }
+
+    .adv-grid {
+      width: 100%; max-height: min(44vh, 330px); overflow-y: auto; overscroll-behavior: contain;
+      display: grid; grid-template-columns: 1fr; gap: 7px;
+      padding: 10px; background: #0e0e0e;
+      border: 1px solid var(--border); border-radius: 14px;
+    }
+    @media (min-width: 540px) { .adv-grid { grid-template-columns: 1fr 1fr; } }
+    .adv-grid::-webkit-scrollbar { width: 8px; }
+    .adv-grid::-webkit-scrollbar-track { background: transparent; }
+    .adv-grid::-webkit-scrollbar-thumb { background: #2e2e2e; border-radius: 8px; }
+    .adv-grid::-webkit-scrollbar-thumb:hover { background: var(--lime); }
+    .adv-row { display: flex; align-items: center; gap: 7px; }
+    .adv-no {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem;
+      color: #565656; width: 18px; text-align: right; flex-shrink: 0;
+    }
+    .adv-in {
+      flex: 1; min-width: 0;
+      background: #191919; border: 1px solid #262626; border-radius: 8px;
+      padding: 8px 9px; color: var(--text);
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem;
+      outline: none; transition: border-color 0.14s, background 0.14s;
+    }
+    .adv-in:focus { border-color: var(--lime); background: #1f2412; }
+    .adv-in.filled { border-color: rgba(200,241,53,0.34); }
+    .adv-in::placeholder { color: #3a3a3a; }
+
+    .adv-tools { display: flex; gap: 6px; width: 100%; flex-wrap: wrap; }
+    .adv-tool {
+      flex: 1; min-width: 96px;
+      background: #191919; border: 1px solid var(--border); border-radius: 9px;
+      padding: 9px 4px; font-family: 'IBM Plex Sans Thai', sans-serif;
+      font-size: 0.68rem; color: var(--muted); cursor: pointer; transition: all 0.14s;
+    }
+    .adv-tool:hover { border-color: var(--cyan); color: var(--cyan); }
+    .bulk-box { width: 100%; display: none; flex-direction: column; gap: 7px; }
+    .bulk-box.show { display: flex; animation: paneIn 0.25s ease both; }
+    .bulk-box textarea {
+      width: 100%; height: 112px; resize: vertical;
+      background: #0e0e0e; border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px; color: var(--text);
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; line-height: 1.6; outline: none;
+    }
+    .bulk-box textarea:focus { border-color: var(--lime); }
+    .bulk-hint { font-size: 0.6rem; color: var(--muted); line-height: 1.65; }
+
+    .vault-note {
+      width: 100%; max-width: 300px; text-align: center;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.55rem;
+      color: #4d4d4d; letter-spacing: 0.06em; line-height: 1.7;
+    }
+
+    /* ══ Badge สิทธิ์บน topbar ══ */
+    .access-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #222; border: 1px solid var(--border);
+      border-radius: 8px; padding: 6px 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em;
+      color: var(--muted); cursor: pointer; flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .access-chip:hover { border-color: var(--red); color: var(--red); }
+    .access-chip i {
+      width: 6px; height: 6px; border-radius: 50%; background: #febc2e;
+      animation: liveBlink 1.8s ease-in-out infinite;
+    }
+    .access-chip.full { color: var(--lime); border-color: rgba(200,241,53,0.4); }
+    .access-chip.full i { background: var(--lime); }
+
+    /* ══ การ์ดที่ถูกล็อก ══ */
+    .card.locked { border-color: #302020; }
+    .card.locked .browser-mock,
+    .card.locked .card-body { filter: grayscale(1) brightness(0.5); }
+    .card.locked:hover {
+      transform: none; border-color: #4a2a2a;
+      box-shadow: 0 0 0 1px rgba(255,95,87,0.2);
+    }
+    .card.locked:hover .browser-mock { transform: none; }
+    .card.locked:hover .card-preview::after { animation: none; }
+    .card.locked .card-meter i { width: 0 !important; }
+    .lock-veil {
+      display: none;
+      position: absolute; inset: 0; z-index: 6;
+      background:
+        repeating-linear-gradient(135deg, rgba(255,95,87,0.05) 0 8px, transparent 8px 16px),
+        rgba(10,10,10,0.66);
+      backdrop-filter: blur(1.5px);
+      flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+      text-align: center; padding: 8px;
+    }
+    .card.locked .lock-veil { display: flex; }
+    .lv-ico { font-size: 1.3rem; filter: drop-shadow(0 0 8px rgba(255,95,87,0.5)); }
+    .lv-t {
+      font-size: 0.72rem; font-weight: 700; color: #ff8a84;
+    }
+    .lv-s {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.55rem; color: #8a6a6a; letter-spacing: 0.06em;
+    }
+    .card.denied { animation: denyShake 0.4s ease; }
+    @keyframes denyShake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    /* ลดการเคลื่อนไหวสำหรับผู้ที่ตั้งค่าไว้ */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+      #bgChart { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ พื้นหลังกราฟหุ้นวิ่ง ══ -->
+<canvas id="bgChart"></canvas>
+<div id="bgVignette"></div>
+
+<!-- ══════════ ACCESS GATE — หน้าล็อกอิน ══════════ -->
+<div id="lockScreen">
+  <div class="lock-shell">
+
+    <!-- แผงอินโฟกราฟิก -->
+    <div class="lock-info">
+      <div class="li-head">
+        <span class="li-title">Security Module</span>
+        <span class="li-live"><i></i> ARMED</span>
+      </div>
+
+      <div class="li-shield">
+        <svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="shGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stop-color="#c8f135" stop-opacity="0.16"/>
+              <stop offset="100%" stop-color="#22d3ee" stop-opacity="0.04"/>
+            </linearGradient>
+            <clipPath id="shClip">
+              <path d="M100 22 L142 38 V78 C142 104 122 120 100 128 C78 120 58 104 58 78 V38 Z"/>
+            </clipPath>
+          </defs>
+
+          <circle class="sh-ring" cx="100" cy="75" r="62" fill="none"
+                  stroke="rgba(200,241,53,0.20)" stroke-width="1" stroke-dasharray="3 9"/>
+          <circle class="sh-ring rev" cx="100" cy="75" r="54" fill="none"
+                  stroke="rgba(34,211,238,0.16)" stroke-width="1" stroke-dasharray="14 10"/>
+
+          <circle class="sh-node"    cx="100" cy="13"  r="2.6" fill="#c8f135"/>
+          <circle class="sh-node n2" cx="162" cy="75"  r="2.6" fill="#22d3ee"/>
+          <circle class="sh-node n3" cx="100" cy="137" r="2.6" fill="#c8f135"/>
+          <circle class="sh-node n4" cx="38"  cy="75"  r="2.6" fill="#22d3ee"/>
+
+          <path d="M100 22 L142 38 V78 C142 104 122 120 100 128 C78 120 58 104 58 78 V38 Z"
+                fill="url(#shGrad)"/>
+          <path class="sh-body" pathLength="1"
+                d="M100 22 L142 38 V78 C142 104 122 120 100 128 C78 120 58 104 58 78 V38 Z"
+                fill="none" stroke="#c8f135" stroke-width="2"
+                stroke-linejoin="round" stroke-linecap="round"/>
+
+          <g clip-path="url(#shClip)">
+            <line x1="58" y1="46" x2="142" y2="46" stroke="rgba(255,255,255,0.05)" stroke-width="0.7"/>
+            <line x1="58" y1="62" x2="142" y2="62" stroke="rgba(255,255,255,0.05)" stroke-width="0.7"/>
+            <line x1="58" y1="78" x2="142" y2="78" stroke="rgba(255,255,255,0.05)" stroke-width="0.7"/>
+            <line x1="58" y1="94" x2="142" y2="94" stroke="rgba(255,255,255,0.05)" stroke-width="0.7"/>
+            <line x1="58" y1="110" x2="142" y2="110" stroke="rgba(255,255,255,0.05)" stroke-width="0.7"/>
+            <rect class="sh-scan" x="56" y="72" width="88" height="10" fill="url(#shGrad)"/>
+            <rect class="sh-scan" x="56" y="76" width="88" height="1.6" fill="#c8f135" opacity="0.85"/>
+          </g>
+
+          <g class="sh-lock">
+            <path d="M90 74 V66 a10 10 0 0 1 20 0 V74" fill="none" stroke="#22d3ee" stroke-width="2.4" stroke-linecap="round"/>
+            <rect x="84" y="74" width="32" height="24" rx="4.5" fill="#0f1a1d" stroke="#22d3ee" stroke-width="2"/>
+            <circle cx="100" cy="84" r="3" fill="#c8f135"/>
+            <rect x="98.6" y="85" width="2.8" height="7" rx="1.4" fill="#c8f135"/>
+          </g>
+          <circle class="sh-pulse" cx="100" cy="84" r="16" fill="none" stroke="#c8f135" stroke-width="1.2"/>
+        </svg>
+      </div>
+
+      <div class="li-rows">
+        <div class="li-row"><span class="dot-ok"></span><span class="k">CIPHER</span><span class="v ok">AES-256-GCM</span></div>
+        <div class="li-row"><span class="dot-ok"></span><span class="k">KEY DERIVATION</span><span class="v cy">PBKDF2 / SHA-512</span></div>
+        <div class="li-row"><span class="dot-ok"></span><span class="k">ITERATIONS</span><span class="v cy"><span data-count="100000">0</span></span></div>
+        <div class="li-row"><span class="dot-ok"></span><span class="k">INTEGRITY</span><span class="v ok">GCM AUTH TAG</span></div>
+      </div>
+
+      <div class="li-console" id="liConsole"></div>
+
+      <div class="li-bars">
+        <div class="li-bar-row"><span class="lbl">ENCRYPTION</span><span class="li-track"><i class="li-fill" style="--w:100%;animation-delay:.3s"></i></span><span class="pct">100%</span></div>
+        <div class="li-bar-row"><span class="lbl">INTEGRITY</span><span class="li-track"><i class="li-fill" style="--w:100%;animation-delay:.45s"></i></span><span class="pct">100%</span></div>
+        <div class="li-bar-row"><span class="lbl">GATE LOAD</span><span class="li-track"><i class="li-fill" style="--w:12%;animation-delay:.6s"></i></span><span class="pct">12%</span></div>
+      </div>
+    </div>
+
+    <!-- การ์ดใส่รหัส -->
+    <div class="lock-card">
+      <div class="lock-logo">
+        <div class="lock-badge">S</div>
+        <div class="lock-logo-text">
+          <span class="name">SPACEZ TERMINAL</span>
+          <span class="sub">secure access gate</span>
+        </div>
+      </div>
+      <div class="lock-divider"></div>
+
+      <div class="lock-status"><i></i> <span id="gateStatus">รอการยืนยันตัวตน</span></div>
+
+      <!-- ═══════════ โหมดปกติ (BASIC) — รหัสผ่าน 1 ช่อง ═══════════ -->
+      <div class="gate-pane active" id="paneBasic">
+        <div class="pw-wrap">
+          <input class="pw-input" type="password" id="pwBasic" placeholder="กรอกรหัสผ่าน"
+                 autocomplete="off" autocapitalize="off" spellcheck="false" />
+          <button class="pw-eye" type="button" data-eye="pwBasic" title="แสดง / ซ่อนรหัส">&#128065;</button>
+        </div>
+
+        <div class="lock-error hidden" id="lockError">รหัสผ่านไม่ถูกต้อง</div>
+
+        <button class="lock-btn" id="lockBtn" type="button" data-act="basic">
+          <span class="spin"></span><span id="lockBtnTxt">เข้าสู่ระบบ</span>
+        </button>
+
+        <button class="ghost-btn" type="button" data-act="toAdv">
+          &#9889; Advanced Mode / Full Access
+        </button>
+
+        <div class="tier-hint">
+          <div class="tier-chip basic"><b>BASIC</b>รหัส 1 ช่อง · 10 ไฟล์</div>
+          <div class="tier-chip full"><b>FULL</b>รหัส 50 ช่อง · ครบทุกไฟล์</div>
+        </div>
+
+        <div class="vault-note">AES-256-GCM · PBKDF2-SHA512 · 100,000 ROUNDS<br>ข้อมูลทั้งหมดถูกเข้ารหัสอยู่ในซอร์สโค้ด</div>
+      </div>
+
+      <!-- ═══════════ โหมดขั้นสูง (FULL) — รหัสผ่าน 50 ช่อง ═══════════ -->
+      <div class="gate-pane" id="paneAdv">
+        <div class="adv-head">
+          <div>
+            <span class="adv-t">FULL ACCESS</span>
+            <span class="adv-s">50-FIELD MASTER KEY</span>
+          </div>
+          <span class="adv-count"><b id="advFilled">0</b> / 50</span>
+        </div>
+
+        <div class="adv-prog"><i id="advBar"></i></div>
+
+        <!-- ช่องทั้ง 50 ถูกสร้างด้วย JS (ไม่มีอยู่ใน HTML ต้นฉบับ) -->
+        <div class="adv-grid" id="advGrid"></div>
+
+        <div class="adv-tools">
+          <button class="adv-tool" type="button" data-act="bulk">&#128203; วางทีเดียว 50 ชุด</button>
+          <button class="adv-tool" type="button" data-act="mask">&#128065; แสดง / ซ่อน</button>
+          <button class="adv-tool" type="button" data-act="clearAll">&#128465; ล้างทั้งหมด</button>
+        </div>
+
+        <div class="bulk-box" id="bulkBox">
+          <textarea id="bulkText" spellcheck="false"
+            placeholder="วางรหัสทั้ง 50 บรรทัดตรงนี้&#10;มีเลขนำหน้า เช่น  01. xxxx  ก็ได้ ระบบตัดให้อัตโนมัติ"></textarea>
+          <button class="adv-tool" type="button" data-act="spread">&#8627; กระจายลงช่องทั้ง 50</button>
+          <div class="bulk-hint">1 บรรทัด = 1 ช่อง · ระบบจะตัดเลขลำดับ (01. / 1) และช่องว่างหัวท้ายออกให้อัตโนมัติ</div>
+        </div>
+
+        <div class="lock-error hidden" id="advError">รหัสไม่ถูกต้อง</div>
+
+        <button class="lock-btn" id="advBtn" type="button" data-act="full">
+          <span class="spin"></span><span id="advBtnTxt">เข้าสู่ระบบ Full Access</span>
+        </button>
+
+        <button class="ghost-btn" type="button" data-act="toBasic">&#8592; กลับหน้าปกติ</button>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <span class="drawer-title">เมนู</span>
+    <button class="close-btn" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-tabs">
+    <button class="dtab active" onclick="switchTab('about',this)">เกี่ยวกับ</button>
+    <button class="dtab" onclick="switchTab('contact',this)">ติดต่อ</button>
+  </div>
+  <div class="dpage active" id="tab-about">
+    <div class="about-avatar">S</div>
+    <div class="about-name">SPACEZ TERMINAL</div>
+    <div class="about-desc">แพลตฟอร์มรวมข้อสอบ CEWA<br>ระบบสิทธิ์เข้าถึง 2 ระดับ · BASIC / FULL</div>
+    <div class="info-row"><span class="info-icon">👤</span><div><div class="info-label">ชื่อ</div><div class="info-val">ชื่อของคุณ</div></div></div>
+    <div class="info-row"><span class="info-icon">🎓</span><div><div class="info-label">สถาบัน</div><div class="info-val">มหาวิทยาลัย / สถาบัน</div></div></div>
+    <div class="info-row"><span class="info-icon">📧</span><div><div class="info-label">อีเมล</div><div class="info-val">email@example.com</div></div></div>
+    <div class="info-row"><span class="info-icon">🔗</span><div><div class="info-label">GitHub</div><div class="info-val">github.com/username</div></div></div>
+  </div>
+
+  <div class="dpage" id="tab-contact">
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!--  ปุ่มศูนย์รวมคอนแทค - แก้ลิงก์ได้ที่ตัวแปร CONTACT_LINKS ในสคริปต์ด้านล่าง  -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <a class="btn-hub" id="hubBtn" href="#" target="_blank" rel="noopener">
+      <span class="hub-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c8f135" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>
+      </span>
+      <span class="hub-txt">
+        <span class="t">ศูนย์รวมคอนแทค</span>
+        <span class="s">ALL LINKS · ONE PAGE</span>
+      </span>
+      <span class="hub-arrow">→</span>
+    </a>
+
+    <div class="hub-sep">ช่องทางอื่น</div>
+    <div class="hub-grid" id="hubGrid">
+      <a class="hub-mini" data-key="facebook" href="#" target="_blank" rel="noopener"><span class="em">📘</span>Facebook</a>
+      <a class="hub-mini" data-key="line"     href="#" target="_blank" rel="noopener"><span class="em">💬</span>LINE</a>
+      <a class="hub-mini" data-key="youtube"  href="#" target="_blank" rel="noopener"><span class="em">▶️</span>YouTube</a>
+      <a class="hub-mini" data-key="github"   href="#" target="_blank" rel="noopener"><span class="em">🐙</span>GitHub</a>
+    </div>
+
+    <div class="hub-sep">ส่งข้อความ</div>
+
+    <div class="field-group"><div class="field-label">ชื่อ</div><input type="text" placeholder="ชื่อของคุณ" id="c-name" /></div>
+    <div class="field-group"><div class="field-label">อีเมล</div><input type="email" placeholder="email@example.com" id="c-email" /></div>
+    <div class="field-group"><div class="field-label">ข้อความ</div><textarea placeholder="พิมพ์ข้อความ..." id="c-msg"></textarea></div>
+    <button class="send-btn" onclick="sendContact()">ส่งข้อความ</button>
+    <div class="success-msg" id="success-msg">✅ ส่งสำเร็จแล้ว! ขอบคุณที่ติดต่อมา</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="logo-badge">S</div>
+    <span class="logo-text">SPACEZ</span>
+    <span class="logo-sub">terminal</span>
+    <span class="access-chip" id="accessChip" style="display:none" onclick="relock()" title="ออกจากระบบ"><i></i>BASIC</span>
+    <button class="hamburger" onclick="openDrawer()" aria-label="เมนู">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+
+  <div class="ticker">
+    <div class="ticker-track" id="tickerTrack"></div>
+  </div>
+
+  <div class="section-label">
+    Images &amp; Exams
+    <span class="count" id="accessCount">400 ชุด</span>
+  </div>
+
+  <div class="grid" id="cardGrid"></div>
+
+  <div class="pagination" id="pagination"></div>
+
+  <!-- ปุ่มสุ่มข้อสอบ (ไอคอนอินโฟกราฟิก) -->
+  <div class="random-wrap">
+    <button class="btn-random" id="randomBtn" onclick="rollRandom()">
+      <span class="rnd-ico">
+        <svg viewBox="0 0 40 40" width="38" height="38">
+          <circle class="rnd-ring" cx="20" cy="20" r="16.5" fill="none"
+                  stroke="#c8f135" stroke-width="1.2" stroke-opacity="0.55"
+                  stroke-dasharray="5 6" stroke-linecap="round"/>
+          <rect class="rnd-bar"    x="9"  y="18" width="4" height="12" rx="1.4" fill="#5a6b1d"/>
+          <rect class="rnd-bar b2" x="15" y="14" width="4" height="16" rx="1.4" fill="#8ca82a"/>
+          <rect class="rnd-bar b3" x="21" y="16" width="4" height="14" rx="1.4" fill="#a9c930"/>
+          <rect class="rnd-bar b4" x="27" y="11" width="4" height="19" rx="1.4" fill="#c8f135"/>
+          <polyline class="rnd-spark" points="8,24 14,19 20,22 26,14 31,9"
+                    fill="none" stroke="#22d3ee" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round"/>
+          <circle class="rnd-spark" cx="31" cy="9" r="2" fill="#22d3ee"/>
+        </svg>
+      </span>
+      <span class="btn-txt">
+        <span class="t">สุ่มข้อสอบ</span>
+        <span class="s" id="rndSub">RANDOM PICK</span>
+      </span>
+    </button>
+
+    <!-- ตัวเลือกขอบเขตการสุ่ม -->
+    <div class="roll-opts">
+      <div class="ro-head">
+        <span class="ro-label">ขอบเขต</span>
+        <div class="ro-modes" id="roModes">
+          <button class="ro active" data-mode="all">ทั้งหมด</button>
+          <button class="ro" data-mode="page">หน้านี้</button>
+          <button class="ro" data-mode="range">กำหนดเอง</button>
+        </div>
+      </div>
+      <div class="ro-range" id="roRange">
+        <div class="ro-unit" id="roUnit">
+          <button class="ru active" data-unit="set">ชุด</button>
+          <button class="ru" data-unit="page">หน้า</button>
+        </div>
+        <input type="number" id="rFrom" min="1" value="1" inputmode="numeric" />
+        <span class="ro-dash">→</span>
+        <input type="number" id="rTo" min="1" value="20" inputmode="numeric" />
+        <span class="ro-info" id="roInfo"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <a class="btn-passphrase" href="SPPG.html">
+      <span class="pf-icon">🔐</span><span class="pf-text">ระบบสุ่มพาสเฟส</span>
+    </a>
+
+    <!-- ปุ่มระบบสแกนหุ้น (เรดาร์ + กราฟวิ่ง) -->
+    <a class="btn-scan" href="SPACEZ_TERMINAL.html">
+      <svg class="btn-bgline" viewBox="0 0 200 44" preserveAspectRatio="none">
+        <polyline points="0,32 18,26 34,30 50,18 66,24 84,12 100,20 118,9 134,17 152,7 170,14 200,5"
+                  fill="none" stroke="#22d3ee" stroke-width="1.4" stroke-linejoin="round" opacity="0.5"/>
+      </svg>
+      <span class="scan-ico">
+        <svg viewBox="0 0 40 40" width="34" height="34">
+          <circle cx="20" cy="20" r="15" fill="none" stroke="rgba(34,211,238,0.35)" stroke-width="1.2"/>
+          <circle cx="20" cy="20" r="9.5" fill="none" stroke="rgba(34,211,238,0.22)" stroke-width="1"/>
+          <circle cx="20" cy="20" r="4" fill="none" stroke="rgba(34,211,238,0.18)" stroke-width="1"/>
+          <line x1="20" y1="5" x2="20" y2="35" stroke="rgba(34,211,238,0.14)" stroke-width="0.8"/>
+          <line x1="5" y1="20" x2="35" y2="20" stroke="rgba(34,211,238,0.14)" stroke-width="0.8"/>
+          <g class="radar-sweep">
+            <path d="M20 20 L20 5 A15 15 0 0 1 33 12 Z" fill="url(#sweepGrad)"/>
+            <line x1="20" y1="20" x2="20" y2="5" stroke="#22d3ee" stroke-width="1.4"/>
+          </g>
+          <circle class="blip"    cx="27" cy="14" r="1.6" fill="#c8f135"/>
+          <circle class="blip b2" cx="13" cy="25" r="1.6" fill="#22d3ee"/>
+          <circle class="blip b3" cx="25" cy="27" r="1.6" fill="#c8f135"/>
+          <defs>
+            <linearGradient id="sweepGrad" x1="0" y1="1" x2="1" y2="0">
+              <stop offset="0%"   stop-color="#22d3ee" stop-opacity="0.55"/>
+              <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </span>
+      <span class="btn-txt">
+        <span class="t">ระบบสแกนหุ้น</span>
+        <span class="s">SPACEZ TERMINAL</span>
+      </span>
+    </a>
+  </div>
+
+  <!-- ปุ่มคำนวณภาษี -->
+  <div class="tax-wrap">
+    <a class="btn-tax" href="SPACEZ_TAX_TERMINAL.html">
+      <span class="tax-ico">
+        <svg viewBox="0 0 40 40" width="38" height="38">
+          <rect x="6" y="6" width="20" height="28" rx="3.5" fill="#12191c" stroke="rgba(34,211,238,0.5)" stroke-width="1.3"/>
+          <rect x="9" y="9.5" width="14" height="5" rx="1.4" fill="rgba(34,211,238,0.16)" stroke="rgba(34,211,238,0.35)" stroke-width="0.7"/>
+          <g fill="rgba(34,211,238,0.55)">
+            <rect x="9"    y="17" width="4" height="3.4" rx="1"/>
+            <rect x="14.8" y="17" width="4" height="3.4" rx="1"/>
+            <rect x="9"    y="22" width="4" height="3.4" rx="1"/>
+            <rect x="14.8" y="22" width="4" height="3.4" rx="1"/>
+            <rect x="9"    y="27" width="9.8" height="3.4" rx="1"/>
+          </g>
+          <rect x="20.6" y="17" width="2.4" height="13.4" rx="1" fill="#c8f135" opacity="0.75"/>
+          <g class="tax-coin">
+            <circle cx="30" cy="13" r="6.5" fill="#1b1c0d" stroke="#c8f135" stroke-width="1.3"/>
+            <text x="30" y="16.4" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                  font-size="8" font-weight="700" fill="#c8f135" class="tax-pct">%</text>
+          </g>
+          <rect class="tax-bar"    x="27"   y="26" width="3" height="8"  rx="1.2" fill="#1c7d8c"/>
+          <rect class="tax-bar t2" x="31.2" y="23" width="3" height="11" rx="1.2" fill="#22d3ee"/>
+          <rect class="tax-bar t3" x="35.4" y="27" width="3" height="7"  rx="1.2" fill="#7ee7f7"/>
+        </svg>
+      </span>
+      <span class="btn-txt">
+        <span class="t">คำนวณภาษี</span>
+        <span class="s">SPACEZ TAX TERMINAL</span>
+      </span>
+      <span class="tax-badge">TAX</span>
+    </a>
+  </div>
+</div>
+
+<div class="roll-overlay" id="rollOverlay">
+  <div class="roll-pill" id="rollPill">?</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ══════════════════════════════════════════════════════════════
+     ⬇⬇  แก้ลิงก์ตรงนี้ได้เลย (เว้นว่าง = ปุ่มนั้นจะถูกซ่อนอัตโนมัติ)  ⬇⬇
+     ══════════════════════════════════════════════════════════════ */
+  const CONTACT_LINKS = {
+    hub:      '',   // ← ศูนย์รวมคอนแทค เช่น https://linktr.ee/xxxx
+    facebook: '',   // ← https://facebook.com/xxxx
+    line:     '',   // ← https://line.me/ti/p/xxxx
+    youtube:  '',   // ← https://youtube.com/@xxxx
+    github:   ''    // ← https://github.com/xxxx
+  };
+  /* ══════════════════════════════════════════════════════════════ */
+
+  /* ══════════════════════════════════════════════════════════════
+     SPACEZ SECURE VAULT — CLIENT-SIDE ENCRYPTION
+     ──────────────────────────────────────────────────────────────
+     • ไฟล์นี้ไม่มีรายชื่อไฟล์ / HTML จริง เป็น plaintext เลยแม้แต่บรรทัดเดียว
+       ทุกอย่างอยู่ในรูป Ciphertext ที่ VAULT_BASIC / VAULT_FULL ด้านล่าง
+       (ไม่ได้ใช้ CSS display:none ซ่อน — ข้อมูลไม่มีอยู่จริงจนกว่าจะถอดรหัสสำเร็จ)
+     • Key Derivation : PBKDF2 + SHA-512 · 100,000 iterations
+     • Encryption     : AES-256-GCM (Authenticated Encryption)
+     • Anti-Tampering : ถ้าแก้ Ciphertext / Salt / IV แม้แต่ไบต์เดียว GCM auth tag
+       จะไม่ผ่าน → โยน "Tampering Detected" และไม่แสดงข้อมูลใด ๆ
+       การเข้า DevTools ไปแก้ if/else ก็ไม่ช่วย เพราะการ์ดทุกใบถูกสร้าง
+       จากข้อความที่ถอดรหัสได้เท่านั้น ไม่มีสาขาโค้ดไหนที่ข้ามการถอดรหัสได้
+     ══════════════════════════════════════════════════════════════ */
+  const KDF_HASH    = 'SHA-512';
+  const KDF_ITER    = 100000;
+  const FIELD_COUNT = 50;
+  const SESSION_KEY = 'spacez_vault_v3';
+
+  /* ══════════════════════════════════════════════════════════════
+     // เอาค่า Ciphertext, Salt, IV ของหน้า Basic มาใส่ตรงนี้
+     สร้างได้จากไฟล์  ADMIN_GENERATOR.html  (แท็บ BASIC)
+     ══════════════════════════════════════════════════════════════ */
+  const VAULT_BASIC = {
+    salt: 'AZJoxctHsabesJpI5VQgAg==',
+    iv:   'e6O0w67dcDgntS82',
+    ct:   'jXoFZyj0EreWlM20l8ItMsG73A8d3mmzWZy4qMR7FwjULw0N7p4oNUkWAZk0oLSDlvEJe6PCELVMbqQF4M6V9JU5Hmcfs62dpeJJ/uxv3zMMXQponPbLzSGY1xWtD8NMLBozuhEnhwt9L3DoNwtFdEim0tGrq5Yl41lsGjpRXDhZRphfsXnekrnKJYL90UFWOa4T51l+C3e5gavO+501OuHVFoRJg1eJ6ng5w1jabhOXmbIwbvlz8S7DAH/rhHw0HQ3C/aKe4nkCOTzEfRWti+qaRPQRbzfXn9Ru0IKmyhWkiG4ssj7aRiPSv1nOjyBa8cvSL1ggCxbw3vP2a3+ZvXb+W/5iciSO7MF8sooQRD03vVRir1LEy+mzvO8bUS63htQOhGXh2oXr8EQxfwKpCHoyUoQAUMdLMbDoHXovRiby1oPHCGJag6MDnjiRzTbqgdxnfm6QgE0oziNtZuUTyG+lWUEtMTVI6qiBjcncor02uk81q0EJak/3q7wEw09tlFtlQX2G3/PCH9EjDNadBSVrBt1IA+xk90CuS7bWmCeNPj5Ywys85JRuDshfq05X0STmSj228n4DVW3vdLm+BiRfG8LtA8ge7qNvHcig1vwURaDoC3uHRXpw4Kqx5d3YM0OR9kltnB92UoPWae7fdTuzSPn5MMdzGvnw11E5UAUACFhRR0zL4MAnRcIwx41ZCVruojxMP1o2O88N7pfWKtWNRDv6G5uKG1SbssYHWDFhk2CjAQTCoGbQFX77sSkWJhvsoiOTcFcbuwA1mxjrUsnXnlVv8a15I9p5EYLesvOOQMtCG9kKZ0YFk2LX9Ty63teSej6RARFf8GV4KyUrjGkIehzAYkY422A5FOY4JYKAwSbDMunHLgAVMyCEvzSM0uetaSfK0QnyMuYCt4K7Lfhll3cf4Mg2Ps2H8mVMOmwPdWRbLUSCeYxaMloFrxrv/jD1Ll1vm+S4S1T+2Pfyk22Y5cKqTq4api1C71CQgEuo8krO+/bZqok5oWV4qHqmLtPJL4Al4rMvKx5zK3/RZ4Tq8p00q7eT9eeDm5XHtIc6svaDZj0cHHVzeswfdJcMdxJxOZyb0E7/866Eg4xYpKF2JvQc7r8LNdp5IsToB9PDpRNI/kcPXAI9vBGgIBKoesc='
+  };
+
+  /* ══════════════════════════════════════════════════════════════
+     // เอาค่า Ciphertext, Salt, IV ของหน้า Full Access (รหัส 50 ช่อง) มาใส่ตรงนี้
+     สร้างได้จากไฟล์  ADMIN_GENERATOR.html  (แท็บ FULL ACCESS)
+     ══════════════════════════════════════════════════════════════ */
+  const VAULT_FULL = {
+    salt: 'Psq3/g+xpuTmreIgBCn7dw==',
+    iv:   'IMrygQeHXXeRZY9Y',
+    ct:   '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'
+  };
+
+  let ACCESS    = null;   // 'basic' | 'full' | null
+  let attempts  = 0;
+  let lockUntil = 0;
+
+  /* ── base64 → bytes ── */
+  function b64ToBytes(s) {
+    const bin = atob(s);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  /* ── PBKDF2-SHA512 100,000 รอบ → คีย์ AES-256 ── */
+  async function deriveAesKey(password, saltB64) {
+    const base = await crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt: b64ToBytes(saltB64), iterations: KDF_ITER, hash: KDF_HASH },
+      base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  }
+
+  /* ── ถอดรหัสตู้เซฟ: ผิดรหัส หรือ ciphertext ถูกแก้ = โยน Tampering Detected ── */
+  async function openVault(vault, password) {
+    if (!vault || !vault.salt || !vault.iv || !vault.ct ||
+        vault.ct.indexOf('__') === 0) throw new Error('VAULT_EMPTY');
+
+    const key = await deriveAesKey(password, vault.salt);
+    let raw;
+    try {
+      raw = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: b64ToBytes(vault.iv), tagLength: 128 }, key, b64ToBytes(vault.ct));
+    } catch (e) {
+      throw new Error('Tampering Detected');   // GCM auth tag ไม่ผ่าน
+    }
+
+    let data;
+    try { data = JSON.parse(new TextDecoder().decode(raw)); }
+    catch (e) { throw new Error('Tampering Detected'); }
+
+    if (!data || !Array.isArray(data.items) || data.items.length === 0) {
+      throw new Error('Tampering Detected');
+    }
+    return data;
+  }
+
+  /* ── ตัวช่วย UI ── */
+  function gateMsg(t) { const el = document.getElementById('gateStatus'); if (el) el.textContent = t; }
+  function showErr(id, msg) {
+    const e = document.getElementById(id);
+    if (!e) return;
+    e.textContent = msg; e.classList.remove('hidden');
+    const card = document.querySelector('.lock-card');
+    if (card) { card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); }
+  }
+  function hideErr(id) { const e = document.getElementById(id); if (e) e.classList.add('hidden'); }
+
+  /* ── สร้างช่องรหัส 50 ช่องด้วย JS ── */
+  function buildAdvFields() {
+    const g = document.getElementById('advGrid');
+    if (!g) return;
+    let h = '';
+    for (let i = 1; i <= FIELD_COUNT; i++) {
+      const nn = (i < 10 ? '0' : '') + i;
+      h += '<div class="adv-row"><span class="adv-no">' + nn + '</span>' +
+           '<input class="adv-in" type="password" data-i="' + i + '" placeholder="ช่องที่ ' + nn + '" ' +
+           'autocomplete="off" autocapitalize="off" spellcheck="false" /></div>';
+    }
+    g.innerHTML = h;
+
+    g.addEventListener('input', e => {
+      const el = e.target.closest('.adv-in');
+      if (!el) return;
+      el.classList.toggle('filled', el.value.trim().length > 0);
+      updateAdvCount();
+      hideErr('advError');
+    });
+
+    g.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      const el = e.target.closest('.adv-in');
+      if (!el) return;
+      e.preventDefault();
+      const i = parseInt(el.dataset.i, 10);
+      if (i < FIELD_COUNT) {
+        const nx = g.querySelector('.adv-in[data-i="' + (i + 1) + '"]');
+        if (nx) nx.focus();
+      } else {
+        unlockFull();
+      }
+    });
+  }
+
+  function advInputs() { return Array.from(document.querySelectorAll('#advGrid .adv-in')); }
+  function advValues() { return advInputs().map(i => i.value.trim()); }
+
+  function updateAdvCount() {
+    const filled = advValues().filter(Boolean).length;
+    const c = document.getElementById('advFilled');
+    const b = document.getElementById('advBar');
+    if (c) c.textContent = filled;
+    if (b) b.style.width = (filled / FIELD_COUNT * 100) + '%';
+  }
+
+  /* ── สลับหน้าจอ ปกติ ⇄ ขั้นสูง ── */
+  function showPane(which) {
+    const pb = document.getElementById('paneBasic');
+    const pa = document.getElementById('paneAdv');
+    if (which === 'adv') {
+      pb.classList.remove('active'); pa.classList.add('active');
+      document.body.classList.add('adv-mode');
+      gateMsg('ADVANCED MODE · 50-FIELD MASTER KEY');
+      setTimeout(() => { const f = document.querySelector('.adv-in[data-i="1"]'); if (f) f.focus(); }, 90);
+    } else {
+      pa.classList.remove('active'); pb.classList.add('active');
+      document.body.classList.remove('adv-mode');
+      gateMsg('รอการยืนยันตัวตน');
+      setTimeout(() => { const f = document.getElementById('pwBasic'); if (f) f.focus(); }, 90);
+    }
+  }
+
+  /* ── วางรหัสทีเดียว 50 บรรทัด ── */
+  function spreadBulk() {
+    const box = document.getElementById('bulkText');
+    const lines = box.value.split(/\r?\n/)
+      .map(l => l.replace(/^\s*\d{1,2}\s*[.)\]:\-]\s+/, '').trim())
+      .filter(l => l.length > 0);
+    advInputs().forEach((el, idx) => {
+      el.value = lines[idx] || '';
+      el.classList.toggle('filled', !!lines[idx]);
+    });
+    updateAdvCount();
+    box.value = '';
+    document.getElementById('bulkBox').classList.remove('show');
+    toast('กระจายแล้ว ' + Math.min(lines.length, FIELD_COUNT) + ' / ' + FIELD_COUNT + ' ช่อง');
+  }
+
+  /* ══ เข้าสู่ระบบ: โหมดปกติ (รหัส 1 ช่อง) ══ */
+  async function unlockBasic() {
+    if (Date.now() < lockUntil) return;
+    const pw = document.getElementById('pwBasic').value;
+    if (!pw) { showErr('lockError', 'กรุณากรอกรหัสผ่าน'); return; }
+    await runUnlock({
+      vault: VAULT_BASIC, password: pw,
+      btn: 'lockBtn', txt: 'lockBtnTxt', label: 'เข้าสู่ระบบ', err: 'lockError'
+    });
+  }
+
+  /* ══ เข้าสู่ระบบ: Full Access (นำทั้ง 50 ช่องมาต่อกันเป็น Master Password) ══ */
+  async function unlockFull() {
+    if (Date.now() < lockUntil) return;
+    const vals = advValues();
+    const filled = vals.filter(Boolean).length;
+    if (filled < FIELD_COUNT) {
+      showErr('advError', 'กรอกไม่ครบ — ยังขาดอีก ' + (FIELD_COUNT - filled) + ' ช่อง');
+      return;
+    }
+    await runUnlock({
+      vault: VAULT_FULL, password: vals.join(''),   // ← Concatenate ทั้ง 50 ช่อง
+      btn: 'advBtn', txt: 'advBtnTxt', label: 'เข้าสู่ระบบ Full Access', err: 'advError'
+    });
+  }
+
+  async function runUnlock(o) {
+    const btn = document.getElementById(o.btn);
+    const txt = document.getElementById(o.txt);
+    btn.classList.add('busy'); btn.disabled = true;
+    txt.textContent = 'กำลังถอดรหัส...';
+    gateMsg('PBKDF2-SHA512 · 100,000 rounds');
+    hideErr(o.err);
+    await new Promise(r => setTimeout(r, 50));
+
+    try {
+      const data = await openVault(o.vault, o.password);
+      try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(data)); } catch (e) {}
+      gateMsg('ถอดรหัสสำเร็จ · ' + String(data.tier || '').toUpperCase());
+      grantAccess(data);
+    } catch (err) {
+      btn.classList.remove('busy'); btn.disabled = false;
+      txt.textContent = o.label;
+
+      if (err.message === 'VAULT_EMPTY') {
+        showErr(o.err, 'ยังไม่ได้ใส่ค่า Ciphertext / Salt / IV ในโค้ด');
+        gateMsg('vault ว่าง — ใช้ ADMIN_GENERATOR.html สร้างก่อน');
+        return;
+      }
+
+      attempts++;
+      showErr(o.err, '⛔ Tampering Detected — รหัสไม่ถูกต้อง หรือข้อมูลถูกดัดแปลง (ครั้งที่ ' + attempts + ')');
+      gateMsg('การถอดรหัสล้มเหลว');
+      if (attempts >= 5) startCooldown(30);
+    }
+  }
+
+  /* ── ปลดล็อกสำเร็จ: สร้างรายการไฟล์จากข้อมูลที่ถอดรหัสได้เท่านั้น ── */
+  function grantAccess(data) {
+    ACCESS = (data.tier === 'full') ? 'full' : 'basic';
+
+    MANIFEST = data.items.map((it, idx) => ({
+      n:     it.n || (idx + 1),
+      title: String(it.t || it.title || ('SET' + (idx + 1))),
+      href:  String(it.h || it.href || '#'),
+      sub:   String(it.s || it.sub || '')
+    }));
+    TOTAL_SETS = MANIFEST.length;
+    PAGE_COUNT = Math.max(1, Math.ceil(TOTAL_SETS / PER_PAGE));
+    attempts = 0;
+
+    /* ล้างรหัสผ่านออกจาก DOM ทันทีหลังใช้เสร็จ */
+    const pb = document.getElementById('pwBasic');
+    if (pb) pb.value = '';
+    advInputs().forEach(el => { el.value = ''; el.classList.remove('filled'); });
+    updateAdvCount();
+
+    document.getElementById('lockScreen').classList.add('hidden');
+    document.body.classList.remove('adv-mode');
+    document.body.style.overflow = '';
+
+    refreshRollUI();
+    showPage(1);
+    applyAccess();
+
+    setTimeout(() => {
+      toast(ACCESS === 'full'
+        ? '🟢 FULL ACCESS · เปิดครบทั้ง ' + TOTAL_SETS + ' ชุด'
+        : '🟡 BASIC ACCESS · เปิดได้ ' + TOTAL_SETS + ' ชุด');
+    }, 550);
+  }
+
+  /* ── กู้สถานะภายในแท็บเดิม (เก็บเฉพาะข้อมูลที่ถอดแล้ว ไม่เก็บรหัสผ่าน) ── */
+  function restoreSession() {
+    let raw = null;
+    try { raw = sessionStorage.getItem(SESSION_KEY); } catch (e) { return false; }
+    if (!raw) return false;
+    try {
+      const data = JSON.parse(raw);
+      if (!data || !Array.isArray(data.items) || !data.items.length) throw 0;
+      grantAccess(data);
+      return true;
+    } catch (e) {
+      try { sessionStorage.removeItem(SESSION_KEY); } catch (e2) {}
+      return false;
+    }
+  }
+
+  /* ── ใส่ผิดครบ 5 ครั้ง = พักการทำงาน 30 วินาที ── */
+  function startCooldown(sec) {
+    lockUntil = Date.now() + sec * 1000;
+    const btns = ['lockBtn', 'advBtn'].map(id => document.getElementById(id)).filter(Boolean);
+    btns.forEach(b => b.disabled = true);
+    let left = sec;
+    gateMsg('ระบบล็อกชั่วคราว');
+    const paint = () => {
+      const msg = 'ใส่ผิดหลายครั้ง — รออีก ' + left + ' วินาที';
+      ['lockError', 'advError'].forEach(id => {
+        const e = document.getElementById(id);
+        if (e) { e.textContent = msg; e.classList.remove('hidden'); }
+      });
+    };
+    paint();
+    const tick = setInterval(() => {
+      left--;
+      if (left <= 0) {
+        clearInterval(tick);
+        btns.forEach(b => b.disabled = false);
+        attempts = 0; lockUntil = 0;
+        hideErr('lockError'); hideErr('advError');
+        gateMsg('รอการยืนยันตัวตน');
+      } else { paint(); }
+    }, 1000);
+  }
+
+  /* ── ตัวเลขนับขึ้นในแผงอินโฟกราฟิก ── */
+  function countUp() {
+    document.querySelectorAll('.li-rows [data-count]').forEach(el => {
+      const target = parseInt(el.dataset.count, 10);
+      const dur = 1200; const t0 = performance.now();
+      (function step(now) {
+        const p = Math.min(1, (now - t0) / dur);
+        const eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(target * eased);
+        if (p < 1) requestAnimationFrame(step);
+      })(t0);
+    });
+  }
+
+  /* ── log ระบบความปลอดภัยหน้าล็อกอิน ── */
+  function bootConsole() {
+    const el = document.getElementById('liConsole');
+    if (!el) return;
+    const lines = [
+      ['ok', 'web crypto subtle ready'],
+      ['ok', 'vault sealed · aes-256-gcm'],
+      ['cy', 'pbkdf2-sha512 x100000'],
+      ['wa', 'awaiting master key...']
+    ];
+    let i = 0;
+    (function next() {
+      if (i >= lines.length) {
+        el.insertAdjacentHTML('beforeend', '<div class="ln"><span class="cur"></span></div>');
+        return;
+      }
+      const [cls, txt] = lines[i++];
+      const tag = cls === 'ok' ? '[ ok ]' : cls === 'wa' ? '[ .. ]' : '[ >> ]';
+      el.insertAdjacentHTML('beforeend',
+        '<div class="ln"><span class="' + cls + '">' + tag + '</span> ' + txt + '</div>');
+      el.scrollTop = el.scrollHeight;
+      setTimeout(next, 380);
+    })();
+  }
+
+  /* ── อัปเดตป้ายสิทธิ์ (การ์ดที่ไม่มีสิทธิ์จะไม่ถูกสร้างขึ้นเลย) ── */
+  function applyAccess() {
+    const cnt = document.getElementById('accessCount');
+    if (cnt) cnt.textContent = TOTAL_SETS ? ('เปิดได้ ' + TOTAL_SETS + ' ชุด') : '— ยังไม่ได้เข้าสู่ระบบ';
+
+    const chip = document.getElementById('accessChip');
+    if (chip) {
+      chip.classList.toggle('full', ACCESS === 'full');
+      chip.innerHTML = '<i></i>' + (ACCESS === 'full' ? 'FULL ' : 'BASIC ') + TOTAL_SETS;
+      chip.style.display = ACCESS ? 'inline-flex' : 'none';
+    }
+  }
+
+  /* ── ออกจากระบบ (แตะสองครั้ง) ── */
+  let relockArm = 0;
+  function relock() {
+    if (Date.now() - relockArm < 3000) {
+      sessionStorage.removeItem(SESSION_KEY);
+      location.reload();
+      return;
+    }
+    relockArm = Date.now();
+    toast('แตะอีกครั้งภายใน 3 วินาที เพื่อออกจากระบบ');
+  }
+
+  /* ── Toast ── */
+  let toastTimer = null;
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  }
+
+  /* ── PRNG แบบมี seed (Mulberry32) ── */
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  /* ══ สร้างกราฟ SVG ในการ์ดแต่ละใบ ══ */
+  const W = 120, H = 52, N = 26;
+  function buildSpark(num) {
+    const rnd = mulberry32(num * 7919 + 131);
+    const bias = (rnd() - 0.45) * 0.045;
+    let v = 0.35 + rnd() * 0.3;
+    const pts = [], vols = [];
+    for (let i = 0; i < N; i++) {
+      v += (rnd() - 0.5) * 0.15 + bias;
+      v = Math.max(0.10, Math.min(0.90, v));
+      pts.push(v);
+      vols.push(0.25 + rnd() * 0.75);
+    }
+    const up  = pts[N - 1] >= pts[0];
+    const chg = ((pts[N - 1] - pts[0]) / Math.max(pts[0], 0.12) * 14);
+    const col = up ? '#c8f135' : '#ff5f57';
+    const gid = 'sg' + num;
+
+    const x = i => (i * (W / (N - 1)));
+    const y = v => (H - 5) - v * (H - 14);
+
+    let line = '', area = '', vbars = '';
+    for (let i = 0; i < N; i++) {
+      line += (i ? ' L' : 'M') + x(i).toFixed(1) + ' ' + y(pts[i]).toFixed(1);
+      const bh = 3 + vols[i] * 11, bw = (W / N) * 0.5;
+      vbars += '<rect class="vol" x="' + (x(i) - bw / 2).toFixed(1) + '" y="' + (H - bh).toFixed(1) +
+               '" width="' + bw.toFixed(1) + '" height="' + bh.toFixed(1) +
+               '" fill="' + col + '" opacity="0.13" style="animation-delay:' + (i * 18) + 'ms"/>';
+    }
+    area = line + ' L' + W + ' ' + H + ' L0 ' + H + ' Z';
+
+    const lx = x(N - 1), ly = y(pts[N - 1]);
+
+    return {
+      up: up, chg: chg,
+      svg:
+        '<svg class="spark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
+          '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">' +
+            '<stop offset="0%" stop-color="' + col + '" stop-opacity="0.34"/>' +
+            '<stop offset="100%" stop-color="' + col + '" stop-opacity="0"/>' +
+          '</linearGradient></defs>' +
+          '<g>' +
+            '<line class="gl" x1="0" y1="13" x2="' + W + '" y2="13"/>' +
+            '<line class="gl" x1="0" y1="26" x2="' + W + '" y2="26"/>' +
+            '<line class="gl" x1="0" y1="39" x2="' + W + '" y2="39"/>' +
+          '</g>' +
+          vbars +
+          '<path class="area" d="' + area + '" fill="url(#' + gid + ')"/>' +
+          '<path class="line" d="' + line + '" stroke="' + col + '" pathLength="1"/>' +
+          '<circle class="ring" cx="' + lx.toFixed(1) + '" cy="' + ly.toFixed(1) + '" r="2" fill="none" stroke="' + col + '" stroke-width="1"/>' +
+          '<circle class="tip" cx="' + lx.toFixed(1) + '" cy="' + ly.toFixed(1) + '" r="1.9" fill="' + col + '"/>' +
+          '<rect class="scan" x="-2" y="0" width="2" height="' + H + '" fill="' + col + '" opacity="0.5"/>' +
+        '</svg>'
+    };
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  /* การ์ดทุกใบสร้างจากข้อมูลที่ถอดรหัสได้เท่านั้น — ไม่มี href ใดอยู่ในซอร์สโค้ด */
+  function cardHTML(item, idx) {
+    const d = buildSpark(item.n || (idx + 1));
+    return '<a class="card" href="' + esc(item.href) + '" data-name="' + esc(item.title) +
+      '" data-num="' + (idx + 1) + '" tabindex="0">' +
+      '<div class="card-preview"><div class="browser-mock">' +
+        '<div class="browser-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>' +
+        '<div class="browser-url">spacez://' + esc(item.title.toLowerCase()) + '</div><div class="live-dot"></div></div>' +
+        '<div class="browser-content">' + d.svg + '</div>' +
+      '</div></div>' +
+      '<div class="card-meter"><i></i></div>' +
+      '<div class="card-body"><div class="card-head">' +
+        '<span class="card-title">' + esc(item.title) + '</span>' +
+        '<span class="card-chg ' + (d.up ? 'up' : 'down') + '">' +
+          (d.chg >= 0 ? '+' : '') + d.chg.toFixed(2) + '%</span></div>' +
+      '<span class="card-sub">' + esc(item.sub || item.title) + '</span></div></a>';
+  }
+
+  /* เล่นกราฟใหม่ตอนเอาเมาส์ชี้ */
+  function replay(card) {
+    const svg = card.querySelector('.spark');
+    if (!svg) return;
+    const line = svg.querySelector('.line');
+    const area = svg.querySelector('.area');
+    [line, area].forEach(el => {
+      if (!el) return;
+      el.style.animation = 'none';
+      void el.getBoundingClientRect();
+      el.style.animation = '';
+    });
+  }
+
+  /* ── Pagination + Cards ──
+     MANIFEST = รายการไฟล์ทั้งหมด ว่างเปล่าเสมอจนกว่าจะถอดรหัสสำเร็จ
+     จำนวนชุด / ชื่อ / ลิงก์ ไม่มีอยู่ในซอร์สโค้ดเลย                       */
+  const PER_PAGE = 20;
+  let MANIFEST   = [];
+  let TOTAL_SETS = 0;
+  let PAGE_COUNT = 1;
+  let currentPage = 1;
+
+  function pageOf(name) {
+    const i = MANIFEST.findIndex(x => x.title === name);
+    return i < 0 ? 1 : Math.min(PAGE_COUNT, Math.floor(i / PER_PAGE) + 1);
+  }
+
+  function renderGrid(page) {
+    const grid  = document.getElementById('cardGrid');
+    if (!MANIFEST.length) { grid.innerHTML = ''; return; }
+    const start = (page - 1) * PER_PAGE;
+    let html = '';
+    for (let i = start; i < start + PER_PAGE && i < MANIFEST.length; i++) html += cardHTML(MANIFEST[i], i);
+    grid.innerHTML = html;
+    grid.querySelectorAll('.card').forEach((c, i) => {
+      c.style.animationDelay = (i * 26) + 'ms';
+      c.classList.add('anim');
+      c.addEventListener('mouseenter', () => replay(c));
+    });
+    applyAccess();
+  }
+
+  function renderPagination() {
+    const el = document.getElementById('pagination');
+    if (!MANIFEST.length) { el.innerHTML = ''; return; }
+    const cur = currentPage, last = PAGE_COUNT;
+    const set = new Set([1, last, cur, cur - 1, cur + 1]);
+    if (cur <= 3) { set.add(2); set.add(3); set.add(4); }
+    if (cur >= last - 2) { set.add(last - 1); set.add(last - 2); set.add(last - 3); }
+    const list = Array.from(set).filter(n => n >= 1 && n <= last).sort((a, b) => a - b);
+
+    let html = '<button class="page-btn nav" data-go="' + (cur - 1) + '"' +
+               (cur === 1 ? ' disabled' : '') + '>\u2039</button>';
+    let prev = 0;
+    list.forEach(n => {
+      if (prev && n - prev > 1) html += '<span class="page-gap">\u2026</span>';
+      html += '<button class="page-btn' + (n === cur ? ' active' : '') +
+              '" data-go="' + n + '">' + n + '</button>';
+      prev = n;
+    });
+    html += '<button class="page-btn nav" data-go="' + (cur + 1) + '"' +
+            (cur === last ? ' disabled' : '') + '>\u203A</button>';
+    el.innerHTML = html;
+  }
+
+  function showPage(page) {
+    currentPage = Math.min(PAGE_COUNT, Math.max(1, page));
+    renderGrid(currentPage);
+    renderPagination();
+    updateRollInfo();
+  }
+
+  /* ══ ขอบเขตการสุ่ม ══ */
+  const ROLL = { mode: 'all', unit: 'set', from: 1, to: 20 };
+
+  function rollBounds() {
+    let lo = 1, hi = TOTAL_SETS;
+    if (ROLL.mode === 'page') {
+      lo = (currentPage - 1) * PER_PAGE + 1;
+      hi = Math.min(TOTAL_SETS, lo + PER_PAGE - 1);
+    } else if (ROLL.mode === 'range') {
+      let a = ROLL.from, b = ROLL.to;
+      if (ROLL.unit === 'page') { a = (a - 1) * PER_PAGE + 1; b = b * PER_PAGE; }
+      lo = Math.max(1, Math.min(a, b));
+      hi = Math.min(TOTAL_SETS, Math.max(a, b));
+    }
+    return [lo, hi];
+  }
+
+  function rollPool() {
+    const [lo, hi] = rollBounds();
+    const out = [];
+    for (let n = lo; n <= hi; n++) if (n >= 1 && n <= TOTAL_SETS) out.push(n);
+    return out;
+  }
+
+  /* อัปเดตขอบเขตช่องสุ่มหลังปลดล็อก */
+  function refreshRollUI() {
+    const f = document.getElementById('rFrom');
+    const t = document.getElementById('rTo');
+    const max = Math.max(1, TOTAL_SETS);
+    if (f) { f.max = max; if (parseInt(f.value, 10) > max) f.value = 1; }
+    if (t) { t.max = max; ROLL.to = Math.min(ROLL.to, max); t.value = ROLL.to; }
+    updateRollInfo();
+  }
+
+  function updateRollInfo() {
+    const info = document.getElementById('roInfo');
+    const sub  = document.getElementById('rndSub');
+    if (!info || !sub) return;
+    if (!MANIFEST.length) {
+      info.classList.add('warn');
+      info.innerHTML = 'ยังไม่ได้เข้าสู่ระบบ';
+      sub.textContent = 'LOCKED';
+      return;
+    }
+    const [lo, hi] = rollBounds();
+    const pool = rollPool();
+    const nameAt = n => (MANIFEST[n - 1] ? MANIFEST[n - 1].title : '?');
+
+    info.classList.toggle('warn', pool.length === 0);
+    info.innerHTML = nameAt(lo) + ' \u2013 ' + nameAt(hi) +
+      ' \u00B7 สุ่มได้ <b>' + pool.length + '</b> ชุด';
+
+    sub.textContent = ROLL.mode === 'all'   ? 'RANDOM \u00B7 ALL ' + pool.length + ' SETS'
+                    : ROLL.mode === 'page'  ? 'RANDOM \u00B7 PAGE ' + currentPage
+                    :                         'RANDOM \u00B7 ' + lo + '-' + hi;
+  }
+
+  function setRollMode(mode) {
+    ROLL.mode = mode;
+    document.querySelectorAll('.ro').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+    document.getElementById('roRange').classList.toggle('show', mode === 'range');
+    updateRollInfo();
+  }
+
+  function setRollUnit(unit) {
+    ROLL.unit = unit;
+    document.querySelectorAll('.ru').forEach(b => b.classList.toggle('active', b.dataset.unit === unit));
+    const max = unit === 'page' ? PAGE_COUNT : TOTAL_SETS;
+    const f = document.getElementById('rFrom'), t = document.getElementById('rTo');
+    f.max = max; t.max = max;
+    ROLL.from = 1; ROLL.to = unit === 'page' ? Math.min(2, PAGE_COUNT) : Math.min(20, TOTAL_SETS);
+    f.value = ROLL.from; t.value = ROLL.to;
+    updateRollInfo();
+  }
+
+  function readRange() {
+    const max = ROLL.unit === 'page' ? PAGE_COUNT : TOTAL_SETS;
+    const clamp = v => Math.max(1, Math.min(max, parseInt(v, 10) || 1));
+    ROLL.from = clamp(document.getElementById('rFrom').value);
+    ROLL.to   = clamp(document.getElementById('rTo').value);
+    updateRollInfo();
+  }
+
+  /* ── Drawer ── */
+  function openDrawer() {
+    document.getElementById('drawer').classList.add('open');
+    document.getElementById('overlay').classList.add('open');
+  }
+  function closeDrawer() {
+    document.getElementById('drawer').classList.remove('open');
+    document.getElementById('overlay').classList.remove('open');
+  }
+  function switchTab(name, el) {
+    document.querySelectorAll('.dtab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.dpage').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+  }
+  function sendContact() {
+    const n = document.getElementById('c-name').value.trim();
+    const e = document.getElementById('c-email').value.trim();
+    const m = document.getElementById('c-msg').value.trim();
+    if (!n || !e || !m) { toast('กรุณากรอกข้อมูลให้ครบ'); return; }
+    document.getElementById('success-msg').style.display = 'block';
+    document.getElementById('c-name').value = '';
+    document.getElementById('c-email').value = '';
+    document.getElementById('c-msg').value = '';
+  }
+
+  /* ── ตั้งค่าลิงก์ศูนย์รวมคอนแทค ── */
+  function setupLinks() {
+    const hub = document.getElementById('hubBtn');
+    if (CONTACT_LINKS.hub) {
+      hub.href = CONTACT_LINKS.hub;
+    } else {
+      hub.href = '#';
+      hub.addEventListener('click', e => {
+        e.preventDefault();
+        toast('ยังไม่ได้ใส่ลิงก์ — แก้ที่ CONTACT_LINKS.hub ในโค้ด');
+      });
+    }
+    document.querySelectorAll('.hub-mini').forEach(a => {
+      const url = CONTACT_LINKS[a.dataset.key];
+      if (url) a.href = url;
+      else a.style.display = 'none';
+    });
+    const grid = document.getElementById('hubGrid');
+    const anyMini = Object.keys(CONTACT_LINKS).some(k => k !== 'hub' && CONTACT_LINKS[k]);
+    if (!anyMini) {
+      grid.style.display = 'none';
+      grid.previousElementSibling.style.display = 'none';
+    }
+  }
+
+  /* ── Ticker ── */
+  function buildTicker() {
+    const rows = [
+      ['SET',        '1,412.86', 0.42],  ['SPACEZ',   '60 SETS', 1.00],
+      ['ELLIOTT',    'WAVE 3',   2.18],  ['CEWA',     'MOCK EXAM', 0.77],
+      ['FIB',        '0.618',   -0.31],  ['BTC',      '64,180',  1.44],
+      ['GOLD',       '2,398.5',  0.19],  ['USDTHB',   '35.42',  -0.22],
+      ['IMPULSE',    '5 WAVES',  0.88],  ['CORRECTION','ABC',   -1.02]
+    ];
+    let html = '';
+    rows.forEach(r => {
+      const cls = r[2] >= 0 ? 'up' : 'down';
+      const arw = r[2] >= 0 ? '▲' : '▼';
+      html += '<span class="tk"><b>' + r[0] + '</b> ' + r[1] +
+              ' <span class="' + cls + '">' + arw + ' ' + Math.abs(r[2]).toFixed(2) + '%</span></span>';
+    });
+    document.getElementById('tickerTrack').innerHTML = html + html;
+  }
+
+  /* ══ พื้นหลัง: กราฟเส้นวิ่งขึ้นลงเรื่อย ๆ ══ */
+  function initBgChart() {
+    const cv = document.getElementById('bgChart');
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    let w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    const SERIES = [
+      { pts: [], step: 26, shift: 0, spd: 0.85, v: 0.55, amp: 0.055, color: 'rgba(200,241,53,', line: 1.5, fill: 0.055, off: 0.62 },
+      { pts: [], step: 34, shift: 0, spd: 0.55, v: 0.45, amp: 0.040, color: 'rgba(34,211,238,',  line: 1.1, fill: 0.030, off: 0.44 }
+    ];
+
+    function resize() {
+      w = cv.clientWidth; h = cv.clientHeight;
+      cv.width = w * dpr; cv.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      SERIES.forEach(s => {
+        const need = Math.ceil(w / s.step) + 3;
+        while (s.pts.length < need) {
+          s.v += (Math.random() - 0.5) * s.amp;
+          s.v = Math.max(0.12, Math.min(0.88, s.v));
+          s.pts.push(s.v);
+        }
+        while (s.pts.length > need) s.pts.shift();
+      });
+    }
+
+    let last = 0;
+    function frame(ts) {
+      if (ts - last > 33) {
+        last = ts;
+        SERIES.forEach(s => {
+          s.shift += s.spd;
+          while (s.shift >= s.step) {
+            s.shift -= s.step;
+            s.v += (Math.random() - 0.5) * s.amp;
+            s.v = Math.max(0.12, Math.min(0.88, s.v));
+            s.pts.push(s.v);
+            if (s.pts.length > 2) s.pts.shift();
+          }
+        });
+        draw();
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
+
+      // เส้นกริดแนวนอนจาง ๆ
+      ctx.strokeStyle = 'rgba(255,255,255,0.022)';
+      ctx.lineWidth = 1;
+      for (let i = 1; i < 8; i++) {
+        const y = (h / 8) * i;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+
+      SERIES.forEach(s => {
+        const base = h * s.off, span = h * 0.42;
+        const yOf = v => base - (v - 0.5) * span * 2;
+        const xOf = i => i * s.step - s.step - s.shift;
+
+        ctx.beginPath();
+        ctx.moveTo(xOf(0), yOf(s.pts[0]));
+        for (let i = 1; i < s.pts.length; i++) {
+          ctx.lineTo(xOf(i), yOf(s.pts[i]));
+        }
+        // พื้นที่ใต้กราฟ
+        ctx.lineTo(w + s.step * 2, h);
+        ctx.lineTo(-s.step * 2, h);
+        ctx.closePath();
+        const g = ctx.createLinearGradient(0, base - span, 0, h);
+        g.addColorStop(0, s.color + s.fill + ')');
+        g.addColorStop(1, s.color + '0)');
+        ctx.fillStyle = g;
+        ctx.fill();
+
+        // เส้นกราฟ
+        ctx.beginPath();
+        ctx.moveTo(xOf(0), yOf(s.pts[0]));
+        for (let i = 1; i < s.pts.length; i++) {
+          ctx.lineTo(xOf(i), yOf(s.pts[i]));
+        }
+        ctx.strokeStyle = s.color + '0.16)';
+        ctx.lineWidth = s.line;
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+      });
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    requestAnimationFrame(frame);
+  }
+
+  /* ── สุ่มข้อสอบ ── */
+  function rollRandom() {
+    const btn = document.getElementById('randomBtn');
+    const overlay = document.getElementById('rollOverlay');
+    const pill = document.getElementById('rollPill');
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(c => c.classList.remove('picked'));
+    pill.classList.remove('locked');
+    btn.classList.add('rolling');
+    overlay.classList.add('show');
+    const nums = rollPool();
+    if (!nums.length) {
+      btn.classList.remove('rolling');
+      overlay.classList.remove('show');
+      toast('🔒 ช่วงที่เลือกไม่มีชุดที่คุณเปิดได้ — ลองเปลี่ยนขอบเขต');
+      return;
+    }
+    const pool = nums.map(n => MANIFEST[n - 1].title);
+    const picked = pool[Math.floor(Math.random() * pool.length)];
+    let ticks = 0; const total = 18;
+    const interval = setInterval(() => {
+      pill.textContent = pool[Math.floor(Math.random() * pool.length)];
+      ticks++;
+      if (ticks >= total) {
+        clearInterval(interval);
+        pill.textContent = picked;
+        pill.classList.add('locked');
+        btn.classList.remove('rolling');
+        showPage(pageOf(picked));
+        cards.forEach(c => { if (c.dataset.name === picked) c.classList.add('picked'); });
+        setTimeout(() => {
+          overlay.classList.remove('show');
+          setTimeout(() => {
+            const it = MANIFEST.find(x => x.title === picked);
+            if (it) window.location.href = it.href;
+          }, 400);
+        }, 900);
+      }
+    }, 80);
+  }
+
+  /* ── Boot ── */
+  document.addEventListener('DOMContentLoaded', () => {
+    buildTicker();
+    setupLinks();
+    initBgChart();
+    countUp();
+    bootConsole();
+    buildAdvFields();
+    updateAdvCount();
+
+    /* ล็อกหน้าจอไว้ก่อน แล้วค่อยลองกู้สถานะของแท็บนี้ */
+    document.body.style.overflow = 'hidden';
+    if (!restoreSession()) {
+      showPage(1);
+      applyAccess();
+      updateRollInfo();
+      setTimeout(() => { const f = document.getElementById('pwBasic'); if (f) f.focus(); }, 250);
+    }
+
+    /* เปลี่ยนหน้า */
+    document.getElementById('pagination').addEventListener('click', e => {
+      const b = e.target.closest('.page-btn');
+      if (!b || b.disabled) return;
+      showPage(parseInt(b.dataset.go, 10));
+    });
+
+    /* ขอบเขตการสุ่ม */
+    document.getElementById('roModes').addEventListener('click', e => {
+      const b = e.target.closest('.ro');
+      if (b) setRollMode(b.dataset.mode);
+    });
+    document.getElementById('roUnit').addEventListener('click', e => {
+      const b = e.target.closest('.ru');
+      if (b) setRollUnit(b.dataset.unit);
+    });
+    ['rFrom', 'rTo'].forEach(id => {
+      document.getElementById(id).addEventListener('input', readRange);
+      document.getElementById(id).addEventListener('change', readRange);
+    });
+    refreshRollUI();
+
+    /* ── ปุ่มทั้งหมดบนหน้าล็อกอิน (event delegation ไม่ใช้ inline onclick) ── */
+    document.getElementById('lockScreen').addEventListener('click', e => {
+      const eye = e.target.closest('[data-eye]');
+      if (eye) {
+        const f = document.getElementById(eye.dataset.eye);
+        f.type = (f.type === 'password') ? 'text' : 'password';
+        f.focus();
+        return;
+      }
+      const b = e.target.closest('[data-act]');
+      if (!b) return;
+      switch (b.dataset.act) {
+        case 'basic':    unlockBasic(); break;
+        case 'full':     unlockFull();  break;
+        case 'toAdv':    showPane('adv');   break;
+        case 'toBasic':  showPane('basic'); break;
+        case 'bulk':     document.getElementById('bulkBox').classList.toggle('show'); break;
+        case 'spread':   spreadBulk(); break;
+        case 'clearAll':
+          advInputs().forEach(el => { el.value = ''; el.classList.remove('filled'); });
+          updateAdvCount(); hideErr('advError');
+          toast('ล้างช่องรหัสทั้ง 50 แล้ว');
+          break;
+        case 'mask': {
+          const ins = advInputs();
+          const toText = ins.length && ins[0].type === 'password';
+          ins.forEach(el => el.type = toText ? 'text' : 'password');
+          break;
+        }
+      }
+    });
+
+    /* Enter ในช่องรหัสโหมดปกติ */
+    document.getElementById('pwBasic').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); unlockBasic(); }
+    });
+    document.getElementById('pwBasic').addEventListener('input', () => hideErr('lockError'));
+  });
+</script>
+</body>
+</html>
