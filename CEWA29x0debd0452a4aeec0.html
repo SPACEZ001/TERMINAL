@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CEWA 29 — Wave Lab · SPACEZ EXAM HUB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080808;
+  --neon:#ccff00;
+  --neon-2:#00ff66;
+  --cyan:#22d3ee;
+  --red:#ff3b4e;
+  --amber:#ffb020;
+  --violet:#a78bfa;
+  --white:#f4f6f1;
+  --grey:#8b9186;
+  --grey-dim:#54594f;
+  --glass:rgba(255,255,255,0.035);
+  --glass-2:rgba(255,255,255,0.055);
+  --border:rgba(204,255,0,0.18);
+  --border-dim:rgba(255,255,255,0.09);
+  --sans:'Inter','Noto Sans Thai',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono','Noto Sans Thai','Fira Code',ui-monospace,monospace;
+  --radius:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:radial-gradient(ellipse 80% 45% at 50% -5%, rgba(204,255,0,0.07), transparent 60%),var(--bg);
+  color:var(--white);font-family:var(--sans);line-height:1.55;overflow-x:hidden;position:relative;
+  -webkit-text-size-adjust:100%;
+}
+::selection{background:var(--neon);color:#080808;}
+a{color:inherit;text-decoration:none;}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
+button:focus-visible,a:focus-visible{outline:2px solid var(--neon);outline-offset:3px;}
+img,svg{display:block;}
+
+/* ============ background texture ============ */
+.grid-overlay{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(160,255,160,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(160,255,160,0.05) 1px,transparent 1px);
+  background-size:46px 46px;
+  -webkit-mask-image:radial-gradient(circle at 50% 15%,black,transparent 80%);
+  mask-image:radial-gradient(circle at 50% 15%,black,transparent 80%);}
+.scanline{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.4;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,0.018) 0px,transparent 1px,transparent 3px);}
+#fxCanvas{position:fixed;inset:0;z-index:2;pointer-events:none;}
+
+/* ============ keyframes ============ */
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes tickerScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes dashDraw{to{stroke-dashoffset:0}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes dotPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
+@keyframes glowPulse{0%,100%{opacity:1}50%{opacity:.38}}
+@keyframes ringPulse{0%{opacity:.5;transform:scale(.4)}70%,100%{opacity:0;transform:scale(1.9)}}
+@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes spinSlow{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes barGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes popIn{0%{opacity:0;transform:scale(.72)}60%{transform:scale(1.06)}100%{opacity:1;transform:scale(1)}}
+@keyframes shakeX{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes sweep{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
+@keyframes hueRun{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+@keyframes tierPing{0%{box-shadow:0 0 0 0 rgba(204,255,0,.5)}100%{box-shadow:0 0 0 16px rgba(204,255,0,0)}}
+@keyframes waveBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease;}
+.reveal.in-view{opacity:1;transform:translateY(0);}
+
+/* ============ chrome ============ */
+.top-fixed{position:fixed;top:0;left:0;right:0;z-index:60;}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 26px;
+  background:rgba(8,8,8,.75);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border-dim);}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-weight:600;font-size:14px;letter-spacing:.5px;flex-shrink:0;}
+.logo-blip{width:9px;height:9px;background:var(--neon);box-shadow:0 0 12px var(--neon);animation:blink 1.5s infinite steps(1);flex-shrink:0;}
+.logo-sub{color:var(--grey-dim);font-weight:400;font-size:11px;letter-spacing:1px;}
+.nav-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.nav-chip{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--grey);
+  border:1px solid var(--border-dim);background:var(--glass);padding:8px 14px;border-radius:20px;transition:all .25s;}
+.nav-chip:hover{border-color:var(--neon);color:var(--neon);box-shadow:0 0 14px rgba(204,255,0,.18);}
+.ticker-bar{overflow:hidden;padding:8px 0;background:rgba(255,255,255,.02);border-bottom:1px solid var(--border-dim);}
+.ticker-track{display:inline-block;white-space:nowrap;animation:tickerScroll 46s linear infinite;}
+.ticker-item{display:inline-flex;align-items:center;gap:7px;margin-right:36px;font-family:var(--mono);font-size:11.5px;color:var(--grey);}
+.ticker-item b{color:var(--white);font-weight:600;}
+.ticker-item .up{color:var(--neon-2);} .ticker-item .down{color:var(--red);} .ticker-item .nn{color:var(--neon);}
+
+/* ============ shell ============ */
+.screen{display:none;position:relative;z-index:3;}
+.screen.active{display:block;animation:fadeIn .45s ease;}
+.wrap{max-width:1180px;margin:0 auto;padding:0 26px;}
+.eyebrow{font-family:var(--mono);color:var(--neon);font-size:12px;letter-spacing:3px;text-transform:uppercase;display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.eyebrow .cursor{width:7px;height:14px;background:var(--neon);animation:blink 1s infinite steps(1);flex-shrink:0;}
+.rule{height:1px;background:linear-gradient(90deg,var(--border),transparent);}
+.sec-head{margin-bottom:34px;}
+.sec-head h2{font-weight:800;font-size:clamp(1.35rem,3vw,2rem);text-transform:uppercase;letter-spacing:-.4px;line-height:1.15;}
+.sec-head p{color:var(--grey);font-size:14px;margin-top:10px;max-width:660px;}
+
+.btn{font-family:var(--mono);font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;padding:15px 28px;border-radius:2px;
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;transition:all .25s;cursor:pointer;}
+.btn-primary{background:var(--neon);color:#080808;font-weight:700;}
+.btn-primary:hover{box-shadow:0 0 28px rgba(204,255,0,.55);transform:translateY(-2px);}
+.btn-outline{border:1px solid var(--border);color:var(--white);}
+.btn-outline:hover{border-color:var(--neon);color:var(--neon);box-shadow:0 0 20px rgba(204,255,0,.2);}
+.btn-ghost{border:1px solid var(--border-dim);color:var(--grey);}
+.btn-ghost:hover{border-color:var(--neon);color:var(--neon);}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
+
+/* ============ LOBBY ============ */
+.hero{padding:150px 0 40px;position:relative;}
+.hero h1{font-weight:900;font-size:clamp(2.1rem,6vw,4.1rem);line-height:1.04;letter-spacing:-1.4px;text-transform:uppercase;animation:fadeUp .8s ease .1s both;}
+.hero h1 .accent{background:linear-gradient(90deg,var(--neon),var(--neon-2),var(--cyan),var(--neon));background-size:200% auto;
+  -webkit-background-clip:text;background-clip:text;color:transparent;animation:hueRun 6s linear infinite;}
+.hero .sub{margin-top:20px;max-width:560px;color:var(--grey);font-size:1rem;animation:fadeUp .8s ease .25s both;}
+.hero-stats{display:flex;gap:10px;margin-top:26px;flex-wrap:wrap;animation:fadeUp .8s ease .4s both;}
+.stat-chip{font-family:var(--mono);font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--grey);
+  border:1px solid var(--border-dim);padding:9px 15px;border-radius:20px;display:flex;align-items:center;gap:8px;background:var(--glass);}
+.stat-chip .dot{width:6px;height:6px;border-radius:50%;background:var(--neon-2);box-shadow:0 0 8px var(--neon-2);animation:dotPulse 2.2s ease-in-out infinite;flex-shrink:0;}
+.hero-wave{position:absolute;right:18px;top:56%;transform:translateY(-50%);width:40%;max-width:520px;opacity:.85;pointer-events:none;}
+@media(max-width:1020px){.hero-wave{display:none;}}
+
+.wave-path{fill:none;stroke:var(--neon);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:1400;stroke-dashoffset:1400;animation:dashDraw 3.4s ease forwards .5s;}
+.wave-path.corr{stroke:var(--red);stroke-dasharray:700;stroke-dashoffset:700;animation:dashDraw 1.8s ease forwards 3.6s;}
+.wave-dot{fill:var(--neon);filter:drop-shadow(0 0 8px var(--neon));opacity:0;animation:popIn .5s ease forwards;}
+.wave-lbl{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;fill:var(--neon);opacity:0;animation:popIn .5s ease forwards;}
+.wave-lbl.c{fill:var(--red);} .wave-dot.c{fill:var(--red);filter:drop-shadow(0 0 8px var(--red));}
+.wave-grid{stroke:rgba(255,255,255,.07);stroke-width:1;}
+
+/* variant cards */
+.var-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+@media(max-width:900px){.var-grid{grid-template-columns:1fr;}}
+.var-card{background:var(--glass);border:1px solid var(--border-dim);border-radius:var(--radius);padding:24px;position:relative;overflow:hidden;
+  transition:border-color .3s,transform .3s,box-shadow .3s;cursor:pointer;text-align:left;width:100%;}
+.var-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--grey-dim);transition:background .3s,box-shadow .3s;}
+.var-card:hover{transform:translateY(-3px);border-color:rgba(204,255,0,.35);}
+.var-card.sel{border-color:var(--neon);background:rgba(204,255,0,.05);box-shadow:0 0 26px rgba(204,255,0,.14);}
+.var-card.sel::before{background:var(--neon);box-shadow:0 0 12px var(--neon);}
+.var-card .vtag{font-family:var(--mono);font-size:11.5px;letter-spacing:1.5px;color:var(--grey);text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;}
+.var-card.sel .vtag{color:var(--neon);}
+.var-card h3{font-size:1.15rem;font-weight:800;margin:10px 0 6px;letter-spacing:-.3px;line-height:1.25;}
+.var-card p{color:var(--grey);font-size:13px;line-height:1.55;min-height:60px;}
+.var-pills{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;}
+.pill{font-family:var(--mono);font-size:10.5px;padding:6px 11px;border:1px solid var(--border-dim);border-radius:20px;color:var(--grey);}
+.var-card.sel .pill{border-color:rgba(204,255,0,.3);color:var(--neon);}
+.vfx{height:96px;margin:6px 0 12px;border-radius:10px;background:rgba(0,0,0,.35);border:1px solid var(--border-dim);overflow:hidden;}
+.vfx svg{width:100%;height:100%;}
+.chk{width:20px;height:20px;border-radius:50%;border:1px solid var(--border-dim);display:grid;place-items:center;font-size:11px;color:transparent;transition:all .25s;}
+.var-card.sel .chk{border-color:var(--neon);background:var(--neon);color:#080808;}
+
+/* grade ladder */
+.ladder{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px;}
+@media(max-width:760px){.ladder{grid-template-columns:1fr;}}
+.tier{border:1px solid var(--border-dim);border-radius:var(--radius);padding:20px;background:var(--glass);position:relative;overflow:hidden;}
+.tier .tname{font-family:var(--mono);font-size:12px;letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+.tier .trange{font-family:var(--mono);font-size:1.9rem;font-weight:700;margin:8px 0 2px;letter-spacing:-1px;}
+.tier .tdesc{font-size:12.5px;color:var(--grey);line-height:1.5;}
+.tier .tbar{height:5px;border-radius:4px;background:rgba(255,255,255,.07);margin-top:14px;overflow:hidden;}
+.tier .tbar i{display:block;height:100%;transform-origin:left;animation:barGrow 1.2s cubic-bezier(.2,.8,.2,1) forwards;}
+.tier.fail{--tc:var(--red);} .tier.pass{--tc:var(--neon-2);} .tier.master{--tc:var(--neon);}
+.tier .tname,.tier .trange{color:var(--tc);}
+.tier .tbar i{background:var(--tc);box-shadow:0 0 12px var(--tc);}
+.tier.master{border-color:rgba(204,255,0,.35);}
+.tier .tico{width:34px;height:34px;position:absolute;right:16px;top:16px;opacity:.5;}
+
+.ctl-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:28px;}
+.toggle{display:inline-flex;align-items:center;gap:11px;font-family:var(--mono);font-size:12px;letter-spacing:1px;text-transform:uppercase;
+  border:1px solid var(--border-dim);background:var(--glass);padding:13px 18px;border-radius:30px;color:var(--grey);transition:all .25s;}
+.toggle:hover{border-color:var(--neon);color:var(--neon);}
+.toggle.on{border-color:var(--neon);color:var(--neon);background:rgba(204,255,0,.08);box-shadow:0 0 18px rgba(204,255,0,.16);}
+.sw{width:34px;height:18px;border-radius:20px;background:rgba(255,255,255,.12);position:relative;transition:background .25s;flex-shrink:0;}
+.sw::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--grey);transition:all .25s;}
+.toggle.on .sw{background:rgba(204,255,0,.3);} .toggle.on .sw::after{left:18px;background:var(--neon);box-shadow:0 0 10px var(--neon);}
+
+/* ============ QUIZ ============ */
+.qtop{position:fixed;top:0;left:0;right:0;z-index:55;background:rgba(8,8,8,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border-dim);}
+.qtop-in{max-width:1180px;margin:0 auto;padding:12px 26px;display:flex;align-items:center;gap:16px;}
+.qtop .qname{font-family:var(--mono);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--neon);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.qtop .qsub{font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);letter-spacing:1px;}
+.qprogress{flex:1;min-width:80px;}
+.qbar{height:6px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;position:relative;}
+.qbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--neon-2),var(--neon));box-shadow:0 0 14px rgba(204,255,0,.6);transition:width .35s cubic-bezier(.2,.8,.2,1);}
+.qbar .mk{position:absolute;top:-3px;width:1px;height:12px;background:rgba(255,255,255,.35);}
+.qmeta{font-family:var(--mono);font-size:10.5px;color:var(--grey);letter-spacing:.6px;margin-top:6px;display:flex;justify-content:space-between;gap:10px;}
+.qclock{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--white);letter-spacing:1px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.qclock.warn{color:var(--amber);animation:glowPulse 1s infinite;}
+.qclock.danger{color:var(--red);animation:glowPulse .6s infinite;}
+.qclock svg{flex-shrink:0;}
+
+.qbody{padding:126px 0 130px;}
+.qlayout{display:grid;grid-template-columns:1fr 216px;gap:26px;align-items:start;}
+@media(max-width:1000px){.qlayout{grid-template-columns:1fr;}.qrail{display:none!important;}}
+.qrail{position:sticky;top:126px;background:var(--glass);border:1px solid var(--border-dim);border-radius:var(--radius);padding:16px;}
+.qrail h4{font-family:var(--mono);font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--grey-dim);margin-bottom:12px;}
+.navgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;}
+.navdot{aspect-ratio:1;border-radius:5px;border:1px solid var(--border-dim);font-family:var(--mono);font-size:10px;color:var(--grey-dim);
+  display:grid;place-items:center;transition:all .2s;background:rgba(0,0,0,.25);}
+.navdot:hover{border-color:var(--neon);color:var(--neon);}
+.navdot.done{background:rgba(204,255,0,.16);border-color:rgba(204,255,0,.5);color:var(--neon);}
+.navdot.here{outline:1px solid var(--neon);outline-offset:1px;}
+.railstat{margin-top:14px;padding-top:14px;border-top:1px solid var(--border-dim);font-family:var(--mono);font-size:11px;color:var(--grey);display:flex;justify-content:space-between;}
+.railstat b{color:var(--neon);}
+.railring{display:grid;place-items:center;margin:6px 0 10px;}
+
+.qcard{background:var(--glass);border:1px solid var(--border-dim);border-radius:var(--radius);padding:24px;margin-bottom:16px;position:relative;overflow:hidden;
+  transition:border-color .3s,box-shadow .3s;}
+.qcard::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--grey-dim);transition:background .3s,box-shadow .3s;}
+.qcard.answered::before{background:var(--neon);box-shadow:0 0 12px var(--neon);}
+.qcard.answered{border-color:rgba(204,255,0,.22);}
+.qhead{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+.qnum{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1px;color:#080808;background:var(--neon);padding:5px 10px;border-radius:3px;flex-shrink:0;}
+.qtopic{font-family:var(--mono);font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--grey);border:1px solid var(--border-dim);padding:4px 10px;border-radius:20px;}
+.qmulti{font-family:var(--mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--amber);border:1px solid rgba(255,176,32,.3);background:rgba(255,176,32,.08);padding:4px 10px;border-radius:20px;}
+.qtext{font-size:15.5px;font-weight:500;line-height:1.62;margin-bottom:18px;}
+.choices{display:flex;flex-direction:column;gap:9px;}
+.choice{display:flex;align-items:flex-start;gap:13px;padding:14px 16px;border:1px solid var(--border-dim);border-radius:10px;background:rgba(0,0,0,.25);
+  transition:all .2s;text-align:left;width:100%;}
+.choice:hover{border-color:rgba(204,255,0,.45);background:rgba(204,255,0,.04);transform:translateX(3px);}
+.choice .cl{font-family:var(--mono);font-size:12px;font-weight:600;width:26px;height:26px;border-radius:6px;border:1px solid var(--border-dim);
+  display:grid;place-items:center;flex-shrink:0;color:var(--grey);transition:all .2s;}
+.choice.multi .cl{border-radius:4px;}
+.choice .ct{font-size:14.2px;line-height:1.55;color:var(--white);padding-top:2px;}
+.choice.on{border-color:var(--neon);background:rgba(204,255,0,.09);box-shadow:0 0 18px rgba(204,255,0,.12);}
+.choice.on .cl{background:var(--neon);color:#080808;border-color:var(--neon);box-shadow:0 0 12px rgba(204,255,0,.6);}
+
+.subbar{position:fixed;left:0;right:0;bottom:0;z-index:56;background:rgba(8,8,8,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-top:1px solid var(--border-dim);}
+.subbar-in{max-width:1180px;margin:0 auto;padding:12px 26px;display:flex;align-items:center;justify-content:space-between;gap:14px;}
+.subbar .sinfo{font-family:var(--mono);font-size:11.5px;color:var(--grey);letter-spacing:.6px;}
+.subbar .sinfo b{color:var(--neon);}
+.subbar .sbtns{display:flex;gap:10px;}
+@media(max-width:560px){.subbar .sinfo{font-size:10px;} .subbar-in{padding:10px 16px;} .btn{padding:13px 18px;font-size:11px;}}
+
+/* live projection HUD */
+.hud{position:fixed;right:18px;bottom:78px;z-index:54;background:rgba(8,8,8,.86);border:1px solid var(--border-dim);border-radius:14px;
+  padding:12px 14px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(0,0,0,.5);}
+.hud .hlbl{font-family:var(--mono);font-size:9.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--grey-dim);}
+.hud .hval{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--neon);letter-spacing:-.5px;}
+@media(max-width:760px){.hud{display:none;}}
+
+/* ============ RESULTS ============ */
+.rhero{padding:132px 0 20px;text-align:center;position:relative;}
+.badge-wrap{display:inline-flex;flex-direction:column;align-items:center;gap:14px;animation:popIn .7s cubic-bezier(.2,.9,.3,1.2) both;}
+.gbadge{font-family:var(--mono);font-size:clamp(1.3rem,4vw,2.1rem);font-weight:700;letter-spacing:4px;text-transform:uppercase;
+  padding:14px 32px;border-radius:4px;border:1px solid currentColor;position:relative;overflow:hidden;}
+.gbadge::after{content:'';position:absolute;top:0;left:0;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);animation:sweep 2.6s ease-in-out infinite 1s;}
+.gbadge.fail{color:var(--red);background:rgba(255,59,78,.08);box-shadow:0 0 34px rgba(255,59,78,.22);}
+.gbadge.pass{color:var(--neon-2);background:rgba(0,255,102,.08);box-shadow:0 0 34px rgba(0,255,102,.22);}
+.gbadge.master{color:var(--neon);background:rgba(204,255,0,.1);box-shadow:0 0 46px rgba(204,255,0,.3);animation:tierPing 2.2s ease-out infinite;}
+.rsubtitle{color:var(--grey);font-size:14px;max-width:620px;margin:0 auto;}
+
+.ringbox{display:grid;place-items:center;position:relative;margin:6px auto 0;}
+.ringbox svg{overflow:visible;}
+.ring-bg{fill:none;stroke:rgba(255,255,255,.08);stroke-width:14;}
+.ring-fg{fill:none;stroke-width:14;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset 1.6s cubic-bezier(.2,.8,.2,1);}
+.ring-tick{stroke:rgba(255,255,255,.35);stroke-width:2;}
+.ring-center{position:absolute;inset:0;display:grid;place-items:center;text-align:center;}
+.ring-pct{font-family:var(--mono);font-size:2.9rem;font-weight:700;letter-spacing:-2px;line-height:1;}
+.ring-lbl{font-family:var(--mono);font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:var(--grey-dim);margin-top:6px;}
+
+.rgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media(max-width:900px){.rgrid{grid-template-columns:repeat(2,1fr);}}
+.rstat{background:var(--glass);border:1px solid var(--border-dim);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden;}
+.rstat .rlbl{font-family:var(--mono);font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--grey-dim);display:flex;align-items:center;gap:7px;}
+.rstat .rval{font-family:var(--mono);font-size:1.85rem;font-weight:700;letter-spacing:-1px;margin-top:8px;}
+.rstat .rfoot{font-size:11.5px;color:var(--grey);margin-top:4px;}
+.rstat .rspark{position:absolute;right:0;bottom:0;width:70px;height:38px;opacity:.35;}
+.rstat.good .rval{color:var(--neon-2);} .rstat.bad .rval{color:var(--red);} .rstat.neu .rval{color:var(--white);} .rstat.hi .rval{color:var(--neon);}
+
+/* tier track */
+.track-card{background:var(--glass);border:1px solid var(--border-dim);border-radius:var(--radius);padding:24px;}
+.track{position:relative;height:44px;margin:30px 0 10px;}
+.track .rail{position:absolute;top:18px;left:0;right:0;height:8px;border-radius:8px;background:rgba(255,255,255,.07);overflow:hidden;}
+.track .fill{height:100%;width:0;border-radius:8px;transition:width 1.6s cubic-bezier(.2,.8,.2,1);}
+.track .zone{position:absolute;top:18px;height:8px;opacity:.16;}
+.track .gate{position:absolute;top:4px;width:2px;height:36px;background:rgba(255,255,255,.4);}
+.track .gate span{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--grey);white-space:nowrap;}
+.track .you{position:absolute;top:8px;transform:translateX(-50%);transition:left 1.6s cubic-bezier(.2,.8,.2,1);}
+.track .you .pin{width:14px;height:14px;border-radius:50%;border:2px solid #080808;margin:0 auto;box-shadow:0 0 14px currentColor;}
+.track .you span{position:absolute;top:20px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10.5px;font-weight:700;white-space:nowrap;}
+.gapline{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px;}
+.gapchip{font-family:var(--mono);font-size:11.5px;letter-spacing:.5px;border:1px solid var(--border-dim);background:rgba(0,0,0,.3);
+  padding:11px 15px;border-radius:10px;color:var(--grey);display:flex;align-items:center;gap:9px;}
+.gapchip b{font-size:14px;} .gapchip.ok{border-color:rgba(0,255,102,.35);color:var(--neon-2);} 
+.gapchip.want{border-color:rgba(204,255,0,.35);color:var(--neon);}
+.gapchip.miss{border-color:rgba(255,59,78,.3);color:var(--red);}
+
+/* topic bars */
+.tbars{display:flex;flex-direction:column;gap:14px;}
+.trow{display:grid;grid-template-columns:150px 1fr 64px;gap:14px;align-items:center;}
+@media(max-width:640px){.trow{grid-template-columns:104px 1fr 52px;gap:9px;}}
+.trow .tl{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--grey);display:flex;align-items:center;gap:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.trow .tt{height:12px;border-radius:8px;background:rgba(255,255,255,.06);overflow:hidden;position:relative;}
+.trow .tt i{display:block;height:100%;width:0;border-radius:8px;transition:width 1.3s cubic-bezier(.2,.8,.2,1);position:relative;}
+.trow .tt i::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);animation:sweep 3s ease-in-out infinite;}
+.trow .tv{font-family:var(--mono);font-size:12px;text-align:right;color:var(--white);}
+
+/* heatmap */
+.heat{display:grid;grid-template-columns:repeat(auto-fill,minmax(26px,1fr));gap:5px;}
+.hcell{aspect-ratio:1;border-radius:5px;border:1px solid var(--border-dim);font-family:var(--mono);font-size:9.5px;display:grid;place-items:center;
+  color:var(--grey-dim);background:rgba(0,0,0,.3);opacity:0;transform:scale(.6);animation:popIn .35s ease forwards;}
+.hcell.ok{background:rgba(0,255,102,.18);border-color:rgba(0,255,102,.45);color:var(--neon-2);}
+.hcell.no{background:rgba(255,59,78,.16);border-color:rgba(255,59,78,.42);color:var(--red);}
+.hcell.sk{background:rgba(255,255,255,.05);}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--grey);margin-top:16px;}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:-1px;}
+
+.two-col{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;}
+@media(max-width:900px){.two-col{grid-template-columns:1fr;}}
+.panel{background:var(--glass);border:1px solid var(--border-dim);border-radius:var(--radius);padding:22px;}
+.panel h3{font-family:var(--mono);font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:var(--neon);margin-bottom:6px;display:flex;align-items:center;gap:9px;}
+.panel .phint{font-size:12px;color:var(--grey-dim);margin-bottom:18px;}
+
+.radar-poly{fill:rgba(204,255,0,.18);stroke:var(--neon);stroke-width:2;filter:drop-shadow(0 0 8px rgba(204,255,0,.4));
+  transition:all 1.4s cubic-bezier(.2,.8,.2,1);}
+.radar-web{fill:none;stroke:rgba(255,255,255,.09);stroke-width:1;}
+.radar-axis{stroke:rgba(255,255,255,.09);stroke-width:1;}
+.radar-lbl{font-family:'IBM Plex Mono',monospace;font-size:9px;fill:var(--grey);letter-spacing:.5px;}
+.donut-seg{transition:stroke-dashoffset 1.4s cubic-bezier(.2,.8,.2,1);}
+
+/* review */
+.rev-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+.rtab{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:10px 16px;border:1px solid var(--border-dim);
+  border-radius:22px;color:var(--grey);background:var(--glass);transition:all .25s;}
+.rtab:hover{border-color:var(--neon);color:var(--neon);}
+.rtab.on{background:rgba(204,255,0,.1);border-color:var(--neon);color:var(--neon);box-shadow:0 0 16px rgba(204,255,0,.2);}
+.rcard{background:var(--glass);border:1px solid var(--border-dim);border-left:3px solid var(--grey-dim);border-radius:10px;padding:20px;margin-bottom:12px;}
+.rcard.ok{border-left-color:var(--neon-2);} .rcard.no{border-left-color:var(--red);} .rcard.sk{border-left-color:var(--amber);}
+.rhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+.rmark{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:1.2px;padding:4px 10px;border-radius:3px;text-transform:uppercase;}
+.rmark.ok{background:rgba(0,255,102,.15);color:var(--neon-2);} .rmark.no{background:rgba(255,59,78,.15);color:var(--red);}
+.rmark.sk{background:rgba(255,176,32,.15);color:var(--amber);}
+.rq{font-size:14.5px;font-weight:500;line-height:1.6;margin-bottom:12px;}
+.rchoice{display:flex;gap:11px;padding:10px 13px;border-radius:8px;font-size:13.5px;line-height:1.5;margin-bottom:6px;border:1px solid transparent;background:rgba(0,0,0,.22);color:var(--grey);}
+.rchoice .rl{font-family:var(--mono);font-size:11.5px;font-weight:600;flex-shrink:0;width:18px;}
+.rchoice.correct{border-color:rgba(0,255,102,.4);background:rgba(0,255,102,.07);color:var(--white);}
+.rchoice.picked-wrong{border-color:rgba(255,59,78,.4);background:rgba(255,59,78,.07);color:var(--white);}
+.rtagline{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;margin-left:auto;color:var(--grey-dim);}
+.exp{margin-top:14px;border:1px solid var(--border-dim);border-radius:10px;overflow:hidden;background:rgba(0,0,0,.28);}
+.exp-tabs{display:flex;border-bottom:1px solid var(--border-dim);}
+.exp-tab{flex:1;font-family:var(--mono);font-size:11px;letter-spacing:1px;padding:10px;color:var(--grey);transition:all .2s;}
+.exp-tab.on{background:rgba(204,255,0,.09);color:var(--neon);}
+.exp-body{padding:15px 16px;font-size:13.5px;line-height:1.72;color:#cfd4c8;}
+.exp-body.th{font-family:var(--sans);}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:200;display:none;place-items:center;background:rgba(0,0,0,.78);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:22px;}
+.modal.show{display:grid;animation:fadeIn .22s ease;}
+.mbox{background:#0d0f0c;border:1px solid var(--border);border-radius:16px;padding:28px;max-width:440px;width:100%;
+  box-shadow:0 24px 70px rgba(0,0,0,.7),0 0 40px rgba(204,255,0,.1);animation:popIn .3s cubic-bezier(.2,.9,.3,1.15);}
+.mbox h4{font-family:var(--mono);font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--neon);margin-bottom:12px;display:flex;align-items:center;gap:9px;}
+.mbox p{font-size:14px;color:var(--grey);line-height:1.65;}
+.mbox p b{color:var(--white);}
+.mbtns{display:flex;gap:10px;margin-top:22px;justify-content:flex-end;flex-wrap:wrap;}
+
+.toast{position:fixed;left:50%;bottom:96px;transform:translate(-50%,20px);z-index:210;background:#0d0f0c;border:1px solid var(--border);
+  border-radius:10px;padding:12px 20px;font-family:var(--mono);font-size:12px;color:var(--neon);opacity:0;pointer-events:none;transition:all .3s;
+  box-shadow:0 0 26px rgba(204,255,0,.18);}
+.toast.show{opacity:1;transform:translate(-50%,0);}
+
+.footer{border-top:1px solid var(--border-dim);margin-top:70px;padding:26px 0 40px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--grey-dim);letter-spacing:1px;}
+.sp{height:56px;} .sp-s{height:30px;} .sp-l{height:82px;}
+@media(max-width:600px){
+  .wrap{padding:0 16px;} .hero{padding:132px 0 30px;} .qtop-in{padding:10px 16px;gap:10px;}
+  .qcard{padding:18px 16px;} .qtext{font-size:15px;} .choice{padding:12px 13px;gap:11px;} .choice .ct{font-size:13.6px;}
+  .rgrid{grid-template-columns:repeat(2,1fr);} .sp{height:40px;} .sp-l{height:56px;}
+  .ring-pct{font-size:2.3rem;} .panel{padding:18px 16px;} .track-card{padding:18px 16px;}
+}
+</style>
+</head>
+<body>
+<div class="grid-overlay"></div>
+<div class="scanline"></div>
+<canvas id="fxCanvas"></canvas>
+<style>
+/* ---- looping infographic animations ---- */
+@keyframes drawLoop{0%{stroke-dashoffset:var(--dl)}45%{stroke-dashoffset:0}85%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
+@keyframes fibSlide{0%,100%{transform:translateY(0);opacity:.35}50%{transform:translateY(-4px);opacity:.9}}
+@keyframes boxTick{0%,40%{opacity:.15}55%,100%{opacity:1}}
+@keyframes triSqueeze{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.55)}}
+@keyframes scanBeam{0%{transform:translateX(-30px)}100%{transform:translateX(320px)}}
+.vfx .dl{stroke-dasharray:var(--dl);stroke-dashoffset:var(--dl);animation:drawLoop 5s ease-in-out infinite;}
+.vfx .beam{animation:scanBeam 4s linear infinite;}
+.vfx .fibl{animation:fibSlide 3s ease-in-out infinite;}
+.vfx .tick{animation:boxTick 2.4s ease-in-out infinite;}
+.vfx .tri{animation:triSqueeze 4s ease-in-out infinite;transform-origin:center;}
+.tico .orb{animation:spinSlow 9s linear infinite;transform-origin:50% 50%;}
+</style>
+
+<div class="top-fixed">
+  <nav class="nav">
+    <div class="logo"><span class="logo-blip"></span>SPACEZ<span class="logo-sub">// EXAM HUB · CEWA29</span></div>
+    <div class="nav-right">
+      <a class="nav-chip" href="index.html">← Hub</a>
+      <button class="nav-chip" id="btnHelp">? Info</button>
+    </div>
+  </nav>
+  <div class="ticker-bar"><div class="ticker-track" id="tickerTrack"></div></div>
+</div>
+
+<!-- ══════════════════ LOBBY ══════════════════ -->
+<div class="screen active" id="scLobby">
+  <div class="wrap">
+    <div class="hero">
+      <svg class="hero-wave" viewBox="0 0 540 360" aria-hidden="true">
+        <g class="wave-grid">
+          <line x1="0" y1="60" x2="540" y2="60"/><line x1="0" y1="130" x2="540" y2="130"/>
+          <line x1="0" y1="200" x2="540" y2="200"/><line x1="0" y1="270" x2="540" y2="270"/>
+        </g>
+        <path class="wave-path" d="M20,310 L95,200 L138,258 L250,78 L302,142 L372,44"/>
+        <path class="wave-path corr" d="M372,44 L424,146 L458,98 L516,182"/>
+        <circle class="wave-dot" cx="95" cy="200" r="4" style="animation-delay:1.1s"/>
+        <circle class="wave-dot" cx="138" cy="258" r="4" style="animation-delay:1.5s"/>
+        <circle class="wave-dot" cx="250" cy="78" r="4" style="animation-delay:2.1s"/>
+        <circle class="wave-dot" cx="302" cy="142" r="4" style="animation-delay:2.6s"/>
+        <circle class="wave-dot" cx="372" cy="44" r="5" style="animation-delay:3.2s"/>
+        <circle class="wave-dot c" cx="424" cy="146" r="4" style="animation-delay:4.1s"/>
+        <circle class="wave-dot c" cx="458" cy="98" r="4" style="animation-delay:4.5s"/>
+        <circle class="wave-dot c" cx="516" cy="182" r="4" style="animation-delay:5s"/>
+        <text class="wave-lbl" x="88" y="188" style="animation-delay:1.2s">1</text>
+        <text class="wave-lbl" x="132" y="280" style="animation-delay:1.6s">2</text>
+        <text class="wave-lbl" x="244" y="66" style="animation-delay:2.2s">3</text>
+        <text class="wave-lbl" x="296" y="166" style="animation-delay:2.7s">4</text>
+        <text class="wave-lbl" x="366" y="32" style="animation-delay:3.3s">5</text>
+        <text class="wave-lbl c" x="418" y="170" style="animation-delay:4.2s">A</text>
+        <text class="wave-lbl c" x="452" y="86" style="animation-delay:4.6s">B</text>
+        <text class="wave-lbl c" x="510" y="206" style="animation-delay:5.1s">C</text>
+      </svg>
+
+      <div class="eyebrow"><span class="cursor"></span>Wave Lab · Module 29</div>
+      <h1>CEWA <span class="accent">29</span><br>Elliott Wave<br>Certification Sim</h1>
+      <p class="sub">ชุดข้อสอบจำลอง 90 ข้อ อิงมาตรฐาน Frost &amp; Prechter — <i>Elliott Wave Principle</i> และแนวข้อสอบ EWI พร้อมเฉลยสองภาษา อังกฤษ / ไทย ทุกข้อ</p>
+      <div class="hero-stats">
+        <span class="stat-chip"><span class="dot"></span>90 Questions · 3 Variants</span>
+        <span class="stat-chip"><span class="dot"></span>Bilingual EN / TH Rationale</span>
+        <span class="stat-chip"><span class="dot"></span>CEWA @ 80% · CEWA-M @ 90%</span>
+      </div>
+    </div>
+
+    <div class="sp"></div>
+
+    <!-- variant select -->
+    <div class="sec-head">
+      <div class="eyebrow"><span class="cursor"></span>01 / Select Module</div>
+      <h2>เลือกชุดข้อสอบ</h2>
+      <p>แต่ละ Variant ทดสอบคนละมิติของ Wave Principle — เลือกได้ครั้งละหนึ่งชุด คะแนนคิดแยกกันตามเกณฑ์เดียวกัน</p>
+      <div class="rule" style="margin-top:20px"></div>
+    </div>
+    <div class="var-grid" id="varGrid"></div>
+
+    <div class="sp"></div>
+
+    <!-- grade ladder -->
+    <div class="sec-head">
+      <div class="eyebrow"><span class="cursor"></span>02 / Grading Ladder</div>
+      <h2>เกณฑ์ตัดสิน</h2>
+      <p>เกณฑ์เดียวกันทุก Variant — ต่ำกว่า 80% ถือว่าไม่ผ่าน, 80–89% ได้สถานะ <b style="color:var(--neon-2)">CEWA</b>, ตั้งแต่ 90% ขึ้นไปได้ <b style="color:var(--neon)">CEWA-M (Master)</b></p>
+      <div class="rule" style="margin-top:20px"></div>
+    </div>
+    <div class="ladder">
+      <div class="tier fail">
+        <svg class="tico" viewBox="0 0 40 40"><g class="orb"><circle cx="20" cy="20" r="15" fill="none" stroke="var(--red)" stroke-width="2" stroke-dasharray="6 8"/></g><path d="M14,14 L26,26 M26,14 L14,26" stroke="var(--red)" stroke-width="2.4" stroke-linecap="round"/></svg>
+        <div class="tname"><span class="dot" style="width:6px;height:6px;border-radius:50%;background:var(--red);display:inline-block"></span>Fail</div>
+        <div class="trange">&lt; 80%</div>
+        <div class="tdesc">ยังไม่ผ่านเกณฑ์ — ทบทวนหัวข้อที่คะแนนต่ำจากแผนภาพ Topic Radar แล้วสอบใหม่</div>
+        <div class="tbar"><i style="width:60%;animation-delay:.1s"></i></div>
+      </div>
+      <div class="tier pass">
+        <svg class="tico" viewBox="0 0 40 40"><g class="orb"><circle cx="20" cy="20" r="15" fill="none" stroke="var(--neon-2)" stroke-width="2" stroke-dasharray="4 10"/></g><path d="M13,20.5 L18,26 L28,14.5" fill="none" stroke="var(--neon-2)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="tname"><span style="width:6px;height:6px;border-radius:50%;background:var(--neon-2);display:inline-block"></span>CEWA</div>
+        <div class="trange">80 – 89%</div>
+        <div class="tdesc">ผ่านเกณฑ์รับรอง — เข้าใจกฎหลักและโครงสร้างคลื่นในระดับใช้งานได้จริง</div>
+        <div class="tbar"><i style="width:85%;animation-delay:.25s"></i></div>
+      </div>
+      <div class="tier master">
+        <svg class="tico" viewBox="0 0 40 40"><g class="orb"><circle cx="20" cy="20" r="15" fill="none" stroke="var(--neon)" stroke-width="2" stroke-dasharray="3 6"/></g><path d="M20,10 L23,17.5 L31,18 L25,23 L27,31 L20,26.5 L13,31 L15,23 L9,18 L17,17.5 Z" fill="var(--neon)" opacity=".85"/></svg>
+        <div class="tname"><span style="width:6px;height:6px;border-radius:50%;background:var(--neon);display:inline-block"></span>CEWA-M</div>
+        <div class="trange">≥ 90%</div>
+        <div class="tdesc">ระดับ Master — แม่นทั้งกฎ ข้อยกเว้น และการประยุกต์ในสถานการณ์จริง</div>
+        <div class="tbar"><i style="width:100%;animation-delay:.4s"></i></div>
+      </div>
+    </div>
+
+    <div class="ctl-row">
+      <button class="toggle on" id="btnShuffle"><span class="sw"></span><span>🎲 สุ่มลำดับข้อ &amp; ตัวเลือก</span></button>
+      <button class="btn btn-primary" id="btnStart">▶ Start Exam</button>
+    </div>
+
+    <div class="footer">SPACEZ EXAM HUB — CEWA29 WAVE LAB · reference: Frost &amp; Prechter, Elliott Wave Principle</div>
+  </div>
+</div>
+
+<!-- ══════════════════ QUIZ ══════════════════ -->
+<div class="screen" id="scQuiz">
+  <div class="qtop">
+    <div class="qtop-in">
+      <div style="min-width:0;flex-shrink:1">
+        <div class="qname" id="qName">—</div>
+        <div class="qsub" id="qSub">—</div>
+      </div>
+      <div class="qprogress">
+        <div class="qbar"><i id="qBarFill"></i><span class="mk" style="left:80%"></span><span class="mk" style="left:90%"></span></div>
+        <div class="qmeta"><span id="qMetaL">0 / 0 answered</span><span id="qMetaR">0%</span></div>
+      </div>
+      <div class="qclock" id="qClock">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/></svg>
+        <span id="qClockTxt">00:00</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap qbody">
+    <div class="qlayout">
+      <div id="qList"></div>
+      <aside class="qrail">
+        <h4>Question Map</h4>
+        <div class="railring">
+          <svg width="96" height="96" viewBox="0 0 96 96">
+            <circle cx="48" cy="48" r="38" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="8"/>
+            <circle id="railRing" cx="48" cy="48" r="38" fill="none" stroke="var(--neon)" stroke-width="8" stroke-linecap="round"
+                    stroke-dasharray="238.76" stroke-dashoffset="238.76" transform="rotate(-90 48 48)" style="transition:stroke-dashoffset .4s ease;filter:drop-shadow(0 0 6px var(--neon))"/>
+            <text id="railRingTxt" x="48" y="53" text-anchor="middle" font-family="IBM Plex Mono" font-size="18" font-weight="700" fill="var(--neon)">0%</text>
+          </svg>
+        </div>
+        <div class="navgrid" id="navGrid"></div>
+        <div class="railstat"><span>ANSWERED</span><b id="railAns">0</b></div>
+        <div class="railstat"><span>LEFT</span><b id="railLeft">0</b></div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="hud">
+    <svg width="42" height="42" viewBox="0 0 42 42">
+      <circle cx="21" cy="21" r="17" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="5"/>
+      <circle id="hudRing" cx="21" cy="21" r="17" fill="none" stroke="var(--neon-2)" stroke-width="5" stroke-linecap="round"
+              stroke-dasharray="106.8" stroke-dashoffset="106.8" transform="rotate(-90 21 21)" style="transition:stroke-dashoffset .4s ease"/>
+    </svg>
+    <div>
+      <div class="hlbl">Elapsed</div>
+      <div class="hval" id="hudElapsed">00:00</div>
+    </div>
+    <div style="width:1px;height:30px;background:var(--border-dim)"></div>
+    <div>
+      <div class="hlbl">Completion</div>
+      <div class="hval" id="hudPct">0%</div>
+    </div>
+  </div>
+
+  <div class="subbar">
+    <div class="subbar-in">
+      <div class="sinfo">ตอบแล้ว <b id="subAns">0</b> / <b id="subTot">0</b> · เหลือ <b id="subLeft">0</b> ข้อ</div>
+      <div class="sbtns">
+        <button class="btn btn-ghost" id="btnAbort">Abort</button>
+        <button class="btn btn-primary" id="btnSubmit">Submit ⏎</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ RESULTS ══════════════════ -->
+<div class="screen" id="scResult">
+  <div class="wrap">
+    <div class="rhero">
+      <div class="badge-wrap">
+        <div class="ringbox" id="ringBox"></div>
+        <div class="gbadge" id="gBadge">—</div>
+        <div class="rsubtitle" id="rSubtitle">—</div>
+      </div>
+    </div>
+
+    <div class="sp-s"></div>
+    <div class="rgrid" id="rGrid"></div>
+
+    <div class="sp"></div>
+    <div class="track-card" id="trackCard">
+      <div class="eyebrow" style="margin-bottom:8px"><span class="cursor"></span>Tier Progress</div>
+      <h2 style="font-size:1.25rem;font-weight:800;text-transform:uppercase;letter-spacing:-.3px">ระยะห่างจากเป้าหมาย</h2>
+      <div class="track" id="track">
+        <div class="rail"><div class="fill" id="trackFill"></div></div>
+        <div class="zone" style="left:0;width:80%;background:var(--red)"></div>
+        <div class="zone" style="left:80%;width:10%;background:var(--neon-2)"></div>
+        <div class="zone" style="left:90%;width:10%;background:var(--neon)"></div>
+        <div class="gate" style="left:80%"><span>80% · CEWA</span></div>
+        <div class="gate" style="left:90%"><span>90% · CEWA-M</span></div>
+        <div class="you" id="trackYou"><div class="pin"></div><span id="trackYouTxt">0%</span></div>
+      </div>
+      <div class="gapline" id="gapLine"></div>
+    </div>
+
+    <div class="sp"></div>
+    <div class="two-col">
+      <div class="panel">
+        <h3><span style="width:6px;height:6px;background:var(--neon);border-radius:50%;display:inline-block;box-shadow:0 0 8px var(--neon)"></span>Topic Breakdown</h3>
+        <div class="phint">ความแม่นยำรายหัวข้อ — แถบสั้นคือจุดที่ควรกลับไปทบทวนก่อน</div>
+        <div class="tbars" id="topicBars"></div>
+      </div>
+      <div class="panel">
+        <h3><span style="width:6px;height:6px;background:var(--cyan);border-radius:50%;display:inline-block;box-shadow:0 0 8px var(--cyan)"></span>Skill Radar</h3>
+        <div class="phint">รูปทรงยิ่งเต็มยิ่งสมดุล — ด้านที่บุ๋มคือช่องโหว่</div>
+        <div id="radarBox" style="display:grid;place-items:center"></div>
+      </div>
+    </div>
+
+    <div class="sp"></div>
+    <div class="two-col">
+      <div class="panel">
+        <h3><span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;box-shadow:0 0 8px var(--amber)"></span>Answer Heatmap</h3>
+        <div class="phint">ทุกช่องคือหนึ่งข้อ เรียงตามลำดับที่ทำจริง</div>
+        <div class="heat" id="heatMap"></div>
+        <div class="legend">
+          <span><i style="background:rgba(0,255,102,.5)"></i>ถูก</span>
+          <span><i style="background:rgba(255,59,78,.5)"></i>ผิด</span>
+          <span><i style="background:rgba(255,255,255,.12)"></i>ไม่ได้ตอบ</span>
+        </div>
+      </div>
+      <div class="panel">
+        <h3><span style="width:6px;height:6px;background:var(--violet);border-radius:50%;display:inline-block;box-shadow:0 0 8px var(--violet)"></span>Score Split</h3>
+        <div class="phint">สัดส่วนถูก / ผิด / เว้นว่าง ของชุดนี้</div>
+        <div id="donutBox" style="display:grid;place-items:center"></div>
+      </div>
+    </div>
+
+    <div class="sp"></div>
+    <div class="sec-head">
+      <div class="eyebrow"><span class="cursor"></span>Full Review</div>
+      <h2>เฉลยละเอียดทุกข้อ</h2>
+      <div class="rule" style="margin-top:18px"></div>
+    </div>
+    <div class="rev-tabs" id="revTabs">
+      <button class="rtab on" data-act="revfilter" data-filter="all">ทั้งหมด</button>
+      <button class="rtab" data-act="revfilter" data-filter="wrong">เฉพาะที่ผิด</button>
+      <button class="rtab" data-act="revfilter" data-filter="right">เฉพาะที่ถูก</button>
+      <button class="rtab" data-act="revfilter" data-filter="skip">ไม่ได้ตอบ</button>
+    </div>
+    <div id="revList"></div>
+
+    <div class="ctl-row" style="justify-content:center">
+      <button class="btn btn-outline" id="btnRetry">↻ สอบชุดเดิมอีกครั้ง</button>
+      <button class="btn btn-primary" id="btnBackLobby">◂ กลับหน้าเลือกชุด</button>
+    </div>
+    <div class="footer">SPACEZ EXAM HUB — CEWA29 WAVE LAB · ผลลัพธ์นี้เป็นการจำลองเพื่อการฝึกฝน ไม่ใช่ผลสอบรับรองจริง</div>
+  </div>
+</div>
+
+<!-- modal + toast -->
+<div class="modal" id="modal">
+  <div class="mbox">
+    <h4 id="mTitle"><span style="width:7px;height:7px;background:var(--neon);border-radius:50%;display:inline-block"></span><span id="mTitleTxt">Confirm</span></h4>
+    <p id="mBody">—</p>
+    <div class="mbtns" id="mBtns"></div>
+  </div>
+</div>
+<div class="toast" id="toast">—</div>
+<script>
+/* ═══════════════════════════════════════════════════════════
+   CEWA29 · QUESTION BANK — applied & quantitative emphasis
+   Reference: Frost & Prechter — Elliott Wave Principle (EWI)
+   topic keys: IMP / COR / FIB / DEG / GDL / APP
+   ═══════════════════════════════════════════════════════════ */
+const BANK_V1=[
+{id:'v1q01',topic:'IMP',text:"An advance subdivides 5-3-5-3-5 and wave 4 remains entirely clear of wave 1. Which structure is this?",
+ choices:[{id:'a',letter:'A',text:'A zigzag correction of larger degree'},{id:'b',letter:'B',text:'A contracting triangle of five legs'},{id:'c',letter:'C',text:'A standard five-wave impulse wave'},{id:'d',letter:'D',text:'An ending diagonal within wave five'}],
+ correct:['c'],
+ expEn:"A 5-3-5-3-5 subdivision with no overlap between waves 1 and 4 is the defining signature of a standard impulse. A zigzag subdivides 5-3-5 in three waves, a triangle subdivides 3-3-3-3-3, and an ending diagonal also subdivides 3-3-3-3-3 while permitting overlap.",
+ expTh:"การแบ่งย่อยแบบ 5-3-5-3-5 โดยคลื่น 4 ไม่ทับซ้อนคลื่น 1 คือลายเซ็นของอิมพัลส์มาตรฐาน ส่วนซิกแซกแบ่งเป็น 5-3-5 รวมสามคลื่น สามเหลี่ยมแบ่งเป็น 3-3-3-3-3 และ ending diagonal ก็แบ่งเป็น 3-3-3-3-3 อีกทั้งยอมให้เกิดการทับซ้อนได้"},
+
+{id:'v1q02',topic:'IMP',text:"Wave 1 runs from 100 to 160 and wave 2 bottoms at 124. What proportion of wave 1 did wave 2 retrace?",
+ choices:[{id:'a',letter:'A',text:'Sixty percent of wave one'},{id:'b',letter:'B',text:'Forty percent of wave one'},{id:'c',letter:'C',text:'Seventy-six point four percent'},{id:'d',letter:'D',text:'Twenty-four percent of wave one'}],
+ correct:['a'],
+ expEn:"Wave 1 covers sixty points from 100 to 160. Wave 2 falls thirty-six points from 160 down to 124, and thirty-six divided by sixty is sixty percent. Forty percent would place wave 2 at 136, and twenty-four percent misreads the drop as a percentage of the price level rather than of wave 1.",
+ expTh:"คลื่น 1 กินระยะ 60 จุดจาก 100 ถึง 160 คลื่น 2 ลงมา 36 จุดจาก 160 มาที่ 124 คิดเป็น 36 หารด้วย 60 เท่ากับ 60% ถ้าเป็น 40% คลื่น 2 ต้องอยู่ที่ 136 ส่วน 24% คือการคิดผิดโดยเทียบกับระดับราคาแทนที่จะเทียบกับความยาวคลื่น 1"},
+
+{id:'v1q03',topic:'IMP',text:"Wave 1 spans 40 points, wave 3 spans 95 points and wave 5 spans 32 points. What is the verdict on this count?",
+ choices:[{id:'a',letter:'A',text:'Invalid, because wave 5 is shorter than wave 1'},{id:'b',letter:'B',text:'Valid, because wave 3 is not the shortest motive wave'},{id:'c',letter:'C',text:'Invalid, because wave 5 has failed to extend'},{id:'d',letter:'D',text:'Valid, but only if wave 5 later exceeds the length of wave 1'}],
+ correct:['b'],
+ expEn:"The rule requires only that wave 3 not be the shortest of waves 1, 3 and 5 in price. At ninety-five points wave 3 is comfortably the longest, so the rule holds. Nothing requires wave 5 to be longer than wave 1 or to extend, so the other options impose conditions the Wave Principle never states.",
+ expTh:"กฎกำหนดเพียงว่าคลื่น 3 ต้องไม่สั้นที่สุดในบรรดาคลื่น 1, 3 และ 5 เมื่อวัดด้วยราคา คลื่น 3 ที่ 95 จุดยาวที่สุดอยู่แล้ว กฎจึงไม่ถูกละเมิด ไม่มีข้อกำหนดใดบังคับว่าคลื่น 5 ต้องยาวกว่าคลื่น 1 หรือต้องเกิดการขยายตัว ตัวเลือกอื่นจึงตั้งเงื่อนไขที่หลักการคลื่นไม่เคยระบุไว้"},
+
+{id:'v1q04',topic:'IMP',text:"An impulse count shows wave 1 running from 50 to 80, and wave 4 terminating at 78. What is the status of the count?",
+ choices:[{id:'a',letter:'A',text:'Valid, since wave 4 held above the origin of wave 1'},{id:'b',letter:'B',text:'Valid, since only a close beneath 50 would matter here'},{id:'c',letter:'C',text:'Invalid, since wave 4 must retrace 38.2 percent of wave 3'},{id:'d',letter:'D',text:'Invalid, since wave 4 has entered wave 1 price territory'}],
+ correct:['d'],
+ expEn:"Wave 1 occupies the range from 50 to 80, so any wave 4 that trades below 80 has entered that territory and breaks the overlap rule for a standard impulse. Holding above the origin of wave 1 is not the test, and no rule requires a specific retracement depth for wave 4.",
+ expTh:"คลื่น 1 ครอบคลุมช่วงราคา 50 ถึง 80 ดังนั้นคลื่น 4 ที่ลงต่ำกว่า 80 ถือว่าเข้าไปในเขตของคลื่น 1 แล้ว จึงละเมิดกฎห้ามทับซ้อนของอิมพัลส์มาตรฐาน การยืนเหนือจุดเริ่มต้นของคลื่น 1 ไม่ใช่เกณฑ์ตัดสิน และไม่มีกฎใดบังคับความลึกของคลื่น 4 ไว้ที่ตัวเลขใดตัวเลขหนึ่ง"},
+
+{id:'v1q05',topic:'COR',text:"A decline subdivides 3-3-5 and wave B terminates close to the origin of wave A. Which pattern is this?",
+ choices:[{id:'a',letter:'A',text:'A double zigzag joined by an X wave'},{id:'b',letter:'B',text:'A regular flat correction'},{id:'c',letter:'C',text:'A contracting triangle in wave four'},{id:'d',letter:'D',text:'A leading diagonal beginning a trend'}],
+ correct:['b'],
+ expEn:"The 3-3-5 subdivision identifies the flat family, and a wave B that returns close to the origin of wave A without materially exceeding it marks the regular variety. An expanded flat would carry wave B beyond that origin, while a zigzag subdivides 5-3-5 and a triangle 3-3-3-3-3.",
+ expTh:"การแบ่งย่อย 3-3-5 บ่งบอกว่าอยู่ในตระกูลแฟลต และคลื่น B ที่กลับมาใกล้จุดเริ่มต้นของคลื่น A โดยไม่ทะลุออกไปมากคือแฟลตแบบปกติ ถ้าเป็น expanded flat คลื่น B จะเลยจุดนั้นออกไป ส่วนซิกแซกแบ่งเป็น 5-3-5 และสามเหลี่ยมแบ่งเป็น 3-3-3-3-3"},
+
+{id:'v1q06',topic:'COR',text:"Wave A falls 60 points, wave B rises to about 112 percent of the wave A origin, and wave C ends well below the wave A low. This is:",
+ choices:[{id:'a',letter:'A',text:'A regular flat correction'},{id:'b',letter:'B',text:'A running flat correction'},{id:'c',letter:'C',text:'An expanded flat correction'},{id:'d',letter:'D',text:'A single zigzag correction'}],
+ correct:['c'],
+ expEn:"An expanded flat is identified by a wave B that carries beyond the origin of wave A, followed by a wave C that ends beyond the extreme of wave A. In a running flat wave C would fall short of the wave A low, in a regular flat wave B would stop near the origin, and a zigzag would subdivide 5-3-5 rather than 3-3-5.",
+ expTh:"expanded flat สังเกตได้จากคลื่น B ที่ทะลุเลยจุดเริ่มต้นของคลื่น A ออกไป ตามด้วยคลื่น C ที่จบเลยจุดสุดขั้วของคลื่น A ถ้าเป็น running flat คลื่น C จะไปไม่ถึงจุดต่ำสุดของคลื่น A ถ้าเป็นแฟลตปกติคลื่น B จะหยุดใกล้จุดเริ่มต้น และถ้าเป็นซิกแซกจะแบ่งย่อยแบบ 5-3-5 ไม่ใช่ 3-3-5"},
+
+{id:'v1q07',topic:'COR',text:"A sideways structure subdivides 3-3-3-3-3 and its boundary lines converge toward one another. This is:",
+ choices:[{id:'a',letter:'A',text:'A contracting triangle'},{id:'b',letter:'B',text:'A double three combination'},{id:'c',letter:'C',text:'An expanded flat correction'},{id:'d',letter:'D',text:'A leading diagonal pattern'}],
+ correct:['a'],
+ expEn:"Five corrective legs subdividing 3-3-3-3-3 between converging boundary lines define a contracting triangle. A combination carries W-X-Y labelling rather than five legs, an expanded flat has only three waves, and a leading diagonal is a motive structure occupying wave 1 or wave A.",
+ expTh:"ห้าขาคลื่นปรับฐานที่แบ่งย่อยแบบ 3-3-3-3-3 ภายในเส้นขอบที่บีบเข้าหากันคือสามเหลี่ยมแบบหดตัว ส่วน combination ใช้ป้ายกำกับ W-X-Y ไม่ใช่ห้าขา expanded flat มีเพียงสามคลื่น และ leading diagonal เป็นโครงสร้างขับเคลื่อนที่อยู่ในตำแหน่งคลื่น 1 หรือคลื่น A"},
+
+{id:'v1q08',topic:'FIB',text:"Wave 1 travels from 200 to 260 and wave 2 bottoms at 224. Using the ratio most often cited for an extended third wave, where would wave 3 project to?",
+ choices:[{id:'a',letter:'A',text:'Two hundred eighty-four'},{id:'b',letter:'B',text:'Three hundred point three'},{id:'c',letter:'C',text:'Two hundred seventy-one point two'},{id:'d',letter:'D',text:'Three hundred twenty-one point one'}],
+ correct:['d'],
+ expEn:"Wave 1 measures sixty points, and the ratio most commonly cited for an extended third wave is 1.618, giving roughly ninety-seven points. Projected from the wave 2 low of 224 that yields about 321. Two hundred eighty-four applies a ratio of one, and the remaining figures apply 1.272 and 0.786 respectively.",
+ expTh:"คลื่น 1 ยาว 60 จุด และอัตราส่วนที่อ้างถึงบ่อยที่สุดสำหรับคลื่น 3 ที่ขยายตัวคือ 1.618 ได้ประมาณ 97 จุด เมื่อวัดจากจุดต่ำของคลื่น 2 ที่ 224 จะได้ราว 321 ส่วน 284 คือการใช้อัตราส่วนเท่ากับ 1 และตัวเลขที่เหลือมาจากอัตราส่วน 1.272 และ 0.786 ตามลำดับ"},
+
+{id:'v1q09',topic:'FIB',text:"Wave 3 ran from 120 to 220 and a 38.2 percent retracement is expected for wave 4. Where does that level sit?",
+ choices:[{id:'a',letter:'A',text:'At one hundred seventy'},{id:'b',letter:'B',text:'At one hundred fifty-eight point two exactly'},{id:'c',letter:'C',text:'At one hundred eighty-one point eight'},{id:'d',letter:'D',text:'At one hundred ninety-two point four'}],
+ correct:['c'],
+ expEn:"Wave 3 measures one hundred points, so a 38.2 percent retracement is 38.2 points subtracted from the 220 high, giving 181.8. One hundred seventy is the halfway point, 158.2 corresponds to 61.8 percent, and 192.4 corresponds to a 27.6 percent pullback.",
+ expTh:"คลื่น 3 ยาว 100 จุด ดังนั้นการย้อน 38.2% เท่ากับ 38.2 จุด หักออกจากจุดสูง 220 จะได้ 181.8 ส่วน 170 คือจุดกึ่งกลาง 158.2 ตรงกับ 61.8% และ 192.4 ตรงกับการย่อเพียง 27.6%"},
+
+{id:'v1q10',topic:'DEG',text:"Which sequence lists wave degrees correctly from smaller to larger?",
+ choices:[{id:'a',letter:'A',text:'Minute, Minor, Intermediate, Primary'},{id:'b',letter:'B',text:'Minor, Minute, Primary, Intermediate'},{id:'c',letter:'C',text:'Intermediate, Primary, Minor, Minute'},{id:'d',letter:'D',text:'Primary, Intermediate, Minute, Minor'}],
+ correct:['a'],
+ expEn:"The standard ladder runs upward through Minute, Minor, Intermediate and then Primary. The other sequences interleave the ranks incorrectly, most obviously by placing Minor beneath Minute or by running the whole ladder downward while the question asks for ascending order.",
+ expTh:"ลำดับมาตรฐานไล่จากเล็กไปใหญ่คือ Minute, Minor, Intermediate แล้วจึง Primary ตัวเลือกอื่นสลับลำดับผิด ที่เห็นชัดที่สุดคือการวาง Minor ไว้ต่ำกว่า Minute หรือเรียงจากใหญ่ไปเล็กทั้งที่โจทย์ถามลำดับจากเล็กไปใหญ่"},
+
+{id:'v1q11',topic:'DEG',text:"In standard EWI notation, Primary degree motive waves are written as:",
+ choices:[{id:'a',letter:'A',text:'I II III IV V in plain Roman numerals'},{id:'b',letter:'B',text:'Circled numerals one through five'},{id:'c',letter:'C',text:'1 2 3 4 5 in plain Arabic numerals'},{id:'d',letter:'D',text:'i ii iii iv v in lower-case Roman'}],
+ correct:['b'],
+ expEn:"Primary degree motive waves are shown with circled Arabic numerals. Plain Roman numerals in upper case denote Cycle degree, plain Arabic numerals denote Minor degree, and lower-case Roman numerals denote Minute degree.",
+ expTh:"คลื่นขับเคลื่อนระดับ Primary ใช้ตัวเลขอารบิกในวงกลม ส่วนเลขโรมันตัวใหญ่แบบธรรมดาใช้กับระดับ Cycle เลขอารบิกธรรมดาใช้กับระดับ Minor และเลขโรมันตัวเล็กใช้กับระดับ Minute"},
+
+{id:'v1q12',topic:'GDL',text:"Wave 2 was a sharp, deep zigzag completed in three weeks. By the guideline of alternation, wave 4 is most likely to be:",
+ choices:[{id:'a',letter:'A',text:'An even deeper zigzag of similar duration'},{id:'b',letter:'B',text:'A single sharp decline of exactly 61.8 percent'},{id:'c',letter:'C',text:'A truncated fifth wave followed by reversal'},{id:'d',letter:'D',text:'A shallow sideways flat or triangle'}],
+ correct:['d'],
+ expEn:"Alternation observes that when wave 2 is sharp and deep, wave 4 tends to be sideways and shallow, and vice versa. Repeating the same sharp zigzag form would contradict the guideline, while a truncated fifth describes a different phenomenon belonging to wave 5 rather than wave 4.",
+ expTh:"หลักการสลับรูปแบบระบุว่าเมื่อคลื่น 2 ลงแรงและลึก คลื่น 4 มักออกด้านข้างและตื้น และในทางกลับกันก็เช่นกัน การเกิดซิกแซกแรง ๆ ซ้ำอีกครั้งจะขัดกับหลักการนี้ ส่วนคลื่น 5 แบบ truncation เป็นปรากฏการณ์คนละเรื่องที่เกิดกับคลื่น 5 ไม่ใช่คลื่น 4"},
+
+{id:'v1q13',topic:'GDL',text:"Wave 1 spans 45 points and wave 3 is clearly the extended wave. By the guideline of equality, wave 5 should span roughly:",
+ choices:[{id:'a',letter:'A',text:'Forty-five points, matching wave one'},{id:'b',letter:'B',text:'Ninety points, doubling wave one'},{id:'c',letter:'C',text:'Twenty-two points, half of wave one'},{id:'d',letter:'D',text:'One hundred thirty points, tripling it'}],
+ correct:['a'],
+ expEn:"The guideline of equality holds that when one motive wave extends, the remaining two tend toward equality in price or in Fibonacci proportion. With wave 3 extended, wave 5 most often approximates wave 1, here about forty-five points. The other figures apply multiples the guideline does not suggest.",
+ expTh:"หลักความเท่ากันกล่าวว่าเมื่อคลื่นขับเคลื่อนหนึ่งเกิดการขยายตัว อีกสองคลื่นที่เหลือมักมีขนาดใกล้เคียงกันหรือสัมพันธ์กันด้วยอัตราส่วนฟีโบนักชี เมื่อคลื่น 3 ขยายตัว คลื่น 5 จึงมักใกล้เคียงคลื่น 1 คือราว 45 จุด ตัวเลขอื่นใช้ตัวคูณที่หลักการนี้ไม่ได้เสนอไว้"},
+
+{id:'v1q14',topic:'APP',text:"An impulse is in progress. Wave 1 began at 90 and wave 2 has bottomed at 96. Where does the invalidation level sit?",
+ choices:[{id:'a',letter:'A',text:'At ninety-six, the low reached by wave two'},{id:'b',letter:'B',text:'At the high of wave one, wherever that lies'},{id:'c',letter:'C',text:'At ninety, the origin of wave one'},{id:'d',letter:'D',text:'At the midpoint between ninety and ninety-six'}],
+ correct:['c'],
+ expEn:"The rule that wave 2 may not retrace more than one hundred percent of wave 1 places the invalidation level at the origin of wave 1, which is 90. Trade below that level and the count is dead. The wave 2 low itself is not a rule boundary, since wave 2 may still deepen without breaching anything.",
+ expTh:"กฎที่ว่าคลื่น 2 ห้ามย้อนเกิน 100% ของคลื่น 1 ทำให้จุดยกเลิกนับอยู่ที่จุดกำเนิดของคลื่น 1 คือ 90 หากราคาลงต่ำกว่านั้นการนับเป็นอันจบ ส่วนจุดต่ำของคลื่น 2 เองไม่ใช่เส้นกฎ เพราะคลื่น 2 ยังลงลึกต่อได้โดยไม่ละเมิดอะไร"},
+
+{id:'v1q15',topic:'IMP',text:"Which of the following describes a leading diagonal correctly?",
+ choices:[{id:'a',letter:'A',text:'It subdivides 3-3-3-3-3 and appears only in wave B slots'},{id:'b',letter:'B',text:'It appears in wave 1 or wave A and permits 1-4 overlap'},{id:'c',letter:'C',text:'It appears only in wave 5 and forbids any overlap'},{id:'d',letter:'D',text:'It subdivides 5-3-5-3-5 and never converges'}],
+ correct:['b'],
+ expEn:"A leading diagonal is a motive structure found at the start of a larger move, meaning wave 1 of an impulse or wave A of a zigzag, and unlike a standard impulse it tolerates overlap between waves 1 and 4. Wave B positions are held by corrective patterns, and the wave 5 position belongs to the ending diagonal.",
+ expTh:"leading diagonal เป็นโครงสร้างขับเคลื่อนที่พบตอนเริ่มต้นของการเคลื่อนไหวใหญ่ นั่นคือคลื่น 1 ของอิมพัลส์หรือคลื่น A ของซิกแซก และต่างจากอิมพัลส์มาตรฐานตรงที่ยอมให้คลื่น 1 กับ 4 ทับซ้อนกันได้ ส่วนตำแหน่งคลื่น B เป็นของรูปแบบปรับฐาน และตำแหน่งคลื่น 5 เป็นของ ending diagonal"},
+
+{id:'v1q16',topic:'IMP',text:"A five-wave advance ends with wave 5 failing to exceed the extreme reached by wave 3. This is known as:",
+ choices:[{id:'a',letter:'A',text:'A throw-over beyond the channel'},{id:'b',letter:'B',text:'An extension of the fifth wave'},{id:'c',letter:'C',text:'A running correction of wave four'},{id:'d',letter:'D',text:'A truncation, or fifth wave failure'}],
+ correct:['d'],
+ expEn:"A fifth wave that completes its five sub-waves but stops short of the wave 3 extreme is a truncation, and it usually signals unusual weakness in the underlying trend. A throw-over is a brief break beyond a diagonal boundary, and an extension is an elongated wave rather than a short one.",
+ expTh:"คลื่น 5 ที่แบ่งย่อยครบห้าคลื่นแต่ไปไม่ถึงจุดสุดขั้วของคลื่น 3 เรียกว่า truncation ซึ่งมักบ่งชี้ว่าแนวโน้มหลักอ่อนแรงผิดปกติ ส่วน throw-over คือการทะลุเส้นขอบของ diagonal ชั่วครู่ และ extension คือคลื่นที่ยืดยาวออกไปไม่ใช่คลื่นที่สั้นลง"},
+
+{id:'v1q17',topic:'IMP',text:"When one wave of an impulse extends, the resulting appearance on the chart is that:",
+ choices:[{id:'a',letter:'A',text:'Its sub-waves are far shorter than the other motive waves'},{id:'b',letter:'B',text:'It becomes the shortest of the three motive waves in price'},{id:'c',letter:'C',text:'Its sub-waves rival the other motive waves in amplitude'},{id:'d',letter:'D',text:'It stops subdividing into five at any lesser degree'}],
+ correct:['c'],
+ expEn:"When a wave extends, its sub-waves grow to nearly the same amplitude and duration as the non-extended motive waves of the parent structure, so the impulse can appear to contain nine similar-sized waves. An extended wave is by definition elongated rather than shortest, and it continues to subdivide normally.",
+ expTh:"เมื่อคลื่นใดเกิดการขยายตัว คลื่นย่อยของมันจะมีขนาดและระยะเวลาใกล้เคียงกับคลื่นขับเคลื่อนอื่นในโครงสร้างแม่ ทำให้อิมพัลส์ดูเหมือนมีเก้าคลื่นขนาดพอ ๆ กัน คลื่นที่ขยายตัวย่อมยืดยาวไม่ใช่สั้นที่สุด และยังคงแบ่งย่อยตามปกติ"},
+
+{id:'v1q18',topic:'COR',text:"A correction unfolds as a zigzag, then an X wave, then a second zigzag. Standard labelling for this is:",
+ choices:[{id:'a',letter:'A',text:'W-X-Y'},{id:'b',letter:'B',text:'A-B-C-D-E'},{id:'c',letter:'C',text:'W-X-Y-X-Z'},{id:'d',letter:'D',text:'1-2-3-4-5'}],
+ correct:['a'],
+ expEn:"Two corrective patterns joined by a single X wave are labelled W-X-Y. The five-part W-X-Y-X-Z label belongs to a triple three, A-B-C-D-E belongs to a triangle, and numbered labelling is reserved for motive structures.",
+ expTh:"รูปแบบปรับฐานสองชุดที่เชื่อมด้วยคลื่น X หนึ่งคลื่นใช้ป้ายกำกับ W-X-Y ส่วนป้ายห้าส่วน W-X-Y-X-Z ใช้กับ triple three ป้าย A-B-C-D-E ใช้กับสามเหลี่ยม และป้ายที่เป็นตัวเลขสงวนไว้สำหรับโครงสร้างขับเคลื่อน"},
+
+{id:'v1q19',topic:'COR',text:"Within a contracting triangle, wave B is:",
+ choices:[{id:'a',letter:'A',text:'Always the smallest of the five legs'},{id:'b',letter:'B',text:'A five-wave leg while the other four legs each hold three'},{id:'c',letter:'C',text:'Required to exceed the origin of wave A'},{id:'d',letter:'D',text:'Sometimes larger than wave A, giving a running triangle'}],
+ correct:['d'],
+ expEn:"When wave B carries beyond the origin of wave A the result is a running triangle, which is a recognised variant rather than an error. Wave B is not required to do so, all five legs of a triangle subdivide into threes, and wave E rather than wave B is typically the smallest leg.",
+ expTh:"เมื่อคลื่น B เลยจุดเริ่มต้นของคลื่น A ออกไปจะได้ running triangle ซึ่งเป็นรูปแบบย่อยที่ยอมรับได้ ไม่ใช่ความผิดพลาด คลื่น B ไม่ได้ถูกบังคับให้ทำเช่นนั้น ทั้งห้าขาของสามเหลี่ยมแบ่งย่อยเป็นสามคลื่นเหมือนกันหมด และขาที่เล็กที่สุดมักเป็นคลื่น E ไม่ใช่คลื่น B"},
+
+{id:'v1q20',topic:'COR',text:"The thrust that follows a contracting triangle is most commonly approximated by:",
+ choices:[{id:'a',letter:'A',text:'The height of the smallest leg of the triangle'},{id:'b',letter:'B',text:'The width of the widest part of the triangle'},{id:'c',letter:'C',text:'One point six one eight times the length of wave E'},{id:'d',letter:'D',text:'The full distance travelled by the prior impulse'}],
+ correct:['b'],
+ expEn:"The customary measurement takes the widest part of the triangle, usually the span of wave A or wave B, and projects that distance from the breakout point. Wave E is the smallest leg and makes a poor basis for projection, and the prior impulse bears no fixed relationship to the thrust.",
+ expTh:"วิธีวัดที่ใช้กันคือนำส่วนที่กว้างที่สุดของสามเหลี่ยม ซึ่งมักเป็นระยะของคลื่น A หรือคลื่น B แล้วฉายระยะนั้นออกจากจุดเบรก คลื่น E เป็นขาที่เล็กที่สุดจึงไม่เหมาะใช้เป็นฐานคำนวณ และอิมพัลส์ก่อนหน้าไม่มีความสัมพันธ์ตายตัวกับ thrust"},
+
+{id:'v1q21',topic:'FIB',text:"Wave A of a zigzag falls 80 points. Using the relationship most commonly cited for wave C in a zigzag, wave C projects to:",
+ choices:[{id:'a',letter:'A',text:'Eighty points, equal to wave A'},{id:'b',letter:'B',text:'Thirty point six points, or 38.2 percent'},{id:'c',letter:'C',text:'Two hundred nine points, or 2.618 times'},{id:'d',letter:'D',text:'Forty-nine point four points, or 61.8 percent'}],
+ correct:['a'],
+ expEn:"In a zigzag, wave C most often equals wave A in price, with 1.618 times wave A the next most common relationship. Retracement ratios such as 38.2 and 61.8 percent apply to how far a correction pulls back a prior wave, not to the internal relationship between waves A and C.",
+ expTh:"ในซิกแซก คลื่น C มักมีความยาวเท่ากับคลื่น A มากที่สุด รองลงมาคือ 1.618 เท่าของคลื่น A ส่วนอัตราส่วนย้อนกลับอย่าง 38.2% และ 61.8% ใช้บอกว่าการปรับฐานย้อนคลื่นก่อนหน้าไปเท่าใด ไม่ใช่ความสัมพันธ์ภายในระหว่างคลื่น A กับคลื่น C"},
+
+{id:'v1q22',topic:'FIB',text:"The Fibonacci sequence is generated by:",
+ choices:[{id:'a',letter:'A',text:'Multiplying each term by one point six one eight'},{id:'b',letter:'B',text:'Doubling each term and subtracting the previous one'},{id:'c',letter:'C',text:'Adding each term to the one immediately before it'},{id:'d',letter:'D',text:'Dividing each term by the golden ratio'}],
+ correct:['c'],
+ expEn:"Each term of the sequence is the sum of the two terms preceding it, producing 1, 1, 2, 3, 5, 8, 13 and onward. The ratio of 1.618 emerges from that additive process as the sequence advances, so it is a consequence of the rule rather than the rule itself.",
+ expTh:"แต่ละพจน์ของลำดับเกิดจากผลบวกของสองพจน์ก่อนหน้า ทำให้ได้ 1, 1, 2, 3, 5, 8, 13 ต่อไปเรื่อย ๆ อัตราส่วน 1.618 เกิดขึ้นจากกระบวนการบวกนี้เมื่อลำดับเดินหน้าไป จึงเป็นผลลัพธ์ของกฎ ไม่ใช่ตัวกฎเอง"},
+
+{id:'v1q23',topic:'FIB',text:"Which pair of ratios is most often applied to fourth-wave retracements?",
+ choices:[{id:'a',letter:'A',text:'One point six one eight and two point six one eight'},{id:'b',letter:'B',text:'Zero point seven eight six and zero point eight eight six'},{id:'c',letter:'C',text:'One point zero zero zero and one point three eight two'},{id:'d',letter:'D',text:'Zero point two three six and zero point three eight two'}],
+ correct:['d'],
+ expEn:"Fourth waves in trending markets are typically shallow, and the 23.6 and 38.2 percent retracements of wave 3 are the levels most often quoted. Ratios above one are projection multiples for motive waves, while the deeper 61.8 to 78.6 zone is more characteristic of second waves.",
+ expTh:"คลื่น 4 ในตลาดที่มีแนวโน้มชัดมักตื้น ระดับที่อ้างถึงบ่อยที่สุดคือการย้อน 23.6% และ 38.2% ของคลื่น 3 ส่วนอัตราส่วนที่มากกว่าหนึ่งใช้ฉายเป้าหมายของคลื่นขับเคลื่อน และโซนที่ลึกกว่าอย่าง 61.8 ถึง 78.6 เป็นลักษณะของคลื่น 2 มากกว่า"},
+
+{id:'v1q24',topic:'DEG',text:"Why must an analyst confirm degree consistency across a labelled count?",
+ choices:[{id:'a',letter:'A',text:'Because higher degrees always take more calendar time'},{id:'b',letter:'B',text:'Because a wave cannot be a sub-wave of something smaller'},{id:'c',letter:'C',text:'Because Fibonacci ratios work only at Primary degree and above'},{id:'d',letter:'D',text:'Because every degree contains the same wave count'}],
+ correct:['b'],
+ expEn:"Degree expresses hierarchy, so a wave must always be contained by a structure of larger degree than itself. Mismatched labelling breaks that nesting and produces counts that cannot resolve. Duration correlates loosely with degree but does not define it, and ratios operate at every degree.",
+ expTh:"ระดับคลื่นแสดงลำดับชั้น คลื่นหนึ่งจึงต้องถูกบรรจุอยู่ในโครงสร้างที่มีระดับใหญ่กว่าตัวมันเองเสมอ การใส่ป้ายผิดระดับจะทำลายการซ้อนชั้นนี้และได้การนับที่ไปต่อไม่ได้ ส่วนระยะเวลาสัมพันธ์กับระดับอย่างหลวม ๆ แต่ไม่ใช่ตัวกำหนด และอัตราส่วนใช้ได้ทุกระดับ"},
+
+{id:'v1q25',topic:'DEG',text:"In standard EWI notation, corrective waves at Minor degree are labelled:",
+ choices:[{id:'a',letter:'A',text:'Parenthesised A, B and C'},{id:'b',letter:'B',text:'Lower-case a, b and c'},{id:'c',letter:'C',text:'Upper-case A, B and C'},{id:'d',letter:'D',text:'Circled A, B and C'}],
+ correct:['c'],
+ expEn:"Minor degree uses plain Arabic numerals for motive waves and plain upper-case letters for corrective waves. Lower-case letters denote Minute degree, parenthesised letters denote Minuette, and circled letters denote Primary degree corrections.",
+ expTh:"ระดับ Minor ใช้ตัวเลขอารบิกธรรมดาสำหรับคลื่นขับเคลื่อน และตัวอักษรพิมพ์ใหญ่ธรรมดาสำหรับคลื่นปรับฐาน ส่วนตัวพิมพ์เล็กใช้กับระดับ Minute ตัวอักษรในวงเล็บใช้กับระดับ Minuette และตัวอักษรในวงกลมใช้กับคลื่นปรับฐานระดับ Primary"},
+
+{id:'v1q26',topic:'GDL',text:"Before wave 5 completes, the working impulse channel is drawn by:",
+ choices:[{id:'a',letter:'A',text:'Joining the ends of waves 2 and 4, then a parallel from wave 3'},{id:'b',letter:'B',text:'Joining the ends of waves 1 and 3, then a parallel from wave 2'},{id:'c',letter:'C',text:'Joining the origin of wave 1 to the end of wave 5 and copying it'},{id:'d',letter:'D',text:'Joining the extremes of wave 3 and extending both lines forward'}],
+ correct:['a'],
+ expEn:"Once wave 4 has ended, the base line connects the terminals of waves 2 and 4 and a parallel is projected from the extreme of wave 3, giving an estimated target zone for wave 5. Using the end of wave 5 to build the channel is circular, since the channel exists to estimate that very point.",
+ expTh:"เมื่อคลื่น 4 จบลง ให้ลากเส้นฐานเชื่อมจุดจบของคลื่น 2 กับคลื่น 4 แล้วฉายเส้นขนานจากจุดสุดขั้วของคลื่น 3 เพื่อให้ได้โซนเป้าหมายโดยประมาณของคลื่น 5 การใช้จุดจบของคลื่น 5 มาสร้างช่องราคาเป็นเหตุผลวนกลับ เพราะช่องราคามีไว้เพื่อประมาณจุดนั้นเอง"},
+
+{id:'v1q27',topic:'GDL',text:"The depth-of-corrective-waves guideline states that a correction most often terminates:",
+ choices:[{id:'a',letter:'A',text:'At the 78.6 percent retracement of the whole prior impulse'},{id:'b',letter:'B',text:'Within the span of the fourth wave of one lesser degree'},{id:'c',letter:'C',text:'Precisely at the origin of the preceding motive wave'},{id:'d',letter:'D',text:'At the midpoint of the third wave of the same degree'}],
+ correct:['b'],
+ expEn:"Corrections most commonly come to rest inside the territory covered by the fourth wave of one lesser degree, usually near its terminal point. Retracing the full motive wave to its origin would be unusually deep, and the guideline names no fixed percentage.",
+ expTh:"การปรับฐานมักหยุดลงภายในเขตราคาของคลื่นที่ 4 ของระดับที่เล็กกว่าหนึ่งขั้น โดยส่วนใหญ่อยู่ใกล้จุดจบของคลื่นนั้น การย้อนกลับไปถึงจุดกำเนิดของคลื่นขับเคลื่อนทั้งคลื่นถือว่าลึกผิดปกติ และหลักการนี้ไม่ได้ระบุเปอร์เซ็นต์ตายตัวไว้"},
+
+{id:'v1q28',topic:'GDL',text:"Volume behaviour across a typical impulse shows:",
+ choices:[{id:'a',letter:'A',text:'Steadily rising volume peaking in wave five'},{id:'b',letter:'B',text:'Peak volume in wave two, minimum in wave three'},{id:'c',letter:'C',text:'Identical volume recorded across waves one, three and five'},{id:'d',letter:'D',text:'Peak volume in wave three, lighter volume in wave five'}],
+ correct:['d'],
+ expEn:"Volume expands most strongly during the third wave, when participation is broadest, and typically runs lighter in wave 5 even as price makes new extremes. That divergence between price and volume is one of the classic warnings that an impulse is maturing.",
+ expTh:"ปริมาณการซื้อขายขยายตัวแรงที่สุดในคลื่น 3 ซึ่งเป็นช่วงที่มีผู้เข้าร่วมกว้างที่สุด และมักเบาลงในคลื่น 5 แม้ราคาจะทำจุดสุดขั้วใหม่ ความแตกต่างระหว่างราคากับปริมาณนี้คือสัญญาณเตือนคลาสสิกว่าอิมพัลส์กำลังเข้าสู่ช่วงท้าย"},
+
+{id:'v1q29',topic:'APP',text:"A supposed impulse trades decisively above the origin of wave 1 while wave 2 is still unfolding. The analyst should:",
+ choices:[{id:'a',letter:'A',text:'Discard the count, since wave 2 has breached its rule limit'},{id:'b',letter:'B',text:'Keep the count and call it an extended second wave'},{id:'c',letter:'C',text:'Keep the count but relabel wave 1 as a leading diagonal instead'},{id:'d',letter:'D',text:'Keep the count and shift the invalidation level higher'}],
+ correct:['a'],
+ expEn:"In a declining impulse, wave 2 rising above the origin of wave 1 means it has retraced more than one hundred percent, which breaks an inviolable rule and kills the count outright. Rules cannot be rescued by renaming waves or by moving the invalidation level after the fact.",
+ expTh:"ในอิมพัลส์ขาลง การที่คลื่น 2 ขึ้นเหนือจุดกำเนิดของคลื่น 1 แปลว่าย้อนเกิน 100% ซึ่งละเมิดกฎเหล็กและทำให้การนับตายทันที กฎไม่สามารถกอบกู้ได้ด้วยการเปลี่ยนชื่อคลื่นหรือเลื่อนจุดยกเลิกนับย้อนหลัง"},
+
+{id:'v1q30',topic:'APP',text:"The most reliable early confirmation that a five-wave advance has ended is:",
+ choices:[{id:'a',letter:'A',text:'One session of unusually heavy volume near the high'},{id:'b',letter:'B',text:'A momentum oscillator reaching a deeply overbought reading'},{id:'c',letter:'C',text:'A decisive break below the wave 4 low of lesser degree'},{id:'d',letter:'D',text:'A Fibonacci ratio being met precisely at the high'}],
+ correct:['c'],
+ expEn:"Breaking beneath the fourth wave of one lesser degree is the structural signal, because a genuine correction of the whole five-wave sequence must reach that far. Volume spikes, overbought readings and satisfied ratios can all occur repeatedly inside an ongoing advance.",
+ expTh:"การหลุดลงใต้คลื่นที่ 4 ของระดับที่เล็กกว่าหนึ่งขั้นคือสัญญาณเชิงโครงสร้าง เพราะการปรับฐานของทั้งห้าคลื่นย่อมต้องลงมาถึงบริเวณนั้น ส่วนปริมาณพุ่ง สัญญาณ overbought และการแตะอัตราส่วนพอดี ล้วนเกิดขึ้นซ้ำได้หลายครั้งระหว่างขาขึ้นที่ยังไม่จบ"},
+
+{id:'v1q31',topic:'APP',text:"Two structurally valid counts imply different targets. The appropriate response is to:",
+ choices:[{id:'a',letter:'A',text:'Adopt the count with the larger move and drop the other'},{id:'b',letter:'B',text:'Rank both by probability and define the eliminating level'},{id:'c',letter:'C',text:'Suspend analysis until only one possibility remains'},{id:'d',letter:'D',text:'Average the two targets and forecast the midpoint'}],
+ correct:['b'],
+ expEn:"Sound practice carries both counts, states which is preferred and why, and identifies the specific price that would eliminate one of them. Choosing by target size introduces bias, suspending analysis forfeits the method's value, and averaging produces a level neither count actually supports.",
+ expTh:"แนวปฏิบัติที่ดีคือถือทั้งสองการนับไว้ ระบุว่าอันไหนน่าจะเป็นมากกว่าและเพราะอะไร พร้อมกำหนดราคาที่จะตัดอันหนึ่งทิ้ง การเลือกจากขนาดเป้าหมายทำให้เกิดอคติ การหยุดวิเคราะห์ทำให้เสียประโยชน์ของวิธีการ และการเฉลี่ยได้ระดับที่ไม่มีการนับใดรองรับ"},
+
+{id:'v1q32',topic:'IMP',text:"Which statement about an ending diagonal is correct?",
+ choices:[{id:'a',letter:'A',text:'Each of its sub-waves subdivides into five waves'},{id:'b',letter:'B',text:'It appears most often in wave 1 and wave A positions'},{id:'c',letter:'C',text:'Its wave 4 must remain clear of wave 1 territory'},{id:'d',letter:'D',text:'It subdivides 3-3-3-3-3 inside converging trendlines'}],
+ correct:['d'],
+ expEn:"An ending diagonal consists of five three-wave legs contained by converging boundary lines, and overlap between waves 1 and 4 is its normal feature rather than a violation. It occupies terminal positions, meaning wave 5 or wave C, not the opening positions.",
+ expTh:"ending diagonal ประกอบด้วยห้าขาที่แต่ละขาแบ่งเป็นสามคลื่น อยู่ภายในเส้นขอบที่บีบเข้าหากัน และการทับซ้อนระหว่างคลื่น 1 กับ 4 เป็นลักษณะปกติของมัน ไม่ใช่การละเมิดกฎ โครงสร้างนี้อยู่ในตำแหน่งปิดท้าย คือคลื่น 5 หรือคลื่น C ไม่ใช่ตำแหน่งเริ่มต้น"},
+
+{id:'v1q33',topic:'IMP',text:"A throw-over from an ending diagonal refers to:",
+ choices:[{id:'a',letter:'A',text:'A gap that opens beyond the extreme of wave 3'},{id:'b',letter:'B',text:'The failure of wave 5 to reach the upper boundary'},{id:'c',letter:'C',text:'A brief penetration of the boundary line by wave 5'},{id:'d',letter:'D',text:'The overlap of wave 4 into wave 1 territory'}],
+ correct:['c'],
+ expEn:"A throw-over is the short-lived break of the diagonal's boundary line by the terminal wave, often accompanied by a burst of volume and a sharp reversal immediately afterward. Overlap between waves 1 and 4 is an ordinary characteristic of diagonals and is not the throw-over.",
+ expTh:"throw-over คือการที่คลื่นสุดท้ายทะลุเส้นขอบของ diagonal ออกไปชั่วครู่ มักมาพร้อมปริมาณซื้อขายที่พุ่งขึ้นและการกลับตัวอย่างรวดเร็วทันทีหลังจากนั้น ส่วนการทับซ้อนระหว่างคลื่น 1 กับ 4 เป็นลักษณะทั่วไปของ diagonal ไม่ใช่ throw-over"},
+
+{id:'v1q34',topic:'COR',text:"Which corrective structure does not appear in the wave 2 position of an impulse?",
+ choices:[{id:'a',letter:'A',text:'A triangle'},{id:'b',letter:'B',text:'A zigzag'},{id:'c',letter:'C',text:'An expanded flat'},{id:'d',letter:'D',text:'A double zigzag'}],
+ correct:['a'],
+ expEn:"Triangles are consolidation patterns that appear only in positions preceding the final wave of a larger structure, chiefly wave 4, wave B and wave X. Second waves are typically sharp retracements, and zigzags, flats and combinations all serve there readily.",
+ expTh:"สามเหลี่ยมเป็นรูปแบบสะสมพลังที่ปรากฏเฉพาะในตำแหน่งก่อนคลื่นสุดท้ายของโครงสร้างใหญ่ ส่วนใหญ่คือคลื่น 4 คลื่น B และคลื่น X ในขณะที่คลื่น 2 มักเป็นการย้อนที่รวดเร็ว จึงพบซิกแซก แฟลต และรูปแบบผสมได้ตามปกติ"},
+
+{id:'v1q35',topic:'COR',text:"In a running flat, wave C:",
+ choices:[{id:'a',letter:'A',text:'Travels well beyond the terminal point of wave A'},{id:'b',letter:'B',text:'Ends short of the extreme reached by wave A'},{id:'c',letter:'C',text:'Matches the length of wave A almost exactly'},{id:'d',letter:'D',text:'Subdivides into three waves rather than five'}],
+ correct:['b'],
+ expEn:"A running flat has a wave B that exceeds the origin of wave A and a wave C that fails to reach the wave A extreme, which is why the whole pattern drifts in the direction of the larger trend. Wave C of any flat still subdivides into five waves.",
+ expTh:"running flat มีคลื่น B ที่เลยจุดเริ่มต้นของคลื่น A และคลื่น C ที่ไปไม่ถึงจุดสุดขั้วของคลื่น A จึงทำให้รูปแบบทั้งหมดเคลื่อนไปตามทิศทางของแนวโน้มใหญ่ ทั้งนี้คลื่น C ของแฟลตทุกชนิดยังคงแบ่งย่อยเป็นห้าคลื่น"},
+
+{id:'v1q36',topic:'COR',text:"Within a combination labelled W-X-Y, the component patterns are:",
+ choices:[{id:'a',letter:'A',text:'Always two zigzags of equal length'},{id:'b',letter:'B',text:'Always a triangle followed by a flat'},{id:'c',letter:'C',text:'Restricted to five-wave motive structures exclusively'},{id:'d',letter:'D',text:'Simple corrective patterns joined by an X wave'}],
+ correct:['d'],
+ expEn:"A combination strings together simple corrective patterns such as zigzags, flats and triangles, linked by an intervening X wave, and the components need not match one another. Motive five-wave structures cannot serve as components of a corrective combination.",
+ expTh:"combination คือการนำรูปแบบปรับฐานอย่างง่าย เช่น ซิกแซก แฟลต และสามเหลี่ยม มาต่อกันโดยมีคลื่น X คั่นกลาง และองค์ประกอบไม่จำเป็นต้องเป็นชนิดเดียวกัน ส่วนโครงสร้างขับเคลื่อนห้าคลื่นไม่สามารถเป็นองค์ประกอบของรูปแบบปรับฐานได้"},
+
+{id:'v1q37',topic:'FIB',text:"The ratio of a Fibonacci number to the number two places higher in the sequence converges toward:",
+ choices:[{id:'a',letter:'A',text:'Zero point three eight two'},{id:'b',letter:'B',text:'Zero point six one eight'},{id:'c',letter:'C',text:'One point six one eight'},{id:'d',letter:'D',text:'Two point six one eight'}],
+ correct:['a'],
+ expEn:"Dividing a term by the one two places ahead approaches 0.382, which is the square of 0.618. Comparing adjacent terms gives 0.618 downward or 1.618 upward, while 2.618 comes from looking two places ahead in the opposite direction.",
+ expTh:"การหารพจน์หนึ่งด้วยพจน์ที่อยู่สูงขึ้นไปสองตำแหน่งจะลู่เข้าสู่ 0.382 ซึ่งเป็นกำลังสองของ 0.618 ส่วนการเทียบพจน์ที่อยู่ติดกันให้ 0.618 เมื่อหารลงและ 1.618 เมื่อหารขึ้น ในขณะที่ 2.618 ได้จากการมองข้ามไปสองตำแหน่งในทิศทางตรงข้าม"},
+
+{id:'v1q38',topic:'FIB',text:"Wave 1 runs from 100 to 150 and wave 3 ends at 260. Applying the 0.618 relationship to the net travel from the start of wave 1 to the end of wave 3, wave 5 would add about:",
+ choices:[{id:'a',letter:'A',text:'Thirty point nine points'},{id:'b',letter:'B',text:'Sixty-one point eight points'},{id:'c',letter:'C',text:'Ninety-eight point nine points'},{id:'d',letter:'D',text:'One hundred sixty points'}],
+ correct:['c'],
+ expEn:"The net distance from 100 to 260 is one hundred sixty points, and 0.618 of that is about 98.9. Sixty-one point eight applies the ratio to wave 1 instead, thirty point nine halves that figure again, and one hundred sixty is the unadjusted net travel.",
+ expTh:"ระยะสุทธิจาก 100 ถึง 260 เท่ากับ 160 จุด และ 0.618 ของระยะนั้นคือประมาณ 98.9 ส่วน 61.8 เกิดจากการนำอัตราส่วนไปใช้กับคลื่น 1 แทน 30.9 คือการหารตัวเลขนั้นลงอีกครึ่ง และ 160 คือระยะสุทธิที่ยังไม่ได้คูณอัตราส่วน"},
+
+{id:'v1q39',topic:'DEG',text:"Two analysts disagree over whether an advance is Minor or Intermediate degree. The correct basis for settling the question is:",
+ choices:[{id:'a',letter:'A',text:'The number of calendar days the advance consumed in total'},{id:'b',letter:'B',text:'The percentage size of the move considered on its own'},{id:'c',letter:'C',text:'The count of trading sessions contained in the advance'},{id:'d',letter:'D',text:'Where the advance nests within surrounding structures'}],
+ correct:['d'],
+ expEn:"Degree is settled by where a wave nests in the hierarchy, since it must be a component of something larger and contain something smaller. Duration and amplitude offer rough corroboration only, so a brief, modest advance can still carry a large degree label when the surrounding structure demands it.",
+ expTh:"ระดับคลื่นตัดสินจากตำแหน่งที่คลื่นซ้อนอยู่ในลำดับชั้น เพราะมันต้องเป็นองค์ประกอบของสิ่งที่ใหญ่กว่าและบรรจุสิ่งที่เล็กกว่าไว้ ระยะเวลาและขนาดช่วยยืนยันได้เพียงคร่าว ๆ การเคลื่อนไหวที่สั้นและไม่ใหญ่จึงยังได้ป้ายระดับใหญ่ได้หากโครงสร้างรอบข้างบังคับเช่นนั้น"},
+
+{id:'v1q40',topic:'DEG',text:"Supercycle degree motive waves are written in standard notation as:",
+ choices:[{id:'a',letter:'A',text:'I II III IV V without any enclosure'},{id:'b',letter:'B',text:'Roman numerals enclosed in parentheses'},{id:'c',letter:'C',text:'Arabic numerals enclosed in circles'},{id:'d',letter:'D',text:'Roman numerals enclosed in square brackets'}],
+ correct:['b'],
+ expEn:"Supercycle motive waves carry upper-case Roman numerals in parentheses. Plain upper-case Roman numerals mark Cycle degree, square brackets mark Grand Supercycle, and circled Arabic numerals mark Primary degree.",
+ expTh:"คลื่นขับเคลื่อนระดับ Supercycle ใช้เลขโรมันตัวใหญ่ในวงเล็บ ส่วนเลขโรมันตัวใหญ่แบบธรรมดาใช้กับระดับ Cycle วงเล็บเหลี่ยมใช้กับระดับ Grand Supercycle และเลขอารบิกในวงกลมใช้กับระดับ Primary"},
+
+{id:'v1q41',topic:'GDL',text:"Alternation applied across a complete corrective sequence suggests that:",
+ choices:[{id:'a',letter:'A',text:'Wave A and wave C must be equal in length'},{id:'b',letter:'B',text:'Every correction alternates between rising and falling'},{id:'c',letter:'C',text:'If wave A is simple, wave C is likely to be complex'},{id:'d',letter:'D',text:'Corrections alternate strictly between zigzag and triangle'}],
+ correct:['c'],
+ expEn:"Alternation extends beyond waves 2 and 4 to the internal makeup of corrections, so a straightforward wave A often precedes a more elaborate wave C. Equality of A and C is a separate Fibonacci tendency, and no rule dictates a strict rotation between named patterns.",
+ expTh:"หลักการสลับรูปแบบไม่ได้จำกัดอยู่แค่คลื่น 2 กับ 4 แต่ครอบคลุมถึงองค์ประกอบภายในของการปรับฐานด้วย คลื่น A ที่เรียบง่ายจึงมักตามด้วยคลื่น C ที่ซับซ้อนกว่า ส่วนความเท่ากันของ A กับ C เป็นแนวโน้มเชิงฟีโบนักชีคนละเรื่อง และไม่มีกฎใดบังคับให้สลับรูปแบบตายตัว"},
+
+{id:'v1q42',topic:'GDL',text:"Wave 5 decisively pierces the upper channel line drawn from waves 1 and 3. This most commonly signals:",
+ choices:[{id:'a',letter:'A',text:'An accelerating fifth wave, often near a blow-off extreme'},{id:'b',letter:'B',text:'Immediate invalidation of the entire impulse count'},{id:'c',letter:'C',text:'That wave 5 must reach 2.618 times the total length of wave 1'},{id:'d',letter:'D',text:'That wave 4 must be relabelled as a running triangle'}],
+ correct:['a'],
+ expEn:"A break above the channel during wave 5 typically reflects an acceleration in enthusiasm and often marks the closing stage of the advance rather than its failure. Channels are guidelines, so piercing one carries no power to invalidate a count and implies no specific ratio.",
+ expTh:"การทะลุเหนือช่องราคาระหว่างคลื่น 5 มักสะท้อนความคึกคักที่เร่งตัวขึ้น และบ่อยครั้งเป็นสัญญาณของช่วงปิดท้ายของขาขึ้นมากกว่าความล้มเหลว ช่องราคาเป็นเพียงแนวทาง การทะลุจึงไม่มีอำนาจยกเลิกการนับและไม่ได้บอกอัตราส่วนใดโดยเฉพาะ"},
+
+{id:'v1q43',topic:'APP',text:"An analyst labels a decline as wave 2 but finds it subdivides cleanly into five waves. The best interpretation is that:",
+ choices:[{id:'a',letter:'A',text:'The five-wave subdivision confirms the wave 2 label'},{id:'b',letter:'B',text:'It is more likely wave A of a correction or a new impulse'},{id:'c',letter:'C',text:'Wave 2 may subdivide into five whenever it is sharp'},{id:'d',letter:'D',text:'Subdivisions below Minor degree can safely be ignored'}],
+ correct:['b'],
+ expEn:"Corrective waves subdivide into threes, so a clean five-wave decline is not a wave 2. It points either to wave A of a larger correction or to the opening wave of a new impulse in the opposite direction, both of which imply the prior trend has ended.",
+ expTh:"คลื่นปรับฐานแบ่งย่อยเป็นสามคลื่น การลงที่แบ่งเป็นห้าคลื่นอย่างชัดเจนจึงไม่ใช่คลื่น 2 แต่ชี้ไปที่คลื่น A ของการปรับฐานใหญ่หรือคลื่นแรกของอิมพัลส์ใหม่ในทิศทางตรงข้าม ซึ่งทั้งสองกรณีบ่งบอกว่าแนวโน้มเดิมจบลงแล้ว"},
+
+{id:'v1q44',topic:'APP',text:"The socionomic hypothesis proposes that:",
+ choices:[{id:'a',letter:'A',text:'News events determine the direction of subsequent mood'},{id:'b',letter:'B',text:'Central bank policy is the primary driver of wave form'},{id:'c',letter:'C',text:'Wave patterns arise only in electronically traded markets'},{id:'d',letter:'D',text:'Endogenous social mood drives both prices and events'}],
+ correct:['d'],
+ expEn:"Socionomics reverses the conventional arrow of causality, holding that waves of social mood arise internally and then express themselves in prices and in social outcomes alike. Wave structures were documented long before electronic trading existed.",
+ expTh:"socionomics กลับทิศทางของเหตุและผลแบบเดิม โดยถือว่าคลื่นของอารมณ์สังคมเกิดขึ้นจากภายในแล้วจึงแสดงออกทั้งในราคาและในเหตุการณ์ทางสังคม ทั้งนี้โครงสร้างคลื่นถูกบันทึกไว้ตั้งแต่ก่อนจะมีการซื้อขายทางอิเล็กทรอนิกส์เสียอีก"},
+
+{id:'v1q45',topic:'APP',text:"Fibonacci confluence adds analytical weight because:",
+ choices:[{id:'a',letter:'A',text:'Independent projections cluster within a narrow price zone'},{id:'b',letter:'B',text:'A single ratio is measured repeatedly on the very same wave'},{id:'c',letter:'C',text:'Longer timeframe ratios always override shorter ones'},{id:'d',letter:'D',text:'The 1.618 ratio is applied to every wave in sequence'}],
+ correct:['a'],
+ expEn:"Confluence means several separately derived measurements, taken from different waves and different degrees, arrive at approximately the same price area. Repeating one measurement adds no independent evidence, and no rule ranks timeframes automatically.",
+ expTh:"confluence หมายถึงการที่การวัดหลายชุดซึ่งได้มาจากคลื่นและระดับที่ต่างกัน มาบรรจบกันในบริเวณราคาใกล้เคียงกัน การวัดซ้ำด้วยวิธีเดิมไม่ได้เพิ่มหลักฐานที่เป็นอิสระ และไม่มีกฎใดจัดลำดับความสำคัญของกรอบเวลาโดยอัตโนมัติ"},
+
+{id:'v1q46',topic:'IMP',text:"A complete Elliott cycle of a five-wave advance and a three-wave decline contains how many waves at the next lower degree?",
+ choices:[{id:'a',letter:'A',text:'Five waves'},{id:'b',letter:'B',text:'Three waves'},{id:'c',letter:'C',text:'Eight waves'},{id:'d',letter:'D',text:'Thirty-four waves'}],
+ correct:['c'],
+ expEn:"Five advancing waves plus three declining waves total eight, which is itself a Fibonacci number. Five and three are the counts of the two halves taken separately, and thirty-four appears only after several further layers of subdivision.",
+ expTh:"คลื่นขาขึ้นห้าคลื่นรวมกับคลื่นขาลงสามคลื่นได้แปดคลื่น ซึ่งเป็นจำนวนฟีโบนักชีเช่นกัน ส่วนเลขห้าและสามคือจำนวนของแต่ละครึ่งเมื่อนับแยกกัน และเลข 34 จะปรากฏก็ต่อเมื่อแบ่งย่อยลงไปอีกหลายชั้น"},
+
+{id:'v1q47',topic:'IMP',text:"A triangle shows waves B and D ending at essentially the same level while the opposite boundary slopes toward them. This is:",
+ choices:[{id:'a',letter:'A',text:'A running triangle with an unusually large wave B'},{id:'b',letter:'B',text:'A barrier triangle, a contracting variety'},{id:'c',letter:'C',text:'An expanding triangle with diverging boundaries'},{id:'d',letter:'D',text:'A double three combination in disguise'}],
+ correct:['b'],
+ expEn:"Equal terminals for waves B and D produce one horizontal boundary while the other line converges on it, which is the barrier form of the contracting triangle. A running triangle is defined by wave B exceeding the origin of wave A, and diverging boundaries would make the pattern an expanding triangle.",
+ expTh:"การที่คลื่น B และ D จบที่ระดับเท่ากันทำให้ได้เส้นขอบแนวนอนหนึ่งเส้น ในขณะที่เส้นอีกด้านบีบเข้าหา ซึ่งคือรูปแบบ barrier ของสามเหลี่ยมแบบหดตัว ส่วน running triangle นิยามจากคลื่น B ที่เลยจุดเริ่มต้นของคลื่น A และเส้นขอบที่ถ่างออกจะทำให้เป็นสามเหลี่ยมแบบขยายตัว"},
+
+{id:'v1q48',topic:'COR',text:"Wave 4 of an impulse takes the form of a triangle. What typically follows?",
+ choices:[{id:'a',letter:'A',text:'An immediate reversal of the larger trend direction'},{id:'b',letter:'B',text:'A second triangle at the very same degree'},{id:'c',letter:'C',text:'A deep retracement into wave 2 territory'},{id:'d',letter:'D',text:'A thrust in the trend direction, completing wave 5'}],
+ correct:['d'],
+ expEn:"A fourth-wave triangle is a consolidation that precedes the final wave, so the breakout thrust carries price in the direction of the larger trend and completes wave 5. An immediate reversal would leave the impulse unfinished, and a move into wave 2 territory would breach the overlap rule.",
+ expTh:"สามเหลี่ยมในคลื่น 4 คือการสะสมพลังก่อนคลื่นสุดท้าย การเบรกออกจึงพาราคาไปในทิศทางของแนวโน้มใหญ่และปิดคลื่น 5 ถ้ากลับตัวทันทีอิมพัลส์จะยังไม่จบ และการเคลื่อนเข้าไปในเขตคลื่น 2 จะละเมิดกฎห้ามทับซ้อน"},
+
+{id:'v1q49',topic:'COR',text:"Successive legs of a triangle each run longer than the one before while its boundary lines widen. This structure is:",
+ choices:[{id:'a',letter:'A',text:'A contracting triangle sitting in the wave 4 position'},{id:'b',letter:'B',text:'A barrier triangle with one flat boundary line'},{id:'c',letter:'C',text:'An expanding triangle, a recognised variant'},{id:'d',letter:'D',text:'An invalid count that has to be relabelled'}],
+ correct:['c'],
+ expEn:"Legs that grow larger inside widening boundaries describe the expanding triangle, which still holds five legs each subdividing into three waves. Contracting and barrier forms both narrow rather than widen, and the geometry itself invalidates nothing.",
+ expTh:"ขาที่ยาวขึ้นเรื่อย ๆ ภายในเส้นขอบที่ถ่างออกคือลักษณะของสามเหลี่ยมแบบขยายตัว ซึ่งยังคงมีห้าขาที่แต่ละขาแบ่งเป็นสามคลื่น ส่วนแบบหดตัวและแบบ barrier ต่างก็บีบเข้าไม่ใช่ถ่างออก และรูปทรงแบบนี้ไม่ได้ทำให้การนับเป็นโมฆะแต่อย่างใด"},
+
+{id:'v1q50',topic:'FIB',text:"Wave A of an expanded flat spans 50 points. Applying the commonly cited 1.618 relationship, wave C projects to span:",
+ choices:[{id:'a',letter:'A',text:'Eighty point nine points'},{id:'b',letter:'B',text:'Thirty point nine points'},{id:'c',letter:'C',text:'One hundred thirty point nine points'},{id:'d',letter:'D',text:'Fifty points exactly'}],
+ correct:['a'],
+ expEn:"Multiplying fifty points by 1.618 gives 80.9, and that extended relationship between waves C and A is characteristic of the expanded flat. Fifty points would represent simple equality, thirty point nine applies 0.618, and one hundred thirty point nine applies 2.618.",
+ expTh:"นำ 50 จุดคูณด้วย 1.618 จะได้ 80.9 และความสัมพันธ์แบบขยายระหว่างคลื่น C กับคลื่น A นี้เป็นลักษณะเฉพาะของ expanded flat ส่วน 50 จุดคือความเท่ากันแบบเรียบง่าย 30.9 มาจากอัตราส่วน 0.618 และ 130.9 มาจากอัตราส่วน 2.618"}
+];
+</script>
+<script>
+const BANK_V2=[
+{id:'v2q01',topic:'IMP',text:"Which observation would force an analyst to abandon a standard impulse label outright?",
+ choices:[{id:'a',letter:'A',text:'Wave 5 failing to exceed wave 3 while wave 4 stays clear'},{id:'b',letter:'B',text:'Wave 4 overlapping wave 1 with no diagonal characteristics'},{id:'c',letter:'C',text:'Wave 3 running longer than both wave 1 and wave 5'},{id:'d',letter:'D',text:'Wave 2 retracing eighty-five percent of wave 1 on light volume'}],
+ correct:['b'],
+ expEn:"Overlap between waves 1 and 4 breaks an inviolable rule unless the structure is a diagonal, which the question excludes. A truncated fifth is permitted, wave 3 being the longest is the normal case, and a deep but incomplete wave 2 retracement breaches nothing.",
+ expTh:"การทับซ้อนระหว่างคลื่น 1 กับ 4 ละเมิดกฎเหล็ก เว้นแต่โครงสร้างนั้นเป็น diagonal ซึ่งโจทย์ตัดออกไปแล้ว ส่วนคลื่น 5 แบบ truncation เกิดขึ้นได้ คลื่น 3 ที่ยาวที่สุดคือกรณีปกติ และคลื่น 2 ที่ลึกแต่ยังไม่ถึง 100% ก็ไม่ได้ละเมิดอะไร"},
+
+{id:'v2q02',topic:'IMP',text:"Within a contracting ending diagonal, the relationship between successive motive legs is that:",
+ choices:[{id:'a',letter:'A',text:'Each motive leg runs longer than the one before it'},{id:'b',letter:'B',text:'All five legs come out approximately equal in length'},{id:'c',letter:'C',text:'The legs alternate between longer and shorter without pattern'},{id:'d',letter:'D',text:'Each motive leg falls short of the preceding motive leg'}],
+ correct:['d'],
+ expEn:"Contraction is what produces the converging boundary lines, so wave 3 is shorter than wave 1 and wave 5 is shorter than wave 3. Legs that grow progressively larger would describe an expanding diagonal instead.",
+ expTh:"การหดตัวคือสิ่งที่ทำให้เส้นขอบบีบเข้าหากัน คลื่น 3 จึงสั้นกว่าคลื่น 1 และคลื่น 5 สั้นกว่าคลื่น 3 ส่วนขาที่ยาวขึ้นเรื่อย ๆ จะเป็นลักษณะของ diagonal แบบขยายตัวแทน"},
+
+{id:'v2q03',topic:'COR',text:"Which pattern may serve as the final component of a double three but never as the first?",
+ choices:[{id:'a',letter:'A',text:'A triangle'},{id:'b',letter:'B',text:'A zigzag'},{id:'c',letter:'C',text:'A regular flat'},{id:'d',letter:'D',text:'An expanded flat'}],
+ correct:['a'],
+ expEn:"A triangle terminates a corrective sequence, so within a combination it can occupy only the final slot. Zigzags and both varieties of flat appear freely in either the opening or the closing position of the structure.",
+ expTh:"สามเหลี่ยมเป็นรูปแบบที่ปิดท้ายลำดับการปรับฐาน ภายใน combination จึงอยู่ได้เฉพาะตำแหน่งสุดท้าย ส่วนซิกแซกและแฟลตทั้งสองชนิดปรากฏได้อย่างอิสระทั้งตำแหน่งเปิดและตำแหน่งปิดของโครงสร้าง"},
+
+{id:'v2q04',topic:'COR',text:"An analyst maps a zigzag, then a move against it, then a second zigzag. The middle segment is best described as:",
+ choices:[{id:'a',letter:'A',text:'A motive wave subdividing into five along the trend'},{id:'b',letter:'B',text:'A wave that is required to exceed the first zigzag origin without fail'},{id:'c',letter:'C',text:'An X wave, itself corrective, retracing part of the first'},{id:'d',letter:'D',text:'A second wave belonging to a new impulse advance'}],
+ correct:['c'],
+ expEn:"The connecting segment is an X wave, a simple corrective structure that retraces part of the pattern before it and separates the two zigzags. A five-wave motive reading would break the corrective character of the whole sequence, and an X wave may exceed the first zigzag origin but is never obliged to.",
+ expTh:"ส่วนที่เชื่อมอยู่ตรงกลางคือคลื่น X ซึ่งเป็นโครงสร้างปรับฐานอย่างง่ายที่ย้อนบางส่วนของรูปแบบก่อนหน้าและคั่นซิกแซกทั้งสองชุด การอ่านเป็นคลื่นขับเคลื่อนห้าคลื่นจะทำลายลักษณะปรับฐานของทั้งลำดับ และคลื่น X อาจเลยจุดเริ่มต้นของซิกแซกแรกได้แต่ไม่เคยถูกบังคับ"},
+
+{id:'v2q05',topic:'FIB',text:"A Fibonacci time count points to a reversal next week, but the wave structure is plainly incomplete. The sound response is to:",
+ choices:[{id:'a',letter:'A',text:'Take the date as decisive and forecast the reversal regardless'},{id:'b',letter:'B',text:'Apply the time count only above Primary degree'},{id:'c',letter:'C',text:'Let the time count stand in for the missing structure'},{id:'d',letter:'D',text:'Wait for structure, treating time as supporting evidence'}],
+ correct:['d'],
+ expEn:"Structure comes first, so an incomplete pattern outweighs any calendar projection and the analyst waits. Time is the least reliable of the three analytical legs and earns weight only once price and pattern already agree, which is why treating a date as decisive invites forcing the count.",
+ expTh:"โครงสร้างมาก่อนเสมอ รูปแบบที่ยังไม่สมบูรณ์จึงมีน้ำหนักเหนือการฉายวันใด ๆ และนักวิเคราะห์ควรรอ เวลาเป็นขาที่เชื่อถือได้น้อยที่สุดในสามขาของการวิเคราะห์ และจะมีน้ำหนักก็ต่อเมื่อราคาและรูปแบบเห็นพ้องกันแล้ว การยึดวันที่เป็นตัวตัดสินจึงนำไปสู่การฝืนนับ"},
+
+{id:'v2q06',topic:'FIB',text:"When wave 3 is the extended wave, the most frequently observed relationship between wave 5 and wave 1 is:",
+ choices:[{id:'a',letter:'A',text:'Wave 5 approximates wave 1, consistent with equality'},{id:'b',letter:'B',text:'Wave 5 reaches 2.618 times the length of wave 1'},{id:'c',letter:'C',text:'Wave 5 measures roughly 0.236 of wave 1'},{id:'d',letter:'D',text:'Wave 5 exceeds wave 3 in price in most cases'}],
+ correct:['a'],
+ expEn:"When one motive wave extends, the two that did not extend tend toward equality, so an extended third wave usually leaves wave 5 close to the length of wave 1. Extended multiples belong to the extending wave, not to the two that remain ordinary.",
+ expTh:"เมื่อคลื่นขับเคลื่อนหนึ่งเกิดการขยายตัว อีกสองคลื่นที่ไม่ขยายมักมีขนาดใกล้เคียงกัน คลื่น 3 ที่ขยายตัวจึงมักทิ้งให้คลื่น 5 มีความยาวใกล้เคียงคลื่น 1 ส่วนตัวคูณแบบขยายเป็นของคลื่นที่ขยายตัวเอง ไม่ใช่ของสองคลื่นที่เหลือ"},
+
+{id:'v2q07',topic:'DEG',text:"An analyst labels a three-month decline as Minute degree while the waves around it are Primary. This is problematic because:",
+ choices:[{id:'a',letter:'A',text:'Minute degree waves can only advance, never decline'},{id:'b',letter:'B',text:'Fibonacci ratios stop functioning below Intermediate degree'},{id:'c',letter:'C',text:'The wave is nested at a degree far too small for its context'},{id:'d',letter:'D',text:'Any three-month wave is Cycle degree by definition'}],
+ correct:['c'],
+ expEn:"Skipping several ranks between neighbouring labels breaks the hierarchy, since a Minute wave cannot stand as a direct component of a Primary structure. Duration alone never fixes a degree, and ratios apply at every level of the hierarchy.",
+ expTh:"การข้ามหลายระดับระหว่างป้ายกำกับที่อยู่ติดกันทำลายลำดับชั้น เพราะคลื่นระดับ Minute ไม่สามารถเป็นองค์ประกอบโดยตรงของโครงสร้างระดับ Primary ได้ ทั้งนี้ระยะเวลาเพียงอย่างเดียวไม่เคยเป็นตัวกำหนดระดับ และอัตราส่วนใช้ได้ทุกชั้น"},
+
+{id:'v2q08',topic:'DEG',text:"Which labelling correctly shows a Minuette degree motive sequence?",
+ choices:[{id:'a',letter:'A',text:'Lower-case Roman numerals without enclosure'},{id:'b',letter:'B',text:'Lower-case Roman numerals in parentheses'},{id:'c',letter:'C',text:'Plain Arabic numerals one through five'},{id:'d',letter:'D',text:'Arabic numerals enclosed in circles'}],
+ correct:['b'],
+ expEn:"Minuette degree motive waves are written as lower-case Roman numerals inside parentheses. Bare lower-case Roman numerals mark Minute degree, plain Arabic numerals mark Minor, and circled numerals mark Primary.",
+ expTh:"คลื่นขับเคลื่อนระดับ Minuette เขียนเป็นเลขโรมันตัวเล็กในวงเล็บ ส่วนเลขโรมันตัวเล็กที่ไม่มีวงเล็บใช้กับระดับ Minute เลขอารบิกธรรมดาใช้กับระดับ Minor และเลขในวงกลมใช้กับระดับ Primary"},
+
+{id:'v2q09',topic:'GDL',text:"The guideline of alternation applied within an impulse concerns:",
+ choices:[{id:'a',letter:'A',text:'The contrast in form and depth between waves 2 and 4'},{id:'b',letter:'B',text:'The difference in volume between waves 1 and 5'},{id:'c',letter:'C',text:'The alternation of degree between adjacent motive waves'},{id:'d',letter:'D',text:'The reversal of channel slope from wave 3 to wave 5'}],
+ correct:['a'],
+ expEn:"Inside an impulse, alternation predicts that the two corrective waves will differ in character, so a sharp deep wave 2 suggests a sideways shallow wave 4. Degree never alternates between neighbouring waves of the same structure.",
+ expTh:"ภายในอิมพัลส์ หลักการสลับรูปแบบทำนายว่าคลื่นปรับฐานทั้งสองจะมีลักษณะต่างกัน คลื่น 2 ที่ลงแรงและลึกจึงบอกใบ้ถึงคลื่น 4 ที่ออกด้านข้างและตื้น ทั้งนี้ระดับคลื่นไม่เคยสลับกันระหว่างคลื่นข้างเคียงในโครงสร้างเดียวกัน"},
+
+{id:'v2q10',topic:'GDL',text:"Which construction correctly frames a completed zigzag?",
+ choices:[{id:'a',letter:'A',text:'A parallel drawn from the origin of wave A straight through wave C'},{id:'b',letter:'B',text:'A single line joining the extremes of waves A and C'},{id:'c',letter:'C',text:'A base line across the ends of A and C with a parallel at B'},{id:'d',letter:'D',text:'The channel already drawn on the preceding impulse'}],
+ correct:['c'],
+ expEn:"Joining the terminals of waves A and C gives the base line, and a parallel through the wave B extreme completes the frame and helps estimate where wave C should end. A single line frames nothing on its own, and the channel from the prior impulse describes a different structure entirely.",
+ expTh:"การลากเส้นเชื่อมจุดจบของคลื่น A กับคลื่น C ให้เส้นฐาน แล้วฉายเส้นขนานผ่านจุดสุดขั้วของคลื่น B จะทำให้กรอบสมบูรณ์และช่วยประมาณว่าคลื่น C ควรจบที่ใด ส่วนเส้นเดี่ยวไม่ได้สร้างกรอบอะไร และช่องราคาของอิมพัลส์ก่อนหน้าอธิบายโครงสร้างคนละอันโดยสิ้นเชิง"},
+
+{id:'v2q11',topic:'APP',text:"A market completes five waves up, declines in three waves into the territory of wave 4 of one lesser degree, then advances to a new high. The most probable reading is:",
+ choices:[{id:'a',letter:'A',text:'The five-wave advance was wave 3 of a larger impulse'},{id:'b',letter:'B',text:'A correction has ended and the larger uptrend has resumed'},{id:'c',letter:'C',text:'The whole structure must be relabelled as a triangle'},{id:'d',letter:'D',text:'The advance is a diagonal about to be invalidated'}],
+ correct:['b'],
+ expEn:"A three-wave decline that halts within the fourth wave of lesser degree matches the depth guideline for a normal correction, and a subsequent new high confirms the larger trend has resumed. A triangle would need five legs, and a completed correction gives no reason to expect invalidation.",
+ expTh:"การลงสามคลื่นที่หยุดภายในเขตคลื่นที่ 4 ของระดับเล็กกว่าหนึ่งขั้นตรงกับหลักความลึกของการปรับฐานปกติ และการทำจุดสูงใหม่ต่อมายืนยันว่าแนวโน้มใหญ่กลับมาแล้ว ถ้าเป็นสามเหลี่ยมต้องมีห้าขา และการปรับฐานที่จบแล้วไม่มีเหตุให้คาดว่าจะถูกยกเลิกนับ"},
+
+{id:'v2q12',topic:'APP',text:"Which observation most strongly distinguishes an ending diagonal from a completed standard impulse?",
+ choices:[{id:'a',letter:'A',text:'A Fibonacci relationship linking waves 3 and 5'},{id:'b',letter:'B',text:'Volume expanding into the final high of the move'},{id:'c',letter:'C',text:'The move occupying more time than the wave before it'},{id:'d',letter:'D',text:'Overlap of waves 1 and 4 inside converging boundaries'}],
+ correct:['d'],
+ expEn:"Overlap contained by converging trendlines is diagnostic, because a standard impulse forbids that overlap entirely while a diagonal expects it. Fibonacci relationships and timing comparisons appear in both structures and settle nothing.",
+ expTh:"การทับซ้อนที่อยู่ภายในเส้นขอบซึ่งบีบเข้าหากันคือจุดชี้ขาด เพราะอิมพัลส์มาตรฐานห้ามการทับซ้อนโดยสิ้นเชิง ในขณะที่ diagonal คาดหวังให้เกิด ส่วนความสัมพันธ์ฟีโบนักชีและการเทียบเวลาพบได้ในทั้งสองโครงสร้างจึงตัดสินอะไรไม่ได้"},
+
+{id:'v2q13',topic:'IMP',text:"The rule set governing a contracting ending diagonal permits:",
+ choices:[{id:'a',letter:'A',text:'Wave 3 to be the shortest of the three motive legs'},{id:'b',letter:'B',text:'Wave 2 to retrace more than 100 percent of wave 1'},{id:'c',letter:'C',text:'Wave 4 to overlap wave 1 while wave 3 is not the shortest'},{id:'d',letter:'D',text:'Wave 5 to stop short of the boundary line in every single instance'}],
+ correct:['c'],
+ expEn:"A diagonal relaxes the overlap rule but retains the other two, so wave 3 still may not be the shortest and wave 2 still may not exceed the origin of wave 1. Wave 5 may either fall short of the boundary or throw over it, so neither outcome is required.",
+ expTh:"diagonal ผ่อนปรนกฎห้ามทับซ้อน แต่ยังคงกฎอีกสองข้อไว้ คลื่น 3 จึงยังห้ามสั้นที่สุด และคลื่น 2 ยังห้ามเลยจุดกำเนิดของคลื่น 1 ส่วนคลื่น 5 อาจไปไม่ถึงเส้นขอบหรือทะลุออกไปก็ได้ จึงไม่มีผลลัพธ์ใดที่ถูกบังคับ"},
+
+{id:'v2q14',topic:'COR',text:"In an expanded flat, the characteristic behaviour of wave B is that it:",
+ choices:[{id:'a',letter:'A',text:'Terminates beyond the origin of wave A'},{id:'b',letter:'B',text:'Falls short of half the length of wave A'},{id:'c',letter:'C',text:'Subdivides into five waves rather than three'},{id:'d',letter:'D',text:'Ends precisely at the starting point of wave A'}],
+ correct:['a'],
+ expEn:"The defining feature of the expanded variety is a wave B that carries past where wave A began, commonly to about 1.236 or 1.382 times the length of wave A. Wave B of any flat subdivides into three waves, and a B that stops at the origin describes the regular flat.",
+ expTh:"ลักษณะเฉพาะของแบบขยายคือคลื่น B ที่ไปเลยจุดเริ่มต้นของคลื่น A โดยทั่วไปราว 1.236 หรือ 1.382 เท่าของความยาวคลื่น A ทั้งนี้คลื่น B ของแฟลตทุกชนิดแบ่งย่อยเป็นสามคลื่น และคลื่น B ที่หยุดพอดีที่จุดเริ่มต้นคือลักษณะของแฟลตปกติ"},
+
+{id:'v2q15',topic:'COR',text:"Three corrective patterns linked by two intervening X waves are labelled:",
+ choices:[{id:'a',letter:'A',text:'A-B-C-D-E'},{id:'b',letter:'B',text:'W-X-Y-X-Z'},{id:'c',letter:'C',text:'W-X-Y'},{id:'d',letter:'D',text:'1-2-3-4-5'}],
+ correct:['b'],
+ expEn:"Three corrective components linked by two X waves are labelled W-X-Y-X-Z. The shorter W-X-Y label covers a double three, A-B-C-D-E belongs to triangles, and numbered labels are reserved for motive structures.",
+ expTh:"องค์ประกอบปรับฐานสามชุดที่เชื่อมด้วยคลื่น X สองคลื่นใช้ป้ายกำกับ W-X-Y-X-Z ส่วนป้ายที่สั้นกว่าอย่าง W-X-Y ใช้กับ double three ป้าย A-B-C-D-E เป็นของสามเหลี่ยม และป้ายตัวเลขสงวนไว้สำหรับโครงสร้างขับเคลื่อน"},
+
+{id:'v2q16',topic:'FIB',text:"Which statement about Fibonacci ratios in wave analysis is most accurate?",
+ choices:[{id:'a',letter:'A',text:'Every wave must satisfy a ratio in order to be valid'},{id:'b',letter:'B',text:'Ratios apply to motive waves but never to corrections'},{id:'c',letter:'C',text:'The ratios determine wave structure rather than describe it'},{id:'d',letter:'D',text:'Ratios describe tendencies and never override the rules'}],
+ correct:['d'],
+ expEn:"Ratios are guidelines that summarise how waves have commonly related to one another, and they yield to the three inviolable rules whenever the two conflict. Many valid waves meet no ratio at all, and corrections display ratios just as motive waves do.",
+ expTh:"อัตราส่วนเป็นแนวทางที่สรุปว่าคลื่นมักสัมพันธ์กันอย่างไร และต้องยอมให้กฎเหล็กสามข้อเมื่อทั้งสองขัดกัน คลื่นที่ถูกต้องจำนวนมากไม่ตรงกับอัตราส่วนใดเลย และคลื่นปรับฐานก็แสดงอัตราส่วนได้เช่นเดียวกับคลื่นขับเคลื่อน"},
+
+{id:'v2q17',topic:'GDL',text:"The personality of a fifth wave typically includes:",
+ choices:[{id:'a',letter:'A',text:'Narrowing breadth and momentum diverging against price'},{id:'b',letter:'B',text:'The strongest breadth and heaviest volume of the sequence'},{id:'c',letter:'C',text:'Widespread pessimism and outright disbelief in the trend'},{id:'d',letter:'D',text:'The largest price range among the three motive waves'}],
+ correct:['a'],
+ expEn:"Fifth waves are driven by a narrowing group of leaders, so breadth contracts and momentum indicators commonly fail to confirm the new price extreme. Peak breadth, heaviest volume and the largest range belong to the third wave, while disbelief characterises wave 1.",
+ expTh:"คลื่น 5 ถูกขับเคลื่อนโดยผู้นำตลาดกลุ่มที่แคบลง ความกว้างของตลาดจึงหดตัวและอินดิเคเตอร์โมเมนตัมมักไม่ยืนยันจุดสุดขั้วใหม่ของราคา ส่วนความกว้างสูงสุด ปริมาณหนาแน่นที่สุด และช่วงราคากว้างที่สุดเป็นของคลื่น 3 ในขณะที่ความไม่เชื่อเป็นลักษณะของคลื่น 1"},
+
+{id:'v2q18',topic:'GDL',text:"Which description best matches the personality of a first wave?",
+ choices:[{id:'a',letter:'A',text:'Broad participation with unanimous bullish sentiment'},{id:'b',letter:'B',text:'Panic selling on the heaviest volume of the whole cycle'},{id:'c',letter:'C',text:'Often mistaken for a rally within the prior downtrend'},{id:'d',letter:'D',text:'Complacency accompanied by record retail inflows'}],
+ correct:['c'],
+ expEn:"First waves begin while the previous trend still dominates sentiment, so they are commonly dismissed as a bounce inside the old decline. Unanimous bullishness and record inflows belong near the end of a five-wave advance rather than its beginning.",
+ expTh:"คลื่น 1 เริ่มขึ้นในขณะที่แนวโน้มเดิมยังครอบงำอารมณ์ตลาด จึงมักถูกมองข้ามว่าเป็นเพียงการเด้งภายในขาลงเดิม ส่วนความเชื่อมั่นขาขึ้นเป็นเอกฉันท์และเงินไหลเข้าสถิติสูงสุดเป็นลักษณะของช่วงท้ายขาขึ้นห้าคลื่น ไม่ใช่ช่วงเริ่มต้น"},
+
+{id:'v2q19',topic:'APP',text:"After a throw-over from an ending diagonal, the move that follows typically:",
+ choices:[{id:'a',letter:'A',text:'Extends the trend by a further 1.618 times wave 5'},{id:'b',letter:'B',text:'Consolidates sideways for a Fibonacci count of sessions'},{id:'c',letter:'C',text:'Retraces only the distance of the throw-over itself'},{id:'d',letter:'D',text:'Reverses swiftly, often back to where the diagonal began'}],
+ correct:['d'],
+ expEn:"Because an ending diagonal terminates a larger structure, the reversal that follows is usually rapid and carries at minimum to the level where the diagonal started, frequently further. Extending the trend would contradict the terminal role of the pattern.",
+ expTh:"เนื่องจาก ending diagonal ปิดท้ายโครงสร้างใหญ่ การกลับตัวที่ตามมาจึงมักรวดเร็วและอย่างน้อยพากลับไปถึงระดับที่ diagonal เริ่มต้น บ่อยครั้งไปไกลกว่านั้น การเดินหน้าต่อในทิศเดิมจะขัดกับบทบาทปิดท้ายของรูปแบบนี้"},
+
+{id:'v2q20',topic:'APP',text:"The practical value of an invalidation level is that it:",
+ choices:[{id:'a',letter:'A',text:'Guarantees the preferred count will eventually prove correct'},{id:'b',letter:'B',text:'Converts a wave count into a testable, falsifiable position'},{id:'c',letter:'C',text:'Marks the exact price at which the target will be reached'},{id:'d',letter:'D',text:'Removes the need to maintain any alternate count'}],
+ correct:['b'],
+ expEn:"An invalidation level is drawn from a rule rather than a preference, so it states in advance the price at which the count must be abandoned. That turns analysis into something that can be disproved and managed, but it guarantees nothing and does not replace alternate counts.",
+ expTh:"จุดยกเลิกนับมาจากกฎไม่ใช่ความชอบส่วนตัว จึงระบุล่วงหน้าได้ว่าราคาใดที่ต้องทิ้งการนับนั้น สิ่งนี้เปลี่ยนการวิเคราะห์ให้เป็นสิ่งที่พิสูจน์ผิดได้และบริหารความเสี่ยงได้ แต่ไม่ได้รับประกันอะไรและไม่ได้ทดแทนการถือการนับทางเลือกไว้"}
+];
+</script>
+<script>
+const BANK_V3=[
+{id:'v3q01',topic:'IMP',text:"Which TWO conditions must hold for a count to remain a valid standard impulse?",
+ choices:[{id:'a',letter:'A',text:'Wave 4 stays entirely clear of wave 1 price territory'},{id:'b',letter:'B',text:'Wave 5 travels farther in price than wave 3 does'},{id:'c',letter:'C',text:'Wave 2 holds above the origin from which wave 1 began'},{id:'d',letter:'D',text:'Wave 2 retraces at least half the length of wave 1'}],
+ correct:['a','c'],
+ expEn:"Two of the three inviolable rules are stated here, the third being that wave 3 may not be the shortest motive wave. Wave 5 failing to exceed wave 3 is a truncation, which is permitted, and no rule sets a minimum depth for wave 2.",
+ expTh:"ข้อความข้างต้นระบุกฎเหล็กสองในสามข้อ โดยข้อที่สามคือคลื่น 3 ห้ามสั้นที่สุดในบรรดาคลื่นขับเคลื่อน ส่วนคลื่น 5 ที่ไปไม่ถึงคลื่น 3 คือ truncation ซึ่งเกิดขึ้นได้ และไม่มีกฎใดกำหนดความลึกขั้นต่ำของคลื่น 2"},
+
+{id:'v3q02',topic:'IMP',text:"Which TWO statements about diagonals are correct?",
+ choices:[{id:'a',letter:'A',text:'A contracting ending diagonal subdivides 5-3-5-3-5'},{id:'b',letter:'B',text:'A leading diagonal may occupy a wave 1 or wave A slot'},{id:'c',letter:'C',text:'Wave 4 of any diagonal must avoid wave 1 territory'},{id:'d',letter:'D',text:'An ending diagonal appears in wave 5 or wave C slots'}],
+ correct:['b','d'],
+ expEn:"Leading diagonals open larger structures while ending diagonals close them, which fixes their respective positions. An ending diagonal subdivides 3-3-3-3-3, and overlap between waves 1 and 4 is expected in a diagonal rather than forbidden.",
+ expTh:"leading diagonal เปิดโครงสร้างใหญ่ ส่วน ending diagonal ปิดโครงสร้างใหญ่ ตำแหน่งของทั้งสองจึงถูกกำหนดไว้ตามนั้น ทั้งนี้ ending diagonal แบ่งย่อยแบบ 3-3-3-3-3 และการทับซ้อนระหว่างคลื่น 1 กับ 4 เป็นสิ่งที่คาดหวังใน diagonal ไม่ใช่สิ่งต้องห้าม"},
+
+{id:'v3q03',topic:'COR',text:"Which THREE of the following are recognised corrective structures?",
+ choices:[{id:'a',letter:'A',text:'An expanded flat correction'},{id:'b',letter:'B',text:'A contracting triangle of five legs'},{id:'c',letter:'C',text:'A leading diagonal in a wave 1 slot'},{id:'d',letter:'D',text:'A double zigzag joined by an X wave'}],
+ correct:['a','b','d'],
+ expEn:"Flats, triangles and multiple zigzags all belong to the corrective family, which moves against the trend of one larger degree. A leading diagonal is a motive structure, since it travels in the direction of the larger trend and subdivides accordingly.",
+ expTh:"แฟลต สามเหลี่ยม และซิกแซกหลายชุด ล้วนอยู่ในตระกูลคลื่นปรับฐานซึ่งเคลื่อนสวนทางกับแนวโน้มของระดับที่ใหญ่กว่าหนึ่งขั้น ส่วน leading diagonal เป็นโครงสร้างขับเคลื่อน เพราะเคลื่อนไปตามทิศทางของแนวโน้มใหญ่และแบ่งย่อยตามแบบนั้น"},
+
+{id:'v3q04',topic:'COR',text:"Which TWO observations point toward a flat rather than a zigzag?",
+ choices:[{id:'a',letter:'A',text:'Wave A subdivides clearly into five distinct waves'},{id:'b',letter:'B',text:'Wave C exceeds wave A by roughly 1.618 times'},{id:'c',letter:'C',text:'Wave A subdivides into three waves rather than five'},{id:'d',letter:'D',text:'Wave B retraces most or all of the ground wave A covered'}],
+ correct:['c','d'],
+ expEn:"A flat is built as 3-3-5, so a three-wave A and a deep retracing B are its early signatures. A five-wave A points instead to a zigzag, and a wave C running 1.618 times wave A occurs in both families and therefore settles nothing.",
+ expTh:"แฟลตมีโครงสร้าง 3-3-5 คลื่น A ที่แบ่งเป็นสามคลื่นและคลื่น B ที่ย้อนลึกจึงเป็นลายเซ็นในช่วงต้น ส่วนคลื่น A ที่แบ่งเป็นห้าคลื่นชี้ไปที่ซิกแซก และคลื่น C ที่ยาว 1.618 เท่าของคลื่น A เกิดได้ทั้งสองตระกูลจึงตัดสินอะไรไม่ได้"},
+
+{id:'v3q05',topic:'FIB',text:"Which THREE Fibonacci relationships are commonly cited in wave analysis?",
+ choices:[{id:'a',letter:'A',text:'Wave 3 measuring 1.618 times the length of wave 1'},{id:'b',letter:'B',text:'Wave 4 retracing 0.382 of the distance of wave 3'},{id:'c',letter:'C',text:'Wave C equalling wave A in price within a zigzag'},{id:'d',letter:'D',text:'Wave 2 retracing exactly 0.500 of the length of wave 3'}],
+ correct:['a','b','c'],
+ expEn:"These three relationships appear constantly in practice and cover an extension, a shallow retracement and an internal corrective proportion. The fourth option is incoherent, because wave 2 retraces wave 1 and cannot retrace a wave that has not yet formed.",
+ expTh:"ความสัมพันธ์สามข้อนี้พบได้บ่อยมากในทางปฏิบัติ ครอบคลุมทั้งการขยายตัว การย้อนแบบตื้น และสัดส่วนภายในของคลื่นปรับฐาน ส่วนตัวเลือกที่สี่ขัดแย้งในตัวเอง เพราะคลื่น 2 ย้อนคลื่น 1 และย้อนคลื่นที่ยังไม่เกิดขึ้นไม่ได้"},
+
+{id:'v3q06',topic:'FIB',text:"Which TWO statements about applying Fibonacci ratios are correct?",
+ choices:[{id:'a',letter:'A',text:'A wave that meets no ratio is structurally invalid'},{id:'b',letter:'B',text:'Confluence of several projections strengthens a zone'},{id:'c',letter:'C',text:'Ratios are guidelines that never override the three rules'},{id:'d',letter:'D',text:'The 1.618 ratio applies only to fifth waves'}],
+ correct:['b','c'],
+ expEn:"Independent projections clustering in one area raise confidence in that area, and ratios always defer to the rules when the two disagree. Plenty of valid waves satisfy no ratio, and 1.618 is applied across many wave relationships rather than to wave 5 alone.",
+ expTh:"การที่การฉายเป้าหมายหลายชุดซึ่งเป็นอิสระต่อกันมารวมตัวในบริเวณเดียวช่วยเพิ่มความมั่นใจในบริเวณนั้น และอัตราส่วนต้องยอมให้กฎเสมอเมื่อขัดกัน ทั้งนี้คลื่นที่ถูกต้องจำนวนมากไม่ตรงกับอัตราส่วนใดเลย และ 1.618 ใช้กับความสัมพันธ์หลายแบบไม่ใช่เฉพาะคลื่น 5"},
+
+{id:'v3q07',topic:'DEG',text:"Which TWO principles should govern how an analyst assigns degree?",
+ choices:[{id:'a',letter:'A',text:'Degree follows a wave position inside larger structures'},{id:'b',letter:'B',text:'Each degree occupies a fixed number of calendar months'},{id:'c',letter:'C',text:'Ratios are reserved for Intermediate degree and above'},{id:'d',letter:'D',text:'Notation must stay consistent from one degree to the next'}],
+ correct:['a','d'],
+ expEn:"Assignment rests on hierarchical position rather than on any fixed duration, and disciplined notation is what keeps the nesting legible as a count grows complex. Ratios function identically at every level, from Minuette through to Grand Supercycle.",
+ expTh:"ระดับคลื่นอธิบายตำแหน่งในลำดับชั้น ไม่ใช่ระยะเวลาที่ตายตัว และการใช้ป้ายกำกับอย่างมีวินัยคือสิ่งที่ทำให้การซ้อนชั้นยังอ่านออกเมื่อการนับซับซ้อนขึ้น ส่วนอัตราส่วนทำงานเหมือนกันทุกระดับ ตั้งแต่ Minuette ถึง Grand Supercycle"},
+
+{id:'v3q08',topic:'DEG',text:"Which THREE notations match their stated degree in standard EWI practice?",
+ choices:[{id:'a',letter:'A',text:'Circled numerals one to five for Primary degree motive waves'},{id:'b',letter:'B',text:'Plain Arabic numerals for Cycle degree motive waves'},{id:'c',letter:'C',text:'Plain upper-case Roman numerals for Cycle degree motive waves'},{id:'d',letter:'D',text:'Lower-case Roman numerals for Minute degree motive waves'}],
+ correct:['a','c','d'],
+ expEn:"Primary uses circled numerals, Cycle uses bare upper-case Roman numerals, and Minute uses bare lower-case Roman numerals. Plain Arabic numerals belong to Minor degree, so pairing them with Cycle is the error in the set.",
+ expTh:"ระดับ Primary ใช้เลขในวงกลม ระดับ Cycle ใช้เลขโรมันตัวใหญ่แบบไม่มีวงเล็บ และระดับ Minute ใช้เลขโรมันตัวเล็กแบบไม่มีวงเล็บ ส่วนเลขอารบิกธรรมดาเป็นของระดับ Minor การจับคู่กับ Cycle จึงเป็นข้อที่ผิด"},
+
+{id:'v3q09',topic:'GDL',text:"Which TWO statements correctly characterise alternation?",
+ choices:[{id:'a',letter:'A',text:'Breaching it invalidates a count the way a rule would'},{id:'b',letter:'B',text:'A sharp wave 2 suggests a sideways wave 4 will follow'},{id:'c',letter:'C',text:'It applies to form, to depth and to complexity alike'},{id:'d',letter:'D',text:'It requires waves 2 and 4 to consume equal amounts of time'}],
+ correct:['b','c'],
+ expEn:"Alternation is an expectation about contrast covering pattern type, retracement depth and internal complexity. It carries no invalidating force, since a count in which both corrections look alike is unusual but entirely legal, and it makes no claim about matching durations.",
+ expTh:"หลักการสลับรูปแบบเป็นความคาดหมายเรื่องความต่าง ครอบคลุมทั้งชนิดของรูปแบบ ความลึกของการย้อน และความซับซ้อนภายใน แต่ไม่มีอำนาจยกเลิกการนับ เพราะการนับที่คลื่นปรับฐานทั้งสองหน้าตาคล้ายกันนั้นพบไม่บ่อยแต่ถูกกฎ และหลักการนี้ไม่ได้พูดถึงระยะเวลาที่เท่ากัน"},
+
+{id:'v3q10',topic:'GDL',text:"Which TWO are legitimate analytical uses of channelling?",
+ choices:[{id:'a',letter:'A',text:'Estimating the zone in which wave 5 may terminate'},{id:'b',letter:'B',text:'Determining the degree of a wave with certainty'},{id:'c',letter:'C',text:'Replacing the no-overlap rule when it proves inconvenient'},{id:'d',letter:'D',text:'Signalling acceleration when price pierces the upper line'}],
+ correct:['a','d'],
+ expEn:"Channels frame a structure and offer a target zone for the final wave, and a decisive break beyond the upper line commonly marks an accelerating advance. A channel cannot establish degree and can never be used to set aside an inviolable rule.",
+ expTh:"ช่องราคาช่วยกรอบโครงสร้างและให้โซนเป้าหมายของคลื่นสุดท้าย และการทะลุเหนือเส้นบนอย่างเด็ดขาดมักบ่งชี้ขาขึ้นที่เร่งตัว ทั้งนี้ช่องราคาไม่สามารถกำหนดระดับคลื่นได้ และไม่มีวันใช้ยกเว้นกฎเหล็กได้"},
+
+{id:'v3q11',topic:'APP',text:"Which THREE responses are appropriate when two structurally valid counts coexist?",
+ choices:[{id:'a',letter:'A',text:'Discard whichever count implies the smaller price target'},{id:'b',letter:'B',text:'Rank both counts by probability and state that ranking'},{id:'c',letter:'C',text:'Identify the price level that would eliminate one of them'},{id:'d',letter:'D',text:'Continue monitoring both as the structure develops further'}],
+ correct:['b','c','d'],
+ expEn:"Ranking, defining an eliminating level and continuing to monitor all keep the analysis honest and testable. Discarding a count because its target is smaller substitutes preference for evidence and is exactly the bias the method is designed to resist.",
+ expTh:"การจัดอันดับ การกำหนดระดับที่จะตัดการนับหนึ่งทิ้ง และการติดตามต่อไป ล้วนทำให้การวิเคราะห์ซื่อตรงและตรวจสอบได้ ส่วนการทิ้งการนับเพราะเป้าหมายเล็กกว่าคือการเอาความชอบมาแทนหลักฐาน ซึ่งเป็นอคติที่วิธีการนี้ออกแบบมาเพื่อต้านทานโดยตรง"},
+
+{id:'v3q12',topic:'APP',text:"Which TWO observations would justify relabelling a supposed impulse as corrective?",
+ choices:[{id:'a',letter:'A',text:'Wave 4 overlaps wave 1 with no diagonal boundaries present'},{id:'b',letter:'B',text:'The motive legs each subdivide into three waves, not five'},{id:'c',letter:'C',text:'Wave 3 is the longest of the three motive waves'},{id:'d',letter:'D',text:'Wave 2 retraces 61.8 percent of the length of wave 1'}],
+ correct:['a','b'],
+ expEn:"Overlap without diagonal geometry breaks the impulse rules, and legs that subdivide into threes are corrective by definition, so either observation forces a rethink. A longest wave 3 and a 61.8 percent wave 2 are both entirely ordinary in a healthy impulse.",
+ expTh:"การทับซ้อนที่ไม่มีรูปทรง diagonal รองรับละเมิดกฎของอิมพัลส์ และขาที่แบ่งย่อยเป็นสามคลื่นถือเป็นคลื่นปรับฐานโดยนิยาม ทั้งสองข้อจึงบังคับให้ทบทวนการนับใหม่ ส่วนคลื่น 3 ที่ยาวที่สุดและคลื่น 2 ที่ย้อน 61.8% เป็นเรื่องปกติของอิมพัลส์ที่สมบูรณ์"},
+
+{id:'v3q13',topic:'IMP',text:"Which TWO characteristics are typical of an extended third wave?",
+ choices:[{id:'a',letter:'A',text:'Contracting range and falling volume into its terminal point'},{id:'b',letter:'B',text:'Frequent truncation at the point where it completes'},{id:'c',letter:'C',text:'Powerful market breadth accompanied by expanding volume'},{id:'d',letter:'D',text:'Gaps and sharp acceleration through prior resistance'}],
+ correct:['c','d'],
+ expEn:"Third waves carry the broadest participation of the sequence, which shows up as expanding volume, gaps and decisive breaks through resistance. Contracting range and truncation are fifth-wave phenomena, and truncation applies only to wave 5.",
+ expTh:"คลื่น 3 มีผู้เข้าร่วมกว้างที่สุดในลำดับ ซึ่งแสดงออกมาเป็นปริมาณที่ขยายตัว การเกิดแก๊ป และการทะลุแนวต้านอย่างเด็ดขาด ส่วนช่วงราคาที่แคบลงและ truncation เป็นปรากฏการณ์ของคลื่น 5 และ truncation ใช้กับคลื่น 5 เท่านั้น"},
+
+{id:'v3q14',topic:'IMP',text:"Which THREE statements about wave extensions are correct?",
+ choices:[{id:'a',letter:'A',text:'Extension occurs most often in wave 3 in most markets'},{id:'b',letter:'B',text:'Normally only one of waves 1, 3 and 5 extends'},{id:'c',letter:'C',text:'An extended wave makes the impulse resemble nine similar waves'},{id:'d',letter:'D',text:'Extension shortens the extended wave relative to the others'}],
+ correct:['a','b','c'],
+ expEn:"Extension elongates one motive wave, usually wave 3 in equity markets, and normally only one wave extends within a given impulse. Because the sub-waves of the extended wave grow to comparable size, the whole structure can be read as nine similar waves.",
+ expTh:"การขยายตัวทำให้คลื่นขับเคลื่อนหนึ่งยืดยาวออก ซึ่งมักเป็นคลื่น 3 ในตลาดหุ้น และโดยปกติมีเพียงคลื่นเดียวที่ขยายตัวในอิมพัลส์หนึ่ง เนื่องจากคลื่นย่อยของคลื่นที่ขยายตัวโตขึ้นจนขนาดใกล้เคียงกัน โครงสร้างทั้งหมดจึงอ่านได้เป็นเก้าคลื่นที่มีขนาดพอกัน"},
+
+{id:'v3q15',topic:'COR',text:"Which TWO statements about the positions triangles may occupy are correct?",
+ choices:[{id:'a',letter:'A',text:'A triangle may occupy the wave 2 position of an impulse'},{id:'b',letter:'B',text:'A triangle may occupy the wave 4 position of an impulse'},{id:'c',letter:'C',text:'Every leg of a triangle subdivides into five waves'},{id:'d',letter:'D',text:'A triangle may occupy the wave B position of a correction'}],
+ correct:['b','d'],
+ expEn:"Triangles precede the final wave of a larger structure, so they appear in wave 4, wave B and wave X positions but not in wave 2. Each of the five legs of a triangle subdivides into three waves rather than five.",
+ expTh:"สามเหลี่ยมมาก่อนคลื่นสุดท้ายของโครงสร้างใหญ่ จึงปรากฏในตำแหน่งคลื่น 4 คลื่น B และคลื่น X แต่ไม่ปรากฏในคลื่น 2 ทั้งนี้ทั้งห้าขาของสามเหลี่ยมแบ่งย่อยเป็นสามคลื่น ไม่ใช่ห้าคลื่น"},
+
+{id:'v3q16',topic:'COR',text:"Which TWO statements about multiple corrections are correct?",
+ choices:[{id:'a',letter:'A',text:'X waves are corrective structures that link the components'},{id:'b',letter:'B',text:'A double three must contain two identical component patterns'},{id:'c',letter:'C',text:'Combinations tend to move sideways rather than steeply'},{id:'d',letter:'D',text:'A triple zigzag is labelled W-X-Y with no further waves'}],
+ correct:['a','c'],
+ expEn:"An X wave is itself a simple corrective pattern that joins one component to the next, and combinations characteristically drift sideways as they consume time. Components need not match, and a triple structure requires the five-part W-X-Y-X-Z label.",
+ expTh:"คลื่น X เป็นรูปแบบปรับฐานอย่างง่ายที่เชื่อมองค์ประกอบหนึ่งเข้ากับอีกองค์ประกอบหนึ่ง และ combination มักเคลื่อนออกด้านข้างขณะกินเวลา ทั้งนี้องค์ประกอบไม่จำเป็นต้องเหมือนกัน และโครงสร้างแบบสามชุดต้องใช้ป้ายห้าส่วน W-X-Y-X-Z"},
+
+{id:'v3q17',topic:'FIB',text:"Which THREE values belong to the Fibonacci ratio family used by wave analysts?",
+ choices:[{id:'a',letter:'A',text:'Zero point six one eight'},{id:'b',letter:'B',text:'One point six one eight'},{id:'c',letter:'C',text:'Zero point five five five'},{id:'d',letter:'D',text:'Zero point three eight two'}],
+ correct:['a','b','d'],
+ expEn:"The golden ratio and its inverse, together with 0.382 as the square of 0.618, form the core of the family used in wave work. The remaining value is not derived from the sequence and plays no part in standard analysis.",
+ expTh:"อัตราส่วนทองคำและส่วนกลับของมัน รวมกับ 0.382 ซึ่งเป็นกำลังสองของ 0.618 คือแกนหลักของกลุ่มอัตราส่วนที่ใช้ในการวิเคราะห์คลื่น ส่วนค่าที่เหลือไม่ได้มาจากลำดับฟีโบนักชีและไม่มีบทบาทในการวิเคราะห์มาตรฐาน"},
+
+{id:'v3q18',topic:'GDL',text:"Which TWO statements about wave personality are correct?",
+ choices:[{id:'a',letter:'A',text:'Wave 2 is normally accompanied by widespread optimism'},{id:'b',letter:'B',text:'Wave 5 shows the broadest participation of the sequence'},{id:'c',letter:'C',text:'Wave 1 often begins while pessimism still lingers'},{id:'d',letter:'D',text:'Wave 4 is often dull and frustrating to trade'}],
+ correct:['c','d'],
+ expEn:"First waves start amid residual gloom from the previous decline, and fourth waves are typically choppy consolidations that whipsaw traders. Wave 2 revives the pessimism of the old trend rather than optimism, and the broadest participation belongs to wave 3.",
+ expTh:"คลื่น 1 เริ่มขึ้นท่ามกลางความหม่นหมองที่ยังหลงเหลือจากขาลงก่อนหน้า และคลื่น 4 มักเป็นการสะสมพลังที่แกว่งไปมาจนเทรดเดอร์หงุดหงิด ส่วนคลื่น 2 กลับปลุกความมองโลกในแง่ร้ายของแนวโน้มเดิมขึ้นมาใหม่ ไม่ใช่ความเชื่อมั่น และการมีส่วนร่วมกว้างที่สุดเป็นของคลื่น 3"},
+
+{id:'v3q19',topic:'APP',text:"Which TWO conditions support the conclusion that a five-wave advance has completed?",
+ choices:[{id:'a',letter:'A',text:'A decline beneath the wave 4 low of one lesser degree'},{id:'b',letter:'B',text:'A subsequent decline that subdivides into five waves'},{id:'c',letter:'C',text:'A single session of unusually heavy volume near the high'},{id:'d',letter:'D',text:'A momentum oscillator reaching an overbought reading'}],
+ correct:['a','b'],
+ expEn:"Both are structural signals: reaching the fourth wave of lesser degree is the depth a genuine correction requires, and a five-wave decline indicates the trend itself has turned. Volume spikes and overbought readings recur many times within an advance that is still unfinished.",
+ expTh:"ทั้งสองข้อเป็นสัญญาณเชิงโครงสร้าง การลงถึงคลื่นที่ 4 ของระดับเล็กกว่าคือความลึกที่การปรับฐานจริงต้องไปถึง และการลงแบบห้าคลื่นบ่งบอกว่าแนวโน้มกลับทิศแล้ว ส่วนปริมาณที่พุ่งและสัญญาณ overbought เกิดซ้ำได้หลายครั้งในขาขึ้นที่ยังไม่จบ"},
+
+{id:'v3q20',topic:'APP',text:"Which THREE statements reflect the socionomic hypothesis?",
+ choices:[{id:'a',letter:'A',text:'News events cause the direction that social mood then takes'},{id:'b',letter:'B',text:'Social mood is generated endogenously within the population'},{id:'c',letter:'C',text:'Mood patterns express themselves across markets and society'},{id:'d',letter:'D',text:'Mood trends precede the social events they help produce'}],
+ correct:['b','c','d'],
+ expEn:"Socionomics holds that mood arises from within a population, patterns itself in waves, and expresses itself simultaneously in prices and in cultural, political and economic outcomes. Treating news as the cause reverses that arrow and states the conventional view the hypothesis rejects.",
+ expTh:"socionomics ถือว่าอารมณ์เกิดขึ้นจากภายในกลุ่มประชากร ก่อตัวเป็นรูปแบบคลื่น และแสดงออกพร้อมกันทั้งในราคาและในผลลัพธ์ทางวัฒนธรรม การเมือง และเศรษฐกิจ การมองว่าข่าวเป็นสาเหตุคือการกลับทิศของลูกศรนี้ และเป็นมุมมองแบบเดิมที่สมมติฐานนี้ปฏิเสธ"}
+];
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════
+   CEWA29 · ENGINE
+   ═══════════════════════════════════════════════════════════ */
+const TOPICS={
+  IMP:{en:'Impulse Structure',th:'โครงสร้างอิมพัลส์',c:'var(--neon)'},
+  COR:{en:'Corrective Patterns',th:'รูปแบบปรับฐาน',c:'var(--cyan)'},
+  FIB:{en:'Fibonacci Ratios',th:'อัตราส่วนฟีโบนักชี',c:'var(--amber)'},
+  DEG:{en:'Degree & Labelling',th:'ระดับคลื่นและป้ายกำกับ',c:'var(--violet)'},
+  GDL:{en:'Guidelines',th:'แนวทางประกอบ',c:'var(--neon-2)'},
+  APP:{en:'Applied Analysis',th:'การประยุกต์ใช้',c:'#ff7ab8'}
+};
+const TOPIC_ORDER=['IMP','COR','FIB','DEG','GDL','APP'];
+
+const VFX1=`<svg viewBox="0 0 260 96"><g stroke="rgba(255,255,255,.06)" stroke-width="1"><line x1="0" y1="24" x2="260" y2="24"/><line x1="0" y1="48" x2="260" y2="48"/><line x1="0" y1="72" x2="260" y2="72"/></g>
+<path class="dl" style="--dl:340" d="M12,84 L48,48 L66,66 L128,20 L152,42 L196,10" fill="none" stroke="var(--neon)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="dl" style="--dl:140;animation-delay:.6s" d="M196,10 L216,52 L230,34 L250,70" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="128" cy="20" r="3" fill="var(--neon)"><animate attributeName="opacity" values="0;1;1;0" dur="5s" repeatCount="indefinite"/></circle></svg>`;
+
+const VFX2=`<svg viewBox="0 0 260 96"><g stroke="rgba(255,255,255,.06)" stroke-width="1"><line x1="0" y1="48" x2="260" y2="48"/></g>
+<path class="dl" style="--dl:150" d="M14,26 L42,74 L58,44 L86,82" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="dl" style="--dl:150;animation-delay:.5s" d="M104,30 L128,70 L150,32 L172,74" fill="none" stroke="var(--neon-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<g class="tri"><path class="dl" style="--dl:170;animation-delay:1s" d="M188,20 L212,74 L224,32 L238,64 L246,44" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="188" y1="20" x2="250" y2="46" stroke="rgba(255,176,32,.35)" stroke-width="1" stroke-dasharray="3 3"/>
+<line x1="212" y1="74" x2="250" y2="46" stroke="rgba(255,176,32,.35)" stroke-width="1" stroke-dasharray="3 3"/></g>
+<text x="14" y="93" font-family="IBM Plex Mono" font-size="8" fill="var(--grey-dim)">ZIGZAG</text>
+<text x="104" y="93" font-family="IBM Plex Mono" font-size="8" fill="var(--grey-dim)">FLAT</text>
+<text x="190" y="93" font-family="IBM Plex Mono" font-size="8" fill="var(--grey-dim)">TRIANGLE</text></svg>`;
+
+const VFX3=`<svg viewBox="0 0 260 96">
+<g class="fibl"><line x1="8" y1="18" x2="150" y2="18" stroke="var(--violet)" stroke-width="1" stroke-dasharray="4 4"/><text x="154" y="21" font-family="IBM Plex Mono" font-size="8" fill="var(--violet)">1.618</text></g>
+<g class="fibl" style="animation-delay:.4s"><line x1="8" y1="40" x2="150" y2="40" stroke="var(--amber)" stroke-width="1" stroke-dasharray="4 4"/><text x="154" y="43" font-family="IBM Plex Mono" font-size="8" fill="var(--amber)">0.618</text></g>
+<g class="fibl" style="animation-delay:.8s"><line x1="8" y1="62" x2="150" y2="62" stroke="var(--neon-2)" stroke-width="1" stroke-dasharray="4 4"/><text x="154" y="65" font-family="IBM Plex Mono" font-size="8" fill="var(--neon-2)">0.382</text></g>
+<g class="tick"><rect x="200" y="14" width="12" height="12" rx="3" fill="none" stroke="var(--neon)" stroke-width="1.6"/><path d="M203,20 L206,23 L210,17" fill="none" stroke="var(--neon)" stroke-width="1.8" stroke-linecap="round"/></g>
+<g class="tick" style="animation-delay:.5s"><rect x="200" y="38" width="12" height="12" rx="3" fill="none" stroke="var(--neon)" stroke-width="1.6"/><path d="M203,44 L206,47 L210,41" fill="none" stroke="var(--neon)" stroke-width="1.8" stroke-linecap="round"/></g>
+<g class="tick" style="animation-delay:1s"><rect x="200" y="62" width="12" height="12" rx="3" fill="none" stroke="var(--neon)" stroke-width="1.6"/><path d="M203,68 L206,71 L210,65" fill="none" stroke="var(--neon)" stroke-width="1.8" stroke-linecap="round"/></g>
+<rect class="beam" x="0" y="0" width="26" height="96" fill="url(#bg1)" opacity=".25"/>
+<defs><linearGradient id="bg1" x1="0" x2="1"><stop offset="0" stop-color="transparent"/><stop offset="0.5" stop-color="var(--neon)"/><stop offset="1" stop-color="transparent"/></linearGradient></defs></svg>`;
+
+const VARIANTS=[
+  {key:'v1',label:'CEWA I',title:'Elliott Wave Analyst — Level I',n:50,min:60,multi:false,bank:()=>BANK_V1,vfx:VFX1,
+   desc:'กฎเหล็กสามข้อ โครงสร้างอิมพัลส์ รูปแบบปรับฐาน อัตราส่วนฟีโบนักชี ระดับคลื่น และบุคลิกคลื่น',
+   pills:['Single Best Answer','50 ข้อ','60 นาที']},
+  {key:'v2',label:'CEWA II · Part 1',title:'Elliott Wave Analyst — Level II, Part 1',n:20,min:30,multi:false,bank:()=>BANK_V2,vfx:VFX2,
+   desc:'การนับคลื่นขั้นสูง ไดแอโกนอล การปรับฐานเชิงซ้อน เทคนิคช่องราคา และ Socionomics',
+   pills:['Single Best Answer','20 ข้อ','30 นาที']},
+  {key:'v3',label:'CEWA II · Part 2',title:'Elliott Wave Analyst — Level II, Part 2',n:20,min:30,multi:true,bank:()=>BANK_V3,vfx:VFX3,
+   desc:'ข้อสอบแบบเลือกหลายคำตอบ เน้นการบูรณาการหลายแนวคิดและการวิเคราะห์เชิงประยุกต์',
+   pills:['Multiple Correct','20 ข้อ','30 นาที']}
+];
+
+const state={vi:0,shuffled:true,questions:[],answers:{},started:0,endAt:0,timer:null,lang:'en',filter:'all',result:null};
+
+/* ---------- utils ---------- */
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function shuffleWith(arr,rnd){const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function deepClone(bank){return bank.map(q=>({...q,choices:q.choices.map(c=>({...c})),correct:[...q.correct]}));}
+function fmt(s){s=Math.max(0,Math.floor(s));const m=Math.floor(s/60),x=s%60;return String(m).padStart(2,'0')+':'+String(x).padStart(2,'0');}
+function esc(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2200);}
+
+/* ---------- modal (never uses window.confirm) ---------- */
+function modal(title,html,buttons){
+  $('#mTitleTxt').textContent=title;$('#mBody').innerHTML=html;
+  const wrap=$('#mBtns');wrap.innerHTML='';
+  buttons.forEach((b,i)=>{const el=document.createElement('button');el.className='btn '+(b.style||'btn-ghost');el.textContent=b.label;
+    el.addEventListener('click',()=>{$('#modal').classList.remove('show');if(b.fn)b.fn();});wrap.appendChild(el);});
+  $('#modal').classList.add('show');
+}
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')$('#modal').classList.remove('show');});
+
+/* ---------- ticker ---------- */
+(function(){
+  const items=[
+    ['RULE 01','Wave 2 never retraces &gt;100% of Wave 1','nn'],
+    ['RULE 02','Wave 3 is never the shortest motive wave','nn'],
+    ['RULE 03','Wave 4 never enters Wave 1 territory','nn'],
+    ['ZIGZAG','5-3-5','up'],['FLAT','3-3-5','up'],['TRIANGLE','3-3-3-3-3','up'],
+    ['φ','1.618','nn'],['1/φ','0.618','nn'],['W4 RETRACE','0.382 typical','up'],
+    ['DIAGONAL','overlap allowed','down'],['TRUNCATION','W5 &lt; W3 extreme','down'],
+    ['DEGREES','9 named levels','up'],['ALTERNATION','sharp ⇄ sideways','up'],
+    ['CEWA','≥ 80%','up'],['CEWA-M','≥ 90%','up']
+  ];
+  const html=items.map(([a,b,c])=>`<span class="ticker-item"><b>${a}</b><span class="${c}">${b}</span></span>`).join('');
+  $('#tickerTrack').innerHTML=html+html;
+})();
+
+/* ---------- lobby ---------- */
+function renderVariants(){
+  $('#varGrid').innerHTML=VARIANTS.map((v,i)=>`
+    <button class="var-card${i===state.vi?' sel':''}" data-act="pickvar" data-i="${i}">
+      <div class="vtag"><span>${esc(v.label)}</span><span class="chk">✓</span></div>
+      <div class="vfx">${v.vfx}</div>
+      <h3>${esc(v.title)}</h3>
+      <p>${esc(v.desc)}</p>
+      <div class="var-pills">${v.pills.map(p=>`<span class="pill">${esc(p)}</span>`).join('')}</div>
+    </button>`).join('');
+}
+renderVariants();
+
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-act]');if(!t)return;
+  const act=t.dataset.act;
+  if(act==='pickvar'){state.vi=+t.dataset.i;renderVariants();}
+  else if(act==='choice'){pickChoice(+t.dataset.qi,t.dataset.cid);}
+  else if(act==='jump'){const el=document.getElementById('qc-'+t.dataset.qi);if(el)el.scrollIntoView({behavior:'smooth',block:'center'});}
+  else if(act==='exptab'){setExpLang(+t.dataset.qi,t.dataset.lang);}
+  else if(act==='revfilter'){state.filter=t.dataset.filter;$$('#revTabs .rtab').forEach(b=>b.classList.toggle('on',b===t));renderReview();}
+});
+
+$('#btnShuffle').addEventListener('click',function(){state.shuffled=!state.shuffled;this.classList.toggle('on',state.shuffled);
+  toast(state.shuffled?'สุ่มลำดับ: เปิด':'สุ่มลำดับ: ปิด');});
+$('#btnHelp').addEventListener('click',()=>modal('CEWA29 Info',
+  `<b>90 ข้อ · 3 ชุด</b> อ้างอิง Frost &amp; Prechter — Elliott Wave Principle<br><br>
+   เกณฑ์: ต่ำกว่า 80% = FAIL · 80–89% = <b style="color:var(--neon-2)">CEWA</b> · 90% ขึ้นไป = <b style="color:var(--neon)">CEWA-M</b><br><br>
+   ชุดที่ 3 เป็นแบบเลือกหลายคำตอบ ต้องเลือกให้ครบทุกตัวเลือกที่ถูกและไม่เลือกตัวที่ผิด จึงจะได้คะแนน`,
+  [{label:'เข้าใจแล้ว',style:'btn-primary'}]));
+
+$('#btnStart').addEventListener('click',startExam);
+
+/* ---------- exam ---------- */
+function startExam(){
+  const v=VARIANTS[state.vi];
+  let qs=deepClone(v.bank());
+  if(state.shuffled){
+    const seed=(Date.now()^(Math.random()*1e9))>>>0;
+    const rnd=mulberry32(seed);
+    qs=shuffleWith(qs,rnd);
+    qs.forEach(q=>{q.choices=shuffleWith(q.choices,rnd);q.choices.forEach((c,i)=>c.letter='ABCD'[i]);});
+  }
+  state.questions=qs;state.answers={};state.result=null;
+  state.started=Date.now();state.endAt=state.started+v.min*60000;
+  $('#qName').textContent=v.title;
+  $('#qSub').textContent=v.label+' · '+v.n+' Q · '+v.min+' MIN · '+(v.multi?'MULTIPLE CORRECT':'SINGLE BEST ANSWER');
+  $('#subTot').textContent=qs.length;
+  renderQuiz();updateProgress();
+  show('scQuiz');window.scrollTo(0,0);
+  clearInterval(state.timer);state.timer=setInterval(tick,250);tick();
+}
+
+function show(id){$$('.screen').forEach(s=>s.classList.toggle('active',s.id===id));}
+
+function renderQuiz(){
+  const v=VARIANTS[state.vi];
+  $('#qList').innerHTML=state.questions.map((q,i)=>{
+    const tp=TOPICS[q.topic];
+    return `<div class="qcard" id="qc-${i}">
+      <div class="qhead">
+        <span class="qnum">Q${String(i+1).padStart(2,'0')}</span>
+        <span class="qtopic">${esc(tp.en)}</span>
+        ${v.multi?`<span class="qmulti">เลือก ${q.correct.length} ข้อ</span>`:''}
+      </div>
+      <div class="qtext">${esc(q.text)}</div>
+      <div class="choices">
+        ${q.choices.map(c=>`<button class="choice${v.multi?' multi':''}" data-act="choice" data-qi="${i}" data-cid="${c.id}">
+            <span class="cl">${c.letter}</span><span class="ct">${esc(c.text)}</span></button>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+  $('#navGrid').innerHTML=state.questions.map((q,i)=>`<button class="navdot" data-act="jump" data-qi="${i}" id="nd-${i}">${i+1}</button>`).join('');
+}
+
+function pickChoice(qi,cid){
+  const v=VARIANTS[state.vi];
+  if(v.multi){
+    const cur=state.answers[qi]?state.answers[qi].slice():[];
+    const at=cur.indexOf(cid);
+    if(at>=0)cur.splice(at,1);else cur.push(cid);
+    if(cur.length)state.answers[qi]=cur;else delete state.answers[qi];
+  }else{
+    state.answers[qi]=[cid];
+  }
+  const card=document.getElementById('qc-'+qi);
+  const sel=state.answers[qi]||[];
+  card.querySelectorAll('.choice').forEach(b=>b.classList.toggle('on',sel.includes(b.dataset.cid)));
+  card.classList.toggle('answered',sel.length>0);
+  document.getElementById('nd-'+qi).classList.toggle('done',sel.length>0);
+  updateProgress();
+}
+
+function updateProgress(){
+  const tot=state.questions.length, ans=Object.keys(state.answers).length, pct=tot?Math.round(ans/tot*100):0;
+  $('#qBarFill').style.width=pct+'%';
+  $('#qMetaL').textContent=ans+' / '+tot+' answered';
+  $('#qMetaR').textContent=pct+'%';
+  $('#subAns').textContent=ans;$('#subLeft').textContent=tot-ans;
+  $('#railAns').textContent=ans;$('#railLeft').textContent=tot-ans;
+  $('#hudPct').textContent=pct+'%';
+  const C=2*Math.PI*38;$('#railRing').setAttribute('stroke-dashoffset',C*(1-pct/100));
+  $('#railRingTxt').textContent=pct+'%';
+  const C2=2*Math.PI*17;$('#hudRing').setAttribute('stroke-dashoffset',C2*(1-pct/100));
+}
+
+function tick(){
+  const left=(state.endAt-Date.now())/1000;
+  const el=(Date.now()-state.started)/1000;
+  $('#qClockTxt').textContent=fmt(left);
+  $('#hudElapsed').textContent=fmt(el);
+  const c=$('#qClock');c.classList.toggle('warn',left<=300&&left>60);c.classList.toggle('danger',left<=60);
+  if(left<=0){clearInterval(state.timer);finish(true);}
+}
+
+$('#btnAbort').addEventListener('click',()=>{
+  modal('ยกเลิกการสอบ','ออกจากการสอบตอนนี้ คำตอบทั้งหมดจะ<b>หายไป</b> ต้องการออกใช่หรือไม่',
+  [{label:'ทำต่อ'},{label:'ออก',style:'btn-outline',fn:()=>{clearInterval(state.timer);show('scLobby');window.scrollTo(0,0);}}]);
+});
+
+$('#btnSubmit').addEventListener('click',()=>{
+  const tot=state.questions.length,ans=Object.keys(state.answers).length,left=tot-ans;
+  if(left>0){
+    modal('ยังตอบไม่ครบ',`เหลืออีก <b>${left}</b> ข้อที่ยังไม่ได้ตอบ ข้อที่เว้นว่างจะถูกนับเป็นผิด<br><br>ต้องการส่งคำตอบเลยหรือไม่`,
+      [{label:'กลับไปทำต่อ'},{label:'ส่งคำตอบ',style:'btn-primary',fn:()=>finish(false)}]);
+  }else{
+    modal('ส่งคำตอบ','ตอบครบทุกข้อแล้ว ต้องการส่งคำตอบเพื่อดูผลใช่หรือไม่',
+      [{label:'ตรวจทานอีกครั้ง'},{label:'ส่งคำตอบ',style:'btn-primary',fn:()=>finish(false)}]);
+  }
+});
+
+/* ---------- grading ---------- */
+function finish(timeout){
+  clearInterval(state.timer);
+  const qs=state.questions;
+  const rows=qs.map((q,i)=>{
+    const picked=(state.answers[i]||[]).slice().sort();
+    const corr=q.correct.slice().sort();
+    const skipped=picked.length===0;
+    const ok=!skipped&&picked.length===corr.length&&picked.every((p,k)=>p===corr[k]);
+    return {q,i,picked,corr,ok,skipped};
+  });
+  const correct=rows.filter(r=>r.ok).length;
+  const skipped=rows.filter(r=>r.skipped).length;
+  const wrong=rows.length-correct-skipped;
+  const pct=Math.round(correct/rows.length*1000)/10;
+  const grade=pct>=90?'master':(pct>=80?'pass':'fail');
+  const secs=Math.min((Date.now()-state.started)/1000,VARIANTS[state.vi].min*60);
+  state.result={rows,correct,wrong,skipped,pct,grade,secs,timeout,total:rows.length};
+  renderResults();show('scResult');window.scrollTo(0,0);
+  if(timeout)setTimeout(()=>toast('หมดเวลา — ระบบส่งคำตอบให้อัตโนมัติ'),400);
+}
+
+/* ---------- results ---------- */
+function renderResults(){
+  const R=state.result,v=VARIANTS[state.vi];
+  const col=R.grade==='master'?'var(--neon)':(R.grade==='pass'?'var(--neon-2)':'var(--red)');
+
+  /* score ring */
+  const C=2*Math.PI*80;
+  $('#ringBox').innerHTML=`
+    <svg width="212" height="212" viewBox="0 0 200 200">
+      <circle class="ring-bg" cx="100" cy="100" r="80"/>
+      <circle class="ring-fg" id="scoreRing" cx="100" cy="100" r="80" stroke="${col}"
+              stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}" style="filter:drop-shadow(0 0 10px ${col})"/>
+      <g class="ring-tick">
+        <line x1="100" y1="12" x2="100" y2="26" transform="rotate(288 100 100)"/>
+        <line x1="100" y1="12" x2="100" y2="26" transform="rotate(324 100 100)"/>
+      </g>
+      <text x="100" y="6" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="var(--grey-dim)"></text>
+    </svg>
+    <div class="ring-center"><div>
+      <div class="ring-pct" id="ringPct" style="color:${col}">0%</div>
+      <div class="ring-lbl">Final Score</div>
+    </div></div>`;
+  setTimeout(()=>{
+    $('#scoreRing').setAttribute('stroke-dashoffset',(C*(1-Math.min(R.pct,100)/100)).toFixed(1));
+    countUp($('#ringPct'),R.pct,1500);
+  },160);
+
+  const badge=$('#gBadge');
+  badge.className='gbadge '+R.grade;
+  badge.textContent=R.grade==='master'?'CEWA-M':(R.grade==='pass'?'CEWA':'NOT PASSED');
+  $('#rSubtitle').innerHTML=R.grade==='master'
+    ?`ระดับ <b style="color:var(--neon)">Master</b> — ทำได้ ${R.correct}/${R.total} ข้อ แม่นทั้งกฎ ข้อยกเว้น และการประยุกต์`
+    :R.grade==='pass'
+    ?`ผ่านเกณฑ์ <b style="color:var(--neon-2)">CEWA</b> — ทำได้ ${R.correct}/${R.total} ข้อ อีกนิดเดียวก็ถึงระดับ Master`
+    :`ยังไม่ผ่าน — ทำได้ ${R.correct}/${R.total} ข้อ ดูแผนภาพด้านล่างเพื่อหาหัวข้อที่ควรทบทวนก่อน`;
+
+  /* stat cards */
+  const avg=R.secs/R.total;
+  const accOfAnswered=(R.total-R.skipped)?Math.round(R.correct/(R.total-R.skipped)*100):0;
+  $('#rGrid').innerHTML=[
+    {c:'good',lbl:'Correct',val:R.correct,foot:`จาก ${R.total} ข้อ`,ic:'✓'},
+    {c:'bad',lbl:'Incorrect',val:R.wrong,foot:R.skipped?`+ เว้นว่าง ${R.skipped} ข้อ`:'ไม่มีข้อที่เว้นว่าง',ic:'✕'},
+    {c:'hi',lbl:'Time Used',val:fmt(R.secs),foot:`เฉลี่ย ${avg.toFixed(1)} วิ/ข้อ`,ic:'◷'},
+    {c:'neu',lbl:'Hit Rate',val:accOfAnswered+'%',foot:'เฉพาะข้อที่ตอบ',ic:'◎'}
+  ].map((s,i)=>`<div class="rstat ${s.c}" style="animation:fadeUp .5s ease ${i*0.08}s both">
+      <div class="rlbl"><span>${s.ic}</span>${s.lbl}</div>
+      <div class="rval">${s.val}</div>
+      <div class="rfoot">${s.foot}</div>
+      <svg class="rspark" viewBox="0 0 70 38"><path d="M0,30 L12,22 L22,26 L34,12 L46,18 L58,6 L70,10" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".5"/></svg>
+    </div>`).join('');
+
+  /* tier track */
+  const p=Math.min(R.pct,100);
+  $('#trackFill').style.background=col;
+  $('#trackFill').style.boxShadow='0 0 14px '+col;
+  $('#trackYou').style.color=col;
+  $('#trackYouTxt').style.color=col;
+  $('#trackYouTxt').textContent=R.pct+'%';
+  setTimeout(()=>{$('#trackFill').style.width=p+'%';$('#trackYou').style.left=p+'%';},240);
+
+  const needPass=Math.max(0,Math.ceil(R.total*0.80-1e-9)-R.correct);
+  const needMaster=Math.max(0,Math.ceil(R.total*0.90-1e-9)-R.correct);
+  const chips=[];
+  chips.push(`<span class="gapchip ${R.pct>=80?'ok':'miss'}">CEWA · 80% <b>${R.pct>=80?'ผ่านแล้ว ✓':'ขาดอีก '+needPass+' ข้อ'}</b></span>`);
+  chips.push(`<span class="gapchip ${R.pct>=90?'ok':'want'}">CEWA-M · 90% <b>${R.pct>=90?'ผ่านแล้ว ✓':'ขาดอีก '+needMaster+' ข้อ'}</b></span>`);
+  chips.push(`<span class="gapchip">คะแนนเต็ม <b>${R.total}</b> ข้อ · ตอบถูก <b>${R.correct}</b></span>`);
+  if(R.pct>=90)chips.push(`<span class="gapchip ok">เกินเกณฑ์ Master <b>+${(R.pct-90).toFixed(1)}%</b></span>`);
+  $('#gapLine').innerHTML=chips.join('');
+
+  /* topic bars + radar */
+  const stats={};
+  R.rows.forEach(r=>{const k=r.q.topic;(stats[k]=stats[k]||{n:0,c:0}).n++;if(r.ok)stats[k].c++;});
+  const used=TOPIC_ORDER.filter(k=>stats[k]);
+  $('#topicBars').innerHTML=used.map((k,i)=>{
+    const s=stats[k],pc=Math.round(s.c/s.n*100),tc=TOPICS[k].c;
+    return `<div class="trow">
+      <div class="tl"><span style="width:7px;height:7px;border-radius:50%;background:${tc};flex-shrink:0;box-shadow:0 0 7px ${tc}"></span>${esc(TOPICS[k].th)}</div>
+      <div class="tt"><i data-w="${pc}" style="background:${tc};box-shadow:0 0 10px ${tc};animation-delay:${i*0.1}s"></i></div>
+      <div class="tv">${s.c}/${s.n}</div>
+    </div>`;}).join('');
+  setTimeout(()=>{$$('#topicBars .tt i').forEach(el=>el.style.width=el.dataset.w+'%');},300);
+  drawRadar(used.map(k=>({k,pc:stats[k].c/stats[k].n})));
+
+  /* heatmap */
+  $('#heatMap').innerHTML=R.rows.map((r,i)=>
+    `<div class="hcell ${r.skipped?'sk':(r.ok?'ok':'no')}" style="animation-delay:${Math.min(i*0.022,1.4)}s" title="ข้อ ${i+1}">${i+1}</div>`).join('');
+
+  drawDonut(R);
+
+  /* review */
+  state.filter='all';$$('#revTabs .rtab').forEach((b,i)=>b.classList.toggle('on',i===0));
+  renderReview();
+
+  if(R.grade!=='fail')burst(R.grade==='master'?190:110,R.grade==='master');
+}
+
+function countUp(el,target,dur){
+  const t0=performance.now();
+  function f(t){const k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,3);
+    el.textContent=(target*e).toFixed(1).replace(/\.0$/,'')+'%';
+    if(k<1)requestAnimationFrame(f);else el.textContent=target+'%';}
+  requestAnimationFrame(f);
+}
+
+function drawRadar(data){
+  const n=data.length,cx=100,cy=104,R=70;
+  const pt=(i,r)=>{const a=-Math.PI/2+i*2*Math.PI/n;return[cx+Math.cos(a)*r,cy+Math.sin(a)*r];};
+  let web='';
+  [0.25,0.5,0.75,1].forEach(f=>{
+    const d=data.map((_,i)=>pt(i,R*f)).map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join('')+'Z';
+    web+=`<path class="radar-web" d="${d}"/>`;});
+  let axes='',labels='';
+  data.forEach((d,i)=>{
+    const p=pt(i,R),lp=pt(i,R+15);
+    axes+=`<line class="radar-axis" x1="${cx}" y1="${cy}" x2="${p[0].toFixed(1)}" y2="${p[1].toFixed(1)}"/>`;
+    const anchor=Math.abs(lp[0]-cx)<6?'middle':(lp[0]>cx?'start':'end');
+    labels+=`<text class="radar-lbl" x="${lp[0].toFixed(1)}" y="${(lp[1]+3).toFixed(1)}" text-anchor="${anchor}">${d.k}</text>`;
+  });
+  const zero=data.map((_,i)=>pt(i,0.5)).map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join('')+'Z';
+  const full=data.map((d,i)=>pt(i,Math.max(R*d.pc,1))).map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join('')+'Z';
+  let dots='';
+  data.forEach((d,i)=>{const p=pt(i,Math.max(R*d.pc,1));
+    dots+=`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3" fill="var(--neon)" opacity="0"><animate attributeName="opacity" from="0" to="1" dur=".4s" begin="${1+i*0.08}s" fill="freeze"/></circle>`;});
+  $('#radarBox').innerHTML=`<svg width="230" height="215" viewBox="0 0 200 200">${web}${axes}
+    <path class="radar-poly" id="radarPoly" d="${zero}"/>${dots}${labels}</svg>`;
+  setTimeout(()=>{$('#radarPoly').setAttribute('d',full);},350);
+}
+
+function drawDonut(R){
+  const r=62,C=2*Math.PI*r;
+  const segs=[{v:R.correct,c:'var(--neon-2)',l:'ถูก'},{v:R.wrong,c:'var(--red)',l:'ผิด'},{v:R.skipped,c:'rgba(255,255,255,.22)',l:'เว้นว่าง'}].filter(s=>s.v>0);
+  let off=0,paths='';
+  segs.forEach((s,i)=>{
+    const frac=s.v/R.total, len=C*frac;
+    paths+=`<circle class="donut-seg" cx="100" cy="100" r="${r}" fill="none" stroke="${s.c}" stroke-width="20"
+      stroke-dasharray="0 ${C.toFixed(1)}" data-da="${(len-2).toFixed(1)} ${(C-len+2).toFixed(1)}" data-do="${(-off).toFixed(1)}"
+      transform="rotate(-90 100 100)" stroke-linecap="butt" style="transition:stroke-dasharray 1.1s cubic-bezier(.2,.8,.2,1) ${i*0.15}s"/>`;
+    off+=len;
+  });
+  $('#donutBox').innerHTML=`<svg width="200" height="200" viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="${r}" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="20"/>${paths}
+      <text x="100" y="96" text-anchor="middle" font-family="IBM Plex Mono" font-size="26" font-weight="700" fill="var(--white)">${R.correct}</text>
+      <text x="100" y="116" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--grey-dim)" letter-spacing="2">CORRECT</text>
+    </svg>
+    <div class="legend" style="justify-content:center">${segs.map(s=>`<span><i style="background:${s.c}"></i>${s.l} ${s.v}</span>`).join('')}</div>`;
+  setTimeout(()=>{$$('#donutBox .donut-seg').forEach(el=>{
+    el.setAttribute('stroke-dasharray',el.dataset.da);el.setAttribute('stroke-dashoffset',el.dataset.do);});},260);
+}
+
+/* ---------- review ---------- */
+function renderReview(){
+  const R=state.result;
+  const rows=R.rows.filter(r=>state.filter==='all'||(state.filter==='wrong'&&!r.ok&&!r.skipped)||(state.filter==='right'&&r.ok)||(state.filter==='skip'&&r.skipped));
+  if(!rows.length){$('#revList').innerHTML=`<div class="panel" style="text-align:center;color:var(--grey);font-family:var(--mono);font-size:12px">— ไม่มีข้อในหมวดนี้ —</div>`;return;}
+  $('#revList').innerHTML=rows.map(r=>{
+    const cls=r.skipped?'sk':(r.ok?'ok':'no');
+    const mark=r.skipped?'ไม่ได้ตอบ':(r.ok?'ถูก':'ผิด');
+    return `<div class="rcard ${cls}">
+      <div class="rhead">
+        <span class="rmark ${cls}">${mark}</span>
+        <span class="qnum">Q${String(r.i+1).padStart(2,'0')}</span>
+        <span class="rtagline">${esc(TOPICS[r.q.topic].en)}</span>
+      </div>
+      <div class="rq">${esc(r.q.text)}</div>
+      ${r.q.choices.map(c=>{
+        const isC=r.corr.includes(c.id),isP=r.picked.includes(c.id);
+        const k=isC?'correct':(isP?'picked-wrong':'');
+        const tag=isC?'<span class="rtagline">เฉลย</span>':(isP?'<span class="rtagline">คุณเลือก</span>':'');
+        return `<div class="rchoice ${k}"><span class="rl">${c.letter}</span><span style="flex:1">${esc(c.text)}</span>${tag}</div>`;
+      }).join('')}
+      <div class="exp">
+        <div class="exp-tabs">
+          <button class="exp-tab on" data-act="exptab" data-qi="${r.i}" data-lang="en">🇬🇧 English</button>
+          <button class="exp-tab" data-act="exptab" data-qi="${r.i}" data-lang="th">🇹🇭 ภาษาไทย</button>
+        </div>
+        <div class="exp-body" id="exp-${r.i}">${esc(r.q.expEn)}</div>
+      </div>
+    </div>`;}).join('');
+}
+function setExpLang(qi,lang){
+  const q=state.questions[qi];const body=document.getElementById('exp-'+qi);
+  body.textContent=lang==='th'?q.expTh:q.expEn;
+  body.className='exp-body'+(lang==='th'?' th':'');
+  const tabs=body.parentElement.querySelectorAll('.exp-tab');
+  tabs.forEach(t=>t.classList.toggle('on',t.dataset.lang===lang));
+}
+
+$('#btnRetry').addEventListener('click',()=>{modal('สอบอีกครั้ง','เริ่มทำชุดเดิมใหม่ทั้งหมด คะแนนรอบนี้จะถูกล้างทิ้ง',
+  [{label:'ยกเลิก'},{label:'เริ่มใหม่',style:'btn-primary',fn:startExam}]);});
+$('#btnBackLobby').addEventListener('click',()=>{show('scLobby');window.scrollTo(0,0);});
+
+/* ---------- confetti ---------- */
+const cv=$('#fxCanvas');let cx2=null;try{cx2=cv.getContext('2d');}catch(e){}
+let parts=[],raf=null;
+function sizeCv(){if(!cx2)return;const d=window.devicePixelRatio||1;cv.width=Math.floor(innerWidth*d);cv.height=Math.floor(innerHeight*d);
+  cv.style.width=innerWidth+'px';cv.style.height=innerHeight+'px';cx2.setTransform(d,0,0,d,0,0);}
+sizeCv();addEventListener('resize',sizeCv);
+function burst(n,gold){
+  if(!cx2)return;
+  const cols=gold?['#ccff00','#00ff66','#ffffff','#ffb020']:['#00ff66','#ccff00','#ffffff'];
+  for(let i=0;i<n;i++)parts.push({x:innerWidth/2+(Math.random()-.5)*220,y:innerHeight*0.34,
+    vx:(Math.random()-.5)*9,vy:-Math.random()*11-4,g:0.26+Math.random()*0.14,
+    s:3+Math.random()*5,r:Math.random()*Math.PI,vr:(Math.random()-.5)*0.3,
+    c:cols[(Math.random()*cols.length)|0],life:150+Math.random()*90});
+  if(!raf)raf=requestAnimationFrame(step);
+}
+function step(){
+  cx2.clearRect(0,0,innerWidth,innerHeight);
+  parts=parts.filter(p=>p.life>0&&p.y<innerHeight+60);
+  parts.forEach(p=>{p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;p.life--;
+    cx2.save();cx2.translate(p.x,p.y);cx2.rotate(p.r);cx2.globalAlpha=Math.max(0,Math.min(1,p.life/60));
+    cx2.fillStyle=p.c;cx2.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.6);cx2.restore();});
+  if(parts.length)raf=requestAnimationFrame(step);else{raf=null;cx2.clearRect(0,0,innerWidth,innerHeight);}
+}
+
+/* ---------- reveal on scroll ---------- */
+if('IntersectionObserver' in window){
+  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in-view');}),{threshold:.12});
+  $$('.reveal').forEach(el=>io.observe(el));
+}else{ $$('.reveal').forEach(el=>el.classList.add('in-view')); }
+
+/* ---------- keyboard ---------- */
+addEventListener('keydown',e=>{
+  if(e.key==='Escape')$('#modal').classList.remove('show');
+  if(e.key==='Enter'&&e.ctrlKey&&$('#scQuiz').classList.contains('active'))$('#btnSubmit').click();
+});
+</script>
+</body>
+</html>
