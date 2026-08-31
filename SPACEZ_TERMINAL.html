@@ -18898,7 +18898,7 @@ var GM = {
   #spzKeyPanel .spz-kp-msg{margin-top:9px;min-height:15px;}
   .spz-ok{color:var(--neon-2,#7CFFB2);} .spz-bad{color:#ff6b6b;}
   .stock-card .spz-live-row{display:flex;align-items:baseline;gap:8px;margin:10px 0 -2px;
-    font-family:var(--mono);font-size:12px;}
+    font-family:var(--mono);font-size:12px;flex-wrap:wrap;}
   .stock-card .spz-px{color:var(--white);font-weight:700;font-size:15px;}
   .stock-card .spz-chg{font-size:11.5px;font-weight:600;}
   .stock-card .spz-chg.up{color:var(--neon-2,#7CFFB2);} .stock-card .spz-chg.down{color:var(--red,#ff5c5c);}
@@ -18912,6 +18912,22 @@ var GM = {
   html[data-theme="light"] #spzKeyPanel input{background:#fff;color:#12141c;}
   html[data-theme="light"] .stock-card .spz-px{color:#12141c;}
   #spzLiveBar .spz-short{display:none;opacity:.8;}
+  /* freshness tags — one visual language for "how fresh is this number" */
+  .spz-tag{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);
+    font-size:8.5px;letter-spacing:.9px;font-weight:600;padding:2px 7px;border-radius:3px;
+    border:1px solid currentColor;white-space:nowrap;vertical-align:middle;line-height:1.5;}
+  .spz-tag::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;flex:none;}
+  .spz-tag-rt{color:var(--neon-2,#7CFFB2);}
+  .spz-tag-rt::before{animation:spzPulse 2.2s ease-out infinite;}
+  .spz-tag-dl{color:var(--neon,#ccff00);}
+  .spz-tag-auto{color:#63b8ff;}
+  .spz-tag-stat{color:var(--grey-dim,#54594f);}
+  .spz-tag-head{margin-left:10px;}
+  .stock-card .spz-tag.spz-flag-slot{margin-left:auto;}
+  .eyebrow .spz-tag{margin-left:10px;}
+  .spz-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:11px;font-family:var(--mono);
+    font-size:10px;color:var(--grey-dim);line-height:1.9;}
+  .spz-legend span.spz-lg{display:inline-flex;align-items:center;gap:7px;}
   @media(max-width:900px){
     #spzLiveBar{padding:7px 14px;font-size:10px;gap:8px;flex-wrap:nowrap;}
     #spzLiveBar .spz-src{display:none;}          /* keep the bar one row tall */
@@ -19188,7 +19204,9 @@ var GM = {
         s.live_chg   = n(r.chg_pct);
         s.live_ccy   = r.ccy || ccy(t);
         s.live_ts    = ts;
+        s.live_src   = 'snapshot';
       }
+      s.__metric_src = 'snapshot';
     });
     var h = window.__SPZ_HOOKS;
     if (h && h.tickers) {
@@ -19245,6 +19263,68 @@ var GM = {
       staticTag:'ค่าคงที่', liveTag:'สด', notice:'ข้อมูลตลาดแบบสด — เพื่อการศึกษา ไม่ใช่คำแนะนำการลงทุน ความหน่วงขึ้นกับแหล่งข้อมูล' }
   };
 
+  /* ---------------------------------------------------------------
+     freshness tags. Four honest tiers — a 30-minute snapshot is not
+     "real-time", and free Yahoo quotes are delayed, so neither gets to
+     wear that word.
+     --------------------------------------------------------------- */
+  var TAGS = {
+    en:{ rt:'REAL-TIME', dl:'LIVE · ~15 MIN DELAY', auto:'AUTO · EVERY 30 MIN', stat:'REFERENCE',
+         legend:'How fresh is a number:',
+         lrt:'streaming from Finnhub as it prints (needs your free key)',
+         ldl:'pulled live in your browser from Yahoo, delayed about 15 minutes',
+         lauto:'rebuilt server-side every 30 minutes and shipped with the page',
+         lstat:'a fixed study figure written into the page, not a market quote' },
+    th:{ rt:'เรียลไทม์', dl:'สด · ดีเลย์ ~15 นาที', auto:'อัปเดตเอง · ทุก 30 นาที', stat:'ค่าอ้างอิง',
+         legend:'ตัวเลขสดแค่ไหน:',
+         lrt:'ไหลจาก Finnhub ทันทีที่ราคาเกิด (ต้องใส่คีย์ฟรีของคุณ)',
+         ldl:'เบราว์เซอร์ดึงสดจาก Yahoo ดีเลย์ราว 15 นาที',
+         lauto:'เซิร์ฟเวอร์สร้างใหม่ทุก 30 นาทีแล้วส่งมากับหน้าเว็บ',
+         lstat:'ตัวเลขคงที่ที่เขียนไว้ในไฟล์เพื่อการศึกษา ไม่ใช่ราคาตลาด' }
+  };
+
+  /* compact wording for tight spots like a stock card */
+  var TAGS_SHORT = {
+    en:{ rt:'REAL-TIME', dl:'~15m', auto:'AUTO 30m', stat:'REF' },
+    th:{ rt:'เรียลไทม์', dl:'ดีเลย์ 15น.', auto:'ออโต้ 30น.', stat:'อ้างอิง' }
+  };
+
+  function tagText(kind, short){
+    var d = short ? (TAGS_SHORT[lang()] || TAGS_SHORT.en) : (TAGS[lang()] || TAGS.en);
+    return d[kind] || '';
+  }
+
+  function tagHTML(kind, extraClass, short){
+    return '<span class="spz-tag spz-tag-' + kind + (extraClass ? ' ' + extraClass : '') +
+           '" title="' + tagText(kind) + '">' + tagText(kind, short) + '</span>';
+  }
+
+  /* which tier a given source string belongs to */
+  function tierOf(src){
+    if (src === 'finnhub') return 'rt';
+    if (src === 'yahoo')   return 'dl';
+    if (src === 'auto-sync' || src === 'snapshot') return 'auto';
+    return 'stat';
+  }
+
+  function bestTier(){
+    if (apiKey()) return 'rt';
+    if (srcSeen && srcSeen.yahoo && Date.now() - srcSeen.yahoo < 10 * 60 * 1000) return 'dl';
+    if (snapTs) return 'auto';
+    return 'stat';
+  }
+
+  function legendHTML(){
+    var pairs = [['rt','lrt'],['dl','ldl'],['auto','lauto'],['stat','lstat']];
+    return '<div class="spz-legend"><span style="opacity:.75">' + tagText('legend') + '</span>' +
+      pairs.map(function(p){
+        return '<span class="spz-lg">' + tagHTML(p[0]) + ' ' + tagText(p[1]) + '</span>';
+      }).join('') + '</div>';
+  }
+
+  window.__SPZ_TAGS = { html: tagHTML, tier: tierOf, best: bestTier, legend: legendHTML,
+                        text: tagText };
+
   function lang(){
     var h = window.__SPZ_HOOKS;
     if (h && typeof h.lang === 'function') { try { return h.lang(); } catch(e){} }
@@ -19267,6 +19347,7 @@ var GM = {
     bar.id = 'spzLiveBar';
     bar.innerHTML =
       '<span class="spz-dot"></span><span class="spz-state">…</span>' +
+      '<span class="spz-tier"></span>' +
       '<span class="spz-src" id="spzSrc"></span>' +
       '<span class="spz-short"></span>' +
       '<span class="spz-spacer"></span>' +
@@ -19278,6 +19359,7 @@ var GM = {
     panel.innerHTML =
       '<div class="spz-state" id="spzKeyTitle" style="color:inherit;font-weight:600;"></div>' +
       '<div class="spz-kp-note" id="spzKeyNote" style="margin-top:7px;"></div>' +
+      '<div id="spzLegend"></div>' +
       '<div class="spz-kp-row">' +
         '<input type="password" id="spzKeyInput" autocomplete="off" spellcheck="false">' +
         '<button type="button" id="spzKeySave"></button>' +
@@ -19350,6 +19432,8 @@ var GM = {
     bar.className = 'is-' + (state.mode === 'loading' ? 'loading' : state.mode === 'live' ? 'live' : 'static');
     bar.querySelector('.spz-state').textContent =
       state.mode === 'loading' ? S('loading') : state.mode === 'live' ? S('live') : S('stat');
+    var tierEl = bar.querySelector('.spz-tier');
+    if (tierEl) tierEl.innerHTML = tagHTML(bestTier());
     document.getElementById('spzSrc').innerHTML =
       S('quotes') + ': <b>' + state.qSrc + '</b> <span class="spz-sep">·</span> ' +
       S('funda') + ': <b>' + state.mSrc + '</b> <span class="spz-sep">·</span> ' +
@@ -19361,10 +19445,38 @@ var GM = {
     document.getElementById('spzKeyBtn').textContent = S('keyBtn');
     document.getElementById('spzKeyTitle').textContent = S('keyTitle');
     document.getElementById('spzKeyNote').textContent = S('keyNote');
+    var lg = document.getElementById('spzLegend');
+    if (lg) lg.innerHTML = legendHTML();
+    mountHeadTags();
     document.getElementById('spzKeySave').textContent = S('save');
     document.getElementById('spzKeyClear').textContent = S('clear');
     if (inputEl) inputEl.placeholder = S('ph');
     bar.title = S('notice');
+  }
+
+  /* ---------------------------------------------------------------
+     5b. section header tags — so each screen says how fresh it is
+     --------------------------------------------------------------- */
+  var HEAD_TAGS = [
+    { sec:'directory',  id:'spzTagDir',  kind:function(){ return apiKey() ? 'rt' : (snapTs ? 'auto' : 'stat'); } },
+    { sec:'comparator', id:'spzTagCmp',  kind:function(){ return apiKey() ? 'rt' : (snapTs ? 'auto' : 'stat'); } },
+    { sec:'fx',         id:'spzTagFx',   kind:function(){ return (fxCache || snapTs) ? 'auto' : 'stat'; } }
+  ];
+
+  function mountHeadTags(){
+    HEAD_TAGS.forEach(function(h){
+      var sec = document.getElementById(h.sec);
+      if (!sec) return;
+      var eyebrow = sec.querySelector('.eyebrow');
+      if (!eyebrow) return;
+      var tag = document.getElementById(h.id);
+      if (!tag) {
+        tag = document.createElement('span');
+        tag.id = h.id;
+        eyebrow.appendChild(tag);
+      }
+      tag.outerHTML = tagHTML(h.kind(), '').replace('<span ', '<span id="' + h.id + '" ');
+    });
   }
 
   /* ---------------------------------------------------------------
@@ -19453,10 +19565,11 @@ var GM = {
          requests per tab switch only trips the proxy's rate limit */
       var p1 = (keyed ? quoteOf(t, force) : Promise.reject(new Error('snapshot'))).then(function(q){
         s.live_price = q.price; s.live_chg = q.chgPct; s.live_ccy = q.ccy || ccy(t);
-        s.live_ts = q.ts; noteSrc(q.src); state.last = Date.now();
+        s.live_ts = q.ts; s.live_src = q.src; noteSrc(q.src); state.last = Date.now();
       }, function(){});
       var p2 = metricOf(t).then(function(m){
-        applyMetrics(s, m); state.mSrc = 'finnhub'; state.last = Date.now();
+        applyMetrics(s, m); s.__metric_src = 'finnhub';
+        state.mSrc = 'finnhub'; state.last = Date.now();
       }, function(){});
       return Promise.all([p1, p2]);
     });
@@ -19503,9 +19616,9 @@ var GM = {
           html += '<span class="spz-chg ' + (up ? 'up' : 'down') + '">' +
                   (up ? '▲ +' : '▼ ') + s.live_chg.toFixed(2) + '%</span>';
         }
-        html += '<span class="spz-flag live">' + S('liveTag') + '</span>';
+        html += tagHTML(tierOf(s.live_src), 'spz-flag-slot', true);
       } else {
-        html += '<span class="spz-flag">' + S('staticTag') + '</span>';
+        html += tagHTML('stat', 'spz-flag-slot', true);
       }
       row.innerHTML = html;
       var desc = card.querySelector('.sc-desc');
@@ -19615,6 +19728,8 @@ var GM = {
     watchGrid();
     watchFxInput();
     decorate();
+    mountHeadTags();
+    setInterval(mountHeadTags, 15000);
     /* never leave the badge spinning forever on a blocked network */
     setTimeout(function(){
       if (!state.last) { state.mode = 'static'; paintBar(); }
@@ -19784,6 +19899,13 @@ var GM = {
   }
   function sgn(v, d){ return (v >= 0 ? '+' : '') + v.toFixed(d === undefined ? 2 : d) + '%'; }
 
+  /* the freshness tag, borrowed from the live-data module so the whole page
+     speaks one language about how current a number is */
+  function tag(){
+    var T2 = window.__SPZ_TAGS;
+    return T2 ? T2.html(snap ? 'auto' : 'stat') : '';
+  }
+
   /* ---------------------------------------------------------------
      state — one selection shared by the flow panel
      --------------------------------------------------------------- */
@@ -19859,7 +19981,7 @@ var GM = {
     var list = rows(state.group);
     box.innerHTML =
       '<div class="ss-top"><span class="ss-eyebrow"><span class="ss-live-dot"></span>' +
-        esc(t('eyebrow')) + '</span></div>' +
+        esc(t('eyebrow')) + '</span>' + tag() + '</div>' +
       '<h3>' + esc(t('title')) + '</h3>' +
       '<p class="ss-lede">' + esc(t('lede')) + '</p>' +
       '<div class="ss-pill-row" style="margin-bottom:14px;">' +
@@ -19889,7 +20011,7 @@ var GM = {
 
     box.innerHTML =
       '<div class="ss-top"><span class="ss-eyebrow"><span class="ss-live-dot"></span>' +
-        esc(t('eyebrow')) + '</span></div>' +
+        esc(t('eyebrow')) + '</span>' + tag() + '</div>' +
       '<h3>' + esc(t('gTitle')) + '</h3>' +
       '<p class="ss-lede">' + esc(t('gLede')) + '</p>' +
       '<div class="ss-pills">' + pills(TF, state.gTf, 'gtf') + '</div>' +
@@ -19940,7 +20062,7 @@ var GM = {
     var keys = Object.keys(ccy).filter(function(k){ return k !== 'USD'; });
     if (!keys.length) {
       box.innerHTML = '<div class="ss-top"><span class="ss-eyebrow"><span class="ss-live-dot"></span>' +
-        esc(t('eyebrow')) + '</span></div><h3>' + esc(t('cTitle')) + '</h3>' +
+        esc(t('eyebrow')) + '</span>' + tag() + '</div><h3>' + esc(t('cTitle')) + '</h3>' +
         '<div class="ss-empty">' + esc(t('waiting')) + '</div>';
       return;
     }
@@ -19963,7 +20085,7 @@ var GM = {
     var strongest = keys[0], weakest = keys[keys.length - 1];
     box.innerHTML =
       '<div class="ss-top"><span class="ss-eyebrow"><span class="ss-live-dot"></span>' +
-        esc(t('eyebrow')) + '</span></div>' +
+        esc(t('eyebrow')) + '</span>' + tag() + '</div>' +
       '<h3>' + esc(t('cTitle')) + '</h3>' +
       '<p class="ss-lede">' + esc(t('cLede')) + '</p>' +
       '<div class="ss-best">' +
