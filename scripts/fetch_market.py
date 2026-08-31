@@ -153,6 +153,8 @@ def fetch_one(sym, thai):
     try:
         info = tk.get_info() or {}
         out["name"] = info.get("shortName") or info.get("longName")
+        out["sector"] = info.get("sector")
+        out["industry"] = info.get("industry")
         pe = info.get("trailingPE") or info.get("forwardPE")
         out["pe"] = num(pe) or None
         if out.get("pe") is not None and out["pe"] <= 0:
@@ -440,6 +442,94 @@ def _rsi(closes, n=14, offset=0):
     return round(100.0 - (100.0 / (1.0 + rs)), 1)
 
 
+def _rsi_series(closes, n=14):
+    """Wilder RSI at every bar, so pivots can be compared to each other."""
+    if len(closes) < n + 2:
+        return []
+    out = [None] * len(closes)
+    gains = losses = 0.0
+    for i in range(1, n + 1):
+        ch = closes[i] - closes[i - 1]
+        gains += max(ch, 0.0)
+        losses += max(-ch, 0.0)
+    ag, al = gains / n, losses / n
+    out[n] = 100.0 if al == 0 else 100.0 - 100.0 / (1.0 + ag / al)
+    for i in range(n + 1, len(closes)):
+        ch = closes[i] - closes[i - 1]
+        ag = (ag * (n - 1) + max(ch, 0.0)) / n
+        al = (al * (n - 1) + max(-ch, 0.0)) / n
+        out[i] = 100.0 if al == 0 else 100.0 - 100.0 / (1.0 + ag / al)
+    return out
+
+
+def _pivots(closes, w=5, high=True):
+    """Fractal swing points: a bar that is the extreme of its +/- w window."""
+    out = []
+    for i in range(w, len(closes) - w):
+        window = closes[i - w:i + w + 1]
+        if high and closes[i] == max(window):
+            out.append(i)
+        elif not high and closes[i] == min(window):
+            out.append(i)
+    # thin out clusters: keep the strongest pivot in any 5-bar huddle
+    pruned = []
+    for i in out:
+        if pruned and i - pruned[-1] < 8:
+            better = closes[i] > closes[pruned[-1]] if high else closes[i] < closes[pruned[-1]]
+            if better:
+                pruned[-1] = i
+            continue
+        pruned.append(i)
+    return pruned
+
+
+def divergence_of(closes, rsi):
+    """Compare the newest swing point with the most extreme one before it.
+
+    That is how the pattern is actually read: today's high against the prior
+    major high, not against a fixed number of days ago. Comparing only the last
+    two pivots breaks on noisy series, where the last two "pivots" are often a
+    pair of meaningless wiggles a fortnight apart.
+    """
+    if len(closes) < 90 or not rsi:
+        return None
+    recent = 30                       # the newest pivot must be roughly current
+    look = min(len(closes), 260)
+    base = len(closes) - look
+    seg = closes[base:]
+
+    for high in (True, False):
+        piv = [i for i in _pivots(seg, 8, high) if rsi[base + i] is not None]
+        if len(piv) < 2:
+            continue
+        b = piv[-1]
+        if (len(closes) - 1 - (base + b)) > recent:
+            continue
+        earlier = [i for i in piv[:-1] if b - i >= 15]
+        if not earlier:
+            continue
+        # the reference point is the prior extreme, not merely the prior pivot
+        a = max(earlier, key=lambda i: seg[i]) if high else min(earlier, key=lambda i: seg[i])
+
+        pa, pb = seg[a], seg[b]
+        ra, rb = rsi[base + a], rsi[base + b]
+        if not pa:
+            continue
+        pgap = (pb - pa) / pa * 100.0
+        rgap = rb - ra
+        if high and pgap > 0.5 and rgap < -3.0:
+            return {"divergence": "bearish", "div_gap": round(rgap, 1),
+                    "div_price_gap": round(pgap, 2),
+                    "div_rsi_from": round(ra, 1), "div_rsi_to": round(rb, 1),
+                    "div_bars": b - a}
+        if (not high) and pgap < -0.5 and rgap > 3.0:
+            return {"divergence": "bullish", "div_gap": round(rgap, 1),
+                    "div_price_gap": round(pgap, 2),
+                    "div_rsi_from": round(ra, 1), "div_rsi_to": round(rb, 1),
+                    "div_bars": b - a}
+    return None
+
+
 def trend_stats(closes):
     """Trend and momentum shape — the raw material for turning-point reads."""
     out = {}
@@ -489,22 +579,22 @@ def trend_stats(closes):
     except Exception:
         pass
 
-    # divergence: price pushing to new highs while momentum fades (or the
-    # mirror image at the lows). This is the shape people mean when they say
-    # "the price keeps going but the indicator does not agree".
-    r1, r2 = out.get("rsi"), out.get("rsi_20d_ago")
-    if r1 is not None and r2 is not None and len(closes) > 21:
-        p_now, p_then = closes[-1], closes[-21]
-        if p_then:
-            p_chg = (p_now - p_then) / p_then * 100.0
-            near_high = out.get("off_high", -99) > -4.0
-            near_low = out.get("off_low", 99) < 6.0
-            if p_chg > 1.0 and (r1 - r2) < -4.0 and near_high:
-                out["divergence"] = "bearish"
-                out["div_gap"] = round(r1 - r2, 1)
-            elif p_chg < -1.0 and (r1 - r2) > 4.0 and near_low:
-                out["divergence"] = "bullish"
-                out["div_gap"] = round(r1 - r2, 1)
+    # divergence, measured peak against peak rather than against a fixed
+    # number of days ago
+    try:
+        d = divergence_of(closes, _rsi_series(closes, 14))
+        if d:
+            # a bearish divergence only means something near the highs, and a
+            # bullish one only near the lows
+            ok = True
+            if d["divergence"] == "bearish" and out.get("off_high") is not None:
+                ok = out["off_high"] > -8.0
+            if d["divergence"] == "bullish" and out.get("off_low") is not None:
+                ok = out["off_low"] < 10.0
+            if ok:
+                out.update(d)
+    except Exception:
+        pass
     return out
 
 
@@ -607,7 +697,8 @@ def build_regime(stocks, flows, macro, ccy):
             return
         seen.add(tkr)
         divs.append({"t": tkr, "kind": r["divergence"], "gap": r.get("div_gap"),
-                     "rsi": r.get("rsi"), "rsi_then": r.get("rsi_20d_ago"),
+                     "rsi": r.get("div_rsi_to"), "rsi_then": r.get("div_rsi_from"),
+                     "price_gap": r.get("div_price_gap"), "bars": r.get("div_bars"),
                      "m1": r.get("m1"), "off_high": r.get("off_high"),
                      "name": name, "etf": etf})
 

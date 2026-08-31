@@ -13142,7 +13142,7 @@ var CL_UI = {
         { k:'market', t:{en:'Read the market',th:'อ่านตลาด'},
           ids:['outlook', 'regime', 'flow', 'globe', 'infl', 'desk', 'scenarios'] },
         { k:'tools',  t:{en:'Workbench',th:'เครื่องมือ'},
-          ids:['chartlab', 'directory', 'pro'] }
+          ids:['chartlab', 'directory', 'pro', 'proof'] }
       ];
       var used = {}, n = 0, g, i, r;
       for(g = 0; g < GROUPS.length; g++){
@@ -18940,6 +18940,8 @@ var GM = {
     border:1px solid var(--border-dim);color:var(--grey);opacity:.9;}
   .stock-card .spz-flag.live{color:var(--neon-2,#7CFFB2);border-color:rgba(124,255,178,.35);}
   .sc-metric.spz-fresh b{color:var(--neon,#cf0);}
+  .sc-metric b.spz-na{color:var(--grey-dim)!important;font-size:11px;letter-spacing:.5px;cursor:help;
+    border-bottom:1px dotted currentColor;}
   html[data-theme="light"] #spzLiveBar{background:rgba(240,241,236,.9);}
   html[data-theme="light"] #spzKeyPanel{background:rgba(246,247,243,.96);}
   html[data-theme="light"] #spzLiveBar .spz-state{color:#12141c;}
@@ -18956,6 +18958,9 @@ var GM = {
   .spz-tag-dl{color:var(--neon,#ccff00);}
   .spz-tag-auto{color:#63b8ff;}
   .spz-tag-stat{color:var(--grey-dim,#54594f);}
+  .spz-tag-stale{color:var(--amber,#ffb020);}
+  .spz-tag-stale::before{animation:rgBlink 1.2s steps(2,end) infinite;}
+  @keyframes rgBlink{0%,100%{opacity:1}50%{opacity:.15}}
   .spz-tag-head{margin-left:10px;}
   .stock-card .spz-tag.spz-flag-slot{margin-left:auto;}
   .eyebrow .spz-tag{margin-left:10px;}
@@ -19010,6 +19015,11 @@ var GM = {
   function yahooSym(t){ return isThai(t) ? t + '.BK' : t.replace('.', '-'); }
   function finnhubSym(t){ return t; }
   function ccy(t){ return isThai(t) ? 'THB' : 'USD'; }
+
+  var FIN_SECTORS = ['Financial Services', 'Financial', 'Financials'];
+  function isFinancial(s){
+    return !!(s && s.sector && FIN_SECTORS.indexOf(s.sector) !== -1);
+  }
 
   /* ---------------------------------------------------------------
      2. tiny scheduler: token bucket + limited concurrency
@@ -19233,6 +19243,7 @@ var GM = {
       if (!s) return;
       applyMetrics(s, { pe:n(r.pe), roe:n(r.roe), roi:n(r.roic), de:n(r.de),
                         margin:n(r.margin), pb:n(r.pb), divYield:n(r.div), ts:ts });
+      if (r.sector) s.sector = r.sector;
       if (n(r.price) !== null && (!s.live_ts || s.live_ts < ts)) {
         s.live_price = r.price;
         s.live_chg   = n(r.chg_pct);
@@ -19285,7 +19296,8 @@ var GM = {
       save:'Save & sync', clear:'Clear', ph:'paste your Finnhub key…',
       saved:'Key saved — syncing live data…', cleared:'Key removed. Prices fall back to Yahoo.',
       bad:'That key was rejected by Finnhub. Check it and try again.',
-      staticTag:'STATIC', liveTag:'LIVE', notice:'Live market data — for study, not investment advice. Delays vary by source.' },
+      staticTag:'STATIC', liveTag:'LIVE', notice:'Live market data — for study, not investment advice. Delays vary by source.',
+      naShort:'n/a', naWhy:'ROIC and net margin do not mean anything for a bank or insurer — lending IS the balance sheet. Read ROE, P/B and the loan book instead.' },
     th:{ live:'สด', loading:'กำลังดึง', stat:'ค่าคงที่', off:'ออฟไลน์',
       quotes:'ราคา', funda:'พื้นฐาน', fx:'อัตราแลกเปลี่ยน', updated:'อัปเดต',
       refresh:'⟳ รีเฟรช', keyBtn:'⚙ API KEY', never:'ยังไม่มี',
@@ -19294,7 +19306,8 @@ var GM = {
       save:'บันทึกและซิงก์', clear:'ล้างคีย์', ph:'วางคีย์ Finnhub ของคุณ…',
       saved:'บันทึกคีย์แล้ว — กำลังดึงข้อมูลสด…', cleared:'ลบคีย์แล้ว ราคาจะกลับไปใช้ Yahoo',
       bad:'Finnhub ปฏิเสธคีย์นี้ ลองตรวจสอบแล้วใส่ใหม่',
-      staticTag:'ค่าคงที่', liveTag:'สด', notice:'ข้อมูลตลาดแบบสด — เพื่อการศึกษา ไม่ใช่คำแนะนำการลงทุน ความหน่วงขึ้นกับแหล่งข้อมูล' }
+      staticTag:'ค่าคงที่', liveTag:'สด', notice:'ข้อมูลตลาดแบบสด — เพื่อการศึกษา ไม่ใช่คำแนะนำการลงทุน ความหน่วงขึ้นกับแหล่งข้อมูล',
+      naShort:'ไม่ใช้', naWhy:'ROIC และอัตรากำไรสุทธิไม่มีความหมายกับธนาคารและประกัน เพราะงบดุลคือตัวสินค้าเอง ให้ดู ROE, P/B และคุณภาพพอร์ตสินเชื่อแทน' }
   };
 
   /* ---------------------------------------------------------------
@@ -19304,12 +19317,14 @@ var GM = {
      --------------------------------------------------------------- */
   var TAGS = {
     en:{ rt:'REAL-TIME', dl:'LIVE · ~15 MIN DELAY', auto:'AUTO · EVERY 30 MIN', stat:'REFERENCE',
+         stale:'DATA IS STALE', open:'OPEN', closed:'CLOSED', lastClose:'last close',
          legend:'How fresh is a number:',
          lrt:'streaming from Finnhub as it prints (needs your free key)',
          ldl:'pulled live in your browser from Yahoo, delayed about 15 minutes',
          lauto:'rebuilt server-side every 30 minutes and shipped with the page',
          lstat:'a fixed study figure written into the page, not a market quote' },
     th:{ rt:'เรียลไทม์', dl:'สด · ดีเลย์ ~15 นาที', auto:'อัปเดตเอง · ทุก 30 นาที', stat:'ค่าอ้างอิง',
+         stale:'ข้อมูลค้าง', open:'เปิด', closed:'ปิด', lastClose:'ราคาปิด',
          legend:'ตัวเลขสดแค่ไหน:',
          lrt:'ไหลจาก Finnhub ทันทีที่ราคาเกิด (ต้องใส่คีย์ฟรีของคุณ)',
          ldl:'เบราว์เซอร์ดึงสดจาก Yahoo ดีเลย์ราว 15 นาที',
@@ -19319,8 +19334,8 @@ var GM = {
 
   /* compact wording for tight spots like a stock card */
   var TAGS_SHORT = {
-    en:{ rt:'REAL-TIME', dl:'~15m', auto:'AUTO 30m', stat:'REF' },
-    th:{ rt:'เรียลไทม์', dl:'ดีเลย์ 15น.', auto:'ออโต้ 30น.', stat:'อ้างอิง' }
+    en:{ rt:'REAL-TIME', dl:'~15m', auto:'AUTO 30m', stat:'REF', stale:'STALE' },
+    th:{ rt:'เรียลไทม์', dl:'ดีเลย์ 15น.', auto:'ออโต้ 30น.', stat:'อ้างอิง', stale:'ค้าง' }
   };
 
   function tagText(kind, short){
@@ -19337,15 +19352,43 @@ var GM = {
   function tierOf(src){
     if (src === 'finnhub') return 'rt';
     if (src === 'yahoo')   return 'dl';
-    if (src === 'auto-sync' || src === 'snapshot') return 'auto';
+    if (src === 'auto-sync' || src === 'snapshot') {
+      var age = snapAgeH();
+      return (age !== null && age > 3) ? 'stale' : 'auto';
+    }
     return 'stat';
+  }
+
+  function snapAgeH(){
+    return snapTs ? (Date.now() - snapTs) / 36e5 : null;
   }
 
   function bestTier(){
     if (apiKey()) return 'rt';
     if (srcSeen && srcSeen.yahoo && Date.now() - srcSeen.yahoo < 10 * 60 * 1000) return 'dl';
-    if (snapTs) return 'auto';
+    if (snapTs) {
+      var age = snapAgeH();
+      return (age !== null && age > 3) ? 'stale' : 'auto';
+    }
     return 'stat';
+  }
+
+  /* Exchange clocks. The auto-sync file keeps refreshing after a market
+     closes, so a price can be current AND be yesterday's close — worth
+     saying out loud rather than letting 'live' imply trading. */
+  function marketStatus(){
+    var now = new Date();
+    var utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+    var bkk = new Date(utcMs + 7 * 3600000);
+    var bMin = bkk.getHours() * 60 + bkk.getMinutes();
+    var setOpen = bkk.getDay() >= 1 && bkk.getDay() <= 5 && bMin >= 600 && bMin <= 990;
+
+    var m = now.getUTCMonth();
+    var etOffset = (m >= 2 && m <= 10) ? -4 : -5;      /* close enough to DST */
+    var et = new Date(utcMs + etOffset * 3600000);
+    var eMin = et.getHours() * 60 + et.getMinutes();
+    var usOpen = et.getDay() >= 1 && et.getDay() <= 5 && eMin >= 570 && eMin < 960;
+    return { set: setOpen, us: usOpen };
   }
 
   function legendHTML(){
@@ -19468,11 +19511,18 @@ var GM = {
       state.mode === 'loading' ? S('loading') : state.mode === 'live' ? S('live') : S('stat');
     var tierEl = bar.querySelector('.spz-tier');
     if (tierEl) tierEl.innerHTML = tagHTML(bestTier());
+    var ms = marketStatus();
+    var age = snapAgeH();
     document.getElementById('spzSrc').innerHTML =
       S('quotes') + ': <b>' + state.qSrc + '</b> <span class="spz-sep">·</span> ' +
       S('funda') + ': <b>' + state.mSrc + '</b> <span class="spz-sep">·</span> ' +
-      S('fx') + ': <b>' + state.fxSrc + '</b> <span class="spz-sep">·</span> ' +
-      S('updated') + ' ' + fmtTime(state.last);
+      'SET <b style="color:' + (ms.set ? 'var(--neon-2,#7CFFB2)' : 'var(--grey-dim)') + '">' +
+        tagText(ms.set ? 'open' : 'closed') + '</b> <span class="spz-sep">·</span> ' +
+      'US <b style="color:' + (ms.us ? 'var(--neon-2,#7CFFB2)' : 'var(--grey-dim)') + '">' +
+        tagText(ms.us ? 'open' : 'closed') + '</b> <span class="spz-sep">·</span> ' +
+      S('updated') + ' ' + fmtTime(state.last) +
+      (age !== null && age > 3 ? ' <b style="color:var(--amber,#ffb020)">(' +
+        age.toFixed(age > 24 ? 0 : 1) + 'h)</b>' : '');
     var shortEl = bar.querySelector('.spz-short');
     if (shortEl) shortEl.textContent = S('updated') + ' ' + fmtTime(state.last);
     document.getElementById('spzRefreshBtn').textContent = S('refresh');
@@ -19661,12 +19711,18 @@ var GM = {
 
       if (s.__live) {
         card.querySelectorAll('.sc-metric').forEach(function(m){ m.classList.add('spz-fresh'); });
-        if (s.roic_live && !card.querySelector('.spz-roic')) {
+        if (!card.querySelector('.spz-roic')) {
           var wrap = card.querySelector('.sc-metrics');
-          if (wrap) {
+          if (wrap && (s.roic_live || isFinancial(s))) {
             var d = document.createElement('div');
             d.className = 'sc-metric spz-fresh spz-roic';
-            d.innerHTML = '<span>ROIC</span><b>' + s.roic_live + '</b>';
+            /* ROIC and net margin describe a company that turns assets into
+               products. For a bank the balance sheet IS the product, so the
+               ratio is arithmetic without meaning — say so instead of
+               leaving a hole. */
+            d.innerHTML = isFinancial(s)
+              ? '<span>ROIC</span><b class="spz-na" title="' + S('naWhy') + '">' + S('naShort') + '</b>'
+              : '<span>ROIC</span><b>' + s.roic_live + '</b>';
             wrap.appendChild(d);
           }
         }
@@ -19867,6 +19923,10 @@ var GM = {
   html[data-theme="light"] .spz-scan .ss-name,html[data-theme="light"] .spz-scan h3,
   html[data-theme="light"] .spz-scan table.ss-tab td,html[data-theme="light"] .spz-scan .ss-best .ss-bv{color:#12141c;}
   html[data-theme="light"] .spz-scan .ss-bar{background:rgba(18,20,28,.09);}
+  .spz-dated{display:flex;align-items:flex-start;gap:11px;margin:0 0 20px;padding:11px 14px;
+    border-left:2px solid var(--grey-dim,#54594f);background:rgba(255,255,255,.02);
+    border-radius:0 8px 8px 0;font-size:12px;line-height:1.65;color:var(--grey);max-width:900px;}
+  .spz-dated .spz-tag{flex:none;margin-top:1px;}
 </style>
 <script>
 (function(){
@@ -20151,6 +20211,42 @@ var GM = {
     { sec:'infl',  id:'spzScanCcy',   before:'[data-i="note"]', paint:paintCcy }
   ];
 
+  /* Screens that mix a written-once narrative with a live panel need to say
+     which half is which — otherwise a figure typed in August still reads as
+     today's number six months from now. */
+  var NOTICES = [
+    { sec:'flow',  id:'spzNoteFlow',
+      en:'The fund-flow dollar figures and the rotation story on this screen were written by hand in August 2026 and do not change. The LIVE FLOW SCAN panel further down is the part that updates itself.',
+      th:'ตัวเลขเม็ดเงินกองทุนและเรื่องเล่าการหมุนกลุ่มในหน้านี้ เขียนด้วยมือเมื่อสิงหาคม 2026 และไม่เปลี่ยนตามเวลา ส่วนที่อัปเดตเองคือพาเนล "สแกนกระแสเงินสด" ด้านล่าง' },
+    { sec:'globe', id:'spzNoteGlobe',
+      en:'The central-bank balance sheets, CPI and policy rates on this screen are a dated snapshot written in August 2026. The world scan panel below is live.',
+      th:'ขนาดงบดุลธนาคารกลาง เงินเฟ้อ และดอกเบี้ยนโยบายในหน้านี้ เป็นภาพนิ่งที่เขียนไว้เมื่อสิงหาคม 2026 ส่วนพาเนลสแกนโลกด้านล่างเป็นข้อมูลสด' },
+    { sec:'infl',  id:'spzNoteInfl',
+      en:'The CPI and policy-rate table on this screen was written in August 2026 — those come out monthly and the numbers here do not refresh. The currency board below is live.',
+      th:'ตารางเงินเฟ้อและดอกเบี้ยนโยบายในหน้านี้เขียนไว้เมื่อสิงหาคม 2026 — ตัวเลขพวกนี้ประกาศรายเดือนและในหน้านี้ไม่อัปเดตเอง ส่วนกระดานค่าเงินด้านล่างเป็นข้อมูลสด' },
+    { sec:'glossary', id:'spzNoteGloss',
+      en:'The numbers in these explanations are teaching examples, not quotes. Wherever a real figure exists it is on the stock cards in the Stocks screen, which refresh themselves — if the two disagree, the stock card is the live one.',
+      th:'ตัวเลขในคำอธิบายเหล่านี้เป็นตัวอย่างเพื่อสอน ไม่ใช่ราคาจริง ตัวเลขจริงอยู่บนการ์ดหุ้นในหน้า "หุ้นตัวอย่าง" ซึ่งอัปเดตเอง ถ้าสองที่ไม่ตรงกัน ให้ยึดการ์ดหุ้น' }
+  ];
+
+  function mountNotices(){
+    NOTICES.forEach(function(nt){
+      var sec = document.getElementById(nt.sec);
+      if (!sec) return;
+      var box = document.getElementById(nt.id);
+      if (!box) {
+        box = document.createElement('div');
+        box.id = nt.id;
+        box.className = 'spz-dated';
+        var head = sec.querySelector('.section-head') || sec.firstElementChild;
+        if (head && head.nextSibling) sec.insertBefore(box, head.nextSibling);
+        else sec.appendChild(box);
+      }
+      var tags = window.__SPZ_TAGS;
+      box.innerHTML = (tags ? tags.html('stat') : '') + '<span>' + esc(tx(nt)) + '</span>';
+    });
+  }
+
   function mountOne(m){
     var sec = document.getElementById(m.sec);
     if (!sec) return false;
@@ -20172,11 +20268,13 @@ var GM = {
       var box = document.getElementById(m.id);
       if (box) m.paint(box);
     });
+    mountNotices();
   }
 
   function mountAll(){
     var missing = 0;
     MOUNTS.forEach(function(m){ if (!mountOne(m)) missing++; });
+    mountNotices();
     return missing === 0;
   }
 
@@ -21028,6 +21126,634 @@ var GM = {
     document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 1100); });
   } else {
     setTimeout(boot, 1100);
+  }
+})();
+</script>
+
+<!-- ============================================================
+     SPACEZ PROOF LAB  (menu: "ทดสอบเรดาร์")
+     Two things the terminal owed the reader:
+       1. Backtest — every gauge re-run over 12-25 years of history, graded
+          on whether the market actually did anything different after it went
+          red. Runs again in the browser at whatever horizon you pick.
+       2. Self-check — recomputes the live snapshot's own numbers from its
+          raw fields and reports any that do not reconcile.
+     ============================================================ -->
+<style>
+  #proof .pf-wrap{max-width:1180px;margin:0 auto;padding:0 24px 90px;}
+  @media(max-width:700px){#proof .pf-wrap{padding:0 14px 60px;}}
+  #proof .pf-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 22px;}
+  #proof .pf-tab{font-family:var(--mono);font-size:11px;letter-spacing:.8px;padding:8px 15px;
+    border:1px solid var(--border-dim);border-radius:22px;background:transparent;color:var(--grey);
+    cursor:pointer;transition:all .16s;}
+  #proof .pf-tab:hover{color:var(--white);border-color:var(--border,rgba(204,255,0,.2));}
+  #proof .pf-tab.on{background:var(--neon,#cf0);border-color:var(--neon,#cf0);color:#0a0a0a;font-weight:700;}
+  #proof .pf-run{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:20px;
+    border:1px solid var(--border-dim);border-radius:12px;padding:15px 17px;background:rgba(255,255,255,.018);}
+  #proof .pf-btn{font-family:var(--mono);font-size:11.5px;letter-spacing:1px;font-weight:700;
+    padding:9px 18px;border-radius:6px;border:1px solid var(--neon,#cf0);background:var(--neon,#cf0);
+    color:#0a0a0a;cursor:pointer;transition:transform .14s,box-shadow .2s;}
+  #proof .pf-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(204,255,0,.25);}
+  #proof .pf-btn[disabled]{opacity:.55;cursor:default;transform:none;box-shadow:none;}
+  #proof .pf-sel{display:flex;gap:6px;flex-wrap:wrap;}
+  #proof .pf-h{font-family:var(--mono);font-size:10.5px;padding:6px 12px;border-radius:20px;
+    border:1px solid var(--border-dim);color:var(--grey);background:transparent;cursor:pointer;}
+  #proof .pf-h.on{border-color:var(--neon,#cf0);color:var(--neon,#cf0);}
+  #proof .pf-status{font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);flex:1 1 200px;}
+  #proof .pf-prog{height:4px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden;
+    flex:1 1 100%;margin-top:4px;display:none;}
+  #proof .pf-prog.on{display:block;}
+  #proof .pf-prog i{display:block;height:100%;width:0;border-radius:3px;background:var(--neon,#cf0);
+    transition:width .25s linear;}
+
+  #proof .pf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;}
+  #proof .pf-card{border:1px solid var(--border-dim);border-radius:12px;padding:16px 17px;
+    background:rgba(255,255,255,.018);display:flex;flex-direction:column;gap:10px;}
+  #proof .pf-card.g-A{border-color:rgba(124,255,178,.5);}
+  #proof .pf-card.g-B{border-color:rgba(124,255,178,.3);}
+  #proof .pf-card.g-C{border-color:rgba(255,176,32,.4);}
+  #proof .pf-card.g-D,#proof .pf-card.g-F{border-color:rgba(255,59,78,.45);}
+  #proof .pf-ch{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+  #proof .pf-name{font-size:14.5px;font-weight:800;color:var(--white);line-height:1.35;}
+  #proof .pf-sub{font-family:var(--mono);font-size:9.5px;color:var(--grey-dim);margin-top:3px;}
+  #proof .pf-grade{font-family:var(--mono);font-size:26px;font-weight:800;line-height:1;
+    width:46px;height:46px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+    border:1px solid currentColor;flex:none;}
+  #proof .g-A .pf-grade{color:var(--neon-2,#7CFFB2);} #proof .g-B .pf-grade{color:var(--neon,#cf0);}
+  #proof .g-C .pf-grade{color:var(--amber,#ffb020);} #proof .g-D .pf-grade,#proof .g-F .pf-grade{color:var(--red,#ff3b4e);}
+  #proof .g-na .pf-grade{color:var(--grey-dim);font-size:14px;}
+  #proof .pf-nums{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+  #proof .pf-n{border:1px solid var(--border-dim);border-radius:8px;padding:8px 10px;}
+  #proof .pf-nl{font-family:var(--mono);font-size:8.5px;letter-spacing:1px;color:var(--grey-dim);}
+  #proof .pf-nv{font-family:var(--mono);font-size:16px;font-weight:800;color:var(--white);margin-top:3px;}
+  #proof .pf-nv.up{color:var(--neon-2,#7CFFB2);} #proof .pf-nv.down{color:var(--red,#ff3b4e);}
+  #proof .pf-verdict{font-size:12.5px;line-height:1.65;color:var(--grey);}
+  #proof .pf-verdict b{color:var(--white);font-weight:600;}
+  #proof .pf-miss{font-family:var(--mono);font-size:10.5px;line-height:1.7;color:var(--grey-dim);
+    border-top:1px dashed rgba(255,255,255,.07);padding-top:9px;}
+  #proof .pf-miss b{color:var(--amber,#ffb020);font-weight:600;}
+  #proof .pf-spark{height:34px;position:relative;}
+  #proof .pf-spark svg{width:100%;height:100%;display:block;overflow:visible;}
+
+  #proof .pf-sec{margin-top:40px;}
+  #proof .pf-sech{font-size:21px;font-weight:900;letter-spacing:-.3px;color:var(--white);margin:0 0 8px;}
+  #proof .pf-secl{font-size:13.5px;line-height:1.75;color:var(--grey);max-width:820px;margin-bottom:18px;}
+  #proof .pf-check{border:1px solid var(--border-dim);border-radius:12px;overflow:hidden;}
+  #proof .pf-crow{display:grid;grid-template-columns:auto 1fr auto;gap:5px 13px;padding:12px 16px;
+    border-bottom:1px solid rgba(255,255,255,.05);align-items:center;}
+  #proof .pf-crow:last-child{border-bottom:0;}
+  #proof .pf-cflag{font-family:var(--mono);font-size:9px;letter-spacing:.9px;padding:3px 8px;border-radius:3px;
+    border:1px solid currentColor;white-space:nowrap;}
+  #proof .pf-cflag.pass{color:var(--neon-2,#7CFFB2);} #proof .pf-cflag.fail{color:var(--red,#ff3b4e);}
+  #proof .pf-cflag.skip{color:var(--grey-dim);}
+  #proof .pf-cname{font-size:13px;color:var(--white);}
+  #proof .pf-cdet{grid-column:2/-1;font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);line-height:1.6;}
+  #proof .pf-cdet b{color:var(--white);font-weight:600;}
+  #proof .pf-sum{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+  #proof .pf-sum > div{flex:1 1 150px;border:1px solid var(--border-dim);border-radius:10px;padding:12px 14px;}
+  #proof .pf-note{margin-top:32px;border-left:2px solid var(--amber,#ffb020);padding:12px 0 12px 15px;
+    font-size:12.5px;line-height:1.75;color:var(--grey);}
+  #proof .pf-empty{font-family:var(--mono);font-size:12px;color:var(--grey-dim);padding:22px 0;}
+  html[data-theme="light"] #proof .pf-name,html[data-theme="light"] #proof .pf-nv,
+  html[data-theme="light"] #proof .pf-sech,html[data-theme="light"] #proof .pf-cname{color:#12141c;}
+</style>
+<script>
+(function(){
+  'use strict';
+  if (window.__SPZ_PROOF) return;
+
+  function L(){ return document.documentElement.getAttribute('lang') === 'th' ? 'th' : 'en'; }
+  function tx(o){ return o ? (o[L()] !== undefined ? o[L()] : o.en) : ''; }
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  var isNum = function(v){ return typeof v === 'number' && isFinite(v); };
+  function sgn(v, d){ return (v >= 0 ? '+' : '') + Number(v).toFixed(d === undefined ? 2 : d); }
+
+  var C = {
+    eyebrow:{en:'Proof Lab',th:'ห้องพิสูจน์'},
+    h:{en:'Does any of this actually work?',th:'ของพวกนี้ใช้ได้จริงไหม'},
+    lede:{en:'A dashboard that has never been tested is decoration. This screen runs every Turning Point Radar gauge back through 12–25 years of history, finds every time it went red, and measures what the market did over the following months — against the base rate for the same period, so a market that mostly rises cannot make a useless gauge look clever. Then it checks the live numbers against their own inputs. Both tests run on your click, in your browser, from the same data the rest of the site uses.',
+          th:'แดชบอร์ดที่ไม่เคยถูกทดสอบก็เป็นแค่ของประดับ หน้านี้เอามาตรวัดทุกตัวในเรดาร์ย้อนกลับไปในประวัติศาสตร์ 12–25 ปี หาทุกครั้งที่มันขึ้นสีแดง แล้ววัดว่าตลาดทำอะไรในเดือนถัดมา — เทียบกับค่าปกติของช่วงเดียวกัน เพื่อไม่ให้ตลาดที่ยังไงก็ขึ้นทำให้มาตรวัดที่ไร้ประโยชน์ดูฉลาด จากนั้นตรวจว่าตัวเลขสดตรงกับวัตถุดิบของมันเองไหม ทั้งสองการทดสอบรันตอนคุณกด ในเบราว์เซอร์คุณ จากข้อมูลชุดเดียวกับที่ทั้งเว็บใช้'},
+    tabBt:{en:'① Backtest the radar',th:'① ทดสอบเรดาร์ย้อนหลัง'},
+    tabCk:{en:'② Check the live numbers',th:'② ตรวจตัวเลขสด'},
+    run:{en:'▶ RUN THE TEST',th:'▶ รันการทดสอบ'},
+    rerun:{en:'▶ RUN AGAIN',th:'▶ รันอีกครั้ง'},
+    running:{en:'running…',th:'กำลังรัน…'},
+    horizon:{en:'Measure the market over:',th:'วัดตลาดในช่วง:'},
+    h21:{en:'1 month',th:'1 เดือน'}, h63:{en:'3 months',th:'3 เดือน'},
+    h126:{en:'6 months',th:'6 เดือน'}, h252:{en:'12 months',th:'12 เดือน'},
+    loading:{en:'Loading the history file…',th:'กำลังโหลดไฟล์ประวัติ…'},
+    noFile:{en:'The history file is not on the server yet — it is rebuilt once a day by the same job that refreshes the market data. Check back after the next run.',
+            th:'ไฟล์ประวัติยังไม่ขึ้นเซิร์ฟเวอร์ — มันถูกสร้างใหม่วันละครั้งโดยงานเดียวกับที่รีเฟรชข้อมูลตลาด กลับมาดูอีกทีหลังรอบถัดไป'},
+    ready:{en:'{n} gauges · {a} of history · benchmark {b}',th:'มาตรวัด {n} ตัว · ข้อมูล {a} · เทียบกับ {b}'},
+    ep:{en:'RED EPISODES',th:'ครั้งที่ขึ้นแดง'},
+    after:{en:'MARKET AFTER',th:'ตลาดหลังจากนั้น'},
+    base:{en:'NORMAL PERIOD',th:'ช่วงปกติทั่วไป'},
+    edge:{en:'DIFFERENCE',th:'ต่างกัน'},
+    downRate:{en:'{p}% of those episodes were followed by a fall',th:'{p}% ของครั้งเหล่านั้น ตลาดลงต่อ'},
+    missH:{en:'Worst false alarm:',th:'เตือนผิดหนักสุด:'},
+    bestH:{en:'Best call:',th:'ทายแม่นสุด:'},
+    gA:{en:'Real edge. When this one goes red the market has behaved measurably worse than usual, consistently across horizons.',
+        th:'มีของจริง เมื่อตัวนี้ขึ้นแดง ตลาดทำผลงานแย่กว่าปกติอย่างวัดได้ และสม่ำเสมอในหลายช่วงเวลา'},
+    gB:{en:'Useful. A clear tilt, though not big enough to act on alone.',
+        th:'ใช้ได้ มีทิศทางชัด แต่ยังไม่แรงพอจะใช้ตัดสินใจตัวเดียว'},
+    gC:{en:'Weak. There is a tilt, but small enough that noise could explain it.',
+        th:'อ่อน มีทิศทางอยู่ แต่เล็กพอที่ความบังเอิญอธิบายได้'},
+    gD:{en:'No evidence. Over this history the market did not behave differently after this gauge went red. Keep it as context, do not treat it as a signal.',
+        th:'ไม่มีหลักฐาน ตลอดประวัติชุดนี้ ตลาดไม่ได้ทำอะไรต่างจากปกติหลังมาตรวัดตัวนี้ขึ้นแดง เก็บไว้เป็นบริบทได้ แต่อย่านับเป็นสัญญาณ'},
+    gF:{en:'Backwards. The market has done BETTER than usual after this gauge went red. Reading it as a warning would have cost you.',
+        th:'กลับทิศ ตลาดทำผลงานดีกว่าปกติหลังมาตรวัดตัวนี้ขึ้นแดง ถ้าอ่านว่าเป็นคำเตือนคือขาดทุน'},
+    gNA:{en:'Not enough red episodes in the sample to judge. Silence is not evidence either way.',
+         th:'จำนวนครั้งที่ขึ้นแดงน้อยเกินกว่าจะตัดสิน ความเงียบก็ไม่ใช่หลักฐานเช่นกัน'},
+    recKeep:{en:'KEEP',th:'เก็บไว้'}, recCtx:{en:'CONTEXT ONLY',th:'ใช้เป็นบริบท'},
+    recDrop:{en:'CONSIDER DROPPING',th:'ควรพิจารณาถอด'}, recNa:{en:'UNJUDGED',th:'ยังตัดสินไม่ได้'},
+    summaryH:{en:'What the test says overall',th:'ผลรวมของการทดสอบ'},
+    method:{en:'Method',th:'วิธีทดสอบ'},
+    ckH:{en:'Do the live numbers reconcile?',th:'ตัวเลขสดตรงกันไหม'},
+    ckL:{en:'Every derived figure on the site is recomputed here from the raw fields in the same snapshot and compared with what the collector published. A mismatch means a bug in the code, not a market event — which is exactly why it is worth checking in public.',
+         th:'ทุกตัวเลขที่คำนวณต่อบนเว็บถูกคำนวณใหม่ตรงนี้จากข้อมูลดิบในสแนปช็อตเดียวกัน แล้วเทียบกับค่าที่ตัวเก็บข้อมูลเผยแพร่ ถ้าไม่ตรงแปลว่าโค้ดมีบั๊ก ไม่ใช่เหตุการณ์ตลาด ซึ่งเป็นเหตุผลว่าทำไมถึงควรตรวจให้เห็นกันไปเลย'},
+    pass:{en:'PASS',th:'ผ่าน'}, fail:{en:'FAIL',th:'ไม่ผ่าน'}, skip:{en:'NO DATA',th:'ไม่มีข้อมูล'},
+    ckPassed:{en:'checks passed',th:'รายการผ่าน'},
+    ckFailed:{en:'failed',th:'ไม่ผ่าน'},
+    ckSkipped:{en:'skipped',th:'ข้าม'},
+    note:{en:'A backtest describes what already happened; it is not a promise about what happens next. Sample sizes here are small — a dozen episodes over twenty years is normal for this kind of signal, and a dozen is not many. Everything on this page is educational, not investment advice.',
+          th:'การทดสอบย้อนหลังบอกสิ่งที่เกิดไปแล้ว ไม่ใช่คำสัญญาว่าอะไรจะเกิดต่อ จำนวนตัวอย่างในนี้น้อย — สิบกว่าครั้งในยี่สิบปีถือเป็นเรื่องปกติของสัญญาณประเภทนี้ และสิบกว่าครั้งก็ยังถือว่าน้อย ทุกอย่างในหน้านี้เพื่อการศึกษา ไม่ใช่คำแนะนำการลงทุน'}
+  };
+
+  var state = { tab:'bt', horizon:63, data:null, loading:false, tried:false, results:null, checks:null };
+  var sec = null;
+
+  /* ---------------------------------------------------------------
+     the test itself — re-run in the browser from the weekly series
+     --------------------------------------------------------------- */
+  function median(xs){
+    if (!xs.length) return null;
+    var s = xs.slice().sort(function(a,b){ return a-b; });
+    var n = s.length;
+    return n % 2 ? s[(n-1)/2] : (s[n/2-1] + s[n/2]) / 2;
+  }
+
+  function stateOf(t, v){
+    if (!isNum(v)) return 'na';
+    if (t.dir === 'down') return v <= t.ok ? 'ok' : (v <= t.warn ? 'warn' : 'alert');
+    return v >= t.ok ? 'ok' : (v >= t.warn ? 'warn' : 'alert');
+  }
+
+  /* weekly series → episodes → forward benchmark returns */
+  function runGauge(g, benchIdx, benchArr, weeksAhead){
+    var ser = (state.data.series || {})[g.k] || [];
+    if (ser.length < 100 || !g.thresholds) return null;
+    var eps = [], prev = null, lastIdx = -1e9;
+    var COOL = 8;                                  /* ~2 months of weeks */
+    for (var i = 0; i < ser.length; i++) {
+      var st = stateOf(g.thresholds, ser[i][1]);
+      if (st === 'alert' && prev !== 'alert' && (i - lastIdx) >= COOL) {
+        eps.push(ser[i][0]);
+        lastIdx = i;
+      }
+      prev = st;
+    }
+    var fwd = [], all = [];
+    for (var j = 0; j + weeksAhead < benchArr.length; j++) {
+      var a = benchArr[j][1], b = benchArr[j + weeksAhead][1];
+      if (a) all.push((b - a) / a * 100);
+    }
+    var baseMed = median(all);
+    eps.forEach(function(d){
+      var k = benchIdx[d];
+      if (k === undefined || k + weeksAhead >= benchArr.length) return;
+      var a = benchArr[k][1], b = benchArr[k + weeksAhead][1];
+      if (a) fwd.push({ d:d, r:(b - a) / a * 100 });
+    });
+    if (!fwd.length) return { k:g.k, en:g.en, th:g.th, n:0, grade:'n/a' };
+    var rets = fwd.map(function(x){ return x.r; });
+    var med = median(rets);
+    var worst = fwd.reduce(function(m, x){ return x.r > m.r ? x : m; }, fwd[0]);
+    var best = fwd.reduce(function(m, x){ return x.r < m.r ? x : m; }, fwd[0]);
+    var edge = baseMed === null ? null : med - baseMed;
+    var grade;
+    if (fwd.length < 3 || edge === null) grade = 'n/a';
+    else if (edge <= -4 && fwd.length >= 5) grade = 'A';
+    else if (edge <= -2 && fwd.length >= 4) grade = 'B';
+    else if (edge <= -0.75) grade = 'C';
+    else if (edge < 0) grade = 'D';
+    else grade = 'F';
+    return { k:g.k, en:g.en, th:g.th, n:fwd.length, med:med, base:baseMed, edge:edge,
+             negRate: rets.filter(function(r){ return r < 0; }).length / rets.length * 100,
+             worst:worst, best:best, grade:grade, first:g.first, last:g.last,
+             series:ser };
+  }
+
+  function runAll(done){
+    var d = state.data;
+    if (!d) { done(); return; }
+    var bench = d.bench_series || [];
+    var idx = {};
+    bench.forEach(function(row, i){ idx[row[0]] = i; });
+    var weeks = Math.max(1, Math.round(state.horizon / 5));
+    var gauges = d.gauges || [];
+    var out = [], i = 0;
+
+    var prog = sec.querySelector('[data-pf="prog"]');
+    var bar = prog && prog.querySelector('i');
+    if (prog) prog.classList.add('on');
+
+    (function step(){
+      var t0 = Date.now();
+      while (i < gauges.length && Date.now() - t0 < 40) {
+        var r = runGauge(gauges[i], idx, bench, weeks);
+        if (r) out.push(r);
+        i++;
+      }
+      if (bar) bar.style.width = Math.round(i / Math.max(1, gauges.length) * 100) + '%';
+      if (i < gauges.length) { setTimeout(step, 60); return; }
+      setTimeout(function(){
+        if (prog) prog.classList.remove('on');
+        if (bar) bar.style.width = '0';
+        state.results = out;
+        done();
+      }, 320);
+    })();
+  }
+
+  /* ---------------------------------------------------------------
+     self-check of the live snapshot
+     --------------------------------------------------------------- */
+  function near(a, b, tol){ return isNum(a) && isNum(b) && Math.abs(a - b) <= tol; }
+
+  function buildChecks(){
+    var snap = (window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot()) || null;
+    if (!snap) return null;
+    var out = [];
+    var r = snap.regime || {}, f = snap.flows || {}, st = snap.stocks || {};
+    var idx = {};
+    ['sector','asset','country'].forEach(function(b){
+      (f[b] || []).forEach(function(x){ idx[x.sym] = x; });
+    });
+
+    function add(name, ok, detail){
+      out.push({ name:name, ok:ok, detail:detail });
+    }
+    function spreadCheck(label, key, a, b) {
+      var ra = idx[a], rb = idx[b];
+      if (!ra || !rb || !isNum(ra.m1) || !isNum(rb.m1) || !isNum(r[key])) {
+        add(label, null, a + ' / ' + b + ' — ' + tx(C.skip));
+        return;
+      }
+      var expect = ra.m1 - rb.m1;
+      add(label, near(r[key], expect, 0.05),
+          a + ' ' + sgn(ra.m1) + '% − ' + b + ' ' + sgn(rb.m1) + '% = <b>' + sgn(expect) +
+          '</b> · published <b>' + sgn(r[key]) + '</b>');
+    }
+
+    /* 1. day change recomputed for every stock */
+    var bad = [], n = 0;
+    Object.keys(st).forEach(function(t){
+      var s = st[t];
+      if (!isNum(s.price) || !isNum(s.prev) || !isNum(s.chg_pct)) return;
+      n++;
+      var e = (s.price - s.prev) / s.prev * 100;
+      if (Math.abs(e - s.chg_pct) > 0.02) bad.push(t + ' (' + sgn(s.chg_pct) + ' vs ' + sgn(e) + ')');
+    });
+    add(L() === 'th' ? 'ราคาเปลี่ยนแปลงรายวันของหุ้นทุกตัว' : 'Day change on every stock',
+        n > 0 ? bad.length === 0 : null,
+        n + ' ' + (L() === 'th' ? 'ตัวคำนวณใหม่จาก (ราคา − ราคาก่อนหน้า)' : 'recomputed from (price − prev)') +
+        (bad.length ? ' · <b>' + bad.slice(0, 4).join(', ') + '</b>' : ''));
+
+    /* 2-5. the spread gauges */
+    spreadCheck(L() === 'th' ? 'ตลาดหุ้นกู้ = HYG − LQD' : 'Credit gauge = HYG − LQD', 'credit_1m', 'HYG', 'LQD');
+    spreadCheck(L() === 'th' ? 'ความอยากเสี่ยง = XLY − XLP' : 'Risk appetite = XLY − XLP', 'cyclical_vs_defensive_1m', 'XLY', 'XLP');
+    spreadCheck(L() === 'th' ? 'ผู้นำตลาด = SMH − SPY' : 'Leadership = SMH − SPY', 'semis_vs_market_1m', 'SMH', 'SPY');
+    spreadCheck(L() === 'th' ? 'หุ้นเล็ก = IWM − SPY' : 'Small caps = IWM − SPY', 'smallcap_vs_market_1m', 'IWM', 'SPY');
+    spreadCheck(L() === 'th' ? 'หุ้น เทียบ พันธบัตร = SPY − TLT' : 'Stocks vs bonds = SPY − TLT', 'stocks_vs_bonds_1m', 'SPY', 'TLT');
+
+    /* 6. yield curve */
+    if (isNum(r.yield_10y) && isNum(r.yield_3m) && isNum(r.curve_10y_3m)) {
+      var ec = r.yield_10y - r.yield_3m;
+      add(L() === 'th' ? 'เส้นผลตอบแทน = 10 ปี − 3 เดือน' : 'Yield curve = 10y − 3m',
+          near(r.curve_10y_3m, ec, 0.02),
+          r.yield_10y + ' − ' + r.yield_3m + ' = <b>' + ec.toFixed(2) + '</b> · published <b>' +
+          r.curve_10y_3m + '</b>');
+    } else {
+      add(L() === 'th' ? 'เส้นผลตอบแทน = 10 ปี − 3 เดือน' : 'Yield curve = 10y − 3m', null, tx(C.skip));
+    }
+
+    /* 7. breadth recomputed from the stocks themselves */
+    var above = 0, tot = 0;
+    Object.keys(st).forEach(function(t){
+      var s = st[t];
+      if (isNum(s.price) && isNum(s.ma200)) { tot++; if (s.price > s.ma200) above++; }
+    });
+    if (tot >= 20 && isNum(r.breadth_200)) {
+      var eb = above / tot * 100;
+      add(L() === 'th' ? 'ความกว้างของตลาด นับใหม่จากหุ้นทุกตัว' : 'Breadth recounted from the stocks',
+          near(r.breadth_200, eb, 1.0),
+          above + '/' + tot + ' = <b>' + eb.toFixed(1) + '%</b> · published <b>' + r.breadth_200 + '%</b>');
+    } else {
+      add(L() === 'th' ? 'ความกว้างของตลาด นับใหม่จากหุ้นทุกตัว' : 'Breadth recounted from the stocks', null, tx(C.skip));
+    }
+
+    /* 8. RSI inside its bounds, and distance-to-average consistent */
+    var rsiBad = [], maBad = [], rn = 0;
+    Object.keys(st).forEach(function(t){
+      var s = st[t];
+      if (isNum(s.rsi)) { rn++; if (s.rsi < 0 || s.rsi > 100) rsiBad.push(t); }
+      if (isNum(s.price) && isNum(s.ma200) && isNum(s.vs_ma200)) {
+        var e = (s.price - s.ma200) / s.ma200 * 100;
+        if (Math.abs(e - s.vs_ma200) > 0.2) maBad.push(t);
+      }
+    });
+    add(L() === 'th' ? 'RSI อยู่ในช่วง 0–100' : 'RSI within 0–100',
+        rn > 0 ? rsiBad.length === 0 : null,
+        rn + ' ' + (L() === 'th' ? 'ค่า' : 'values') + (rsiBad.length ? ' · <b>' + rsiBad.join(', ') + '</b>' : ''));
+    add(L() === 'th' ? 'ระยะห่างจากเส้น 200 วัน' : 'Distance from the 200-day average',
+        maBad.length === 0, (L() === 'th' ? 'คำนวณใหม่จากราคาและเส้นค่าเฉลี่ย' : 'recomputed from price and the average') +
+        (maBad.length ? ' · <b>' + maBad.slice(0, 4).join(', ') + '</b>' : ''));
+
+    /* 9. currency board sanity */
+    var ccy = snap.ccy || {};
+    var ck = Object.keys(ccy);
+    var ccyBad = ck.filter(function(k){ return !isNum(ccy[k].rate) || ccy[k].rate <= 0; });
+    add(L() === 'th' ? 'อัตราแลกเปลี่ยนทุกสกุลเป็นบวก และ USD = 1' : 'Every FX rate positive, USD = 1',
+        ck.length ? (ccyBad.length === 0 && ccy.USD && ccy.USD.rate === 1) : null,
+        ck.length + ' ' + (L() === 'th' ? 'สกุล' : 'currencies') +
+        (ccyBad.length ? ' · <b>' + ccyBad.join(', ') + '</b>' : ''));
+
+    /* 10. divergence flags re-derived */
+    var divs = (r.divergences || []);
+    var dBad = divs.filter(function(d){
+      if (d.kind === 'bearish') return !(isNum(d.rsi) && isNum(d.rsi_then) && d.rsi < d.rsi_then);
+      if (d.kind === 'bullish') return !(isNum(d.rsi) && isNum(d.rsi_then) && d.rsi > d.rsi_then);
+      return true;
+    });
+    add(L() === 'th' ? 'ทิศทางไดเวอร์เจนซ์สอดคล้องกับ RSI' : 'Divergence direction agrees with its RSI pair',
+        divs.length ? dBad.length === 0 : null,
+        divs.length + ' ' + (L() === 'th' ? 'รายการ' : 'entries') +
+        (dBad.length ? ' · <b>' + dBad.map(function(d){ return d.t; }).join(', ') + '</b>' : ''));
+
+    /* 11. freshness */
+    var age = snap.generated_at ? (Date.now() - Date.parse(snap.generated_at)) / 36e5 : null;
+    add(L() === 'th' ? 'ความสดของข้อมูล (ควรไม่เกิน 3 ชม.)' : 'Snapshot freshness (should be under 3h)',
+        isNum(age) ? age < 3 : null,
+        isNum(age) ? '<b>' + age.toFixed(1) + ' h</b> · ' + esc(snap.generated_at) : tx(C.skip));
+
+    /* 12. every flow row usable */
+    var rows = (f.sector || []).concat(f.asset || [], f.country || []);
+    var fBad = rows.filter(function(x){ return !x.sym || !isNum(x.m1); });
+    add(L() === 'th' ? 'ทุกแถวในสแกนเนอร์มีสัญลักษณ์และผลตอบแทน' : 'Every scanner row has a symbol and a return',
+        rows.length ? fBad.length === 0 : null,
+        rows.length + ' ' + (L() === 'th' ? 'แถว' : 'rows') +
+        (fBad.length ? ' · <b>' + fBad.length + ' incomplete</b>' : ''));
+
+    return out;
+  }
+
+  /* ---------------------------------------------------------------
+     drawing
+     --------------------------------------------------------------- */
+  function sparkline(ser, th){
+    if (!ser || ser.length < 5) return '';
+    var vals = ser.map(function(p){ return p[1]; });
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    var span = (hi - lo) || 1;
+    var step = 100 / (ser.length - 1);
+    var d = ser.map(function(p, i){
+      var x = (i * step).toFixed(2);
+      var y = (30 - (p[1] - lo) / span * 28).toFixed(2);
+      return (i ? 'L' : 'M') + x + ' ' + y;
+    }).join(' ');
+    var warnY = th ? (30 - (th.warn - lo) / span * 28) : null;
+    return '<div class="pf-spark"><svg viewBox="0 0 100 32" preserveAspectRatio="none">' +
+      (warnY !== null && warnY > -5 && warnY < 37 ?
+        '<line x1="0" y1="' + warnY.toFixed(2) + '" x2="100" y2="' + warnY.toFixed(2) +
+        '" stroke="rgba(255,59,78,.55)" stroke-width=".6" stroke-dasharray="2 2"/>' : '') +
+      '<path d="' + d + '" fill="none" stroke="var(--neon,#cf0)" stroke-width=".9" ' +
+      'stroke-linejoin="round" vector-effect="non-scaling-stroke" opacity=".85"/>' +
+    '</svg></div>';
+  }
+
+  function gradeCopy(g){
+    return g === 'A' ? tx(C.gA) : g === 'B' ? tx(C.gB) : g === 'C' ? tx(C.gC)
+         : g === 'D' ? tx(C.gD) : g === 'F' ? tx(C.gF) : tx(C.gNA);
+  }
+  function gradeRec(g){
+    return g === 'A' || g === 'B' ? tx(C.recKeep) : g === 'C' ? tx(C.recCtx)
+         : g === 'n/a' ? tx(C.recNa) : tx(C.recDrop);
+  }
+
+  function cardHTML(res, spec){
+    var g = res.grade;
+    var th = spec && spec.thresholds;
+    return '<div class="pf-card g-' + (g === 'n/a' ? 'na' : g) + '">' +
+      '<div class="pf-ch"><div><div class="pf-name">' + esc(tx(res)) + '</div>' +
+        '<div class="pf-sub">' + esc(gradeRec(g)) + (res.first ? ' · ' + esc(res.first) + ' →' : '') + '</div></div>' +
+        '<div class="pf-grade">' + esc(g === 'n/a' ? '—' : g) + '</div></div>' +
+      sparkline(res.series, th) +
+      '<div class="pf-nums">' +
+        '<div class="pf-n"><div class="pf-nl">' + esc(tx(C.ep)) + '</div><div class="pf-nv">' + res.n + '</div></div>' +
+        '<div class="pf-n"><div class="pf-nl">' + esc(tx(C.after)) + '</div><div class="pf-nv ' +
+          (isNum(res.med) && res.med < 0 ? 'down' : 'up') + '">' + (isNum(res.med) ? sgn(res.med, 1) + '%' : '—') + '</div></div>' +
+        '<div class="pf-n"><div class="pf-nl">' + esc(tx(C.base)) + '</div><div class="pf-nv">' +
+          (isNum(res.base) ? sgn(res.base, 1) + '%' : '—') + '</div></div>' +
+        '<div class="pf-n"><div class="pf-nl">' + esc(tx(C.edge)) + '</div><div class="pf-nv ' +
+          (isNum(res.edge) && res.edge < 0 ? 'down' : 'up') + '">' + (isNum(res.edge) ? sgn(res.edge, 1) + ' pts' : '—') + '</div></div>' +
+      '</div>' +
+      '<div class="pf-verdict">' + esc(gradeCopy(g)) +
+        (isNum(res.negRate) && res.n ? ' <b>' + esc(tx(C.downRate).replace('{p}', Math.round(res.negRate))) + '</b>' : '') +
+      '</div>' +
+      (res.worst ? '<div class="pf-miss">' + esc(tx(C.missH)) + ' <b>' + esc(res.worst.d) + '</b> → ' +
+        sgn(res.worst.r, 1) + '%<br>' + esc(tx(C.bestH)) + ' <b>' + esc(res.best.d) + '</b> → ' +
+        sgn(res.best.r, 1) + '%</div>' : '') +
+    '</div>';
+  }
+
+  function btBody(){
+    var d = state.data;
+    if (state.loading) return '<div class="pf-empty">' + esc(tx(C.loading)) + '</div>';
+    if (state.tried && !d) return '<div class="pf-empty">' + esc(tx(C.noFile)) + '</div>';
+    if (!d) return '<div class="pf-empty">' + esc(tx(C.loading)) + '</div>';
+
+    var specs = {};
+    (d.gauges || []).forEach(function(g){ specs[g.k] = g; });
+    var res = state.results || [];
+    var years = '';
+    if (d.gauges && d.gauges.length) {
+      var firsts = d.gauges.map(function(g){ return g.first; }).filter(Boolean).sort();
+      if (firsts.length) years = firsts[0] + ' → ' + (d.gauges[0].last || '');
+    }
+
+    var counts = { A:0, B:0, C:0, D:0, F:0, 'n/a':0 };
+    res.forEach(function(x){ counts[x.grade] = (counts[x.grade] || 0) + 1; });
+
+    var summary = res.length ? '<div class="pf-sum">' +
+      [['A+B', counts.A + counts.B, 'var(--neon-2,#7CFFB2)'],
+       ['C', counts.C, 'var(--amber,#ffb020)'],
+       ['D+F', counts.D + counts.F, 'var(--red,#ff3b4e)']].map(function(x){
+        return '<div><div class="pf-nl">' + x[0] + '</div><div class="pf-nv" style="color:' + x[2] + '">' +
+               x[1] + '</div></div>';
+      }).join('') + '</div>' : '';
+
+    return '<div class="pf-run">' +
+        '<button type="button" class="pf-btn" data-pf="run">' +
+          esc(res.length ? tx(C.rerun) : tx(C.run)) + '</button>' +
+        '<span class="pf-status">' + esc(tx(C.horizon)) + '</span>' +
+        '<span class="pf-sel">' + [21,63,126,252].map(function(h){
+          return '<button type="button" class="pf-h' + (state.horizon === h ? ' on' : '') +
+                 '" data-h="' + h + '">' + esc(tx(C['h' + h])) + '</button>';
+        }).join('') + '</span>' +
+        '<span class="pf-prog" data-pf="prog"><i></i></span>' +
+        '<span class="pf-status" style="flex-basis:100%">' +
+          esc(tx(C.ready).replace('{n}', (d.gauges || []).length).replace('{a}', years)
+              .replace('{b}', d.benchmark || 'SPY')) + '</span>' +
+      '</div>' + summary +
+      (res.length ? '<div class="pf-grid">' + res.map(function(x){ return cardHTML(x, specs[x.k]); }).join('') + '</div>'
+                  : '<div class="pf-empty">' + esc(tx(C.run)) + '</div>') +
+      '<div class="pf-sec"><h3 class="pf-sech">' + esc(tx(C.method)) + '</h3>' +
+        '<p class="pf-secl">' + esc(d.method || '') + '</p></div>' +
+      '<div class="pf-note">' + esc(tx(C.note)) + '</div>';
+  }
+
+  function ckBody(){
+    var rows = state.checks;
+    if (!rows) return '<div class="pf-run">' +
+      '<button type="button" class="pf-btn" data-pf="check">' + esc(tx(C.run)) + '</button>' +
+      '<span class="pf-status">' + esc(tx(C.ckL)) + '</span></div>';
+    var pass = rows.filter(function(r){ return r.ok === true; }).length;
+    var fail = rows.filter(function(r){ return r.ok === false; }).length;
+    var skip = rows.filter(function(r){ return r.ok === null; }).length;
+    return '<div class="pf-run">' +
+        '<button type="button" class="pf-btn" data-pf="check">' + esc(tx(C.rerun)) + '</button>' +
+        '<span class="pf-status">' +
+          '<b style="color:var(--neon-2,#7CFFB2)">' + pass + '</b> ' + esc(tx(C.ckPassed)) + ' · ' +
+          '<b style="color:' + (fail ? 'var(--red,#ff3b4e)' : 'var(--grey-dim)') + '">' + fail + '</b> ' +
+          esc(tx(C.ckFailed)) + ' · ' + skip + ' ' + esc(tx(C.ckSkipped)) + '</span>' +
+      '</div>' +
+      '<div class="pf-check">' + rows.map(function(r){
+        var cls = r.ok === true ? 'pass' : r.ok === false ? 'fail' : 'skip';
+        var lab = r.ok === true ? tx(C.pass) : r.ok === false ? tx(C.fail) : tx(C.skip);
+        return '<div class="pf-crow">' +
+          '<span class="pf-cflag ' + cls + '">' + esc(lab) + '</span>' +
+          '<span class="pf-cname">' + esc(r.name) + '</span>' +
+          '<span></span>' +
+          '<span class="pf-cdet">' + (r.detail || '') + '</span>' +
+        '</div>';
+      }).join('') + '</div>' +
+      '<div class="pf-note">' + esc(tx(C.note)) + '</div>';
+  }
+
+  function paint(){
+    if (!sec) return;
+    var q = function(k){ return sec.querySelector('[data-pf="' + k + '"]'); };
+    if (q('eb')) q('eb').textContent = tx(C.eyebrow);
+    if (q('h')) q('h').textContent = tx(C.h);
+    if (q('lede')) q('lede').textContent = tx(C.lede);
+    var tabs = q('tabs');
+    if (tabs) {
+      tabs.innerHTML =
+        '<button type="button" class="pf-tab' + (state.tab === 'bt' ? ' on' : '') + '" data-tab="bt">' +
+          esc(tx(C.tabBt)) + '</button>' +
+        '<button type="button" class="pf-tab' + (state.tab === 'ck' ? ' on' : '') + '" data-tab="ck">' +
+          esc(tx(C.tabCk)) + '</button>';
+    }
+    var body = q('body');
+    if (body) {
+      body.innerHTML = state.tab === 'bt'
+        ? '<h3 class="pf-sech" style="margin-bottom:6px;">' + esc(tx(C.h)) + '</h3>' + btBody()
+        : '<h3 class="pf-sech" style="margin-bottom:6px;">' + esc(tx(C.ckH)) + '</h3>' +
+          '<p class="pf-secl">' + esc(tx(C.ckL)) + '</p>' + ckBody();
+    }
+    wire();
+  }
+
+  function wire(){
+    sec.querySelectorAll('[data-tab]').forEach(function(b){
+      b.addEventListener('click', function(){
+        state.tab = b.getAttribute('data-tab');
+        if (state.tab === 'bt') ensureData();
+        paint();
+      });
+    });
+    sec.querySelectorAll('[data-h]').forEach(function(b){
+      b.addEventListener('click', function(){
+        state.horizon = parseInt(b.getAttribute('data-h'), 10);
+        if (state.results) { runAll(paint); } else { paint(); }
+      });
+    });
+    var run = sec.querySelector('[data-pf="run"]');
+    if (run) run.addEventListener('click', function(){
+      run.disabled = true;
+      run.textContent = tx(C.running);
+      ensureData(function(){ runAll(paint); });
+    });
+    var chk = sec.querySelector('[data-pf="check"]');
+    if (chk) chk.addEventListener('click', function(){
+      chk.disabled = true;
+      chk.textContent = tx(C.running);
+      setTimeout(function(){ state.checks = buildChecks() || []; paint(); }, 260);
+    });
+  }
+
+  function ensureData(then){
+    if (state.data) { if (then) then(); return; }
+    if (state.loading) return;
+    state.loading = true;
+    paint();
+    fetch('data/backtest.json?v=' + Math.floor(Date.now() / 3.6e6))
+      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(d){ state.data = d; state.loading = false; state.tried = true; paint(); if (then) then(); },
+            function(){ state.loading = false; state.tried = true; paint(); });
+  }
+
+  function build(){
+    if (document.getElementById('proof')) return true;
+    if (!document.querySelector('.top-fixed') || !window.__spzAddRoute) return false;
+
+    sec = document.createElement('section');
+    sec.id = 'proof';
+    sec.setAttribute('data-route', 'proof');
+    sec.innerHTML =
+      '<div class="pf-wrap">' +
+        '<div class="section-head reveal in-view" style="padding-top:34px;">' +
+          '<div class="eyebrow"><span class="cursor"></span><span data-pf="eb"></span></div>' +
+          '<h2 data-pf="h"></h2>' +
+          '<p class="lede" data-pf="lede"></p>' +
+          '<div class="rule"></div>' +
+        '</div>' +
+        '<div class="pf-tabs" data-pf="tabs"></div>' +
+        '<div data-pf="body"></div>' +
+      '</div>';
+    document.body.appendChild(sec);
+
+    window.__spzAddRoute({
+      id:'proof', after:'regime',
+      t:{en:'Proof Lab — test the radar',th:'ทดสอบเรดาร์'},
+      d:{en:'Run every gauge back through 12–25 years of history and grade it on whether the market actually behaved differently — plus a self-check that recomputes the live numbers from their own inputs.',
+         th:'รันมาตรวัดทุกตัวย้อนกลับไป 12–25 ปี แล้วให้เกรดว่าตลาดทำอะไรต่างจริงไหม พร้อมการตรวจสอบตัวเองที่คำนวณตัวเลขสดใหม่จากวัตถุดิบของมันเอง'}
+    });
+
+    sec.__render = paint;
+    paint();
+    return true;
+  }
+
+  function boot(){
+    var tries = 0;
+    var iv = setInterval(function(){
+      if (build() || ++tries > 60) clearInterval(iv);
+    }, 400);
+    new MutationObserver(paint).observe(document.documentElement,
+      { attributes:true, attributeFilter:['lang'] });
+    document.addEventListener('click', function(e){
+      var a = e.target.closest && e.target.closest('[data-route-to="proof"]');
+      if (a) setTimeout(function(){ ensureData(); }, 300);
+    });
+  }
+
+  window.__SPZ_PROOF = { paint: paint, state: state, checks: buildChecks, run: runAll };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 1300); });
+  } else {
+    setTimeout(boot, 1300);
   }
 })();
 </script>
