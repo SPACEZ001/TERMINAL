@@ -1,0 +1,52 @@
+name: backtest
+
+# Rebuilds data/backtest.json — every radar gauge re-run over its full
+# history and graded on whether the market actually behaved differently
+# afterwards. Slower and far less time-sensitive than the market snapshot,
+# so it runs once a day rather than every half hour.
+
+on:
+  schedule:
+    - cron: '20 2 * * *'     # daily, after the US close has settled
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/build_backtest.py'
+      - '.github/workflows/backtest.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: backtest
+  cancel-in-progress: false
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install deps
+        run: pip install --quiet --upgrade yfinance
+
+      - name: Run the backtest
+        run: python scripts/build_backtest.py
+
+      - name: Commit if changed
+        run: |
+          git config user.name  "spacez-market-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain data/backtest.json)" ]; then
+            git add data/backtest.json
+            git commit -m "data: radar backtest $(date -u '+%Y-%m-%d %H:%M UTC')"
+            git pull --rebase --autostash origin main || true
+            git push
+          else
+            echo "no change"
+          fi
