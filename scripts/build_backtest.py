@@ -325,6 +325,38 @@ def weekly(series, grid):
     return out
 
 
+# sector ETFs, kept as weekly closes so the page can ask "in the windows
+# that looked like today, which groups actually led?"
+SECTOR_ETFS = [
+    ("XLK",  "Technology",        "เทคโนโลยี"),
+    ("XLF",  "Financials",        "การเงิน"),
+    ("XLE",  "Energy",            "พลังงาน"),
+    ("XLV",  "Health care",       "สุขภาพ"),
+    ("XLY",  "Consumer cyclical", "สินค้าฟุ่มเฟือย"),
+    ("XLP",  "Consumer staples",  "สินค้าจำเป็น"),
+    ("XLI",  "Industrials",       "อุตสาหกรรม"),
+    ("XLU",  "Utilities",         "สาธารณูปโภค"),
+    ("XLB",  "Materials",         "วัสดุ"),
+    ("SMH",  "Semiconductors",    "เซมิคอนดักเตอร์"),
+    ("IWM",  "US small cap",      "หุ้นเล็กสหรัฐฯ"),
+    ("TLT",  "Long Treasuries",   "พันธบัตรยาว"),
+    ("GLD",  "Gold",              "ทองคำ"),
+    ("EEM",  "Emerging markets",  "ตลาดเกิดใหม่"),
+]
+
+
+def fetch_sectors(grid):
+    out = {}
+    for sym, en, th in SECTOR_ETFS:
+        print("[sector] %s" % sym)
+        c = closes_of(sym)
+        if len(c) < 300:
+            continue
+        out[sym] = {"en": en, "th": th, "s": weekly(c, grid)}
+        time.sleep(0.15)
+    return out
+
+
 def main():
     print("benchmark…")
     bench = closes_of(BENCH)
@@ -353,6 +385,12 @@ def main():
     # weekly benchmark, on the same grid, for the in-browser re-run
     bench_weekly = weekly(bench, grid)
 
+    try:
+        sectors = fetch_sectors(grid)
+    except Exception as e:
+        print("sectors failed: %s" % e, file=sys.stderr)
+        sectors = {}
+
     payload = {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "benchmark": BENCH,
@@ -367,6 +405,7 @@ def main():
         "gauges": results,
         "series": series_out,
         "bench_series": bench_weekly,
+        "sectors": sectors,
     }
 
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
@@ -374,7 +413,8 @@ def main():
         json.dump(payload, f, ensure_ascii=False, separators=(",", ":"),
                   sort_keys=True)
     size = os.path.getsize(OUT) / 1024.0
-    print("wrote %s — %d gauges, %.0f KB" % (OUT, len(results), size))
+    print("wrote %s — %d gauges, %d sector series, %.0f KB"
+          % (OUT, len(results), len(sectors), size))
     for r in results:
         core = (r.get("h") or {}).get("63") or {}
         print("  %-26s grade %-3s episodes %-3s edge %s"
