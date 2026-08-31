@@ -224,6 +224,189 @@ def fetch_fx():
     return {}, None
 
 
+# ---------------------------------------------------------------------------
+# Money-flow proxies.
+#
+# Real fund-flow tape (ICI, EPFR, Lipper) is not free. What IS free is the
+# price and volume of the ETFs that money moves through, so the scanner is
+# built on two honest observables per instrument:
+#   · % price change over 1D / 1W / 1M / 3M / YTD
+#   · dollar volume today vs its own 20-day average (crowding)
+# Labelled as a proxy everywhere it is shown.
+# ---------------------------------------------------------------------------
+
+SECTORS = [
+    ("XLK",  "Technology",       "เทคโนโลยี"),
+    ("XLF",  "Financials",       "การเงิน"),
+    ("XLE",  "Energy",           "พลังงาน"),
+    ("XLV",  "Health care",      "สุขภาพ"),
+    ("XLY",  "Consumer cyclical","สินค้าฟุ่มเฟือย"),
+    ("XLP",  "Consumer staples", "สินค้าจำเป็น"),
+    ("XLI",  "Industrials",      "อุตสาหกรรม"),
+    ("XLU",  "Utilities",        "สาธารณูปโภค"),
+    ("XLB",  "Materials",        "วัสดุ"),
+    ("XLRE", "Real estate",      "อสังหาฯ"),
+    ("XLC",  "Communication",    "สื่อสาร"),
+    ("SMH",  "Semiconductors",   "เซมิคอนดักเตอร์"),
+]
+
+ASSETS = [
+    ("SPY",     "US large cap",        "หุ้นใหญ่สหรัฐฯ"),
+    ("QQQ",     "US tech / Nasdaq",    "เทคสหรัฐฯ / แนสแด็ก"),
+    ("IWM",     "US small cap",        "หุ้นเล็กสหรัฐฯ"),
+    ("EFA",     "Developed ex-US",     "ตลาดพัฒนาแล้วนอกสหรัฐฯ"),
+    ("EEM",     "Emerging markets",    "ตลาดเกิดใหม่"),
+    ("TLT",     "Long Treasuries",     "พันธบัตรยาวสหรัฐฯ"),
+    ("IEF",     "7-10y Treasuries",    "พันธบัตร 7-10 ปี"),
+    ("SHY",     "Short Treasuries",    "พันธบัตรสั้น"),
+    ("HYG",     "High-yield credit",   "หุ้นกู้ผลตอบแทนสูง"),
+    ("LQD",     "Investment grade",    "หุ้นกู้ระดับลงทุน"),
+    ("GLD",     "Gold",                "ทองคำ"),
+    ("SLV",     "Silver",              "เงิน"),
+    ("DBC",     "Commodities",         "สินค้าโภคภัณฑ์"),
+    ("USO",     "Crude oil",           "น้ำมันดิบ"),
+    ("BTC-USD", "Bitcoin",             "บิตคอยน์"),
+    ("UUP",     "US dollar",           "ดอลลาร์สหรัฐฯ"),
+    ("^VIX",    "Volatility (VIX)",    "ความผันผวน (VIX)"),
+]
+
+COUNTRIES = [
+    ("THD",  "TH", "🇹🇭", "Thailand",     "ไทย"),
+    ("EWJ",  "JP", "🇯🇵", "Japan",        "ญี่ปุ่น"),
+    ("MCHI", "CN", "🇨🇳", "China",        "จีน"),
+    ("EWY",  "KR", "🇰🇷", "South Korea",  "เกาหลีใต้"),
+    ("EWT",  "TW", "🇹🇼", "Taiwan",       "ไต้หวัน"),
+    ("INDA", "IN", "🇮🇳", "India",        "อินเดีย"),
+    ("EWZ",  "BR", "🇧🇷", "Brazil",       "บราซิล"),
+    ("EWG",  "DE", "🇩🇪", "Germany",      "เยอรมนี"),
+    ("EWU",  "GB", "🇬🇧", "United Kingdom","สหราชอาณาจักร"),
+    ("EWA",  "AU", "🇦🇺", "Australia",    "ออสเตรเลีย"),
+    ("EWC",  "CA", "🇨🇦", "Canada",       "แคนาดา"),
+    ("EWH",  "HK", "🇭🇰", "Hong Kong",    "ฮ่องกง"),
+    ("EWS",  "SG", "🇸🇬", "Singapore",    "สิงคโปร์"),
+    ("VNM",  "VN", "🇻🇳", "Vietnam",      "เวียดนาม"),
+    ("EWM",  "MY", "🇲🇾", "Malaysia",     "มาเลเซีย"),
+    ("EIDO", "ID", "🇮🇩", "Indonesia",    "อินโดนีเซีย"),
+    ("EPHE", "PH", "🇵🇭", "Philippines",  "ฟิลิปปินส์"),
+    ("SPY",  "US", "🇺🇸", "United States","สหรัฐอเมริกา"),
+    ("EZU",  "EU", "🇪🇺", "Euro area",    "ยูโรโซน"),
+]
+
+# currencies shown on the inflation / currency desk (menu 09)
+DESK_CCY = ["USD", "EUR", "JPY", "GBP", "CHF", "CAD", "AUD", "CNY", "KRW",
+            "TWD", "THB", "SGD", "MYR", "IDR", "PHP", "VND", "INR", "BRL",
+            "MXN", "SAR", "AED", "TRY", "ARS"]
+
+
+def _ret(closes, back):
+    """% change from `back` sessions ago to the latest close."""
+    if len(closes) <= back:
+        return None
+    a, b = closes[-1 - back], closes[-1]
+    if not a:
+        return None
+    return round((b - a) / a * 100.0, 2)
+
+
+def series_stats(ysym):
+    """One history call -> the whole return ladder plus a crowding read."""
+    tk = yf.Ticker(ysym)
+    h = tk.history(period="1y", auto_adjust=False)
+    if h is None or h.empty:
+        raise ValueError("no history")
+    closes = [float(c) for c in h["Close"].tolist() if c == c]
+    if len(closes) < 2:
+        raise ValueError("thin history")
+
+    out = {
+        "price": num(closes[-1], 4),
+        "d1": _ret(closes, 1),
+        "w1": _ret(closes, 5),
+        "m1": _ret(closes, 21),
+        "m3": _ret(closes, 63),
+        "m6": _ret(closes, 126),
+    }
+
+    # year to date
+    try:
+        this_year = h.index[-1].year
+        ytd_rows = h[h.index.year == this_year]
+        if len(ytd_rows) > 1:
+            first = float(ytd_rows["Close"].iloc[0])
+            if first:
+                out["ytd"] = round((closes[-1] - first) / first * 100.0, 2)
+    except Exception:
+        pass
+
+    # crowding: today's dollar volume against its own 20-day average
+    try:
+        vol = [float(v) for v in h["Volume"].tolist()]
+        dv = [c * v for c, v in zip(closes, vol[-len(closes):]) if v == v]
+        if len(dv) > 21 and sum(dv[-21:-1]) > 0:
+            avg20 = sum(dv[-21:-1]) / 20.0
+            if avg20 > 0:
+                out["vol_ratio"] = round(dv[-1] / avg20, 2)
+                out["dollar_vol"] = int(dv[-1])
+    except Exception:
+        pass
+
+    hi = num(h["Close"].max()); lo = num(h["Close"].min())
+    if hi and lo and hi > lo:
+        out["range_pos"] = round((closes[-1] - lo) / (hi - lo) * 100.0, 1)
+    return {k: v for k, v in out.items() if v is not None}
+
+
+def fetch_flows():
+    """Sector / asset-class / country money-flow proxies."""
+    groups = {"sector": [], "asset": [], "country": []}
+
+    def add(bucket, sym, row, extra):
+        try:
+            st = series_stats(sym)
+        except Exception as e:
+            print("  flow failed %s: %s" % (sym, e), file=sys.stderr)
+            return
+        st["sym"] = sym
+        st.update(extra)
+        groups[bucket].append(st)
+        time.sleep(0.25)
+
+    for sym, en, th in SECTORS:
+        print("[flow/sector] %s" % sym)
+        add("sector", sym, None, {"en": en, "th": th})
+    for sym, en, th in ASSETS:
+        print("[flow/asset] %s" % sym)
+        add("asset", sym, None, {"en": en, "th": th})
+    for sym, cc, flag, en, th in COUNTRIES:
+        print("[flow/country] %s" % sym)
+        add("country", sym, None, {"cc": cc, "flag": flag, "en": en, "th": th})
+
+    return groups
+
+
+def fetch_ccy_moves():
+    """Spot vs USD plus 1D / 1M / YTD moves, for the currency desk."""
+    out = {}
+    for cur in DESK_CCY:
+        if cur == "USD":
+            out["USD"] = {"rate": 1.0, "d1": 0.0, "m1": 0.0, "ytd": 0.0}
+            continue
+        try:
+            st = series_stats(cur + "=X")     # USD -> CUR
+        except Exception as e:
+            print("  ccy failed %s: %s" % (cur, e), file=sys.stderr)
+            continue
+        row = {"rate": st.get("price")}
+        # a rise in USDXXX means the local currency weakened: flip the sign so
+        # the number reads as "how the currency itself moved"
+        for k in ("d1", "m1", "ytd"):
+            if st.get(k) is not None:
+                row[k] = round(-st[k], 2)
+        out[cur] = {k: v for k, v in row.items() if v is not None}
+        time.sleep(0.2)
+    return out
+
+
 def main():
     prev = {}
     if os.path.exists(OUT):
@@ -255,20 +438,41 @@ def main():
 
     fx, fx_src = fetch_fx()
 
+    try:
+        flows = fetch_flows()
+    except Exception as e:
+        print("flows failed wholesale: %s" % e, file=sys.stderr)
+        flows = {"sector": [], "asset": [], "country": []}
+
+    try:
+        ccy = fetch_ccy_moves()
+    except Exception as e:
+        print("ccy moves failed: %s" % e, file=sys.stderr)
+        ccy = {}
+
     payload = {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source": {"quotes": "yahoo finance (yfinance)",
                    "fundamentals": "yahoo finance (yfinance)",
-                   "fx": fx_src or "unavailable"},
-        "counts": {"stocks": len(stocks), "fx": len(fx)},
+                   "fx": fx_src or "unavailable",
+                   "flows": "ETF price + volume proxy (yfinance) — not fund-flow data"},
+        "counts": {"stocks": len(stocks), "fx": len(fx),
+                   "sector": len(flows.get("sector", [])),
+                   "asset": len(flows.get("asset", [])),
+                   "country": len(flows.get("country", [])),
+                   "ccy": len(ccy)},
         "fx": fx,
+        "ccy": ccy,
+        "flows": flows,
         "stocks": stocks,
     }
 
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=1, sort_keys=True)
-    print("wrote %s — %d stocks, %d fx rates" % (OUT, len(stocks), len(fx)))
+    print("wrote %s — %d stocks, %d fx rates, %d flow rows, %d currencies"
+          % (OUT, len(stocks), len(fx),
+             sum(len(v) for v in flows.values()), len(ccy)))
 
     if len(stocks) < 10:
         print("too few stocks resolved — failing so the run is visible", file=sys.stderr)
