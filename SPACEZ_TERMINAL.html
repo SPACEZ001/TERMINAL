@@ -18911,7 +18911,13 @@ var GM = {
   html[data-theme="light"] #spzLiveBar .spz-state{color:#12141c;}
   html[data-theme="light"] #spzKeyPanel input{background:#fff;color:#12141c;}
   html[data-theme="light"] .stock-card .spz-px{color:#12141c;}
-  @media(max-width:700px){#spzLiveBar{padding:8px 14px;font-size:10px;gap:9px;}#spzKeyPanel{padding:12px 14px;}}
+  @media(max-width:900px){
+    #spzLiveBar{padding:7px 14px;font-size:10px;gap:8px;flex-wrap:nowrap;}
+    #spzLiveBar .spz-src{display:none;}          /* keep the bar one row tall */
+    #spzLiveBar .spz-short{display:inline;}
+    #spzKeyPanel{padding:12px 14px;}
+  }
+  #spzLiveBar .spz-short{display:none;opacity:.8;}
 </style>
 <script>
 (function(){
@@ -19256,6 +19262,7 @@ var GM = {
     bar.innerHTML =
       '<span class="spz-dot"></span><span class="spz-state">…</span>' +
       '<span class="spz-src" id="spzSrc"></span>' +
+      '<span class="spz-short"></span>' +
       '<span class="spz-spacer"></span>' +
       '<button type="button" id="spzRefreshBtn"></button>' +
       '<button type="button" id="spzKeyBtn"></button>';
@@ -19310,6 +19317,22 @@ var GM = {
     paintBar();
   }
 
+  /* the fixed header got taller, so section anchors need a matching offset */
+  function syncScrollOffset(){
+    var top = document.querySelector('.top-fixed');
+    if (!top) return;
+    var h = Math.round(top.getBoundingClientRect().height) + 24;
+    document.documentElement.style.scrollPaddingTop = h + 'px';
+    var ids = ['types','directory','comparator','scenarios','glossary',
+               'sizing','wealth','signals','quiz','fx','pro'];
+    ids.forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.style.scrollMarginTop = h + 'px';
+    });
+  }
+  window.addEventListener('resize', function(){ clearTimeout(syncScrollOffset.t);
+    syncScrollOffset.t = setTimeout(syncScrollOffset, 200); });
+
   function fmtTime(ts){
     if (!ts) return S('never');
     var d = new Date(ts);
@@ -19326,6 +19349,8 @@ var GM = {
       S('funda') + ': <b>' + state.mSrc + '</b> <span class="spz-sep">·</span> ' +
       S('fx') + ': <b>' + state.fxSrc + '</b> <span class="spz-sep">·</span> ' +
       S('updated') + ' ' + fmtTime(state.last);
+    var shortEl = bar.querySelector('.spz-short');
+    if (shortEl) shortEl.textContent = S('updated') + ' ' + fmtTime(state.last);
     document.getElementById('spzRefreshBtn').textContent = S('refresh');
     document.getElementById('spzKeyBtn').textContent = S('keyBtn');
     document.getElementById('spzKeyTitle').textContent = S('keyTitle');
@@ -19580,6 +19605,7 @@ var GM = {
   function boot(){
     if (!window.__SPZ_HOOKS || !document.querySelector('.ticker-bar')) { setTimeout(boot, 300); return; }
     buildBar();
+    syncScrollOffset();
     watchGrid();
     watchFxInput();
     decorate();
