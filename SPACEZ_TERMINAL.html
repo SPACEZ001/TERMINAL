@@ -19169,8 +19169,11 @@ var GM = {
   var snapTs = 0, tapeTs = {};
   function n(v){ return (typeof v === 'number' && isFinite(v)) ? v : null; }
 
+  var lastSnap = null;
+
   function applySnapshot(d){
     if (!d || !d.stocks) return;
+    lastSnap = d;
     var ts = Date.parse(d.generated_at) || Date.now();
     snapTs = ts;
     var by = {};
@@ -19208,6 +19211,9 @@ var GM = {
     try { if (h && h.renderDir) h.renderDir(); } catch(e){}
     decorate();
     paintBar();
+    try {
+      document.dispatchEvent(new CustomEvent('spz:snapshot', { detail: d }));
+    } catch(e){}
   }
 
   function loadSnapshot(){
@@ -19635,11 +19641,422 @@ var GM = {
 
   window.__SPZ_LIVE = {
     refresh: refreshAll, quoteOf: quoteOf, metricOf: metricOf,
-    cfg: CFG, state: state, decorate: decorate
+    cfg: CFG, state: state, decorate: decorate,
+    snapshot: function(){ return lastSnap; }
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 400); });
   else setTimeout(boot, 400);
+})();
+</script>
+
+<!-- ============================================================
+     SPACEZ MONEY-FLOW SCANNER
+     Three live panels fed by data/market.json:
+       #flow  (menu 07) — where money moved, by sector / asset class / country
+       #globe (menu 08) — the same read as a world ranking
+       #infl  (menu 09) — live currency table vs USD
+     The numbers are an honest proxy: ETF price moves plus dollar volume
+     against its own 20-day average. Real fund-flow tape is not free, and
+     nothing here is presented as if it were.
+     ============================================================ -->
+<style>
+  .spz-scan{margin:34px 0 0;border:1px solid var(--border-dim);border-radius:var(--radius,14px);
+    background:var(--glass,rgba(255,255,255,.035));padding:20px 20px 18px;}
+  .spz-scan .ss-top{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:4px;}
+  .spz-scan .ss-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:1.6px;
+    color:var(--neon,#cf0);display:flex;align-items:center;gap:7px;}
+  .spz-scan .ss-live-dot{width:6px;height:6px;border-radius:50%;background:var(--neon-2,#7CFFB2);
+    animation:spzPulse 2.2s ease-out infinite;flex:none;}
+  .spz-scan h3{font-size:19px;font-weight:900;letter-spacing:-.3px;margin:7px 0 6px;color:var(--white);}
+  .spz-scan .ss-lede{font-size:13px;line-height:1.65;color:var(--grey);max-width:660px;margin-bottom:16px;}
+  .spz-scan .ss-pills{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px;}
+  .spz-scan .ss-pill{font-family:var(--mono);font-size:10.5px;letter-spacing:.7px;padding:5px 11px;
+    border:1px solid var(--border-dim);border-radius:20px;background:transparent;color:var(--grey);
+    cursor:pointer;transition:all .16s;}
+  .spz-scan .ss-pill:hover{color:var(--white);border-color:var(--border,rgba(204,255,0,.18));}
+  .spz-scan .ss-pill.on{background:var(--neon,#cf0);border-color:var(--neon,#cf0);color:#0a0a0a;font-weight:700;}
+  .spz-scan .ss-pill-row{display:flex;gap:16px;flex-wrap:wrap;align-items:center;}
+  .spz-scan .ss-sep{width:1px;height:18px;background:var(--border-dim);}
+  .spz-scan .ss-cols{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:6px;}
+  @media(max-width:760px){.spz-scan .ss-cols{grid-template-columns:1fr;gap:22px;}.spz-scan{padding:16px 14px;}}
+  .spz-scan .ss-colh{font-family:var(--mono);font-size:10px;letter-spacing:1.3px;color:var(--grey-dim);
+    padding-bottom:9px;border-bottom:1px solid var(--border-dim);margin-bottom:11px;
+    display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .spz-scan .ss-colh .ss-in{color:var(--neon-2,#7CFFB2);} .spz-scan .ss-colh .ss-out{color:var(--red,#ff3b4e);}
+  .spz-scan .ss-row{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:baseline;
+    padding:8px 0;border-bottom:1px dashed rgba(255,255,255,.055);}
+  .spz-scan .ss-row:last-child{border-bottom:0;}
+  .spz-scan .ss-name{font-size:13px;color:var(--white);display:flex;align-items:baseline;gap:7px;min-width:0;}
+  .spz-scan .ss-name em{font-style:normal;font-family:var(--mono);font-size:9.5px;letter-spacing:.6px;
+    color:var(--grey-dim);flex:none;}
+  .spz-scan .ss-val{font-family:var(--mono);font-size:13.5px;font-weight:700;white-space:nowrap;}
+  .spz-scan .ss-val.up{color:var(--neon-2,#7CFFB2);} .spz-scan .ss-val.down{color:var(--red,#ff3b4e);}
+  .spz-scan .ss-bar{grid-column:1/-1;height:4px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden;}
+  .spz-scan .ss-bar i{display:block;height:100%;border-radius:3px;}
+  .spz-scan .ss-bar i.up{background:linear-gradient(90deg,rgba(124,255,178,.35),var(--neon-2,#7CFFB2));}
+  .spz-scan .ss-bar i.down{background:linear-gradient(90deg,rgba(255,59,78,.35),var(--red,#ff3b4e));}
+  .spz-scan .ss-meta{grid-column:1/-1;font-family:var(--mono);font-size:9.5px;letter-spacing:.5px;
+    color:var(--grey-dim);}
+  .spz-scan .ss-meta b{color:var(--amber,#ffb020);font-weight:600;}
+  .spz-scan .ss-foot{margin-top:16px;padding-top:13px;border-top:1px solid var(--border-dim);
+    font-family:var(--mono);font-size:10px;letter-spacing:.4px;color:var(--grey-dim);line-height:1.7;}
+  .spz-scan .ss-empty{font-family:var(--mono);font-size:11px;color:var(--grey-dim);padding:18px 0;}
+  .spz-scan table.ss-tab{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;}
+  .spz-scan table.ss-tab th{text-align:right;font-size:9.5px;letter-spacing:1.1px;color:var(--grey-dim);
+    padding:0 0 9px;border-bottom:1px solid var(--border-dim);font-weight:500;}
+  .spz-scan table.ss-tab th:first-child,.spz-scan table.ss-tab td:first-child{text-align:left;}
+  .spz-scan table.ss-tab td{text-align:right;padding:8px 0;border-bottom:1px dashed rgba(255,255,255,.05);
+    color:var(--white);white-space:nowrap;}
+  .spz-scan table.ss-tab td.ss-cur{color:var(--white);}
+  .spz-scan table.ss-tab td.ss-cur span{color:var(--grey-dim);margin-left:7px;font-size:10.5px;}
+  .spz-scan .ss-tab-wrap{overflow-x:auto;}
+  .spz-scan .ss-best{display:flex;gap:12px;flex-wrap:wrap;margin:2px 0 16px;}
+  .spz-scan .ss-best > div{flex:1 1 190px;border:1px solid var(--border-dim);border-radius:9px;padding:11px 13px;}
+  .spz-scan .ss-best .ss-bl{font-family:var(--mono);font-size:9.5px;letter-spacing:1.1px;color:var(--grey-dim);}
+  .spz-scan .ss-best .ss-bv{font-size:16px;font-weight:800;margin-top:5px;color:var(--white);}
+  html[data-theme="light"] .spz-scan .ss-name,html[data-theme="light"] .spz-scan h3,
+  html[data-theme="light"] .spz-scan table.ss-tab td,html[data-theme="light"] .spz-scan .ss-best .ss-bv{color:#12141c;}
+  html[data-theme="light"] .spz-scan .ss-bar{background:rgba(18,20,28,.09);}
+</style>
+<script>
+(function(){
+  'use strict';
+  if (window.__SPZ_SCAN) return;
+
+  var TF = [
+    { k:'d1',  en:'1 day',   th:'1 วัน' },
+    { k:'w1',  en:'1 week',  th:'1 สัปดาห์' },
+    { k:'m1',  en:'1 month', th:'1 เดือน' },
+    { k:'m3',  en:'3 months',th:'3 เดือน' },
+    { k:'ytd', en:'YTD',     th:'ตั้งแต่ต้นปี' }
+  ];
+  var GROUPS = [
+    { k:'sector',  en:'Sectors',        th:'กลุ่มอุตสาหกรรม' },
+    { k:'asset',   en:'Asset classes',  th:'ประเภทสินทรัพย์' },
+    { k:'country', en:'Countries',      th:'ประเทศ' }
+  ];
+
+  var T = {
+    en:{
+      eyebrow:'LIVE FLOW SCAN',
+      title:'Where the money actually went',
+      lede:'A read on money flow built from what is publicly measurable: how each ETF moved over the window you pick, and how heavily it traded against its own 20-day average. Green is money arriving, red is money leaving. This is a proxy, not the fund-flow tape.',
+      inH:'MONEY ARRIVING', outH:'MONEY LEAVING',
+      strongest:'Strongest', weakest:'Weakest', crowd:'volume',
+      hot:'heavy', quiet:'light',
+      foot:'Proxy built from ETF price and volume (Yahoo Finance), refreshed automatically about every 30 minutes. Real fund-flow data (ICI, EPFR) is subscription-only and is not what these numbers are. Educational use only.',
+      updated:'updated', waiting:'Waiting for the first data sync…',
+      gTitle:'World money scan',
+      gLede:'Every major market ranked by how its country ETF moved over the window — the fastest read available on which way capital leaned.',
+      cTitle:'Live currency board',
+      cLede:'Spot rate against the US dollar, and how far each currency has moved. A positive number means the currency strengthened against the dollar.',
+      cCur:'Currency', cRate:'per USD', cD1:'1 day', cM1:'1 month', cYtd:'YTD',
+      cFoot:'Spot rates from Yahoo Finance FX pairs, refreshed automatically about every 30 minutes. Indicative mid-market levels — your bank or broker will quote differently.'
+    },
+    th:{
+      eyebrow:'สแกนกระแสเงินสด',
+      title:'เงินไหลไปไหนมาบ้างจริง ๆ',
+      lede:'อ่านกระแสเงินจากสิ่งที่วัดได้จริง: ETF แต่ละตัวเคลื่อนไหวเท่าไหร่ในช่วงที่เลือก และซื้อขายหนาแน่นแค่ไหนเทียบค่าเฉลี่ย 20 วันของตัวเอง สีเขียวคือเงินไหลเข้า สีแดงคือเงินไหลออก นี่คือค่าประมาณ ไม่ใช่ข้อมูลกระแสเงินกองทุนจริง',
+      inH:'เงินไหลเข้า', outH:'เงินไหลออก',
+      strongest:'เข้ามากสุด', weakest:'ออกมากสุด', crowd:'วอลุ่ม',
+      hot:'หนาแน่น', quiet:'เบาบาง',
+      foot:'ค่าประมาณจากราคาและวอลุ่มของ ETF (Yahoo Finance) อัปเดตอัตโนมัติราวทุก 30 นาที ข้อมูลกระแสเงินกองทุนจริง (ICI, EPFR) ต้องเสียเงินสมัคร และไม่ใช่ตัวเลขชุดนี้ ใช้เพื่อการศึกษาเท่านั้น',
+      updated:'อัปเดต', waiting:'กำลังรอข้อมูลรอบแรก…',
+      gTitle:'สแกนเงินโลก',
+      gLede:'จัดอันดับตลาดหลักทั้งหมดจากการเคลื่อนไหวของ ETF ประเทศนั้นในช่วงที่เลือก — เป็นภาพที่เร็วที่สุดว่าทุนเอนไปทางไหน',
+      cTitle:'กระดานค่าเงินสด',
+      cLede:'อัตราแลกเปลี่ยนเทียบดอลลาร์สหรัฐฯ และค่าเงินแต่ละสกุลขยับไปเท่าไหร่ ตัวเลขบวกแปลว่าสกุลนั้นแข็งค่าขึ้นเมื่อเทียบกับดอลลาร์',
+      cCur:'สกุลเงิน', cRate:'ต่อ 1 USD', cD1:'1 วัน', cM1:'1 เดือน', cYtd:'ตั้งแต่ต้นปี',
+      cFoot:'อัตราแลกเปลี่ยนจากคู่เงิน Yahoo Finance อัปเดตอัตโนมัติราวทุก 30 นาที เป็นราคากลางเพื่ออ้างอิง ธนาคารหรือโบรกเกอร์ของคุณจะเสนอราคาต่างจากนี้',
+      cFootNote:''
+    }
+  };
+
+  function L(){
+    return (document.documentElement.getAttribute('lang') === 'th') ? 'th' : 'en';
+  }
+  function t(k){ return (T[L()] || T.en)[k]; }
+  function tx(o){ return o ? (o[L()] || o.en) : ''; }
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function sgn(v, d){ return (v >= 0 ? '+' : '') + v.toFixed(d === undefined ? 2 : d) + '%'; }
+
+  /* ---------------------------------------------------------------
+     state — one selection shared by the flow panel
+     --------------------------------------------------------------- */
+  var state = { tf:'m1', group:'sector', gTf:'m1' };
+  var snap = null;
+
+  function rows(group){
+    var f = snap && snap.flows && snap.flows[group];
+    return (f && f.length) ? f.slice() : [];
+  }
+
+  function fmtTime(iso){
+    var d = iso ? new Date(iso) : null;
+    if (!d || isNaN(d.getTime())) return '—';
+    return d.toLocaleString(L() === 'th' ? 'th-TH' : 'en-GB',
+      { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', hour12:false });
+  }
+
+  function pills(list, current, attr){
+    return list.map(function(o){
+      return '<button type="button" class="ss-pill' + (o.k === current ? ' on' : '') +
+             '" data-' + attr + '="' + o.k + '">' + esc(tx(o)) + '</button>';
+    }).join('');
+  }
+
+  function rowHTML(r, key, max, withFlag){
+    var v = r[key];
+    if (typeof v !== 'number') return '';
+    var up = v >= 0;
+    var w = max > 0 ? Math.max(2, Math.min(100, Math.abs(v) / max * 100)) : 2;
+    var name = (withFlag && r.flag ? r.flag + ' ' : '') + tx(r);
+    var meta = '';
+    if (typeof r.vol_ratio === 'number') {
+      var hot = r.vol_ratio >= 1.3, quiet = r.vol_ratio <= 0.7;
+      meta = t('crowd') + ' ×' + r.vol_ratio.toFixed(2) +
+             (hot ? ' · <b>' + t('hot') + '</b>' : quiet ? ' · ' + t('quiet') : '');
+    }
+    return '<div class="ss-row">' +
+        '<span class="ss-name">' + esc(name) + '<em>' + esc(r.sym || '') + '</em></span>' +
+        '<span class="ss-val ' + (up ? 'up' : 'down') + '">' + sgn(v) + '</span>' +
+        '<span class="ss-bar"><i class="' + (up ? 'up' : 'down') + '" style="width:' + w + '%"></i></span>' +
+        (meta ? '<span class="ss-meta">' + meta + '</span>' : '') +
+      '</div>';
+  }
+
+  function twoColumns(list, key, withFlag){
+    var have = list.filter(function(r){ return typeof r[key] === 'number'; });
+    if (!have.length) return '<div class="ss-empty">' + esc(t('waiting')) + '</div>';
+    have.sort(function(a, b){ return b[key] - a[key]; });
+    var max = 0;
+    have.forEach(function(r){ max = Math.max(max, Math.abs(r[key])); });
+
+    /* a negative number is not "money arriving", so split by sign first and
+       only fall back to rank when one side is empty */
+    var pos = have.filter(function(r){ return r[key] > 0; });
+    var neg = have.filter(function(r){ return r[key] < 0; }).reverse();
+    var n = Math.min(7, Math.max(3, Math.ceil(have.length / 2)));
+    var top = (pos.length ? pos : have.slice(0, 1)).slice(0, n);
+    var bottom = (neg.length ? neg : have.slice(-1)).slice(0, n);
+
+    return '<div class="ss-cols">' +
+      '<div><div class="ss-colh"><span class="ss-in">▲ ' + esc(t('inH')) + '</span></div>' +
+        top.map(function(r){ return rowHTML(r, key, max, withFlag); }).join('') + '</div>' +
+      '<div><div class="ss-colh"><span class="ss-out">▼ ' + esc(t('outH')) + '</span></div>' +
+        bottom.map(function(r){ return rowHTML(r, key, max, withFlag); }).join('') + '</div>' +
+    '</div>';
+  }
+
+  /* ---------------------------------------------------------------
+     panel 1 — capital flow page (menu 07)
+     --------------------------------------------------------------- */
+  function paintFlow(box){
+    var list = rows(state.group);
+    box.innerHTML =
+      '<div class="ss-top"><span class="ss-eyebrow"><span class="ss-live-dot"></span>' +
+        esc(t('eyebrow')) + '</span></div>' +
+      '<h3>' + esc(t('title')) + '</h3>' +
+      '<p class="ss-lede">' + esc(t('lede')) + '</p>' +
+      '<div class="ss-pill-row" style="margin-bottom:14px;">' +
+        '<div class="ss-pills" style="margin:0;">' + pills(GROUPS, state.group, 'grp') + '</div>' +
+        '<span class="ss-sep"></span>' +
+        '<div class="ss-pills" style="margin:0;">' + pills(TF, state.tf, 'tf') + '</div>' +
+      '</div>' +
+      twoColumns(list, state.tf, state.group === 'country') +
+      '<div class="ss-foot">' + esc(t('foot')) + '<br>' +
+        esc(t('updated')) + ' ' + esc(fmtTime(snap && snap.generated_at)) + '</div>';
+
+    box.querySelectorAll('[data-grp]').forEach(function(b){
+      b.addEventListener('click', function(){ state.group = b.getAttribute('data-grp'); paintFlow(box); });
+    });
+    box.querySelectorAll('[data-tf]').forEach(function(b){
+      b.addEventListener('click', function(){ state.tf = b.getAttribute('data-tf'); paintFlow(box); });
+    });
+  }
+
+  /* ---------------------------------------------------------------
+     panel 2 — global money map (menu 08)
+     --------------------------------------------------------------- */
+  function paintGlobe(box){
+    var list = rows('country').filter(function(r){ return typeof r[state.gTf] === 'number'; });
+    list.sort(function(a, b){ return b[state.gTf] - a[state.gTf]; });
+    var best = list[0], worst = list[list.length - 1];
+
+    box.innerHTML =
+      '<div class="ss-top"><span class="ss-eyebrow"><span class="ss-live-dot"></span>' +
+        esc(t('eyebrow')) + '</span></div>' +
+      '<h3>' + esc(t('gTitle')) + '</h3>' +
+      '<p class="ss-lede">' + esc(t('gLede')) + '</p>' +
+      '<div class="ss-pills">' + pills(TF, state.gTf, 'gtf') + '</div>' +
+      (best && worst ?
+        '<div class="ss-best">' +
+          '<div><div class="ss-bl">' + esc(t('strongest')) + '</div><div class="ss-bv">' +
+            esc((best.flag || '') + ' ' + tx(best)) + ' <span style="color:var(--neon-2,#7CFFB2)">' +
+            sgn(best[state.gTf]) + '</span></div></div>' +
+          '<div><div class="ss-bl">' + esc(t('weakest')) + '</div><div class="ss-bv">' +
+            esc((worst.flag || '') + ' ' + tx(worst)) + ' <span style="color:var(--red,#ff3b4e)">' +
+            sgn(worst[state.gTf]) + '</span></div></div>' +
+        '</div>' : '') +
+      twoColumns(list, state.gTf, true) +
+      '<div class="ss-foot">' + esc(t('foot')) + '<br>' +
+        esc(t('updated')) + ' ' + esc(fmtTime(snap && snap.generated_at)) + '</div>';
+
+    box.querySelectorAll('[data-gtf]').forEach(function(b){
+      b.addEventListener('click', function(){ state.gTf = b.getAttribute('data-gtf'); paintGlobe(box); });
+    });
+  }
+
+  /* ---------------------------------------------------------------
+     panel 3 — currency board (menu 09)
+     --------------------------------------------------------------- */
+  var CUR_NAME = {
+    USD:{en:'US dollar',th:'ดอลลาร์สหรัฐฯ',f:'🇺🇸'}, EUR:{en:'Euro',th:'ยูโร',f:'🇪🇺'},
+    JPY:{en:'Japanese yen',th:'เยนญี่ปุ่น',f:'🇯🇵'}, GBP:{en:'British pound',th:'ปอนด์อังกฤษ',f:'🇬🇧'},
+    CHF:{en:'Swiss franc',th:'ฟรังก์สวิส',f:'🇨🇭'}, CAD:{en:'Canadian dollar',th:'ดอลลาร์แคนาดา',f:'🇨🇦'},
+    AUD:{en:'Australian dollar',th:'ดอลลาร์ออสเตรเลีย',f:'🇦🇺'}, CNY:{en:'Chinese yuan',th:'หยวนจีน',f:'🇨🇳'},
+    KRW:{en:'Korean won',th:'วอนเกาหลี',f:'🇰🇷'}, TWD:{en:'Taiwan dollar',th:'ดอลลาร์ไต้หวัน',f:'🇹🇼'},
+    THB:{en:'Thai baht',th:'บาทไทย',f:'🇹🇭'}, SGD:{en:'Singapore dollar',th:'ดอลลาร์สิงคโปร์',f:'🇸🇬'},
+    MYR:{en:'Malaysian ringgit',th:'ริงกิตมาเลเซีย',f:'🇲🇾'}, IDR:{en:'Indonesian rupiah',th:'รูเปียห์อินโดนีเซีย',f:'🇮🇩'},
+    PHP:{en:'Philippine peso',th:'เปโซฟิลิปปินส์',f:'🇵🇭'}, VND:{en:'Vietnamese dong',th:'ดองเวียดนาม',f:'🇻🇳'},
+    INR:{en:'Indian rupee',th:'รูปีอินเดีย',f:'🇮🇳'}, BRL:{en:'Brazilian real',th:'เรียลบราซิล',f:'🇧🇷'},
+    MXN:{en:'Mexican peso',th:'เปโซเม็กซิโก',f:'🇲🇽'}, SAR:{en:'Saudi riyal',th:'ริยัลซาอุฯ',f:'🇸🇦'},
+    AED:{en:'UAE dirham',th:'ดีแรห์ม UAE',f:'🇦🇪'}, TRY:{en:'Turkish lira',th:'ลีราตุรกี',f:'🇹🇷'},
+    ARS:{en:'Argentine peso',th:'เปโซอาร์เจนตินา',f:'🇦🇷'}, HKD:{en:'Hong Kong dollar',th:'ดอลลาร์ฮ่องกง',f:'🇭🇰'}
+  };
+
+  function cell(v){
+    if (typeof v !== 'number') return '<td style="color:var(--grey-dim)">—</td>';
+    return '<td style="color:' + (v >= 0 ? 'var(--neon-2,#7CFFB2)' : 'var(--red,#ff3b4e)') + '">' +
+           sgn(v) + '</td>';
+  }
+
+  function paintCcy(box){
+    var ccy = (snap && snap.ccy) || {};
+    var keys = Object.keys(ccy).filter(function(k){ return k !== 'USD'; });
+    if (!keys.length) {
+      box.innerHTML = '<div class="ss-top"><span class="ss-eyebrow"><span class="ss-live-dot"></span>' +
+        esc(t('eyebrow')) + '</span></div><h3>' + esc(t('cTitle')) + '</h3>' +
+        '<div class="ss-empty">' + esc(t('waiting')) + '</div>';
+      return;
+    }
+    keys.sort(function(a, b){
+      var x = ccy[a].m1, y = ccy[b].m1;
+      return (typeof y === 'number' ? y : -999) - (typeof x === 'number' ? x : -999);
+    });
+
+    var body = keys.map(function(k){
+      var r = ccy[k], nm = CUR_NAME[k] || { en:k, th:k, f:'' };
+      var rate = (typeof r.rate === 'number')
+        ? r.rate.toLocaleString('en-US', { minimumFractionDigits: r.rate >= 500 ? 0 : r.rate >= 20 ? 2 : 4,
+                                           maximumFractionDigits: r.rate >= 500 ? 0 : r.rate >= 20 ? 2 : 4 })
+        : '—';
+      return '<tr><td class="ss-cur">' + esc((nm.f ? nm.f + ' ' : '') + k) +
+             '<span>' + esc(tx(nm)) + '</span></td>' +
+             '<td>' + rate + '</td>' + cell(r.d1) + cell(r.m1) + cell(r.ytd) + '</tr>';
+    }).join('');
+
+    var strongest = keys[0], weakest = keys[keys.length - 1];
+    box.innerHTML =
+      '<div class="ss-top"><span class="ss-eyebrow"><span class="ss-live-dot"></span>' +
+        esc(t('eyebrow')) + '</span></div>' +
+      '<h3>' + esc(t('cTitle')) + '</h3>' +
+      '<p class="ss-lede">' + esc(t('cLede')) + '</p>' +
+      '<div class="ss-best">' +
+        '<div><div class="ss-bl">' + esc(t('strongest')) + ' · ' + esc(tx({en:'1 month',th:'1 เดือน'})) +
+          '</div><div class="ss-bv">' + esc(((CUR_NAME[strongest] || {}).f || '') + ' ' + strongest) +
+          ' <span style="color:var(--neon-2,#7CFFB2)">' +
+          (typeof ccy[strongest].m1 === 'number' ? sgn(ccy[strongest].m1) : '—') + '</span></div></div>' +
+        '<div><div class="ss-bl">' + esc(t('weakest')) + ' · ' + esc(tx({en:'1 month',th:'1 เดือน'})) +
+          '</div><div class="ss-bv">' + esc(((CUR_NAME[weakest] || {}).f || '') + ' ' + weakest) +
+          ' <span style="color:var(--red,#ff3b4e)">' +
+          (typeof ccy[weakest].m1 === 'number' ? sgn(ccy[weakest].m1) : '—') + '</span></div></div>' +
+      '</div>' +
+      '<div class="ss-tab-wrap"><table class="ss-tab"><thead><tr>' +
+        '<th>' + esc(t('cCur')) + '</th><th>' + esc(t('cRate')) + '</th>' +
+        '<th>' + esc(t('cD1')) + '</th><th>' + esc(t('cM1')) + '</th><th>' + esc(t('cYtd')) + '</th>' +
+      '</tr></thead><tbody>' + body + '</tbody></table></div>' +
+      '<div class="ss-foot">' + esc(t('cFoot')) + '<br>' +
+        esc(t('updated')) + ' ' + esc(fmtTime(snap && snap.generated_at)) + '</div>';
+  }
+
+  /* ---------------------------------------------------------------
+     mounting — the three sections are built by their own scripts on a
+     delay, so wait for each, then keep the panel pinned to the section
+     itself (their painters wipe every [data-*] child).
+     --------------------------------------------------------------- */
+  var MOUNTS = [
+    { sec:'flow',  id:'spzScanFlow',  before:'[data-f="lead"]', paint:paintFlow },
+    { sec:'globe', id:'spzScanGlobe', before:'[data-g="note"]', paint:paintGlobe },
+    { sec:'infl',  id:'spzScanCcy',   before:'[data-i="note"]', paint:paintCcy }
+  ];
+
+  function mountOne(m){
+    var sec = document.getElementById(m.sec);
+    if (!sec) return false;
+    var box = document.getElementById(m.id);
+    if (!box) {
+      box = document.createElement('div');
+      box.id = m.id;
+      box.className = 'spz-scan reveal in-view';
+      var anchor = sec.querySelector(m.before);
+      if (anchor) sec.insertBefore(box, anchor);
+      else sec.appendChild(box);
+    }
+    m.paint(box);
+    return true;
+  }
+
+  function paintAll(){
+    MOUNTS.forEach(function(m){
+      var box = document.getElementById(m.id);
+      if (box) m.paint(box);
+    });
+  }
+
+  function mountAll(){
+    var missing = 0;
+    MOUNTS.forEach(function(m){ if (!mountOne(m)) missing++; });
+    return missing === 0;
+  }
+
+  function boot(){
+    var tries = 0;
+    var iv = setInterval(function(){
+      if (mountAll() || ++tries > 60) clearInterval(iv);
+    }, 400);
+
+    document.addEventListener('spz:snapshot', function(e){
+      snap = e.detail;
+      mountAll();
+    });
+
+    /* the live module may already have the snapshot before we booted */
+    var seed = setInterval(function(){
+      if (window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot()) {
+        snap = window.__SPZ_LIVE.snapshot();
+        mountAll();
+        clearInterval(seed);
+      }
+    }, 600);
+    setTimeout(function(){ clearInterval(seed); }, 45000);
+
+    new MutationObserver(paintAll)
+      .observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+  }
+
+  window.__SPZ_SCAN = { repaint: paintAll, mount: mountAll,
+                        state: state, snap: function(){ return snap; } };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 900); });
+  } else {
+    setTimeout(boot, 900);
+  }
 })();
 </script>
 
