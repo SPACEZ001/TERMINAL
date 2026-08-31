@@ -598,19 +598,24 @@ def build_regime(stocks, flows, macro, ccy):
 
     # --- divergences worth showing, strongest gap first ---
     divs = []
+    seen = set()
+
+    def add_div(tkr, r, name, etf=False):
+        # SPY is a stock row, an asset-class row and the US country proxy all
+        # at once, so the same divergence can arrive three times
+        if not r.get("divergence") or tkr in seen:
+            return
+        seen.add(tkr)
+        divs.append({"t": tkr, "kind": r["divergence"], "gap": r.get("div_gap"),
+                     "rsi": r.get("rsi"), "rsi_then": r.get("rsi_20d_ago"),
+                     "m1": r.get("m1"), "off_high": r.get("off_high"),
+                     "name": name, "etf": etf})
+
     for tkr, r in stocks.items():
-        if r.get("divergence"):
-            divs.append({"t": tkr, "kind": r["divergence"], "gap": r.get("div_gap"),
-                         "rsi": r.get("rsi"), "rsi_then": r.get("rsi_20d_ago"),
-                         "m1": r.get("m1"), "off_high": r.get("off_high"),
-                         "name": r.get("name")})
+        add_div(tkr, r, r.get("name"))
     for bucket in ("sector", "asset", "country"):
         for r in flows.get(bucket, []):
-            if r.get("divergence"):
-                divs.append({"t": r.get("sym"), "kind": r["divergence"], "gap": r.get("div_gap"),
-                             "rsi": r.get("rsi"), "rsi_then": r.get("rsi_20d_ago"),
-                             "m1": r.get("m1"), "off_high": r.get("off_high"),
-                             "name": r.get("en"), "etf": True})
+            add_div(r.get("sym"), r, r.get("en"), True)
     divs.sort(key=lambda d: abs(d.get("gap") or 0), reverse=True)
     reg["divergences"] = divs[:24]
 
