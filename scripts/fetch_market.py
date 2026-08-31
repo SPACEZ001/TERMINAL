@@ -118,16 +118,19 @@ def fetch_one(sym, thai):
     tk = yf.Ticker(ysym)
     out = {"ccy": "THB" if thai else "USD", "yahoo": ysym}
 
-    # ---- price: history() is the one call that works for stocks and ETFs
-    #      alike and hands us the previous close for the day change ----
+    # ---- price + trend: one year of closes covers the day change, the
+    #      moving averages and the RSI the turning-point radar needs ----
     try:
-        h = tk.history(period="7d", auto_adjust=False)
+        h = tk.history(period="1y", auto_adjust=False)
         if h is not None and not h.empty:
             closes = [float(c) for c in h["Close"].tolist() if c == c]
             if closes:
                 out["price"] = num(closes[-1], 4)
             if len(closes) >= 2:
                 out["prev"] = num(closes[-2], 4)
+            out["m1"] = _ret(closes, 21)
+            out["m3"] = _ret(closes, 63)
+            out.update(trend_stats(closes))
     except Exception as e:
         print("  history failed %s: %s" % (ysym, e), file=sys.stderr)
 
@@ -353,6 +356,8 @@ def series_stats(ysym):
     hi = num(h["Close"].max()); lo = num(h["Close"].min())
     if hi and lo and hi > lo:
         out["range_pos"] = round((closes[-1] - lo) / (hi - lo) * 100.0, 1)
+
+    out.update(trend_stats(closes))
     return {k: v for k, v in out.items() if v is not None}
 
 
@@ -407,6 +412,218 @@ def fetch_ccy_moves():
     return out
 
 
+def _sma(vals, n):
+    if len(vals) < n:
+        return None
+    return sum(vals[-n:]) / float(n)
+
+
+def _rsi(closes, n=14, offset=0):
+    """Wilder RSI. `offset` steps back in time, so we can compare momentum
+    now against momentum N sessions ago — that gap is what a divergence is."""
+    seq = closes[:len(closes) - offset] if offset else closes
+    if len(seq) < n + 1:
+        return None
+    gains = losses = 0.0
+    for i in range(1, n + 1):
+        ch = seq[i] - seq[i - 1]
+        gains += max(ch, 0.0)
+        losses += max(-ch, 0.0)
+    ag, al = gains / n, losses / n
+    for i in range(n + 1, len(seq)):
+        ch = seq[i] - seq[i - 1]
+        ag = (ag * (n - 1) + max(ch, 0.0)) / n
+        al = (al * (n - 1) + max(-ch, 0.0)) / n
+    if al == 0:
+        return 100.0
+    rs = ag / al
+    return round(100.0 - (100.0 / (1.0 + rs)), 1)
+
+
+def trend_stats(closes):
+    """Trend and momentum shape — the raw material for turning-point reads."""
+    out = {}
+    if len(closes) < 30:
+        return out
+    last = closes[-1]
+    ma50, ma200 = _sma(closes, 50), _sma(closes, 200)
+    if ma50:
+        out["ma50"] = round(ma50, 4)
+        out["vs_ma50"] = round((last - ma50) / ma50 * 100.0, 2)
+    if ma200:
+        out["ma200"] = round(ma200, 4)
+        out["vs_ma200"] = round((last - ma200) / ma200 * 100.0, 2)
+    if ma50 and ma200:
+        out["above_ma200"] = last > ma200
+        prev50 = _sma(closes[:-10], 50)
+        prev200 = _sma(closes[:-10], 200)
+        if prev50 and prev200:
+            was, now = prev50 > prev200, ma50 > ma200
+            if was != now:
+                out["cross"] = "golden" if now else "death"
+
+    r_now = _rsi(closes, 14, 0)
+    r_then = _rsi(closes, 14, 20)
+    if r_now is not None:
+        out["rsi"] = r_now
+    if r_then is not None:
+        out["rsi_20d_ago"] = r_then
+
+    hi = max(closes[-252:]) if len(closes) >= 30 else max(closes)
+    lo = min(closes[-252:]) if len(closes) >= 30 else min(closes)
+    if hi:
+        out["off_high"] = round((last - hi) / hi * 100.0, 2)
+    if lo:
+        out["off_low"] = round((last - lo) / lo * 100.0, 2)
+
+    # 20-session realised volatility, annualised
+    try:
+        rets = []
+        for i in range(len(closes) - 20, len(closes)):
+            if i > 0 and closes[i - 1]:
+                rets.append(closes[i] / closes[i - 1] - 1.0)
+        if len(rets) > 5:
+            m = sum(rets) / len(rets)
+            var = sum((r - m) ** 2 for r in rets) / (len(rets) - 1)
+            out["vol20"] = round((var ** 0.5) * (252 ** 0.5) * 100.0, 1)
+    except Exception:
+        pass
+
+    # divergence: price pushing to new highs while momentum fades (or the
+    # mirror image at the lows). This is the shape people mean when they say
+    # "the price keeps going but the indicator does not agree".
+    r1, r2 = out.get("rsi"), out.get("rsi_20d_ago")
+    if r1 is not None and r2 is not None and len(closes) > 21:
+        p_now, p_then = closes[-1], closes[-21]
+        if p_then:
+            p_chg = (p_now - p_then) / p_then * 100.0
+            near_high = out.get("off_high", -99) > -4.0
+            near_low = out.get("off_low", 99) < 6.0
+            if p_chg > 1.0 and (r1 - r2) < -4.0 and near_high:
+                out["divergence"] = "bearish"
+                out["div_gap"] = round(r1 - r2, 1)
+            elif p_chg < -1.0 and (r1 - r2) > 4.0 and near_low:
+                out["divergence"] = "bullish"
+                out["div_gap"] = round(r1 - r2, 1)
+    return out
+
+
+MACRO = [
+    ("^TNX",      "us10y",  "US 10-year yield",      "ผลตอบแทนพันธบัตรสหรัฐฯ 10 ปี"),
+    ("^IRX",      "us3m",   "US 3-month yield",      "ผลตอบแทนพันธบัตรสหรัฐฯ 3 เดือน"),
+    ("^VIX",      "vix",    "Volatility index",      "ดัชนีความผันผวน"),
+    ("DX-Y.NYB",  "dxy",    "US dollar index",       "ดัชนีดอลลาร์สหรัฐฯ"),
+    ("^GSPC",     "spx",    "S&P 500",               "เอสแอนด์พี 500"),
+    ("^SET.BK",   "set",    "SET index",             "ดัชนีหุ้นไทย"),
+]
+
+
+def fetch_macro():
+    out = {}
+    for sym, key, en, th in MACRO:
+        print("[macro] %s" % sym)
+        try:
+            st = series_stats(sym)
+        except Exception as e:
+            print("  macro failed %s: %s" % (sym, e), file=sys.stderr)
+            continue
+        st["sym"] = sym
+        st["en"] = en
+        st["th"] = th
+        out[key] = st
+        time.sleep(0.25)
+    return out
+
+
+def build_regime(stocks, flows, macro, ccy):
+    """Turn the raw series into the handful of numbers a turning-point read
+    actually needs. Interpretation lives in the page, not here."""
+    reg = {}
+
+    # --- breadth: how much of the market is still in an uptrend ---
+    have = [r for r in stocks.values() if r.get("ma200") and r.get("price")]
+    if len(have) >= 20:
+        above200 = sum(1 for r in have if r["price"] > r["ma200"])
+        reg["breadth_200"] = round(above200 / float(len(have)) * 100.0, 1)
+        reg["breadth_n"] = len(have)
+    have50 = [r for r in stocks.values() if r.get("ma50") and r.get("price")]
+    if len(have50) >= 20:
+        reg["breadth_50"] = round(
+            sum(1 for r in have50 if r["price"] > r["ma50"]) / float(len(have50)) * 100.0, 1)
+
+    # --- risk appetite spreads, in percentage points over a window ---
+    idx = {}
+    for bucket in ("sector", "asset", "country"):
+        for r in flows.get(bucket, []):
+            idx[r.get("sym")] = r
+
+    def spread(a, b, key):
+        ra, rb = idx.get(a), idx.get(b)
+        if not ra or not rb:
+            return None
+        va, vb = ra.get(key), rb.get(key)
+        if va is None or vb is None:
+            return None
+        return round(va - vb, 2)
+
+    reg["cyclical_vs_defensive_1m"] = spread("XLY", "XLP", "m1")
+    reg["cyclical_vs_defensive_3m"] = spread("XLY", "XLP", "m3")
+    reg["credit_1m"] = spread("HYG", "LQD", "m1")
+    reg["semis_vs_market_1m"] = spread("SMH", "SPY", "m1")
+    reg["smallcap_vs_market_1m"] = spread("IWM", "SPY", "m1")
+    reg["stocks_vs_bonds_1m"] = spread("SPY", "TLT", "m1")
+    reg["em_vs_us_3m"] = spread("EEM", "SPY", "m3")
+    for k in ("GLD", "UUP", "DBC", "TLT", "SPY"):
+        r = idx.get(k)
+        if r:
+            reg[k.lower() + "_1m"] = r.get("m1")
+            reg[k.lower() + "_3m"] = r.get("m3")
+
+    # --- rates: an inverted curve is the classic late-cycle marker ---
+    t10 = (macro.get("us10y") or {}).get("price")
+    t3m = (macro.get("us3m") or {}).get("price")
+    if t10 is not None and t3m is not None:
+        reg["yield_10y"] = round(t10, 2)
+        reg["yield_3m"] = round(t3m, 2)
+        reg["curve_10y_3m"] = round(t10 - t3m, 2)
+    vix = macro.get("vix") or {}
+    if vix.get("price") is not None:
+        reg["vix"] = round(vix["price"], 2)
+        reg["vix_1m"] = vix.get("m1")
+
+    thb = ccy.get("THB") or {}
+    if thb:
+        reg["thb_1m"] = thb.get("m1")
+        reg["thb_ytd"] = thb.get("ytd")
+
+    # --- divergences worth showing, strongest gap first ---
+    divs = []
+    for tkr, r in stocks.items():
+        if r.get("divergence"):
+            divs.append({"t": tkr, "kind": r["divergence"], "gap": r.get("div_gap"),
+                         "rsi": r.get("rsi"), "rsi_then": r.get("rsi_20d_ago"),
+                         "m1": r.get("m1"), "off_high": r.get("off_high"),
+                         "name": r.get("name")})
+    for bucket in ("sector", "asset", "country"):
+        for r in flows.get(bucket, []):
+            if r.get("divergence"):
+                divs.append({"t": r.get("sym"), "kind": r["divergence"], "gap": r.get("div_gap"),
+                             "rsi": r.get("rsi"), "rsi_then": r.get("rsi_20d_ago"),
+                             "m1": r.get("m1"), "off_high": r.get("off_high"),
+                             "name": r.get("en"), "etf": True})
+    divs.sort(key=lambda d: abs(d.get("gap") or 0), reverse=True)
+    reg["divergences"] = divs[:24]
+
+    # --- trend breaks and crosses, also strongest first ---
+    breaks = []
+    for tkr, r in stocks.items():
+        if r.get("cross"):
+            breaks.append({"t": tkr, "kind": r["cross"], "vs200": r.get("vs_ma200"),
+                           "name": r.get("name")})
+    reg["crosses"] = breaks[:20]
+    return reg
+
+
 def main():
     prev = {}
     if os.path.exists(OUT):
@@ -434,7 +651,7 @@ def main():
             row = merged
         if row:
             stocks[tkr] = row
-        time.sleep(0.35)
+        time.sleep(0.2)
 
     fx, fx_src = fetch_fx()
 
@@ -450,6 +667,18 @@ def main():
         print("ccy moves failed: %s" % e, file=sys.stderr)
         ccy = {}
 
+    try:
+        macro = fetch_macro()
+    except Exception as e:
+        print("macro failed: %s" % e, file=sys.stderr)
+        macro = {}
+
+    try:
+        regime = build_regime(stocks, flows, macro, ccy)
+    except Exception as e:
+        print("regime failed: %s" % e, file=sys.stderr)
+        regime = {}
+
     payload = {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source": {"quotes": "yahoo finance (yfinance)",
@@ -460,19 +689,24 @@ def main():
                    "sector": len(flows.get("sector", [])),
                    "asset": len(flows.get("asset", [])),
                    "country": len(flows.get("country", [])),
-                   "ccy": len(ccy)},
+                   "ccy": len(ccy), "macro": len(macro),
+                   "divergences": len(regime.get("divergences", []))},
         "fx": fx,
         "ccy": ccy,
         "flows": flows,
+        "macro": macro,
+        "regime": regime,
         "stocks": stocks,
     }
 
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=1, sort_keys=True)
-    print("wrote %s — %d stocks, %d fx rates, %d flow rows, %d currencies"
+    print("wrote %s — %d stocks, %d fx rates, %d flow rows, %d currencies, "
+          "%d macro, %d divergences"
           % (OUT, len(stocks), len(fx),
-             sum(len(v) for v in flows.values()), len(ccy)))
+             sum(len(v) for v in flows.values()), len(ccy), len(macro),
+             len(regime.get("divergences", []))))
 
     if len(stocks) < 10:
         print("too few stocks resolved — failing so the run is visible", file=sys.stderr)
