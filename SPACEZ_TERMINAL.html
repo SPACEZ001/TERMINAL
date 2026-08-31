@@ -6325,7 +6325,7 @@ render: heavy series on Canvas2D/WebGL off the React tree; React only owns chrom
       const desc = currentLang === 'en' ? s.desc_en : s.desc_th;
       const divVal = s.div ? s.div : (currentLang === 'en' ? s.div_en : s.div_th);
       const roeVal = s.roe ? s.roe : (currentLang === 'en' ? s.roe_en : s.roe_th);
-      return '<div class="stock-card">' +
+      return '<div class="stock-card" data-tk="' + s.ticker + '">' +
         '<div class="sc-ticker">$' + s.ticker + '</div>' +
         '<div class="sc-name">' + name + '</div>' +
         '<div class="sc-desc">' + desc + '</div>' +
@@ -7796,6 +7796,18 @@ render: heavy series on Canvas2D/WebGL off the React tree; React only owns chrom
   applyLang('en');
   /* seed the FX rate box once the <select> options actually exist */
   if(fxRateEl && !fxRateEl.value) fxFillReferenceRate();
+
+  /* ============ hooks for the live-data layer ============ */
+  window.__SPZ_HOOKS = {
+    dir: stockDirectory,
+    tickers: tickers,
+    fx: fxCurrencies,
+    renderDir: renderDirectoryGrid,
+    renderTicker: renderTicker,
+    updateFxRateLabel: updateFxRateLabel,
+    fxFillReferenceRate: fxFillReferenceRate,
+    lang: function(){ return currentLang; }
+  };
 </script>
 
 <script>
@@ -13881,20 +13893,22 @@ var CL_UI = {
       'This is an educational terminal. Nothing in it is investment advice, a recommendation, or a solicitation to buy or sell any security.',
       'Price charts in the Chart Lab are simulated data for practising chart reading. They are not real quotes and must never be used to value anything or to place a trade.',
       'Company examples, metric figures and market-cycle readings are illustrations. Verify every number at the primary source before you act on it.',
+      'Live prices and fundamentals are pulled straight from free third-party APIs (Finnhub, Yahoo Finance via public proxies, open.er-api.com for FX). They can be delayed, rate-limited, partially wrong, or unavailable — treat every live number as indicative and confirm it at the primary source before acting.',
       'Investing carries risk of permanent loss. Past performance tells you nothing reliable about the future.',
       'The author is not a licensed financial advisor and knows nothing about your finances, tax position or goals. Speak to a licensed professional before committing money.'
     ],th:[
       'นี่คือเทอร์มินัลเพื่อการศึกษา ไม่มีส่วนใดเป็นคำแนะนำการลงทุน การชี้ชวน หรือการเสนอให้ซื้อขายหลักทรัพย์ใดๆ',
       'กราฟราคาในห้องทดลองกราฟเป็นข้อมูลจำลองสำหรับฝึกอ่านกราฟ ไม่ใช่ราคาจริง และห้ามใช้ประเมินมูลค่าหรือใช้ตัดสินใจเทรดเด็ดขาด',
       'ชื่อบริษัท ตัวเลขเมตริก และการอ่านวัฏจักรตลาด เป็นเพียงตัวอย่างประกอบ ให้ตรวจสอบทุกตัวเลขจากแหล่งต้นทางก่อนนำไปใช้',
+      'ราคาสดและตัวเลขพื้นฐานดึงตรงจาก API ฟรีของบุคคลที่สาม (Finnhub, Yahoo Finance ผ่าน public proxy และ open.er-api.com สำหรับอัตราแลกเปลี่ยน) ข้อมูลอาจหน่วง ถูกจำกัดจำนวนครั้ง คลาดเคลื่อน หรือใช้ไม่ได้ชั่วคราว ให้ถือเป็นตัวเลขอ้างอิงและตรวจสอบกับแหล่งต้นทางก่อนใช้ตัดสินใจเสมอ',
       'การลงทุนมีความเสี่ยงที่จะสูญเงินต้นอย่างถาวร ผลตอบแทนในอดีตไม่ได้บอกอะไรที่เชื่อถือได้เกี่ยวกับอนาคต',
       'ผู้จัดทำไม่ใช่ผู้แนะนำการลงทุนที่มีใบอนุญาต และไม่รู้อะไรเลยเกี่ยวกับการเงิน ภาษี หรือเป้าหมายของคุณ ควรปรึกษาผู้เชี่ยวชาญที่มีใบอนุญาตก่อนลงเงินจริง'
     ]},
     chk:{en:'I understand this is educational content only, that the chart data is simulated, and that I am responsible for my own decisions.',
          th:'ผมเข้าใจว่านี่เป็นเนื้อหาเพื่อการศึกษาเท่านั้น ข้อมูลกราฟเป็นข้อมูลจำลอง และผมรับผิดชอบการตัดสินใจของตัวเอง'},
     go:{en:'Enter terminal',th:'เข้าสู่เทอร์มินัล'},
-    fine:{en:'Not affiliated with any broker, exchange or issuer. No data is collected or sent anywhere.',
-          th:'ไม่มีความเกี่ยวข้องกับโบรกเกอร์ ตลาดหลักทรัพย์ หรือผู้ออกหลักทรัพย์ใดๆ ไม่มีการเก็บหรือส่งข้อมูลไปที่ใดทั้งสิ้น'}
+    fine:{en:'Not affiliated with any broker, exchange or issuer. No personal data is collected — your browser calls the free market-data APIs directly, and any API key you enter stays in this browser only.',
+          th:'ไม่มีความเกี่ยวข้องกับโบรกเกอร์ ตลาดหลักทรัพย์ หรือผู้ออกหลักทรัพย์ใดๆ ไม่มีการเก็บข้อมูลส่วนตัว เบราว์เซอร์ของคุณเรียก API ข้อมูลตลาดฟรีโดยตรง และคีย์ API ที่ใส่ไว้จะถูกเก็บในเบราว์เซอร์นี้เท่านั้น'}
   };
 
   function buildGate(){
@@ -18839,6 +18853,701 @@ var GM = {
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(start, 700); });
   else setTimeout(start, 700);
+})();
+</script>
+
+<!-- ============================================================
+     SPACEZ LIVE DATA LAYER  (added 2026)
+     Free-tier market data for a static single-file page:
+       · Finnhub  → real-time US quotes + fundamentals (P/E, ROE, ROI/ROIC,
+                    D/E, net margin, P/B, dividend yield)
+       · Yahoo Finance (via public CORS proxies) → fallback quotes,
+                    and prices for Thai (.BK) tickers
+       · open.er-api.com / frankfurter.dev → live FX reference rates
+     Everything degrades gracefully back to the built-in static numbers.
+     ============================================================ -->
+<style>
+  #spzLiveBar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:8px 20px;
+    background:rgba(8,8,8,0.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--border-dim);
+    font-family:var(--mono);font-size:11px;letter-spacing:.4px;color:var(--grey);}
+  #spzLiveBar .spz-dot{width:7px;height:7px;border-radius:50%;background:var(--grey);flex:none;
+    box-shadow:0 0 0 0 rgba(204,255,0,0.5);}
+  #spzLiveBar.is-live .spz-dot{background:var(--neon-2,#7CFFB2);animation:spzPulse 2.2s ease-out infinite;}
+  #spzLiveBar.is-loading .spz-dot{background:#ffd24a;animation:spzPulse 1s ease-out infinite;}
+  #spzLiveBar.is-static .spz-dot{background:#ff5c5c;}
+  @keyframes spzPulse{0%{box-shadow:0 0 0 0 rgba(124,255,178,.45);}70%{box-shadow:0 0 0 7px rgba(124,255,178,0);}100%{box-shadow:0 0 0 0 rgba(124,255,178,0);}}
+  #spzLiveBar .spz-state{color:var(--white);font-weight:600;letter-spacing:.8px;}
+  #spzLiveBar .spz-sep{opacity:.35;}
+  #spzLiveBar .spz-src{opacity:.8;}
+  #spzLiveBar button{background:transparent;border:1px solid var(--border-dim);color:var(--grey);
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.6px;padding:3px 9px;border-radius:4px;
+    cursor:pointer;transition:border-color .18s,color .18s;}
+  #spzLiveBar button:hover{border-color:var(--neon,#cf0);color:var(--white);}
+  #spzLiveBar .spz-spacer{flex:1 1 auto;}
+  #spzKeyPanel{display:none;padding:14px 20px 16px;background:rgba(8,8,8,0.94);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--border-dim);font-family:var(--mono);font-size:11.5px;color:var(--grey);}
+  #spzKeyPanel.open{display:block;}
+  #spzKeyPanel .spz-kp-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:9px;}
+  #spzKeyPanel input{flex:1 1 260px;min-width:0;background:rgba(0,0,0,.25);border:1px solid var(--border-dim);
+    color:var(--white);font-family:var(--mono);font-size:12px;padding:8px 10px;border-radius:5px;}
+  #spzKeyPanel input:focus{outline:none;border-color:var(--neon,#cf0);}
+  #spzKeyPanel .spz-kp-note{line-height:1.65;max-width:760px;opacity:.85;}
+  #spzKeyPanel a{color:var(--neon,#cf0);text-decoration:none;border-bottom:1px dotted currentColor;}
+  #spzKeyPanel .spz-kp-msg{margin-top:9px;min-height:15px;}
+  .spz-ok{color:var(--neon-2,#7CFFB2);} .spz-bad{color:#ff6b6b;}
+  .stock-card .spz-live-row{display:flex;align-items:baseline;gap:8px;margin:10px 0 -2px;
+    font-family:var(--mono);font-size:12px;}
+  .stock-card .spz-px{color:var(--white);font-weight:700;font-size:15px;}
+  .stock-card .spz-chg{font-size:11.5px;font-weight:600;}
+  .stock-card .spz-chg.up{color:var(--neon-2,#7CFFB2);} .stock-card .spz-chg.down{color:var(--red,#ff5c5c);}
+  .stock-card .spz-flag{margin-left:auto;font-size:9px;letter-spacing:.9px;padding:2px 6px;border-radius:3px;
+    border:1px solid var(--border-dim);color:var(--grey);opacity:.9;}
+  .stock-card .spz-flag.live{color:var(--neon-2,#7CFFB2);border-color:rgba(124,255,178,.35);}
+  .sc-metric.spz-fresh b{color:var(--neon,#cf0);}
+  html[data-theme="light"] #spzLiveBar{background:rgba(240,241,236,.9);}
+  html[data-theme="light"] #spzKeyPanel{background:rgba(246,247,243,.96);}
+  html[data-theme="light"] #spzLiveBar .spz-state{color:#12141c;}
+  html[data-theme="light"] #spzKeyPanel input{background:#fff;color:#12141c;}
+  html[data-theme="light"] .stock-card .spz-px{color:#12141c;}
+  @media(max-width:700px){#spzLiveBar{padding:8px 14px;font-size:10px;gap:9px;}#spzKeyPanel{padding:12px 14px;}}
+</style>
+<script>
+(function(){
+  'use strict';
+  if (window.__SPZ_LIVE) return;
+
+  /* ---------------------------------------------------------------
+     0. config
+     --------------------------------------------------------------- */
+  var CFG = {
+    /* Optional baked-in Finnhub key. A page served publicly exposes this to
+       anyone who views source — the in-page key box (localStorage) is the
+       safer route for personal keys. */
+    finnhubKey: '',
+    quoteTTL   : 45 * 1000,          /* live quote cache            */
+    metricTTL  : 12 * 60 * 60 * 1000,/* fundamentals cache          */
+    fxTTL      : 60 * 60 * 1000,     /* fx cache                    */
+    autoRefresh: 60 * 1000,          /* tape + visible cards        */
+    budgetPerMin: 55,                /* Finnhub free tier is 60/min */
+    concurrency: 4
+  };
+
+  var LS = {
+    key:'spz_finnhub_key', quote:'spz_quote_cache_v1',
+    metric:'spz_metric_cache_v1', fx:'spz_fx_cache_v1', proxy:'spz_proxy_idx_v1'
+  };
+
+  function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+  function jparse(s,d){ try{ return s ? JSON.parse(s) : d; }catch(e){ return d; } }
+
+  /* ---------------------------------------------------------------
+     1. symbol map — Thai tickers trade on SET, Yahoo suffix .BK
+     --------------------------------------------------------------- */
+  var TH_TICKERS = ['KBANK','BBL','SCB','KTB','PTT','SCC','TOP','DELTA','GULF','AOT',
+    'CPALL','MINT','ADVANC','TISCO','LH','RATCH','EGCO','TTB','PTTEP','BDMS','BH',
+    'CPF','OSP','TU','CPAXT'];
+
+  function isThai(t){ return TH_TICKERS.indexOf(t) !== -1; }
+  function yahooSym(t){ return isThai(t) ? t + '.BK' : t.replace('.', '-'); }
+  function finnhubSym(t){ return t; }
+  function ccy(t){ return isThai(t) ? 'THB' : 'USD'; }
+
+  /* ---------------------------------------------------------------
+     2. tiny scheduler: token bucket + limited concurrency
+     --------------------------------------------------------------- */
+  var callTimes = [], queue = [], running = 0;
+
+  function budgetOk(){
+    var now = Date.now();
+    while (callTimes.length && now - callTimes[0] > 60000) callTimes.shift();
+    return callTimes.length < CFG.budgetPerMin;
+  }
+
+  function pump(){
+    while (running < CFG.concurrency && queue.length) {
+      if (!budgetOk()) { setTimeout(pump, 1500); return; }
+      var job = queue.shift();
+      running++; callTimes.push(Date.now());
+      job.fn().then(job.res, job.rej).then(function(){ running--; pump(); });
+    }
+  }
+
+  function schedule(fn, priority){
+    return new Promise(function(res, rej){
+      var job = { fn:fn, res:res, rej:rej };
+      if (priority) queue.unshift(job); else queue.push(job);
+      pump();
+    });
+  }
+
+  function getJSON(url, ms){
+    var ctrl = ('AbortController' in window) ? new AbortController() : null;
+    var t = setTimeout(function(){ if (ctrl) ctrl.abort(); }, ms || 9000);
+    return fetch(url, ctrl ? { signal: ctrl.signal } : undefined).then(function(r){
+      clearTimeout(t);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }, function(e){ clearTimeout(t); throw e; });
+  }
+
+  /* ---------------------------------------------------------------
+     3. providers
+     --------------------------------------------------------------- */
+  function apiKey(){ return (lsGet(LS.key) || CFG.finnhubKey || '').trim(); }
+
+  function finnhubQuote(t){
+    var k = apiKey(); if (!k) return Promise.reject(new Error('no key'));
+    return getJSON('https://finnhub.io/api/v1/quote?symbol=' + encodeURIComponent(finnhubSym(t)) + '&token=' + k)
+      .then(function(d){
+        if (!d || typeof d.c !== 'number' || d.c === 0) throw new Error('empty quote');
+        return { price:d.c, chg:d.d, chgPct:d.dp, prev:d.pc, ccy:'USD', src:'finnhub', ts:Date.now() };
+      });
+  }
+
+  /* public CORS proxies, tried in order; the winner is remembered */
+  var PROXIES = [
+    function(u){ return u; },
+    function(u){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
+    function(u){ return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u); },
+    function(u){ return 'https://corsproxy.io/?url=' + encodeURIComponent(u); }
+  ];
+  var proxyIdx = parseInt(lsGet(LS.proxy) || '0', 10) || 0;
+
+  function viaProxy(url){
+    var order = [], i;
+    for (i = 0; i < PROXIES.length; i++) order.push((proxyIdx + i) % PROXIES.length);
+    return order.reduce(function(chain, idx){
+      return chain.catch(function(){
+        return getJSON(PROXIES[idx](url)).then(function(d){
+          if (idx !== proxyIdx) { proxyIdx = idx; lsSet(LS.proxy, String(idx)); }
+          return d;
+        });
+      });
+    }, Promise.reject(new Error('init')));
+  }
+
+  function yahooQuote(t){
+    var url = 'https://query1.finance.yahoo.com/v8/finance/chart/' +
+              encodeURIComponent(yahooSym(t)) + '?range=5d&interval=1d';
+    return viaProxy(url).then(function(d){
+      var r = d && d.chart && d.chart.result && d.chart.result[0];
+      var m = r && r.meta;
+      if (!m || typeof m.regularMarketPrice !== 'number') throw new Error('no yahoo meta');
+      var prev = (typeof m.chartPreviousClose === 'number') ? m.chartPreviousClose : m.previousClose;
+      var px = m.regularMarketPrice, chg = (typeof prev === 'number') ? px - prev : null;
+      return {
+        price: px, chg: chg, prev: prev,
+        chgPct: (chg !== null && prev) ? (chg / prev) * 100 : null,
+        ccy: m.currency || ccy(t), src:'yahoo', ts: Date.now()
+      };
+    });
+  }
+
+  function fetchQuote(t){
+    return schedule(function(){
+      return (isThai(t) ? Promise.reject(new Error('non-US'))
+                        : finnhubQuote(t)).catch(function(){ return yahooQuote(t); });
+    });
+  }
+
+  function num(v){ return (typeof v === 'number' && isFinite(v)) ? v : null; }
+
+  function fetchMetrics(t){
+    var k = apiKey();
+    if (!k || isThai(t)) return Promise.reject(new Error('unsupported'));
+    return schedule(function(){
+      return getJSON('https://finnhub.io/api/v1/stock/metric?symbol=' +
+        encodeURIComponent(finnhubSym(t)) + '&metric=all&token=' + k)
+        .then(function(d){
+          var m = d && d.metric;
+          if (!m) throw new Error('no metric');
+          return {
+            pe        : num(m.peTTM) || num(m.peBasicExclExtraTTM) || num(m.peNormalizedAnnual),
+            roe       : num(m.roeTTM) || num(m.roeRfy),
+            roi       : num(m.roiTTM) || num(m.roiAnnual),
+            de        : num(m['totalDebt/totalEquityQuarterly']) || num(m['totalDebt/totalEquityAnnual']),
+            margin    : num(m.netProfitMarginTTM) || num(m.netProfitMarginAnnual),
+            pb        : num(m.pbQuarterly) || num(m.pbAnnual),
+            divYield  : num(m.dividendYieldIndicatedAnnual) || num(m.currentDividendYieldTTM),
+            hi52      : num(m['52WeekHigh']), lo52: num(m['52WeekLow']),
+            ts        : Date.now()
+          };
+        });
+    });
+  }
+
+  function fetchFX(){
+    return getJSON('https://open.er-api.com/v6/latest/USD').then(function(d){
+      if (!d || !d.rates) throw new Error('no rates');
+      return { rates:d.rates, src:'open.er-api.com', ts:Date.now() };
+    }).catch(function(){
+      return getJSON('https://api.frankfurter.dev/v1/latest?base=USD').then(function(d){
+        if (!d || !d.rates) throw new Error('no rates');
+        var r = d.rates; r.USD = 1;
+        return { rates:r, src:'frankfurter.dev', ts:Date.now() };
+      });
+    });
+  }
+
+  /* ---------------------------------------------------------------
+     4. caches
+     --------------------------------------------------------------- */
+  var quoteCache  = jparse(lsGet(LS.quote), {});
+  var metricCache = jparse(lsGet(LS.metric), {});
+  var fxCache     = jparse(lsGet(LS.fx), null);
+  var saveTimer = null;
+  function persist(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){
+      lsSet(LS.quote, JSON.stringify(quoteCache));
+      lsSet(LS.metric, JSON.stringify(metricCache));
+      if (fxCache) lsSet(LS.fx, JSON.stringify(fxCache));
+    }, 400);
+  }
+  function fresh(o, ttl){ return o && (Date.now() - o.ts) < ttl; }
+
+  function quoteOf(t, force){
+    if (!force && fresh(quoteCache[t], CFG.quoteTTL)) return Promise.resolve(quoteCache[t]);
+    return fetchQuote(t).then(function(q){ quoteCache[t] = q; persist(); return q; });
+  }
+  function metricOf(t){
+    if (fresh(metricCache[t], CFG.metricTTL)) return Promise.resolve(metricCache[t]);
+    return fetchMetrics(t).then(function(m){ metricCache[t] = m; persist(); return m; });
+  }
+
+  /* ---------------------------------------------------------------
+     4b. repo snapshot — data/market.json, refreshed by GitHub Actions.
+         No API key, no CORS proxy, always same-origin. This is what makes
+         the page self-updating even for a visitor who never touches the
+         key box; live browser quotes are layered on top when they work.
+     --------------------------------------------------------------- */
+  var SNAP_URL = 'data/market.json';
+  var snapTs = 0, tapeTs = {};
+  function n(v){ return (typeof v === 'number' && isFinite(v)) ? v : null; }
+
+  function applySnapshot(d){
+    if (!d || !d.stocks) return;
+    var ts = Date.parse(d.generated_at) || Date.now();
+    snapTs = ts;
+    var by = {};
+    allStocks().forEach(function(s){ by[s.ticker] = s; });
+    Object.keys(d.stocks).forEach(function(t){
+      var r = d.stocks[t], s = by[t];
+      if (!s) return;
+      applyMetrics(s, { pe:n(r.pe), roe:n(r.roe), roi:n(r.roic), de:n(r.de),
+                        margin:n(r.margin), pb:n(r.pb), divYield:n(r.div), ts:ts });
+      if (n(r.price) !== null && (!s.live_ts || s.live_ts < ts)) {
+        s.live_price = r.price;
+        s.live_chg   = n(r.chg_pct);
+        s.live_ccy   = r.ccy || ccy(t);
+        s.live_ts    = ts;
+      }
+    });
+    var h = window.__SPZ_HOOKS;
+    if (h && h.tickers) {
+      h.tickers.forEach(function(row){
+        var r = d.stocks[row[0]];
+        if (r && n(r.chg_pct) !== null && (!tapeTs[row[0]] || tapeTs[row[0]] < ts)) {
+          row[1] = (r.chg_pct >= 0 ? '+' : '') + r.chg_pct.toFixed(2) + '%';
+          row[2] = r.chg_pct >= 0;
+          tapeTs[row[0]] = ts;
+        }
+      });
+      try { h.renderTicker(); } catch(e){}
+    }
+    if (d.fx && Object.keys(d.fx).length > 3 && !fresh(fxCache, CFG.fxTTL)) {
+      applyFx({ rates:d.fx, src:'snapshot', ts:ts });
+    }
+    state.mSrc = 'auto-sync';
+    noteSrc('auto-sync');
+    state.last = Math.max(state.last, ts);
+    try { if (h && h.renderDir) h.renderDir(); } catch(e){}
+    decorate();
+    paintBar();
+  }
+
+  function loadSnapshot(){
+    return getJSON(SNAP_URL + '?v=' + Math.floor(Date.now() / 300000), 12000)
+      .then(applySnapshot, function(){ /* file not deployed yet — fine */ });
+  }
+
+  /* ---------------------------------------------------------------
+     5. status bar
+     --------------------------------------------------------------- */
+  var STR = {
+    en:{ live:'LIVE', loading:'SYNCING', stat:'STATIC', off:'OFFLINE',
+      quotes:'quotes', funda:'fundamentals', fx:'FX', updated:'updated',
+      refresh:'⟳ REFRESH', keyBtn:'⚙ API KEY', never:'never',
+      keyTitle:'Finnhub API key — free tier',
+      keyNote:'Real-time US quotes and fundamentals (P/E, ROE, ROI, D/E, net margin, P/B, dividend yield) come from Finnhub. Grab a free key at finnhub.io, paste it here, and it is stored only in this browser (localStorage) — never uploaded anywhere. Without a key the page still pulls live prices from Yahoo Finance through a public proxy, and falls back to the built-in reference figures for fundamentals. Thai (SET) tickers get live prices only; their fundamentals stay as the built-in study figures.',
+      save:'Save & sync', clear:'Clear', ph:'paste your Finnhub key…',
+      saved:'Key saved — syncing live data…', cleared:'Key removed. Prices fall back to Yahoo.',
+      bad:'That key was rejected by Finnhub. Check it and try again.',
+      staticTag:'STATIC', liveTag:'LIVE', notice:'Live market data — for study, not investment advice. Delays vary by source.' },
+    th:{ live:'สด', loading:'กำลังดึง', stat:'ค่าคงที่', off:'ออฟไลน์',
+      quotes:'ราคา', funda:'พื้นฐาน', fx:'อัตราแลกเปลี่ยน', updated:'อัปเดต',
+      refresh:'⟳ รีเฟรช', keyBtn:'⚙ API KEY', never:'ยังไม่มี',
+      keyTitle:'Finnhub API key — แพลนฟรี',
+      keyNote:'ราคาหุ้นสหรัฐฯ แบบเรียลไทม์และตัวเลขพื้นฐาน (P/E, ROE, ROI, D/E, อัตรากำไรสุทธิ, P/B, ปันผล) ดึงจาก Finnhub สมัครคีย์ฟรีได้ที่ finnhub.io แล้ววางคีย์ไว้ตรงนี้ ระบบเก็บไว้ในเบราว์เซอร์ของคุณเอง (localStorage) เท่านั้น ไม่ส่งไปที่ไหน ถ้าไม่ใส่คีย์ หน้านี้ยังดึงราคาสดจาก Yahoo Finance ผ่าน public proxy ได้ และใช้ตัวเลขพื้นฐานที่ฝังมาในไฟล์แทน ส่วนหุ้นไทย (SET) จะได้เฉพาะราคาสด ตัวเลขพื้นฐานยังเป็นค่าอ้างอิงเพื่อการศึกษา',
+      save:'บันทึกและซิงก์', clear:'ล้างคีย์', ph:'วางคีย์ Finnhub ของคุณ…',
+      saved:'บันทึกคีย์แล้ว — กำลังดึงข้อมูลสด…', cleared:'ลบคีย์แล้ว ราคาจะกลับไปใช้ Yahoo',
+      bad:'Finnhub ปฏิเสธคีย์นี้ ลองตรวจสอบแล้วใส่ใหม่',
+      staticTag:'ค่าคงที่', liveTag:'สด', notice:'ข้อมูลตลาดแบบสด — เพื่อการศึกษา ไม่ใช่คำแนะนำการลงทุน ความหน่วงขึ้นกับแหล่งข้อมูล' }
+  };
+
+  function lang(){
+    var h = window.__SPZ_HOOKS;
+    if (h && typeof h.lang === 'function') { try { return h.lang(); } catch(e){} }
+    return (document.documentElement.getAttribute('lang') === 'th') ? 'th' : 'en';
+  }
+  function S(k){ return (STR[lang()] || STR.en)[k]; }
+
+  var state = { mode:'loading', last:0, qSrc:'—', mSrc:'—', fxSrc:'—' };
+  var srcSeen = {};
+  function noteSrc(name){
+    srcSeen[name] = Date.now();
+    var live = Object.keys(srcSeen).filter(function(k){ return Date.now() - srcSeen[k] < 5*60*1000; });
+    state.qSrc = live.length ? live.sort().join(' + ') : '—';
+  }
+  var bar, panel, msgEl, inputEl;
+
+  function buildBar(){
+    var tape = document.querySelector('.ticker-bar');
+    bar = document.createElement('div');
+    bar.id = 'spzLiveBar';
+    bar.innerHTML =
+      '<span class="spz-dot"></span><span class="spz-state">…</span>' +
+      '<span class="spz-src" id="spzSrc"></span>' +
+      '<span class="spz-spacer"></span>' +
+      '<button type="button" id="spzRefreshBtn"></button>' +
+      '<button type="button" id="spzKeyBtn"></button>';
+
+    panel = document.createElement('div');
+    panel.id = 'spzKeyPanel';
+    panel.innerHTML =
+      '<div class="spz-state" id="spzKeyTitle" style="color:inherit;font-weight:600;"></div>' +
+      '<div class="spz-kp-note" id="spzKeyNote" style="margin-top:7px;"></div>' +
+      '<div class="spz-kp-row">' +
+        '<input type="password" id="spzKeyInput" autocomplete="off" spellcheck="false">' +
+        '<button type="button" id="spzKeySave"></button>' +
+        '<button type="button" id="spzKeyClear"></button>' +
+      '</div><div class="spz-kp-msg" id="spzKeyMsg"></div>';
+
+    if (tape && tape.parentNode) {
+      tape.parentNode.insertBefore(bar, tape.nextSibling);
+      bar.parentNode.insertBefore(panel, bar.nextSibling);
+    } else {
+      document.body.insertBefore(bar, document.body.firstChild);
+      document.body.insertBefore(panel, bar.nextSibling);
+    }
+
+    msgEl = document.getElementById('spzKeyMsg');
+    inputEl = document.getElementById('spzKeyInput');
+    inputEl.value = lsGet(LS.key) || '';
+
+    document.getElementById('spzRefreshBtn').addEventListener('click', function(){ refreshAll(true); });
+    document.getElementById('spzKeyBtn').addEventListener('click', function(){
+      panel.classList.toggle('open');
+    });
+    document.getElementById('spzKeySave').addEventListener('click', function(){
+      var v = inputEl.value.trim();
+      if (!v) return;
+      lsSet(LS.key, v);
+      msgEl.className = 'spz-kp-msg';
+      msgEl.textContent = S('saved');
+      metricCache = {}; quoteCache = {}; persist();
+      finnhubQuote('AAPL').then(function(){
+        msgEl.className = 'spz-kp-msg spz-ok'; msgEl.textContent = S('saved');
+      }, function(){
+        msgEl.className = 'spz-kp-msg spz-bad'; msgEl.textContent = S('bad');
+      });
+      refreshAll(true);
+    });
+    document.getElementById('spzKeyClear').addEventListener('click', function(){
+      try{ localStorage.removeItem(LS.key); }catch(e){}
+      inputEl.value = '';
+      msgEl.className = 'spz-kp-msg'; msgEl.textContent = S('cleared');
+      refreshAll(true);
+    });
+    paintBar();
+  }
+
+  function fmtTime(ts){
+    if (!ts) return S('never');
+    var d = new Date(ts);
+    return d.toLocaleTimeString(lang() === 'th' ? 'th-TH' : 'en-GB', { hour12:false });
+  }
+
+  function paintBar(){
+    if (!bar) return;
+    bar.className = 'is-' + (state.mode === 'loading' ? 'loading' : state.mode === 'live' ? 'live' : 'static');
+    bar.querySelector('.spz-state').textContent =
+      state.mode === 'loading' ? S('loading') : state.mode === 'live' ? S('live') : S('stat');
+    document.getElementById('spzSrc').innerHTML =
+      S('quotes') + ': <b>' + state.qSrc + '</b> <span class="spz-sep">·</span> ' +
+      S('funda') + ': <b>' + state.mSrc + '</b> <span class="spz-sep">·</span> ' +
+      S('fx') + ': <b>' + state.fxSrc + '</b> <span class="spz-sep">·</span> ' +
+      S('updated') + ' ' + fmtTime(state.last);
+    document.getElementById('spzRefreshBtn').textContent = S('refresh');
+    document.getElementById('spzKeyBtn').textContent = S('keyBtn');
+    document.getElementById('spzKeyTitle').textContent = S('keyTitle');
+    document.getElementById('spzKeyNote').textContent = S('keyNote');
+    document.getElementById('spzKeySave').textContent = S('save');
+    document.getElementById('spzKeyClear').textContent = S('clear');
+    if (inputEl) inputEl.placeholder = S('ph');
+    bar.title = S('notice');
+  }
+
+  /* ---------------------------------------------------------------
+     6. ticker tape
+     --------------------------------------------------------------- */
+  function refreshTape(force){
+    var h = window.__SPZ_HOOKS;
+    if (!h || !h.tickers) return Promise.resolve();
+    var jobs = h.tickers.map(function(row){
+      return quoteOf(row[0], force).then(function(q){
+        if (q.chgPct === null || q.chgPct === undefined) return;
+        row[1] = (q.chgPct >= 0 ? '+' : '') + q.chgPct.toFixed(2) + '%';
+        row[2] = q.chgPct >= 0;
+        tapeTs[row[0]] = Date.now();
+        noteSrc(q.src); state.last = Date.now();
+      }, function(){});
+    });
+    return Promise.all(jobs).then(function(){
+      try { h.renderTicker(); } catch(e){}
+      paintBar();
+    });
+  }
+
+  /* ---------------------------------------------------------------
+     7. stock directory + comparator data
+     --------------------------------------------------------------- */
+  function pct(v){ return (v >= 0 ? '' : '') + v.toFixed(2) + '%'; }
+
+  function applyMetrics(stock, m){
+    if (m.pe     !== null && m.pe > 0)  stock.pe = m.pe.toFixed(2);
+    if (m.roe    !== null)              stock.roe = pct(m.roe);
+    if (m.de     !== null)              stock.de_ratio = m.de.toFixed(2);
+    if (m.margin !== null)              stock.net_margin = m.margin.toFixed(1);
+    if (m.pb     !== null && m.pb > 0)  stock.pb_ratio = m.pb.toFixed(2);
+    if (m.divYield !== null && m.divYield > 0) stock.div = pct(m.divYield);
+    if (m.roi    !== null)              stock.roic_live = pct(m.roi);
+    stock.__live = true; stock.__liveTs = m.ts;
+  }
+
+  function allStocks(){
+    var h = window.__SPZ_HOOKS, out = [];
+    if (!h || !h.dir) return out;
+    Object.keys(h.dir).forEach(function(cat){
+      h.dir[cat].forEach(function(s){ out.push(s); });
+    });
+    return out;
+  }
+  function stocksIn(cat){
+    var h = window.__SPZ_HOOKS;
+    return (h && h.dir && h.dir[cat]) ? h.dir[cat] : [];
+  }
+
+  function currentCat(){
+    var tab = document.querySelector('.dir-tab.active');
+    return (tab && tab.dataset.cat) || 'value';
+  }
+
+  var syncing = false;
+  function syncStocks(list, force){
+    if (!list.length) return Promise.resolve();
+    var jobs = list.map(function(s){
+      var t = s.ticker;
+      var p1 = quoteOf(t, force).then(function(q){
+        s.live_price = q.price; s.live_chg = q.chgPct; s.live_ccy = q.ccy || ccy(t);
+        s.live_ts = q.ts; noteSrc(q.src); state.last = Date.now();
+      }, function(){});
+      var p2 = metricOf(t).then(function(m){
+        applyMetrics(s, m); state.mSrc = 'finnhub'; state.last = Date.now();
+      }, function(){});
+      return Promise.all([p1, p2]);
+    });
+    return Promise.all(jobs).then(function(){
+      var h = window.__SPZ_HOOKS;
+      try { if (h && h.renderDir) h.renderDir(); } catch(e){}
+      decorate();
+      paintBar();
+    });
+  }
+
+  var fmtCache = {};
+  function money(v, cur){
+    var key = cur + (v < 1 ? 'a' : 'b');
+    if (!fmtCache[key]) {
+      fmtCache[key] = new Intl.NumberFormat('en-US', {
+        style:'currency', currency:cur, minimumFractionDigits: v < 1 ? 4 : 2,
+        maximumFractionDigits: v < 1 ? 4 : 2
+      });
+    }
+    try { return fmtCache[key].format(v); } catch(e){ return v.toFixed(2) + ' ' + cur; }
+  }
+
+  function decorate(){
+    var grid = document.getElementById('directoryGrid');
+    if (!grid) return;
+    var byTicker = {};
+    allStocks().forEach(function(s){ byTicker[s.ticker] = s; });
+
+    grid.querySelectorAll('.stock-card').forEach(function(card){
+      var t = card.getAttribute('data-tk');
+      var s = t && byTicker[t];
+      if (!s) return;
+      var old = card.querySelector('.spz-live-row');
+      if (old) old.parentNode.removeChild(old);
+
+      var row = document.createElement('div');
+      row.className = 'spz-live-row';
+      var html = '';
+      if (typeof s.live_price === 'number') {
+        var up = (s.live_chg || 0) >= 0;
+        html += '<span class="spz-px">' + money(s.live_price, s.live_ccy || ccy(t)) + '</span>';
+        if (typeof s.live_chg === 'number') {
+          html += '<span class="spz-chg ' + (up ? 'up' : 'down') + '">' +
+                  (up ? '▲ +' : '▼ ') + s.live_chg.toFixed(2) + '%</span>';
+        }
+        html += '<span class="spz-flag live">' + S('liveTag') + '</span>';
+      } else {
+        html += '<span class="spz-flag">' + S('staticTag') + '</span>';
+      }
+      row.innerHTML = html;
+      var desc = card.querySelector('.sc-desc');
+      if (desc && desc.nextSibling) card.insertBefore(row, desc.nextSibling);
+      else card.appendChild(row);
+
+      if (s.__live) {
+        card.querySelectorAll('.sc-metric').forEach(function(m){ m.classList.add('spz-fresh'); });
+        if (s.roic_live && !card.querySelector('.spz-roic')) {
+          var wrap = card.querySelector('.sc-metrics');
+          if (wrap) {
+            var d = document.createElement('div');
+            d.className = 'sc-metric spz-fresh spz-roic';
+            d.innerHTML = '<span>ROIC</span><b>' + s.roic_live + '</b>';
+            wrap.appendChild(d);
+          }
+        }
+      }
+    });
+  }
+
+  /* re-decorate whenever the grid is re-rendered (tab switch, language switch) */
+  function watchGrid(){
+    var grid = document.getElementById('directoryGrid');
+    if (!grid) return;
+    var mo = new MutationObserver(function(){
+      if (mo.__busy) return;
+      mo.__busy = true;
+      setTimeout(function(){ mo.__busy = false; decorate(); }, 0);
+    });
+    mo.observe(grid, { childList:true });
+    document.addEventListener('click', function(e){
+      var tab = e.target.closest && e.target.closest('.dir-tab');
+      if (tab) setTimeout(function(){ syncStocks(stocksIn(currentCat()), false); }, 60);
+    });
+  }
+
+  /* ---------------------------------------------------------------
+     8. FX desk
+     --------------------------------------------------------------- */
+  var fxTouched = false;
+  function watchFxInput(){
+    var el = document.getElementById('fxRate');
+    if (el) el.addEventListener('input', function(){ fxTouched = true; });
+  }
+
+  function applyFx(data){
+    var h = window.__SPZ_HOOKS;
+    if (!h || !h.fx || !data || !data.rates) return;
+    var used = 0;
+    h.fx.forEach(function(c){
+      var r = data.rates[c.code];
+      if (typeof r === 'number' && r > 0) { c.usd = r; used++; }
+    });
+    if (!used) return;
+    state.fxSrc = data.src; state.last = Date.now();
+    try {
+      if (h.updateFxRateLabel) h.updateFxRateLabel();
+      if (!fxTouched && h.fxFillReferenceRate) h.fxFillReferenceRate();
+    } catch(e){}
+    paintBar();
+  }
+
+  function refreshFx(force){
+    if (!force && fresh(fxCache, CFG.fxTTL)) { applyFx(fxCache); return Promise.resolve(); }
+    return fetchFX().then(function(d){
+      fxCache = d; persist(); applyFx(d);
+    }, function(){
+      if (fxCache) applyFx(fxCache);
+    });
+  }
+
+  /* ---------------------------------------------------------------
+     9. orchestration
+     --------------------------------------------------------------- */
+  function refreshAll(force){
+    state.mode = 'loading'; paintBar();
+    if (!apiKey() && !snapTs) state.mSrc = lang() === 'th' ? 'ค่าในไฟล์' : 'built-in';
+    return Promise.all([
+      refreshTape(force),
+      syncStocks(stocksIn(currentCat()), force),
+      refreshFx(force)
+    ]).then(function(){
+      state.mode = state.last ? 'live' : 'static';
+      paintBar();
+    });
+  }
+
+  function warmRest(){
+    /* quietly fill in the other categories once the visible one is done */
+    var cats = ['value','growth','dividend','defensive'], i = 0;
+    (function next(){
+      if (i >= cats.length) return;
+      var cat = cats[i++];
+      if (cat === currentCat()) { next(); return; }
+      syncStocks(stocksIn(cat), false).then(function(){ setTimeout(next, 2500); }, function(){ setTimeout(next, 4000); });
+    })();
+  }
+
+  function boot(){
+    if (!window.__SPZ_HOOKS || !document.querySelector('.ticker-bar')) { setTimeout(boot, 300); return; }
+    buildBar();
+    watchGrid();
+    watchFxInput();
+    decorate();
+    /* never leave the badge spinning forever on a blocked network */
+    setTimeout(function(){
+      if (!state.last) { state.mode = 'static'; paintBar(); }
+    }, 12000);
+    /* keep bar + card labels in the right language */
+    new MutationObserver(function(){ paintBar(); decorate(); })
+      .observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+
+    loadSnapshot().then(function(){
+      return refreshAll(false);
+    }).then(function(){ setTimeout(warmRest, 3000); });
+    setInterval(function(){ if (!document.hidden) loadSnapshot(); }, 10 * 60 * 1000);
+    setInterval(function(){
+      if (document.hidden) return;
+      refreshTape(true);
+      syncStocks(stocksIn(currentCat()), true);
+    }, CFG.autoRefresh);
+    setInterval(function(){ if (!document.hidden) refreshFx(false); }, CFG.fxTTL);
+  }
+
+  window.__SPZ_LIVE = {
+    refresh: refreshAll, quoteOf: quoteOf, metricOf: metricOf,
+    cfg: CFG, state: state, decorate: decorate
+  };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 400); });
+  else setTimeout(boot, 400);
 })();
 </script>
 
