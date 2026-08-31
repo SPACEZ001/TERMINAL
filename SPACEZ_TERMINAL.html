@@ -19009,12 +19009,34 @@ var GM = {
 
   /* public CORS proxies, tried in order; the winner is remembered */
   var PROXIES = [
-    /* verified working from a Thai residential connection, Aug 2026 */
-    function(u){ return 'https://api.cors.lol/?url=' + encodeURIComponent(u); },
-    function(u){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
-    function(u){ return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u); },
-    function(u){ return u; }   /* direct: only where Yahoo sends CORS headers */
+    /* order tuned against a Thai residential connection, Aug 2026.
+       `text: true` means the proxy wraps the payload in prose, so the JSON
+       has to be cut back out of it. */
+    { url: function(u){ return 'https://api.cors.lol/?url=' + encodeURIComponent(u); } },
+    { url: function(u){ return 'https://r.jina.ai/' + u; }, text: true },
+    { url: function(u){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); } },
+    { url: function(u){ return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u); } },
+    { url: function(u){ return u; } }   /* direct: where Yahoo sends CORS headers */
   ];
+
+  function getText(url, ms){
+    var ctrl = ('AbortController' in window) ? new AbortController() : null;
+    var t = setTimeout(function(){ if (ctrl) ctrl.abort(); }, ms || 8000);
+    return fetch(url, ctrl ? { signal: ctrl.signal } : undefined).then(function(r){
+      clearTimeout(t);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    }, function(e){ clearTimeout(t); throw e; });
+  }
+
+  function fetchThrough(p, url){
+    if (!p.text) return getJSON(p.url(url), 7000);
+    return getText(p.url(url), 8000).then(function(txt){
+      var a = txt.indexOf('{'), b = txt.lastIndexOf('}');
+      if (a < 0 || b <= a) throw new Error('no json in proxy body');
+      return JSON.parse(txt.slice(a, b + 1));
+    });
+  }
   var proxyIdx = parseInt(lsGet(LS.proxy) || '0', 10) || 0;
 
   /* Free CORS proxies rate-limit hard: a burst of a dozen requests comes back
@@ -19030,7 +19052,7 @@ var GM = {
     for (i = 0; i < PROXIES.length; i++) order.push((proxyIdx + i) % PROXIES.length);
     return order.reduce(function(chain, idx){
       return chain.catch(function(){
-        return getJSON(PROXIES[idx](url), 7000).then(function(d){
+        return fetchThrough(PROXIES[idx], url).then(function(d){
           if (idx !== proxyIdx) { proxyIdx = idx; lsSet(LS.proxy, String(idx)); }
           proxyFails = 0;
           return d;
