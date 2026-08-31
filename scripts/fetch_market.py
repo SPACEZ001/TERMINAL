@@ -118,29 +118,47 @@ def fetch_one(sym, thai):
     tk = yf.Ticker(ysym)
     out = {"ccy": "THB" if thai else "USD", "yahoo": ysym}
 
-    # ---- price (fast_info is cheap and rarely fails) ----
+    # ---- price: history() is the one call that works for stocks and ETFs
+    #      alike and hands us the previous close for the day change ----
     try:
-        fi = tk.fast_info
-        price = fi.get("last_price") if hasattr(fi, "get") else fi.last_price
-        prev = fi.get("previous_close") if hasattr(fi, "get") else fi.previous_close
-        cur = fi.get("currency") if hasattr(fi, "get") else None
-        if cur:
-            out["ccy"] = cur
-        if price:
-            out["price"] = num(price, 4)
-        if prev:
-            out["prev"] = num(prev, 4)
-        if out.get("price") and out.get("prev"):
-            out["chg_pct"] = round((out["price"] - out["prev"]) / out["prev"] * 100.0, 2)
+        h = tk.history(period="7d", auto_adjust=False)
+        if h is not None and not h.empty:
+            closes = [float(c) for c in h["Close"].tolist() if c == c]
+            if closes:
+                out["price"] = num(closes[-1], 4)
+            if len(closes) >= 2:
+                out["prev"] = num(closes[-2], 4)
     except Exception as e:
-        print("  price failed %s: %s" % (ysym, e), file=sys.stderr)
+        print("  history failed %s: %s" % (ysym, e), file=sys.stderr)
+
+    if not out.get("price"):
+        try:
+            fi = tk.fast_info
+            price = fi.get("last_price") if hasattr(fi, "get") else fi.last_price
+            prev = fi.get("previous_close") if hasattr(fi, "get") else fi.previous_close
+            cur = fi.get("currency") if hasattr(fi, "get") else None
+            if cur:
+                out["ccy"] = cur
+            if price:
+                out["price"] = num(price, 4)
+            if prev and not out.get("prev"):
+                out["prev"] = num(prev, 4)
+        except Exception as e:
+            print("  fast_info failed %s: %s" % (ysym, e), file=sys.stderr)
 
     # ---- fundamentals ----
     try:
         info = tk.get_info() or {}
         out["name"] = info.get("shortName") or info.get("longName")
         pe = info.get("trailingPE") or info.get("forwardPE")
-        out["pe"] = num(pe)
+        out["pe"] = num(pe) or None
+        if out.get("pe") is not None and out["pe"] <= 0:
+            out["pe"] = None
+        if not out.get("prev"):
+            out["prev"] = num(info.get("previousClose")
+                              or info.get("regularMarketPreviousClose"), 4)
+        if info.get("currency"):
+            out["ccy"] = info["currency"]
         out["roe"] = pct(info.get("returnOnEquity"))
         out["roa"] = pct(info.get("returnOnAssets"))
         de = info.get("debtToEquity")
@@ -151,9 +169,25 @@ def fetch_one(sym, thai):
             except (TypeError, ValueError):
                 pass
         out["margin"] = pct(info.get("profitMargins"))
-        out["pb"] = num(info.get("priceToBook"))
-        dy = info.get("dividendYield")
-        out["div"] = pct(dy) if dy else None
+        pb = num(info.get("priceToBook"))
+        out["pb"] = pb if (pb and pb > 0) else None
+
+        # Dividend yield: `dividendYield` has flipped between a ratio and a
+        # percent across yfinance releases, so derive it from cash instead.
+        rate = info.get("dividendRate")
+        try:
+            rate = float(rate) if rate is not None else None
+        except (TypeError, ValueError):
+            rate = None
+        if rate and out.get("price"):
+            out["div"] = round(rate / out["price"] * 100.0, 2)
+        else:
+            ty = info.get("trailingAnnualDividendYield")
+            try:
+                ty = float(ty) if ty is not None else None
+            except (TypeError, ValueError):
+                ty = None
+            out["div"] = round(ty * 100.0, 2) if ty else None
         out["hi52"] = num(info.get("fiftyTwoWeekHigh"))
         out["lo52"] = num(info.get("fiftyTwoWeekLow"))
         mc = info.get("marketCap")
@@ -163,6 +197,9 @@ def fetch_one(sym, thai):
             out["price"] = num(info.get("currentPrice"), 4)
     except Exception as e:
         print("  info failed %s: %s" % (ysym, e), file=sys.stderr)
+
+    if out.get("price") and out.get("prev"):
+        out["chg_pct"] = round((out["price"] - out["prev"]) / out["prev"] * 100.0, 2)
 
     r = roic_of(tk)
     if r is not None:
