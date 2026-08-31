@@ -19017,17 +19017,29 @@ var GM = {
   ];
   var proxyIdx = parseInt(lsGet(LS.proxy) || '0', 10) || 0;
 
+  /* Free CORS proxies rate-limit hard: a burst of a dozen requests comes back
+     without CORS headers and every one fails. So we trip a breaker after a few
+     consecutive failures and leave the proxies alone for a while — the repo
+     snapshot keeps the page populated in the meantime. */
+  var proxyFails = 0, proxyPausedUntil = 0;
+  function proxyAllowed(){ return Date.now() > proxyPausedUntil; }
+
   function viaProxy(url){
+    if (!proxyAllowed()) return Promise.reject(new Error('proxy cooling down'));
     var order = [], i;
     for (i = 0; i < PROXIES.length; i++) order.push((proxyIdx + i) % PROXIES.length);
     return order.reduce(function(chain, idx){
       return chain.catch(function(){
-        return getJSON(PROXIES[idx](url)).then(function(d){
+        return getJSON(PROXIES[idx](url), 7000).then(function(d){
           if (idx !== proxyIdx) { proxyIdx = idx; lsSet(LS.proxy, String(idx)); }
+          proxyFails = 0;
           return d;
         });
       });
-    }, Promise.reject(new Error('init')));
+    }, Promise.reject(new Error('init'))).catch(function(e){
+      if (++proxyFails >= 4) { proxyPausedUntil = Date.now() + 10 * 60 * 1000; proxyFails = 0; }
+      throw e;
+    });
   }
 
   function yahooQuote(t){
@@ -19305,9 +19317,30 @@ var GM = {
   /* ---------------------------------------------------------------
      6. ticker tape
      --------------------------------------------------------------- */
+  var tapeCursor = 0;
+
+  /* keyless mode: one symbol per tick, rotating — steady updates that stay
+     well under any free proxy's rate limit */
+  function trickleTape(){
+    var h = window.__SPZ_HOOKS;
+    if (!h || !h.tickers || !h.tickers.length || !proxyAllowed()) return Promise.resolve();
+    var row = h.tickers[tapeCursor % h.tickers.length];
+    tapeCursor++;
+    return quoteOf(row[0], true).then(function(q){
+      if (q.chgPct === null || q.chgPct === undefined) return;
+      row[1] = (q.chgPct >= 0 ? '+' : '') + q.chgPct.toFixed(2) + '%';
+      row[2] = q.chgPct >= 0;
+      tapeTs[row[0]] = Date.now();
+      noteSrc(q.src); state.last = Date.now();
+      try { h.renderTicker(); } catch(e){}
+      paintBar();
+    }, function(){});
+  }
+
   function refreshTape(force){
     var h = window.__SPZ_HOOKS;
     if (!h || !h.tickers) return Promise.resolve();
+    if (!apiKey()) return trickleTape();
     var jobs = h.tickers.map(function(row){
       return quoteOf(row[0], force).then(function(q){
         if (q.chgPct === null || q.chgPct === undefined) return;
@@ -19360,9 +19393,12 @@ var GM = {
   var syncing = false;
   function syncStocks(list, force){
     if (!list.length) return Promise.resolve();
+    var keyed = !!apiKey();
     var jobs = list.map(function(s){
       var t = s.ticker;
-      var p1 = quoteOf(t, force).then(function(q){
+      /* without a key the card price comes from the snapshot: firing 20 proxy
+         requests per tab switch only trips the proxy's rate limit */
+      var p1 = (keyed ? quoteOf(t, force) : Promise.reject(new Error('snapshot'))).then(function(q){
         s.live_price = q.price; s.live_chg = q.chgPct; s.live_ccy = q.ccy || ccy(t);
         s.live_ts = q.ts; noteSrc(q.src); state.last = Date.now();
       }, function(){});
@@ -19538,10 +19574,14 @@ var GM = {
     }).then(function(){ setTimeout(warmRest, 3000); });
     setInterval(function(){ if (!document.hidden) loadSnapshot(); }, 10 * 60 * 1000);
     setInterval(function(){
-      if (document.hidden) return;
+      if (document.hidden || !apiKey()) return;
       refreshTape(true);
       syncStocks(stocksIn(currentCat()), true);
     }, CFG.autoRefresh);
+    setInterval(function(){
+      if (document.hidden || apiKey()) return;
+      trickleTape();
+    }, 7000);
     setInterval(function(){ if (!document.hidden) refreshFx(false); }, CFG.fxTTL);
   }
 
