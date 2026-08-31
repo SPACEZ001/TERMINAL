@@ -1,0 +1,50 @@
+name: market-data
+
+# Keeps data/market.json fresh so SPACEZ_TERMINAL.html always has numbers to
+# show, with no API key and no CORS proxy involved. The page still layers
+# browser-side live quotes on top of this snapshot.
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'   # every 30 min (GitHub queues these, expect drift)
+  workflow_dispatch:          # run it by hand from the Actions tab
+  push:
+    paths:
+      - 'scripts/fetch_market.py'
+      - '.github/workflows/market-data.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: market-data
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install deps
+        run: pip install --quiet --upgrade yfinance
+
+      - name: Build snapshot
+        run: python scripts/fetch_market.py
+
+      - name: Commit if changed
+        run: |
+          git config user.name  "spacez-market-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain data/market.json)" ]; then
+            git add data/market.json
+            git commit -m "data: market snapshot $(date -u '+%Y-%m-%d %H:%M UTC')"
+            git push
+          else
+            echo "no change"
+          fi
