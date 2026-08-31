@@ -20384,6 +20384,15 @@ var GM = {
     color:var(--grey-dim);}
   #regime .rg-ticks b{position:absolute;font-weight:500;transform:translateX(-50%);white-space:nowrap;}
 
+  #regime .rg-bt{font-family:var(--mono);font-size:8.5px;letter-spacing:.9px;padding:2px 7px;
+    border-radius:3px;border:1px dashed currentColor;align-self:flex-start;cursor:help;}
+  #regime .rg-bt.ok{color:var(--neon-2,#7CFFB2);}
+  #regime .rg-bt.warn{color:var(--amber,#ffb020);}
+  #regime .rg-bt.alert{color:var(--grey-dim);}
+  #regime .rg-btnote{margin:-8px 0 22px;font-size:12.5px;line-height:1.7;color:var(--grey);
+    border-left:2px solid var(--grey-dim);padding:10px 0 10px 14px;max-width:860px;}
+  #regime .rg-btnote b{color:var(--white);}
+  #regime .rg-btnote a{color:var(--neon,#cf0);text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer;}
   #regime .rg-cmean{font-size:12.5px;line-height:1.65;color:var(--grey);}
   #regime .rg-cwhy{font-size:11.5px;line-height:1.6;color:var(--grey-dim);border-top:1px dashed rgba(255,255,255,.07);
     padding-top:9px;margin-top:2px;}
@@ -20818,8 +20827,47 @@ var GM = {
   /* ---------------------------------------------------------------
      render
      --------------------------------------------------------------- */
-  var snap = null, sec = null, bar = null;
+  var snap = null, sec = null, bar = null, grades = null;
   function reg(){ return (snap && snap.regime) || {}; }
+
+  /* The Proof Lab measured every one of these gauges against 12–25 years of
+     history. Showing that grade next to the live reading is the whole point
+     of having run the test — a gauge with no historical edge should not look
+     as authoritative as one that has it. */
+  function loadGrades(){
+    if (grades !== null) return;
+    grades = {};
+    fetch('data/backtest.json?v=' + Math.floor(Date.now() / 3.6e6))
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){
+        if (!d || !d.gauges) return;
+        d.gauges.forEach(function(g){
+          var core = (g.h || {})['63'] || {};
+          grades[g.k] = { g:g.grade, edge:core.edge, n:g.episodes };
+        });
+        repaintAll();
+      }, function(){});
+  }
+
+  var GRADE_COPY = {
+    A:{en:'measured edge',th:'พิสูจน์แล้วว่ามีผล'},
+    B:{en:'measured edge',th:'พิสูจน์แล้วว่ามีผล'},
+    C:{en:'weak edge in the test',th:'ผลทดสอบอ่อน'},
+    D:{en:'no edge in the test',th:'ทดสอบแล้วไม่มีผล'},
+    F:{en:'test says the opposite',th:'ทดสอบแล้วได้ผลตรงข้าม'},
+    'n/a':{en:'untested',th:'ยังไม่ได้ทดสอบ'}
+  };
+
+  function gradeChip(k){
+    if (!grades || !grades[k]) return '';
+    var g = grades[k];
+    var cls = (g.g === 'A' || g.g === 'B') ? 'ok' : g.g === 'C' ? 'warn' : 'alert';
+    var t = tx(GRADE_COPY[g.g] || GRADE_COPY['n/a']);
+    return '<span class="rg-bt ' + cls + '" title="' + esc(t) +
+      (isNum(g.edge) ? ' · ' + (L() === 'th' ? 'ส่วนต่าง 3 เดือน ' : '3-month edge ') + sgn(g.edge) + ' pts · ' +
+        g.n + (L() === 'th' ? ' ครั้ง' : ' episodes') : '') + '">' +
+      (L() === 'th' ? 'ผลทดสอบ ' : 'TEST ') + esc(g.g === 'n/a' ? '—' : g.g) + '</span>';
+  }
   function flows(){ return (snap && snap.flows) || {}; }
 
   function gaugeHTML(g, r){
@@ -20830,6 +20878,7 @@ var GM = {
     return '<div class="rg-card st-' + s + '">' +
       '<div class="rg-ct"><span>' + esc(tx(g.n)) + '</span>' +
         '<span class="rg-chip ' + s + '">' + esc(chip) + '</span></div>' +
+      (gradeChip(g.k) || '') +
       '<div class="rg-cval">' + esc(val) + '<small>' + esc(g.unit.trim() || '') + '</small></div>' +
       dialHTML(g, v) +
       '<div class="rg-cmean">' + esc(s === 'na' ? tx(COPY.unknown) : tx(g.m[s])) + '</div>' +
@@ -20945,6 +20994,25 @@ var GM = {
     };
   }
 
+  function btNote(){
+    if (!grades || !Object.keys(grades).length) return '';
+    var ks = Object.keys(grades);
+    var good = ks.filter(function(k){ return 'AB'.indexOf(grades[k].g) !== -1; }).length;
+    var weak = ks.filter(function(k){ return grades[k].g === 'C'; }).length;
+    var none = ks.filter(function(k){ return 'DF'.indexOf(grades[k].g) !== -1; }).length;
+    var th = L() === 'th';
+    return '<div class="rg-btnote" style="margin-top:22px;">' +
+      (th ? '<b>ผลทดสอบย้อนหลังของมาตรวัดพวกนี้:</b> จาก ' + ks.length + ' ตัว มี <b>' + good +
+            '</b> ตัวที่พิสูจน์แล้วว่ามีผล, <b>' + weak + '</b> ตัวผลอ่อน และ <b>' + none +
+            '</b> ตัวที่ทดสอบแล้วไม่มีผลหรือได้ผลตรงข้าม — แปลว่าให้อ่านมาตรวัดพวกนี้เป็น "ตอนนี้ตลาดหน้าตาแบบไหน" ไม่ใช่ "ตลาดจะลง" ' +
+            'กดดูรายละเอียดทีละตัวได้ที่หน้า <a data-rg="goproof">ทดสอบเรดาร์</a>'
+         : '<b>What the backtest says about these gauges:</b> of ' + ks.length + ', <b>' + good +
+           '</b> showed a measurable edge, <b>' + weak + '</b> were weak, and <b>' + none +
+           '</b> showed none or the opposite — so read these as "what kind of market is this", not as "the market will fall". ' +
+           'The per-gauge detail is in the <a data-rg="goproof">Proof Lab</a>.') +
+    '</div>';
+  }
+
   function paint(){
     if (!sec) return;
     var host = sec.querySelector('[data-rg="body"]');
@@ -20978,6 +21046,7 @@ var GM = {
           esc(tx(COPY.howH)) + '</b> — ' + esc(tx(COPY.how)) + '</div>' +
       '</div>' +
       '<div class="rg-grid">' + GAUGES.map(function(g){ return gaugeHTML(g, r); }).join('') + '</div>' +
+      btNote() +
       '<div class="rg-sec"><h3 class="rg-sech">' + esc(tx(COPY.divH)) + '</h3>' +
         '<p class="rg-secl">' + esc(tx(COPY.divL)) + '</p>' + divHTML(r) + '</div>' +
       '<div class="rg-sec"><h3 class="rg-sech">' + esc(tx(COPY.moneyH)) + '</h3>' +
@@ -20987,6 +21056,12 @@ var GM = {
       '<div class="rg-sec"><h3 class="rg-sech">' + esc(tx(COPY.playH)) + '</h3>' +
         '<p class="rg-secl">' + esc(tx(COPY.playL)) + '</p>' + playHTML(r) + '</div>' +
       '<div class="rg-note">' + esc(tx(COPY.note)) + '</div>';
+
+    var go = host.querySelector('[data-rg="goproof"]');
+    if (go) go.addEventListener('click', function(){
+      var link = document.querySelector('[data-route-to="proof"]');
+      if (link) link.click();
+    });
   }
 
   /* ---------------------------------------------------------------
@@ -21091,6 +21166,7 @@ var GM = {
   }
 
   function repaintAll(){
+    loadGrades();
     if (sec) {
       var q = function(k){ return sec.querySelector('[data-rg="' + k + '"]'); };
       if (q('eb')) q('eb').textContent = tx(COPY.eyebrow);
@@ -21245,6 +21321,8 @@ var GM = {
     noFile:{en:'The history file is not on the server yet — it is rebuilt once a day by the same job that refreshes the market data. Check back after the next run.',
             th:'ไฟล์ประวัติยังไม่ขึ้นเซิร์ฟเวอร์ — มันถูกสร้างใหม่วันละครั้งโดยงานเดียวกับที่รีเฟรชข้อมูลตลาด กลับมาดูอีกทีหลังรอบถัดไป'},
     ready:{en:'{n} gauges · {a} of history · benchmark {b}',th:'มาตรวัด {n} ตัว · ข้อมูล {a} · เทียบกับ {b}'},
+    resNote:{en:'your run samples the history weekly, so a grade can differ by one step from the daily pass the server does',
+             th:'การรันในเบราว์เซอร์อ่านข้อมูลรายสัปดาห์ เกรดจึงอาจต่างจากรอบรายวันที่เซิร์ฟเวอร์คำนวณอยู่หนึ่งขั้น'},
     ep:{en:'RED EPISODES',th:'ครั้งที่ขึ้นแดง'},
     after:{en:'MARKET AFTER',th:'ตลาดหลังจากนั้น'},
     base:{en:'NORMAL PERIOD',th:'ช่วงปกติทั่วไป'},
@@ -21603,7 +21681,7 @@ var GM = {
         '<span class="pf-prog" data-pf="prog"><i></i></span>' +
         '<span class="pf-status" style="flex-basis:100%">' +
           esc(tx(C.ready).replace('{n}', (d.gauges || []).length).replace('{a}', years)
-              .replace('{b}', d.benchmark || 'SPY')) + '</span>' +
+              .replace('{b}', d.benchmark || 'SPY')) + ' · ' + esc(tx(C.resNote)) + '</span>' +
       '</div>' + summary +
       (res.length ? '<div class="pf-grid">' + res.map(function(x){ return cardHTML(x, specs[x.k]); }).join('') + '</div>'
                   : '<div class="pf-empty">' + esc(tx(C.run)) + '</div>') +
