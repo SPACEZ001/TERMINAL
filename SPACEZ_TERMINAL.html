@@ -18929,7 +18929,7 @@ var GM = {
     quoteTTL   : 45 * 1000,          /* live quote cache            */
     metricTTL  : 12 * 60 * 60 * 1000,/* fundamentals cache          */
     fxTTL      : 60 * 60 * 1000,     /* fx cache                    */
-    autoRefresh: 60 * 1000,          /* tape + visible cards        */
+    autoRefresh: 90 * 1000,          /* tape + visible cards        */
     budgetPerMin: 55,                /* Finnhub free tier is 60/min */
     concurrency: 4
   };
@@ -19009,10 +19009,11 @@ var GM = {
 
   /* public CORS proxies, tried in order; the winner is remembered */
   var PROXIES = [
-    function(u){ return u; },
+    /* verified working from a Thai residential connection, Aug 2026 */
+    function(u){ return 'https://api.cors.lol/?url=' + encodeURIComponent(u); },
     function(u){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
     function(u){ return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u); },
-    function(u){ return 'https://corsproxy.io/?url=' + encodeURIComponent(u); }
+    function(u){ return u; }   /* direct: only where Yahoo sends CORS headers */
   ];
   var proxyIdx = parseInt(lsGet(LS.proxy) || '0', 10) || 0;
 
@@ -19505,7 +19506,10 @@ var GM = {
   }
 
   function warmRest(){
-    /* quietly fill in the other categories once the visible one is done */
+    /* Only worth doing when a Finnhub key is present: without one the repo
+       snapshot already covers every category, and hammering a free public
+       CORS proxy with 58 extra symbols just gets us rate-limited. */
+    if (!apiKey()) return;
     var cats = ['value','growth','dividend','defensive'], i = 0;
     (function next(){
       if (i >= cats.length) return;
