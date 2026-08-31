@@ -13106,7 +13106,7 @@ var CL_UI = {
         { k:'learn',  t:{en:'Learn',th:'เรียนรู้'},
           ids:['guided', 'start', 'types', 'glossary', 'signals'] },
         { k:'market', t:{en:'Read the market',th:'อ่านตลาด'},
-          ids:['outlook', 'flow', 'globe', 'infl', 'desk', 'scenarios'] },
+          ids:['outlook', 'regime', 'flow', 'globe', 'infl', 'desk', 'scenarios'] },
         { k:'tools',  t:{en:'Workbench',th:'เครื่องมือ'},
           ids:['chartlab', 'directory', 'pro'] }
       ];
@@ -20178,6 +20178,543 @@ var GM = {
     document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 900); });
   } else {
     setTimeout(boot, 900);
+  }
+})();
+</script>
+
+<!-- ============================================================
+     SPACEZ TURNING-POINT RADAR  (menu: "สัญญาณเปลี่ยนทิศ")
+     One screen that checks every measurable thing that tends to move
+     before price does, explains what each reading means in plain words,
+     and shows where money has historically rotated when that reading
+     appears. Fed by data/market.json → regime / macro / flows.
+     ============================================================ -->
+<style>
+  #regime .rg-wrap{max-width:1180px;margin:0 auto;padding:0 24px 90px;}
+  @media(max-width:700px){#regime .rg-wrap{padding:0 14px 60px;}}
+  #regime .rg-verdict{border:1px solid var(--border-dim);border-radius:var(--radius,14px);
+    background:var(--glass,rgba(255,255,255,.035));padding:24px;margin-bottom:26px;}
+  #regime .rg-vhead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;}
+  #regime .rg-score{font-family:var(--mono);font-size:38px;font-weight:800;line-height:1;color:var(--white);}
+  #regime .rg-of{font-family:var(--mono);font-size:12px;color:var(--grey-dim);letter-spacing:1px;}
+  #regime .rg-label{font-size:17px;font-weight:800;letter-spacing:-.2px;}
+  #regime .rg-label.ok{color:var(--neon-2,#7CFFB2);}
+  #regime .rg-label.warn{color:var(--amber,#ffb020);}
+  #regime .rg-label.alert{color:var(--red,#ff3b4e);}
+  #regime .rg-meter{height:7px;border-radius:4px;background:rgba(255,255,255,.07);margin:16px 0 12px;overflow:hidden;}
+  #regime .rg-meter i{display:block;height:100%;border-radius:4px;transition:width .5s ease;}
+  #regime .rg-vsub{font-size:13.5px;line-height:1.7;color:var(--grey);max-width:760px;}
+  #regime .rg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:14px;}
+  #regime .rg-card{border:1px solid var(--border-dim);border-radius:11px;padding:15px 16px 14px;
+    background:rgba(255,255,255,.018);display:flex;flex-direction:column;gap:8px;}
+  #regime .rg-card.st-alert{border-color:rgba(255,59,78,.4);}
+  #regime .rg-card.st-warn{border-color:rgba(255,176,32,.35);}
+  #regime .rg-ct{font-family:var(--mono);font-size:9.5px;letter-spacing:1.2px;color:var(--grey-dim);
+    display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  #regime .rg-chip{font-family:var(--mono);font-size:8.5px;letter-spacing:.9px;padding:2px 7px;
+    border-radius:3px;border:1px solid currentColor;white-space:nowrap;}
+  #regime .rg-chip.ok{color:var(--neon-2,#7CFFB2);}
+  #regime .rg-chip.warn{color:var(--amber,#ffb020);}
+  #regime .rg-chip.alert{color:var(--red,#ff3b4e);}
+  #regime .rg-chip.na{color:var(--grey-dim);}
+  #regime .rg-cname{font-size:14px;font-weight:700;color:var(--white);line-height:1.35;}
+  #regime .rg-cval{font-family:var(--mono);font-size:22px;font-weight:800;line-height:1;color:var(--white);}
+  #regime .rg-cval small{font-size:11px;font-weight:500;color:var(--grey-dim);margin-left:6px;}
+  #regime .rg-cmean{font-size:12.5px;line-height:1.65;color:var(--grey);}
+  #regime .rg-cwhy{font-size:11.5px;line-height:1.6;color:var(--grey-dim);border-top:1px dashed rgba(255,255,255,.07);
+    padding-top:9px;margin-top:2px;}
+  #regime .rg-sec{margin-top:44px;}
+  #regime .rg-sech{font-size:22px;font-weight:900;letter-spacing:-.3px;color:var(--white);margin:0 0 8px;}
+  #regime .rg-secl{font-size:13.5px;line-height:1.75;color:var(--grey);max-width:780px;margin-bottom:18px;}
+  #regime .rg-div{border:1px solid var(--border-dim);border-radius:11px;overflow:hidden;}
+  #regime .rg-drow{display:grid;grid-template-columns:auto 1fr auto;gap:6px 14px;padding:13px 16px;
+    border-bottom:1px solid rgba(255,255,255,.05);align-items:center;}
+  #regime .rg-drow:last-child{border-bottom:0;}
+  #regime .rg-dtk{font-family:var(--mono);font-weight:700;font-size:13.5px;color:var(--neon,#cf0);}
+  #regime .rg-dtk small{display:block;font-size:10px;color:var(--grey-dim);font-weight:500;letter-spacing:0;}
+  #regime .rg-dtxt{font-size:12.5px;line-height:1.6;color:var(--grey);}
+  #regime .rg-dtxt b{color:var(--white);font-weight:600;}
+  #regime .rg-dkind{font-family:var(--mono);font-size:9px;letter-spacing:.9px;padding:3px 8px;border-radius:3px;
+    border:1px solid currentColor;white-space:nowrap;}
+  #regime .rg-dkind.bear{color:var(--red,#ff3b4e);} #regime .rg-dkind.bull{color:var(--neon-2,#7CFFB2);}
+  #regime .rg-nums{grid-column:1/-1;font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);
+    display:flex;gap:16px;flex-wrap:wrap;}
+  #regime .rg-nums b{color:var(--white);font-weight:600;}
+  #regime .rg-play{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;}
+  #regime .rg-pcard{border:1px solid var(--border-dim);border-radius:11px;padding:16px;background:rgba(255,255,255,.018);}
+  #regime .rg-pcard.on{border-color:var(--border,rgba(204,255,0,.28));background:rgba(204,255,0,.045);}
+  #regime .rg-ph{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:9px;}
+  #regime .rg-pname{font-size:14.5px;font-weight:800;color:var(--white);line-height:1.35;}
+  #regime .rg-pon{font-family:var(--mono);font-size:8.5px;letter-spacing:1px;padding:3px 7px;border-radius:3px;
+    border:1px solid currentColor;white-space:nowrap;color:var(--grey-dim);}
+  #regime .rg-pcard.on .rg-pon{color:var(--neon,#cf0);}
+  #regime .rg-pd{font-size:12.5px;line-height:1.65;color:var(--grey);margin-bottom:12px;}
+  #regime .rg-flowline{display:flex;align-items:flex-start;gap:9px;font-size:12.5px;line-height:1.6;padding:6px 0;}
+  #regime .rg-arrow{font-family:var(--mono);font-size:11px;flex:none;width:52px;letter-spacing:.5px;}
+  #regime .rg-arrow.out{color:var(--red,#ff3b4e);} #regime .rg-arrow.in{color:var(--neon-2,#7CFFB2);}
+  #regime .rg-names{color:var(--grey);}
+  #regime .rg-tk{font-family:var(--mono);font-size:11px;color:var(--neon,#cf0);}
+  #regime .rg-note{margin-top:34px;border-left:2px solid var(--amber,#ffb020);padding:12px 0 12px 15px;
+    font-size:12.5px;line-height:1.75;color:var(--grey);}
+  #regime .rg-empty{font-family:var(--mono);font-size:12px;color:var(--grey-dim);padding:22px 0;}
+  html[data-theme="light"] #regime .rg-score,html[data-theme="light"] #regime .rg-cname,
+  html[data-theme="light"] #regime .rg-cval,html[data-theme="light"] #regime .rg-sech,
+  html[data-theme="light"] #regime .rg-pname,html[data-theme="light"] #regime .rg-dtxt b{color:#12141c;}
+  html[data-theme="light"] #regime .rg-meter{background:rgba(18,20,28,.1);}
+</style>
+<script>
+(function(){
+  'use strict';
+  if (window.__SPZ_REGIME) return;
+
+  function L(){ return document.documentElement.getAttribute('lang') === 'th' ? 'th' : 'en'; }
+  function tx(o){ return o ? (o[L()] !== undefined ? o[L()] : o.en) : ''; }
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function sgn(v, d){ return (v >= 0 ? '+' : '') + Number(v).toFixed(d === undefined ? 1 : d); }
+  var isNum = function(v){ return typeof v === 'number' && isFinite(v); };
+
+  var COPY = {
+    eyebrow:{en:'Turning Point Radar',th:'เรดาร์สัญญาณเปลี่ยนทิศ'},
+    h:{en:'How would you know the market is turning?',th:'จะรู้ได้ยังไงว่าตลาดกำลังจะเปลี่ยนทิศ'},
+    lede:{en:'Nobody calls a top or a bottom. What you can do is watch the handful of things that historically move BEFORE price does — how many stocks are still in an uptrend, whether credit and small caps are keeping up, what the bond curve is saying, and whether the leaders are still being bought with conviction. This page checks all of them at once, every 30 minutes, and translates each reading into plain language.',
+          th:'ไม่มีใครทายจุดสูงสุดหรือต่ำสุดได้ สิ่งที่ทำได้คือเฝ้าดูตัวชี้วัดไม่กี่ตัวที่ในอดีตมักขยับ "ก่อน" ราคา — หุ้นส่วนใหญ่ยังอยู่ในขาขึ้นไหม ตลาดหุ้นกู้และหุ้นเล็กยังตามทันหรือเปล่า เส้นอัตราผลตอบแทนบอกอะไร และหุ้นผู้นำยังถูกซื้ออย่างมั่นใจอยู่ไหม หน้านี้เช็คทั้งหมดพร้อมกันทุก 30 นาที แล้วแปลแต่ละค่าออกมาเป็นภาษาคน'},
+    verdictOf:{en:'signals flashing a hard warning',th:'สัญญาณเตือนแรง'},
+    soft:{en:'more leaning that way',th:'ตัวเริ่มเอียงไปทางนั้น'},
+    vOk:{en:'Still risk-on',th:'ตลาดยังอยู่โหมดรับความเสี่ยง'},
+    vMix:{en:'Cracks appearing',th:'เริ่มมีรอยร้าว'},
+    vAlert:{en:'Several warnings at once',th:'เตือนพร้อมกันหลายจุด'},
+    vOkD:{en:'Most of the plumbing still points the same way as price. Trends that break usually give you more warning than this.',
+          th:'กลไกส่วนใหญ่ยังชี้ไปทางเดียวกับราคา แนวโน้มที่จะพลิกมักส่งสัญญาณเตือนมากกว่านี้'},
+    vMixD:{en:'Some of the early movers have turned while price has not. This is the stage where position size matters more than opinion.',
+           th:'ตัวชี้วัดที่มักขยับก่อนบางตัวพลิกไปแล้วทั้งที่ราคายังไม่พลิก ช่วงแบบนี้ขนาดการลงทุนสำคัญกว่าความเห็น'},
+    vAlertD:{en:'Multiple independent readings are warning together. That is not a sell signal by itself — it is a reason to know exactly what you own and why.',
+             th:'ตัวชี้วัดที่ไม่เกี่ยวกันหลายตัวเตือนพร้อมกัน นั่นไม่ใช่สัญญาณให้ขายในตัวมันเอง แต่เป็นเหตุผลให้รู้ให้ชัดว่าคุณถืออะไรอยู่และถือเพราะอะไร'},
+    unknown:{en:'no data',th:'ไม่มีข้อมูล'},
+    divH:{en:'Price says one thing, momentum says another',th:'ราคาพูดอย่าง แรงส่งพูดอีกอย่าง'},
+    divL:{en:'A divergence is when price pushes to a new high but the momentum behind it (RSI) is weaker than it was a month ago — the move is being carried by fewer buyers each time. It is a warning, not a timer: divergences can run for months before anything happens, and some simply resolve by momentum catching back up. Treat it as a reason to check your risk, not a reason to sell.',
+          th:'ไดเวอร์เจนซ์คือตอนที่ราคาทำจุดสูงใหม่ แต่แรงส่งที่อยู่เบื้องหลัง (RSI) อ่อนกว่าเมื่อเดือนก่อน — แปลว่าการขึ้นรอบนี้ถูกดันด้วยคนซื้อที่น้อยลงเรื่อย ๆ มันคือสัญญาณเตือน ไม่ใช่นาฬิกาจับเวลา ไดเวอร์เจนซ์วิ่งต่อได้เป็นเดือนก่อนจะเกิดอะไรขึ้น และบางครั้งก็จบลงด้วยแรงส่งกลับมาไล่ทันเอง ให้ถือเป็นเหตุผลให้ทบทวนความเสี่ยง ไม่ใช่เหตุผลให้ขาย'},
+    divNone:{en:'No divergences right now — price and momentum are agreeing across the list.',
+             th:'ตอนนี้ยังไม่พบไดเวอร์เจนซ์ — ราคากับแรงส่งไปในทางเดียวกันทั้งรายการ'},
+    bear:{en:'MOMENTUM FADING',th:'แรงส่งอ่อนลง'},
+    bull:{en:'MOMENTUM BUILDING',th:'แรงส่งกำลังกลับ'},
+    bearT:{en:'Price is up <b>{m}%</b> over the month and sitting <b>{h}%</b> from its 52-week high, but RSI has fallen from <b>{a}</b> to <b>{b}</b>. Higher price, weaker push.',
+           th:'ราคาขึ้น <b>{m}%</b> ในหนึ่งเดือน และอยู่ห่างจุดสูงสุด 52 สัปดาห์แค่ <b>{h}%</b> แต่ RSI ลดจาก <b>{a}</b> เหลือ <b>{b}</b> ราคาสูงขึ้นแต่แรงดันอ่อนลง'},
+    bullT:{en:'Price is down <b>{m}%</b> over the month but RSI has risen from <b>{a}</b> to <b>{b}</b> — selling pressure is draining out even as the price slips.',
+           th:'ราคาลง <b>{m}%</b> ในหนึ่งเดือน แต่ RSI ขยับขึ้นจาก <b>{a}</b> เป็น <b>{b}</b> — แรงขายกำลังเบาลงทั้งที่ราคายังไหลลง'},
+    playH:{en:'When this happens, where does the money usually go?',th:'ถ้าเจอแบบนี้ เงินมักไหลไปไหน'},
+    playL:{en:'These are historical tendencies, not rules and not forecasts. The blocks lit up are the ones your live data matches right now. Every one of them has failed before, which is exactly why the reasoning matters more than the label.',
+           th:'นี่คือแนวโน้มที่เคยเกิดในอดีต ไม่ใช่กฎและไม่ใช่การพยากรณ์ บล็อกที่สว่างคือเงื่อนไขที่ข้อมูลสดตอนนี้เข้าเกณฑ์ ทุกข้อเคยผิดมาแล้ว ซึ่งเป็นเหตุผลว่าทำไมเหตุผลเบื้องหลังถึงสำคัญกว่าป้ายชื่อ'},
+    active:{en:'ACTIVE NOW',th:'ตรงเงื่อนไขตอนนี้'},
+    inactive:{en:'not now',th:'ยังไม่เข้าเกณฑ์'},
+    out:{en:'OUT OF',th:'ออกจาก'}, into:{en:'INTO',th:'เข้าสู่'},
+    note:{en:'Every number here is computed from free public price data and refreshed about every 30 minutes. It is educational material, not investment advice, and no combination of these readings can tell you what happens next.',
+          th:'ทุกตัวเลขในหน้านี้คำนวณจากข้อมูลราคาสาธารณะที่ใช้ได้ฟรี และอัปเดตราวทุก 30 นาที เป็นเนื้อหาเพื่อการศึกษา ไม่ใช่คำแนะนำการลงทุน และไม่มีชุดตัวเลขไหนบอกอนาคตได้'},
+    waiting:{en:'Waiting for the first data sync…',th:'กำลังรอข้อมูลรอบแรก…'}
+  };
+
+  /* ---------------------------------------------------------------
+     the gauges. Each knows how to read itself and how to say what the
+     reading means — three different sentences for three states.
+     --------------------------------------------------------------- */
+  function st3(v, okAbove, warnAbove){
+    if (!isNum(v)) return 'na';
+    if (v >= okAbove) return 'ok';
+    if (v >= warnAbove) return 'warn';
+    return 'alert';
+  }
+  function st3inv(v, okBelow, warnBelow){
+    if (!isNum(v)) return 'na';
+    if (v <= okBelow) return 'ok';
+    if (v <= warnBelow) return 'warn';
+    return 'alert';
+  }
+
+  var GAUGES = [
+    { k:'breadth_200', unit:'%', level:true,
+      n:{en:'Market breadth',th:'ความกว้างของตลาด'},
+      v:function(r){ return r.breadth_200; },
+      s:function(v){ return st3(v, 60, 45); },
+      why:{en:'Share of the tracked stocks trading above their own 200-day average.',
+           th:'สัดส่วนหุ้นในรายการที่ราคายืนเหนือเส้นค่าเฉลี่ย 200 วันของตัวเอง'},
+      m:{ ok:{en:'Most stocks are still in an uptrend — the rally is being carried broadly.',
+              th:'หุ้นส่วนใหญ่ยังอยู่ในขาขึ้น การขึ้นรอบนี้กระจายตัวดี'},
+          warn:{en:'The market is thinning out. Fewer names are doing the work than the index suggests.',
+                th:'ตลาดเริ่มบางลง หุ้นที่แบกดัชนีมีน้อยกว่าที่ดัชนีทำให้เห็น'},
+          alert:{en:'The index is being held up by a handful of names. This is the classic late-stage shape.',
+                 th:'ดัชนีถูกพยุงด้วยหุ้นไม่กี่ตัว นี่คือรูปทรงคลาสสิกของช่วงปลายรอบ'} } },
+
+    { k:'credit_1m', unit:' pts',
+      n:{en:'Credit market',th:'ตลาดหุ้นกู้'},
+      v:function(r){ return r.credit_1m; },
+      s:function(v){ return st3(v, 0, -1.5); },
+      why:{en:'High-yield bonds (HYG) versus safer investment-grade (LQD) over a month. Credit usually cracks before equities do.',
+           th:'หุ้นกู้ผลตอบแทนสูง (HYG) เทียบหุ้นกู้ระดับลงทุน (LQD) ในหนึ่งเดือน ตลาดเครดิตมักร้าวก่อนตลาดหุ้น'},
+      m:{ ok:{en:'Lenders are still comfortable taking risk. No stress showing here.',
+              th:'ผู้ให้กู้ยังกล้ารับความเสี่ยง ยังไม่เห็นความตึงเครียด'},
+          warn:{en:'Risky borrowers are starting to lag. Worth watching, not panicking about.',
+                th:'ลูกหนี้ความเสี่ยงสูงเริ่มตามหลัง ควรจับตา แต่ยังไม่ต้องตกใจ'},
+          alert:{en:'Credit is pulling away from equities — historically one of the earliest real warnings.',
+                 th:'ตลาดเครดิตแยกตัวออกจากตลาดหุ้น ในอดีตนี่คือสัญญาณเตือนจริงที่มาเร็วที่สุดตัวหนึ่ง'} } },
+
+    { k:'cyclical_vs_defensive_1m', unit:' pts',
+      n:{en:'Risk appetite',th:'ความอยากเสี่ยง'},
+      v:function(r){ return r.cyclical_vs_defensive_1m; },
+      s:function(v){ return st3(v, 0, -3); },
+      why:{en:'Consumer cyclicals (XLY) versus staples (XLP) over a month — what people buy when they feel rich versus when they feel careful.',
+           th:'หุ้นสินค้าฟุ่มเฟือย (XLY) เทียบสินค้าจำเป็น (XLP) ในหนึ่งเดือน — ของที่คนซื้อตอนรู้สึกรวย เทียบกับตอนรู้สึกต้องระวัง'},
+      m:{ ok:{en:'Money is still paying up for growth and discretionary spending.',
+              th:'เงินยังยอมจ่ายแพงให้การเติบโตและการใช้จ่ายฟุ่มเฟือย'},
+          warn:{en:'The defensive side is catching up. Early rotation behaviour.',
+                th:'ฝั่งตั้งรับเริ่มไล่ทัน เป็นพฤติกรรมหมุนกลุ่มระยะแรก'},
+          alert:{en:'Money is moving into what people need rather than what they want.',
+                 th:'เงินกำลังย้ายไปหาของที่คนจำเป็นต้องใช้ แทนของที่คนแค่อยากได้'} } },
+
+    { k:'semis_vs_market_1m', unit:' pts',
+      n:{en:'Leadership (semis)',th:'ผู้นำตลาด (เซมิคอนดักเตอร์)'},
+      v:function(r){ return r.semis_vs_market_1m; },
+      s:function(v){ return st3(v, 0, -4); },
+      why:{en:'Semiconductors (SMH) versus the S&P (SPY). Semis lead the AI trade both up and down.',
+           th:'กลุ่มเซมิคอนดักเตอร์ (SMH) เทียบดัชนี S&P (SPY) กลุ่มนี้นำธีม AI ทั้งขาขึ้นและขาลง'},
+      m:{ ok:{en:'The leaders are still leading. The theme has not lost its bid.',
+              th:'หุ้นผู้นำยังนำอยู่ ธีมนี้ยังมีแรงซื้อ'},
+          warn:{en:'Leadership is flattening out against the market.',
+                th:'ความเป็นผู้นำเริ่มแผ่วลงเมื่อเทียบตลาด'},
+          alert:{en:'The group that led on the way up is now lagging — leadership is changing hands.',
+                 th:'กลุ่มที่นำขาขึ้นกลับมาตามหลัง ความเป็นผู้นำกำลังเปลี่ยนมือ'} } },
+
+    { k:'smallcap_vs_market_1m', unit:' pts',
+      n:{en:'Small caps',th:'หุ้นเล็ก'},
+      v:function(r){ return r.smallcap_vs_market_1m; },
+      s:function(v){ return st3(v, -1, -5); },
+      why:{en:'Russell 2000 (IWM) versus the S&P. Small companies feel a slowdown and tight credit first.',
+           th:'ดัชนีหุ้นเล็ก (IWM) เทียบ S&P บริษัทเล็กรับรู้เศรษฐกิจชะลอและสินเชื่อตึงก่อนใคร'},
+      m:{ ok:{en:'Small caps are keeping pace — the recovery is not just a mega-cap story.',
+              th:'หุ้นเล็กยังตามทัน การฟื้นตัวไม่ได้เป็นเรื่องของหุ้นยักษ์อย่างเดียว'},
+          warn:{en:'Small caps are slipping behind the index.',
+                th:'หุ้นเล็กเริ่มตามหลังดัชนี'},
+          alert:{en:'Small caps are being abandoned — money is hiding in size and balance sheets.',
+                 th:'เงินทิ้งหุ้นเล็ก ไปหลบในบริษัทใหญ่ที่งบแข็งแรง'} } },
+
+    { k:'stocks_vs_bonds_1m', unit:' pts',
+      n:{en:'Stocks vs bonds',th:'หุ้น เทียบ พันธบัตร'},
+      v:function(r){ return r.stocks_vs_bonds_1m; },
+      s:function(v){ return st3(v, 0, -4); },
+      why:{en:'SPY versus long Treasuries (TLT) over a month — whether money prefers growth or safety.',
+           th:'SPY เทียบพันธบัตรระยะยาว (TLT) ในหนึ่งเดือน — เงินเลือกการเติบโตหรือความปลอดภัย'},
+      m:{ ok:{en:'Equities are winning the competition for money.',
+              th:'หุ้นชนะการแย่งเงินอยู่'},
+          warn:{en:'Bonds are catching a bid alongside stocks. Someone is hedging.',
+                th:'พันธบัตรเริ่มมีคนซื้อพร้อม ๆ กับหุ้น มีคนกำลังป้องกันความเสี่ยง'},
+          alert:{en:'Money is choosing safety over growth.',
+                 th:'เงินเลือกความปลอดภัยมากกว่าการเติบโต'} } },
+
+    { k:'curve_10y_3m', unit:'%',
+      n:{en:'Yield curve (10y − 3m)',th:'เส้นอัตราผลตอบแทน (10 ปี − 3 เดือน)'},
+      v:function(r){ return r.curve_10y_3m; },
+      s:function(v){ if (!isNum(v)) return 'na'; return v > 0.5 ? 'ok' : v > 0 ? 'warn' : 'alert'; },
+      why:{en:'Long rates minus short rates. When it goes negative, lending long is punished — the single most watched recession marker.',
+           th:'ดอกเบี้ยยาวลบดอกเบี้ยสั้น เมื่อติดลบ การปล่อยกู้ระยะยาวจะไม่คุ้ม เป็นเครื่องหมายเตือนภาวะถดถอยที่คนจับตามากที่สุด'},
+      m:{ ok:{en:'Normal shape. Banks get paid to lend, credit keeps flowing.',
+              th:'รูปทรงปกติ ธนาคารได้กำไรจากการปล่อยกู้ สินเชื่อยังไหลได้'},
+          warn:{en:'Nearly flat. The cushion between short and long rates is almost gone.',
+                th:'เกือบแบน ส่วนต่างระหว่างดอกเบี้ยสั้นกับยาวแทบหมด'},
+          alert:{en:'Inverted. Historically this has led recessions by roughly 6–18 months — with false alarms along the way.',
+                 th:'กลับหัวแล้ว ในอดีตมักนำหน้าภาวะถดถอยราว 6–18 เดือน แต่ก็เคยเตือนผิดมาแล้วเหมือนกัน'} } },
+
+    { k:'vix', unit:'', level:true,
+      n:{en:'Volatility (VIX)',th:'ความผันผวน (VIX)'},
+      v:function(r){ return r.vix; },
+      s:function(v){ return st3inv(v, 18, 25); },
+      why:{en:'What options traders are paying for protection over the next month.',
+           th:'ราคาที่นักเทรดออปชั่นยอมจ่ายเพื่อป้องกันความเสี่ยงในเดือนข้างหน้า'},
+      m:{ ok:{en:'Calm. Note that calm markets are where complacency builds.',
+              th:'สงบ แต่พึงระลึกว่าตลาดที่สงบคือที่ที่ความประมาทก่อตัว'},
+          warn:{en:'Nervous but functioning. Hedging is getting more expensive.',
+                th:'ประหม่าแต่ยังทำงานได้ ต้นทุนการป้องกันความเสี่ยงแพงขึ้น'},
+          alert:{en:'Fear is being paid for. Moves get violent in both directions here.',
+                 th:'มีคนยอมจ่ายเพื่อความกลัว ช่วงนี้ราคาเหวี่ยงแรงทั้งสองทาง'} } },
+
+    { k:'dbc_3m', unit:'%',
+      n:{en:'Commodity pressure',th:'แรงกดดันสินค้าโภคภัณฑ์'},
+      v:function(r){ return r.dbc_3m; },
+      s:function(v){ return st3inv(v, 4, 10); },
+      why:{en:'Broad commodities (DBC) over three months — the raw input into next year’s inflation.',
+           th:'ดัชนีสินค้าโภคภัณฑ์รวม (DBC) ในสามเดือน เป็นต้นทุนดิบที่จะกลายเป็นเงินเฟ้อของปีหน้า'},
+      m:{ ok:{en:'No fresh cost-push pressure building.',
+              th:'ยังไม่มีแรงกดดันต้นทุนรอบใหม่ก่อตัว'},
+          warn:{en:'Input costs are climbing. Watch margins in the next earnings season.',
+                th:'ต้นทุนวัตถุดิบไต่ขึ้น จับตาอัตรากำไรในงบไตรมาสหน้า'},
+          alert:{en:'A commodity surge is the fastest route to a policy surprise.',
+                 th:'สินค้าโภคภัณฑ์พุ่งแรง เป็นทางลัดที่สุดสู่การเซอร์ไพรส์เชิงนโยบาย'} } },
+
+    { k:'uup_3m', unit:'%',
+      n:{en:'US dollar',th:'ดอลลาร์สหรัฐฯ'},
+      v:function(r){ return r.uup_3m; },
+      s:function(v){ return st3inv(v, 2, 5); },
+      why:{en:'The dollar over three months. A strong dollar drains money out of emerging markets, Thailand included.',
+           th:'ดอลลาร์ในสามเดือน ดอลลาร์แข็งดูดเงินออกจากตลาดเกิดใหม่ รวมถึงไทย'},
+      m:{ ok:{en:'Soft or stable dollar — friendly for emerging markets and commodities.',
+              th:'ดอลลาร์อ่อนหรือทรงตัว เป็นมิตรกับตลาดเกิดใหม่และสินค้าโภคภัณฑ์'},
+          warn:{en:'The dollar is firming. That tightens conditions everywhere else.',
+                th:'ดอลลาร์เริ่มแข็ง ทำให้สภาพคล่องที่อื่นตึงตัวขึ้น'},
+          alert:{en:'A hard dollar rally pulls money home and pressures every EM currency.',
+                 th:'ดอลลาร์แข็งแรง ดึงเงินกลับบ้านและกดดันค่าเงินตลาดเกิดใหม่ทุกสกุล'} } },
+
+    { k:'thb_1m', unit:'%',
+      n:{en:'Thai baht (1 month)',th:'ค่าเงินบาท (1 เดือน)'},
+      v:function(r){ return r.thb_1m; },
+      s:function(v){ return st3(v, -1, -3); },
+      why:{en:'How the baht moved against the dollar. A weaker baht flatters exporters and hurts anyone paying in dollars.',
+           th:'บาทขยับเทียบดอลลาร์แค่ไหน บาทอ่อนช่วยผู้ส่งออก แต่กระทบทุกคนที่ต้องจ่ายเป็นดอลลาร์'},
+      m:{ ok:{en:'Stable or firmer baht — no currency pressure on Thai assets.',
+              th:'บาททรงตัวหรือแข็งขึ้น ไม่มีแรงกดดันด้านค่าเงินต่อสินทรัพย์ไทย'},
+          warn:{en:'The baht is slipping. Exporters gain, importers and travel-linked names pay.',
+                th:'บาทอ่อนลง ผู้ส่งออกได้ ผู้นำเข้าและหุ้นที่โยงกับการเดินทางเสีย'},
+          alert:{en:'A fast baht slide usually goes with foreign money leaving Thai assets.',
+                 th:'บาทอ่อนเร็วมักมาพร้อมเงินต่างชาติไหลออกจากสินทรัพย์ไทย'} } }
+  ];
+
+  /* ---------------------------------------------------------------
+     rotation playbook — each block says what it needs to be true
+     --------------------------------------------------------------- */
+  var PLAYS = [
+    { on:function(r){ return isNum(r.dbc_3m) && r.dbc_3m > 5; },
+      n:{en:'Commodities running, inflation risk rising',th:'สินค้าโภคภัณฑ์วิ่ง ความเสี่ยงเงินเฟ้อสูงขึ้น'},
+      d:{en:'When raw material costs climb, companies that own the resource earn more and companies that consume it earn less. Long-dated growth stocks suffer twice: their costs rise and the discount rate applied to their far-future profits rises too.',
+         th:'เมื่อต้นทุนวัตถุดิบไต่ขึ้น บริษัทที่เป็นเจ้าของทรัพยากรได้กำไรมากขึ้น ส่วนบริษัทที่ใช้ทรัพยากรได้น้อยลง หุ้นเติบโตที่กำไรอยู่ไกลโดนสองเด้ง ทั้งต้นทุนขึ้นและอัตราคิดลดกำไรอนาคตก็สูงขึ้น'},
+      out:{en:'expensive growth, long bonds, airlines',th:'หุ้นเติบโตราคาแพง พันธบัตรยาว สายการบิน'},
+      into:{en:'energy, materials, value',th:'พลังงาน วัสดุ หุ้นคุณค่า'},
+      tk:['XOM','CVX','PTT','PTTEP','TOP','SCC'] },
+
+    { on:function(r){ return isNum(r.curve_10y_3m) && r.curve_10y_3m < 0; },
+      n:{en:'Yield curve inverted',th:'เส้นอัตราผลตอบแทนกลับหัว'},
+      d:{en:'Short money costs more than long money, so banks lend less and marginal borrowers get squeezed. Money historically drifts toward companies whose demand does not depend on the economic cycle.',
+         th:'เงินสั้นแพงกว่าเงินยาว ธนาคารจึงปล่อยกู้น้อยลง และลูกหนี้ชายขอบโดนบีบ ในอดีตเงินมักไหลไปหาบริษัทที่ความต้องการสินค้าไม่ขึ้นกับวัฏจักรเศรษฐกิจ'},
+      out:{en:'small caps, cyclicals, high-debt names',th:'หุ้นเล็ก หุ้นวัฏจักร หุ้นหนี้สูง'},
+      into:{en:'staples, healthcare, utilities, long bonds',th:'สินค้าจำเป็น สุขภาพ สาธารณูปโภค พันธบัตรยาว'},
+      tk:['KO','PEP','JNJ','PG','DUK','SO','BDMS','ADVANC'] },
+
+    { on:function(r){ return isNum(r.breadth_200) && r.breadth_200 < 45; },
+      n:{en:'Leadership narrowing',th:'ผู้นำตลาดแคบลง'},
+      d:{en:'When the index rises while most of its members do not, the market has become a bet on a few names. That works until one of them misses. Money usually shifts toward quality that can survive being wrong.',
+         th:'เมื่อดัชนีขึ้นแต่หุ้นส่วนใหญ่ไม่ขึ้น ตลาดกลายเป็นการเดิมพันกับหุ้นไม่กี่ตัว ซึ่งใช้ได้จนกว่าจะมีตัวใดตัวหนึ่งพลาด เงินมักย้ายไปหาคุณภาพที่ทนทานพอจะรอดแม้คิดผิด'},
+      out:{en:'crowded momentum, thin small caps',th:'หุ้นโมเมนตัมที่คนแออัด หุ้นเล็กสภาพคล่องบาง'},
+      into:{en:'large-cap quality, dividend payers',th:'หุ้นใหญ่คุณภาพ หุ้นปันผล'},
+      tk:['BRK.B','JNJ','KO','MSFT','ABBV','O'] },
+
+    { on:function(r){ return isNum(r.credit_1m) && r.credit_1m < -1.5; },
+      n:{en:'Credit under stress',th:'ตลาดเครดิตตึงตัว'},
+      d:{en:'Bond investors get repaid before shareholders, so when they start demanding more to hold risky debt, they are telling you something the equity market has not priced yet.',
+         th:'ผู้ถือหุ้นกู้ได้เงินคืนก่อนผู้ถือหุ้น ดังนั้นเมื่อพวกเขาเริ่มเรียกผลตอบแทนสูงขึ้นเพื่อถือหนี้เสี่ยง นั่นคือเขากำลังบอกอะไรบางอย่างที่ตลาดหุ้นยังไม่ได้คิดราคา'},
+      out:{en:'leveraged balance sheets, junk credit',th:'บริษัทที่กู้เยอะ หุ้นกู้เกรดต่ำ'},
+      into:{en:'cash, short bonds, low-debt companies',th:'เงินสด พันธบัตรสั้น บริษัทที่หนี้น้อย'},
+      tk:['SHY','LQD','JNJ','XOM','ADVANC'] },
+
+    { on:function(r){ return isNum(r.uup_3m) && r.uup_3m < -2; },
+      n:{en:'Dollar weakening',th:'ดอลลาร์อ่อนค่า'},
+      d:{en:'A falling dollar makes everything priced in dollars cheaper for the rest of the world, and it releases the pressure on emerging market borrowers. Historically the friendliest backdrop Thai and Asian equities get.',
+         th:'ดอลลาร์อ่อนทำให้ของที่ตั้งราคาเป็นดอลลาร์ถูกลงสำหรับคนทั้งโลก และคลายแรงกดดันให้ลูกหนี้ในตลาดเกิดใหม่ ในอดีตนี่คือฉากหลังที่เป็นมิตรที่สุดกับหุ้นไทยและหุ้นเอเชีย'},
+      out:{en:'US cash, dollar hoarding',th:'เงินสดดอลลาร์ การกอดดอลลาร์'},
+      into:{en:'emerging markets, gold, commodities, Thai equities',th:'ตลาดเกิดใหม่ ทองคำ สินค้าโภคภัณฑ์ หุ้นไทย'},
+      tk:['GLD','EEM','KBANK','PTT','AOT','CPALL'] },
+
+    { on:function(r){ return isNum(r.uup_3m) && r.uup_3m > 5; },
+      n:{en:'Dollar squeezing everyone else',th:'ดอลลาร์แข็งบีบทุกคน'},
+      d:{en:'Dollar strength drains liquidity out of every market that borrows in dollars. Thai and other Asian assets tend to underperform in local terms and worse again once converted back.',
+         th:'ดอลลาร์แข็งดูดสภาพคล่องออกจากทุกตลาดที่กู้เป็นดอลลาร์ สินทรัพย์ไทยและเอเชียมักทำผลตอบแทนแย่กว่าในสกุลท้องถิ่น และแย่กว่าเดิมอีกเมื่อแปลงกลับ'},
+      out:{en:'emerging markets, commodities',th:'ตลาดเกิดใหม่ สินค้าโภคภัณฑ์'},
+      into:{en:'US large caps, dollar cash',th:'หุ้นใหญ่สหรัฐฯ เงินสดดอลลาร์'},
+      tk:['MSFT','AAPL','BRK.B','SHY'] },
+
+    { on:function(r){ return isNum(r.thb_1m) && r.thb_1m < -1.5; },
+      n:{en:'Baht weakening',th:'บาทอ่อนค่า'},
+      d:{en:'A weaker baht raises the value of every dollar an exporter earns, and raises the cost of everything imported. The split inside the Thai market is unusually clean.',
+         th:'บาทอ่อนทำให้ทุกดอลลาร์ที่ผู้ส่งออกหาได้มีค่ามากขึ้น และทำให้ของนำเข้าทุกอย่างแพงขึ้น การแบ่งข้างในตลาดหุ้นไทยจากเรื่องนี้ชัดเจนผิดปกติ'},
+      out:{en:'importers, travel and fuel-cost names',th:'ผู้นำเข้า หุ้นท่องเที่ยวและหุ้นที่ต้นทุนน้ำมันสูง'},
+      into:{en:'Thai exporters and dollar earners',th:'ผู้ส่งออกไทยและบริษัทที่มีรายได้เป็นดอลลาร์'},
+      tk:['DELTA','TU','CPF','PTTEP','KCE'] },
+
+    { on:function(r){ return isNum(r.vix) && r.vix > 25; },
+      n:{en:'Fear is being paid for',th:'มีคนยอมจ่ายเพื่อความกลัว'},
+      d:{en:'When protection gets expensive, forced selling and margin calls do the trading, not opinions. Correlations go to one and diversification stops working for a while.',
+         th:'เมื่อการป้องกันความเสี่ยงแพง คนที่ซื้อขายคือแรงบังคับขายและมาร์จิ้นคอล ไม่ใช่ความเห็น ความสัมพันธ์ของสินทรัพย์วิ่งเข้าหากันหมดและการกระจายความเสี่ยงหยุดทำงานชั่วคราว'},
+      out:{en:'everything leveraged or crowded',th:'ทุกอย่างที่ใช้เลเวอเรจหรือคนแออัด'},
+      into:{en:'cash, gold, Treasuries',th:'เงินสด ทองคำ พันธบัตรรัฐบาล'},
+      tk:['GLD','TLT','SHY'] },
+
+    { on:function(r){ return isNum(r.semis_vs_market_1m) && r.semis_vs_market_1m < -4; },
+      n:{en:'The leaders stopped leading',th:'หุ้นผู้นำหยุดนำ'},
+      d:{en:'A theme ends when its best names stop outperforming, not when the story stops being told. Money that leaves a crowded leadership group usually reappears in whatever was ignored while everyone was busy.',
+         th:'ธีมจบเมื่อหุ้นที่ดีที่สุดของธีมหยุดชนะตลาด ไม่ใช่ตอนที่เรื่องเล่าหยุดถูกเล่า เงินที่ออกจากกลุ่มผู้นำที่แออัด มักไปโผล่ในของที่ถูกมองข้ามตอนที่ทุกคนยุ่งอยู่'},
+      out:{en:'the crowded winner group',th:'กลุ่มผู้ชนะที่คนแออัด'},
+      into:{en:'laggards, value, dividends, cash',th:'หุ้นที่ตามหลัง หุ้นคุณค่า หุ้นปันผล เงินสด'},
+      tk:['XLE','XLV','XLP','KO','O','BBL'] }
+  ];
+
+  /* ---------------------------------------------------------------
+     render
+     --------------------------------------------------------------- */
+  var snap = null, sec = null;
+
+  function reg(){ return (snap && snap.regime) || {}; }
+
+  function gaugeHTML(g, r){
+    var v = g.v(r), s = g.s(v);
+    var val = isNum(v) ? (g.level ? Number(v).toFixed(1) : sgn(v, 1)) : '—';
+    return '<div class="rg-card st-' + s + '">' +
+      '<div class="rg-ct"><span>' + esc(tx(g.n)) + '</span>' +
+        '<span class="rg-chip ' + s + '">' +
+          (s === 'na' ? esc(tx(COPY.unknown)) : s === 'ok' ? 'OK' : s === 'warn' ? '!' : '!!') + '</span></div>' +
+      '<div class="rg-cval">' + esc(val) + '<small>' + esc(g.unit.trim() || '') + '</small></div>' +
+      '<div class="rg-cmean">' + esc(s === 'na' ? tx(COPY.unknown) : tx(g.m[s])) + '</div>' +
+      '<div class="rg-cwhy">' + esc(tx(g.why)) + '</div>' +
+    '</div>';
+  }
+
+  function divHTML(r){
+    var list = r.divergences || [];
+    if (!list.length) return '<div class="rg-empty">' + esc(tx(COPY.divNone)) + '</div>';
+    return '<div class="rg-div">' + list.slice(0, 12).map(function(d){
+      var bear = d.kind === 'bearish';
+      var tpl = tx(bear ? COPY.bearT : COPY.bullT)
+        .replace('{m}', isNum(d.m1) ? sgn(d.m1, 1) : '—')
+        .replace('{h}', isNum(d.off_high) ? Number(d.off_high).toFixed(1) : '—')
+        .replace('{a}', isNum(d.rsi_then) ? d.rsi_then : '—')
+        .replace('{b}', isNum(d.rsi) ? d.rsi : '—');
+      return '<div class="rg-drow">' +
+        '<span class="rg-dtk">' + esc(d.t) + (d.name ? '<small>' + esc(String(d.name).slice(0, 26)) + '</small>' : '') + '</span>' +
+        '<span class="rg-dtxt">' + tpl + '</span>' +
+        '<span class="rg-dkind ' + (bear ? 'bear' : 'bull') + '">' + esc(tx(bear ? COPY.bear : COPY.bull)) + '</span>' +
+      '</div>';
+    }).join('') + '</div>';
+  }
+
+  function playHTML(r){
+    return '<div class="rg-play">' + PLAYS.map(function(p){
+      var on = false;
+      try { on = !!p.on(r); } catch(e){}
+      return '<div class="rg-pcard' + (on ? ' on' : '') + '">' +
+        '<div class="rg-ph"><span class="rg-pname">' + esc(tx(p.n)) + '</span>' +
+          '<span class="rg-pon">' + esc(on ? tx(COPY.active) : tx(COPY.inactive)) + '</span></div>' +
+        '<div class="rg-pd">' + esc(tx(p.d)) + '</div>' +
+        '<div class="rg-flowline"><span class="rg-arrow out">' + esc(tx(COPY.out)) + '</span>' +
+          '<span class="rg-names">' + esc(tx(p.out)) + '</span></div>' +
+        '<div class="rg-flowline"><span class="rg-arrow in">' + esc(tx(COPY.into)) + '</span>' +
+          '<span class="rg-names">' + esc(tx(p.into)) + '</span></div>' +
+        '<div class="rg-flowline"><span class="rg-arrow">&nbsp;</span><span class="rg-tk">' +
+          p.tk.map(function(t){ return '$' + esc(t); }).join('  ') + '</span></div>' +
+      '</div>';
+    }).join('') + '</div>';
+  }
+
+  function paint(){
+    if (!sec) return;
+    var host = sec.querySelector('[data-rg="body"]');
+    if (!host) return;
+    var r = reg();
+
+    if (!snap || !Object.keys(r).length) {
+      host.innerHTML = '<div class="rg-empty">' + esc(tx(COPY.waiting)) + '</div>';
+      return;
+    }
+
+    var states = GAUGES.map(function(g){ return g.s(g.v(r)); });
+    var known = states.filter(function(s){ return s !== 'na'; });
+    var soft = states.filter(function(s){ return s === 'warn'; }).length;
+    var alerts = states.filter(function(s){ return s === 'alert'; }).length;
+    /* the headline counts only the hard warnings — a gauge that is merely
+       soft is normal in any market and should not read as an alarm */
+    var mood = alerts <= 1 ? 'ok' : alerts <= 3 ? 'warn' : 'alert';
+    var pct = known.length ? Math.round((alerts + soft * 0.5) / known.length * 100) : 0;
+    var barColor = mood === 'ok' ? 'var(--neon-2,#7CFFB2)' : mood === 'warn' ? 'var(--amber,#ffb020)' : 'var(--red,#ff3b4e)';
+    var tags = window.__SPZ_TAGS;
+
+    host.innerHTML =
+      '<div class="rg-verdict">' +
+        '<div class="rg-vhead">' +
+          '<span class="rg-score">' + alerts + '</span>' +
+          '<span class="rg-of">/ ' + known.length + ' &nbsp;' + esc(tx(COPY.verdictOf)) +
+            (soft ? ' &nbsp;·&nbsp; ' + soft + ' ' + esc(tx(COPY.soft)) : '') + '</span>' +
+          '<span class="rg-label ' + mood + '">' +
+            esc(tx(mood === 'ok' ? COPY.vOk : mood === 'warn' ? COPY.vMix : COPY.vAlert)) + '</span>' +
+          (tags ? tags.html('auto', 'spz-tag-head') : '') +
+        '</div>' +
+        '<div class="rg-meter"><i style="width:' + Math.max(4, pct) + '%;background:' + barColor + '"></i></div>' +
+        '<div class="rg-vsub">' + esc(tx(mood === 'ok' ? COPY.vOkD : mood === 'warn' ? COPY.vMixD : COPY.vAlertD)) + '</div>' +
+      '</div>' +
+      '<div class="rg-grid">' + GAUGES.map(function(g){ return gaugeHTML(g, r); }).join('') + '</div>' +
+      '<div class="rg-sec"><h3 class="rg-sech">' + esc(tx(COPY.divH)) + '</h3>' +
+        '<p class="rg-secl">' + esc(tx(COPY.divL)) + '</p>' + divHTML(r) + '</div>' +
+      '<div class="rg-sec"><h3 class="rg-sech">' + esc(tx(COPY.playH)) + '</h3>' +
+        '<p class="rg-secl">' + esc(tx(COPY.playL)) + '</p>' + playHTML(r) + '</div>' +
+      '<div class="rg-note">' + esc(tx(COPY.note)) + '</div>';
+  }
+
+  function build(){
+    if (document.getElementById('regime')) return true;
+    var host = document.querySelector('.top-fixed');
+    if (!host || !window.__spzAddRoute) return false;
+
+    sec = document.createElement('section');
+    sec.id = 'regime';
+    sec.setAttribute('data-route', 'regime');
+    sec.innerHTML =
+      '<div class="rg-wrap">' +
+        '<div class="section-head reveal in-view" style="padding-top:34px;">' +
+          '<div class="eyebrow"><span class="cursor"></span><span data-rg="eb"></span></div>' +
+          '<h2 data-rg="h"></h2>' +
+          '<p class="lede" data-rg="lede"></p>' +
+          '<div class="rule"></div>' +
+        '</div>' +
+        '<div data-rg="body"></div>' +
+      '</div>';
+    document.body.appendChild(sec);
+
+    window.__spzAddRoute({
+      id:'regime', feat:true, after:'flow',
+      t:{en:'Turning Point Radar',th:'สัญญาณเปลี่ยนทิศ'},
+      d:{en:'Every early-warning reading on one screen — breadth, credit, the curve, leadership, currencies — with what each one means and where money has historically rotated next.',
+         th:'ตัวชี้วัดเตือนล่วงหน้าทั้งหมดในหน้าเดียว — ความกว้างของตลาด เครดิต เส้นผลตอบแทน ผู้นำตลาด ค่าเงิน พร้อมคำอธิบายว่าแต่ละค่าแปลว่าอะไร และในอดีตเงินมักหมุนไปไหนต่อ'}
+    });
+
+    sec.__render = repaintHead;
+    repaintHead();
+    return true;
+  }
+
+  function repaintHead(){
+    if (!sec) return;
+    var q = function(k){ return sec.querySelector('[data-rg="' + k + '"]'); };
+    if (q('eb')) q('eb').textContent = tx(COPY.eyebrow);
+    if (q('h')) q('h').textContent = tx(COPY.h);
+    if (q('lede')) q('lede').textContent = tx(COPY.lede);
+    paint();
+  }
+
+  function boot(){
+    var tries = 0;
+    var iv = setInterval(function(){
+      if (build() || ++tries > 60) clearInterval(iv);
+    }, 400);
+
+    document.addEventListener('spz:snapshot', function(e){ snap = e.detail; repaintHead(); });
+    var seed = setInterval(function(){
+      var s = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot();
+      if (s) { snap = s; repaintHead(); clearInterval(seed); }
+    }, 600);
+    setTimeout(function(){ clearInterval(seed); }, 45000);
+
+    new MutationObserver(repaintHead)
+      .observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+  }
+
+  window.__SPZ_REGIME = { repaint: repaintHead, gauges: GAUGES, plays: PLAYS,
+                          snap: function(){ return snap; } };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 1100); });
+  } else {
+    setTimeout(boot, 1100);
   }
 })();
 </script>
