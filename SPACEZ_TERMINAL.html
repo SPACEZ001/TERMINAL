@@ -23965,7 +23965,7 @@ var GM = {
      --------------------------------------------------------------- */
   var root, sticky, copyHost, instHost, scrubHost, hintHost, svg;
   var G = {};                        /* the mutable pieces of the drawing */
-  var state = { i:0, t:0, p:0, on:false, raf:0, t0:0 };
+  var state = { i:0, t:0, p:0, on:false, vis:false, raf:0, t0:0 };
 
   function buildSVG(){
     svg = svgEl('svg', { viewBox:'0 0 ' + VB + ' ' + VB, 'aria-hidden':'true' });
@@ -24469,14 +24469,14 @@ var GM = {
   }
 
   function boot(){
-    if (!build()) {
-      var tries = 0;
-      var iv = setInterval(function(){
-        if (build() || ++tries > 40) clearInterval(iv);
-      }, 300);
-      return;
-    }
-    wireUp();
+    if (build()) { wireUp(); return; }
+    /* the shell was not ready yet — keep trying, but wire up when it lands
+       rather than returning and leaving the hero with no scroll listener */
+    var tries = 0;
+    var iv = setInterval(function(){
+      if (build()) { clearInterval(iv); wireUp(); }
+      else if (++tries > 40) clearInterval(iv);
+    }, 300);
   }
 
   function wireUp(){
@@ -24486,20 +24486,24 @@ var GM = {
       wireUp.t = setTimeout(function(){ measure(); onScroll(); }, 160);
     });
 
-    /* the loop only runs while the dial is actually on screen */
+    /* The loop runs only while the dial is on screen AND the tab is visible.
+       These are two independent facts, so they are stored separately: folding
+       them into one flag meant a page opened in a background tab latched off
+       and never started, because coming back could only AND with false. */
+    function sync(){
+      state.on = state.vis && !document.hidden;
+      if (state.on) kick();
+    }
     if (window.IntersectionObserver) {
       new IntersectionObserver(function(es){
-        state.on = es[0].isIntersecting && !document.hidden;
-        if (state.on) kick();
+        state.vis = es[0].isIntersecting;
+        sync();
       }, { threshold:0 }).observe(sticky);
     } else {
-      state.on = true;
-      kick();
+      state.vis = true;
+      sync();
     }
-    document.addEventListener('visibilitychange', function(){
-      state.on = state.on && !document.hidden;
-      if (!document.hidden) kick();
-    });
+    document.addEventListener('visibilitychange', sync);
 
     /* paintCopy already marks the active panel from state.i, so a language
        switch is just a re-render — no need to fake a state change first */
