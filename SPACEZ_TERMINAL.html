@@ -22030,14 +22030,19 @@ var GM = {
   }
 
   function hasSet(){ return (((state.data || {}).bench_series_th) || []).length > 200; }
-  function benchSym(){ return state.bench === 'SET' && hasSet() ? '^SET.BK' : 'SPY'; }
+  function benchSym(){ return state.bench === 'SET' && hasSet() ? 'SET' : 'SPY'; }
   function benchArr(){
     var d = state.data || {};
-    return benchSym() === '^SET.BK' ? d.bench_series_th : (d.bench_series || []);
+    return benchSym() === 'SET' ? d.bench_series_th : (d.bench_series || []);
   }
+  function benchInfo(){ return ((state.data || {}).benchmarks || {})[benchSym()] || null; }
   function benchName(){
-    var lab = ((state.data || {}).benchmarks || {})[benchSym()];
-    return lab ? tx(lab) : benchSym();
+    var lab = benchInfo();
+    if (!lab) return benchSym();
+    /* say which instrument this actually is — "the Thai market" meaning the
+       SET index and "the Thai market" meaning a dollar-priced ETF are not the
+       same claim, and the reader is entitled to know which one they got */
+    return tx(lab) + (lab.symbol && lab.symbol !== benchSym() ? ' · ' + lab.symbol : '');
   }
 
   /* first benchmark week on or after a date — an episode date from one
