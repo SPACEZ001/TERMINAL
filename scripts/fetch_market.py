@@ -23,6 +23,10 @@ import urllib.request
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "data", "market.json")
 
+CHART_DAYS = 252        # the year every published statistic is measured over
+HIST_DAYS = 504         # what actually ships, so a 200-day average can be
+                        # drawn across the whole of that visible year
+
 US = ["JPM", "BAC", "WFC", "C", "GS", "XOM", "CVX", "MMM", "BRK-B", "GM", "F",
       "CVS", "MET", "NVDA", "TSLA", "AMZN", "META", "PLTR", "AMD", "NFLX",
       "SHOP", "MSFT", "GOOGL", "AVGO", "TSM", "CRM", "NOW", "ORCL", "T", "VZ",
@@ -118,12 +122,19 @@ def fetch_one(sym, thai):
     tk = yf.Ticker(ysym)
     out = {"ccy": "THB" if thai else "USD", "yahoo": ysym}
 
-    # ---- price + trend: one year of closes covers the day change, the
-    #      moving averages and the RSI the turning-point radar needs ----
+    # ---- price + trend ----
+    # Two years are fetched but only the last one is published. The extra year
+    # is what makes a 200-day average drawable across the whole visible chart
+    # instead of only appearing two-thirds of the way in; every statistic below
+    # is still computed on the same trailing year it always was, so nothing
+    # else shifts meaning. It costs no extra requests, only a bigger response.
     try:
-        h = tk.history(period="1y", auto_adjust=False)
+        h = tk.history(period="2y", auto_adjust=False)
         if h is not None and not h.empty:
-            closes = [float(c) for c in h["Close"].tolist() if c == c]
+            pairs = [(ts.strftime("%Y-%m-%d"), float(c))
+                     for ts, c in h["Close"].items() if c == c]
+            closes_2y = [c for _, c in pairs]
+            closes = closes_2y[-CHART_DAYS:]
             if closes:
                 out["price"] = num(closes[-1], 4)
             if len(closes) >= 2:
@@ -131,6 +142,7 @@ def fetch_one(sym, thai):
             out["m1"] = _ret(closes, 21)
             out["m3"] = _ret(closes, 63)
             out.update(trend_stats(closes))
+            out["_hist"] = pairs
     except Exception as e:
         print("  history failed %s: %s" % (ysym, e), file=sys.stderr)
 
@@ -720,6 +732,68 @@ def build_regime(stocks, flows, macro, ccy):
     return reg
 
 
+def _price_str(v):
+    """Enough decimals to be exact on screen, and not one more."""
+    a = abs(v)
+    nd = 1 if a >= 1000 else 2 if a >= 10 else 3 if a >= 1 else 4
+    s = ("%.*f" % (nd, v)).rstrip("0").rstrip(".")
+    return s or "0"
+
+
+def build_charts(stocks):
+    """Daily closes for every stock, packed against a shared calendar.
+
+    Each market's dates are written once and every stock's closes line up
+    against them, with an empty slot for a day that stock did not trade — so
+    a halt cannot silently shift a whole price line sideways. The series are
+    comma-joined strings rather than JSON arrays because this file is written
+    with indent=1, and forty thousand numbers each on their own line would
+    triple the download for nothing.
+    """
+    groups = {}
+    for tkr, row in stocks.items():
+        hist = row.get("_hist")
+        if not hist:
+            continue
+        market = "th" if row.get("ccy") == "THB" else "us"
+        groups.setdefault(market, {})[tkr] = hist[-HIST_DAYS:]
+
+    cal = {}
+    for market, rows in groups.items():
+        dates = set()
+        for pairs in rows.values():
+            dates.update(d for d, _ in pairs)
+        days = sorted(dates)[-HIST_DAYS:]
+        pos = dict((d, i) for i, d in enumerate(days))
+        cal[market] = ",".join(days)
+
+        for tkr, pairs in rows.items():
+            slots = [""] * len(days)
+            seen = 0
+            for d, c in pairs:
+                i = pos.get(d)
+                if i is not None:
+                    slots[i] = _price_str(c)
+                    seen += 1
+            if seen < 30:
+                continue
+            stocks[tkr]["cal"] = market
+            stocks[tkr]["c"] = ",".join(slots)
+
+    # A stock whose fetch failed keeps its old fields from the previous run,
+    # and an old price line against a new calendar would be drawn shifted by
+    # however many days have passed. No chart beats a wrong one.
+    for row in stocks.values():
+        if row.pop("_hist", None) is None:
+            row.pop("c", None)
+            row.pop("cal", None)
+
+    return {"cal": cal, "days": CHART_DAYS,
+            "note": ("daily closes, oldest first, aligned to the calendar for "
+                     "the stock's market; an empty slot is a day that stock "
+                     "did not trade")}
+
+
 def main():
     prev = {}
     if os.path.exists(OUT):
@@ -775,6 +849,14 @@ def main():
         print("regime failed: %s" % e, file=sys.stderr)
         regime = {}
 
+    try:
+        charts = build_charts(stocks)
+    except Exception as e:
+        print("charts failed: %s" % e, file=sys.stderr)
+        charts = {}
+        for row in stocks.values():
+            row.pop("_hist", None)
+
     payload = {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source": {"quotes": "yahoo finance (yfinance)",
@@ -792,6 +874,7 @@ def main():
         "flows": flows,
         "macro": macro,
         "regime": regime,
+        "charts": charts,
         "stocks": stocks,
     }
 
