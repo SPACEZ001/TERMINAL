@@ -48,7 +48,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "data", "backtest.json")
 
 BENCH = "SPY"                          # the grid every gauge is sampled on
-BENCH_TH = "^SET.BK"
+BENCH_TH = "SET"                       # canonical id; the actual source is
+                                       # whichever of THAI_SOURCES answers
 HORIZONS = [21, 63, 126, 252]          # ~1m, 3m, 6m, 12m in sessions
 COOLDOWN = 42                          # sessions before a new episode counts
 TRIALS = 4000                          # permutation draws per p-value
@@ -57,8 +58,22 @@ MIN_GAUGES_FOR_COUNT = 8               # a day needs this many live gauges to
 
 BENCH_LABEL = {
     "SPY": {"en": "US market (SPY)", "th": "ตลาดสหรัฐฯ (SPY)"},
-    "^SET.BK": {"en": "Thai market (SET)", "th": "ตลาดไทย (SET)"},
+    "SET": {"en": "Thai market (SET)", "th": "ตลาดไทย (SET)"},
 }
+
+# Yahoo does not serve ^SET.BK — it returns nothing, quietly, which is how it
+# went missing from the collector's macro block too. So the Thai benchmark is
+# tried from several places and the first one that answers with a real history
+# wins. Which one it was is written into the payload, because "Thai market"
+# meaning the SET index in baht and "Thai market" meaning a US-listed ETF in
+# dollars are not the same claim.
+THAI_SOURCES = [
+    ("^SET.BK", "yahoo", {"en": "Thai market (SET)", "th": "ตลาดไทย (SET)"}),
+    ("^set", "stooq", {"en": "Thai market (SET)", "th": "ตลาดไทย (SET)"}),
+    ("^seti", "stooq", {"en": "Thai market (SET)", "th": "ตลาดไทย (SET)"}),
+    ("THD", "yahoo", {"en": "Thai equities (THD ETF, priced in USD)",
+                      "th": "หุ้นไทย (กองทุน THD ราคาสกุลดอลลาร์)"}),
+]
 
 # universe used for the breadth gauge — long-listed US names only, so the
 # series does not lurch when a young ticker joins
@@ -171,6 +186,49 @@ def closes_of(sym, period="max"):
     print("  %-10s %5d sessions %s" % (sym, len(out),
           (min(out) + " → " + max(out)) if out else ""))
     return out
+
+
+def stooq_closes(sym):
+    """Daily closes from Stooq's free CSV endpoint — no key, no account.
+
+    An unknown symbol comes back as a one-line "No data" body rather than an
+    HTTP error, which the reader below turns into an empty dict.
+    """
+    import csv
+    import io
+    import urllib.parse
+    import urllib.request
+
+    url = "https://stooq.com/q/d/l/?s=%s&i=d" % urllib.parse.quote(sym, safe="")
+    req = urllib.request.Request(url, headers={"User-Agent": "spacez-terminal/1.0"})
+    txt = urllib.request.urlopen(req, timeout=60).read().decode("utf-8", "replace")
+    out = {}
+    for row in csv.DictReader(io.StringIO(txt)):
+        d = (row.get("Date") or "").strip()
+        try:
+            v = float(row.get("Close"))
+        except (TypeError, ValueError):
+            continue
+        if len(d) == 10 and v > 0:
+            out[d] = v
+    return out
+
+
+def fetch_thai_bench():
+    """The first Thai benchmark that actually answers. (symbol, source, label, closes)"""
+    for sym, src, label in THAI_SOURCES:
+        try:
+            closes = stooq_closes(sym) if src == "stooq" else closes_of(sym)
+        except Exception as e:
+            print("  thai %-10s via %-6s failed: %s" % (sym, src, str(e)[:90]),
+                  file=sys.stderr)
+            continue
+        n = len(closes)
+        print("  thai %-10s via %-6s %6d sessions %s"
+              % (sym, src, n, (min(closes) + " → " + max(closes)) if n else ""))
+        if n > 1000:
+            return sym, src, label, closes
+    return None, None, None, {}
 
 
 def pct_change(series, dates, win):
@@ -525,11 +583,15 @@ def main():
     grid = spy.dates
     benches = {BENCH: spy}
 
-    st = Bench(BENCH_TH, closes_of(BENCH_TH))
+    th_sym, th_src, th_label, th_closes = fetch_thai_bench()
+    st = Bench(BENCH_TH, th_closes)
     if st.ok():
         benches[BENCH_TH] = st
+        BENCH_LABEL[BENCH_TH] = dict(th_label)
+        print("Thai benchmark: %s via %s (%d sessions)"
+              % (th_sym, th_src, len(st.dates)))
     else:
-        print("SET history unusable (%d sessions) — US only" % len(st.dates),
+        print("no Thai benchmark answered — grading on the US market only",
               file=sys.stderr)
 
     # ---- build every gauge series and its daily state -------------------
@@ -662,8 +724,11 @@ def main():
     payload = {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "benchmark": BENCH,
-        "benchmarks": {sym: BENCH_LABEL.get(sym, {"en": sym, "th": sym})
-                       for sym in benches},
+        "benchmarks": dict(
+            (sym, dict(BENCH_LABEL.get(sym, {"en": sym, "th": sym}),
+                       symbol=(th_sym if sym == BENCH_TH else sym),
+                       source=(th_src if sym == BENCH_TH else "yahoo")))
+            for sym in benches),
         "horizons": HORIZONS,
         "cooldown_sessions": COOLDOWN,
         "trials": TRIALS,
