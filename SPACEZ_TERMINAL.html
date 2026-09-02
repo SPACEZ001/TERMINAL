@@ -3190,6 +3190,7 @@
     display:inline-flex;gap:6px;align-items:baseline;
   }
   .sm-m b{color:var(--grey-dim);font-weight:400;font-size:8.5px;letter-spacing:.8px;}
+  .sm-m b[title]{cursor:help;border-bottom:1px dotted var(--grey-dim);}
   @media(max-width:600px){
     .sm-c{grid-template-columns:30px 1fr;gap:10px;padding:13px;}
     .sm-n{font-size:19px;}
@@ -3507,6 +3508,7 @@
   .gm-m{font-family:var(--mono);font-size:10px;color:var(--grey);
     border:1px solid var(--border-dim);border-radius:6px;padding:4px 9px;display:inline-flex;gap:6px;}
   .gm-m b{color:var(--grey-dim);font-weight:400;font-size:8.5px;letter-spacing:.8px;}
+  .gm-m b[title]{cursor:help;border-bottom:1px dotted var(--grey-dim);}
   .gm-rules{margin-top:16px;border:1px solid rgba(255,176,32,.3);border-radius:13px;
     background:rgba(255,176,32,.05);padding:18px 18px 16px;}
   .gm-rh{font-family:var(--mono);font-size:9.5px;letter-spacing:1.4px;text-transform:uppercase;
@@ -17880,6 +17882,28 @@ var PICKUI = {
     return null;
   };
 
+  /* one-line, plain-English explanations for the metric abbreviations
+     (P/E, ROE, ...) that show up as bare labels in several places —
+     the Glossary has the full explanation, this is the tooltip version */
+  var MTIP = {
+    en:{ pe:"Price divided by earnings per share — how many years of today's profit you're paying up front for.",
+         div:'Annual dividend as a percent of the share price.',
+         roe:"Annual profit as a percent of shareholder equity — how efficiently the company turns its own capital into profit.",
+         de:'Total debt divided by shareholder equity — how much the company relies on borrowed money.',
+         mg:"Net profit as a percent of revenue — how much of every unit of sales actually becomes profit.",
+         pb:"Share price divided by book value per share — what you're paying versus the company's accounting net worth." },
+    th:{ pe:'ราคาหุ้นหารด้วยกำไรต่อหุ้น — จ่ายเงินซื้อกำไรของบริษัทล่วงหน้ากี่ปี',
+         div:'เงินปันผลต่อปี คิดเป็นเปอร์เซ็นต์ของราคาหุ้น',
+         roe:'กำไรต่อปี คิดเป็นเปอร์เซ็นต์ของส่วนของผู้ถือหุ้น — บริษัทใช้เงินทุนของตัวเองสร้างกำไรได้มีประสิทธิภาพแค่ไหน',
+         de:'หนี้สินรวมหารด้วยส่วนของผู้ถือหุ้น — บริษัทพึ่งพาเงินกู้มากแค่ไหน',
+         mg:'กำไรสุทธิ คิดเป็นเปอร์เซ็นต์ของรายได้ — ทุกหน่วยที่ขายได้ กลายเป็นกำไรเท่าไหร่',
+         pb:'ราคาหุ้นหารด้วยมูลค่าทางบัญชีต่อหุ้น — จ่ายแพงกว่ามูลค่าทางบัญชีของบริษัทแค่ไหน' }
+  };
+  window.__SPZ_MTIP = function(key){
+    var lg = (document.documentElement.getAttribute('lang') === 'th') ? 'th' : 'en';
+    return (MTIP[lg] || MTIP.en)[key] || '';
+  };
+
   /* ---------------- page ---------------- */
   function build(){
     var sec = el('section');
@@ -17986,12 +18010,13 @@ var PICKUI = {
     }
 
     function metricRow(s){
-      var m = [['P/E', s.pe, ''], [T({en:'Yield',th:'ปันผล'}), s.div, '%'],
-               ['ROE', s.roe, '%'], ['D/E', s.de, ''],
-               [T({en:'Margin',th:'มาร์จิ้น'}), s.mg, '%'], ['P/B', s.pb, '']];
+      var m = [['P/E', s.pe, '', 'pe'], [T({en:'Yield',th:'ปันผล'}), s.div, '%', 'div'],
+               ['ROE', s.roe, '%', 'roe'], ['D/E', s.de, '', 'de'],
+               [T({en:'Margin',th:'มาร์จิ้น'}), s.mg, '%', 'mg'], ['P/B', s.pb, '', 'pb']];
       var h = '<div class="sm-met">';
       for(var i = 0; i < m.length; i++){
-        h += '<span class="sm-m"><b>' + esc(m[i][0]) + '</b>' +
+        var tip = window.__SPZ_MTIP ? window.__SPZ_MTIP(m[i][3]) : '';
+        h += '<span class="sm-m"><b' + (tip ? ' title="' + esc(tip) + '"' : '') + '>' + esc(m[i][0]) + '</b>' +
              (isFinite(m[i][1]) ? m[i][1] + m[i][2] : '—') + '</span>';
       }
       return h + '</div>';
@@ -18792,11 +18817,12 @@ var GM = {
       (function(r, idx){
         var st = r.s;
         var w = why ? why(r) : [];
-        var met = [['P/E', st.pe, ''], [T({en:'Yield',th:'ปันผล'}), st.div, '%'], ['ROE', st.roe, '%'],
-                   ['D/E', st.de, ''], [T({en:'Margin',th:'มาร์จิ้น'}), st.mg, '%'], ['P/B', st.pb, '']];
+        var met = [['P/E', st.pe, '', 'pe'], [T({en:'Yield',th:'ปันผล'}), st.div, '%', 'div'], ['ROE', st.roe, '%', 'roe'],
+                   ['D/E', st.de, '', 'de'], [T({en:'Margin',th:'มาร์จิ้น'}), st.mg, '%', 'mg'], ['P/B', st.pb, '', 'pb']];
         var mh = '';
         for(var k = 0; k < met.length; k++){
-          mh += '<span class="gm-m"><b>' + esc(met[k][0]) + '</b>' +
+          var tip = window.__SPZ_MTIP ? window.__SPZ_MTIP(met[k][3]) : '';
+          mh += '<span class="gm-m"><b' + (tip ? ' title="' + esc(tip) + '"' : '') + '>' + esc(met[k][0]) + '</b>' +
                 (isFinite(met[k][1]) ? met[k][1] + met[k][2] : '—') + '</span>';
         }
         /* plain-English "what this business does" line, pulled from the
@@ -26035,6 +26061,161 @@ var GM = {
   } else {
     setTimeout(boot, 1500);
   }
+})();
+</script>
+
+<!-- ===== SPACEZ GUIDED MODE DISCOVERY (nav pill + first-visit hint) =====
+     Guided Mode already has its own page and its own on/off toggle (see the
+     SPACEZ GUIDED MODE module), but the only way to find it was to open the
+     top-bar dropdown menu first -- a first-time visitor had no reason to
+     know it existed. This module adds two small, purely additive things:
+     an always-visible pill in the top bar next to the language toggle
+     showing Guided Mode's current on/off state (click -> jumps straight to
+     the guided page), and a one-time dismissible banner under the status
+     bar inviting a first-time visitor to try it. Neither duplicates any
+     guided-mode logic -- both just navigate to the existing #/guided route,
+     the same way the nav dropdown's own "Guided Mode" item already does. -->
+<style>
+  .gmh-pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);
+    font-size:10px;letter-spacing:.8px;border:1px solid var(--border-dim);border-radius:20px;
+    padding:7px 12px;cursor:pointer;background:var(--glass);color:var(--grey);
+    transition:border-color .25s,color .25s;flex-shrink:0;white-space:nowrap;}
+  .gmh-pill:hover{border-color:var(--neon);color:var(--white);}
+  .gmh-dot{width:6px;height:6px;border-radius:50%;background:var(--grey-dim);flex:none;}
+  .gmh-pill.on .gmh-dot{background:var(--neon-2,#7CFFB2);box-shadow:0 0 6px var(--neon-2,#7CFFB2);}
+  html[data-theme="light"] .gmh-pill{color:#575d6e;}
+  @media(max-width:760px){.gmh-pill .gmh-lbl{display:none;}.gmh-pill{padding:7px 9px;}}
+
+  .gmh-banner{display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    padding:13px 24px;border-bottom:1px solid var(--border-dim);
+    background:linear-gradient(90deg,rgba(204,255,0,.07),rgba(255,255,255,.012));}
+  .gmh-banner-t{font-size:13.5px;line-height:1.5;color:var(--grey);flex:1 1 320px;min-width:0;}
+  .gmh-banner-t b{color:var(--white);font-weight:700;}
+  html[data-theme="light"] .gmh-banner-t b{color:#12141c;}
+  .gmh-banner-actions{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  .gmh-go{font-family:var(--mono);font-size:11px;letter-spacing:.8px;font-weight:700;
+    border:1px solid var(--neon);border-radius:20px;padding:8px 16px;cursor:pointer;
+    background:var(--neon);color:#080808;}
+  .gmh-x{font-family:var(--mono);font-size:16px;line-height:1;border:0;background:transparent;
+    color:var(--grey-dim);cursor:pointer;padding:4px 8px;}
+  .gmh-x:hover{color:var(--white);}
+  @media(max-width:640px){.gmh-banner{padding:11px 14px;}}
+</style>
+<script>
+(function(){
+  'use strict';
+  var HINT_KEY = 'spacez.gm_hint_seen';
+  var GUIDE_KEY = 'spacez.guide';
+
+  function L(){ return document.documentElement.lang === 'th' ? 'th' : 'en'; }
+  function guideOn(){
+    try {
+      var raw = localStorage.getItem(GUIDE_KEY);
+      return raw ? !!JSON.parse(raw).on : false;
+    } catch(e){ return false; }
+  }
+  function hintSeen(){
+    try { return localStorage.getItem(HINT_KEY) === '1'; } catch(e){ return false; }
+  }
+  function markSeen(){
+    try { localStorage.setItem(HINT_KEY, '1'); } catch(e){}
+  }
+  function goGuided(){
+    markSeen();
+    dismissBanner();
+    var link = document.querySelector('[data-route-to="guided"]');
+    if(link) link.click();
+  }
+
+  var STR = {
+    en:{ pillOn:'Guide: ON', pillOff:'Guide',
+         bannerT:'<b>New here?</b> Guided Mode walks you through this whole site in ten steps, in the order that actually works.',
+         go:'Try it →' },
+    th:{ pillOn:'แนะนำ: เปิด', pillOff:'แนะนำ',
+         bannerT:'<b>เพิ่งเข้ามาครั้งแรกใช่ไหม</b> โหมดแนะนำจะพาไล่ดูทั้งเว็บทีละสิบขั้นตอน เรียงตามลำดับที่ใช้ได้จริง',
+         go:'ลองเลย →' }
+  };
+
+  /* ---------- nav pill ---------- */
+  var pill;
+  function paintPill(){
+    if(!pill) return;
+    var on = guideOn(), t = STR[L()];
+    pill.classList.toggle('on', on);
+    pill.innerHTML = '<span class="gmh-dot"></span><span class="gmh-lbl">' +
+      (on ? t.pillOn : t.pillOff) + '</span>';
+  }
+  function buildPill(){
+    if(pill) return true;
+    var host = document.getElementById('langToggle');
+    if(!host || !host.parentNode) return false;
+    pill = document.createElement('button');
+    pill.type = 'button';
+    pill.className = 'gmh-pill';
+    pill.addEventListener('click', goGuided);
+    host.parentNode.insertBefore(pill, host);
+    paintPill();
+    return true;
+  }
+
+  /* ---------- first-visit banner ---------- */
+  var banner;
+  function paintBanner(){
+    if(!banner) return;
+    var t = STR[L()];
+    banner.querySelector('[data-gmh="t"]').innerHTML = t.bannerT;
+    banner.querySelector('[data-gmh="go"]').textContent = t.go;
+  }
+  function dismissBanner(){
+    markSeen();
+    if(banner && banner.parentNode) banner.parentNode.removeChild(banner);
+    banner = null;
+  }
+  function buildBanner(){
+    if(banner) return true;
+    if(hintSeen() || guideOn()) return true;   /* already discovered it */
+    var anchor = document.getElementById('spzLiveBar');
+    if(!anchor || !anchor.parentNode) return false;
+    banner = document.createElement('div');
+    banner.className = 'gmh-banner';
+    banner.innerHTML =
+      '<span class="gmh-banner-t" data-gmh="t"></span>' +
+      '<span class="gmh-banner-actions">' +
+        '<button type="button" class="gmh-go" data-gmh="go"></button>' +
+        '<button type="button" class="gmh-x" aria-label="dismiss">✕</button>' +
+      '</span>';
+    anchor.parentNode.insertBefore(banner, anchor.nextSibling);
+    banner.querySelector('.gmh-go').addEventListener('click', goGuided);
+    banner.querySelector('.gmh-x').addEventListener('click', dismissBanner);
+    paintBanner();
+    return true;
+  }
+
+  function boot(){
+    var tries = 0;
+    var iv = setInterval(function(){
+      var okPill = buildPill();
+      var okBanner = buildBanner();
+      if((okPill && okBanner) || ++tries > 60) clearInterval(iv);
+    }, 300);
+
+    new MutationObserver(function(){ paintPill(); paintBanner(); })
+      .observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+
+    document.addEventListener('click', function(){
+      setTimeout(function(){
+        paintPill();
+        if(banner && guideOn()) dismissBanner();
+      }, 200);
+    });
+    window.addEventListener('hashchange', function(){
+      if(/^#\/guided\b/.test(location.hash || '')){ markSeen(); dismissBanner(); }
+      setTimeout(paintPill, 200);
+    });
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 700); });
+  else setTimeout(boot, 700);
 })();
 </script>
 
