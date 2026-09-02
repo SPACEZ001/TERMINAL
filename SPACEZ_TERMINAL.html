@@ -20423,8 +20423,8 @@ var GM = {
      One screen that checks every measurable thing that tends to move
      before price does, explains what each reading means in plain words,
      shows where money is sitting right now, and where it has historically
-     gone when the warnings appear. Plus a dismissible alert banner that
-     rides along the top of every screen while a warning stands.
+     gone when the warnings appear. Plus a small popup, bottom-right, when
+     a warning stands — it times itself out after 10s if you never touch it.
      Fed by data/market.json → regime / macro / flows / stocks.
      ============================================================ -->
 <style>
@@ -20651,40 +20651,64 @@ var GM = {
   html[data-theme="light"] #regime .rg-meter,html[data-theme="light"] #regime .rg-mbar{background:rgba(18,20,28,.1);}
   html[data-theme="light"] #regime .rg-mark{background:#12141c;}
 
-  /* ---------- the alert banner that rides the top of every screen ---------- */
-  #spzAlertBar{display:none;align-items:center;gap:13px;padding:10px 20px;
-    background:linear-gradient(90deg,rgba(255,176,32,.16),rgba(255,176,32,.05) 60%,transparent);
-    border-bottom:1px solid rgba(255,176,32,.4);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-    font-family:var(--mono);font-size:11.5px;color:var(--white);position:relative;overflow:hidden;
-    animation:rgDrop .45s cubic-bezier(.2,.9,.25,1);}
-  #spzAlertBar.show{display:flex;}
-  #spzAlertBar.lvl-alert{background:linear-gradient(90deg,rgba(255,59,78,.18),rgba(255,59,78,.05) 60%,transparent);
-    border-bottom-color:rgba(255,59,78,.45);}
-  @keyframes rgDrop{from{opacity:0;transform:translateY(-100%)}to{opacity:1;transform:none}}
-  #spzAlertBar .ab-icon{width:9px;height:9px;border-radius:50%;background:var(--amber,#ffb020);flex:none;
-    box-shadow:0 0 0 0 rgba(255,176,32,.6);animation:rgPing 2s ease-out infinite;}
-  #spzAlertBar.lvl-alert .ab-icon{background:var(--red,#ff3b4e);}
-  @keyframes rgPing{0%{box-shadow:0 0 0 0 rgba(255,176,32,.55)}70%{box-shadow:0 0 0 9px rgba(255,176,32,0)}100%{box-shadow:0 0 0 0 rgba(255,176,32,0)}}
-  #spzAlertBar .ab-txt{min-width:0;line-height:1.55;}
-  #spzAlertBar .ab-txt b{color:var(--amber,#ffb020);font-weight:700;letter-spacing:.5px;}
-  #spzAlertBar.lvl-alert .ab-txt b{color:var(--red,#ff3b4e);}
-  #spzAlertBar .ab-sp{flex:1 1 auto;}
+  /* ---------- the turn-signal popup — bottom-right, minimal, times itself out ---------- */
+  #spzAlertBar{position:fixed;right:18px;bottom:96px;z-index:90;
+    display:flex;align-items:flex-start;gap:12px;width:min(336px,calc(100vw - 32px));
+    padding:15px 16px 16px;border-radius:16px;
+    background:linear-gradient(165deg,rgba(20,16,10,.97),rgba(9,9,9,.97));
+    border:1px solid rgba(255,176,32,.36);
+    box-shadow:0 18px 46px rgba(0,0,0,.5),0 0 0 1px rgba(255,176,32,.06);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    font-family:var(--mono);font-size:11.5px;color:var(--white);
+    opacity:0;visibility:hidden;pointer-events:none;
+    transform:translateY(14px) scale(.97);
+    transition:opacity .3s cubic-bezier(.2,.9,.25,1),transform .3s cubic-bezier(.2,.9,.25,1),visibility 0s .3s;}
+  #spzAlertBar.show{opacity:1;visibility:visible;pointer-events:auto;transform:none;
+    transition:opacity .3s cubic-bezier(.2,.9,.25,1),transform .3s cubic-bezier(.2,.9,.25,1);}
+  #spzAlertBar.lvl-alert{border-color:rgba(255,59,78,.4);
+    box-shadow:0 18px 46px rgba(0,0,0,.5),0 0 0 1px rgba(255,59,78,.08);}
+  html[data-theme="light"] #spzAlertBar{background:linear-gradient(165deg,rgba(255,255,255,.98),rgba(248,248,250,.98));
+    box-shadow:0 18px 46px rgba(20,20,30,.16),0 0 0 1px rgba(255,176,32,.12);color:#12141c;}
+  html[data-theme="light"] #spzAlertBar.lvl-alert{box-shadow:0 18px 46px rgba(20,20,30,.16),0 0 0 1px rgba(255,59,78,.14);}
+
+  #spzAlertBar .ab-ring{position:relative;width:26px;height:26px;flex:none;margin-top:1px;}
+  #spzAlertBar .ab-ring svg{width:26px;height:26px;transform:rotate(-90deg);display:block;}
+  #spzAlertBar .ab-ring circle{fill:none;stroke-width:2;}
+  #spzAlertBar .ab-ring-bg{stroke:rgba(255,255,255,.14);}
+  html[data-theme="light"] #spzAlertBar .ab-ring-bg{stroke:rgba(18,20,28,.14);}
+  #spzAlertBar .ab-ring-fg{stroke:var(--amber,#ffb020);stroke-linecap:round;stroke-dasharray:66;stroke-dashoffset:0;}
+  #spzAlertBar.lvl-alert .ab-ring-fg{stroke:var(--red,#ff3b4e);}
+  #spzAlertBar .ab-ring-fg.run{animation:abDrain 10s linear forwards;}
+  #spzAlertBar.paused .ab-ring-fg.run{animation-play-state:paused;}
+  @keyframes abDrain{from{stroke-dashoffset:0;}to{stroke-dashoffset:66;}}
+  #spzAlertBar .ab-dot{position:absolute;left:50%;top:50%;width:6px;height:6px;border-radius:50%;
+    background:var(--amber,#ffb020);transform:translate(-50%,-50%);
+    box-shadow:0 0 0 0 rgba(255,176,32,.6);animation:abPing 2s ease-out infinite;}
+  #spzAlertBar.lvl-alert .ab-dot{background:var(--red,#ff3b4e);animation-name:abPingRed;}
+  @keyframes abPing{0%{box-shadow:0 0 0 0 rgba(255,176,32,.55)}70%{box-shadow:0 0 0 7px rgba(255,176,32,0)}100%{box-shadow:0 0 0 0 rgba(255,176,32,0)}}
+  @keyframes abPingRed{0%{box-shadow:0 0 0 0 rgba(255,59,78,.55)}70%{box-shadow:0 0 0 7px rgba(255,59,78,0)}100%{box-shadow:0 0 0 0 rgba(255,59,78,0)}}
+
+  #spzAlertBar .ab-body{min-width:0;flex:1 1 auto;display:flex;flex-direction:column;gap:6px;}
+  #spzAlertBar .ab-head{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--amber,#ffb020);}
+  #spzAlertBar.lvl-alert .ab-head{color:var(--red,#ff3b4e);}
+  #spzAlertBar .ab-txt{margin:0;line-height:1.6;font-family:var(--sans);font-size:12.5px;color:var(--grey);}
+  html[data-theme="light"] #spzAlertBar .ab-txt{color:#3a3d4a;}
+  #spzAlertBar .ab-actions{display:flex;gap:8px;margin-top:5px;flex-wrap:wrap;}
   #spzAlertBar button{background:transparent;border:1px solid var(--border-dim);color:var(--grey);
-    font-family:var(--mono);font-size:10.5px;letter-spacing:.6px;padding:4px 11px;border-radius:4px;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.4px;padding:6px 12px;border-radius:20px;
     cursor:pointer;transition:border-color .18s,color .18s;white-space:nowrap;}
   #spzAlertBar button:hover{border-color:var(--neon,#cf0);color:var(--white);}
+  html[data-theme="light"] #spzAlertBar button:hover{color:#12141c;}
   #spzAlertBar button.ab-go{border-color:rgba(255,176,32,.5);color:var(--amber,#ffb020);}
   #spzAlertBar.lvl-alert button.ab-go{border-color:rgba(255,59,78,.5);color:var(--red,#ff3b4e);}
-  @media(max-width:820px){
-    #spzAlertBar{padding:9px 14px;font-size:10px;gap:9px;}
-    /* never hide the reason — that would leave a warning with nothing in it */
-    #spzAlertBar .ab-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-    #spzAlertBar button{padding:4px 8px;font-size:9.5px;}
-  }
+
   @media(max-width:560px){
-    #spzAlertBar{flex-wrap:wrap;}
-    #spzAlertBar .ab-txt{flex:1 1 100%;white-space:normal;order:2;}
-    #spzAlertBar .ab-sp{display:none;}
+    #spzAlertBar{right:10px;left:10px;bottom:86px;width:auto;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    #spzAlertBar{transition:opacity .01s linear;}
+    #spzAlertBar .ab-ring-fg.run{animation:none;}
+    #spzAlertBar .ab-dot{animation:none;}
   }
 </style>
 <script>
@@ -21774,9 +21798,15 @@ var GM = {
   }
 
   /* ---------------------------------------------------------------
-     the alert banner — sits under the status bar on every screen
+     the turn-signal popup — a small card, bottom-right, that clears
+     itself: acknowledge it, open the detail (both dismiss it too),
+     or leave it alone and the ring runs out in 10s and it goes away
+     on its own. Hover or focus pauses the countdown so it never
+     vanishes mid-read.
      --------------------------------------------------------------- */
   var ACK_KEY = 'spz_turn_ack_v1';
+  var AUTO_MS = 10000; /* keep in sync with the abDrain keyframe duration in CSS */
+  var autoTimer = null, autoStart = 0, autoRemain = AUTO_MS, autoPaused = false;
 
   function alertState(){
     var r = reg();
@@ -21819,30 +21849,80 @@ var GM = {
     };
   }
 
+  function clearAutoTimer(){
+    if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
+  }
+  function scheduleAuto(ms){
+    clearAutoTimer();
+    autoStart = Date.now();
+    autoTimer = setTimeout(function(){ dismissBar(); }, ms);
+  }
+  function startAuto(){
+    autoPaused = false;
+    autoRemain = AUTO_MS;
+    if (bar) {
+      bar.classList.remove('paused');
+      var ring = bar.querySelector('[data-ab="ringfg"]');
+      if (ring) ring.classList.remove('run');
+      void bar.offsetWidth; /* force reflow so the drain animation restarts from zero */
+      if (ring) ring.classList.add('run');
+    }
+    scheduleAuto(AUTO_MS);
+  }
+  function pauseAuto(){
+    if (autoPaused || !autoTimer) return;
+    autoPaused = true;
+    autoRemain = Math.max(0, autoRemain - (Date.now() - autoStart));
+    clearAutoTimer();
+    if (bar) bar.classList.add('paused');
+  }
+  function resumeAuto(){
+    if (!autoPaused) return;
+    autoPaused = false;
+    if (bar) bar.classList.remove('paused');
+    scheduleAuto(autoRemain || AUTO_MS);
+  }
+
+  /* used for both "got it" and the auto-timeout — either way the reader has
+     seen it, so the same signature does not nag again */
+  function dismissBar(){
+    clearAutoTimer();
+    var st = alertState();
+    if (st) lsSet(ACK_KEY, st.sig);
+    if (bar) bar.classList.remove('show');
+    try { window.dispatchEvent(new Event('resize')); } catch(e){}
+  }
+
   function buildBar(){
     if (bar) return true;
-    var anchor = document.getElementById('spzKeyPanel') || document.querySelector('.ticker-bar');
-    if (!anchor || !anchor.parentNode) return false;
+    if (!document.body) return false;
     bar = document.createElement('div');
     bar.id = 'spzAlertBar';
     bar.innerHTML =
-      '<span class="ab-icon"></span>' +
-      '<span class="ab-txt"><b data-ab="t"></b> <span class="ab-detail" data-ab="d"></span></span>' +
-      '<span class="ab-sp"></span>' +
-      '<button type="button" class="ab-go" data-ab="go"></button>' +
-      '<button type="button" data-ab="ack"></button>';
-    anchor.parentNode.insertBefore(bar, anchor.nextSibling);
+      '<div class="ab-ring"><svg viewBox="0 0 26 26" aria-hidden="true">' +
+        '<circle class="ab-ring-bg" cx="13" cy="13" r="10.5"></circle>' +
+        '<circle class="ab-ring-fg" data-ab="ringfg" cx="13" cy="13" r="10.5"></circle>' +
+      '</svg><span class="ab-dot"></span></div>' +
+      '<div class="ab-body">' +
+        '<div class="ab-head" data-ab="t"></div>' +
+        '<p class="ab-txt" data-ab="d"></p>' +
+        '<div class="ab-actions">' +
+          '<button type="button" class="ab-go" data-ab="go"></button>' +
+          '<button type="button" data-ab="ack"></button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(bar);
 
     bar.querySelector('[data-ab="go"]').addEventListener('click', function(){
+      dismissBar();
       var link = document.querySelector('[data-route-to="regime"]');
       if (link) link.click(); else location.hash = '#/regime';
     });
-    bar.querySelector('[data-ab="ack"]').addEventListener('click', function(){
-      var st = alertState();
-      if (st) lsSet(ACK_KEY, st.sig);
-      bar.classList.remove('show');
-      try { window.dispatchEvent(new Event('resize')); } catch(e){}
-    });
+    bar.querySelector('[data-ab="ack"]').addEventListener('click', dismissBar);
+    bar.addEventListener('mouseenter', pauseAuto);
+    bar.addEventListener('mouseleave', resumeAuto);
+    bar.addEventListener('focusin', pauseAuto);
+    bar.addEventListener('focusout', resumeAuto);
     return true;
   }
 
@@ -21850,15 +21930,20 @@ var GM = {
     if (!buildBar()) return;
     var st = alertState();
     if (!st || lsGet(ACK_KEY) === st.sig) {
+      clearAutoTimer();
       bar.classList.remove('show');
+      bar.removeAttribute('data-sig');
       return;
     }
+    var isNew = bar.dataset.sig !== st.sig || !bar.classList.contains('show');
+    bar.dataset.sig = st.sig;
     bar.classList.toggle('lvl-alert', st.level === 'alert');
     bar.querySelector('[data-ab="t"]').textContent = '⚠ ' + tx(COPY.abTitle);
     bar.querySelector('[data-ab="d"]').textContent = st.text;
     bar.querySelector('[data-ab="go"]').textContent = tx(COPY.abGo);
     bar.querySelector('[data-ab="ack"]').textContent = tx(COPY.abAck);
     bar.classList.add('show');
+    if (isNew) startAuto();
     try { window.dispatchEvent(new Event('resize')); } catch(e){}
   }
 
