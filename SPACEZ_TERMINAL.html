@@ -3,6 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+/* Runs synchronously before <body> is parsed, so the disclaimer gate can
+   never lose a race with the rest of the page: without this, on a slow
+   parse the hero/ticker/nav were sometimes visible and interactive for a
+   moment before the gate's own (much later) boot script got to run. The
+   matching CSS is next to .gate below; this only ever adds a class. */
+(function(){
+  try {
+    if (localStorage.getItem('spacez.ack') !== '1') {
+      document.documentElement.classList.add('spz-gate-wait');
+      setTimeout(function(){
+        document.documentElement.classList.remove('spz-gate-wait');
+      }, 6000); /* safety net: never leave the page permanently hidden */
+    }
+  } catch(e){}
+})();
+</script>
 <meta name="description" content="SPACEZ TERMINAL — bilingual stock education terminal: beginner guide, market cycle outlook, chart lab, 14 core metrics, 13 chart signals and what-if simulators.">
 <meta name="theme-color" content="#080808">
 <meta property="og:title" content="SPACEZ TERMINAL — Stock Scanner & Education Terminal">
@@ -97,12 +114,16 @@
   .lt-option.active{color:var(--neon);text-shadow:0 0 8px rgba(204,255,0,.4);}
   .lt-sep{color:var(--grey-dim);}
 
-  .ticker-bar{overflow:hidden;padding:9px 0;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border-dim);}
+  .ticker-bar{overflow:hidden;padding:9px 0;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border-dim);display:flex;align-items:center;gap:0;}
+  .tape-badge{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:0 16px;margin-right:14px;border-right:1px solid var(--border-dim);font-family:var(--mono);font-size:10.5px;letter-spacing:1px;white-space:nowrap;}
+  .tape-badge .spz-tag{font-size:10.5px;}
+  .ticker-viewport{overflow:hidden;flex:1 1 auto;min-width:0;}
   .ticker-track{display:inline-block;white-space:nowrap;animation:tickerScroll 34s linear infinite;}
   .ticker-item{display:inline-flex;align-items:center;gap:7px;margin-right:38px;font-family:var(--mono);font-size:12px;letter-spacing:.4px;color:var(--grey);}
   .ticker-item b{color:var(--white);font-weight:600;}
   .ticker-item .up{color:var(--neon-2);}
   .ticker-item .down{color:var(--red);}
+  @media (max-width:640px){.tape-badge{padding:0 10px;margin-right:10px;font-size:9.5px;}}
 
   /* ---------- shared section shell ---------- */
   section{padding:130px 32px;max-width:1280px;margin:0 auto;position:relative;z-index:2;}
@@ -1615,6 +1636,11 @@
      ========================================================================= */
 
   /* ---------- entry disclaimer gate ---------- */
+  /* paired with the inline script in <head> — hide the whole page the
+     instant we know consent is outstanding, so the gate is the first
+     thing painted rather than racing the rest of the boot sequence */
+  html.spz-gate-wait{visibility:hidden;}
+  html.spz-gate-wait #spzGate{visibility:visible;}
   .gate{
     position:fixed;inset:0;z-index:9000;background:rgba(3,4,3,.94);
     backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;
@@ -3453,6 +3479,9 @@
     font-family:var(--mono);font-size:9.5px;letter-spacing:.6px;color:var(--grey-dim);
     border-left:2px solid var(--neon);padding-left:11px;margin-bottom:15px;line-height:1.7;
   }
+  .gm-flow-line{font-size:13px;line-height:1.7;color:var(--grey);margin:0 0 16px;}
+  .gm-flow-line b{color:var(--white);font-weight:700;}
+  html[data-theme="light"] .gm-flow-line b{color:#12141c;}
   .gm-picks{display:flex;flex-direction:column;gap:10px;}
   .gm-pick{
     display:grid;grid-template-columns:40px 1fr;gap:13px;align-items:start;cursor:pointer;
@@ -3472,6 +3501,8 @@
     color:var(--grey-dim);border:1px solid var(--border-dim);border-radius:4px;padding:2px 7px;}
   .gm-psc{margin-left:auto;font-family:var(--mono);font-size:19px;font-weight:800;color:var(--neon);}
   .gm-pw{font-size:12.6px;line-height:1.6;color:var(--neon-2);}
+  .gm-pd{font-size:12px;line-height:1.6;color:var(--grey);}
+  .gm-pd b{color:var(--grey-dim);font-weight:600;}
   .gm-pm{display:flex;flex-wrap:wrap;gap:6px;}
   .gm-m{font-family:var(--mono);font-size:10px;color:var(--grey);
     border:1px solid var(--border-dim);border-radius:6px;padding:4px 9px;display:inline-flex;gap:6px;}
@@ -3816,7 +3847,8 @@
     </button>
   </nav>
   <div class="ticker-bar">
-    <div class="ticker-track" id="tickerTrack"></div>
+    <span class="tape-badge" id="tapeBadge"></span>
+    <div class="ticker-viewport"><div class="ticker-track" id="tickerTrack"></div></div>
   </div>
 </div>
 
@@ -14003,6 +14035,7 @@ var CL_UI = {
       try { localStorage.setItem('spacez.ack', '1'); } catch(e){}
       g.hidden = true;
       document.body.style.overflow = '';
+      document.documentElement.classList.remove('spz-gate-wait');
     });
 
     function paint(){
@@ -14020,7 +14053,7 @@ var CL_UI = {
     repaint.push(paint);
     paint();
 
-    if(done){ g.hidden = true; }
+    if(done){ g.hidden = true; document.documentElement.classList.remove('spz-gate-wait'); }
     else { document.body.style.overflow = 'hidden'; }
   }
 
@@ -17808,6 +17841,45 @@ var PICKUI = {
   };
   window.__SPZ_WHY = function(r){ return whyText(r); };
 
+  /* which sectors today's flow map favours vs starves, for a given phase —
+     the same table rank() already uses, just surfaced so other modules
+     (the guided-mode summary) can describe the rotation in words instead
+     of only baking it into a score nobody sees the inside of */
+  var SECLBL = {
+    en:{bank:'banks',insurance:'insurers',energy:'energy',industrial:'industrials',auto:'autos',
+        health:'health',pharma:'pharma',semis:'semiconductors',cloud:'cloud & software',
+        power:'power & utilities',telecom:'telecom',reit:'REITs',staples:'staples',
+        retail:'retail',materials:'materials'},
+    th:{bank:'ธนาคาร',insurance:'ประกัน',energy:'พลังงาน',industrial:'อุตสาหกรรม',auto:'ยานยนต์',
+        health:'สุขภาพ',pharma:'ยา',semis:'เซมิคอนดักเตอร์',cloud:'คลาวด์และซอฟต์แวร์',
+        power:'ไฟฟ้าและสาธารณูปโภค',telecom:'โทรคมนาคม',reit:'กองทรัสต์อสังหาฯ',staples:'สินค้าจำเป็น',
+        retail:'ค้าปลีก',materials:'วัสดุ'}
+  };
+  window.__SPZ_FLOWMAP = function(phase){
+    var flow = FLOWMX[phase] || FLOWMX.mid;
+    var rows = Object.keys(flow).map(function(k){ return { sec:k, score:flow[k] }; });
+    rows.sort(function(a, b){ return b.score - a.score; });
+    return {
+      top: rows.slice(0, 3),
+      bottom: rows.slice(-3).reverse(),
+      label: function(sec, lang){ return (SECLBL[lang] || SECLBL.en)[sec] || sec; }
+    };
+  };
+  /* ticker -> plain-English business description, looked up from the same
+     directory the Stock Directory page renders from */
+  window.__SPZ_STOCK_DESC = function(tk){
+    var dir = window.__SPZ_DIR;
+    if(!dir) return null;
+    var cats = ['value', 'growth', 'dividend', 'defensive'];
+    for(var c = 0; c < cats.length; c++){
+      var list = dir[cats[c]] || [];
+      for(var i = 0; i < list.length; i++){
+        if(list[i].ticker === tk) return { en:list[i].desc_en, th:list[i].desc_th };
+      }
+    }
+    return null;
+  };
+
   /* ---------------- page ---------------- */
   function build(){
     var sec = el('section');
@@ -18186,8 +18258,8 @@ var PICKUI = {
 var GM = {
   eb:{en:'Guided Mode',th:'โหมดแนะนำ'},
   h2:{en:'Do It In Order, One Step At A Time',th:'ทำไปทีละขั้น ตามลำดับ'},
-  lede:{en:'Eight steps in the order that actually works. Turn it on and a bar appears at the bottom of every page with the next step. Turn it off and it disappears completely — nothing else about the site changes.',
-        th:'แปดขั้นตอนเรียงตามลำดับที่ใช้ได้จริง เปิดโหมดนี้แล้วจะมีแถบขึ้นด้านล่างทุกหน้าพร้อมปุ่มไปขั้นถัดไป ปิดแล้วมันหายไปเลย ส่วนอื่นของเว็บไม่เปลี่ยนอะไรทั้งสิ้น'},
+  lede:{en:'%N steps in the order that actually works. Turn it on and a bar appears at the bottom of every page with the next step. Turn it off and it disappears completely — nothing else about the site changes.',
+        th:'%N ขั้นตอนเรียงตามลำดับที่ใช้ได้จริง เปิดโหมดนี้แล้วจะมีแถบขึ้นด้านล่างทุกหน้าพร้อมปุ่มไปขั้นถัดไป ปิดแล้วมันหายไปเลย ส่วนอื่นของเว็บไม่เปลี่ยนอะไรทั้งสิ้น'},
 
   on:{en:'Turn guided mode on',th:'เปิดโหมดแนะนำ'},
   off:{en:'Turn it off',th:'ปิดโหมด'},
@@ -18219,8 +18291,8 @@ var GM = {
   sumH:{en:'So — what does that leave you with',th:'สรุป — แล้วเหลืออะไรบ้าง'},
   sumLead:{en:'Computed live from the two answers below, the cycle reading the site is using right now, the capital flow map and the P/E, yield, ROE, D/E, margin and P/B of all %N names.',
            th:'คำนวณสดจากคำตอบสองข้อด้านล่าง ค่าวัฏจักรที่เว็บใช้อยู่ตอนนี้ แผนที่กระแสเงิน และค่า P/E ปันผล ROE D/E มาร์จิ้น P/B ของหุ้นทั้ง %N ตัว'},
-  sumLock:{en:'Finish all eight steps to unlock this. You can open it now, but the numbers mean far less if you have not seen where they came from.',
-           th:'ทำครบทั้งแปดขั้นเพื่อปลดล็อก จะเปิดดูเลยก็ได้ แต่ตัวเลขจะมีความหมายน้อยมากถ้ายังไม่เห็นว่ามันมาจากไหน'},
+  sumLock:{en:'Finish all %N steps to unlock this. You can open it now, but the numbers mean far less if you have not seen where they came from.',
+           th:'ทำครบทั้ง %N ขั้นเพื่อปลดล็อก จะเปิดดูเลยก็ได้ แต่ตัวเลขจะมีความหมายน้อยมากถ้ายังไม่เห็นว่ามันมาจากไหน'},
   sumOpen:{en:'Open it anyway',th:'ขอดูเลย'},
   mktQ:{en:'Which market do you actually trade?',th:'คุณเทรดตลาดไหนจริงๆ'},
   mkts:[{id:'all',l:{en:'Both',th:'ทั้งสอง'}},{id:'US',l:{en:'US only',th:'สหรัฐฯ'}},{id:'TH',l:{en:'Thai only',th:'ไทย'}}],
@@ -18241,6 +18313,9 @@ var GM = {
         'ตัดสินใจขนาดไม้ก่อนที่จะหลงรักไอเดีย และจำกัดหุ้นตัวเดียวไว้ราว 5% ของพอร์ต']
   },
   usingH:{en:'Built from',th:'สร้างจาก'},
+  flowInto:{en:'Money is rotating into',th:'เงินกำลังหมุนเข้าไปที่'},
+  flowOutof:{en:'and out of',th:'และไหลออกจาก'},
+  descLbl:{en:'What it does',th:'ทำธุรกิจอะไร'},
   finH:{en:'That is the whole loop',th:'ครบวงจรแล้ว'},
   finN:{en:'Run it again whenever the cycle call changes, a company reports, or you have new money to put in. The order matters more than the speed.',
         th:'ทำวนใหม่ทุกครั้งที่การอ่านวัฏจักรเปลี่ยน มีบริษัทประกาศงบ หรือมีเงินก้อนใหม่จะลง ลำดับสำคัญกว่าความเร็ว'},
@@ -18263,6 +18338,24 @@ var GM = {
            th:'เกจบนการ์ดแต่ละใบ และแผง "อะไรจะทำให้การอ่านเปลี่ยน"'},
      tip:{en:'Right now five of six point to mid cycle and only inflation leans late. That single dissenting indicator is the one to watch — if CPI goes above 4%, the read flips and so does everything downstream of it.',
           th:'ตอนนี้ห้าในหกชี้ไปที่กลางวัฏจักร มีแค่เงินเฟ้อที่เอียงไปทางปลาย ตัวที่เห็นต่างตัวเดียวนั่นแหละที่ต้องจับตา ถ้า CPI เกิน 4% การอ่านจะพลิก และทุกอย่างที่ต่อจากนั้นพลิกตาม'}},
+
+    {id:'radar', ic:'📡', route:'regime',
+     t:{en:'Check whether that read is holding up',th:'เช็คว่าการอ่านนั้นยังยืนอยู่ไหม'},
+     goal:{en:'Open the Turning Point Radar and see how many of the eleven gauges are flashing a hard warning versus just leaning that way.',
+           th:'เปิดหน้าเรดาร์สัญญาณเปลี่ยนทิศ แล้วดูว่าในสิบเอ็ดมาตรวัดมีกี่ตัวที่เตือนแรงจริง กี่ตัวแค่เอียงไปทางนั้น'},
+     look:{en:'The big number at the top — it only counts gauges that crossed fully into their red zone. A couple of amber ones next to it is normal.',
+           th:'ตัวเลขใหญ่ด้านบน — นับเฉพาะมาตรวัดที่เข้าโซนแดงเต็มตัว มีสีเหลืองข้างๆ อีกสองสามตัวถือว่าปกติ'},
+     tip:{en:'Zero red gauges backs up a mid-cycle read from the last step. If two or more turn red, or a whole cluster of related gauges lights up together, trust that over the cycle label alone — then scroll down this same page to see what money is already doing about it.',
+          th:'ถ้าไม่มีสัญญาณแดงเลย ก็สนับสนุนการอ่านว่าอยู่กลางวัฏจักรจากขั้นก่อนหน้า แต่ถ้าแดงตั้งแต่สองตัวขึ้นไป หรือกลุ่มมาตรวัดที่เกี่ยวข้องกันสว่างพร้อมกัน ให้เชื่อสัญญาณนี้มากกว่าป้ายชื่อวัฏจักรเฉยๆ แล้วเลื่อนลงไปดูในหน้าเดียวกันว่าตอนนี้เงินกำลังทำอะไรกับมันอยู่'}},
+
+    {id:'flow', ic:'💸', route:'flow',
+     t:{en:'See where money is already moving',th:'ดูว่าตอนนี้เงินไหลไปทางไหนแล้ว'},
+     goal:{en:'Open Capital Flow and flip between sector, asset class and country. Note the two or three pulling money in right now.',
+           th:'เปิดหน้าเงินทุนไหลไปไหน สลับดูทั้งกลุ่มอุตสาหกรรม สินทรัพย์ และประเทศ จดไว้ว่าตอนนี้เงินไหลเข้าอะไรมากที่สุดสองสามอันดับแรก'},
+     look:{en:'The in-flow and out-flow columns side by side — a sector at the top of "in" while its usual opposite sits in "out" is the clearest signal on this page.',
+           th:'คอลัมน์เงินไหลเข้ากับไหลออกวางคู่กัน กลุ่มที่ติดอันดับต้นฝั่ง "เข้า" ขณะกลุ่มที่มักสวนทางกันอยู่ฝั่ง "ออก" คือสัญญาณที่ชัดที่สุดในหน้านี้'},
+     tip:{en:'This is a price-and-volume proxy for real fund flow, not the real tape — free data cannot get that. Use it to confirm a story, not invent one: cyclicals showing up in "in" confirms a mid-cycle read; staples and utilities showing up there instead is the earliest sign that read is wrong.',
+          th:'นี่คือค่าประมาณจากราคาและปริมาณซื้อขาย ไม่ใช่ข้อมูลกระแสเงินจริง เพราะข้อมูลฟรีไม่มีตัวนั้น ให้ใช้มันยืนยันเรื่องราว ไม่ใช่สร้างเรื่องราวขึ้นมาเอง ถ้าหุ้นวัฏจักรติดอันดับฝั่ง "เข้า" ก็ยืนยันว่ากลางวัฏจักรจริง แต่ถ้ากลุ่มสินค้าจำเป็นกับสาธารณูปโภคติดฝั่ง "เข้า" แทน นั่นคือสัญญาณแรกที่บอกว่าการอ่านนั้นผิด'}},
 
     {id:'globe', ic:'🕸️', route:'globe',
      t:{en:'Follow the money to a sector',th:'ตามเงินไปให้ถึงกลุ่มอุตสาหกรรม'},
@@ -18442,7 +18535,7 @@ var GM = {
     function q(k){ return sec.querySelector('[data-g="' + k + '"]'); }
     q('eb').textContent = T(GM.eb);
     q('h2').textContent = T(GM.h2);
-    q('lede').textContent = T(GM.lede);
+    q('lede').textContent = T(GM.lede).replace('%N', N);
     q('sm').textContent = T(GM.sMap);
     q('ss').textContent = T(GM.sSteps);
     q('note').innerHTML = '<b>⚠</b> ' + esc(T(GM.note));
@@ -18640,7 +18733,7 @@ var GM = {
 
     if(!all && !S.peek){
       var lock = el('div', 'gm-lock',
-        '<div class="gm-lock-t">🔒 ' + esc(T(GM.sumLock)) + '</div>' +
+        '<div class="gm-lock-t">🔒 ' + esc(T(GM.sumLock).replace('%N', N)) + '</div>' +
         '<button type="button" class="gm-b pri">' + esc(T(GM.sumOpen)) + '</button>');
       lock.querySelector('button').addEventListener('click', function(){ S.peek = true; paintSum(); });
       host.appendChild(lock);
@@ -18680,6 +18773,18 @@ var GM = {
         esc(T(GM.usingH)) + ': ' + esc(T(cy.label())) +
         ' · ' + esc(cy.asOf) + ' · ' + esc(T({en:'flow map',th:'แผนที่กระแสเงิน'})) +
         ' · P/E · ROE · D/E · P/B'));
+
+      /* the regime → sector → rotation line: computed from the same flow
+         table the ranking already uses, not a separate hand-written claim */
+      var fm = window.__SPZ_FLOWMAP ? window.__SPZ_FLOWMAP(cy.phase) : null;
+      if(fm){
+        var lg = L(), sep = (lg === 'th') ? ' · ' : ', ';
+        var topL = fm.top.map(function(r){ return fm.label(r.sec, lg); }).join(sep);
+        var botL = fm.bottom.map(function(r){ return fm.label(r.sec, lg); }).join(sep);
+        host.appendChild(el('p', 'gm-flow-line',
+          esc(T(GM.flowInto)) + ' <b>' + esc(topL) + '</b> ' +
+          esc(T(GM.flowOutof)) + ' <b>' + esc(botL) + '</b>.'));
+      }
     }
 
     var list = el('div', 'gm-picks');
@@ -18694,6 +18799,10 @@ var GM = {
           mh += '<span class="gm-m"><b>' + esc(met[k][0]) + '</b>' +
                 (isFinite(met[k][1]) ? met[k][1] + met[k][2] : '—') + '</span>';
         }
+        /* plain-English "what this business does" line, pulled from the
+           Stock Directory entry for the same ticker */
+        var descObj = window.__SPZ_STOCK_DESC ? window.__SPZ_STOCK_DESC(st.tk) : null;
+        var descTxt = descObj ? T(descObj) : '';
         var c = el('div', 'gm-pick' + (idx === 0 ? ' first' : ''),
           '<span class="gm-pn">' + (idx + 1) + '</span>' +
           '<span class="gm-pb"><span class="gm-pt"><span class="gm-ptk">$' + esc(st.tk) + '</span>' +
@@ -18701,6 +18810,7 @@ var GM = {
             '<span class="gm-ptag">' + esc(st.mkt) + ' · ' + esc(st.sec) + ' · ' + esc(st.arch) + '</span>' +
             '<span class="gm-psc">' + r.total.toFixed(1) + '</span></span>' +
             '<span class="gm-pw">' + esc(w.join(' · ')) + '</span>' +
+            (descTxt ? '<span class="gm-pd"><b>' + esc(T(GM.descLbl)) + ':</b> ' + esc(descTxt) + '</span>' : '') +
             '<span class="gm-pm">' + mh + '</span></span>');
         c.addEventListener('click', function(){
           var a = document.querySelector('[data-route-to="desk"]');
@@ -18751,8 +18861,8 @@ var GM = {
       window.__spzAddRoute({
         id:'guided', feat:true, after:null, group:'learn',
         t:{en:'Guided Mode',th:'โหมดแนะนำ'},
-        d:{en:'Eight steps in the order that works, with a next-step bar that follows you across the site. Off by default.',
-           th:'แปดขั้นตอนเรียงตามลำดับที่ใช้ได้จริง พร้อมแถบไปขั้นถัดไปที่ตามคุณไปทุกหน้า ปิดอยู่เป็นค่าเริ่มต้น'}
+        d:{en:'Ten steps in the order that works, with a next-step bar that follows you across the site. Off by default.',
+           th:'สิบขั้นตอนเรียงตามลำดับที่ใช้ได้จริง พร้อมแถบไปขั้นถัดไปที่ตามคุณไปทุกหน้า ปิดอยู่เป็นค่าเริ่มต้น'}
       });
     }
 
@@ -19005,23 +19115,56 @@ var GM = {
      Everything degrades gracefully back to the built-in static numbers.
      ============================================================ -->
 <style>
-  #spzLiveBar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:8px 20px;
+  #spzLiveBar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 20px;
     background:rgba(8,8,8,0.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
     border-bottom:1px solid var(--border-dim);
     font-family:var(--mono);font-size:11px;letter-spacing:.4px;color:var(--grey);}
+  html[data-theme="light"] #spzLiveBar{background:rgba(246,247,243,.9);}
+
+  /* ---------- status chips — small pills instead of one long text line ---------- */
+  #spzLiveBar .lb-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 8px;
+    border:1px solid var(--border-dim);border-radius:20px;background:rgba(255,255,255,.03);
+    transition:border-color .2s,background .2s;}
+  html[data-theme="light"] #spzLiveBar .lb-chip{background:rgba(18,20,28,.035);}
+  #spzLiveBar .lb-chip b{color:var(--white);font-weight:600;}
+  html[data-theme="light"] #spzLiveBar .lb-chip b{color:#12141c;}
+  #spzLiveBar .lb-ic{opacity:.75;flex:none;font-size:10px;line-height:1;}
+
   #spzLiveBar .spz-dot{width:7px;height:7px;border-radius:50%;background:var(--grey);flex:none;
     box-shadow:0 0 0 0 rgba(204,255,0,0.5);}
   #spzLiveBar.is-live .spz-dot{background:var(--neon-2,#7CFFB2);animation:spzPulse 2.2s ease-out infinite;}
   #spzLiveBar.is-loading .spz-dot{background:#ffd24a;animation:spzPulse 1s ease-out infinite;}
   #spzLiveBar.is-static .spz-dot{background:#ff5c5c;}
   @keyframes spzPulse{0%{box-shadow:0 0 0 0 rgba(124,255,178,.45);}70%{box-shadow:0 0 0 7px rgba(124,255,178,0);}100%{box-shadow:0 0 0 0 rgba(124,255,178,0);}}
+  #spzLiveBar.is-live .lb-status{border-color:rgba(124,255,178,.3);}
+  #spzLiveBar.is-loading .lb-status{border-color:rgba(255,210,74,.35);}
   #spzLiveBar .spz-state{color:var(--white);font-weight:600;letter-spacing:.8px;}
+  html[data-theme="light"] #spzLiveBar .spz-state{color:#12141c;}
+
+  /* small open/closed market dots, replacing the old bold coloured text */
+  #spzLiveBar .lb-mdot{width:6px;height:6px;border-radius:50%;flex:none;background:var(--grey-dim);}
+  #spzLiveBar .lb-mdot.on{background:var(--neon-2,#7CFFB2);box-shadow:0 0 5px rgba(124,255,178,.65);}
+
   #spzLiveBar .spz-sep{opacity:.35;}
-  #spzLiveBar .spz-src{opacity:.8;}
+  #spzLiveBar .spz-src{opacity:.85;}
+
+  /* live-ticking "updated Ns ago" — the one bit that visibly moves on its own */
+  #spzLiveBar .lb-ago{font-variant-numeric:tabular-nums;}
+
   #spzLiveBar button{background:transparent;border:1px solid var(--border-dim);color:var(--grey);
-    font-family:var(--mono);font-size:10.5px;letter-spacing:.6px;padding:3px 9px;border-radius:4px;
-    cursor:pointer;transition:border-color .18s,color .18s;}
+    font-family:var(--mono);font-size:10px;letter-spacing:.5px;padding:5px 12px;border-radius:20px;
+    cursor:pointer;transition:border-color .18s,color .18s,background .18s;
+    display:inline-flex;align-items:center;gap:6px;}
   #spzLiveBar button:hover{border-color:var(--neon,#cf0);color:var(--white);}
+  html[data-theme="light"] #spzLiveBar button:hover{color:#12141c;}
+  #spzLiveBar #spzKeyBtn.open{border-color:var(--neon,#cf0);color:var(--white);background:rgba(204,255,0,.08);}
+  #spzLiveBar .lb-spin{display:inline-block;font-size:11px;line-height:1;}
+  #spzLiveBar.is-loading #spzRefreshBtn .lb-spin{animation:spzSpin .6s linear infinite;}
+  @keyframes spzSpin{to{transform:rotate(360deg);}}
+  @media (prefers-reduced-motion: reduce){
+    #spzLiveBar.is-loading #spzRefreshBtn .lb-spin{animation:none;}
+    #spzLiveBar .spz-dot{animation:none;}
+  }
   #spzLiveBar .spz-spacer{flex:1 1 auto;}
   #spzKeyPanel{display:none;padding:14px 20px 16px;background:rgba(8,8,8,0.94);
     backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
@@ -19527,13 +19670,13 @@ var GM = {
     bar = document.createElement('div');
     bar.id = 'spzLiveBar';
     bar.innerHTML =
-      '<span class="spz-dot"></span><span class="spz-state">…</span>' +
-      '<span class="spz-tier"></span>' +
-      '<span class="spz-src" id="spzSrc"></span>' +
+      '<span class="lb-chip lb-status"><span class="spz-dot"></span><span class="spz-state">…</span>' +
+        '<span class="spz-tier"></span></span>' +
+      '<span class="lb-chip spz-src" id="spzSrc"></span>' +
       '<span class="spz-short"></span>' +
       '<span class="spz-spacer"></span>' +
-      '<button type="button" id="spzRefreshBtn"></button>' +
-      '<button type="button" id="spzKeyBtn"></button>';
+      '<button type="button" id="spzRefreshBtn"><span class="lb-spin">⟳</span><span class="lb-lbl"></span></button>' +
+      '<button type="button" id="spzKeyBtn"><span class="lb-ic">⚙</span><span class="lb-lbl"></span></button>';
 
     panel = document.createElement('div');
     panel.id = 'spzKeyPanel';
@@ -19608,6 +19751,21 @@ var GM = {
     return d.toLocaleTimeString(lang() === 'th' ? 'th-TH' : 'en-GB', { hour12:false });
   }
 
+  var AGO = {
+    en:{ now:'just now', s:'%Ns ago', m:'%Nm ago', h:'%Nh ago' },
+    th:{ now:'เมื่อครู่นี้', s:'%N วิ ที่แล้ว', m:'%N น. ที่แล้ว', h:'%N ชม. ที่แล้ว' }
+  };
+  function fmtAgo(ts){
+    if (!ts) return S('never');
+    var s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+    var d = AGO[lang()] || AGO.en;
+    if (s < 5) return d.now;
+    if (s < 60) return d.s.replace('%N', s);
+    var m = Math.floor(s / 60);
+    if (m < 60) return d.m.replace('%N', m);
+    return d.h.replace('%N', Math.floor(m / 60));
+  }
+
   function paintBar(){
     if (!bar) return;
     bar.className = 'is-' + (state.mode === 'loading' ? 'loading' : state.mode === 'live' ? 'live' : 'static');
@@ -19615,22 +19773,28 @@ var GM = {
       state.mode === 'loading' ? S('loading') : state.mode === 'live' ? S('live') : S('stat');
     var tierEl = bar.querySelector('.spz-tier');
     if (tierEl) tierEl.innerHTML = tagHTML(bestTier());
+    var tapeBadge = document.getElementById('tapeBadge');
+    if (tapeBadge) tapeBadge.innerHTML = tagHTML(bestTier(), '', true);
     var ms = marketStatus();
     var age = snapAgeH();
     document.getElementById('spzSrc').innerHTML =
-      S('quotes') + ': <b>' + state.qSrc + '</b> <span class="spz-sep">·</span> ' +
-      S('funda') + ': <b>' + state.mSrc + '</b> <span class="spz-sep">·</span> ' +
-      'SET <b style="color:' + (ms.set ? 'var(--neon-2,#7CFFB2)' : 'var(--grey-dim)') + '">' +
-        tagText(ms.set ? 'open' : 'closed') + '</b> <span class="spz-sep">·</span> ' +
-      'US <b style="color:' + (ms.us ? 'var(--neon-2,#7CFFB2)' : 'var(--grey-dim)') + '">' +
-        tagText(ms.us ? 'open' : 'closed') + '</b> <span class="spz-sep">·</span> ' +
-      S('updated') + ' ' + fmtTime(state.last) +
+      '<span class="lb-ic">◆</span>' + S('quotes') + ' <b>' + state.qSrc + '</b>' +
+      '<span class="spz-sep">·</span>' +
+      '<span class="lb-ic">▦</span>' + S('funda') + ' <b>' + state.mSrc + '</b>' +
+      '<span class="spz-sep">·</span>' +
+      '<span class="lb-mdot' + (ms.set ? ' on' : '') + '"></span>SET <b>' + tagText(ms.set ? 'open' : 'closed') + '</b>' +
+      '<span class="spz-sep">·</span>' +
+      '<span class="lb-mdot' + (ms.us ? ' on' : '') + '"></span>US <b>' + tagText(ms.us ? 'open' : 'closed') + '</b>' +
+      '<span class="spz-sep">·</span>' +
+      '<span class="lb-ic">◷</span>' + S('updated') + ' <b class="lb-ago">' + fmtAgo(state.last) + '</b>' +
       (age !== null && age > 3 ? ' <b style="color:var(--amber,#ffb020)">(' +
         age.toFixed(age > 24 ? 0 : 1) + 'h)</b>' : '');
     var shortEl = bar.querySelector('.spz-short');
-    if (shortEl) shortEl.textContent = S('updated') + ' ' + fmtTime(state.last);
-    document.getElementById('spzRefreshBtn').textContent = S('refresh');
-    document.getElementById('spzKeyBtn').textContent = S('keyBtn');
+    if (shortEl) shortEl.innerHTML = S('updated') + ' <span class="lb-ago">' + fmtAgo(state.last) + '</span>';
+    var refLbl = document.querySelector('#spzRefreshBtn .lb-lbl');
+    if (refLbl) refLbl.textContent = S('refresh').replace(/^⟳\s*/, '');
+    var keyLbl = document.querySelector('#spzKeyBtn .lb-lbl');
+    if (keyLbl) keyLbl.textContent = S('keyBtn').replace(/^⚙\s*/, '');
     document.getElementById('spzKeyTitle').textContent = S('keyTitle');
     document.getElementById('spzKeyNote').textContent = S('keyNote');
     var lg = document.getElementById('spzLegend');
@@ -19641,6 +19805,14 @@ var GM = {
     if (inputEl) inputEl.placeholder = S('ph');
     bar.title = S('notice');
   }
+
+  /* the only bit that should visibly tick on its own — cheap, and it is
+     what actually reads as "live" to a person glancing at the bar */
+  setInterval(function(){
+    if (!bar) return;
+    var ago = bar.querySelectorAll('.lb-ago');
+    for (var i = 0; i < ago.length; i++) ago[i].textContent = fmtAgo(state.last);
+  }, 1000);
 
   /* ---------------------------------------------------------------
      5b. section header tags — so each screen says how fresh it is
@@ -24778,6 +24950,19 @@ var GM = {
   #now .nw-h em{font-style:normal;font-family:var(--mono);font-size:11px;letter-spacing:1.6px;
     color:var(--neon,#cf0);}
   #now .nw-l{font-size:13.5px;line-height:1.75;color:var(--grey);max-width:820px;margin-bottom:18px;}
+  /* the checklist: a plain, skimmable "check these, in this order" list
+     sitting above everything else on the page */
+  #now .nw-check{border:1px solid var(--border-dim);border-radius:14px;
+    background:rgba(255,255,255,.024);padding:16px 20px;margin-bottom:32px;max-width:820px;}
+  #now .nw-check-h{font-family:var(--mono);font-size:10px;letter-spacing:1.1px;
+    text-transform:uppercase;color:var(--neon,#cf0);margin-bottom:11px;}
+  #now .nw-check-r{display:flex;align-items:baseline;gap:12px;padding:6px 0;
+    border-top:1px solid rgba(255,255,255,.05);}
+  #now .nw-check-r:first-of-type{border-top:0;}
+  #now .nw-check-n{font-family:var(--mono);font-size:11px;font-weight:800;
+    color:var(--grey-dim);flex:none;width:20px;}
+  #now .nw-check-t{font-size:13.5px;color:var(--white);}
+  html[data-theme="light"] .nw-check-t{color:#12141c;}
 
   /* ① the state of play */
   #now .nw-state{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:13px;
@@ -24877,6 +25062,8 @@ var GM = {
     h:{en:'So what am I supposed to be looking at?',th:'สรุปแล้วต้องดูอะไร'},
     lede:{en:'Everything on this site answers a piece of that question and none of it answers the whole thing, so this screen puts the pieces in the order the question is actually asked. Where the economy is. Where money is moving. Which groups have historically led from a position like this, and which real companies sit in them. What would break that read. And when it is worth coming back to look again.',
           th:'ทุกหน้าในเว็บนี้ตอบคำถามนั้นไปคนละชิ้น แต่ไม่มีหน้าไหนตอบทั้งคำถาม หน้านี้จึงเรียงชิ้นส่วนตามลำดับที่คนถามจริงๆ — เศรษฐกิจอยู่ตรงไหน เงินกำลังไหลไปทางไหน จากตำแหน่งแบบนี้กลุ่มไหนเคยนำ และมีบริษัทจริงตัวไหนอยู่ในกลุ่มนั้น อะไรจะทำให้การอ่านนี้พัง และควรกลับมาดูอีกทีเมื่อไหร่'},
+    checkH:{en:'Before you analyze anything, check these in this order:',
+            th:'ก่อนจะวิเคราะห์อะไรก็ตาม ให้ดูตามลำดับนี้ก่อน:'},
 
     s1:{en:'Where we are',th:'ตอนนี้อยู่ตรงไหน'}, n1:{en:'01',th:'01'},
     s1l:{en:'Three readings the rest of this page depends on. Change the cycle phase anywhere on the site and everything below follows it.',
@@ -25290,7 +25477,13 @@ var GM = {
       if (window.__SPZ_WATCH && window.__SPZ_WATCH.panelHTML) changed = window.__SPZ_WATCH.panelHTML();
     } catch(e){ changed = ''; }
 
-    body.innerHTML = changed +
+    var checklist = '<div class="nw-check"><div class="nw-check-h">' + esc(tx(C.checkH)) + '</div>' +
+      [[C.n1, C.s1], [C.n2, C.s2], [C.n3, C.s3], [C.n4, C.s4], [C.n5, C.s5]].map(function(p){
+        return '<div class="nw-check-r"><span class="nw-check-n">' + esc(tx(p[0])) + '</span>' +
+               '<span class="nw-check-t">' + esc(tx(p[1])) + '</span></div>';
+      }).join('') + '</div>';
+
+    body.innerHTML = checklist + changed +
       sect(C.n1, C.s1, C.s1l, stateHTML()) +
       sect(C.n2, C.s2, C.s2l, flowHTML()) +
       sect(C.n3, C.s3, C.s3l, leadHTML()) +
