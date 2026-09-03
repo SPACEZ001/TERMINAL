@@ -1,0 +1,70 @@
+name: telegram-bot
+
+# Polls Telegram for watchlist commands (add / remove / edit / list / help,
+# plus the deep-link buttons on the site's watchlist page) and keeps
+# data/watchlist.json in sync. Runs on its own fast schedule, separate from
+# the 30-minute market-data snapshot job, so a command feels answered
+# within a few minutes rather than waiting on that cycle.
+#
+# The bot token lives in repository Secrets and reaches the script only
+# through the environment - this repository is public, so it must never be
+# written into a file here.
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: telegram-bot
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      # Blank when unset, which is how the step below knows to skip itself
+      # entirely rather than poll half-configured.
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      ALERT_MOVE_PCT: ${{ vars.ALERT_MOVE_PCT }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Poll Telegram for watchlist commands
+        if: ${{ env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' }}
+        run: python scripts/telegram_bot.py
+
+      - name: Commit if changed
+        run: |
+          git config user.name  "spacez-market-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -z "$(git status --porcelain data/watchlist.json data/bot_state.json)" ]; then
+            echo "no change"; exit 0
+          fi
+          [ -f data/watchlist.json ] && git add data/watchlist.json
+          [ -f data/bot_state.json ] && git add data/bot_state.json
+          git commit -m "watchlist: update from Telegram $(date -u '+%Y-%m-%d %H:%M UTC')"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo "pushed on attempt $attempt"; exit 0
+            fi
+            echo "push rejected, rebasing onto origin/main (attempt $attempt)"
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              echo "could not rebase cleanly"; break
+            fi
+          done
+          echo "::error::could not push the watchlist update after 3 attempts"
+          exit 1

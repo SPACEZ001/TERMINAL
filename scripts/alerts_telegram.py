@@ -51,6 +51,8 @@ from datetime import datetime, timedelta, timezone
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SNAPSHOT = os.path.join(ROOT, "data", "market.json")
 STATE_FILE = os.path.join(ROOT, "data", "alerts_state.json")
+WATCHLIST_FILE = os.path.join(ROOT, "data", "watchlist.json")
+SITE_URL = "https://spacez001.github.io/TERMINAL/SPACEZ_TERMINAL.html"
 
 ICT = timezone(timedelta(hours=7))
 
@@ -64,7 +66,7 @@ OWNER = os.environ.get("ALERT_OWNER", "").strip() or "คุณโฟกัส"
 
 ENABLED = set(
     x.strip()
-    for x in os.environ.get("ALERT_ENABLE", "turn,move,indicator,daily,fx").split(",")
+    for x in os.environ.get("ALERT_ENABLE", "turn,move,indicator,daily,fx,watch").split(",")
     if x.strip()
 )
 
@@ -103,6 +105,7 @@ def load_state():
     st.setdefault("indicators", {})
     st.setdefault("last_daily", "")
     st.setdefault("last_fx", "")
+    st.setdefault("last_watch", "")
     return st
 
 
@@ -114,6 +117,18 @@ def save_state(st, today):
         json.dump(st, fh, ensure_ascii=False, indent=1, sort_keys=True)
         fh.write("\n")
     os.replace(tmp, STATE_FILE)
+
+
+def load_watchlist():
+    """The list a person builds themselves in Telegram or on the site's
+    watchlist page (data/watchlist.json, written by scripts/telegram_bot.py).
+    Missing or unreadable just means nobody is watching anything yet."""
+    try:
+        with open(WATCHLIST_FILE, encoding="utf-8") as fh:
+            wl = json.load(fh)
+    except (OSError, ValueError):
+        wl = {}
+    return wl.get("tickers") or {}
 
 
 # ------------------------------------------------------------- telegram ----
@@ -186,6 +201,23 @@ def price(v):
     return "{:,.4f}".format(v).rstrip("0").rstrip(".")
 
 
+def site_link(ticker):
+    return SITE_URL + "?stock=" + urllib.parse.quote(ticker) + "#/stock"
+
+
+def watch_note(tickers_mentioned, watchlist):
+    """A short footer naming which of the tickers already in this message
+    are on the person's own watchlist, each with a link straight to its
+    page - so a signal on a name they actually care about is one tap away."""
+    watched = [t for t in tickers_mentioned if t in watchlist]
+    if not watched:
+        return []
+    out = ["", "👀 <b>ในวอทช์ลิสต์ของคุณ</b>"]
+    for t in watched:
+        out.append("🔗 <b>%s</b> — %s" % (esc(t), site_link(t)))
+    return out
+
+
 def now_ict():
     return datetime.now(timezone.utc).astimezone(ICT)
 
@@ -215,11 +247,12 @@ DISCLAIMER = "📌 <i>ข้อมูลเพื่อการศึกษา 
 
 
 # ------------------------------------------------------------- sections ----
-def turn_signals(snap, st, today, force=False):
+def turn_signals(snap, st, today, watchlist=None, force=False):
     """New RSI divergences and moving-average crosses - the site's own
     'turn signal' board, pushed as it changes."""
+    watchlist = watchlist or {}
     reg = snap.get("regime") or {}
-    bear, bull, crosses, keys = [], [], [], []
+    bear, bull, crosses, keys, mentioned = [], [], [], [], []
     cutoff = (today - timedelta(days=TURN_COOLDOWN_DAYS)).isoformat()
 
     for d in (reg.get("divergences") or []):
@@ -229,9 +262,11 @@ def turn_signals(snap, st, today, force=False):
         key = "turn:%s:%s" % (t, kind)
         if not force and st["sent"].get(key, "") > cutoff:
             continue
-        line = "▫️ <b>%s</b> · RSI %s → %s" % (esc(t), d.get("rsi_then"), d.get("rsi"))
+        tag = " 👀" if t in watchlist else ""
+        line = "▫️ <b>%s</b>%s · RSI %s → %s" % (esc(t), tag, d.get("rsi_then"), d.get("rsi"))
         (bear if kind == "bearish" else bull).append(line)
         keys.append(key)
+        mentioned.append(t)
         if len(bear) + len(bull) >= MAX_TURN:
             break
 
@@ -242,16 +277,19 @@ def turn_signals(snap, st, today, force=False):
         key = "cross:%s:%s" % (t, kind)
         if not force and st["sent"].get(key, "") > cutoff:
             continue
+        tag = " 👀" if t in watchlist else ""
         crosses.append(
-            "%s <b>%s</b> · %s (ห่าง MA200 %s)"
+            "%s <b>%s</b>%s · %s (ห่าง MA200 %s)"
             % (
                 "🟢" if kind == "golden" else "🔴",
                 esc(t),
+                tag,
                 "Golden cross" if kind == "golden" else "Death cross",
                 pct(c.get("vs200")),
             )
         )
         keys.append(key)
+        mentioned.append(t)
 
     if not (bear or bull or crosses):
         return None, []
@@ -275,12 +313,14 @@ def turn_signals(snap, st, today, force=False):
         msg.append("📐 <b>เส้นค่าเฉลี่ยตัดกัน</b>")
         msg.extend(crosses)
 
+    msg += watch_note(mentioned, watchlist)
     msg += ["", RULE, "", "📌 <i>เป็นการรายงานสิ่งที่เกิดขึ้นในข้อมูล ไม่ใช่คำแนะนำให้ซื้อขายนะคะ</i>"]
     return "\n".join(msg), keys
 
 
-def big_moves(snap, st, today, force=False):
+def big_moves(snap, st, today, watchlist=None, force=False):
     """Anything that moved more than the threshold today, once per name."""
+    watchlist = watchlist or {}
     stocks = snap.get("stocks") or {}
     day = today.isoformat()
     rows, keys = [], []
@@ -311,9 +351,10 @@ def big_moves(snap, st, today, force=False):
     def block(title, items):
         out = ["", title]
         for _, t, s in items[:8]:
+            tag = " 👀" if t in watchlist else ""
             out.append(
-                "%s <b>%s</b> %s · %s"
-                % (mark(s.get("chg_pct")), esc(t), pct(s.get("chg_pct")), price(s.get("price")))
+                "%s <b>%s</b>%s %s · %s"
+                % (mark(s.get("chg_pct")), esc(t), tag, pct(s.get("chg_pct")), price(s.get("price")))
             )
             name = (s.get("name") or "").strip()
             if name:
@@ -325,11 +366,64 @@ def big_moves(snap, st, today, force=False):
     if dn:
         msg += block("🔴 <b>ลงแรง</b>", dn)
 
+    msg += watch_note([t for _, t, _ in rows], watchlist)
     msg += ["", RULE, "", DISCLAIMER]
     return "\n".join(msg), keys
 
 
-def indicator_warnings(snap, st, force=False):
+def watchlist_moves(snap, st, today, watchlist, force=False):
+    """A watched ticker can set its own, tighter move threshold than the
+    global one (via the /edit command) - this is the pass that honours it,
+    independent of big_moves() above so the two never double up on the
+    same-day key."""
+    stocks = snap.get("stocks") or {}
+    day = today.isoformat()
+    rows, keys = [], []
+    for t, info in watchlist.items():
+        custom = info.get("alert_pct")
+        if custom is None or custom >= MOVE_PCT:
+            continue  # no tighter than the global check already covers it
+        s = stocks.get(t)
+        chg = s.get("chg_pct") if s else None
+        if chg is None or abs(chg) < custom:
+            continue
+        key = "watchmove:%s:%s" % (t, day)
+        if not force and key in st["sent"]:
+            continue
+        rows.append((t, s, custom))
+        keys.append(key)
+    if not rows:
+        return None, []
+
+    msg = ["👀 <b>หุ้นในวอทช์ลิสต์ขยับตามเกณฑ์ที่ตั้งไว้ค่ะ</b>", stamp(), "", RULE, ""]
+    for t, s, custom in rows:
+        msg.append(
+            "%s <b>%s</b> %s · %s <i>(เกณฑ์ %g%%)</i>"
+            % (mark(s.get("chg_pct")), esc(t), pct(s.get("chg_pct")), price(s.get("price")), custom)
+        )
+        msg.append("🔗 " + site_link(t))
+    msg += ["", RULE, "", DISCLAIMER]
+    return "\n".join(msg), keys
+
+
+def watchlist_flags(snap, watchlist):
+    """Which watched tickers currently look worth a second look - used to
+    tag a market-wide indicator warning with the names that actually matter
+    to this person, not just the market as a whole."""
+    stocks = snap.get("stocks") or {}
+    out = []
+    for t in watchlist:
+        s = stocks.get(t)
+        if not s:
+            continue
+        if s.get("divergence") == "bearish" or s.get("cross") == "death" or (
+            isinstance(s.get("vs_ma200"), (int, float)) and s["vs_ma200"] < 0
+        ):
+            out.append(t)
+    return out
+
+
+def indicator_warnings(snap, st, watchlist=None, force=False):
     """Edge-triggered: fires when a reading crosses a line, and again only
     when it crosses back and returns. No repeat while it simply stays there."""
     reg = snap.get("regime") or {}
@@ -384,7 +478,12 @@ def indicator_warnings(snap, st, force=False):
     if force:
         head.append("<i>ตัวอย่าง — นี่คือสถานะปัจจุบันของทุกตัวชี้วัดค่ะ</i>")
         head.append("")
-    return "\n".join(head + lines + ["", RULE, "", DISCLAIMER])
+    tail = []
+    flagged = watchlist_flags(snap, watchlist or {})
+    if flagged:
+        tail = ["", "ℹ️ <b>หุ้นในวอทช์ลิสต์ที่ควรจับตาเป็นพิเศษตอนนี้</b>",
+                "▫️ " + ", ".join(esc(t) for t in flagged)]
+    return "\n".join(head + lines + tail + ["", RULE, "", DISCLAIMER])
 
 
 def daily_summary(snap):
@@ -475,6 +574,71 @@ def daily_fx(snap):
     return "\n".join(msg)
 
 
+def sector_peer_note(t, s, stocks):
+    """Informational only, never a buy/sell call: how this stock's 1-month
+    momentum compares with the average of the other names the snapshot puts
+    in the same sector. Needs at least 3 peers to say anything."""
+    sector = s.get("sector")
+    m1 = s.get("m1")
+    if not sector or not isinstance(m1, (int, float)):
+        return None
+    peers = [
+        p.get("m1") for tk, p in stocks.items()
+        if tk != t and p.get("sector") == sector and isinstance(p.get("m1"), (int, float))
+    ]
+    if len(peers) < 3:
+        return None
+    avg = sum(peers) / len(peers)
+    gap = m1 - avg
+    if gap <= -4:
+        return "หุ้นกลุ่ม %s ตัวอื่นเฉลี่ยเดือนนี้แรงกว่านี้อยู่ราว %.1f จุดค่ะ" % (esc(sector), abs(gap))
+    if gap >= 4:
+        return "เดือนนี้ตัวนี้แรงกว่าค่าเฉลี่ยกลุ่ม %s อยู่ราว %.1f จุดค่ะ" % (esc(sector), gap)
+    return None
+
+
+def watchlist_digest(snap, watchlist):
+    """Once a day: a short check-in on every watched name - price, the
+    flags the site itself would show on its one-stock page, and how it
+    compares with its own sector this month. Purely informational."""
+    if not watchlist:
+        return None
+    stocks = snap.get("stocks") or {}
+    msg = ["👀 <b>เช็คอินหุ้นในวอทช์ลิสต์ประจำวันค่ะ</b>", stamp(), "", RULE]
+    any_row = False
+    for t in sorted(watchlist):
+        s = stocks.get(t)
+        if not s:
+            msg += ["", "▫️ <b>%s</b> · <i>ยังไม่มีข้อมูลตัวนี้ในสแนปช็อตค่ะ</i>" % esc(t)]
+            any_row = True
+            continue
+        any_row = True
+        msg += ["", "%s <b>%s</b> %s · %s" % (
+            mark(s.get("chg_pct")), esc(t), pct(s.get("chg_pct")), price(s.get("price")),
+        )]
+        flags = []
+        if s.get("divergence") == "bearish":
+            flags.append("⚠️ ราคาขึ้นแต่แรงซื้อลด (bearish divergence)")
+        if s.get("divergence") == "bullish":
+            flags.append("✨ ราคาลงแต่แรงขายเริ่มเบา (bullish divergence)")
+        if s.get("cross") == "death":
+            flags.append("🔴 เพิ่งเกิด death cross")
+        if s.get("cross") == "golden":
+            flags.append("🟢 เพิ่งเกิด golden cross")
+        if isinstance(s.get("vs_ma200"), (int, float)) and s["vs_ma200"] < 0:
+            flags.append("▼ อยู่ใต้เส้นค่าเฉลี่ย 200 วัน")
+        for f in flags:
+            msg.append("     " + f)
+        peer = sector_peer_note(t, s, stocks)
+        if peer:
+            msg.append("     💬 " + peer)
+        msg.append("     🔗 " + site_link(t))
+    if not any_row:
+        return None
+    msg += ["", RULE, "", DISCLAIMER]
+    return "\n".join(msg)
+
+
 def bootstrap(snap, st, day):
     """First ever run: the board is already full of signals that fired days or
     weeks ago. Record them all as seen so the first notification is not a wall
@@ -492,6 +656,7 @@ def bootstrap(snap, st, day):
     indicator_warnings(snap, st)          # records the current on/off states
     st["last_daily"] = day
     st["last_fx"] = day
+    st["last_watch"] = day
 
 
 def welcome():
@@ -509,8 +674,12 @@ def welcome():
         "📢 ราคาขยับแรงเกิน %g%% · วันละครั้งต่อตัว" % MOVE_PCT,
         "🚨 อินดิเคเตอร์เตือน · เฉพาะตอนค่าข้ามเส้น",
         "📊 สรุปตลาด + 💱 ค่าเงิน · ทุกวัน %02d:00 น." % ((DAILY_HOUR_UTC + 7) % 24),
+        "👀 เช็คอินวอทช์ลิสต์ · ทุกวัน (ถ้ามีหุ้นที่ติดตามอยู่)",
         "",
         RULE,
+        "",
+        "พิมพ์ <code>เพิ่ม PTT</code> เพื่อเริ่มติดตามหุ้นตัวไหนได้เลยค่ะ "
+        "หรือพิมพ์ <code>ช่วยเหลือ</code> ดูคำสั่งทั้งหมด",
         "",
         "<i>สัญญาณที่ค้างอยู่ก่อนหน้านี้ ดิฉันบันทึกว่ารับทราบแล้ว "
         "เพื่อไม่ให้ข้อความแรกท่วมนะคะ</i>",
@@ -546,11 +715,12 @@ def main():
     day = today.isoformat()
     first_run = not os.path.exists(STATE_FILE)
     st = load_state()
+    watchlist = load_watchlist()
 
     if DRY_RUN:
         print("DRY RUN - no credentials, or ALERT_DRY_RUN=1. Nothing will be sent.")
-    print("snapshot generated_at=%s  enabled=%s%s"
-          % (snap.get("generated_at"), ",".join(sorted(ENABLED)),
+    print("snapshot generated_at=%s  enabled=%s  watchlist=%d%s"
+          % (snap.get("generated_at"), ",".join(sorted(ENABLED)), len(watchlist),
              "  TEST MODE" if TEST_MODE else ""))
 
     # ------------------------------------------------ one-off test send ----
@@ -558,12 +728,15 @@ def main():
     # reading or writing the saved state, so a test can never make a real
     # alert go missing later.
     if TEST_MODE:
-        blank = {"sent": {}, "indicators": {}, "last_daily": "", "last_fx": ""}
+        blank = {"sent": {}, "indicators": {}, "last_daily": "", "last_fx": "", "last_watch": ""}
+        demo_watch = watchlist if watchlist else {
+            next(iter(snap.get("stocks") or {"AAPL": {}})): {"alert_pct": None}
+        }
         send(test_banner())
-        turn, _ = turn_signals(snap, blank, today, force=True)
-        move, _ = big_moves(snap, blank, today, force=True)
-        for msg in (turn, move, indicator_warnings(snap, blank, force=True),
-                    daily_summary(snap), daily_fx(snap)):
+        turn, _ = turn_signals(snap, blank, today, watchlist=demo_watch, force=True)
+        move, _ = big_moves(snap, blank, today, watchlist=demo_watch, force=True)
+        for msg in (turn, move, indicator_warnings(snap, blank, watchlist=demo_watch, force=True),
+                    daily_summary(snap), daily_fx(snap), watchlist_digest(snap, demo_watch)):
             if msg:
                 send(msg)
         send("✅ <b>ทดสอบเสร็จเรียบร้อยค่ะ</b>\nระบบพร้อมทำงานตามปกตินะคะ 🙏")
@@ -582,17 +755,22 @@ def main():
     pending = []          # (message, keys-to-remember)
 
     if "turn" in ENABLED:
-        msg, keys = turn_signals(snap, st, today)
+        msg, keys = turn_signals(snap, st, today, watchlist=watchlist)
         if msg:
             pending.append((msg, keys))
 
     if "move" in ENABLED:
-        msg, keys = big_moves(snap, st, today)
+        msg, keys = big_moves(snap, st, today, watchlist=watchlist)
+        if msg:
+            pending.append((msg, keys))
+
+    if "watch" in ENABLED and watchlist:
+        msg, keys = watchlist_moves(snap, st, today, watchlist)
         if msg:
             pending.append((msg, keys))
 
     if "indicator" in ENABLED:
-        msg = indicator_warnings(snap, st)
+        msg = indicator_warnings(snap, st, watchlist=watchlist)
         if msg:
             pending.append((msg, []))
 
@@ -610,6 +788,11 @@ def main():
             if msg:
                 pending.append((msg, []))
                 st["last_fx"] = day
+        if "watch" in ENABLED and st.get("last_watch") != day:
+            msg = watchlist_digest(snap, watchlist)
+            if msg:
+                pending.append((msg, []))
+            st["last_watch"] = day
 
     if not pending:
         print("nothing new to report")

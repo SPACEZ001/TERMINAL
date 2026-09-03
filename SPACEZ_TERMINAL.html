@@ -13257,7 +13257,7 @@ var CL_UI = {
         { k:'market', t:{en:'Read the market',th:'อ่านตลาด'},
           ids:['now', 'outlook', 'regime', 'flow', 'globe', 'infl', 'desk', 'scenarios'] },
         { k:'tools',  t:{en:'Workbench',th:'เครื่องมือ'},
-          ids:['stock', 'chartlab', 'directory', 'pro', 'proof'] }
+          ids:['stock', 'watchlist', 'chartlab', 'directory', 'pro', 'proof'] }
       ];
       var used = {}, n = 0, g, i, r;
       for(g = 0; g < GROUPS.length; g++){
@@ -26941,6 +26941,299 @@ var GM = {
   }
   if(document.readyState === 'complete') setTimeout(restoreRoute, 60);
   else window.addEventListener('load', function(){ setTimeout(restoreRoute, 60); });
+})();
+</script>
+
+
+<!-- ============================================================================
+     WATCHLIST
+     Additive only: a new route registered through window.__spzAddRoute, the
+     same mechanism the "now" and "stock" modules already use. Touches no
+     existing route's markup or script.
+     ========================================================================= -->
+<style>
+  #watchlist .wl-wrap{max-width:1160px;margin:0 auto;padding:0 32px 90px;}
+  @media(max-width:600px){ #watchlist .wl-wrap{padding:0 22px 70px;} }
+
+  #watchlist .wl-add{
+    display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+    border:1px solid var(--border-dim);border-radius:var(--radius);
+    background:var(--glass);padding:16px 18px;margin:22px 0 28px;
+  }
+  #watchlist .wl-add input[type="text"]{
+    flex:1 1 220px;min-width:160px;background:transparent;border:1px solid var(--border-dim);
+    border-radius:10px;padding:10px 12px;color:var(--white);font-family:var(--mono);
+    font-size:14px;text-transform:uppercase;
+  }
+  #watchlist .wl-add input[type="text"]:focus{outline:none;border-color:var(--neon);}
+  #watchlist .wl-addbtn{
+    background:var(--neon);color:#08130a;border:none;border-radius:10px;
+    padding:10px 18px;font-family:var(--mono);font-weight:700;font-size:13px;
+    cursor:pointer;white-space:nowrap;
+  }
+  #watchlist .wl-addbtn:hover{opacity:.88;}
+  #watchlist .wl-addnote{flex:1 1 100%;font-size:12px;color:var(--grey);line-height:1.6;}
+
+  #watchlist .wl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+  #watchlist .wl-card{
+    border:1px solid var(--border-dim);border-radius:var(--radius);
+    background:var(--glass);padding:16px 18px;display:flex;flex-direction:column;gap:8px;
+  }
+  #watchlist .wl-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+  #watchlist .wl-tk{font-family:var(--mono);font-weight:800;font-size:16px;letter-spacing:.02em;}
+  #watchlist .wl-nm{font-size:12px;color:var(--grey);}
+  #watchlist .wl-px{font-family:var(--mono);font-size:14px;}
+  #watchlist .wl-chg{font-family:var(--mono);font-size:13px;font-weight:700;}
+  #watchlist .wl-chg.up{color:var(--neon-2,var(--neon));}
+  #watchlist .wl-chg.dn{color:var(--red);}
+  #watchlist .wl-chg.fl{color:var(--grey);}
+
+  #watchlist .wl-flags{display:flex;flex-direction:column;gap:5px;margin-top:2px;}
+  #watchlist .wl-flag{font-size:11.5px;line-height:1.5;border-left:2px solid var(--border-dim);padding-left:8px;color:var(--grey);}
+  #watchlist .wl-flag.bad{border-color:var(--red);color:var(--white);}
+  #watchlist .wl-flag.warn{border-color:var(--amber);color:var(--white);}
+  #watchlist .wl-flag.good{border-color:var(--neon-2,var(--neon));color:var(--white);}
+  #watchlist .wl-flag.info{border-color:var(--grey-dim);}
+
+  #watchlist .wl-btns{display:flex;gap:8px;margin-top:8px;}
+  #watchlist .wl-btn{
+    flex:1;text-align:center;border:1px solid var(--border-dim);border-radius:8px;
+    padding:8px 6px;font-size:12px;font-family:var(--mono);cursor:pointer;
+    background:transparent;color:var(--white);
+  }
+  #watchlist .wl-btn:hover{border-color:var(--neon);color:var(--neon);}
+  #watchlist .wl-btn.rm:hover{border-color:var(--red);color:var(--red);}
+
+  #watchlist .wl-empty{
+    border:1px dashed var(--border-dim);border-radius:var(--radius);
+    padding:40px 24px;text-align:center;color:var(--grey);font-size:13.5px;line-height:1.7;
+  }
+  #watchlist .wl-cmds{
+    margin-top:32px;border-top:1px solid var(--border-dim);padding-top:20px;
+    font-size:12.5px;color:var(--grey);line-height:2;
+  }
+  #watchlist .wl-cmds code{background:var(--glass);border:1px solid var(--border-dim);
+    border-radius:5px;padding:1px 6px;color:var(--white);font-family:var(--mono);}
+</style>
+<script>
+(function(){
+  'use strict';
+  if (window.__SPZ_WATCHLIST) return;
+
+  function L(){ return document.documentElement.getAttribute('lang') === 'th' ? 'th' : 'en'; }
+  function tx(o){ return o ? (o[L()] !== undefined ? o[L()] : o.en) : ''; }
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  var isNum = function(v){ return typeof v === 'number' && isFinite(v); };
+  function pct(v){ if(!isNum(v)) return '—'; return (v>=0?'+':'') + v.toFixed(2) + '%'; }
+  function price(v){
+    if(!isNum(v)) return '—';
+    var a = Math.abs(v);
+    return v.toFixed(a>=10?2:a>=1?3:4).replace(/0+$/,'').replace(/\.$/,'');
+  }
+
+  var BOT = 'spacez_terminal_alert_bot';
+  function deepLink(action, ticker){
+    return 'https://t.me/' + BOT + '?start=' + action + '_' + encodeURIComponent(ticker);
+  }
+
+  var C = {
+    eyebrow:{en:'Stocks you chose to follow',th:'หุ้นที่คุณเลือกติดตาม'},
+    h:{en:'My Watchlist',th:'วอทช์ลิสต์ของฉัน'},
+    lede:{en:'Add any of the site’s tracked stocks here and it gets a closer look: its own risk flags, how it compares with its sector this month, and a Telegram check-in once a day. Adding or removing goes through Telegram, since this page has nowhere of its own to save anything — tap a button here and confirm with one tap there.',
+          th:'เพิ่มหุ้นตัวไหนที่เว็บนี้ติดตามอยู่เข้ามาที่นี่ จะได้รับการจับตาเป็นพิเศษ — มีสัญญาณเสี่ยงของตัวเอง เทียบกับกลุ่มอุตสาหกรรมเดียวกันให้ในแต่ละเดือน และมีเช็คอินทาง Telegram ให้ทุกวัน การเพิ่ม/เอาออกจะทำผ่าน Telegram เพราะหน้านี้เองไม่มีที่เก็บข้อมูลถาวร — กดปุ่มที่นี่แล้วไปกดยืนยันอีกทีในแอปได้เลย'},
+    addLabel:{en:'Add a ticker',th:'เพิ่มหุ้นด้วยชื่อย่อ'},
+    addPh:{en:'e.g. PTT, AAPL…',th:'เช่น PTT, AAPL…'},
+    addBtn:{en:'Add via Telegram',th:'เพิ่มผ่าน Telegram'},
+    addNote:{en:'Opens Telegram with the command already filled in — just tap send.',
+             th:'จะเปิด Telegram พร้อมคำสั่งกรอกไว้ให้แล้ว กดส่งอีกทีเดียวจบ'},
+    open:{en:'Full page',th:'ดูหน้าเต็ม'},
+    remove:{en:'Remove',th:'เอาออก'},
+    emptyH:{en:'Nothing pinned yet',th:'ยังไม่มีหุ้นที่ปักหมุดไว้'},
+    emptyB:{en:'Add a stock above, or message the bot directly — it understands both slash commands and plain Thai.',
+            th:'เพิ่มหุ้นจากช่องด้านบน หรือพิมพ์คุยกับบอทโดยตรงก็ได้ — เข้าใจทั้งคำสั่งสั้นๆ และพิมพ์เป็นประโยคปกติ'},
+    unknownNote:{en:'This snapshot has no data for it yet.',th:'สแนปช็อตนี้ยังไม่มีข้อมูลของตัวนี้'},
+    cmdsH:{en:'Bot commands, for reference',th:'คำสั่งของบอท (ไว้เปิดดูเวลาลืม)'}
+  };
+
+  var FLAG_COPY = {
+    bear:{en:'Bearish divergence — price up, momentum fading',th:'ราคาขึ้นแต่แรงซื้อลด (bearish divergence)'},
+    bull:{en:'Bullish divergence — price down, momentum turning',th:'ราคาลงแต่แรงขายเริ่มเบา (bullish divergence)'},
+    death:{en:'Recent death cross',th:'เพิ่งเกิด death cross'},
+    golden:{en:'Recent golden cross',th:'เพิ่งเกิด golden cross'},
+    belowMA:{en:'Below its 200-day average',th:'อยู่ใต้เส้นค่าเฉลี่ย 200 วัน'}
+  };
+
+  function peerNote(t, s, stocks){
+    var sector = s.sector, m1 = s.m1;
+    if(!sector || !isNum(m1)) return null;
+    var peers = [], k;
+    for(k in stocks){
+      if(k === t) continue;
+      var p = stocks[k];
+      if(p && p.sector === sector && isNum(p.m1)) peers.push(p.m1);
+    }
+    if(peers.length < 3) return null;
+    var avg = peers.reduce(function(a,b){return a+b;},0) / peers.length;
+    var gap = m1 - avg;
+    if(gap <= -4) return { k:'info', en:'Sector (' + sector + ') is up ~' + Math.abs(gap).toFixed(1) + 'pt more on average this month.',
+                                     th:'หุ้นกลุ่ม ' + sector + ' ตัวอื่นเฉลี่ยเดือนนี้แรงกว่านี้ราว ' + Math.abs(gap).toFixed(1) + ' จุด' };
+    if(gap >= 4) return { k:'good', en:'Beating its sector (' + sector + ') average by ~' + gap.toFixed(1) + 'pt this month.',
+                                    th:'เดือนนี้แรงกว่าค่าเฉลี่ยกลุ่ม ' + sector + ' อยู่ราว ' + gap.toFixed(1) + ' จุด' };
+    return null;
+  }
+
+  function flagsOf(t, s, stocks){
+    var out = [];
+    if(!s) return out;
+    if(s.divergence === 'bearish') out.push({k:'bad', t:FLAG_COPY.bear});
+    if(s.divergence === 'bullish') out.push({k:'good', t:FLAG_COPY.bull});
+    if(s.cross === 'death') out.push({k:'bad', t:FLAG_COPY.death});
+    if(s.cross === 'golden') out.push({k:'good', t:FLAG_COPY.golden});
+    if(isNum(s.vs_ma200) && s.vs_ma200 < 0) out.push({k:'warn', t:FLAG_COPY.belowMA});
+    var peer = peerNote(t, s, stocks);
+    if(peer) out.push({k:peer.k === 'good' ? 'good' : 'info', t:peer});
+    return out;
+  }
+
+  var sec, state = { wl:null, stocks:null };
+
+  function loadWatchlist(cb){
+    fetch('data/watchlist.json?v=' + Math.floor(Date.now()/60000))
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){ state.wl = (d && d.tickers) || {}; if(cb) cb(); })
+      .catch(function(){ state.wl = state.wl || {}; if(cb) cb(); });
+  }
+
+  function stocksSnapshot(){
+    var s = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot();
+    return (s && s.stocks) || null;
+  }
+
+  function cardHTML(t, s, stocks){
+    var chgCls = !s || !isNum(s.chg_pct) ? 'fl' : (s.chg_pct > 0 ? 'up' : s.chg_pct < 0 ? 'dn' : 'fl');
+    var flags = flagsOf(t, s, stocks || {});
+    return '<div class="wl-card" data-wl-tk="' + esc(t) + '">' +
+      '<div class="wl-top"><span class="wl-tk">$' + esc(t) + '</span>' +
+      (s ? '<span class="wl-px">' + esc(price(s.price)) + '</span>' : '') + '</div>' +
+      (s ? ('<span class="wl-nm">' + esc((s.name||'').slice(0,42)) + '</span>' +
+            '<span class="wl-chg ' + chgCls + '">' + esc(pct(s.chg_pct)) + '</span>')
+          : '<span class="wl-nm">' + esc(tx(C.unknownNote)) + '</span>') +
+      (flags.length ? '<div class="wl-flags">' + flags.map(function(f){
+        return '<div class="wl-flag ' + f.k + '">' + esc(tx(f.t)) + '</div>';
+      }).join('') + '</div>' : '') +
+      '<div class="wl-btns">' +
+        '<button type="button" class="wl-btn open" data-wl-open="' + esc(t) + '">' + esc(tx(C.open)) + '</button>' +
+        '<a class="wl-btn rm" href="' + deepLink('remove', t) + '" target="_blank" rel="noopener noreferrer">' + esc(tx(C.remove)) + '</a>' +
+      '</div></div>';
+  }
+
+  function paint(){
+    if(!sec) return;
+    var body = sec.querySelector('[data-wl="body"]');
+    if(!body) return;
+    sec.querySelector('[data-wl="eb"]').textContent = tx(C.eyebrow);
+    sec.querySelector('[data-wl="h"]').textContent = tx(C.h);
+    sec.querySelector('[data-wl="lede"]').textContent = tx(C.lede);
+
+    var stocks = stocksSnapshot();
+    var tickers = state.wl ? Object.keys(state.wl).sort() : [];
+
+    var addBox =
+      '<div class="wl-add">' +
+        '<input type="text" list="wlTickers" data-wl="input" placeholder="' + esc(tx(C.addPh)) + '">' +
+        '<button type="button" class="wl-addbtn" data-wl="addbtn">' + esc(tx(C.addBtn)) + '</button>' +
+        '<span class="wl-addnote">' + esc(tx(C.addNote)) + '</span>' +
+        '<datalist id="wlTickers">' + (stocks ? Object.keys(stocks).sort().map(function(k){
+          return '<option value="' + esc(k) + '">';
+        }).join('') : '') + '</datalist>' +
+      '</div>';
+
+    var grid;
+    if(!tickers.length){
+      grid = '<div class="wl-empty"><b>' + esc(tx(C.emptyH)) + '</b><br>' + esc(tx(C.emptyB)) + '</div>';
+    } else {
+      grid = '<div class="wl-grid">' + tickers.map(function(t){
+        return cardHTML(t, stocks ? stocks[t] : null, stocks);
+      }).join('') + '</div>';
+    }
+
+    var cmds = '<div class="wl-cmds">' + esc(tx(C.cmdsH)) + '<br>' +
+      '<code>' + (L()==='th' ? 'เพิ่ม PTT' : 'add PTT') + '</code> · ' +
+      '<code>' + (L()==='th' ? 'ลบ PTT' : 'remove PTT') + '</code> · ' +
+      '<code>' + (L()==='th' ? 'แก้ไข PTT 3' : 'edit PTT 3') + '</code> · ' +
+      '<code>' + (L()==='th' ? 'รายการ' : 'list') + '</code> · ' +
+      '<code>' + (L()==='th' ? 'ช่วยเหลือ' : 'help') + '</code></div>';
+
+    body.innerHTML = addBox + grid + cmds;
+
+    var openBtns = body.querySelectorAll('[data-wl-open]');
+    for(var i=0;i<openBtns.length;i++){
+      openBtns[i].addEventListener('click', function(){
+        var t = this.getAttribute('data-wl-open');
+        if(window.__SPZ_STOCK && window.__SPZ_STOCK.open) window.__SPZ_STOCK.open(t);
+      });
+    }
+    var addBtn = body.querySelector('[data-wl="addbtn"]');
+    var input = body.querySelector('[data-wl="input"]');
+    if(addBtn && input){
+      addBtn.addEventListener('click', function(){
+        var t = (input.value || '').trim().toUpperCase();
+        if(!t) return;
+        window.open(deepLink('add', t), '_blank', 'noopener');
+      });
+      input.addEventListener('keydown', function(e){
+        if(e.key === 'Enter') addBtn.click();
+      });
+    }
+  }
+
+  function build(){
+    if (document.getElementById('watchlist')) return true;
+    if (!document.querySelector('.top-fixed') || !window.__spzAddRoute) return false;
+
+    sec = document.createElement('section');
+    sec.id = 'watchlist';
+    sec.setAttribute('data-route', 'watchlist');
+    sec.innerHTML =
+      '<div class="wl-wrap">' +
+        '<div class="section-head reveal in-view" style="padding-top:34px;">' +
+          '<div class="eyebrow"><span class="cursor"></span><span data-wl="eb"></span></div>' +
+          '<h2 data-wl="h"></h2>' +
+          '<p class="lede" data-wl="lede"></p>' +
+          '<div class="rule"></div>' +
+        '</div>' +
+        '<div data-wl="body"></div>' +
+      '</div>';
+    document.body.appendChild(sec);
+
+    window.__spzAddRoute({
+      id:'watchlist', after:'stock',
+      t:{en:'My Watchlist',th:'วอทช์ลิสต์ของฉัน'},
+      d:{en:'The stocks you chose to follow, each with its own risk flags, a sector comparison, and a daily Telegram check-in.',
+         th:'หุ้นที่คุณเลือกติดตาม พร้อมสัญญาณเสี่ยงของตัวเอง เทียบกับกลุ่มอุตสาหกรรม และเช็คอินทาง Telegram ทุกวัน'}
+    });
+
+    sec.__render = paint;
+    loadWatchlist(paint);
+    setInterval(function(){ loadWatchlist(paint); }, 60000);
+    document.addEventListener('spz:snapshot', function(){ paint(); });
+    new MutationObserver(function(){ try { sec.__render(); } catch(e){} })
+      .observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+
+    return true;
+  }
+
+  function boot(){
+    var tries = 0;
+    var iv = setInterval(function(){
+      if (build() || ++tries > 60) clearInterval(iv);
+    }, 350);
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+
+  window.__SPZ_WATCHLIST = { paint: function(){ paint(); }, reload: function(){ loadWatchlist(paint); } };
 })();
 </script>
 
