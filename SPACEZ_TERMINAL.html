@@ -26945,6 +26945,7 @@ var GM = {
 </script>
 
 
+
 <!-- ============================================================================
      WATCHLIST
      Additive only: a new route registered through window.__spzAddRoute, the
@@ -26969,9 +26970,17 @@ var GM = {
   #watchlist .wl-addbtn{
     background:var(--neon);color:#08130a;border:none;border-radius:10px;
     padding:10px 18px;font-family:var(--mono);font-weight:700;font-size:13px;
-    cursor:pointer;white-space:nowrap;
+    cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-flex;
+    align-items:center;justify-content:center;
   }
   #watchlist .wl-addbtn:hover{opacity:.88;}
+  #watchlist .wl-copybtn{
+    background:transparent;color:var(--white);border:1px solid var(--border-dim);
+    border-radius:10px;padding:10px 14px;font-family:var(--mono);font-weight:700;
+    font-size:12px;cursor:pointer;white-space:nowrap;
+  }
+  #watchlist .wl-copybtn:hover{border-color:var(--neon);color:var(--neon);}
+  #watchlist .wl-copybtn.copied{border-color:var(--neon-2,var(--neon));color:var(--neon-2,var(--neon));}
   #watchlist .wl-addnote{flex:1 1 100%;font-size:12px;color:var(--grey);line-height:1.6;}
 
   #watchlist .wl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
@@ -26995,25 +27004,40 @@ var GM = {
   #watchlist .wl-flag.good{border-color:var(--neon-2,var(--neon));color:var(--white);}
   #watchlist .wl-flag.info{border-color:var(--grey-dim);}
 
-  #watchlist .wl-btns{display:flex;gap:8px;margin-top:8px;}
+  #watchlist .wl-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
   #watchlist .wl-btn{
-    flex:1;text-align:center;border:1px solid var(--border-dim);border-radius:8px;
+    flex:1 1 80px;text-align:center;border:1px solid var(--border-dim);border-radius:8px;
     padding:8px 6px;font-size:12px;font-family:var(--mono);cursor:pointer;
-    background:transparent;color:var(--white);
+    background:transparent;color:var(--white);text-decoration:none;
   }
   #watchlist .wl-btn:hover{border-color:var(--neon);color:var(--neon);}
   #watchlist .wl-btn.rm:hover{border-color:var(--red);color:var(--red);}
+  #watchlist .wl-btn.cp.copied{border-color:var(--neon-2,var(--neon));color:var(--neon-2,var(--neon));}
 
   #watchlist .wl-empty{
     border:1px dashed var(--border-dim);border-radius:var(--radius);
     padding:40px 24px;text-align:center;color:var(--grey);font-size:13.5px;line-height:1.7;
   }
-  #watchlist .wl-cmds{
-    margin-top:32px;border-top:1px solid var(--border-dim);padding-top:20px;
-    font-size:12.5px;color:var(--grey);line-height:2;
+
+  #watchlist .wl-howto{margin-top:32px;border-top:1px solid var(--border-dim);padding-top:20px;}
+  #watchlist .wl-howto-h{font-family:var(--mono);font-weight:800;font-size:14px;color:var(--white);margin:0 0 6px;}
+  #watchlist .wl-howto-lede{font-size:12.5px;color:var(--grey);line-height:1.7;margin:0 0 16px;max-width:640px;}
+  #watchlist .wl-howto-rows{display:flex;flex-direction:column;gap:8px;}
+  #watchlist .wl-howto-row{
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+    border:1px solid var(--border-dim);border-radius:10px;padding:9px 12px;background:var(--glass);
   }
-  #watchlist .wl-cmds code{background:var(--glass);border:1px solid var(--border-dim);
-    border-radius:5px;padding:1px 6px;color:var(--white);font-family:var(--mono);}
+  #watchlist .wl-howto-label{flex:1 1 170px;font-size:12.5px;color:var(--grey);}
+  #watchlist .wl-howto-code{
+    font-family:var(--mono);font-size:13px;color:var(--white);background:transparent;
+    border:1px solid var(--border-dim);border-radius:6px;padding:4px 8px;
+    flex:1 1 140px;min-width:0;overflow-x:auto;white-space:nowrap;
+  }
+  #watchlist .wl-opentg{
+    display:inline-block;margin-top:16px;font-family:var(--mono);font-size:12.5px;
+    color:var(--neon);text-decoration:none;border-bottom:1px solid transparent;
+  }
+  #watchlist .wl-opentg:hover{border-color:var(--neon);}
 </style>
 <script>
 (function(){
@@ -27035,24 +27059,85 @@ var GM = {
   function deepLink(action, ticker){
     return 'https://t.me/' + BOT + '?start=' + action + '_' + encodeURIComponent(ticker);
   }
+  function plainTgLink(){ return 'https://t.me/' + BOT; }
+
+  function cmdText(kind, t){
+    var th = L() === 'th';
+    switch(kind){
+      case 'add':    return th ? ('เพิ่ม ' + t)        : ('/add ' + t);
+      case 'remove': return th ? ('ลบ ' + t)           : ('/remove ' + t);
+      case 'edit':   return th ? ('แก้ไข ' + t + ' 3') : ('/edit ' + t + ' 3');
+      case 'list':   return th ? 'รายการ'              : '/list';
+      case 'help':   return th ? 'ช่วยเหลือ'            : '/help';
+    }
+    return '';
+  }
+
+  function legacyCopy(str){
+    var ta = document.createElement('textarea');
+    ta.value = str;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '-1000px';
+    ta.style.left = '-1000px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try{ ta.setSelectionRange(0, str.length); }catch(e){}
+    var ok = false;
+    try{ ok = document.execCommand('copy'); }catch(e){ ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  function copyText(str, btn){
+    function done(ok){
+      if(!btn) return;
+      var label = btn.getAttribute('data-label');
+      if(!label){ label = btn.textContent; btn.setAttribute('data-label', label); }
+      btn.textContent = ok ? tx(C.copied) : tx(C.copyFail);
+      btn.classList.toggle('copied', !!ok);
+      if(btn.__wlCopyTO) clearTimeout(btn.__wlCopyTO);
+      btn.__wlCopyTO = setTimeout(function(){
+        btn.textContent = label;
+        btn.classList.remove('copied');
+      }, 1700);
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(str).then(function(){ done(true); }, function(){ done(legacyCopy(str)); });
+    } else {
+      done(legacyCopy(str));
+    }
+  }
 
   var C = {
     eyebrow:{en:'Stocks you chose to follow',th:'หุ้นที่คุณเลือกติดตาม'},
     h:{en:'My Watchlist',th:'วอทช์ลิสต์ของฉัน'},
-    lede:{en:'Add any of the site’s tracked stocks here and it gets a closer look: its own risk flags, how it compares with its sector this month, and a Telegram check-in once a day. Adding or removing goes through Telegram, since this page has nowhere of its own to save anything — tap a button here and confirm with one tap there.',
-          th:'เพิ่มหุ้นตัวไหนที่เว็บนี้ติดตามอยู่เข้ามาที่นี่ จะได้รับการจับตาเป็นพิเศษ — มีสัญญาณเสี่ยงของตัวเอง เทียบกับกลุ่มอุตสาหกรรมเดียวกันให้ในแต่ละเดือน และมีเช็คอินทาง Telegram ให้ทุกวัน การเพิ่ม/เอาออกจะทำผ่าน Telegram เพราะหน้านี้เองไม่มีที่เก็บข้อมูลถาวร — กดปุ่มที่นี่แล้วไปกดยืนยันอีกทีในแอปได้เลย'},
+    lede:{en:'Add any of the site’s tracked stocks here and it gets a closer look: its own risk flags, how it compares with its sector this month, and a Telegram check-in once a day. Adding or removing goes through Telegram, since this page has nowhere of its own to save anything — tap the button below and confirm with one tap there, or copy a command and paste it in yourself if the tap doesn’t carry through.',
+          th:'เพิ่มหุ้นตัวไหนที่เว็บนี้ติดตามอยู่เข้ามาที่นี่ จะได้รับการจับตาเป็นพิเศษ — มีสัญญาณเสี่ยงของตัวเอง เทียบกับกลุ่มอุตสาหกรรมเดียวกันให้ในแต่ละเดือน และมีเช็คอินทาง Telegram ให้ทุกวัน การเพิ่ม/เอาออกจะทำผ่าน Telegram เพราะหน้านี้เองไม่มีที่เก็บข้อมูลถาวร — กดปุ่มด้านล่างแล้วไปกดยืนยันอีกทีในแอป หรือถ้ากดแล้วคำสั่งไม่เข้า ให้คัดลอกคำสั่งไปวางเองก็ได้'},
     addLabel:{en:'Add a ticker',th:'เพิ่มหุ้นด้วยชื่อย่อ'},
     addPh:{en:'e.g. PTT, AAPL…',th:'เช่น PTT, AAPL…'},
     addBtn:{en:'Add via Telegram',th:'เพิ่มผ่าน Telegram'},
-    addNote:{en:'Opens Telegram with the command already filled in — just tap send.',
-             th:'จะเปิด Telegram พร้อมคำสั่งกรอกไว้ให้แล้ว กดส่งอีกทีเดียวจบ'},
+    addNote:{en:'Opens Telegram with the command ready to send. On iPhone, if it only opens the chat and the command doesn’t appear, tap “Copy” and paste it in yourself.',
+             th:'จะเปิด Telegram พร้อมคำสั่งให้กดส่งได้เลย ถ้าเป็น iPhone แล้วเปิดมาแค่หน้าแชทเฉยๆ คำสั่งไม่ขึ้นมาให้ ให้กด “คัดลอก” แล้วไปวางเองอีกที'},
     open:{en:'Full page',th:'ดูหน้าเต็ม'},
     remove:{en:'Remove',th:'เอาออก'},
+    copy:{en:'Copy',th:'คัดลอก'},
+    copied:{en:'Copied ✓',th:'คัดลอกแล้ว ✓'},
+    copyFail:{en:'Select the text & copy manually',th:'เลือกข้อความแล้วคัดลอกเอง'},
     emptyH:{en:'Nothing pinned yet',th:'ยังไม่มีหุ้นที่ปักหมุดไว้'},
     emptyB:{en:'Add a stock above, or message the bot directly — it understands both slash commands and plain Thai.',
             th:'เพิ่มหุ้นจากช่องด้านบน หรือพิมพ์คุยกับบอทโดยตรงก็ได้ — เข้าใจทั้งคำสั่งสั้นๆ และพิมพ์เป็นประโยคปกติ'},
     unknownNote:{en:'This snapshot has no data for it yet.',th:'สแนปช็อตนี้ยังไม่มีข้อมูลของตัวนี้'},
-    cmdsH:{en:'Bot commands, for reference',th:'คำสั่งของบอท (ไว้เปิดดูเวลาลืม)'}
+    howtoH:{en:'How to use the bot',th:'วิธีใช้บอท'},
+    howtoLede:{en:'A tap on a button above should just work. If it only opens the chat without filling anything in — this happens sometimes on iPhone — copy any line below and paste it into the chat yourself. The bot understands both the slash form and plain words, so either works.',
+               th:'กดปุ่มด้านบนแล้วปกติจะใช้ได้เลย แต่ถ้ากดแล้วเปิดมาแค่หน้าแชทเฉยๆ ไม่มีคำสั่งกรอกมาให้ (บางทีเกิดขึ้นกับ iPhone) ให้คัดลอกบรรทัดด้านล่างแล้วไปวางในแชทเอง บอทเข้าใจทั้งคำสั่งขึ้นต้นด้วย / และพิมพ์เป็นคำธรรมดา ใช้แบบไหนก็ได้'},
+    lbAdd:{en:'Add a stock',th:'เพิ่มหุ้น'},
+    lbRemove:{en:'Remove a stock',th:'เอาหุ้นออก'},
+    lbEdit:{en:'Set your own alert threshold (% move)',th:'ตั้งเกณฑ์แจ้งเตือนเอง (% ที่ขยับ)'},
+    lbList:{en:'See your whole list',th:'ดูรายการทั้งหมด'},
+    lbHelp:{en:'Show every command',th:'ดูคำสั่งทั้งหมด'},
+    opentg:{en:'Open the Telegram chat directly',th:'เปิดแชท Telegram โดยตรง'}
   };
 
   var FLAG_COPY = {
@@ -27095,7 +27180,7 @@ var GM = {
     return out;
   }
 
-  var sec, state = { wl:null, stocks:null };
+  var sec, state = { wl:null, stocks:null, exampleTicker:'' };
 
   function loadWatchlist(cb){
     fetch('data/watchlist.json?v=' + Math.floor(Date.now()/60000))
@@ -27124,7 +27209,16 @@ var GM = {
       '<div class="wl-btns">' +
         '<button type="button" class="wl-btn open" data-wl-open="' + esc(t) + '">' + esc(tx(C.open)) + '</button>' +
         '<a class="wl-btn rm" href="' + deepLink('remove', t) + '" target="_blank" rel="noopener noreferrer">' + esc(tx(C.remove)) + '</a>' +
+        '<button type="button" class="wl-btn cp" data-wl-copy-rm="' + esc(t) + '">' + esc(tx(C.copy)) + '</button>' +
       '</div></div>';
+  }
+
+  function howtoRowHTML(key, label, cmd){
+    return '<div class="wl-howto-row">' +
+      '<span class="wl-howto-label">' + esc(label) + '</span>' +
+      '<code class="wl-howto-code" data-wl-ex="' + key + '">' + esc(cmd) + '</code>' +
+      '<button type="button" class="wl-copybtn" data-wl-copy="' + key + '">' + esc(tx(C.copy)) + '</button>' +
+    '</div>';
   }
 
   function paint(){
@@ -27137,11 +27231,13 @@ var GM = {
 
     var stocks = stocksSnapshot();
     var tickers = state.wl ? Object.keys(state.wl).sort() : [];
+    var exT = state.exampleTicker || 'PTT';
 
     var addBox =
       '<div class="wl-add">' +
-        '<input type="text" list="wlTickers" data-wl="input" placeholder="' + esc(tx(C.addPh)) + '">' +
-        '<button type="button" class="wl-addbtn" data-wl="addbtn">' + esc(tx(C.addBtn)) + '</button>' +
+        '<input type="text" list="wlTickers" data-wl="input" placeholder="' + esc(tx(C.addPh)) + '" value="' + esc(state.exampleTicker || '') + '">' +
+        '<a class="wl-addbtn" data-wl="addbtn" href="' + (state.exampleTicker ? deepLink('add', state.exampleTicker) : plainTgLink()) + '" target="_blank" rel="noopener noreferrer">' + esc(tx(C.addBtn)) + '</a>' +
+        '<button type="button" class="wl-copybtn" data-wl="addcopy">' + esc(tx(C.copy)) + '</button>' +
         '<span class="wl-addnote">' + esc(tx(C.addNote)) + '</span>' +
         '<datalist id="wlTickers">' + (stocks ? Object.keys(stocks).sort().map(function(k){
           return '<option value="' + esc(k) + '">';
@@ -27157,14 +27253,20 @@ var GM = {
       }).join('') + '</div>';
     }
 
-    var cmds = '<div class="wl-cmds">' + esc(tx(C.cmdsH)) + '<br>' +
-      '<code>' + (L()==='th' ? 'เพิ่ม PTT' : 'add PTT') + '</code> · ' +
-      '<code>' + (L()==='th' ? 'ลบ PTT' : 'remove PTT') + '</code> · ' +
-      '<code>' + (L()==='th' ? 'แก้ไข PTT 3' : 'edit PTT 3') + '</code> · ' +
-      '<code>' + (L()==='th' ? 'รายการ' : 'list') + '</code> · ' +
-      '<code>' + (L()==='th' ? 'ช่วยเหลือ' : 'help') + '</code></div>';
+    var howto = '<div class="wl-howto">' +
+      '<div class="wl-howto-h">' + esc(tx(C.howtoH)) + '</div>' +
+      '<p class="wl-howto-lede">' + esc(tx(C.howtoLede)) + '</p>' +
+      '<div class="wl-howto-rows">' +
+        howtoRowHTML('add', tx(C.lbAdd), cmdText('add', exT)) +
+        howtoRowHTML('remove', tx(C.lbRemove), cmdText('remove', exT)) +
+        howtoRowHTML('edit', tx(C.lbEdit), cmdText('edit', exT)) +
+        howtoRowHTML('list', tx(C.lbList), cmdText('list', exT)) +
+        howtoRowHTML('help', tx(C.lbHelp), cmdText('help', exT)) +
+      '</div>' +
+      '<a class="wl-opentg" href="' + plainTgLink() + '" target="_blank" rel="noopener noreferrer">' + esc(tx(C.opentg)) + ' →</a>' +
+    '</div>';
 
-    body.innerHTML = addBox + grid + cmds;
+    body.innerHTML = addBox + grid + howto;
 
     var openBtns = body.querySelectorAll('[data-wl-open]');
     for(var i=0;i<openBtns.length;i++){
@@ -27173,17 +27275,53 @@ var GM = {
         if(window.__SPZ_STOCK && window.__SPZ_STOCK.open) window.__SPZ_STOCK.open(t);
       });
     }
-    var addBtn = body.querySelector('[data-wl="addbtn"]');
+
+    var rmCopyBtns = body.querySelectorAll('[data-wl-copy-rm]');
+    for(var r=0;r<rmCopyBtns.length;r++){
+      (function(btn){
+        btn.addEventListener('click', function(){
+          copyText(cmdText('remove', btn.getAttribute('data-wl-copy-rm')), btn);
+        });
+      })(rmCopyBtns[r]);
+    }
+
+    var addAnchor = body.querySelector('[data-wl="addbtn"]');
+    var addCopyBtn = body.querySelector('[data-wl="addcopy"]');
     var input = body.querySelector('[data-wl="input"]');
-    if(addBtn && input){
-      addBtn.addEventListener('click', function(){
-        var t = (input.value || '').trim().toUpperCase();
-        if(!t) return;
-        window.open(deepLink('add', t), '_blank', 'noopener');
+
+    function refresh(){
+      var t = (input.value || '').trim().toUpperCase();
+      state.exampleTicker = t;
+      if(addAnchor) addAnchor.href = t ? deepLink('add', t) : plainTgLink();
+      var exampleT = t || 'PTT';
+      ['add','remove','edit','list','help'].forEach(function(k){
+        var el = body.querySelector('[data-wl-ex="' + k + '"]');
+        if(el) el.textContent = cmdText(k, exampleT);
       });
+    }
+
+    if(input && addAnchor){
+      input.addEventListener('input', refresh);
       input.addEventListener('keydown', function(e){
-        if(e.key === 'Enter') addBtn.click();
+        if(e.key === 'Enter'){ e.preventDefault(); addAnchor.click(); }
       });
+    }
+    if(addCopyBtn){
+      addCopyBtn.addEventListener('click', function(){
+        var t = (input && input.value || '').trim().toUpperCase() || 'PTT';
+        copyText(cmdText('add', t), addCopyBtn);
+      });
+    }
+
+    var howtoCopyBtns = body.querySelectorAll('[data-wl-copy]');
+    for(var j=0;j<howtoCopyBtns.length;j++){
+      (function(btn){
+        btn.addEventListener('click', function(){
+          var key = btn.getAttribute('data-wl-copy');
+          var codeEl = body.querySelector('[data-wl-ex="' + key + '"]');
+          copyText(codeEl ? codeEl.textContent : '', btn);
+        });
+      })(howtoCopyBtns[j]);
     }
   }
 
