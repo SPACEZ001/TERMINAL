@@ -67,15 +67,42 @@ jobs:
         continue-on-error: true
         run: python scripts/alerts_telegram.py
 
+      # Pushing plain `git push` from the default branch works for a normal
+      # run, but fails two ways that are not real problems:
+      #   - re-running an older run checks out that commit, so HEAD is behind
+      #     (and detached) and the push is rejected as non-fast-forward
+      #   - the 30-minute schedule can race the backtest job, which pushes to
+      #     the same branch
+      # Both are fixed by naming the target branch explicitly and rebasing
+      # onto whatever landed in the meantime. The data written here is always
+      # freshly fetched by this run, so replaying it on top is correct.
       - name: Commit if changed
         run: |
           git config user.name  "spacez-market-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [ -n "$(git status --porcelain data/market.json data/alerts_state.json)" ]; then
-            git add data/market.json
-            [ -f data/alerts_state.json ] && git add data/alerts_state.json
-            git commit -m "data: market snapshot $(date -u '+%Y-%m-%d %H:%M UTC')"
-            git push
-          else
+
+          if [ -z "$(git status --porcelain data/market.json data/alerts_state.json)" ]; then
             echo "no change"
+            exit 0
           fi
+
+          git add data/market.json
+          [ -f data/alerts_state.json ] && git add data/alerts_state.json
+          git commit -m "data: market snapshot $(date -u '+%Y-%m-%d %H:%M UTC')"
+
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo "pushed on attempt $attempt"
+              exit 0
+            fi
+            echo "push rejected, rebasing onto origin/main (attempt $attempt)"
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              echo "could not rebase cleanly"
+              break
+            fi
+          done
+
+          echo "::error::could not push the snapshot after 3 attempts"
+          exit 1
