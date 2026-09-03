@@ -8,6 +8,11 @@ on:
   schedule:
     - cron: '*/30 * * * *'   # every 30 min (GitHub queues these, expect drift)
   workflow_dispatch:          # run it by hand from the Actions tab
+    inputs:
+      test_alerts:
+        description: 'ส่งข้อความตัวอย่างทุกแบบไป Telegram (โหมดทดสอบ)'
+        type: boolean
+        default: false
   push:
     paths:
       - 'scripts/fetch_market.py'
@@ -36,6 +41,11 @@ jobs:
       ALERT_MOVE_PCT: ${{ vars.ALERT_MOVE_PCT }}
       ALERT_DAILY_HOUR_UTC: ${{ vars.ALERT_DAILY_HOUR_UTC }}
       ALERT_MAX_TURN: ${{ vars.ALERT_MAX_TURN }}
+      ALERT_OWNER: ${{ vars.ALERT_OWNER }}
+      # Only ever true for a hand-started run with the box ticked; a
+      # scheduled run leaves it blank. A test send never touches the
+      # saved state, so it cannot make a real alert go missing later.
+      ALERT_TEST: ${{ inputs.test_alerts }}
     steps:
       - uses: actions/checkout@v4
 
