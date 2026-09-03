@@ -2,9 +2,18 @@ name: telegram-bot
 
 # Polls Telegram for watchlist commands (add / remove / edit / list / help,
 # plus the deep-link buttons on the site's watchlist page) and keeps
-# data/watchlist.json in sync. Runs on its own fast schedule, separate from
-# the 30-minute market-data snapshot job, so a command feels answered
-# within a few minutes rather than waiting on that cycle.
+# data/watchlist.json in sync. Runs on its own schedule, separate from the
+# 30-minute market-data snapshot job, so a command gets answered without
+# waiting on that cycle.
+#
+# The schedule intentionally is NOT every 5 minutes: GitHub's own docs warn
+# that the shortest legal interval is the least reliable one in practice -
+# on a free/personal account those runs can be silently delayed or dropped
+# for a long time (this repo's first version sat at zero scheduled runs for
+# nearly an hour). Every 10 minutes, offset away from the round numbers
+# everyone else's workflows fire on, is far more likely to actually run.
+# If a reply needs to land sooner than that, use "Run workflow" above by
+# hand - that always runs immediately regardless of the schedule.
 #
 # The bot token lives in repository Secrets and reaches the script only
 # through the environment - this repository is public, so it must never be
@@ -12,7 +21,7 @@ name: telegram-bot
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '3,13,23,33,43,53 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -45,6 +54,12 @@ jobs:
         if: ${{ env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' }}
         run: python scripts/telegram_bot.py
 
+      # Plain `git push` works for a normal run, but fails one way that is
+      # not a real problem: re-running an OLD run (the "Re-run jobs" button
+      # on a past run in the Actions tab) checks out that old commit again,
+      # so HEAD is behind and the push is rejected as non-fast-forward. The
+      # fetch+rebase retry below fixes that automatically; if it ever still
+      # fails, prefer a fresh "Run workflow" over "Re-run jobs" on an old one.
       - name: Commit if changed
         run: |
           git config user.name  "spacez-market-bot"
