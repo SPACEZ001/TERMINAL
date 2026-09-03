@@ -3,7 +3,8 @@
 Telegram alerts for SPACEZ TERMINAL.
 
 Reads the snapshot that scripts/fetch_market.py already produces
-(data/market.json) and pushes short Thai-language notifications to Telegram.
+(data/market.json) and pushes Thai-language notifications to Telegram,
+written in the voice of a personal assistant rather than a raw data dump.
 
 Runs inside the existing market-data workflow, so it sees the numbers the
 site sees. It never fetches anything of its own.
@@ -27,7 +28,10 @@ TUNING (all optional, set as repository Variables)
     ALERT_MOVE_PCT        daily move that counts as "big"   default 5.0
     ALERT_DAILY_HOUR_UTC  hour for the daily digests        default 1 (08:00 ICT)
     ALERT_MAX_TURN        max turn signals per message      default 6
+    ALERT_OWNER           who the assistant is writing to    default คุณโฟกัส
     ALERT_DRY_RUN         "1" to print instead of send
+    ALERT_TEST            "1"/"true" to send one sample of every message type
+                          without touching the saved state
 
 STATE
 -----
@@ -54,6 +58,9 @@ TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
 CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
 
 DRY_RUN = os.environ.get("ALERT_DRY_RUN", "").strip() == "1" or not (TOKEN and CHAT_ID)
+TEST_MODE = os.environ.get("ALERT_TEST", "").strip().lower() in ("1", "true", "yes")
+
+OWNER = os.environ.get("ALERT_OWNER", "").strip() or "คุณโฟกัส"
 
 ENABLED = set(
     x.strip()
@@ -73,10 +80,16 @@ MOVE_PCT = _num("ALERT_MOVE_PCT", 5.0)
 DAILY_HOUR_UTC = int(_num("ALERT_DAILY_HOUR_UTC", 1))
 MAX_TURN = int(_num("ALERT_MAX_TURN", 6))
 
-# A signal that is still true a week later is worth repeating once; anything
-# sooner is the same signal and stays quiet.
 TURN_COOLDOWN_DAYS = 7
 STATE_KEEP_DAYS = 40
+
+RULE = "━━━━━━━━━━━━━━━━━━━"
+
+TH_DAYS = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"]
+TH_MONTHS = [
+    "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+    "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
+]
 
 
 # ---------------------------------------------------------------- state ----
@@ -142,10 +155,9 @@ def send(text):
         return False
 
 
+# ------------------------------------------------------------ formatting --
 def esc(s):
-    return (
-        str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    )
+    return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def pct(v, digits=2):
@@ -154,95 +166,120 @@ def pct(v, digits=2):
     return ("%+." + str(digits) + "f%%") % v
 
 
-def arrow(v):
+def mark(v):
+    """Telegram renders a proportional font, so columns cannot be aligned with
+    padding. Colour does the scanning work instead."""
     if v is None:
-        return "="
-    return "▲" if v > 0 else ("▼" if v < 0 else "=")
+        return "⬜"
+    return "🔺" if v > 0 else ("🔻" if v < 0 else "➖")
 
 
 def price(v):
-    """Telegram renders a proportional font, so columns cannot be aligned with
-    padding. Readable numbers do the work instead."""
     if v is None:
         return "-"
     try:
         v = float(v)
     except (TypeError, ValueError):
         return esc(v)
-    if abs(v) >= 1000:
-        return "{:,.2f}".format(v)
     if abs(v) >= 10:
         return "{:,.2f}".format(v)
     return "{:,.4f}".format(v).rstrip("0").rstrip(".")
 
 
+def now_ict():
+    return datetime.now(timezone.utc).astimezone(ICT)
+
+
+def th_date(dt=None):
+    dt = dt or now_ict()
+    return "วัน%sที่ %d %s %d" % (
+        TH_DAYS[dt.weekday()], dt.day, TH_MONTHS[dt.month - 1], dt.year + 543,
+    )
+
+
+def stamp(dt=None):
+    dt = dt or now_ict()
+    return "🗓 %s · %02d:%02d น." % (th_date(dt), dt.hour, dt.minute)
+
+
+def greeting(dt=None):
+    h = (dt or now_ict()).hour
+    if h < 12:
+        return "☀️ อรุณสวัสดิ์ค่ะ %s" % OWNER
+    if h < 17:
+        return "🌤 สวัสดีตอนบ่ายค่ะ %s" % OWNER
+    return "🌙 สวัสดีตอนเย็นค่ะ %s" % OWNER
+
+
+DISCLAIMER = "📌 <i>ข้อมูลเพื่อการศึกษา ไม่ใช่คำแนะนำการลงทุนนะคะ</i>"
+
+
 # ------------------------------------------------------------- sections ----
-def turn_signals(snap, st, today):
+def turn_signals(snap, st, today, force=False):
     """New RSI divergences and moving-average crosses - the site's own
     'turn signal' board, pushed as it changes."""
     reg = snap.get("regime") or {}
-    out, keys = [], []
+    bear, bull, crosses, keys = [], [], [], []
     cutoff = (today - timedelta(days=TURN_COOLDOWN_DAYS)).isoformat()
 
-    for d in (reg.get("divergences") or [])[:MAX_TURN * 3]:
+    for d in (reg.get("divergences") or []):
         t, kind = d.get("t"), d.get("kind")
         if not t or not kind:
             continue
         key = "turn:%s:%s" % (t, kind)
-        if st["sent"].get(key, "") > cutoff:
+        if not force and st["sent"].get(key, "") > cutoff:
             continue
-        word = "อ่อนแรงที่ยอด" if kind == "bearish" else "เริ่มมีแรงซื้อที่ฐาน"
-        out.append(
-            "  %s <b>%s</b> %s - RSI %s→%s ขณะที่ราคายัง%s"
-            % (
-                "▼" if kind == "bearish" else "▲",
-                esc(t),
-                word,
-                d.get("rsi_then"),
-                d.get("rsi"),
-                "ขึ้น" if kind == "bearish" else "ลง",
-            )
-        )
+        line = "▫️ <b>%s</b> · RSI %s → %s" % (esc(t), d.get("rsi_then"), d.get("rsi"))
+        (bear if kind == "bearish" else bull).append(line)
         keys.append(key)
-        if len(out) >= MAX_TURN:
+        if len(bear) + len(bull) >= MAX_TURN:
             break
 
-    crosses = []
     for c in reg.get("crosses") or []:
         t, kind = c.get("t"), c.get("kind")
         if not t or not kind:
             continue
         key = "cross:%s:%s" % (t, kind)
-        if st["sent"].get(key, "") > cutoff:
+        if not force and st["sent"].get(key, "") > cutoff:
             continue
         crosses.append(
-            "  %s <b>%s</b> %s (ราคาเทียบ MA200 %s)"
+            "%s <b>%s</b> · %s (ห่าง MA200 %s)"
             % (
-                "▲" if kind == "golden" else "▼",
+                "🟢" if kind == "golden" else "🔴",
                 esc(t),
-                "Golden cross - MA50 ตัดขึ้นเหนือ MA200"
-                if kind == "golden"
-                else "Death cross - MA50 ตัดลงใต้ MA200",
+                "Golden cross" if kind == "golden" else "Death cross",
                 pct(c.get("vs200")),
             )
         )
         keys.append(key)
 
-    if not out and not crosses:
+    if not (bear or bull or crosses):
         return None, []
 
-    msg = ["<b>⚠ สัญญาณกลับทิศ</b>"]
-    if out:
-        msg.append("\nสัญญาณขัดแย้ง RSI (RSI divergence):")
-        msg.extend(out)
+    msg = ["🔔 <b>เรียนแจ้งค่ะ — มีสัญญาณกลับทิศใหม่</b>", stamp(), "", RULE]
+
+    if bear:
+        msg.append("")
+        msg.append("⚠️ <b>อ่อนแรงที่ยอด</b> · Bearish divergence")
+        msg.extend(bear)
+        msg.append("<i>ราคายังทำจุดสูงใหม่ แต่แรงซื้อเริ่มหมดค่ะ</i>")
+
+    if bull:
+        msg.append("")
+        msg.append("✨ <b>เริ่มมีแรงซื้อที่ฐาน</b> · Bullish divergence")
+        msg.extend(bull)
+        msg.append("<i>ราคายังลง แต่แรงขายเริ่มเบาลงค่ะ</i>")
+
     if crosses:
-        msg.append("\nเส้นค่าเฉลี่ยตัดกัน:")
+        msg.append("")
+        msg.append("📐 <b>เส้นค่าเฉลี่ยตัดกัน</b>")
         msg.extend(crosses)
-    msg.append("\n<i>เป็นการรายงานสิ่งที่เกิดขึ้นในข้อมูล ไม่ใช่คำแนะนำให้ซื้อขาย</i>")
+
+    msg += ["", RULE, "", "📌 <i>เป็นการรายงานสิ่งที่เกิดขึ้นในข้อมูล ไม่ใช่คำแนะนำให้ซื้อขายนะคะ</i>"]
     return "\n".join(msg), keys
 
 
-def big_moves(snap, st, today):
+def big_moves(snap, st, today, force=False):
     """Anything that moved more than the threshold today, once per name."""
     stocks = snap.get("stocks") or {}
     day = today.isoformat()
@@ -252,7 +289,7 @@ def big_moves(snap, st, today):
         if chg is None or abs(chg) < MOVE_PCT:
             continue
         key = "move:%s:%s" % (t, day)
-        if key in st["sent"]:
+        if not force and key in st["sent"]:
             continue
         rows.append((abs(chg), t, s))
         keys.append(key)
@@ -260,22 +297,39 @@ def big_moves(snap, st, today):
         return None, []
     rows.sort(reverse=True)
 
-    msg = ["<b>ราคาขยับแรงเกิน %g%%</b>" % MOVE_PCT]
-    for _, t, s in rows[:12]:
-        msg.append(
-            "  %s <b>%s</b> %s — %s <i>%s</i>"
-            % (
-                arrow(s.get("chg_pct")),
-                esc(t),
-                pct(s.get("chg_pct")),
-                price(s.get("price")),
-                esc((s.get("name") or "")[:34]),
+    up = [r for r in rows if r[2].get("chg_pct", 0) > 0]
+    dn = [r for r in rows if r[2].get("chg_pct", 0) < 0]
+
+    msg = [
+        "📢 <b>รายงานหุ้นที่ขยับแรงค่ะ</b>",
+        stamp(),
+        "<i>เกณฑ์ที่ตั้งไว้: เกิน ±%g%%</i>" % MOVE_PCT,
+        "",
+        RULE,
+    ]
+
+    def block(title, items):
+        out = ["", title]
+        for _, t, s in items[:8]:
+            out.append(
+                "%s <b>%s</b> %s · %s"
+                % (mark(s.get("chg_pct")), esc(t), pct(s.get("chg_pct")), price(s.get("price")))
             )
-        )
+            name = (s.get("name") or "").strip()
+            if name:
+                out.append("     <i>%s</i>" % esc(name[:38]))
+        return out
+
+    if up:
+        msg += block("🟢 <b>ขึ้นแรง</b>", up)
+    if dn:
+        msg += block("🔴 <b>ลงแรง</b>", dn)
+
+    msg += ["", RULE, "", DISCLAIMER]
     return "\n".join(msg), keys
 
 
-def indicator_warnings(snap, st):
+def indicator_warnings(snap, st, force=False):
     """Edge-triggered: fires when a reading crosses a line, and again only
     when it crosses back and returns. No repeat while it simply stays there."""
     reg = snap.get("regime") or {}
@@ -286,44 +340,51 @@ def indicator_warnings(snap, st):
         (
             "vix_high",
             vix is not None and vix >= 25,
-            "⚠ VIX %s - ความผันผวนสูง ตลาดกำลังกลัว" % vix,
-            "VIX กลับลงต่ำกว่า 25 แล้ว (%s)" % vix,
+            "😰 <b>VIX %s</b> — ความผันผวนพุ่งสูง ตลาดกำลังกลัวค่ะ" % vix,
+            "😌 <b>VIX %s</b> — ความผันผวนกลับลงต่ำกว่า 25 แล้วค่ะ" % vix,
         ),
         (
             "breadth50_weak",
             reg.get("breadth_50") is not None and reg["breadth_50"] < 40,
-            "⚠ หุ้นเหนือ MA50 เหลือ %s%% - หุ้นส่วนใหญ่หลุดเส้นระยะกลาง"
+            "📉 <b>หุ้นเหนือ MA50 เหลือ %s%%</b> — หุ้นส่วนใหญ่หลุดเส้นระยะกลางค่ะ"
             % reg.get("breadth_50"),
-            "หุ้นเหนือ MA50 กลับขึ้นเกิน 40%% แล้ว (%s%%)" % reg.get("breadth_50"),
+            "📈 <b>หุ้นเหนือ MA50 กลับขึ้นเกิน 40%%</b> (%s%%) ค่ะ" % reg.get("breadth_50"),
         ),
         (
             "breadth200_weak",
             reg.get("breadth_200") is not None and reg["breadth_200"] < 50,
-            "⚠ หุ้นเหนือ MA200 เหลือ %s%% - แนวโน้มระยะยาวเริ่มเสีย"
+            "📉 <b>หุ้นเหนือ MA200 เหลือ %s%%</b> — แนวโน้มระยะยาวเริ่มเสียค่ะ"
             % reg.get("breadth_200"),
-            "หุ้นเหนือ MA200 กลับขึ้นเกิน 50%% แล้ว (%s%%)" % reg.get("breadth_200"),
+            "📈 <b>หุ้นเหนือ MA200 กลับขึ้นเกิน 50%%</b> (%s%%) ค่ะ" % reg.get("breadth_200"),
         ),
         (
             "curve_inverted",
             reg.get("curve_10y_3m") is not None and reg["curve_10y_3m"] < 0,
-            "⚠ เส้นผลตอบแทนกลับหัว (10 ปี ต่ำกว่า 3 เดือน %s) - "
-            "ในอดีตมักมาก่อนภาวะถดถอย" % reg.get("curve_10y_3m"),
-            "เส้นผลตอบแทนกลับมาปกติแล้ว (%s)" % reg.get("curve_10y_3m"),
+            "🏦 <b>เส้นผลตอบแทนกลับหัว</b> (10 ปี ต่ำกว่า 3 เดือน %s) — "
+            "ในอดีตมักมาก่อนภาวะถดถอยค่ะ" % reg.get("curve_10y_3m"),
+            "🏦 <b>เส้นผลตอบแทนกลับมาปกติแล้ว</b> (%s) ค่ะ" % reg.get("curve_10y_3m"),
         ),
     ]
 
     lines = []
     for name, is_on, on_text, off_text in checks:
         was_on = bool(st["indicators"].get(name))
+        if force:
+            lines.append(on_text if is_on else off_text)
+            continue
         if is_on and not was_on:
-            lines.append("  " + on_text)
+            lines.append(on_text)
         elif was_on and not is_on:
-            lines.append("  ▲ " + off_text)
+            lines.append(off_text)
         st["indicators"][name] = bool(is_on)
 
     if not lines:
         return None
-    return "<b>อินดิเคเตอร์เตือน</b>\n" + "\n".join(lines)
+    head = ["🚨 <b>สัญญาณเตือนจากอินดิเคเตอร์ค่ะ</b>", stamp(), "", RULE, ""]
+    if force:
+        head.append("<i>ตัวอย่าง — นี่คือสถานะปัจจุบันของทุกตัวชี้วัดค่ะ</i>")
+        head.append("")
+    return "\n".join(head + lines + ["", RULE, "", DISCLAIMER])
 
 
 def daily_summary(snap):
@@ -331,43 +392,86 @@ def daily_summary(snap):
     reg = snap.get("regime") or {}
     stocks = snap.get("stocks") or {}
 
-    msg = ["<b>สรุปตลาดรายวัน</b>"]
+    ICONS = {"set": "🇹🇭", "spx": "🇺🇸", "vix": "😰", "dxy": "💵", "us10y": "🏦"}
+    NAMES = {
+        "set": "SET · หุ้นไทย",
+        "spx": "S&P 500 · หุ้นสหรัฐฯ",
+        "vix": "VIX · ความผันผวน",
+        "dxy": "Dollar Index",
+        "us10y": "พันธบัตรสหรัฐฯ 10 ปี",
+    }
+
+    msg = [greeting(), stamp(), "", "สรุปภาพรวมตลาดให้แล้วนะคะ 📋", "", RULE, "",
+           "📊 <b>ดัชนีหลัก</b>"]
     for key in ("set", "spx", "vix", "dxy", "us10y"):
         m = macro.get(key)
         if not m:
             continue
         msg.append(
-            "  %s %s — <b>%s</b> (%s)"
-            % (arrow(m.get("d1")), esc(m.get("th") or m.get("en") or key),
-               price(m.get("price")), pct(m.get("d1")))
+            "%s %s\n     <b>%s</b>  %s %s"
+            % (ICONS[key], NAMES[key], price(m.get("price")),
+               mark(m.get("d1")), pct(m.get("d1")))
         )
 
     b50, b200 = reg.get("breadth_50"), reg.get("breadth_200")
     if b50 is not None and b200 is not None:
-        msg.append(
-            "\nหุ้นที่ยืนเหนือเส้นค่าเฉลี่ย (จาก %s ตัว)" % reg.get("breadth_n")
-        )
-        msg.append("  เหนือ MA50: %s%%   เหนือ MA200: %s%%" % (b50, b200))
+        msg += ["", "🌡 <b>สุขภาพตลาด</b>",
+                "▫️ ยืนเหนือ MA50 · <b>%s%%</b>" % b50,
+                "▫️ ยืนเหนือ MA200 · <b>%s%%</b>" % b200,
+                "     <i>จากหุ้น %s ตัวที่ติดตามอยู่</i>" % reg.get("breadth_n")]
 
-    moved = [
-        (s.get("chg_pct"), t, s)
-        for t, s in stocks.items()
-        if s.get("chg_pct") is not None
-    ]
+    moved = [(s.get("chg_pct"), t) for t, s in stocks.items() if s.get("chg_pct") is not None]
     if moved:
         moved.sort(reverse=True)
         up = [m for m in moved if m[0] > 0][:3]
         dn = [m for m in moved if m[0] < 0][-3:]
         if up:
-            msg.append("\nขึ้นแรงสุด")
-            for c, t, s in up:
-                msg.append("  ▲ <b>%s</b> %s" % (esc(t), pct(c)))
+            msg += ["", "🟢 <b>ขึ้นแรงสุด</b>"]
+            msg += ["🔺 <b>%s</b> %s" % (esc(t), pct(c)) for c, t in up]
         if dn:
-            msg.append("ลงแรงสุด")
-            for c, t, s in reversed(dn):
-                msg.append("  ▼ <b>%s</b> %s" % (esc(t), pct(c)))
+            msg += ["", "🔴 <b>ลงแรงสุด</b>"]
+            msg += ["🔻 <b>%s</b> %s" % (esc(t), pct(c)) for c, t in reversed(dn)]
 
-    msg.append("\n<i>ข้อมูลเพื่อการศึกษา ไม่ใช่คำแนะนำการลงทุน</i>")
+    msg += ["", RULE, "", DISCLAIMER, "ขอให้เป็นวันที่ดีค่ะ 🙏"]
+    return "\n".join(msg)
+
+
+def daily_fx(snap):
+    ccy = snap.get("ccy") or {}
+    thb = ccy.get("THB")
+    if not thb or not thb.get("rate"):
+        return None
+    rate = thb["rate"]
+
+    msg = [
+        "💱 <b>อัพเดทค่าเงินประจำวันค่ะ</b>",
+        stamp(),
+        "",
+        RULE,
+        "",
+        "🇹🇭 <b>เงินบาท</b>",
+        "     1 USD = <b>%.2f THB</b>  %s %s" % (rate, mark(thb.get("d1")), pct(thb.get("d1"))),
+        "▫️ 1 เดือน · %s" % pct(thb.get("m1")),
+        "▫️ ตั้งแต่ต้นปี · %s" % pct(thb.get("ytd")),
+        "     <i>ตัวเลขบวก = บาทอ่อนค่า (ใช้บาทมากขึ้นต่อ 1 ดอลลาร์)</i>",
+    ]
+
+    crosses = [("EUR", "🇪🇺", "ยูโร"), ("JPY", "🇯🇵", "เยน"),
+               ("GBP", "🇬🇧", "ปอนด์"), ("CNY", "🇨🇳", "หยวน")]
+    rows = []
+    for code, flag, name in crosses:
+        c = ccy.get(code)
+        if not c or not c.get("rate"):
+            continue
+        # every rate is "units per USD", so THB per unit is the ratio
+        per = rate / c["rate"]
+        unit = "100 JPY" if code == "JPY" else "1 " + code
+        shown = per * 100 if code == "JPY" else per
+        rows.append("%s %s (%s) = <b>%.2f THB</b>" % (flag, unit, name, shown))
+    if rows:
+        msg += ["", "🌏 <b>สกุลอื่นคิดเป็นเงินบาท</b>"] + rows
+
+    msg += ["", RULE, "", DISCLAIMER]
     return "\n".join(msg)
 
 
@@ -390,37 +494,42 @@ def bootstrap(snap, st, day):
     st["last_fx"] = day
 
 
-def daily_fx(snap):
-    ccy = snap.get("ccy") or {}
-    thb = ccy.get("THB")
-    if not thb or not thb.get("rate"):
-        return None
-    rate = thb["rate"]
+def welcome():
+    return "\n".join([
+        "✨ <b>ยินดีที่ได้ดูแลค่ะ %s</b>" % OWNER,
+        stamp(),
+        "",
+        "ดิฉันเป็นผู้ช่วยจาก SPACEZ TERMINAL",
+        "จะคอยรายงานความเคลื่อนไหวให้นะคะ 💼",
+        "",
+        RULE,
+        "",
+        "📬 <b>สิ่งที่จะส่งให้</b>",
+        "🔔 สัญญาณกลับทิศ · เมื่อมีสัญญาณ<b>ใหม่</b>",
+        "📢 ราคาขยับแรงเกิน %g%% · วันละครั้งต่อตัว" % MOVE_PCT,
+        "🚨 อินดิเคเตอร์เตือน · เฉพาะตอนค่าข้ามเส้น",
+        "📊 สรุปตลาด + 💱 ค่าเงิน · ทุกวัน %02d:00 น." % ((DAILY_HOUR_UTC + 7) % 24),
+        "",
+        RULE,
+        "",
+        "<i>สัญญาณที่ค้างอยู่ก่อนหน้านี้ ดิฉันบันทึกว่ารับทราบแล้ว "
+        "เพื่อไม่ให้ข้อความแรกท่วมนะคะ</i>",
+        "",
+        "ด้านล่างคือตัวอย่างรายงานประจำวันค่ะ 👇",
+    ])
 
-    msg = ["<b>อัพเดทค่าเงินรายวัน</b>"]
-    msg.append("  1 USD = <b>%.2f THB</b>  %s" % (rate, pct(thb.get("d1"))))
-    msg.append(
-        "  บาทเทียบดอลลาร์: 1 เดือน %s  ตั้งแต่ต้นปี %s"
-        % (pct(thb.get("m1")), pct(thb.get("ytd")))
-    )
-    msg.append("  <i>ตัวเลขเป็นบวก = บาทอ่อนค่า (ใช้บาทมากขึ้นต่อ 1 ดอลลาร์)</i>")
 
-    crosses = [("EUR", "ยูโร"), ("JPY", "เยน"), ("GBP", "ปอนด์"), ("CNY", "หยวน")]
-    rows = []
-    for code, name in crosses:
-        c = ccy.get(code)
-        if not c or not c.get("rate"):
-            continue
-        # every rate is "units per USD", so THB per unit is the ratio
-        per = rate / c["rate"]
-        unit = "100 JPY" if code == "JPY" else "1 " + code
-        shown = per * 100 if code == "JPY" else per
-        rows.append("  %s (%s) = %.2f THB" % (unit, name, shown))
-    if rows:
-        msg.append("\nสกุลอื่นคิดเป็นเงินบาท")
-        msg.extend(rows)
-
-    return "\n".join(msg)
+def test_banner():
+    return "\n".join([
+        "🧪 <b>ทดสอบระบบแจ้งเตือนค่ะ %s</b>" % OWNER,
+        stamp(),
+        "",
+        "ดิฉันจะส่งตัวอย่างข้อความ<b>ทุกแบบ</b>ให้ดูนะคะ",
+        "ข้อความชุดนี้เป็นการทดสอบ ไม่ได้บันทึกลงระบบ",
+        "และไม่กระทบการแจ้งเตือนจริงค่ะ",
+        "",
+        RULE,
+    ])
 
 
 # ------------------------------------------------------------------ main ---
@@ -434,32 +543,36 @@ def main():
 
     now = datetime.now(timezone.utc)
     today = now.date()
+    day = today.isoformat()
     first_run = not os.path.exists(STATE_FILE)
     st = load_state()
 
     if DRY_RUN:
         print("DRY RUN - no credentials, or ALERT_DRY_RUN=1. Nothing will be sent.")
-    print("snapshot generated_at=%s  enabled=%s" % (snap.get("generated_at"), ",".join(sorted(ENABLED))))
+    print("snapshot generated_at=%s  enabled=%s%s"
+          % (snap.get("generated_at"), ",".join(sorted(ENABLED)),
+             "  TEST MODE" if TEST_MODE else ""))
 
-    day = today.isoformat()
+    # ------------------------------------------------ one-off test send ----
+    # Sends a sample of every message type using the real snapshot, without
+    # reading or writing the saved state, so a test can never make a real
+    # alert go missing later.
+    if TEST_MODE:
+        blank = {"sent": {}, "indicators": {}, "last_daily": "", "last_fx": ""}
+        send(test_banner())
+        turn, _ = turn_signals(snap, blank, today, force=True)
+        move, _ = big_moves(snap, blank, today, force=True)
+        for msg in (turn, move, indicator_warnings(snap, blank, force=True),
+                    daily_summary(snap), daily_fx(snap)):
+            if msg:
+                send(msg)
+        send("✅ <b>ทดสอบเสร็จเรียบร้อยค่ะ</b>\nระบบพร้อมทำงานตามปกตินะคะ 🙏")
+        print("test mode: sent the sample set, state untouched")
+        return 0
 
     if first_run:
         bootstrap(snap, st, day)
-        bkk = now.astimezone(ICT).strftime("%d/%m/%Y %H:%M")
-        hello = [
-            "<b>✓ เชื่อมต่อ SPACEZ TERMINAL แล้ว</b>",
-            "ตั้งค่าเสร็จเมื่อ %s (เวลาไทย)" % bkk,
-            "",
-            "จากนี้จะส่งให้อัตโนมัติ:",
-            "  • สัญญาณกลับทิศ — เมื่อมีสัญญาณ<b>ใหม่</b>",
-            "  • ราคาขยับแรงเกิน %g%% — วันละครั้งต่อตัว" % MOVE_PCT,
-            "  • อินดิเคเตอร์เตือน — เฉพาะตอนที่ค่าข้ามเส้น",
-            "  • สรุปตลาด + ค่าเงิน — ทุกวัน %02d:00 เวลาไทย" % ((DAILY_HOUR_UTC + 7) % 24),
-            "",
-            "<i>สัญญาณที่ค้างอยู่ก่อนหน้านี้ถูกบันทึกว่ารับทราบแล้ว "
-            "เพื่อไม่ให้ข้อความแรกท่วม — ด้านล่างคือตัวอย่างสรุปประจำวัน</i>",
-        ]
-        for msg in ("\n".join(hello), daily_summary(snap), daily_fx(snap)):
+        for msg in (welcome(), daily_summary(snap), daily_fx(snap)):
             if msg:
                 send(msg)
         save_state(st, today)
