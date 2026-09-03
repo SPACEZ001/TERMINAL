@@ -11,6 +11,7 @@ on:
   push:
     paths:
       - 'scripts/fetch_market.py'
+      - 'scripts/alerts_telegram.py'
       - '.github/workflows/market-data.yml'
 
 permissions:
@@ -24,6 +25,17 @@ jobs:
   snapshot:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+
+    env:
+      # Secrets are blank when unset, which is how the alert step below knows
+      # to skip itself entirely rather than run half-configured.
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      # Optional repository Variables; blank falls back to the script defaults.
+      ALERT_ENABLE: ${{ vars.ALERT_ENABLE }}
+      ALERT_MOVE_PCT: ${{ vars.ALERT_MOVE_PCT }}
+      ALERT_DAILY_HOUR_UTC: ${{ vars.ALERT_DAILY_HOUR_UTC }}
+      ALERT_MAX_TURN: ${{ vars.ALERT_MAX_TURN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -37,12 +49,21 @@ jobs:
       - name: Build snapshot
         run: python scripts/fetch_market.py
 
+      # Skipped while the token secret is unset, so no state file is written
+      # before the bot exists - the first real run can then introduce itself
+      # instead of starting mid-conversation.
+      - name: Send Telegram alerts
+        if: ${{ env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' }}
+        continue-on-error: true
+        run: python scripts/alerts_telegram.py
+
       - name: Commit if changed
         run: |
           git config user.name  "spacez-market-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [ -n "$(git status --porcelain data/market.json)" ]; then
+          if [ -n "$(git status --porcelain data/market.json data/alerts_state.json)" ]; then
             git add data/market.json
+            [ -f data/alerts_state.json ] && git add data/alerts_state.json
             git commit -m "data: market snapshot $(date -u '+%Y-%m-%d %H:%M UTC')"
             git push
           else
