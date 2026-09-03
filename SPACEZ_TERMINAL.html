@@ -10,13 +10,43 @@
    moment before the gate's own (much later) boot script got to run. The
    matching CSS is next to .gate below; this only ever adds a class. */
 (function(){
+  /* The disclaimer used to be a permanent '1', so once accepted it never came
+     back. It now stores the acceptance time and goes stale after 3 days; the
+     old '1' reads as stale, so existing visitors see it once more. */
+  var ACK_MS = 3 * 24 * 60 * 60 * 1000;
+  window.__spzAckFresh = function(){
+    try {
+      var v = localStorage.getItem('spacez.ack');
+      if (!v) return false;
+      var t = parseInt(v, 10);
+      if (!t || t < 1000000000000) return false; /* legacy '1' or junk */
+      var age = Date.now() - t;
+      return age >= 0 && age < ACK_MS;
+    } catch(e) { return false; }
+  };
+  window.__spzAckStamp = function(){
+    try { localStorage.setItem('spacez.ack', String(Date.now())); } catch(e){}
+  };
+
   try {
-    if (localStorage.getItem('spacez.ack') !== '1') {
+    if (!window.__spzAckFresh()) {
       document.documentElement.classList.add('spz-gate-wait');
       setTimeout(function(){
         document.documentElement.classList.remove('spz-gate-wait');
       }, 6000); /* safety net: never leave the page permanently hidden */
     }
+  } catch(e){}
+
+  /* The router resets to home on every load, so a refresh always lost your
+     place. Remember the route the page was opened with, here in the head
+     before anything else runs; the module at the end of the body restores
+     it once the router has booted - but only if the session is still fresh,
+     so a tab left open overnight starts at home instead of mid-terminal. */
+  try {
+    window.__spzEntryHash = location.hash || '';
+    var STALE_MS = 6 * 60 * 60 * 1000;
+    var seen = parseInt(localStorage.getItem('spacez.lastSeen') || '0', 10);
+    window.__spzSessionFresh = !!(seen && (Date.now() - seen) <= STALE_MS);
   } catch(e){}
 })();
 </script>
@@ -14032,7 +14062,7 @@ var CL_UI = {
 
   function buildGate(){
     var done = false;
-    try { done = localStorage.getItem('spacez.ack') === '1'; } catch(e){}
+    try { done = window.__spzAckFresh ? window.__spzAckFresh() : false; } catch(e){}
     var g = el('div', 'gate');
     g.id = 'spzGate';
     g.setAttribute('role', 'dialog');
@@ -14070,7 +14100,8 @@ var CL_UI = {
       go.disabled = !ok;
     });
     go.addEventListener('click', function(){
-      try { localStorage.setItem('spacez.ack', '1'); } catch(e){}
+      try { (window.__spzAckStamp ? window.__spzAckStamp()
+             : localStorage.setItem('spacez.ack', String(Date.now()))); } catch(e){}
       g.hidden = true;
       document.body.style.overflow = '';
       document.documentElement.classList.remove('spz-gate-wait');
@@ -26769,6 +26800,147 @@ var GM = {
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 1500); });
   else setTimeout(boot, 1500);
+})();
+</script>
+
+
+<!-- ============================================================================
+     v16 - PHONE & TABLET FIT
+     Additive only: every rule below is behind a width or hover:none media
+     query that the desktop layout never matches, so the desktop site renders
+     exactly as before.
+     ========================================================================= -->
+<style>
+  /* ---------- 1. the home hero had no gutter at all below its 1280px
+     container, so the headline, body copy and the "open the radar" button
+     ran flush into both edges. Every other route already pads 32/22px. ---- */
+  @media(max-width:1320px){
+    section.hero.hv{padding-left:32px;padding-right:32px;}
+  }
+  @media(max-width:600px){
+    section.hero.hv{padding-left:22px;padding-right:22px;}
+  }
+
+  /* ---------- 2. on phones the nav cluster was wider than the screen, so
+     the EN/TH toggle sat off the right edge and could not be reached at all.
+     Give it its own full-width row instead of clipping it. --------------- */
+  @media(max-width:560px){
+    .nav{flex-wrap:wrap;row-gap:9px;padding-top:12px;padding-bottom:12px;}
+    /* wrap rather than space-between: the children cannot shrink below their
+       min-content, so on a 375px screen a single nowrap row still forced the
+       whole nav wider than the viewport and pushed EN/TH off the edge. */
+    .nav-cluster{
+      margin-left:0;width:100%;min-width:0;
+      flex-wrap:wrap;justify-content:center;row-gap:8px;border-radius:20px;
+    }
+    /* it fits again now that it owns a row, so the theme picker comes back */
+    .nav-cluster .theme-switch{display:flex;}
+  }
+
+  /* ---------- 3. touch targets. hover:none means phones and tablets only;
+     a desktop browser never matches it, however narrow the window. -------- */
+  @media(hover:none){
+    .nav-cluster .theme-switch{gap:12px;}
+    .nav-cluster .theme-dot{width:20px;height:20px;position:relative;}
+    .nav-cluster .theme-dot::after{
+      content:'';position:absolute;left:50%;top:50%;width:32px;height:32px;
+      transform:translate(-50%,-50%);
+    }
+    .nv-pair{gap:6px;}
+    .nv-b{width:38px;height:38px;}
+    .cyc-trig,.gmh-pill,.nav-cluster .nav-trig{min-height:34px;}
+    .tools-btn{min-height:34px;display:inline-flex;align-items:center;}
+    /* iOS zooms the page in when a font under 16px gets focus */
+    input,select,textarea{font-size:16px;max-width:100%;}
+  }
+
+  /* ---------- 3b. sections clear the fixed header with a hard-coded 90px of
+     padding, which was already ~15px short on a phone and falls well short
+     once the nav wraps to two rows. --spz-topH is measured from the real
+     header by the script below, so the offset now follows it. ------------ */
+  @media(max-width:900px){
+    section[data-route]{padding-top:calc(var(--spz-topH, 160px) + 26px);}
+  }
+
+  /* ---------- 4. the section eyebrow is a nowrap flex row. Once the live
+     data tags were appended ("auto - every 30 min", "part live - part
+     written") it totalled ~438px inside 346px, pushing the whole page 80px
+     wide on a phone. Let it wrap instead of overflowing. ----------------- */
+  @media(max-width:760px){
+    .eyebrow{flex-wrap:wrap;row-gap:6px;}
+  }
+
+  /* ---------- 5. the gate is .gate{display:flex}, which outranks the UA's
+     [hidden]{display:none}, so setting .hidden on it never actually hid it.
+     ---------------------------------------------------------------------- */
+  .gate[hidden]{display:none !important;}
+</style>
+<script>
+(function(){
+  'use strict';
+  /* Heartbeat read by the head script on the next load: it is what tells a
+     refresh apart from coming back to a tab left open overnight. */
+  function mark(){
+    try { localStorage.setItem('spacez.lastSeen', String(Date.now())); } catch(e){}
+  }
+  mark();
+  setInterval(mark, 60000);
+  document.addEventListener('visibilitychange', mark);
+  window.addEventListener('pagehide', mark);
+
+  /* ---- publish the real header height so section padding can follow it
+     instead of assuming one nav row. ---------------------------------- */
+  function measureTop(){
+    var t = document.querySelector('.top-fixed');
+    if(!t) return;
+    var h = Math.round(t.getBoundingClientRect().height);
+    if(h > 0) document.documentElement.style.setProperty('--spz-topH', h + 'px');
+  }
+  measureTop();
+  window.addEventListener('resize', measureTop);
+  window.addEventListener('orientationchange', measureTop);
+  if(window.ResizeObserver){
+    var t0 = document.querySelector('.top-fixed');
+    if(t0) new ResizeObserver(measureTop).observe(t0);
+  }
+  window.addEventListener('load', measureTop);
+
+  /* ---- the disclaimer's own "enter terminal" handler never fires, so the
+     gate could not be dismissed and the acceptance was never recorded. A
+     delegated listener does the work instead; it is additive, so if the
+     original handler ever starts firing the two simply agree. ---------- */
+  document.addEventListener('click', function(ev){
+    var t = ev.target;
+    if(!t || !t.closest) return;
+    var btn = t.closest('.gate-go');
+    if(!btn || btn.disabled) return;
+    var g = document.getElementById('spzGate') || document.querySelector('.gate');
+    if(!g) return;
+    try { if(window.__spzAckStamp) window.__spzAckStamp(); } catch(e){}
+    g.hidden = true;
+    g.style.display = 'none';
+    try {
+      document.body.style.overflow = '';
+      document.documentElement.classList.remove('spz-gate-wait');
+    } catch(e){}
+  }, true);
+
+  /* ---- restore the route the page was opened with. The router lands on
+     home regardless of the incoming hash, so without this every refresh
+     lost your place. Stale sessions deliberately stay on home. --------- */
+  function restoreRoute(){
+    var h = window.__spzEntryHash || '';
+    if(!window.__spzSessionFresh) return;
+    var m = /^#\/([a-z0-9_-]+)$/i.exec(h);
+    if(!m) return;
+    var route = m[1];
+    if(route === 'home') return;
+    var link = document.querySelector('[data-route-to="' + route + '"]');
+    if(link) link.click();
+    else if(location.hash !== h) location.hash = h;
+  }
+  if(document.readyState === 'complete') setTimeout(restoreRoute, 60);
+  else window.addEventListener('load', function(){ setTimeout(restoreRoute, 60); });
 })();
 </script>
 
