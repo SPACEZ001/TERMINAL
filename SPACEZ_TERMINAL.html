@@ -50,43 +50,6 @@
   } catch(e){}
 })();
 </script>
-<script>
-/* Runs synchronously before <body> is parsed, same reasoning as the
-   disclaimer gate's own head script above: without this the terminal's
-   menu/content could flash visible for a moment before the CASCADE v4
-   access-gate boot script (appended at the end of <body>) gets a chance
-   to run. This only ever adds a class — it makes no security decision
-   itself, the real check happens later; this just prevents an unstyled
-   flash of locked content. */
-(function(){
-  /* Tier + timestamp only — never the password — kept in sessionStorage so
-     it clears when the tab closes and never leaks into localStorage. */
-  var AUTH_MS = 12 * 60 * 60 * 1000;
-  window.__spzAuthFresh = function(){
-    try {
-      var raw = sessionStorage.getItem('spacez.auth');
-      if (!raw) return false;
-      var obj = JSON.parse(raw);
-      if (!obj || !obj.tier || !obj.ts) return false;
-      var age = Date.now() - obj.ts;
-      return age >= 0 && age < AUTH_MS;
-    } catch(e) { return false; }
-  };
-  try {
-    if (!window.__spzAuthFresh()) {
-      document.documentElement.classList.add('spz-auth-wait');
-    }
-  } catch(e){}
-})();
-</script>
-<style>
-  /* paired with the inline script above — same anti-flash technique as the
-     disclaimer gate's spz-gate-wait, applied to the CASCADE v4 access gate
-     (module appended at the end of <body>); the auth gate must resolve
-     before the disclaimer gate, so this hides the whole page including it */
-  html.spz-auth-wait{visibility:hidden;}
-  html.spz-auth-wait #spzAuthGate{visibility:visible;}
-</style>
 <meta name="description" content="SPACEZ TERMINAL — bilingual stock education terminal: beginner guide, market cycle outlook, chart lab, 14 core metrics, 13 chart signals and what-if simulators.">
 <meta name="theme-color" content="#080808">
 <meta property="og:title" content="SPACEZ TERMINAL — Stock Scanner & Education Terminal">
@@ -29235,6 +29198,18 @@ var GM = {
   .cag-toast b{color:#ffb020;}
   .cag-toast button{background:#ccff00;color:#080808;border:none;border-radius:8px;padding:6px 10px;
     font-family:'Inter',sans-serif;font-weight:700;font-size:11px;cursor:pointer;flex-shrink:0;}
+
+  /* ---- close control + the persistent "open the gate yourself" trigger ----
+     the gate is a dismissible panel now, not a blocking screen, since the
+     site itself needs no password at all */
+  .cag-close{position:absolute;top:12px;right:12px;width:28px;height:28px;background:transparent;
+    border:none;color:#7a7d72;font-size:.95rem;cursor:pointer;border-radius:8px;line-height:1;}
+  .cag-close:hover{color:#ff3b4e;background:rgba(255,59,78,.08);}
+  #spzAdminTrigger{position:fixed;right:16px;bottom:16px;z-index:9400;background:#101114;
+    border:1px solid #24262b;color:#7a7d72;border-radius:30px;padding:9px 14px;
+    font-family:'Inter',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer;
+    box-shadow:0 8px 24px rgba(0,0,0,.4);}
+  #spzAdminTrigger:hover{border-color:#ccff00;color:#ccff00;}
 </style>
 
 <script>
@@ -29349,10 +29324,11 @@ var GM = {
     });
   }
 
-  /* ---------------- embedded vaults ---------------- */
-  /* เอาค่า Ciphertext, Salt, IV ของหน้า Basic มาใส่ตรงนี้ (สร้างด้วย ADMIN_GENERATOR.html) */
-  var VAULT_BASIC = {"v":4,"s1":"HB2ix52ObBvt2gtFrlDdRw==","s2":"DjdwN1wVX3JyPxMXSaXAow==","s3":"2oFPNtSMNYeePEqIGBEP1g==","s4":"HjdJL/XWnc0w/XFxwTS/Dw==","gates":[{"iv":"Bj0d+9dmURRrAUQweYudHA==","ct":"JT8cULQcwLOLv719s4h6sxykWy8ZgMeNcPz308RFfns="},{"iv":"2gkVZV1/8YG1vAh8vfWanA==","ct":"+hMsvvDHxsQ6aOa+hO8t9cxQJtAZQCLF3Wk9zsQr/Ew="},{"iv":"1orHQMO18NDH7JHLdA4TaQ==","ct":"GwfctSOXmEnj7Hk4vSU1SSkAoc18wlwIpwODJXspQC4="},{"iv":"sn3JCvC1KmEpTqjfmv0wZA==","ct":"0uU77fTTnTFhl88DbhluWA1D8g3O5EF2PavzRihy5LE="},{"iv":"3YHa7H8mh6Ml43+1rC1Yyg==","ct":"bSJEiiOhoUUd6GbOcuYc0lYSkyV004XMbGGCiqIw6lQ="}],"ctrIv":"/ohJUf0KcYyg1JeAkqczeg==","iv":"yUadLZ6X/2CggWaD","ct":"u79bO3Z75pwL8zypVTagbKwM1DsVx9waHT4Gd7Q8fo8ETIsY/nfz/hevZYl+FSzB19OXQ27QxfIQxTXtBGGdkDISpgzPu/l+M7pnn33kswz9M+dfACxB4oevEuPlZ96xNSIqSm2jnmUVF648PClN1V2ynbmMte/ge1zRNqsryeNzxPhCYiRSBTkBn8RIpZeKH/cGbRgd4AsmaoNorPaTOl/tMA=="};
-  /* เอาค่า Ciphertext, Salt, IV ของหน้า Full Access (รหัส 50 ช่อง) มาใส่ตรงนี้ */
+  /* ---------------- embedded vault ---------------- */
+  /* Only one vault now: entering the site needs no password at all (see
+     init(), below), so the only thing a password can still do is unlock
+     Workbench. เอาค่า Ciphertext, Salt, IV ของ Full Access (รหัส 50 ช่อง)
+     มาใส่ตรงนี้ (สร้างด้วย ADMIN_GENERATOR.html) */
   var VAULT_FULL = {"v":4,"s1":"tv3NxthPMswFPma+G22kVQ==","s2":"8rFPQEXd62JnNMX5c1WqDw==","s3":"9Z6OxL2WSdAxK/t5Jy5sZw==","s4":"j9SZ9IcO2ihRWQRHSUSevw==","gates":[{"iv":"K4dLNNjQkiTkBIdxg/ZY5w==","ct":"yD1tSeKF5fTj3H1O98LP3zJU9ULFXcQYkCCXA7YyvF0="},{"iv":"QnoOcDSU/bFOUypi24jzTw==","ct":"XPWFQVH7lHL49Unh8Ct/yXQTnDdIn6n74Pl/ZDZMn9o="},{"iv":"4dj3i4gZMOEnd4hk8GTYaQ==","ct":"VKed08M/r0O3dtmMDkHxD+7SyJtGnfpUkwlR4hkS0Hs="},{"iv":"I3FE5IVWFUjA0C2joHrH9g==","ct":"mj9I6qCopAB/wX+qZdoZmfC3R2wI/GU7Ukzcx8cjWrM="},{"iv":"SMirdIUFg+Xw6yMcrfe6Cw==","ct":"wWDzB47mJtnoDwBRwq2Yl2q/j5jLxrO0cO6xpVhCEsA="}],"ctrIv":"OpSRXl9dNTij5+uIzI/fAA==","iv":"4Fx6xsL83VT98bKc","ct":"wTfnglDIqzBRQIYNQ2NnhOhEKNuXVFU0tq8DBVD6en90zMSx5oWikcIauvjQL1tu2uEZI9PhxL0="};
 
   var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof'];
@@ -29363,18 +29339,13 @@ var GM = {
 
   var TXT = {
     brand:'ACCESS GATE',
-    hBasic:{en:'Enter password',th:'กรอกรหัสผ่าน'},
-    phBasic:{en:'Password',th:'กรอกรหัสผ่าน'},
     enter:{en:'Enter',th:'เข้าสู่ระบบ'},
-    adv:{en:'Advanced Mode / Full Access',th:'โหมดขั้นสูง / Full Access'},
-    back:{en:'Back to normal mode',th:'กลับหน้าปกติ'},
-    tierB:{en:'BASIC · 1 field',th:'BASIC · รหัส 1 ช่อง'},
-    tierF:{en:'FULL · 50 fields',th:'FULL · รหัส 50 ช่อง'},
+    adminTrigger:{en:'🔒 Admin',th:'🔒 แอดมิน'},
     errBad:{en:'Incorrect password',th:'รหัสผ่านไม่ถูกต้อง'},
     errEmpty:{en:'Enter a password first',th:'กรุณากรอกรหัสผ่าน'},
     errLock:{en:'Too many attempts — try again in ',th:'พยายามผิดหลายครั้งเกินไป ลองใหม่ในอีก '},
-    fine:{en:'This gate hides menus, not the code — a correct password still runs code that already ships in this file. Encryption here proves tampering, it does not prove secrecy.',
-          th:'ประตูนี้ซ่อนเมนู ไม่ใช่ซ่อนโค้ด — รหัสถูกก็แค่รันโค้ดที่อยู่ในไฟล์นี้อยู่แล้ว การเข้ารหัสตรงนี้ยืนยันว่าไม่ถูกแก้ไข ไม่ได้ยืนยันว่าเป็นความลับ'},
+    fine:{en:'The site itself is open to everyone — no password needed. This only unlocks Workbench, and it hides menus, not code: a correct password still runs code that already ships in this file. Encryption here proves tampering, it does not prove secrecy.',
+          th:'ตัวเว็บเปิดให้อ่านได้ฟรีอยู่แล้ว ไม่ต้องใส่รหัส ส่วนนี้ใช้ปลดล็อกเฉพาะ Workbench เท่านั้น และมันซ่อนแค่เมนู ไม่ใช่ซ่อนโค้ด — รหัสถูกก็แค่รันโค้ดที่อยู่ในไฟล์นี้อยู่แล้ว การเข้ารหัสตรงนี้ยืนยันว่าไม่ถูกแก้ไข ไม่ได้ยืนยันว่าเป็นความลับ'},
     fullT:{en:'FULL ACCESS',th:'FULL ACCESS'},
     fullS:{en:'50-FIELD MASTER KEY',th:'รหัสผ่าน 50 ช่อง'},
     bulk:{en:'📋 Paste all 50 at once',th:'📋 วางทีเดียว 50 ชุด'},
@@ -29468,34 +29439,26 @@ var GM = {
   }
 
   /* ---------------- gate UI ---------------- */
-  var gate, paneBasic, paneAdv, pwBasic, errBasic, btnBasic;
-  var advInputs = [], errAdv, btnAdv, advFilled, advBar;
+  var gate, paneAdv, errAdv, btnAdv, advFilled, advBar;
+  var advInputs = [];
   var attempts = 0, lockUntil = 0;
+  var adminTrigger = null;
 
   function buildGate(){
     if(document.getElementById('spzAuthGate')) return;
     gate = document.createElement('div');
     gate.id = 'spzAuthGate';
+    gate.hidden = true;
     gate.innerHTML =
       '<div class="cag-wrap">' +
         '<div class="cag-card">' +
+          '<button class="cag-close" type="button" id="cagClose" aria-label="close">✕</button>' +
           '<div class="cag-logo"><div class="cag-badge">S</div>' +
             '<div class="cag-logo-t"><b>SPACEZ TERMINAL</b><span data-x="brand"></span></div></div>' +
           '<div class="cag-div"></div>' +
           '<div class="cag-status"><i></i><span data-x="status"></span></div>' +
 
-          '<div class="cag-pane active" id="cagPaneBasic">' +
-            '<div class="cag-pw-wrap"><input class="cag-pw" type="password" id="cagPwBasic" autocomplete="off" spellcheck="false"/>' +
-              '<button class="cag-eye" type="button" data-eye="cagPwBasic">👁</button></div>' +
-            '<div class="cag-err hidden" id="cagErrBasic"></div>' +
-            '<button class="cag-btn" type="button" id="cagBtnBasic"><span data-x="enter"></span></button>' +
-            '<button class="cag-ghost" type="button" id="cagToAdv">⚡ <span data-x="adv"></span></button>' +
-            '<div class="cag-tiers"><div class="cag-tier b"><b data-x="tierBb"></b><span data-x="tierB"></span></div>' +
-              '<div class="cag-tier f"><b data-x="tierFb"></b><span data-x="tierF"></span></div></div>' +
-            '<div class="cag-fine" data-x="fine"></div>' +
-          '</div>' +
-
-          '<div class="cag-pane" id="cagPaneAdv">' +
+          '<div class="cag-pane active" id="cagPaneAdv">' +
             '<div class="cag-head"><div><b data-x="fullT"></b><span data-x="fullS"></span></div>' +
               '<div class="cag-count"><b id="cagAdvFilled">0</b> / 50</div></div>' +
             '<div class="cag-prog"><i id="cagAdvBar"></i></div>' +
@@ -29512,7 +29475,7 @@ var GM = {
             '</div>' +
             '<div class="cag-err hidden" id="cagErrAdv"></div>' +
             '<button class="cag-btn" type="button" id="cagBtnAdv"><span data-x="enterAdv"></span></button>' +
-            '<button class="cag-ghost" type="button" id="cagToBasic">← <span data-x="back"></span></button>' +
+            '<div class="cag-fine" data-x="fine"></div>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -29523,12 +29486,9 @@ var GM = {
         '<div class="cag-boot-fail"></div>' +
       '</div>';
     document.body.appendChild(gate);
+    gate.classList.add('adv');
 
-    paneBasic = gate.querySelector('#cagPaneBasic');
     paneAdv = gate.querySelector('#cagPaneAdv');
-    pwBasic = gate.querySelector('#cagPwBasic');
-    errBasic = gate.querySelector('#cagErrBasic');
-    btnBasic = gate.querySelector('#cagBtnBasic');
     errAdv = gate.querySelector('#cagErrAdv');
     btnAdv = gate.querySelector('#cagBtnAdv');
     advFilled = gate.querySelector('#cagAdvFilled');
@@ -29562,25 +29522,7 @@ var GM = {
       advBar.style.width = (n / 50 * 100) + '%';
     }
 
-    gate.querySelectorAll('[data-eye]').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        var target = document.getElementById(btn.getAttribute('data-eye'));
-        target.type = target.type === 'password' ? 'text' : 'password';
-      });
-    });
-
-    gate.querySelector('#cagToAdv').addEventListener('click', function(){
-      paneBasic.classList.remove('active');
-      paneAdv.classList.add('active');
-      gate.classList.add('adv');
-      advInputs[0].focus();
-    });
-    gate.querySelector('#cagToBasic').addEventListener('click', function(){
-      paneAdv.classList.remove('active');
-      paneBasic.classList.add('active');
-      gate.classList.remove('adv');
-      pwBasic.focus();
-    });
+    gate.querySelector('#cagClose').addEventListener('click', function(){ gate.hidden = true; });
 
     gate.querySelector('#cagMaskBtn').addEventListener('click', function(){
       var show = advInputs[0] && advInputs[0].type === 'password';
@@ -29621,22 +29563,20 @@ var GM = {
       updateAdvCount();
     });
 
-    btnBasic.addEventListener('click', tryBasic);
-    pwBasic.addEventListener('keydown', function(ev){ if(ev.key === 'Enter') tryBasic(); });
     btnAdv.addEventListener('click', tryFull);
 
     paint();
   }
 
   function paint(){
+    if(adminTrigger) adminTrigger.textContent = Tt(TXT.adminTrigger);
     if(!gate) return;
     gate.querySelectorAll('[data-x]').forEach(function(el){
       var k = el.getAttribute('data-x');
       var map = {
-        brand: TXT.brand, status: (Lg() === 'th' ? 'รอการยืนยันตัวตน' : 'Awaiting authentication'),
-        enter: TXT.enter, adv: TXT.adv, back: TXT.back,
-        tierBb: 'BASIC', tierFb: 'FULL',
-        tierB: TXT.tierB, tierF: TXT.tierF, fine: TXT.fine,
+        brand: TXT.brand,
+        status: (Lg() === 'th' ? 'ปลดล็อกเครื่องมือขั้นสูง' : 'Unlocking Full Access tools'),
+        fine: TXT.fine,
         fullT: TXT.fullT, fullS: TXT.fullS,
         bulk: TXT.bulk, mask: TXT.mask, clear: TXT.clear, spread: TXT.spread, bulkHint: TXT.bulkHint,
         enterAdv: TXT.enter
@@ -29644,7 +29584,6 @@ var GM = {
       if(typeof map[k] === 'string') el.textContent = map[k];
       else if(map[k]) el.textContent = Tt(map[k]);
     });
-    pwBasic.placeholder = Tt(TXT.phBasic);
     gate.querySelector('#cagBulkText').placeholder = Tt(TXT.bulkPh);
   }
 
@@ -29658,26 +29597,11 @@ var GM = {
 
   function finishUnlock(tier){
     try { sessionStorage.setItem('spacez.auth', JSON.stringify({ tier:tier, t:Date.now() })); } catch(e){}
-    pwBasic.value = '';
-    advInputs.forEach(function(inp){ inp.value = ''; });
+    advInputs.forEach(function(inp){ inp.value = ''; inp.classList.remove('filled'); });
     gate.hidden = true;
-    document.documentElement.classList.remove('spz-auth-wait');
     applyTier(tier);
   }
 
-  function tryBasic(){
-    if(lockedNow()){ showErr(errBasic, Tt(TXT.errLock) + Math.ceil((lockUntil - Date.now()) / 1000) + 's'); return; }
-    var pw = pwBasic.value;
-    if(!pw){ showErr(errBasic, Tt(TXT.errEmpty)); return; }
-    clearErr(errBasic);
-    btnBasic.disabled = true;
-    var p = openVault(VAULT_BASIC, pw);
-    runBoot(p).then(function(data){
-      btnBasic.disabled = false;
-      if(!data){ registerFail(); showErr(errBasic, Tt(TXT.errBad)); return; }
-      finishUnlock('basic');
-    });
-  }
   function tryFull(){
     if(lockedNow()){ showErr(errAdv, Tt(TXT.errLock) + Math.ceil((lockUntil - Date.now()) / 1000) + 's'); return; }
     var pw = advInputs.map(function(inp){ return inp.value.trim(); }).join('');
@@ -29693,7 +29617,11 @@ var GM = {
   }
 
   /* ---------------- tier gating on the live site ---------------- */
-  var currentTier = null;
+  /* No password is required to read the site at all — every visitor lands
+     as 'basic' the instant the page loads (see init(), below: it is a
+     synchronous default, not something the visitor waits on). Entering the
+     50-field key only ever adds the Workbench tools on top of that. */
+  var currentTier = 'basic';
 
   function extractRouteId(elm){
     var rt = elm.getAttribute && elm.getAttribute('data-route-to');
@@ -29721,7 +29649,7 @@ var GM = {
       document.body.appendChild(toastEl);
       toastEl.querySelector('button').addEventListener('click', function(){
         toastEl.classList.remove('show');
-        openGateAdv();
+        openGate();
       });
     }
     toastEl.querySelector('[data-t]').textContent = Tt(TXT.toastLocked);
@@ -29731,13 +29659,10 @@ var GM = {
     toastEl.__t = setTimeout(function(){ toastEl.classList.remove('show'); }, 4000);
   }
 
-  function openGateAdv(){
+  function openGate(){
     if(!gate) return;
     gate.hidden = false;
-    document.documentElement.classList.add('spz-auth-wait');
-    paneBasic.classList.remove('active');
-    paneAdv.classList.add('active');
-    gate.classList.add('adv');
+    if(advInputs[0]) advInputs[0].focus();
   }
 
   function applyTier(tier){
@@ -29764,28 +29689,38 @@ var GM = {
     }
   });
 
+  document.addEventListener('keydown', function(ev){
+    if(ev.key === 'Escape' && gate && !gate.hidden) gate.hidden = true;
+  });
+
   var mo = new MutationObserver(function(){ if(currentTier) paintLockVeils(); });
   mo.observe(document.body, { childList:true, subtree:true });
 
   /* ---------------- boot ---------------- */
   function init(){
     buildGate();
-    var fresh = false;
+
+    adminTrigger = document.createElement('button');
+    adminTrigger.id = 'spzAdminTrigger';
+    adminTrigger.type = 'button';
+    adminTrigger.textContent = Tt(TXT.adminTrigger);
+    adminTrigger.addEventListener('click', openGate);
+    document.body.appendChild(adminTrigger);
+
+    /* Tier is decided synchronously, right here — nobody waits on this.
+       Default is always 'basic' (the whole site, minus Workbench); a
+       still-fresh Full-Access session (<12h, sessionStorage only) upgrades
+       it immediately. There is no password prompt standing between a
+       visitor and the site. */
+    var tier = 'basic';
     try {
       var raw = sessionStorage.getItem('spacez.auth');
       if(raw){
         var o = JSON.parse(raw);
-        if(o && o.tier && o.t && (Date.now() - o.t) < 12 * 60 * 60 * 1000) fresh = { tier:o.tier };
+        if(o && o.tier === 'full' && o.t && (Date.now() - o.t) < 12 * 60 * 60 * 1000) tier = 'full';
       }
     } catch(e){}
-    if(fresh){
-      gate.hidden = true;
-      document.documentElement.classList.remove('spz-auth-wait');
-      applyTier(fresh.tier);
-    } else {
-      gate.hidden = false;
-      pwBasic.focus();
-    }
+    applyTier(tier);
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
