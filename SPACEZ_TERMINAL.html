@@ -26613,7 +26613,9 @@ var GM = {
          clock:'Bangkok time now', trig:'System status', close:'Close',
          tickers:'Tracked tickers', tickersD:'from the latest data snapshot',
          online:'Online', offline:'Offline', conn:'Connection',
-         localT:'Your device time', session:'This session', sessionD:'time since you opened this page' },
+         localT:'Your device time', session:'This session', sessionD:'time since you opened this page',
+         bubble:'Bubble Radar data', bubbleOk:'Updated', bubbleWarn:'Pending first run',
+         bubbleNextToday:'next update today', bubbleNextTomorrow:'next update tomorrow' },
     th:{ eb:'สถานะระบบ', note:'แต่ละส่วนของหน้านี้ตอนนี้กำลังทำงานยังไงบ้าง — ไม่ใช่สัญญาณลงทุน',
          quotes:'ระบบราคาหุ้น', quotesOk:'สด', quotesLoad:'กำลังซิงก์…', quotesWarn:'ใช้ค่าอ้างอิง — ยังไม่ต่อราคาสด',
          funda:'ข้อมูลพื้นฐานบริษัท', fundaOk:'ซิงก์แล้ว', fundaWarn:'ยังไม่โหลด',
@@ -26625,7 +26627,9 @@ var GM = {
          clock:'เวลากรุงเทพฯ ตอนนี้', trig:'สถานะระบบ', close:'ปิด',
          tickers:'จำนวนหุ้นที่ติดตาม', tickersD:'จากข้อมูลสแนปช็อตล่าสุด',
          online:'ออนไลน์', offline:'ออฟไลน์', conn:'การเชื่อมต่อ',
-         localT:'เวลาที่เครื่องคุณ', session:'เซสชันนี้', sessionD:'เวลาที่คุณเปิดหน้านี้มา' }
+         localT:'เวลาที่เครื่องคุณ', session:'เซสชันนี้', sessionD:'เวลาที่คุณเปิดหน้านี้มา',
+         bubble:'ข้อมูลเรดาร์ฟองสบู่', bubbleOk:'อัปเดตแล้ว', bubbleWarn:'รอรอบแรก',
+         bubbleNextToday:'อัปเดตรอบถัดไปวันนี้', bubbleNextTomorrow:'อัปเดตรอบถัดไปพรุ่งนี้' }
   };
   var WD_EN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var MO_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -26706,6 +26710,31 @@ var GM = {
       (detail ? '<span class="sysx-d">' + esc(detail) + '</span>' : '') +
       (extraHTML || '') +
       '</span></div>';
+  }
+
+  /* Bubble Radar's once-a-day CAPE/Buffett/margin-debt fetch, read the
+     same way the top status bar reads it (window.__SPZ_BUBBLE, a
+     public export from that module) - kept in sync with the same
+     07:11 UTC cron scripts/fetch_bubble.py runs on. */
+  function bubbleRowHTML(){
+    var d = null;
+    try { d = window.__SPZ_BUBBLE && window.__SPZ_BUBBLE.data && window.__SPZ_BUBBLE.data(); } catch(e){}
+    var hasSignal = !!(d && ((d.cape && d.cape.value != null) ||
+      (d.margin_debt && d.margin_debt.yoy_pct != null) || (d.buffett && d.buffett.value_pct != null)));
+    var gen = (d && d.generated_at) ? Date.parse(d.generated_at) : NaN;
+
+    var now = Date.now(), n = new Date();
+    var next = Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate(), 7, 11, 0);
+    if(next <= now) next += 24 * 3600 * 1000;
+    var nd = new Date(next), td = new Date();
+    var sameDay = nd.getFullYear() === td.getFullYear() && nd.getMonth() === td.getMonth() && nd.getDate() === td.getDate();
+    var nextTime = nd.toLocaleTimeString(L() === 'th' ? 'th-TH' : 'en-GB', { hour12:false, hour:'2-digit', minute:'2-digit' });
+    var det = (sameDay ? S('bubbleNextToday') : S('bubbleNextTomorrow')) + ' ' + nextTime;
+
+    var cls = hasSignal ? 'ok' : 'warn';
+    var val = hasSignal ? S('bubbleOk') : S('bubbleWarn');
+    if(hasSignal && !isNaN(gen)) det = fmtWhen(gen) + ' · ' + det;
+    return row(cls, S('bubble'), val, det);
   }
 
   var trig, back, root, tick;
@@ -26791,6 +26820,7 @@ var GM = {
       row(qCls, S('quotes'), qVal, qDet) +
       row(fCls, S('funda'), fVal, fDet) +
       row(sCls, S('sync'), sVal, sDet, waveHTML, true) +
+      bubbleRowHTML() +
       mktRow(S('setMkt'), sess.set) +
       mktRow(S('usMkt'), sess.us) +
       row('info', S('clock'), sess.bkkClock, sess.bkkDate) +
@@ -26854,6 +26884,7 @@ var GM = {
 
     setInterval(paintTrig, 20000);
     document.addEventListener('spz:snapshot', function(){ paintTrig(); if(back && back.classList.contains('on')) paint(); });
+    document.addEventListener('spz:bubbleData', function(){ if(back && back.classList.contains('on')) paint(); });
     new MutationObserver(function(){ paintTrig(); if(back && back.classList.contains('on')) paint(); })
       .observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
   }
