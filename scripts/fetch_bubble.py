@@ -139,8 +139,17 @@ def fetch_cape():
         "headers_raw": all_rows[hdr],
         "cape_col_candidates": [(i, headers[i]) for i in cape_cols],
         "cape_col_used": cape_col,
+        "date_col_used": date_col,
         "n_rows_parsed": len(rows),
         "last_5_rows": rows[-5:] if rows else [],
+        "merged_cells": list(sheet.merged_cells)[:20],
+        "first10_raw_date_cape": [
+            [r[date_col], r[cape_col]] for r in all_rows[hdr + 1:hdr + 11]
+        ],
+        "last10_raw_date_cape": [
+            [r[date_col], r[cape_col]] for r in all_rows[-10:]
+        ],
+        "sheet_nrows": sheet.nrows,
     }
 
     if not rows:
