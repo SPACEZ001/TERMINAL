@@ -29594,12 +29594,30 @@ var GM = {
     gate.querySelector('#cagBulkBtn').addEventListener('click', function(){ bulkBox.classList.toggle('show'); });
     gate.querySelector('#cagSpreadBtn').addEventListener('click', function(){
       var text = gate.querySelector('#cagBulkText').value;
-      var lines = text.split(/\r?\n/).map(function(l){ return l.replace(/^\s*\d{1,2}[.)]\s*/, '').trim(); })
-        .filter(function(l){ return l.length > 0; });
-      for(var i = 0; i < Math.min(50, lines.length); i++){
-        advInputs[i].value = lines[i];
-        advInputs[i].classList.add('filled');
+      /* Numbered fragments can arrive as one per line OR run together on a
+         single line/paragraph (common when pasted from voice-to-text notes),
+         and can be out of order. So we scan the whole blob for "NN. frag" /
+         "NN) frag" pairs and place each fragment straight into slot NN,
+         instead of assuming line position == slot position. */
+      var byIndex = {};
+      var re = /(?:^|\s)(\d{1,2})\s*[.)]\s*(\S+)/g, m;
+      while((m = re.exec(text))){
+        var n = parseInt(m[1], 10);
+        if(n >= 1 && n <= 50) byIndex[n] = m[2];
       }
+      if(Object.keys(byIndex).length === 0){
+        /* no numbering at all — fall back to treating each whitespace-
+           separated token as sequential, in the order it appears */
+        var toks = text.split(/\s+/).map(function(s){ return s.trim(); }).filter(Boolean);
+        toks.forEach(function(t, i){ byIndex[i + 1] = t; });
+      }
+      Object.keys(byIndex).forEach(function(k){
+        var idx = parseInt(k, 10) - 1;
+        if(idx >= 0 && idx < 50){
+          advInputs[idx].value = byIndex[k];
+          advInputs[idx].classList.add('filled');
+        }
+      });
       updateAdvCount();
     });
 
