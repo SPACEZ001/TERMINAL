@@ -210,6 +210,12 @@ def fetch_one(sym, thai):
         mc = info.get("marketCap")
         if mc:
             out["mcap"] = int(mc)
+        td = info.get("totalDebt")
+        if td:
+            try:
+                out["debt"] = int(td)
+            except (TypeError, ValueError):
+                pass
         if not out.get("price") and info.get("currentPrice"):
             out["price"] = num(info.get("currentPrice"), 4)
     except Exception as e:
