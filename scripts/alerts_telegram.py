@@ -23,8 +23,8 @@ so the data pipeline is never broken by a messaging problem.
 
 TUNING (all optional, set as repository Variables)
 --------------------------------------------------
-    ALERT_ENABLE          comma list: turn,move,indicator,daily,fx
-                          default: all five
+    ALERT_ENABLE          comma list: turn,move,indicator,daily,fx,watch,bubble
+                          default: all of them
     ALERT_MOVE_PCT        daily move that counts as "big"   default 5.0
     ALERT_DAILY_HOUR_UTC  hour for the daily digests        default 1 (08:00 ICT)
     ALERT_MAX_TURN        max turn signals per message      default 6
@@ -50,9 +50,11 @@ from datetime import datetime, timedelta, timezone
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SNAPSHOT = os.path.join(ROOT, "data", "market.json")
+BUBBLE_FILE = os.path.join(ROOT, "data", "bubble.json")
 STATE_FILE = os.path.join(ROOT, "data", "alerts_state.json")
 WATCHLIST_FILE = os.path.join(ROOT, "data", "watchlist.json")
 SITE_URL = "https://spacez001.github.io/TERMINAL/SPACEZ_TERMINAL.html"
+BUBBLE_LINK = SITE_URL + "#/bubble"
 
 ICT = timezone(timedelta(hours=7))
 
@@ -66,7 +68,7 @@ OWNER = os.environ.get("ALERT_OWNER", "").strip() or "คุณโฟกัส"
 
 ENABLED = set(
     x.strip()
-    for x in os.environ.get("ALERT_ENABLE", "turn,move,indicator,daily,fx,watch").split(",")
+    for x in os.environ.get("ALERT_ENABLE", "turn,move,indicator,daily,fx,watch,bubble").split(",")
     if x.strip()
 )
 
@@ -106,6 +108,7 @@ def load_state():
     st.setdefault("last_daily", "")
     st.setdefault("last_fx", "")
     st.setdefault("last_watch", "")
+    st.setdefault("last_bubble", "")
     return st
 
 
@@ -117,6 +120,20 @@ def save_state(st, today):
         json.dump(st, fh, ensure_ascii=False, indent=1, sort_keys=True)
         fh.write("\n")
     os.replace(tmp, STATE_FILE)
+
+
+def load_bubble():
+    """The daily CAPE/Buffett/margin-debt snapshot that scripts/fetch_bubble.py
+    writes (data/bubble.json) - a separate file and a separate, much slower
+    workflow than the 30-minute market snapshot this script normally reads.
+    Missing or unreadable just means that pipeline hasn't produced anything
+    yet; the digest below degrades gracefully the same way every other
+    section here does when a source is unavailable."""
+    try:
+        with open(BUBBLE_FILE, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return {}
 
 
 def load_watchlist():
@@ -582,6 +599,136 @@ def daily_fx(snap):
     return "\n".join(msg)
 
 
+def clamp(v, lo, hi):
+    return lo if v < lo else (hi if v > hi else v)
+
+
+def scale_risk(v, lo, hi):
+    """Mirrors the site's own scaleRisk(value, lo, hi) in SPACEZ_TERMINAL.html
+    exactly, so the composite this script alerts on always matches the
+    number the Bubble Radar page itself shows."""
+    if not isinstance(v, (int, float)):
+        return None
+    return clamp((v - lo) / (hi - lo) * 100.0, 0, 100)
+
+
+def risk_label(score):
+    if score <= 35:
+        return "ต่ำ"
+    if score <= 60:
+        return "ปานกลาง"
+    if score <= 80:
+        return "สูง"
+    return "สูงมาก"
+
+
+def risk_dot(risk):
+    if risk is None:
+        return "⬜"
+    if risk >= 60:
+        return "🔴"
+    if risk >= 35:
+        return "🟠"
+    return "🟢"
+
+
+def bubble_score(bubble, snap):
+    """The same five-signal average the Bubble Radar page computes client
+    side, reimplemented here so the alert and the page can never disagree.
+    Returns (composite_or_None, rows) where each row is
+    (label, formatted_value_or_None, risk_pct_or_None)."""
+    cape = bubble.get("cape") or {}
+    buff = bubble.get("buffett") or {}
+    mdebt = bubble.get("margin_debt") or {}
+    regime = (snap.get("regime") or {})
+
+    cape_v = cape.get("value")
+    buff_v = buff.get("value_pct")
+    mdebt_v = mdebt.get("yoy_pct")
+    breadth_v = regime.get("breadth_200")
+    curve_v = regime.get("curve_10y_3m")
+
+    breadth_risk = (clamp((70 - breadth_v) / (70 - 30) * 100.0, 0, 100)
+                    if isinstance(breadth_v, (int, float)) else None)
+    curve_risk = (clamp((0.5 - curve_v) / (0.5 - (-1.5)) * 100.0, 0, 100)
+                  if isinstance(curve_v, (int, float)) else None)
+
+    rows = [
+        ("Shiller CAPE",
+         "%.1f" % cape_v if isinstance(cape_v, (int, float)) else None,
+         scale_risk(cape_v, 15, 45)),
+        ("Buffett Indicator",
+         "%.0f%%" % buff_v if isinstance(buff_v, (int, float)) else None,
+         scale_risk(buff_v, 80, 220)),
+        ("หนี้มาร์จิ้น (YoY)",
+         "%+.1f%%" % mdebt_v if isinstance(mdebt_v, (int, float)) else None,
+         scale_risk(mdebt_v, -10, 40)),
+        ("ความกว้างของตลาด",
+         "%.0f%%" % breadth_v if isinstance(breadth_v, (int, float)) else None,
+         breadth_risk),
+        ("เส้นผลตอบแทนพันธบัตร (10ปี-3ด.)",
+         (("%+.2fpt" % curve_v) if isinstance(curve_v, (int, float)) else None),
+         curve_risk),
+    ]
+    risks = [r for _, _, r in rows if r is not None]
+    composite = round(sum(risks) / len(risks)) if risks else None
+    return composite, rows
+
+
+PREP_NOTE = "\n".join([
+    "",
+    "🧭 <b>เวลาความเสี่ยงสูง นักลงทุนบางกลุ่มมักหันไปพิจารณากลุ่มที่ทนทานกว่า</b>",
+    "<i>(ชื่อหุ้นด้านล่างเป็นตัวอย่างกลุ่มเพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำให้ซื้อขายนะคะ)</i>",
+    "",
+    "💰 <b>ปันผลสูง/มั่นคง</b> — JNJ, PG, KO, PTT, ADVANC",
+    "🛡 <b>กลุ่มพื้นฐาน (Defensive)</b> — WMT, COST, UNH, CPALL, BDMS",
+    "🏛 <b>คุณภาพ งบดุลแข็งแรง</b> — MSFT, AAPL, GOOGL, AOT, BH",
+    "📉 <b>หุ้นคุณค่า (Value)</b> — BRK.B, JPM, SCC, KBANK",
+    "🪙 <b>กระจายนอกหุ้น</b> — ทองคำ, พันธบัตรระยะสั้น, เงินสด",
+    "",
+    "⚠️ <b>ประเภทที่ควรระวังเป็นพิเศษช่วงนี้</b>",
+    "▫️ หุ้นเติบโตราคาแพงที่ยังไม่มีกำไร (high-multiple, unprofitable)",
+    "▫️ บริษัทหนี้สูง ต้นทุนการเงินหนัก (leverage สูง)",
+    "▫️ หุ้นเก็งกำไรปริมาณซื้อขายน้อย ไปตามกระแสข่าว (meme/low-float)",
+    "▫️ ธุรกิจเผาเงินสดเร็ว ยังไม่เห็นทางทำกำไร (cash-burn)",
+])
+
+
+def bubble_digest(bubble, snap):
+    """Once a day: the site's own Bubble Radar composite score, spelled out
+    signal by signal, with a link straight to the page. Purely a data
+    report - the disclaimer at the end is the same one the page itself
+    carries. Returns None if the bubble-data pipeline hasn't produced
+    anything usable yet (first day it exists, or every source failed)."""
+    composite, rows = bubble_score(bubble, snap)
+    if composite is None:
+        return None
+
+    tier = risk_label(composite)
+    msg = [
+        "🫧 <b>อัปเดตความเสี่ยงฟองสบู่ประจำวันค่ะ</b>",
+        stamp(),
+        "",
+        RULE,
+        "",
+        "%s <b>คะแนนรวม %d%% — ระดับ%s</b>" % (risk_dot(composite), composite, tier),
+        "",
+        "📊 <b>รายละเอียดแต่ละตัวชี้วัด</b>",
+    ]
+    for name, val, risk in rows:
+        if val is None:
+            msg.append("▫️ %s — <i>ยังไม่มีข้อมูล</i>" % esc(name))
+        else:
+            msg.append("%s <b>%s</b>: %s" % (risk_dot(risk), esc(name), esc(val)))
+    msg += ["", "🔗 ดูรายละเอียดเต็มที่เว็บ", BUBBLE_LINK]
+
+    if tier in ("สูง", "สูงมาก"):
+        msg.append(PREP_NOTE)
+
+    msg += ["", RULE, "", DISCLAIMER]
+    return "\n".join(msg)
+
+
 def sector_peer_note(t, s, stocks):
     """Informational only, never a buy/sell call: how this stock's 1-month
     momentum compares with the average of the other names the snapshot puts
@@ -665,6 +812,7 @@ def bootstrap(snap, st, day):
     st["last_daily"] = day
     st["last_fx"] = day
     st["last_watch"] = day
+    st["last_bubble"] = day
 
 
 def welcome():
@@ -683,6 +831,7 @@ def welcome():
         "🚨 อินดิเคเตอร์เตือน · เฉพาะตอนค่าข้ามเส้น",
         "📊 สรุปตลาด + 💱 ค่าเงิน · ทุกวัน %02d:00 น." % ((DAILY_HOUR_UTC + 7) % 24),
         "👀 เช็คอินวอทช์ลิสต์ · ทุกวัน (ถ้ามีหุ้นที่ติดตามอยู่)",
+        "🫧 คะแนนความเสี่ยงฟองสบู่ · ทุกวัน (ถ้ามีข้อมูล)",
         "",
         RULE,
         "",
@@ -724,6 +873,7 @@ def main():
     first_run = not os.path.exists(STATE_FILE)
     st = load_state()
     watchlist = load_watchlist()
+    bubble = load_bubble()
 
     if DRY_RUN:
         print("DRY RUN - no credentials, or ALERT_DRY_RUN=1. Nothing will be sent.")
@@ -736,7 +886,7 @@ def main():
     # reading or writing the saved state, so a test can never make a real
     # alert go missing later.
     if TEST_MODE:
-        blank = {"sent": {}, "indicators": {}, "last_daily": "", "last_fx": "", "last_watch": ""}
+        blank = {"sent": {}, "indicators": {}, "last_daily": "", "last_fx": "", "last_watch": "", "last_bubble": ""}
         demo_watch = watchlist if watchlist else {
             next(iter(snap.get("stocks") or {"AAPL": {}})): {"alert_pct": None}
         }
@@ -744,7 +894,8 @@ def main():
         turn, _ = turn_signals(snap, blank, today, watchlist=demo_watch, force=True)
         move, _ = big_moves(snap, blank, today, watchlist=demo_watch, force=True)
         for msg in (turn, move, indicator_warnings(snap, blank, watchlist=demo_watch, force=True),
-                    daily_summary(snap), daily_fx(snap), watchlist_digest(snap, demo_watch)):
+                    daily_summary(snap), daily_fx(snap), watchlist_digest(snap, demo_watch),
+                    bubble_digest(bubble, snap)):
             if msg:
                 send(msg)
         send("✅ <b>ทดสอบเสร็จเรียบร้อยค่ะ</b>\nระบบพร้อมทำงานตามปกตินะคะ 🙏")
@@ -801,6 +952,11 @@ def main():
             if msg:
                 pending.append((msg, []))
             st["last_watch"] = day
+        if "bubble" in ENABLED and st.get("last_bubble") != day:
+            msg = bubble_digest(bubble, snap)
+            if msg:
+                pending.append((msg, []))
+            st["last_bubble"] = day
 
     if not pending:
         print("nothing new to report")
