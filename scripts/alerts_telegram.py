@@ -122,13 +122,21 @@ def save_state(st, today):
 def load_watchlist():
     """The list a person builds themselves in Telegram or on the site's
     watchlist page (data/watchlist.json, written by scripts/telegram_bot.py).
-    Missing or unreadable just means nobody is watching anything yet."""
+    The watchlist is per-visitor on the website now (data/watchlist.json is
+    keyed by chat id under "users"), but these alerts stay single-user for
+    the site owner: this reads only the owner's own bucket, keyed by their
+    own TELEGRAM_CHAT_ID, same as before that change. Missing or unreadable
+    just means nobody is watching anything yet."""
     try:
         with open(WATCHLIST_FILE, encoding="utf-8") as fh:
             wl = json.load(fh)
     except (OSError, ValueError):
         wl = {}
-    return wl.get("tickers") or {}
+    users = wl.get("users")
+    if isinstance(users, dict):
+        bucket = users.get(str(CHAT_ID)) or {}
+        return bucket.get("tickers") or {}
+    return wl.get("tickers") or {}  # pre-migration legacy flat format
 
 
 # ------------------------------------------------------------- telegram ----
