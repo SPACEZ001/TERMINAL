@@ -90,15 +90,27 @@ def fetch_cape():
     """Robert Shiller's own dataset (ie_data.xls) - monthly since 1871.
 
     Shiller moved this dataset off his old Yale faculty page onto
-    shillerdata.com at some point in 2025 - the Yale page no longer links
-    ie_data.xls at all, which is why this used to fail outright. The new
-    page still serves the file from a versioned CDN URL that changes on
-    every update, so - same as before - the page is scraped for the
-    current link each run rather than hard-coding one that will go stale.
-    Parsed with xlrd directly (not through pandas, whose newer releases
-    refuse to even load xlrd>=2.0 - which itself dropped legacy .xls
-    support, a version trap with no working combination) since the file is
-    still the old binary .xls format.
+    shillerdata.com sometime in 2025, and the file's own layout changed
+    along with it. Two things that broke the old parser:
+
+      - The header is now two rows (a label row plus a units row right
+        under it - e.g. "P/E10 or" then "CAPE" on the next row - only
+        combining both gives the real column name). Read on its own,
+        "CAPE" appears in three places: the true ratio ("P/E10 or CAPE"),
+        its reciprocal ("CAPE Yield"), and a total-return variant ("TR
+        P/E10 or TR CAPE") - so "yield" and a "tr " prefix are both
+        excluded when picking the column.
+      - The date column changed from the old YYYY.MM encoding to a
+        continuous fractional year, each month centered mid-month
+        (January = year + 1/24, then +1/12 per month after that).
+
+    The download link itself still lives on a versioned CDN URL that
+    changes on every update, so - same as before - the page is scraped
+    for the current link each run rather than hard-coding one that will
+    go stale. Parsed with xlrd directly (not through pandas, whose newer
+    releases refuse to even load xlrd>=2.0 - which itself dropped legacy
+    .xls support, a version trap with no working combination) since the
+    file is still the old binary .xls format.
     """
     page = _get("https://shillerdata.com/").decode("utf-8", "ignore")
     m = re.search(r'href="([^"]*ie_data\.xls[^"]*)"', page)
@@ -118,46 +130,31 @@ def fetch_cape():
     hdr = _find_header_row(all_rows, ["date", "cape"])
     if hdr is None:
         raise ValueError("no header row with Date + CAPE columns found")
-    headers = [str(c).strip().lower() for c in all_rows[hdr]]
-    date_col = headers.index("date")
-    cape_cols = [i for i, h in enumerate(headers) if "cape" in h]
-    cape_col = cape_cols[0] if cape_cols else None
+    top = [str(c).strip().lower() for c in all_rows[hdr]]
+    sub = ([str(c).strip().lower() for c in all_rows[hdr + 1]]
+           if hdr + 1 < len(all_rows) else [""] * len(top))
+    combined = [(top[i] + " " + (sub[i] if i < len(sub) else "")).strip()
+                for i in range(len(top))]
+    date_col = top.index("date")
+    cape_candidates = [i for i, h in enumerate(combined)
+                        if "cape" in h and "yield" not in h
+                        and not h.startswith("tr ")]
+    if not cape_candidates:
+        raise ValueError("no CAPE ratio column found among: %r" % combined)
+    cape_col = cape_candidates[0]
 
     rows = []
-    for r in all_rows[hdr + 1:]:
-        d, v = r[date_col], _num(r[cape_col]) if cape_col is not None else None
+    for r in all_rows[hdr + 2:]:
+        d, v = r[date_col], _num(r[cape_col])
         if v is None or not isinstance(d, (int, float)):
             continue
         year = int(d)
-        month = int(round((d - year) * 100))
+        month = int(round((d - year) * 12 + 0.5))
         if not (1 <= month <= 12):
             continue
         rows.append(("%04d-%02d" % (year, month), round(v, 2)))
-
-    sub_hdr = all_rows[hdr + 1] if hdr + 1 < len(all_rows) else []
-    combined_headers = [
-        (str(headers_raw_v).strip() + " " + str(sub_hdr[i]).strip()).strip()
-        for i, headers_raw_v in enumerate(all_rows[hdr])
-    ]
-    debug = {
-        "hdr_row_idx": hdr,
-        "headers_raw": all_rows[hdr],
-        "sub_hdr_raw": sub_hdr,
-        "combined_headers": combined_headers,
-        "cape_col_candidates": [(i, headers[i]) for i in cape_cols],
-        "cape_col_used": cape_col,
-        "date_col_used": date_col,
-        "n_rows_parsed": len(rows),
-        "last_5_rows": rows[-5:] if rows else [],
-        "col12_last5": [[r[5], r[12]] for r in all_rows[-6:-1]] if sheet.ncols > 12 else None,
-        "col14_last5": [[r[5], r[14]] for r in all_rows[-6:-1]] if sheet.ncols > 14 else None,
-        "col16_last5": [[r[5], r[16]] for r in all_rows[-6:-1]] if sheet.ncols > 16 else None,
-        "sheet_nrows": sheet.nrows,
-        "sheet_ncols": sheet.ncols,
-    }
-
     if not rows:
-        raise ValueError("parsed zero CAPE rows; debug=%r" % (debug,))
+        raise ValueError("parsed zero CAPE rows")
     rows.sort()
     rows = _trim_history(rows)
     latest_d, latest_v = rows[-1]
@@ -165,8 +162,7 @@ def fetch_cape():
         "value": latest_v,
         "date": latest_d,
         "history": [{"t": d, "v": v} for d, v in rows],
-        "source": "Robert Shiller / Yale (ie_data.xls)",
-        "_debug": debug,
+        "source": "Robert Shiller / shillerdata.com (ie_data.xls)",
     }
 
 
