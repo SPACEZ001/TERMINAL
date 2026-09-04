@@ -1,0 +1,71 @@
+name: bubble-data
+
+# Refreshes data/bubble.json - the handful of slow-moving bubble-risk
+# indicators (Shiller CAPE, FINRA margin debt, a Buffett Indicator proxy)
+# that the "Bubble Radar" route reads. These sources update at most monthly
+# (GDP is quarterly), so unlike the 30-minute market snapshot this runs once
+# a day - anything faster would just hit Yale/FINRA/FRED's servers for no
+# new data.
+#
+# Everything else the radar shows (VIX, yield curve, breadth, credit
+# spread, sector momentum, ...) already lives in data/market.json and is
+# read from there - nothing here duplicates it.
+
+on:
+  schedule:
+    - cron: '11 7 * * *'   # once a day, off any round hour/minute
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bubble-data
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install deps
+        run: pip install --quiet "xlrd==1.2.0" openpyxl
+        # xlrd is pinned: 2.0+ dropped support for the legacy .xls format
+        # that Shiller's own dataset still ships in, so a bare `pip install
+        # xlrd` would silently install a version that can't read it.
+
+      - name: Build bubble-indicator snapshot
+        run: python scripts/fetch_bubble.py
+
+      # Same fetch+rebase+retry pattern as market-data.yml and
+      # telegram-bot.yml, for the same reason: a plain push can be rejected
+      # by either of those other two schedules landing a commit first.
+      - name: Commit if changed
+        run: |
+          git config user.name  "spacez-market-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -z "$(git status --porcelain data/bubble.json)" ]; then
+            echo "no change"; exit 0
+          fi
+          git add data/bubble.json
+          git commit -m "data: bubble indicators $(date -u '+%Y-%m-%d %H:%M UTC')"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo "pushed on attempt $attempt"; exit 0
+            fi
+            echo "push rejected, rebasing onto origin/main (attempt $attempt)"
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              echo "could not rebase cleanly"; break
+            fi
+          done
+          echo "::error::could not push the bubble-indicator update after 3 attempts"
+          exit 1
