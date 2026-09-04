@@ -10,13 +10,14 @@ Free, no-API-key sources only, each independent so one failure never sinks
 the file — a source that fails keeps whatever value the previous run wrote,
 flagged stale, exactly like fetch_market.py does for a stock:
 
-  · Shiller CAPE ratio         -> Robert Shiller's own public dataset (Yale)
+  · Shiller CAPE ratio         -> Robert Shiller's own public dataset
+                                   (moved from Yale to shillerdata.com in 2025)
   · Margin debt                -> FINRA's public margin-statistics workbook
   · Buffett Indicator proxy    -> FRED's public CSV export (no key needed):
-                                   Wilshire 5000 Full Cap index / US GDP,
-                                   using the standard rule of thumb that the
-                                   Wilshire 5000 index level approximates
-                                   total US market cap in $ billions.
+                                   nonfinancial corporate equities / US GDP.
+                                   FRED discontinued the Wilshire 5000 series
+                                   in June 2024 with no replacement, so this
+                                   uses the closest free FRED-only stand-in.
 
 The regime signals that were already free (VIX, yield curve, breadth,
 credit spread, cyclical-vs-defensive, ...) live in data/market.json already
@@ -88,24 +89,26 @@ def _find_header_row(rows, must_contain):
 def fetch_cape():
     """Robert Shiller's own dataset (ie_data.xls) - monthly since 1871.
 
-    The download link lives on a CDN with a versioned query string that the
-    Yale page regenerates, so the page is scraped for the current link each
-    run rather than hard-coding one that will eventually go stale. Parsed
-    with xlrd directly (not through pandas, whose newer releases refuse to
-    even load xlrd>=2.0 - which itself dropped legacy .xls support, a
-    version trap with no working combination) since the file is still the
-    old binary .xls format.
+    Shiller moved this dataset off his old Yale faculty page onto
+    shillerdata.com at some point in 2025 - the Yale page no longer links
+    ie_data.xls at all, which is why this used to fail outright. The new
+    page still serves the file from a versioned CDN URL that changes on
+    every update, so - same as before - the page is scraped for the
+    current link each run rather than hard-coding one that will go stale.
+    Parsed with xlrd directly (not through pandas, whose newer releases
+    refuse to even load xlrd>=2.0 - which itself dropped legacy .xls
+    support, a version trap with no working combination) since the file is
+    still the old binary .xls format.
     """
-    page = _get("http://www.econ.yale.edu/~shiller/data.htm").decode(
-        "utf-8", "ignore")
+    page = _get("https://shillerdata.com/").decode("utf-8", "ignore")
     m = re.search(r'href="([^"]*ie_data\.xls[^"]*)"', page)
     if not m:
-        raise ValueError("could not find ie_data.xls link on Shiller's page")
+        raise ValueError("could not find ie_data.xls link on shillerdata.com")
     url = m.group(1)
     if url.startswith("//"):
         url = "https:" + url
     elif url.startswith("/"):
-        url = "http://www.econ.yale.edu" + url
+        url = "https://shillerdata.com" + url
 
     import xlrd
     wb = xlrd.open_workbook(file_contents=_get(url))
@@ -231,35 +234,31 @@ def _fred_csv(series_id):
 
 
 def fetch_buffett():
-    """Wilshire 5000 Full Cap index level (FRED) / nominal GDP (FRED).
+    """Nonfinancial corporate equities (FRED) / nominal GDP (FRED).
 
-    The Wilshire 5000 index is constructed so its point level approximates
-    total US stock market capitalisation in $ billions - the same rule of
-    thumb every public "Buffett Indicator" tracker uses, since neither the
-    Fed nor Wilshire ever published a cleaner free composite.
+    FRED discontinued the Wilshire 5000 series on 2024-06-03 (announced at
+    https://news.research.stlouisfed.org/2024/04/fred-will-remove-wilshire-
+    index-data-on-june-3-2024/) and never offered a replacement, so the
+    classic "Wilshire 5000 / GDP" Buffett Indicator can't be built from free
+    FRED data anymore. NCBEILQ027S - the market value of corporate equities
+    issued by nonfinancial corporations, from the Fed's own Financial
+    Accounts (Z.1) - is the closest free FRED-only stand-in: checked against
+    the old Wilshire-based figure at several known points (2000, 2007,
+    2021), it tracks the same shape and a comparable level, so the 0-100%
+    risk scale this feeds doesn't need re-tuning.
     """
-    wilshire = None
-    for sid in ("WILL5000INDFC", "WILL5000IND", "WILL5000PRFC"):
-        try:
-            rows = _fred_csv(sid)
-            if rows:
-                wilshire = rows
-                break
-        except Exception:
-            continue
-    if not wilshire:
-        raise ValueError("could not fetch a Wilshire 5000 series from FRED")
+    ncb = _fred_csv("NCBEILQ027S")   # nonfinancial corp equities, $ millions, quarterly
+    if not ncb:
+        raise ValueError("could not fetch nonfinancial corporate equities "
+                          "(NCBEILQ027S) from FRED")
 
     gdp = _fred_csv("GDP")   # nominal GDP, $ billions, quarterly
     if not gdp:
         raise ValueError("could not fetch GDP from FRED")
 
-    # Resample Wilshire (often daily) down to monthly last-of-month, then
-    # divide by the most recently known quarterly GDP figure at each point.
-    monthly = {}
-    for d, v in wilshire:
-        monthly[d[:7]] = v   # last value seen for that month wins (dates ascend)
-    months = sorted(monthly)
+    ncb_by_q = {}
+    for d, v in ncb:
+        ncb_by_q[d[:7]] = v / 1000.0   # $ millions -> $ billions, same units as GDP
 
     gdp_by_q = {}
     for d, v in gdp:
@@ -276,21 +275,23 @@ def fetch_buffett():
         return best
 
     rows = []
-    for m in months:
+    for m in sorted(ncb_by_q):
         g = gdp_asof(m)
         if not g:
             continue
-        rows.append((m, round(monthly[m] / g * 100.0, 1)))
+        rows.append((m, round(ncb_by_q[m] / g * 100.0, 1)))
     if not rows:
-        raise ValueError("could not align Wilshire 5000 with GDP")
+        raise ValueError("could not align nonfinancial corporate equities with GDP")
     rows = _trim_history(rows)
     latest_d, latest_v = rows[-1]
     return {
         "value_pct": latest_v,
         "date": latest_d,
         "history": [{"t": d, "v": v} for d, v in rows],
-        "source": "FRED: Wilshire 5000 Full Cap Index / GDP",
-        "note": "Wilshire 5000 index level used as a $bn market-cap proxy",
+        "source": "FRED: Nonfinancial corporate equities (NCBEILQ027S) / GDP",
+        "note": "Approximation since FRED discontinued Wilshire 5000 in "
+                "2024: nonfinancial-only, so it can run a little below the "
+                "classic total-market figure",
     }
 
 
