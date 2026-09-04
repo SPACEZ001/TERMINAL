@@ -37,7 +37,12 @@ OUT = os.path.join(ROOT, "data", "bubble.json")
 
 UA = {"User-Agent": "Mozilla/5.0 (compatible; SPACEZ-TERMINAL/1.0; "
                      "+https://spacez001.github.io/TERMINAL/)"}
-HISTORY_YEARS = 25   # enough for a meaningful chart without a heavy file
+HISTORY_YEARS = 160  # generous on purpose: the terminal now charts each
+                     # indicator's *risk score* over time, not just its
+                     # latest value, and the raw data is tiny (a few
+                     # thousand {date, number} pairs at most) - CAPE alone
+                     # goes back to 1871, so this keeps effectively all of
+                     # it rather than the old 25-year window.
 
 
 def _get(url, timeout=30):

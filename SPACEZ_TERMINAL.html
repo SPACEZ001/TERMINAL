@@ -27637,6 +27637,15 @@ var GM = {
   #bubble .bb-card .expl{font-size:12px;color:var(--grey);line-height:1.6;}
   #bubble .bb-card .stale{font-size:11px;color:var(--amber);}
   #bubble .bb-card .bb-spark{width:100%;height:34px;margin-top:2px;color:var(--neon);}
+  #bubble .bb-riskchart{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border-dim);}
+  #bubble .bb-riskchart-row{display:flex;align-items:stretch;gap:6px;}
+  #bubble .bb-riskchart-axis{
+    display:flex;flex-direction:column;justify-content:space-between;
+    font-family:var(--mono);font-size:8.5px;color:var(--grey-dim);
+    flex:0 0 auto;padding:1px 0;text-align:right;
+  }
+  #bubble .bb-riskspark{width:100%;height:56px;flex:1 1 auto;min-width:0;}
+  #bubble .bb-riskchart-cap{margin-top:4px;font-size:10.5px;color:var(--grey-dim);}
   #bubble .bb-card.risk-low .val{color:var(--neon-2,var(--neon));}
   #bubble .bb-card.risk-mod .val{color:var(--amber);}
   #bubble .bb-card.risk-high .val{color:var(--red);}
@@ -27803,6 +27812,7 @@ var GM = {
     radarH:{en:'Shape of the risk',th:'รูปทรงความเสี่ยง'},
     radarNote:{en:'These numbers are converted risk scores (0-100%), not the raw reading - see the actual figures in the cards below. For market breadth and the yield curve, a higher raw value is safer, so 0% there means that signal is currently in the safe zone, not that data is missing.',
                th:'ตัวเลขตรงนี้คือ "คะแนนความเสี่ยง" ที่แปลงค่าแล้ว (0-100%) ไม่ใช่ค่าจริงของตัวชี้วัด ดูค่าจริงได้ที่การ์ดด้านล่าง สำหรับความกว้างของตลาดกับเส้นผลตอบแทนพันธบัตร ค่าจริงยิ่งสูงยิ่งปลอดภัย ดังนั้น 0% ตรงนี้แปลว่าสัญญาณนั้นปลอดภัยอยู่ตอนนี้ ไม่ใช่ไม่มีข้อมูล'},
+    riskHistLabel:{en:'Risk score over time (0-100% scale)',th:'คะแนนความเสี่ยงย้อนหลัง (สเกล 0-100%)'},
     primaryH:{en:'The 5 signals behind the score',th:'5 สัญญาณที่ใช้คำนวณคะแนน'},
     primaryP:{en:'Equally weighted, on purpose - a simple average is easier to trust than a black-box formula.',
               th:'ให้น้ำหนักเท่ากันทุกตัวโดยตั้งใจ - ค่าเฉลี่ยง่ายๆ เชื่อถือได้มากกว่าสูตรลับที่มองไม่เห็น'},
@@ -27941,6 +27951,7 @@ var GM = {
         risk: cape ? scaleRisk(cape.value, 15, 45) : null,
         date: cape && cape.date, stale: cape && cape.stale,
         hist: cape && cape.history,
+        riskHist: riskHistOf(cape && cape.history, 15, 45),
         expl:{en:'How expensive US stocks are vs. 10 years of average earnings, inflation-adjusted. This high has only shown up around 1929, 2000 and 2021.',
               th:'หุ้นสหรัฐฯ แพงแค่ไหนเทียบกับกำไรเฉลี่ยย้อนหลัง 10 ปี (ปรับเงินเฟ้อ) ระดับสูงขนาดนี้เคยเกิดแค่ช่วงปี 1929, 2000 และ 2021'} },
       { key:'buffett', tag:'primary',
@@ -27949,6 +27960,7 @@ var GM = {
         risk: buff ? scaleRisk(buff.value_pct, 80, 220) : null,
         date: buff && buff.date, stale: buff && buff.stale,
         hist: buff && buff.history,
+        riskHist: riskHistOf(buff && buff.history, 80, 220),
         expl:{en:'Total US stock-market value against the whole economy (GDP). Buffett called it "probably the best single measure" of valuation. The free government data feed behind the classic version was discontinued in 2024, so this uses the closest free stand-in (nonfinancial-sector equities), which can run a touch below the original.',
               th:'มูลค่าตลาดหุ้นสหรัฐฯ ทั้งหมดเทียบกับขนาดเศรษฐกิจ (GDP) บัฟเฟตต์เคยเรียกว่าเป็นตัวชี้วัดมูลค่าที่ดีที่สุดตัวหนึ่ง แหล่งข้อมูลฟรีของภาครัฐที่ใช้คำนวณแบบดั้งเดิมถูกยกเลิกไปในปี 2024 จึงใช้ตัวทดแทนที่ใกล้เคียงที่สุด (มูลค่าหุ้นกลุ่มนอกภาคการเงิน) ซึ่งอาจต่ำกว่าตัวเลขดั้งเดิมเล็กน้อย'} },
       { key:'margin', tag:'primary',
@@ -27957,6 +27969,7 @@ var GM = {
         risk: mdebt ? scaleRisk(mdebt.yoy_pct, -10, 40) : null,
         date: mdebt && mdebt.date, stale: mdebt && mdebt.stale,
         hist: mdebt && mdebt.history,
+        riskHist: riskHistOf(yoySeries(mdebt && mdebt.history), -10, 40),
         expl:{en:'How fast borrowing to buy stocks is growing. Debt itself is normal - debt growing far faster than the market has shown up right before 2000, 2008 and 2021.',
               th:'หนี้ที่กู้มาเล่นหุ้นโตเร็วแค่ไหน หนี้เองไม่ใช่เรื่องแปลก แต่หนี้ที่โตเร็วกว่าตลาดมากๆ เคยปรากฏก่อนตลาดร่วงปี 2000, 2008 และ 2021'} },
       { key:'breadth', tag:'primary',
@@ -28023,6 +28036,68 @@ var GM = {
       '<polyline points="'+pts+'" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke"/>' +
       '<circle cx="'+w+'" cy="'+lastY+'" r="2.4" fill="currentColor"/>' +
     '</svg>';
+  }
+
+  function yoySeries(hist){
+    // hist: [{t:'YYYY-MM', v: raw level}], ascending monthly. Turns a raw
+    // level series (like margin debt's history) into a trailing 12-month
+    // % change series, since that - not the level - is what's risk-scored.
+    if (!hist || hist.length <= 12) return null;
+    var out = [];
+    for (var i = 12; i < hist.length; i++){
+      var cur = hist[i], prev = hist[i - 12];
+      if (isNum(cur && cur.v) && isNum(prev && prev.v) && prev.v){
+        out.push({ t: cur.t, v: (cur.v - prev.v) / prev.v * 100 });
+      }
+    }
+    return out.length > 1 ? out : null;
+  }
+
+  function riskHistOf(hist, lo, hi){
+    // Runs each historical raw value through the exact same 0-100% risk
+    // scale used for the current/latest value, so "is the risk trending
+    // up" can be read straight off one consistent axis regardless of the
+    // indicator's own native units.
+    if (!hist) return null;
+    var out = hist.map(function(p){
+      return isNum(p.v) ? { t: p.t, v: scaleRisk(p.v, lo, hi) } : null;
+    }).filter(Boolean);
+    return out.length > 1 ? out : null;
+  }
+
+  function riskChart(hist, w, h){
+    if (!hist || hist.length < 2) return '';
+    var vals = hist.map(function(p){ return p.v; });
+    var n = vals.length;
+    var pts = vals.map(function(v,i){
+      var x = (i/(n-1))*w, y = h - (clamp(v,0,100)/100)*h;
+      return x.toFixed(1)+','+y.toFixed(1);
+    }).join(' ');
+    var last = vals[n-1], lastY = (h - (clamp(last,0,100)/100)*h).toFixed(1);
+    var color = riskColorVar(last);
+    var areaD = 'M0,'+h+' L'+pts.replace(/ /g,' L')+' L'+w+','+h+' Z';
+    var grid = [0,50,100].map(function(pct){
+      var y = (h - (pct/100)*h).toFixed(1);
+      return '<line x1="0" y1="'+y+'" x2="'+w+'" y2="'+y+'" stroke="var(--border-dim)" stroke-width="1" stroke-dasharray="2,3"/>';
+    }).join('');
+    return '<svg class="bb-riskspark" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" style="color:'+color+'">' +
+      grid +
+      '<path d="'+areaD+'" fill="currentColor" fill-opacity="0.12" stroke="none"/>' +
+      '<polyline points="'+pts+'" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke"/>' +
+      '<circle cx="'+w+'" cy="'+lastY+'" r="2.6" fill="currentColor"/>' +
+    '</svg>';
+  }
+
+  function riskChartBlockHTML(riskHist){
+    if (!riskHist || riskHist.length < 2) return '';
+    var span = riskHist[0].t + ' → ' + riskHist[riskHist.length - 1].t;
+    return '<div class="bb-riskchart">' +
+      '<div class="bb-riskchart-row">' +
+        '<div class="bb-riskchart-axis"><span>100%</span><span>50%</span><span>0%</span></div>' +
+        riskChart(riskHist, 260, 56) +
+      '</div>' +
+      '<div class="bb-riskchart-cap">' + esc(tx(C.riskHistLabel)) + ' · ' + esc(span) + '</div>' +
+    '</div>';
   }
 
   function gaugeSVG(){
@@ -28134,6 +28209,7 @@ var GM = {
       if (d.date) body += '<span class="sub">' + esc(tx(C.asOf)) + ' ' + esc(d.date) + '</span>';
       if (d.stale) body += '<span class="stale">' + esc(tx(C.stale)) + '</span>';
       if (d.hist && d.hist.length > 1) body += sparkline(d.hist, 220, 34);
+      body += riskChartBlockHTML(d.riskHist);
     }
     body += '<div class="expl">' + esc(tx(d.expl)) + '</div></div>';
     return body;
