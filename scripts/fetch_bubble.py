@@ -120,11 +120,12 @@ def fetch_cape():
         raise ValueError("no header row with Date + CAPE columns found")
     headers = [str(c).strip().lower() for c in all_rows[hdr]]
     date_col = headers.index("date")
-    cape_col = next(i for i, h in enumerate(headers) if "cape" in h)
+    cape_cols = [i for i, h in enumerate(headers) if "cape" in h]
+    cape_col = cape_cols[0] if cape_cols else None
 
     rows = []
     for r in all_rows[hdr + 1:]:
-        d, v = r[date_col], _num(r[cape_col])
+        d, v = r[date_col], _num(r[cape_col]) if cape_col is not None else None
         if v is None or not isinstance(d, (int, float)):
             continue
         year = int(d)
@@ -132,8 +133,18 @@ def fetch_cape():
         if not (1 <= month <= 12):
             continue
         rows.append(("%04d-%02d" % (year, month), round(v, 2)))
+
+    debug = {
+        "hdr_row_idx": hdr,
+        "headers_raw": all_rows[hdr],
+        "cape_col_candidates": [(i, headers[i]) for i in cape_cols],
+        "cape_col_used": cape_col,
+        "n_rows_parsed": len(rows),
+        "last_5_rows": rows[-5:] if rows else [],
+    }
+
     if not rows:
-        raise ValueError("parsed zero CAPE rows")
+        raise ValueError("parsed zero CAPE rows; debug=%r" % (debug,))
     rows.sort()
     rows = _trim_history(rows)
     latest_d, latest_v = rows[-1]
@@ -142,6 +153,7 @@ def fetch_cape():
         "date": latest_d,
         "history": [{"t": d, "v": v} for d, v in rows],
         "source": "Robert Shiller / Yale (ie_data.xls)",
+        "_debug": debug,
     }
 
 
