@@ -27693,10 +27693,26 @@ var GM = {
   #bubble .bb-scaleseg.risk-low{background:var(--neon-2,var(--neon));opacity:.55;}
   #bubble .bb-scaleseg.risk-mod{background:var(--amber);opacity:.55;}
   #bubble .bb-scaleseg.risk-high{background:var(--red);opacity:.55;}
+  #bubble .bb-scalefill{
+    position:absolute;top:0;bottom:0;left:0;width:0%;
+    background:rgba(255,255,255,.22);overflow:hidden;pointer-events:none;
+    transition:width 1.1s cubic-bezier(.2,.8,.2,1);
+  }
+  #bubble .bb-scalefill::after{
+    content:'';position:absolute;top:0;bottom:0;left:-45%;width:45%;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.7),transparent);
+    animation:bbScaleSweep 2.2s ease-in-out infinite;
+  }
+  @keyframes bbScaleSweep{ 0%{ left:-45%; } 100%{ left:105%; } }
   #bubble .bb-scalepointer{
     position:absolute;top:-7px;left:0%;width:0;height:0;
     border-left:7px solid transparent;border-right:7px solid transparent;border-top:9px solid var(--white);
     transform:translateX(-50%);transition:left 1.1s cubic-bezier(.2,.8,.2,1);
+    animation:bbPointerPulse 1.6s ease-in-out infinite;
+  }
+  @keyframes bbPointerPulse{
+    0%,100%{ filter:drop-shadow(0 0 0 rgba(255,255,255,.95)); }
+    50%{ filter:drop-shadow(0 0 5px rgba(255,255,255,.95)); }
   }
   #bubble .bb-scalerows{display:flex;flex-direction:column;gap:10px;}
   #bubble .bb-scalerow{
@@ -27850,6 +27866,7 @@ var GM = {
     var pos = composite == null ? null : clamp(composite, 0, 100);
     var bar = '<div class="bb-scalebar">' +
       SCALE_TIERS.map(function(t){ return '<div class="bb-scaleseg ' + t.cls + '"></div>'; }).join('') +
+      (pos == null ? '' : '<div class="bb-scalefill" data-final-width="' + pos + '%"></div>') +
       (pos == null ? '' : '<div class="bb-scalepointer" data-final-left="' + pos + '%"></div>') +
       '</div>';
     var rows = SCALE_TIERS.map(function(t){
@@ -28212,6 +28229,11 @@ var GM = {
         if (ptr) {
           var pfin = ptr.getAttribute('data-final-left');
           if (pfin) ptr.style.left = pfin;
+        }
+        var sfill = body.querySelector('.bb-scalefill');
+        if (sfill) {
+          var sfin = sfill.getAttribute('data-final-width');
+          if (sfin) sfill.style.width = sfin;
         }
         var fills = body.querySelectorAll('.bb-flowfill');
         for (var i=0;i<fills.length;i++){
