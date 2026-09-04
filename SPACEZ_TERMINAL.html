@@ -19273,6 +19273,10 @@ var GM = {
   #spzLiveBar .lb-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 8px;
     border:1px solid var(--border-dim);border-radius:20px;background:rgba(255,255,255,.03);
     transition:border-color .2s,background .2s;}
+  /* the status-readout chip carries a lot of segments (quotes, funda,
+     market clocks, bubble data) - let it wrap onto a second line
+     instead of overflowing the viewport on narrower desktop widths */
+  #spzLiveBar .lb-chip.spz-src{flex-wrap:wrap;row-gap:4px;max-width:100%;border-radius:12px;}
   html[data-theme="light"] #spzLiveBar .lb-chip{background:rgba(18,20,28,.035);}
   #spzLiveBar .lb-chip b{color:var(--white);font-weight:600;}
   html[data-theme="light"] #spzLiveBar .lb-chip b{color:#12141c;}
@@ -19692,7 +19696,9 @@ var GM = {
       saved:'Key saved — syncing live data…', cleared:'Key removed. Prices fall back to Yahoo.',
       bad:'That key was rejected by Finnhub. Check it and try again.',
       staticTag:'STATIC', liveTag:'LIVE', notice:'Live market data — for study, not investment advice. Delays vary by source.',
-      naShort:'n/a', naWhy:'ROIC and net margin do not mean anything for a bank or insurer — lending IS the balance sheet. Read ROE, P/B and the loan book instead.' },
+      naShort:'n/a', naWhy:'ROIC and net margin do not mean anything for a bank or insurer — lending IS the balance sheet. Read ROE, P/B and the loan book instead.',
+      bubbleLbl:'bubble data', bubblePending:'pending first run', bubbleUpdated:'updated', bubbleNext:'next update',
+      bubbleToday:'today', bubbleTomorrow:'tomorrow' },
     th:{ live:'สด', loading:'กำลังดึง', stat:'ค่าคงที่', off:'ออฟไลน์',
       quotes:'ราคา', funda:'พื้นฐาน', fx:'อัตราแลกเปลี่ยน', updated:'อัปเดต',
       refresh:'⟳ รีเฟรช', keyBtn:'⚙ API KEY', never:'ยังไม่มี',
@@ -19702,7 +19708,9 @@ var GM = {
       saved:'บันทึกคีย์แล้ว — กำลังดึงข้อมูลสด…', cleared:'ลบคีย์แล้ว ราคาจะกลับไปใช้ Yahoo',
       bad:'Finnhub ปฏิเสธคีย์นี้ ลองตรวจสอบแล้วใส่ใหม่',
       staticTag:'ค่าคงที่', liveTag:'สด', notice:'ข้อมูลตลาดแบบสด — เพื่อการศึกษา ไม่ใช่คำแนะนำการลงทุน ความหน่วงขึ้นกับแหล่งข้อมูล',
-      naShort:'ไม่ใช้', naWhy:'ROIC และอัตรากำไรสุทธิไม่มีความหมายกับธนาคารและประกัน เพราะงบดุลคือตัวสินค้าเอง ให้ดู ROE, P/B และคุณภาพพอร์ตสินเชื่อแทน' }
+      naShort:'ไม่ใช้', naWhy:'ROIC และอัตรากำไรสุทธิไม่มีความหมายกับธนาคารและประกัน เพราะงบดุลคือตัวสินค้าเอง ให้ดู ROE, P/B และคุณภาพพอร์ตสินเชื่อแทน',
+      bubbleLbl:'ข้อมูลฟองสบู่', bubblePending:'รอรอบแรก', bubbleUpdated:'อัปเดต', bubbleNext:'รอบถัดไป',
+      bubbleToday:'วันนี้', bubbleTomorrow:'พรุ่งนี้' }
   };
 
   /* ---------------------------------------------------------------
@@ -19913,6 +19921,57 @@ var GM = {
     return d.h.replace('%N', Math.floor(m / 60));
   }
 
+  /* ---------------------------------------------------------------
+     5a. Bubble Radar status — the daily (not 30-min) CAPE/Buffett/
+     margin-debt fetch is a different cadence from everything else in
+     this bar, so it gets its own segment: what's known, and when the
+     next run happens. scripts/fetch_bubble.py runs once a day at
+     07:11 UTC via .github/workflows/bubble-data.yml — kept in sync
+     with that cron by hand, since a static page can't read the
+     workflow file.
+     --------------------------------------------------------------- */
+  function bubbleData(){
+    try {
+      var b = window.__SPZ_BUBBLE;
+      return (b && typeof b.data === 'function') ? b.data() : null;
+    } catch (e) { return null; }
+  }
+  function bubbleGeneratedTs(d){
+    if (!d || !d.generated_at) return null;
+    var t = Date.parse(d.generated_at);
+    return isNaN(t) ? null : t;
+  }
+  function bubbleHasAnySignal(d){
+    return !!(d && ((d.cape && d.cape.value != null) ||
+      (d.margin_debt && d.margin_debt.yoy_pct != null) ||
+      (d.buffett && d.buffett.value_pct != null)));
+  }
+  function nextBubbleRunTs(){
+    var now = Date.now(), n = new Date();
+    var next = Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate(), 7, 11, 0);
+    if (next <= now) next += 24 * 3600 * 1000;
+    return next;
+  }
+  /* "07:11" alone is ambiguous if that moment already passed today - say
+     which calendar day (in the viewer's own timezone) it falls on */
+  function isSameLocalDay(ts){
+    var a = new Date(ts), b = new Date();
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
+  function bubbleSegmentHTML(){
+    var d = bubbleData(), gen = bubbleGeneratedTs(d), hasSignal = bubbleHasAnySignal(d);
+    var known = hasSignal ? (S('bubbleUpdated') + ' ' + (gen ? fmtAgo(gen) : S('never'))) : S('bubblePending');
+    var next = nextBubbleRunTs();
+    var day = isSameLocalDay(next) ? S('bubbleToday') : S('bubbleTomorrow');
+    return '<span class="spz-sep">·</span>' +
+      '<span class="lb-ic">◔</span>' + S('bubbleLbl') + ' <b>' + known + '</b>' +
+      ' <span class="spz-sep">·</span> ' + S('bubbleNext') + ' ' + day + ' <b>' + fmtTime(next) + '</b>';
+  }
+  /* the bubble module fetches on its own schedule (page load + every
+     15 min) - repaint this bar the moment fresh bubble data lands,
+     rather than waiting for this bar's own next refresh tick */
+  document.addEventListener('spz:bubbleData', function(){ paintBar(); });
+
   function paintBar(){
     if (!bar) return;
     bar.className = 'is-' + (state.mode === 'loading' ? 'loading' : state.mode === 'live' ? 'live' : 'static');
@@ -19931,7 +19990,8 @@ var GM = {
       '<span class="spz-sep">·</span>' +
       '<span class="lb-ic">◷</span>' + S('updated') + ' <b class="lb-ago">' + fmtAgo(state.last) + '</b>' +
       (age !== null && age > 3 ? ' <b style="color:var(--amber,#ffb020)">(' +
-        age.toFixed(age > 24 ? 0 : 1) + 'h)</b>' : '');
+        age.toFixed(age > 24 ? 0 : 1) + 'h)</b>' : '') +
+      bubbleSegmentHTML();
     var shortEl = bar.querySelector('.spz-short');
     if (shortEl) shortEl.innerHTML = S('updated') + ' <span class="lb-ago">' + fmtAgo(state.last) + '</span>';
     var refLbl = document.querySelector('#spzRefreshBtn .lb-lbl');
@@ -27846,8 +27906,14 @@ var GM = {
   function loadBubble(cb){
     fetch('data/bubble.json?v=' + Math.floor(Date.now()/60000))
       .then(function(r){ return r.ok ? r.json() : null; })
-      .then(function(d){ state.bubble = d || {}; if (cb) cb(); })
-      .catch(function(){ state.bubble = state.bubble || {}; if (cb) cb(); });
+      .then(function(d){ state.bubble = d || {}; announceBubble(); if (cb) cb(); })
+      .catch(function(){ state.bubble = state.bubble || {}; announceBubble(); if (cb) cb(); });
+  }
+
+  /* lets the status bar (a separate, earlier-loaded module) show when
+     this data last updated without polling data/bubble.json itself */
+  function announceBubble(){
+    try { document.dispatchEvent(new CustomEvent('spz:bubbleData')); } catch (e) {}
   }
 
   function liveSnap(){
@@ -28096,7 +28162,8 @@ var GM = {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 
-  window.__SPZ_BUBBLE = { paint: function(){ paint(); }, reload: function(){ loadBubble(paint); } };
+  window.__SPZ_BUBBLE = { paint: function(){ paint(); }, reload: function(){ loadBubble(paint); },
+    data: function(){ return state.bubble || null; } };
 })();
 </script>
 
