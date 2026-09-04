@@ -27152,6 +27152,20 @@ var GM = {
   }
   function plainTgLink(){ return 'https://t.me/' + BOT; }
 
+  var UID_KEY = 'spacez.wl.uid';
+  function getUid(create){
+    var v = null;
+    try{ v = localStorage.getItem(UID_KEY); }catch(e){}
+    if(!v && create){
+      v = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+          : ('u' + Date.now().toString(36) + Math.random().toString(36).slice(2));
+      try{ localStorage.setItem(UID_KEY, v); }catch(e){}
+    }
+    return v;
+  }
+  function forgetUid(){ try{ localStorage.removeItem(UID_KEY); }catch(e){} }
+  function linkDeepLink(uid){ return 'https://t.me/' + BOT + '?start=link_' + encodeURIComponent(uid); }
+
   function cmdText(kind, t){
     var th = L() === 'th';
     switch(kind){
@@ -27228,7 +27242,18 @@ var GM = {
     lbEdit:{en:'Set your own alert threshold (% move)',th:'ตั้งเกณฑ์แจ้งเตือนเอง (% ที่ขยับ)'},
     lbList:{en:'See your whole list',th:'ดูรายการทั้งหมด'},
     lbHelp:{en:'Show every command',th:'ดูคำสั่งทั้งหมด'},
-    opentg:{en:'Open the Telegram chat directly',th:'เปิดแชท Telegram โดยตรง'}
+    opentg:{en:'Open the Telegram chat directly',th:'เปิดแชท Telegram โดยตรง'},
+    connectLede:{en:'Each person’s watchlist is tied to their own Telegram account, so what you pin here is yours alone — nobody else sees it, and you don’t see anyone else’s. Tap the button below, then tap Start/Confirm in the chat that opens.',
+                 th:'วอทช์ลิสต์ของแต่ละคนผูกกับบัญชี Telegram ของตัวเอง สิ่งที่คุณปักหมุดจะเป็นของคุณคนเดียว คนอื่นไม่เห็นของคุณ และคุณก็ไม่เห็นของคนอื่น กดปุ่มด้านล่างแล้วกด Start/ยืนยันในแชทที่เปิดขึ้นมาได้เลยค่ะ'},
+    connectBtn:{en:'Connect Telegram',th:'เชื่อมต่อ Telegram'},
+    connectPendingH:{en:'Waiting for confirmation…',th:'กำลังรอการยืนยัน…'},
+    connectPendingB:{en:'Tap the button again if the chat didn’t open, then tap Start there. This page checks again automatically every minute.',
+                     th:'ถ้าแชทไม่เปิดให้กดปุ่มอีกครั้ง แล้วกด Start ในแชท หน้านี้จะเช็คซ้ำให้อัตโนมัติทุกๆ นาทีค่ะ'},
+    connectedNote:{en:'Connected to your own Telegram ✓',th:'เชื่อมต่อ Telegram ของคุณแล้ว ✓'},
+    forgetBtn:{en:'Forget this browser',th:'ลืมการเชื่อมต่อในเบราว์เซอร์นี้'},
+    notConnH:{en:'Not connected yet',th:'ยังไม่ได้เชื่อมต่อ'},
+    notConnB:{en:'Connect your own Telegram to see and manage your personal watchlist here.',
+              th:'เชื่อมต่อ Telegram ของคุณเพื่อดูและจัดการวอทช์ลิสต์ส่วนตัวของคุณที่นี่'}
   };
 
   var FLAG_COPY = {
@@ -27271,13 +27296,36 @@ var GM = {
     return out;
   }
 
-  var sec, state = { wl:null, stocks:null, exampleTicker:'' };
+  var sec, state = { wl:null, stocks:null, exampleTicker:'', links:null, uid:null, chatId:null };
+
+  function loadLinks(cb){
+    fetch('data/telegram_links.json?v=' + Math.floor(Date.now()/60000))
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){ state.links = (d && d.links) || {}; if(cb) cb(); })
+      .catch(function(){ state.links = state.links || {}; if(cb) cb(); });
+  }
 
   function loadWatchlist(cb){
-    fetch('data/watchlist.json?v=' + Math.floor(Date.now()/60000))
-      .then(function(r){ return r.ok ? r.json() : null; })
-      .then(function(d){ state.wl = (d && d.tickers) || {}; if(cb) cb(); })
-      .catch(function(){ state.wl = state.wl || {}; if(cb) cb(); });
+    loadLinks(function(){
+      var uid = getUid(false);
+      var chatId = uid && state.links && state.links[uid] && state.links[uid].chat_id;
+      state.uid = uid;
+      state.chatId = chatId || null;
+      if(!chatId){
+        state.wl = {};
+        if(cb) cb();
+        return;
+      }
+      fetch('data/watchlist.json?v=' + Math.floor(Date.now()/60000))
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(d){
+          var users = (d && d.users) || {};
+          var bucket = users[chatId] || users[String(chatId)];
+          state.wl = (bucket && bucket.tickers) || {};
+          if(cb) cb();
+        })
+        .catch(function(){ state.wl = state.wl || {}; if(cb) cb(); });
+    });
   }
 
   function stocksSnapshot(){
@@ -27324,6 +27372,25 @@ var GM = {
     var tickers = state.wl ? Object.keys(state.wl).sort() : [];
     var exT = state.exampleTicker || 'PTT';
 
+    var uid = state.uid !== undefined ? state.uid : getUid(false);
+    var chatId = state.chatId;
+
+    if(!chatId){
+      var hadUid = !!uid;
+      var uid2 = uid || getUid(true);
+      var dl = linkDeepLink(uid2);
+      body.innerHTML =
+        '<div class="wl-empty">' +
+          '<b>' + esc(tx(hadUid ? C.connectPendingH : C.notConnH)) + '</b><br>' +
+          esc(tx(hadUid ? C.connectPendingB : C.notConnB)) + '<br><br>' +
+          esc(tx(C.connectLede)) +
+          '<div style="margin-top:16px;">' +
+            '<a class="wl-addbtn" href="' + dl + '" target="_blank" rel="noopener noreferrer">' + esc(tx(C.connectBtn)) + '</a>' +
+          '</div>' +
+        '</div>';
+      return;
+    }
+
     var addBox =
       '<div class="wl-add">' +
         '<input type="text" list="wlTickers" data-wl="input" placeholder="' + esc(tx(C.addPh)) + '" value="' + esc(state.exampleTicker || '') + '">' +
@@ -27357,7 +27424,25 @@ var GM = {
       '<a class="wl-opentg" href="' + plainTgLink() + '" target="_blank" rel="noopener noreferrer">' + esc(tx(C.opentg)) + ' →</a>' +
     '</div>';
 
-    body.innerHTML = addBox + grid + howto;
+    var connectedStrip =
+      '<div class="wl-addnote" style="margin-bottom:10px;">' +
+        esc(tx(C.connectedNote)) + ' · ' +
+        '<a href="#" data-wl="forget" style="color:var(--grey);text-decoration:underline;">' + esc(tx(C.forgetBtn)) + '</a>' +
+      '</div>';
+
+    body.innerHTML = connectedStrip + addBox + grid + howto;
+
+    var forgetLink = body.querySelector('[data-wl="forget"]');
+    if(forgetLink){
+      forgetLink.addEventListener('click', function(e){
+        e.preventDefault();
+        forgetUid();
+        state.uid = null;
+        state.chatId = null;
+        state.wl = {};
+        paint();
+      });
+    }
 
     var openBtns = body.querySelectorAll('[data-wl-open]');
     for(var i=0;i<openBtns.length;i++){
