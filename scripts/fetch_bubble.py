@@ -134,22 +134,26 @@ def fetch_cape():
             continue
         rows.append(("%04d-%02d" % (year, month), round(v, 2)))
 
+    sub_hdr = all_rows[hdr + 1] if hdr + 1 < len(all_rows) else []
+    combined_headers = [
+        (str(headers_raw_v).strip() + " " + str(sub_hdr[i]).strip()).strip()
+        for i, headers_raw_v in enumerate(all_rows[hdr])
+    ]
     debug = {
         "hdr_row_idx": hdr,
         "headers_raw": all_rows[hdr],
+        "sub_hdr_raw": sub_hdr,
+        "combined_headers": combined_headers,
         "cape_col_candidates": [(i, headers[i]) for i in cape_cols],
         "cape_col_used": cape_col,
         "date_col_used": date_col,
         "n_rows_parsed": len(rows),
         "last_5_rows": rows[-5:] if rows else [],
-        "merged_cells": list(sheet.merged_cells)[:20],
-        "first10_raw_date_cape": [
-            [r[date_col], r[cape_col]] for r in all_rows[hdr + 1:hdr + 11]
-        ],
-        "last10_raw_date_cape": [
-            [r[date_col], r[cape_col]] for r in all_rows[-10:]
-        ],
+        "col12_last5": [[r[5], r[12]] for r in all_rows[-6:-1]] if sheet.ncols > 12 else None,
+        "col14_last5": [[r[5], r[14]] for r in all_rows[-6:-1]] if sheet.ncols > 14 else None,
+        "col16_last5": [[r[5], r[16]] for r in all_rows[-6:-1]] if sheet.ncols > 16 else None,
         "sheet_nrows": sheet.nrows,
+        "sheet_ncols": sheet.ncols,
     }
 
     if not rows:
