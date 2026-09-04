@@ -50,6 +50,43 @@
   } catch(e){}
 })();
 </script>
+<script>
+/* Runs synchronously before <body> is parsed, same reasoning as the
+   disclaimer gate's own head script above: without this the terminal's
+   menu/content could flash visible for a moment before the CASCADE v4
+   access-gate boot script (appended at the end of <body>) gets a chance
+   to run. This only ever adds a class — it makes no security decision
+   itself, the real check happens later; this just prevents an unstyled
+   flash of locked content. */
+(function(){
+  /* Tier + timestamp only — never the password — kept in sessionStorage so
+     it clears when the tab closes and never leaks into localStorage. */
+  var AUTH_MS = 12 * 60 * 60 * 1000;
+  window.__spzAuthFresh = function(){
+    try {
+      var raw = sessionStorage.getItem('spacez.auth');
+      if (!raw) return false;
+      var obj = JSON.parse(raw);
+      if (!obj || !obj.tier || !obj.ts) return false;
+      var age = Date.now() - obj.ts;
+      return age >= 0 && age < AUTH_MS;
+    } catch(e) { return false; }
+  };
+  try {
+    if (!window.__spzAuthFresh()) {
+      document.documentElement.classList.add('spz-auth-wait');
+    }
+  } catch(e){}
+})();
+</script>
+<style>
+  /* paired with the inline script above — same anti-flash technique as the
+     disclaimer gate's spz-gate-wait, applied to the CASCADE v4 access gate
+     (module appended at the end of <body>); the auth gate must resolve
+     before the disclaimer gate, so this hides the whole page including it */
+  html.spz-auth-wait{visibility:hidden;}
+  html.spz-auth-wait #spzAuthGate{visibility:visible;}
+</style>
 <meta name="description" content="SPACEZ TERMINAL — bilingual stock education terminal: beginner guide, market cycle outlook, chart lab, 14 core metrics, 13 chart signals and what-if simulators.">
 <meta name="theme-color" content="#080808">
 <meta property="og:title" content="SPACEZ TERMINAL — Stock Scanner & Education Terminal">
@@ -29062,6 +29099,683 @@ var GM = {
     --grey-dim:#8e8e93;
   }
 </style>
+
+
+<style>
+/* ============================================================================
+   v13 ADD-ON — SPACEZ CASCADE v4 ACCESS GATE
+   Client-side, no backend: a two-tier password gate (BASIC single field /
+   FULL 50-field master key) sitting in front of the disclaimer gate, using a
+   from-scratch 19-layer key-derivation cascade (PBKDF2-SHA512 -> 5x[HKDF-
+   SHA384 gate + AES-CTR gate-open + PBKDF2-SHA256 stretch + HMAC-SHA512 mix]
+   -> HKDF-SHA512 split -> AES-GCM outer + AES-CTR inner) built on native
+   window.crypto.subtle only — no external crypto library. What it actually
+   protects: which menu items are visible (a UX/access gate), not secret
+   data — the feature code for every page already ships in this file either
+   way, so anyone who opens DevTools can still see it. Honest about that in
+   its own copy (see .cag-fine below). Purely additive.
+   ========================================================================= */
+  #spzAuthGate{position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;
+    padding:20px;background:#07080a;overflow-y:auto;}
+  #spzAuthGate[hidden]{display:none !important;}
+  #spzAuthGate *{box-sizing:border-box;}
+  #spzAuthGate .cag-wrap{width:100%;max-width:420px;margin:auto;display:flex;flex-direction:column;gap:14px;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;}
+  #spzAuthGate.adv .cag-wrap{max-width:640px;}
+
+  .cag-card{position:relative;background:#101114;border:1px solid #24262b;border-radius:18px;
+    padding:26px 22px 22px;display:flex;flex-direction:column;align-items:center;gap:14px;
+    box-shadow:0 30px 70px rgba(0,0,0,.6);}
+  .cag-logo{display:flex;align-items:center;gap:10px;align-self:center;}
+  .cag-badge{width:40px;height:40px;background:#ccff00;border-radius:11px;display:flex;align-items:center;
+    justify-content:center;font-weight:800;font-size:1.2rem;color:#080808;flex-shrink:0;}
+  .cag-logo-t{display:flex;flex-direction:column;gap:1px;font-family:'Inter',sans-serif;}
+  .cag-logo-t b{font-weight:800;font-size:1rem;color:#f4f6f1;letter-spacing:-.01em;}
+  .cag-logo-t span{font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:#7a7d72;letter-spacing:.16em;
+    text-transform:uppercase;}
+  .cag-div{width:100%;height:1px;background:linear-gradient(90deg,transparent,#24262b,transparent);}
+  .cag-status{display:flex;align-items:center;gap:7px;font-size:.62rem;letter-spacing:.09em;color:#7a7d72;}
+  .cag-status i{width:6px;height:6px;border-radius:50%;background:#ffb020;animation:cagBlink 1.6s ease-in-out infinite;}
+  @keyframes cagBlink{0%,100%{opacity:1;}50%{opacity:.25;}}
+
+  .cag-pane{width:100%;display:none;flex-direction:column;align-items:center;gap:12px;}
+  .cag-pane.active{display:flex;}
+
+  .cag-pw-wrap{position:relative;width:100%;}
+  .cag-pw{width:100%;background:#191a1d;border:1px solid #24262b;border-radius:11px;
+    padding:13px 42px 13px 13px;color:#f4f6f1;font-family:'IBM Plex Mono',monospace;font-size:.92rem;
+    letter-spacing:.06em;outline:none;transition:border-color .15s,box-shadow .15s;}
+  .cag-pw:focus{border-color:#ccff00;box-shadow:0 0 0 3px rgba(204,255,0,.12);}
+  .cag-eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:32px;height:32px;
+    background:transparent;border:none;cursor:pointer;color:#7a7d72;font-size:.9rem;border-radius:8px;}
+  .cag-eye:hover{color:#ccff00;background:rgba(204,255,0,.08);}
+
+  .cag-err{font-size:.74rem;color:#ff3b4e;min-height:1.05em;text-align:center;}
+  .cag-err.hidden{visibility:hidden;}
+  .cag-btn{width:100%;background:#ccff00;color:#080808;border:none;border-radius:11px;padding:13px;
+    font-family:'Inter',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:8px;transition:filter .15s,transform .1s;}
+  .cag-btn:hover:not(:disabled){filter:brightness(1.08);}
+  .cag-btn:active:not(:disabled){transform:translateY(1px);}
+  .cag-btn:disabled{opacity:.5;cursor:not-allowed;}
+  .cag-ghost{width:100%;background:transparent;border:1px solid #24262b;border-radius:11px;padding:10px;
+    color:#00ff66;font-family:'Inter',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:6px;}
+  .cag-ghost:hover{border-color:#00ff66;background:rgba(0,255,102,.08);}
+
+  .cag-tiers{display:flex;gap:8px;width:100%;}
+  .cag-tier{flex:1;text-align:center;border:1px dashed #24262b;border-radius:10px;padding:7px 5px;
+    font-size:.6rem;color:#7a7d72;line-height:1.5;}
+  .cag-tier b{display:block;font-size:.66rem;letter-spacing:.07em;}
+  .cag-tier.b b{color:#ffb020;}
+  .cag-tier.f b{color:#ccff00;}
+  .cag-fine{width:100%;text-align:center;font-size:.55rem;color:#4a4c47;letter-spacing:.05em;line-height:1.7;}
+
+  .cag-head{width:100%;display:flex;align-items:flex-end;justify-content:space-between;gap:8px;}
+  .cag-head b{display:block;font-size:.8rem;font-weight:700;color:#ccff00;letter-spacing:.1em;}
+  .cag-head span{display:block;font-size:.56rem;color:#7a7d72;letter-spacing:.1em;margin-top:2px;}
+  .cag-count{font-size:.66rem;color:#7a7d72;white-space:nowrap;}
+  .cag-count b{color:#ccff00;font-size:.92rem;}
+  .cag-prog{width:100%;height:4px;border-radius:4px;background:#1c1d20;overflow:hidden;}
+  .cag-prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ccff00,#00ff66);
+    transition:width .25s;}
+
+  .cag-grid{width:100%;max-height:38vh;overflow-y:auto;display:grid;grid-template-columns:1fr;gap:6px;
+    padding:9px;background:#0a0b0d;border:1px solid #24262b;border-radius:13px;}
+  @media (min-width:520px){.cag-grid{grid-template-columns:1fr 1fr;}}
+  .cag-row{display:flex;align-items:center;gap:6px;}
+  .cag-no{font-family:'IBM Plex Mono',monospace;font-size:.56rem;color:#4a4c47;width:16px;text-align:right;flex-shrink:0;}
+  .cag-in{flex:1;min-width:0;background:#151619;border:1px solid #212226;border-radius:7px;padding:7px 8px;
+    color:#f4f6f1;font-family:'IBM Plex Mono',monospace;font-size:.68rem;outline:none;}
+  .cag-in:focus{border-color:#ccff00;}
+  .cag-in.filled{border-color:rgba(204,255,0,.32);}
+
+  .cag-tools{display:flex;gap:6px;width:100%;flex-wrap:wrap;}
+  .cag-tool{flex:1;min-width:88px;background:#151619;border:1px solid #24262b;border-radius:9px;
+    padding:8px 4px;font-family:'Inter',sans-serif;font-size:.64rem;color:#7a7d72;cursor:pointer;}
+  .cag-tool:hover{border-color:#00ff66;color:#00ff66;}
+  .cag-bulk{width:100%;display:none;flex-direction:column;gap:6px;}
+  .cag-bulk.show{display:flex;}
+  .cag-bulk textarea{width:100%;height:100px;resize:vertical;background:#0a0b0d;border:1px solid #24262b;
+    border-radius:9px;padding:9px;color:#f4f6f1;font-family:'IBM Plex Mono',monospace;font-size:.64rem;
+    line-height:1.6;outline:none;}
+  .cag-bulk-hint{font-size:.56rem;color:#63655e;line-height:1.6;}
+
+  /* ---- boot sequence ---- */
+  .cag-boot{position:fixed;inset:0;z-index:9600;background:#050506;display:none;flex-direction:column;
+    align-items:center;justify-content:center;gap:18px;padding:20px;font-family:'IBM Plex Mono',monospace;}
+  .cag-boot.show{display:flex;}
+  .cag-boot-ring{width:84px;height:84px;position:relative;}
+  .cag-boot-ring i{position:absolute;inset:0;border-radius:50%;border:2px solid transparent;}
+  .cag-boot-ring i:nth-child(1){border-top-color:#ccff00;animation:cagSpin 1.1s linear infinite;}
+  .cag-boot-ring i:nth-child(2){inset:10px;border-bottom-color:#00ff66;animation:cagSpin 1.4s linear infinite reverse;}
+  @keyframes cagSpin{to{transform:rotate(360deg);}}
+  .cag-boot-steps{width:100%;max-width:340px;display:flex;flex-direction:column;gap:6px;}
+  .cag-boot-step{display:flex;align-items:center;gap:9px;font-size:.68rem;color:#4a4c47;transition:color .2s;}
+  .cag-boot-step.on{color:#e7ffb0;}
+  .cag-boot-step.fail{color:#ff3b4e;}
+  .cag-boot-step i{width:6px;height:6px;border-radius:50%;background:#2a2b2e;flex-shrink:0;transition:background .2s;}
+  .cag-boot-step.on i{background:#ccff00;box-shadow:0 0 6px #ccff00;}
+  .cag-boot-step.fail i{background:#ff3b4e;box-shadow:0 0 6px #ff3b4e;}
+  .cag-boot-console{width:100%;max-width:340px;height:64px;overflow:hidden;font-size:.6rem;color:#5c7a3a;
+    line-height:1.5;}
+  .cag-boot-fail{color:#ff3b4e;font-size:.78rem;text-align:center;max-width:320px;line-height:1.6;display:none;}
+  .cag-boot.failed .cag-boot-fail{display:block;}
+  .cag-boot.failed .cag-boot-ring i{border-color:#ff3b4e !important;animation:none;}
+
+  /* ---- locked menu / route items (BASIC tier) ---- */
+  .spz-locked-item{position:relative;filter:grayscale(.85) brightness(.62);cursor:not-allowed !important;}
+  .spz-locked-item::after{content:'🔒';position:absolute;top:6px;right:6px;font-size:11px;
+    filter:none;text-shadow:0 1px 2px rgba(0,0,0,.6);}
+  .cag-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(0);z-index:9700;
+    background:#151619;border:1px solid rgba(255,59,78,.4);color:#f4f6f1;border-radius:12px;
+    padding:12px 16px;font-size:12.5px;max-width:min(360px,86vw);box-shadow:0 14px 34px rgba(0,0,0,.5);
+    display:flex;align-items:center;gap:10px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;}
+  .cag-toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+  .cag-toast b{color:#ffb020;}
+  .cag-toast button{background:#ccff00;color:#080808;border:none;border-radius:8px;padding:6px 10px;
+    font-family:'Inter',sans-serif;font-weight:700;font-size:11px;cursor:pointer;flex-shrink:0;}
+</style>
+
+<script>
+(function(){
+  'use strict';
+  var subtle = window.crypto.subtle;
+  var te = new TextEncoder(), td = new TextDecoder();
+
+  /* ---------------- CASCADE v4 primitives ---------------- */
+  var L1_ITER = 300000, CYCLES = 5, CYC_ITER = 120000;
+
+  function u8cat(){
+    var arrs = Array.prototype.slice.call(arguments);
+    var total = 0, i;
+    for(i = 0; i < arrs.length; i++) total += arrs[i].length;
+    var out = new Uint8Array(total), off = 0;
+    for(i = 0; i < arrs.length; i++){ out.set(arrs[i], off); off += arrs[i].length; }
+    return out;
+  }
+  function b64(bytes){
+    var bin = '', i;
+    for(i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+  function unb64(str){
+    var bin = atob(str), out = new Uint8Array(bin.length), i;
+    for(i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  function pbkdf2Bits(keyBytes, salt, iterations, hash, bitLen){
+    return subtle.importKey('raw', keyBytes, 'PBKDF2', false, ['deriveBits']).then(function(base){
+      return subtle.deriveBits({ name:'PBKDF2', hash:hash, salt:salt, iterations:iterations }, base, bitLen);
+    }).then(function(bits){ return new Uint8Array(bits); });
+  }
+  function hkdfAesKey(ikmBytes, salt, infoBytes, hash, algo, usages){
+    return subtle.importKey('raw', ikmBytes, 'HKDF', false, ['deriveKey']).then(function(base){
+      return subtle.deriveKey({ name:'HKDF', hash:hash, salt:salt, info:infoBytes }, base, algo, false, usages);
+    });
+  }
+  function aesCtr(mode, key, counter, data){
+    var op = mode === 'encrypt' ? subtle.encrypt.bind(subtle) : subtle.decrypt.bind(subtle);
+    return op({ name:'AES-CTR', counter:counter, length:64 }, key, data).then(function(out){ return new Uint8Array(out); });
+  }
+  function hmacSha512(keyBytes, msgBytes){
+    return subtle.importKey('raw', keyBytes, { name:'HMAC', hash:'SHA-512' }, false, ['sign']).then(function(key){
+      return subtle.sign('HMAC', key, msgBytes);
+    }).then(function(sig){ return new Uint8Array(sig); });
+  }
+
+  /* Layer 3 (the gate, inside the loop) is deliberately unauthenticated
+     AES-CTR: it always "succeeds" and hands back a seed — garbage for a
+     wrong password — that keeps flowing through the rest of the pipeline.
+     There is no early exit anywhere in this loop, by design. */
+  function cascadeLoop(state0, s2, s3, s4, gates){
+    var state = state0, c = 0;
+    function step(){
+      if(c >= CYCLES) return Promise.resolve(state);
+      var cc = c;
+      var info2 = te.encode('SPACEZ/GATE/' + cc);
+      return hkdfAesKey(state, s2, info2, 'SHA-384', { name:'AES-CTR', length:256 }, ['decrypt']).then(function(gateKey){
+        var iv = unb64(gates[cc].iv);
+        var ct = unb64(gates[cc].ct);
+        return aesCtr('decrypt', gateKey, iv, ct);
+      }).then(function(seed){
+        var s3c = u8cat(s3, new Uint8Array([cc]));
+        return pbkdf2Bits(seed, s3c, CYC_ITER, 'SHA-256', 512);
+      }).then(function(stretched){
+        var msg = u8cat(state, s4, te.encode('SPACEZ/MIX/' + cc));
+        return hmacSha512(stretched, msg);
+      }).then(function(newState){
+        state = newState; c++;
+        return step();
+      });
+    }
+    return step();
+  }
+
+  function deriveFinalKeys(state, s4){
+    return Promise.all([
+      hkdfAesKey(state, s4, te.encode('SPACEZ/FINAL/CTR'), 'SHA-512', { name:'AES-CTR', length:256 }, ['decrypt']),
+      hkdfAesKey(state, s4, te.encode('SPACEZ/FINAL/GCM'), 'SHA-512', { name:'AES-GCM', length:256 }, ['decrypt'])
+    ]).then(function(r){ return { kCtr:r[0], kGcm:r[1] }; });
+  }
+
+  /* The ONE checkpoint in the whole pipeline is the outer AES-GCM decrypt
+     below — a bad password, a flipped byte anywhere (ciphertext, any salt,
+     any gate blob, either iv), or a missing gate all surface identically as
+     "Tampering Detected". Everything before it always runs to completion,
+     so a right and a wrong password cost the same amount of real work. */
+  function openVault(vault, password){
+    return Promise.resolve().then(function(){
+      if(!vault || !vault.gates || vault.gates.length !== CYCLES) throw new Error('shape');
+      var s1 = unb64(vault.s1), s2 = unb64(vault.s2), s3 = unb64(vault.s3), s4 = unb64(vault.s4);
+      return pbkdf2Bits(te.encode(password), s1, L1_ITER, 'SHA-512', 512).then(function(state0){
+        return cascadeLoop(state0, s2, s3, s4, vault.gates);
+      }).then(function(state){
+        return deriveFinalKeys(state, s4);
+      }).then(function(keys){
+        var outerIv = unb64(vault.iv), ctBytes = unb64(vault.ct);
+        return subtle.decrypt({ name:'AES-GCM', iv:outerIv, tagLength:128 }, keys.kGcm, ctBytes).then(function(mid){
+          var ctrIv = unb64(vault.ctrIv);
+          return aesCtr('decrypt', keys.kCtr, ctrIv, new Uint8Array(mid));
+        });
+      }).then(function(plain){
+        var data = JSON.parse(td.decode(plain));
+        if(!data || typeof data !== 'object') throw new Error('bad shape');
+        return data;
+      });
+    }).catch(function(){
+      throw new Error('Tampering Detected');
+    });
+  }
+
+  /* ---------------- embedded vaults ---------------- */
+  /* เอาค่า Ciphertext, Salt, IV ของหน้า Basic มาใส่ตรงนี้ (สร้างด้วย ADMIN_GENERATOR.html) */
+  var VAULT_BASIC = {"v":4,"s1":"HB2ix52ObBvt2gtFrlDdRw==","s2":"DjdwN1wVX3JyPxMXSaXAow==","s3":"2oFPNtSMNYeePEqIGBEP1g==","s4":"HjdJL/XWnc0w/XFxwTS/Dw==","gates":[{"iv":"Bj0d+9dmURRrAUQweYudHA==","ct":"JT8cULQcwLOLv719s4h6sxykWy8ZgMeNcPz308RFfns="},{"iv":"2gkVZV1/8YG1vAh8vfWanA==","ct":"+hMsvvDHxsQ6aOa+hO8t9cxQJtAZQCLF3Wk9zsQr/Ew="},{"iv":"1orHQMO18NDH7JHLdA4TaQ==","ct":"GwfctSOXmEnj7Hk4vSU1SSkAoc18wlwIpwODJXspQC4="},{"iv":"sn3JCvC1KmEpTqjfmv0wZA==","ct":"0uU77fTTnTFhl88DbhluWA1D8g3O5EF2PavzRihy5LE="},{"iv":"3YHa7H8mh6Ml43+1rC1Yyg==","ct":"bSJEiiOhoUUd6GbOcuYc0lYSkyV004XMbGGCiqIw6lQ="}],"ctrIv":"/ohJUf0KcYyg1JeAkqczeg==","iv":"yUadLZ6X/2CggWaD","ct":"u79bO3Z75pwL8zypVTagbKwM1DsVx9waHT4Gd7Q8fo8ETIsY/nfz/hevZYl+FSzB19OXQ27QxfIQxTXtBGGdkDISpgzPu/l+M7pnn33kswz9M+dfACxB4oevEuPlZ96xNSIqSm2jnmUVF648PClN1V2ynbmMte/ge1zRNqsryeNzxPhCYiRSBTkBn8RIpZeKH/cGbRgd4AsmaoNorPaTOl/tMA=="};
+  /* เอาค่า Ciphertext, Salt, IV ของหน้า Full Access (รหัส 50 ช่อง) มาใส่ตรงนี้ */
+  var VAULT_FULL = {"v":4,"s1":"tv3NxthPMswFPma+G22kVQ==","s2":"8rFPQEXd62JnNMX5c1WqDw==","s3":"9Z6OxL2WSdAxK/t5Jy5sZw==","s4":"j9SZ9IcO2ihRWQRHSUSevw==","gates":[{"iv":"K4dLNNjQkiTkBIdxg/ZY5w==","ct":"yD1tSeKF5fTj3H1O98LP3zJU9ULFXcQYkCCXA7YyvF0="},{"iv":"QnoOcDSU/bFOUypi24jzTw==","ct":"XPWFQVH7lHL49Unh8Ct/yXQTnDdIn6n74Pl/ZDZMn9o="},{"iv":"4dj3i4gZMOEnd4hk8GTYaQ==","ct":"VKed08M/r0O3dtmMDkHxD+7SyJtGnfpUkwlR4hkS0Hs="},{"iv":"I3FE5IVWFUjA0C2joHrH9g==","ct":"mj9I6qCopAB/wX+qZdoZmfC3R2wI/GU7Ukzcx8cjWrM="},{"iv":"SMirdIUFg+Xw6yMcrfe6Cw==","ct":"wWDzB47mJtnoDwBRwq2Yl2q/j5jLxrO0cO6xpVhCEsA="}],"ctrIv":"OpSRXl9dNTij5+uIzI/fAA==","iv":"4Fx6xsL83VT98bKc","ct":"wTfnglDIqzBRQIYNQ2NnhOhEKNuXVFU0tq8DBVD6en90zMSx5oWikcIauvjQL1tu2uEZI9PhxL0="};
+
+  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof'];
+
+  /* ---------------- i18n ---------------- */
+  function Lg(){ return document.documentElement.lang === 'th' ? 'th' : 'en'; }
+  function Tt(o){ if(o == null) return ''; return typeof o === 'string' ? o : (o[Lg()] || o.en || ''); }
+
+  var TXT = {
+    brand:'ACCESS GATE',
+    hBasic:{en:'Enter password',th:'กรอกรหัสผ่าน'},
+    phBasic:{en:'Password',th:'กรอกรหัสผ่าน'},
+    enter:{en:'Enter',th:'เข้าสู่ระบบ'},
+    adv:{en:'Advanced Mode / Full Access',th:'โหมดขั้นสูง / Full Access'},
+    back:{en:'Back to normal mode',th:'กลับหน้าปกติ'},
+    tierB:{en:'BASIC · 1 field',th:'BASIC · รหัส 1 ช่อง'},
+    tierF:{en:'FULL · 50 fields',th:'FULL · รหัส 50 ช่อง'},
+    errBad:{en:'Incorrect password',th:'รหัสผ่านไม่ถูกต้อง'},
+    errEmpty:{en:'Enter a password first',th:'กรุณากรอกรหัสผ่าน'},
+    errLock:{en:'Too many attempts — try again in ',th:'พยายามผิดหลายครั้งเกินไป ลองใหม่ในอีก '},
+    fine:{en:'This gate hides menus, not the code — a correct password still runs code that already ships in this file. Encryption here proves tampering, it does not prove secrecy.',
+          th:'ประตูนี้ซ่อนเมนู ไม่ใช่ซ่อนโค้ด — รหัสถูกก็แค่รันโค้ดที่อยู่ในไฟล์นี้อยู่แล้ว การเข้ารหัสตรงนี้ยืนยันว่าไม่ถูกแก้ไข ไม่ได้ยืนยันว่าเป็นความลับ'},
+    fullT:{en:'FULL ACCESS',th:'FULL ACCESS'},
+    fullS:{en:'50-FIELD MASTER KEY',th:'รหัสผ่าน 50 ช่อง'},
+    bulk:{en:'📋 Paste all 50 at once',th:'📋 วางทีเดียว 50 ชุด'},
+    mask:{en:'👁 Show / hide',th:'👁 แสดง/ซ่อน'},
+    clear:{en:'🗑 Clear all',th:'🗑 ล้างทั้งหมด'},
+    spread:{en:'↳ Spread into all 50 fields',th:'↳ กระจายลงช่องทั้ง 50'},
+    bulkHint:{en:'1 line = 1 field. Leading numbering like "01. " is stripped automatically.',
+               th:'1 บรรทัด = 1 ช่อง ระบบตัดเลขนำหน้าเช่น "01. " ให้อัตโนมัติ'},
+    bulkPh:{en:'Paste all 50 lines here',th:'วางรหัสทั้ง 50 บรรทัดตรงนี้'},
+    step:[
+      {en:'VAULT INTEGRITY',th:'ตรวจสอบตู้เซฟ'},
+      {en:'PBKDF2-SHA512',th:'ยืดรหัสผ่าน 300,000 รอบ'},
+      {en:'CASCADE LOOP x5',th:'เดินสายพาน 5 รอบ'},
+      {en:'HKDF-SHA512',th:'แตกคีย์ปลายทาง'},
+      {en:'AES-256-GCM',th:'ตรวจลายเซ็น'},
+      {en:'AES-256-CTR',th:'แกะชั้นใน'},
+      {en:'MOUNT MANIFEST',th:'เตรียมรายการเมนู'}
+    ],
+    failTitle:{en:'TAMPERING DETECTED',th:'ตรวจพบการปลอมแปลง'},
+    failBody:{en:'Auth tag mismatch · aborting · no data released',th:'ลายเซ็นไม่ตรง · ยกเลิกการทำงาน · ไม่มีข้อมูลถูกปล่อยออกมา'},
+    toastLocked:{en:'This tool needs Full Access.',th:'เครื่องมือนี้ต้องใช้ Full Access'},
+    toastBtn:{en:'Unlock',th:'ปลดล็อก'}
+  };
+
+  /* ---------------- boot sequence ---------------- */
+  var SEQ_SPEED = 1.0; /* 1.0 ~= 5s normal path */
+  function runBoot(realPromise){
+    var boot = document.getElementById('cagBoot');
+    boot.classList.add('show');
+    var stepsEl = boot.querySelector('.cag-boot-steps');
+    stepsEl.innerHTML = '';
+    var rows = [];
+    for(var i = 0; i < TXT.step.length; i++){
+      var row = document.createElement('div');
+      row.className = 'cag-boot-step';
+      row.innerHTML = '<i></i><span></span>';
+      row.querySelector('span').textContent = (i + 1 < 10 ? '0' : '') + (i + 1) + '  ' + Tt(TXT.step[i]);
+      stepsEl.appendChild(row);
+      rows.push(row);
+    }
+    var consoleEl = boot.querySelector('.cag-boot-console');
+    consoleEl.textContent = '';
+    function log(s){ consoleEl.textContent += s + '\n'; consoleEl.scrollTop = consoleEl.scrollHeight; }
+
+    var perStep = 480 * SEQ_SPEED;
+    var i2 = 0;
+    var result = null, err = null;
+    realPromise.then(function(r){ result = r; }).catch(function(e){ err = e; });
+
+    return new Promise(function(resolve){
+      function tick(){
+        if(i2 < 4){
+          rows[i2].classList.add('on');
+          log('> ' + Tt(TXT.step[i2]) + ' ... ok');
+          i2++;
+          setTimeout(tick, perStep);
+          return;
+        }
+        if(i2 === 4){
+          /* stage 05 — this is where the real result actually gets read */
+          function settle(){
+            if(err){
+              rows[4].classList.add('fail');
+              log('> ' + Tt(TXT.step[4]) + ' ... FAIL');
+              boot.classList.add('failed');
+              boot.querySelector('.cag-boot-fail').textContent = Tt(TXT.failTitle) + '\n' + Tt(TXT.failBody);
+              setTimeout(function(){ boot.classList.remove('show','failed'); resolve(null); }, 1400 * SEQ_SPEED);
+            } else {
+              rows[4].classList.add('on');
+              log('> ' + Tt(TXT.step[4]) + ' ... ok');
+              i2 = 5;
+              setTimeout(tick, perStep);
+            }
+          }
+          if(result !== null || err !== null) settle();
+          else setTimeout(function poll(){ (result !== null || err !== null) ? settle() : setTimeout(poll, 30); }, 30);
+          return;
+        }
+        if(i2 < TXT.step.length){
+          rows[i2].classList.add('on');
+          log('> ' + Tt(TXT.step[i2]) + ' ... ok');
+          i2++;
+          setTimeout(tick, perStep);
+          return;
+        }
+        boot.classList.remove('show');
+        resolve(result);
+      }
+      tick();
+    });
+  }
+
+  /* ---------------- gate UI ---------------- */
+  var gate, paneBasic, paneAdv, pwBasic, errBasic, btnBasic;
+  var advInputs = [], errAdv, btnAdv, advFilled, advBar;
+  var attempts = 0, lockUntil = 0;
+
+  function buildGate(){
+    if(document.getElementById('spzAuthGate')) return;
+    gate = document.createElement('div');
+    gate.id = 'spzAuthGate';
+    gate.innerHTML =
+      '<div class="cag-wrap">' +
+        '<div class="cag-card">' +
+          '<div class="cag-logo"><div class="cag-badge">S</div>' +
+            '<div class="cag-logo-t"><b>SPACEZ TERMINAL</b><span data-x="brand"></span></div></div>' +
+          '<div class="cag-div"></div>' +
+          '<div class="cag-status"><i></i><span data-x="status"></span></div>' +
+
+          '<div class="cag-pane active" id="cagPaneBasic">' +
+            '<div class="cag-pw-wrap"><input class="cag-pw" type="password" id="cagPwBasic" autocomplete="off" spellcheck="false"/>' +
+              '<button class="cag-eye" type="button" data-eye="cagPwBasic">👁</button></div>' +
+            '<div class="cag-err hidden" id="cagErrBasic"></div>' +
+            '<button class="cag-btn" type="button" id="cagBtnBasic"><span data-x="enter"></span></button>' +
+            '<button class="cag-ghost" type="button" id="cagToAdv">⚡ <span data-x="adv"></span></button>' +
+            '<div class="cag-tiers"><div class="cag-tier b"><b data-x="tierBb"></b><span data-x="tierB"></span></div>' +
+              '<div class="cag-tier f"><b data-x="tierFb"></b><span data-x="tierF"></span></div></div>' +
+            '<div class="cag-fine" data-x="fine"></div>' +
+          '</div>' +
+
+          '<div class="cag-pane" id="cagPaneAdv">' +
+            '<div class="cag-head"><div><b data-x="fullT"></b><span data-x="fullS"></span></div>' +
+              '<div class="cag-count"><b id="cagAdvFilled">0</b> / 50</div></div>' +
+            '<div class="cag-prog"><i id="cagAdvBar"></i></div>' +
+            '<div class="cag-grid" id="cagAdvGrid"></div>' +
+            '<div class="cag-tools">' +
+              '<button class="cag-tool" type="button" id="cagBulkBtn" data-x="bulk"></button>' +
+              '<button class="cag-tool" type="button" id="cagMaskBtn" data-x="mask"></button>' +
+              '<button class="cag-tool" type="button" id="cagClearBtn" data-x="clear"></button>' +
+            '</div>' +
+            '<div class="cag-bulk" id="cagBulkBox">' +
+              '<textarea id="cagBulkText" spellcheck="false"></textarea>' +
+              '<button class="cag-tool" type="button" id="cagSpreadBtn" data-x="spread"></button>' +
+              '<div class="cag-bulk-hint" data-x="bulkHint"></div>' +
+            '</div>' +
+            '<div class="cag-err hidden" id="cagErrAdv"></div>' +
+            '<button class="cag-btn" type="button" id="cagBtnAdv"><span data-x="enterAdv"></span></button>' +
+            '<button class="cag-ghost" type="button" id="cagToBasic">← <span data-x="back"></span></button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="cag-boot" id="cagBoot">' +
+        '<div class="cag-boot-ring"><i></i><i></i></div>' +
+        '<div class="cag-boot-steps"></div>' +
+        '<div class="cag-boot-console"></div>' +
+        '<div class="cag-boot-fail"></div>' +
+      '</div>';
+    document.body.appendChild(gate);
+
+    paneBasic = gate.querySelector('#cagPaneBasic');
+    paneAdv = gate.querySelector('#cagPaneAdv');
+    pwBasic = gate.querySelector('#cagPwBasic');
+    errBasic = gate.querySelector('#cagErrBasic');
+    btnBasic = gate.querySelector('#cagBtnBasic');
+    errAdv = gate.querySelector('#cagErrAdv');
+    btnAdv = gate.querySelector('#cagBtnAdv');
+    advFilled = gate.querySelector('#cagAdvFilled');
+    advBar = gate.querySelector('#cagAdvBar');
+
+    var advGrid = gate.querySelector('#cagAdvGrid');
+    for(var i = 1; i <= 50; i++){
+      var row = document.createElement('div');
+      row.className = 'cag-row';
+      var nn = (i < 10 ? '0' : '') + i;
+      row.innerHTML = '<span class="cag-no">' + nn + '</span><input class="cag-in" type="password" data-i="' + (i - 1) + '" placeholder="' + nn + '"/>';
+      advGrid.appendChild(row);
+      advInputs.push(row.querySelector('input'));
+    }
+    advInputs.forEach(function(inp, idx){
+      inp.addEventListener('input', function(){
+        inp.classList.toggle('filled', inp.value.trim().length > 0);
+        updateAdvCount();
+      });
+      inp.addEventListener('keydown', function(ev){
+        if(ev.key === 'Enter'){
+          if(idx < 49) advInputs[idx + 1].focus();
+          else tryFull();
+        }
+      });
+    });
+
+    function updateAdvCount(){
+      var n = advInputs.filter(function(x){ return x.value.trim().length > 0; }).length;
+      advFilled.textContent = n;
+      advBar.style.width = (n / 50 * 100) + '%';
+    }
+
+    gate.querySelectorAll('[data-eye]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var target = document.getElementById(btn.getAttribute('data-eye'));
+        target.type = target.type === 'password' ? 'text' : 'password';
+      });
+    });
+
+    gate.querySelector('#cagToAdv').addEventListener('click', function(){
+      paneBasic.classList.remove('active');
+      paneAdv.classList.add('active');
+      gate.classList.add('adv');
+      advInputs[0].focus();
+    });
+    gate.querySelector('#cagToBasic').addEventListener('click', function(){
+      paneAdv.classList.remove('active');
+      paneBasic.classList.add('active');
+      gate.classList.remove('adv');
+      pwBasic.focus();
+    });
+
+    gate.querySelector('#cagMaskBtn').addEventListener('click', function(){
+      var show = advInputs[0] && advInputs[0].type === 'password';
+      advInputs.forEach(function(inp){ inp.type = show ? 'text' : 'password'; });
+    });
+    gate.querySelector('#cagClearBtn').addEventListener('click', function(){
+      advInputs.forEach(function(inp){ inp.value = ''; inp.classList.remove('filled'); });
+      updateAdvCount();
+    });
+    var bulkBox = gate.querySelector('#cagBulkBox');
+    gate.querySelector('#cagBulkBtn').addEventListener('click', function(){ bulkBox.classList.toggle('show'); });
+    gate.querySelector('#cagSpreadBtn').addEventListener('click', function(){
+      var text = gate.querySelector('#cagBulkText').value;
+      var lines = text.split(/\r?\n/).map(function(l){ return l.replace(/^\s*\d{1,2}[.)]\s*/, '').trim(); })
+        .filter(function(l){ return l.length > 0; });
+      for(var i = 0; i < Math.min(50, lines.length); i++){
+        advInputs[i].value = lines[i];
+        advInputs[i].classList.add('filled');
+      }
+      updateAdvCount();
+    });
+
+    btnBasic.addEventListener('click', tryBasic);
+    pwBasic.addEventListener('keydown', function(ev){ if(ev.key === 'Enter') tryBasic(); });
+    btnAdv.addEventListener('click', tryFull);
+
+    paint();
+  }
+
+  function paint(){
+    if(!gate) return;
+    gate.querySelectorAll('[data-x]').forEach(function(el){
+      var k = el.getAttribute('data-x');
+      var map = {
+        brand: TXT.brand, status: (Lg() === 'th' ? 'รอการยืนยันตัวตน' : 'Awaiting authentication'),
+        enter: TXT.enter, adv: TXT.adv, back: TXT.back,
+        tierBb: 'BASIC', tierFb: 'FULL',
+        tierB: TXT.tierB, tierF: TXT.tierF, fine: TXT.fine,
+        fullT: TXT.fullT, fullS: TXT.fullS,
+        bulk: TXT.bulk, mask: TXT.mask, clear: TXT.clear, spread: TXT.spread, bulkHint: TXT.bulkHint,
+        enterAdv: TXT.enter
+      };
+      if(typeof map[k] === 'string') el.textContent = map[k];
+      else if(map[k]) el.textContent = Tt(map[k]);
+    });
+    pwBasic.placeholder = Tt(TXT.phBasic);
+    gate.querySelector('#cagBulkText').placeholder = Tt(TXT.bulkPh);
+  }
+
+  function lockedNow(){ return Date.now() < lockUntil; }
+  function registerFail(){
+    attempts++;
+    if(attempts >= 5) lockUntil = Date.now() + 30000;
+  }
+  function showErr(el, msg){ el.textContent = msg; el.classList.remove('hidden'); }
+  function clearErr(el){ el.classList.add('hidden'); }
+
+  function finishUnlock(tier){
+    try { sessionStorage.setItem('spacez.auth', JSON.stringify({ tier:tier, t:Date.now() })); } catch(e){}
+    pwBasic.value = '';
+    advInputs.forEach(function(inp){ inp.value = ''; });
+    gate.hidden = true;
+    document.documentElement.classList.remove('spz-auth-wait');
+    applyTier(tier);
+  }
+
+  function tryBasic(){
+    if(lockedNow()){ showErr(errBasic, Tt(TXT.errLock) + Math.ceil((lockUntil - Date.now()) / 1000) + 's'); return; }
+    var pw = pwBasic.value;
+    if(!pw){ showErr(errBasic, Tt(TXT.errEmpty)); return; }
+    clearErr(errBasic);
+    btnBasic.disabled = true;
+    var p = openVault(VAULT_BASIC, pw);
+    runBoot(p).then(function(data){
+      btnBasic.disabled = false;
+      if(!data){ registerFail(); showErr(errBasic, Tt(TXT.errBad)); return; }
+      finishUnlock('basic');
+    });
+  }
+  function tryFull(){
+    if(lockedNow()){ showErr(errAdv, Tt(TXT.errLock) + Math.ceil((lockUntil - Date.now()) / 1000) + 's'); return; }
+    var pw = advInputs.map(function(inp){ return inp.value.trim(); }).join('');
+    if(!pw){ showErr(errAdv, Tt(TXT.errEmpty)); return; }
+    clearErr(errAdv);
+    btnAdv.disabled = true;
+    var p = openVault(VAULT_FULL, pw);
+    runBoot(p).then(function(data){
+      btnAdv.disabled = false;
+      if(!data){ registerFail(); showErr(errAdv, Tt(TXT.errBad)); return; }
+      finishUnlock('full');
+    });
+  }
+
+  /* ---------------- tier gating on the live site ---------------- */
+  var currentTier = null;
+
+  function extractRouteId(elm){
+    var rt = elm.getAttribute && elm.getAttribute('data-route-to');
+    if(rt) return rt;
+    var href = elm.getAttribute && elm.getAttribute('href');
+    var m = href && /^#\/([a-z0-9_-]+)$/i.exec(href);
+    return m ? m[1] : null;
+  }
+  function isLockedRoute(id){ return currentTier === 'basic' && LOCKED_ROUTES.indexOf(id) !== -1; }
+
+  function paintLockVeils(){
+    document.querySelectorAll('[data-route-to], a[href^="#/"]').forEach(function(elm){
+      var id = extractRouteId(elm);
+      if(!id) return;
+      elm.classList.toggle('spz-locked-item', isLockedRoute(id));
+    });
+  }
+
+  var toastEl = null;
+  function toast(){
+    if(!toastEl){
+      toastEl = document.createElement('div');
+      toastEl.className = 'cag-toast';
+      toastEl.innerHTML = '<span data-t></span><button type="button" data-b></button>';
+      document.body.appendChild(toastEl);
+      toastEl.querySelector('button').addEventListener('click', function(){
+        toastEl.classList.remove('show');
+        openGateAdv();
+      });
+    }
+    toastEl.querySelector('[data-t]').textContent = Tt(TXT.toastLocked);
+    toastEl.querySelector('[data-b]').textContent = Tt(TXT.toastBtn);
+    toastEl.classList.add('show');
+    clearTimeout(toastEl.__t);
+    toastEl.__t = setTimeout(function(){ toastEl.classList.remove('show'); }, 4000);
+  }
+
+  function openGateAdv(){
+    if(!gate) return;
+    gate.hidden = false;
+    document.documentElement.classList.add('spz-auth-wait');
+    paneBasic.classList.remove('active');
+    paneAdv.classList.add('active');
+    gate.classList.add('adv');
+  }
+
+  function applyTier(tier){
+    currentTier = tier;
+    paintLockVeils();
+  }
+
+  document.addEventListener('click', function(ev){
+    var t = ev.target, elm = t && t.closest && t.closest('[data-route-to], a[href^="#/"]');
+    if(!elm) return;
+    var id = extractRouteId(elm);
+    if(id && isLockedRoute(id)){
+      ev.preventDefault(); ev.stopPropagation();
+      if(ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+      toast();
+    }
+  }, true);
+
+  window.addEventListener('hashchange', function(){
+    var m = /^#\/([a-z0-9_-]+)$/i.exec(location.hash || '');
+    if(m && isLockedRoute(m[1])){
+      toast();
+      location.hash = '#/now';
+    }
+  });
+
+  var mo = new MutationObserver(function(){ if(currentTier) paintLockVeils(); });
+  mo.observe(document.body, { childList:true, subtree:true });
+
+  /* ---------------- boot ---------------- */
+  function init(){
+    buildGate();
+    var fresh = false;
+    try {
+      var raw = sessionStorage.getItem('spacez.auth');
+      if(raw){
+        var o = JSON.parse(raw);
+        if(o && o.tier && o.t && (Date.now() - o.t) < 12 * 60 * 60 * 1000) fresh = { tier:o.tier };
+      }
+    } catch(e){}
+    if(fresh){
+      gate.hidden = true;
+      document.documentElement.classList.remove('spz-auth-wait');
+      applyTier(fresh.tier);
+    } else {
+      gate.hidden = false;
+      pwBasic.focus();
+    }
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+
+  window.__spzRepaintAuthGate = paint;
+  if(window.repaint && window.repaint.push) window.repaint.push(paint);
+})();
+</script>
 
 </body>
 </html>
