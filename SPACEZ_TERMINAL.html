@@ -6468,7 +6468,9 @@ render: heavy series on Canvas2D/WebGL off the React tree; React only owns chrom
           '<div class="sc-metric"><span>' + peLabel + '</span><b>' + s.pe + '</b></div>' +
           '<div class="sc-metric"><span>' + divLabel + '</span><b>' + divVal + '</b></div>' +
           '<div class="sc-metric"><span>' + roeLabel + '</span><b>' + roeVal + '</b></div>' +
-        '</div></div>';
+        '</div>' +
+        (window.__SPZ_CREDIT ? '<div class="sc-credit">' + window.__SPZ_CREDIT.chipHTML(s.ticker) + '</div>' : '') +
+      '</div>';
     }).join('');
   }
 
@@ -23498,6 +23500,11 @@ var GM = {
     beats:{en:'better than {k} of {n}',th:'ดีกว่า {k} จาก {n} ตัว'},
     noPeers:{en:'not enough comparable companies in this file',th:'บริษัทที่เทียบได้ในไฟล์นี้มีไม่พอ'},
 
+    crH:{en:'Credit risk — a computed proxy, not a market CDS price',
+         th:'ความเสี่ยงด้านเครดิต — ค่าที่คำนวณเอง ไม่ใช่ราคา CDS ในตลาดจริง'},
+    crL:{en:'Real single-name Credit Default Swap prices are not published anywhere for free, so this estimates the same idea — how likely the market would think this borrower is to miss a payment — from the leverage and profitability figures already on this page.',
+         th:'ราคา Credit Default Swap รายบริษัทจริงไม่มีที่ไหนเปิดเผยให้ใช้ฟรี หน้านี้จึงประเมินแนวคิดเดียวกัน คือโอกาสที่ตลาดจะมองว่าลูกหนี้รายนี้จะผิดนัดชำระหนี้ จากตัวเลขหนี้สินต่อทุนและความสามารถทำกำไรที่แสดงอยู่ในหน้านี้แล้ว'},
+
     flagH:{en:'Things worth knowing before you go further',th:'เรื่องที่ควรรู้ก่อนไปต่อ'},
     flagL:{en:'Not reasons to buy or sell. Reasons to look closer at something specific.',
            th:'ไม่ใช่เหตุผลให้ซื้อหรือขาย แต่เป็นเหตุผลให้ไปดูบางอย่างให้ละเอียดขึ้น'},
@@ -24108,6 +24115,10 @@ var GM = {
 
       '<div class="sk-sec2"><h3 class="sk-h3">' + esc(tx(C.mH)) + '</h3>' +
         metricsHTML(t) + '</div>' +
+
+      '<div class="sk-sec2"><h3 class="sk-h3">' + esc(tx(C.crH)) + '</h3>' +
+        '<p class="sk-l3">' + esc(tx(C.crL)) + '</p>' +
+        (window.__SPZ_CREDIT ? window.__SPZ_CREDIT.widgetHTML(t) : '') + '</div>' +
 
       '<div class="sk-sec2"><h3 class="sk-h3">' + esc(tx(C.flagH)) + '</h3>' +
         '<p class="sk-l3">' + esc(tx(C.flagL)) + '</p>' + flagsHTML(t) + '</div>' +
@@ -28773,6 +28784,176 @@ var GM = {
   html[data-theme="light"] .np-item:hover{box-shadow:0 8px 22px rgba(16,24,40,.10);}
 </style>
 
+
+
+<style>
+/* ============================================================================
+   v11 ADD-ON — CREDIT RISK SCORE (computed default-risk proxy)
+   Real single-name Credit Default Swap (CDS) spreads are not available from
+   any free, public source (they trade OTC and are sold by S&P Global,
+   Refinitiv/LSEG, ICE and similar paid data vendors only) — see the
+   disclosure text below. Rather than fabricate a CDS number, this module
+   computes an honest, from-the-same-snapshot-everyone-already-sees proxy for
+   default risk: a percentile-rank composite of leverage (debt/equity),
+   profitability (ROA) and net margin, in the same style as the site's
+   existing peer-percentile bars. Always labelled as a computed estimate,
+   never presented as a market price. Purely additive: new classes only.
+   ========================================================================= */
+  .crs-box{border:1px solid var(--border-dim);border-radius:var(--radius,14px);
+    padding:16px 18px;background:rgba(255,255,255,.02);}
+  .crs-head{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    flex-wrap:wrap;margin-bottom:12px;}
+  .crs-title{font-weight:700;font-size:13px;color:var(--white);}
+  .crs-pill{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.4px;
+    padding:4px 10px;border-radius:999px;border:1px solid currentColor;white-space:nowrap;}
+  .crs-bar{position:relative;height:8px;border-radius:999px;margin:4px 0 16px;
+    background:linear-gradient(90deg, #16a34a 0%, var(--amber) 55%, var(--red) 88%);}
+  .crs-bar-mark{position:absolute;top:50%;width:12px;height:12px;border-radius:50%;
+    transform:translate(-50%,-50%);border:2px solid var(--bg,#0a0a0a);
+    box-shadow:0 0 0 1px rgba(255,255,255,.4);}
+  .crs-comps{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
+  .crs-comp-row{display:grid;grid-template-columns:1fr 96px 30px;align-items:center;gap:10px;
+    font-family:var(--mono);font-size:11px;color:var(--grey-dim);}
+  .crs-comp-track{height:5px;border-radius:999px;background:var(--border-dim);overflow:hidden;}
+  .crs-comp-fill{height:100%;border-radius:999px;}
+  .crs-comp-v{text-align:right;color:var(--white);font-weight:600;}
+  .crs-finnote,.crs-note{font-size:11.5px;line-height:1.55;color:var(--grey-dim);margin-top:6px;}
+  .crs-warn{display:flex;gap:10px;align-items:flex-start;border:1px solid rgba(255,168,60,.35);
+    background:rgba(255,168,60,.08);border-radius:10px;padding:10px 12px;margin:8px 0 4px;}
+  .crs-warn-ic{font-size:16px;line-height:1.2;}
+  .crs-warn b{display:block;font-size:12.5px;margin-bottom:3px;color:var(--white);}
+  .crs-warn p{margin:0;font-size:11.8px;line-height:1.55;color:var(--grey);}
+  .crs-empty .crs-note{margin-top:0;}
+
+  .crs-chip{display:inline-flex;align-items:center;font-family:var(--mono);font-size:10.5px;
+    font-weight:700;padding:3px 8px;border-radius:999px;border:1px solid currentColor;
+    letter-spacing:.2px;cursor:default;}
+  .sc-credit{margin-top:8px;}
+</style>
+
+<script>
+(function(){
+  'use strict';
+  function L(){ return document.documentElement.lang === 'th' ? 'th' : 'en'; }
+  function T(o){ if(o == null) return ''; return typeof o === 'string' ? o : (o[L()] || o.en || ''); }
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function isNum(v){ return typeof v === 'number' && isFinite(v); }
+
+  var FIN_SECTORS = ['Financial Services','Financial','Financials'];
+  function isFin(row){ return !!(row && row.sector && FIN_SECTORS.indexOf(row.sector) !== -1); }
+
+  var TXT = {
+    title:{en:'Credit Risk Score',th:'คะแนนความเสี่ยงด้านเครดิต'},
+    sub:{en:'Computed from public leverage, profitability and margin data — not a real market-traded CDS price. No free source publishes real single-name CDS spreads, so this is an honest estimate, not a quote.',
+         th:'คำนวณจาก้อมูลสาธารณะด้านหนี้สินต่อทุน ความสามารถทำกำไร และอัตรากำไร — ไม่ใช่ราคา CDS ที่ซื้อขายจริงในตลาด เพราะไม่มีแหล่งข้อมูลฟรีที่เปิดเผยราคา CDS รายบริษัทจริง ตัวเลขนี้จึงเป็นค่าประมาณอย่างตรงไปตรงมา ไม่ใช่ราคาตลาด'},
+    band:{ low:{en:'Low',th:'ต่ำ'}, mod:{en:'Moderate',th:'ปานกลาง'},
+           high:{en:'High',th:'สูง'}, vhigh:{en:'Very high',th:'สูงมาก'} },
+    comp:{ lev:{en:'Leverage (debt/equity)',th:'หนี้สินต่อทุน'},
+           roa:{en:'Profitability (ROA)',th:'ความสามารถทำกำไร (ROA)'},
+           mg:{en:'Net margin',th:'อัตรากำไรสุทธิ'} },
+    finNote:{en:'Leverage is left out for banks and financials — lending money out is the business, so a high debt/equity here is normal and does not signal distress the way it would elsewhere.',
+              th:'ไม่นับหนี้สินต่อทุนสำหรับกลุ่มธนาคาร/การเงิน เพราะการปล่อยกู้คือตัวธุรกิจ หนี้สูงจึงเป็นเรื่องปกติของกลุ่มนี้ ไม่ได้สื่อถึงปัญหาเหมือนอุตสาหกรรมอื่น'},
+    none:{en:'Not enough public financial data in this snapshot to estimate this yet.',
+          th:'ข้อมูลการเงินสาธารณะในสแนปช็อตนี้ยังไม่พอสำหรับประเมินค่านี้'},
+    warnTitle:{en:'Elevated default risk — think twice',th:'ความเสี่ยงผิดนัดชำระหนี้สูงกว่าปกติ — คิดให้รอบคอบ'},
+    warnBody:{en:'This company scores in the higher range of the tracked list for debt load versus profitability. A real CDS spread that expensive would mean the market prices in a meaningfully higher chance this borrower misses a payment — treat this score the same way: a reason to look closer at the balance sheet and size any position carefully, not a reason to avoid the stock outright.',
+               th:'บริษัทนี้มีคะแนนอยู่ในช่วงสูงของรายชื่อหุ้นที่ติดตาม เมื่อเทียบภาระหนี้กับความสามารถทำกำไร ถ้าเป็นราคา CDS จริงที่แพงขนาดนี้ก็แปลว่าตลาดให้ราคาความเสี่ยงที่จะผิดนัดชำระหนี้สูงขึ้นอย่างมีนัยสำคัญ — ให้อ่านคะแนนนี้แบบเดียวกัน คือเป็นเหตุผลให้ไปดูงบดุลให้ละเอียดขึ้นและคุมขนาดการลงทุนให้รอบคอบ ไม่ใช่เหตุผลให้เลี่ยงหุ้นตัวนี้ไปเลยทันที'},
+    chip:{en:'Credit risk',th:'ความเสี่ยงเครดิต'}
+  };
+
+  var COLOR = { low:'#16a34a', mod:'var(--amber)', high:'var(--red)', vhigh:'var(--red)' };
+  function bandOf(v){ return v>=80?'vhigh':v>=60?'high':v>=35?'mod':'low'; }
+
+  var CACHE = null;
+  function pctRank(vals, x){
+    if(!isNum(x) || !vals.length) return null;
+    var below = 0, n = 0;
+    for(var i=0;i<vals.length;i++){ if(!isNum(vals[i])) continue; n++; if(vals[i] < x) below++; }
+    return n ? Math.round(100*below/n) : null;
+  }
+  function build(){
+    var snap = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot();
+    var stocks = snap && snap.stocks;
+    if(!stocks) return null;
+    var deVals=[], roaVals=[], mgVals=[];
+    var keys = Object.keys(stocks);
+    for(var i=0;i<keys.length;i++){
+      var r = stocks[keys[i]];
+      if(isNum(r.de) && !isFin(r)) deVals.push(r.de);
+      if(isNum(r.roa)) roaVals.push(r.roa);
+      if(isNum(r.margin)) mgVals.push(r.margin);
+    }
+    return { stocks:stocks, deVals:deVals, roaVals:roaVals, mgVals:mgVals };
+  }
+  function get(ticker){
+    if(!CACHE) CACHE = build();
+    if(!CACHE) return null;
+    var row = CACHE.stocks[ticker];
+    if(!row) return null;
+    var fin = isFin(row), comps = [], score = 0, wsum = 0;
+
+    if(!fin && isNum(row.de)){
+      var levP = pctRank(CACHE.deVals, row.de);
+      if(levP != null){ comps.push({k:'lev', v:levP}); score += levP*0.5; wsum += 0.5; }
+    }
+    if(isNum(row.roa)){
+      var roaP = pctRank(CACHE.roaVals, row.roa);
+      if(roaP != null){ var rp = 100-roaP; comps.push({k:'roa', v:rp}); score += rp*0.3; wsum += 0.3; }
+    }
+    if(isNum(row.margin)){
+      var mgP = pctRank(CACHE.mgVals, row.margin);
+      if(mgP != null){ var mp = 100-mgP; comps.push({k:'mg', v:mp}); score += mp*0.2; wsum += 0.2; }
+    }
+    if(!wsum) return null;
+    var final = Math.round(score/wsum);
+    return { score:final, band:bandOf(final), isFin:fin, comps:comps };
+  }
+
+  function widgetHTML(ticker){
+    var d = get(ticker);
+    if(!d){
+      return '<div class="crs-box crs-empty"><div class="crs-note">' + esc(T(TXT.none)) + '</div></div>';
+    }
+    var color = COLOR[d.band];
+    var pct = Math.max(1, Math.min(99, d.score));
+    var compHTML = d.comps.map(function(c){
+      var cband = bandOf(c.v);
+      return '<div class="crs-comp-row">' +
+        '<span>' + esc(T(TXT.comp[c.k])) + '</span>' +
+        '<div class="crs-comp-track"><div class="crs-comp-fill" style="width:' + c.v +
+          '%;background:' + COLOR[cband] + '"></div></div>' +
+        '<span class="crs-comp-v">' + c.v + '</span>' +
+      '</div>';
+    }).join('');
+    var warn = (d.band === 'high' || d.band === 'vhigh')
+      ? '<div class="crs-warn"><span class="crs-warn-ic">' + (d.band === 'vhigh' ? '⛔' : '⚠') + '</span>' +
+          '<div><b>' + esc(T(TXT.warnTitle)) + '</b><p>' + esc(T(TXT.warnBody)) + '</p></div></div>'
+      : '';
+    var finNote = d.isFin ? '<div class="crs-finnote">' + esc(T(TXT.finNote)) + '</div>' : '';
+    return '<div class="crs-box">' +
+      '<div class="crs-head"><span class="crs-pill" style="color:' + color + ';border-color:' + color + '">' +
+        esc(T(TXT.band[d.band])) + ' · ' + d.score + '/100</span></div>' +
+      '<div class="crs-bar"><div class="crs-bar-mark" style="left:' + pct + '%;background:' + color + '"></div></div>' +
+      '<div class="crs-comps">' + compHTML + '</div>' +
+      finNote + warn +
+      '<div class="crs-note">' + esc(T(TXT.sub)) + '</div>' +
+    '</div>';
+  }
+
+  function chipHTML(ticker){
+    var d = get(ticker);
+    if(!d) return '';
+    var color = COLOR[d.band];
+    return '<span class="crs-chip" style="color:' + color + ';border-color:' + color + '" title="' +
+      esc(T(TXT.sub)) + '">' + esc(T(TXT.chip)) + ': ' + esc(T(TXT.band[d.band])) + ' (' + d.score + ')</span>';
+  }
+
+  window.__SPZ_CREDIT = {
+    get:get, widgetHTML:widgetHTML, chipHTML:chipHTML,
+    reset:function(){ CACHE = null; }
+  };
+})();
+</script>
 
 </body>
 </html>
