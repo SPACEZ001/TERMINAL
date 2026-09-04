@@ -28775,5 +28775,179 @@ var GM = {
   html[data-theme="light"] .np-item:hover{box-shadow:0 8px 22px rgba(16,24,40,.10);}
 </style>
 
+<style>
+/* ============================================================================
+   v10 ADD-ON — DASHBOARD SHELL LAYOUT (void/light only)
+   Goes beyond re-colouring: gives the black and white themes their own page
+   *structure* on wide screens — a persistent left icon rail (like the
+   reference dashboard's sidebar), bigger "featured" tiles in the hub menu,
+   and a two-column bento reflow of the Bubble Radar page's cards. Content
+   and copy are untouched; only the arrangement changes, and only for
+   html[data-theme="void"] / html[data-theme="light"] at >=860px wide.
+   The lime (default/green) theme and narrow/mobile screens are unaffected.
+   ========================================================================= */
+
+  .dash-rail{display:none;}
+
+  @media (min-width:860px){
+    html[data-theme="void"] .dash-rail,
+    html[data-theme="light"] .dash-rail{
+      display:flex;flex-direction:column;align-items:center;
+      position:fixed;left:0;top:0;bottom:0;width:72px;z-index:55;
+      padding:18px 0 16px;gap:6px;
+      background:#111217;border-right:1px solid rgba(255,255,255,.07);
+    }
+    html[data-theme="light"] .dash-rail{
+      background:#ffffff;border-right:1px solid rgba(18,20,28,.09);
+      box-shadow:1px 0 0 rgba(18,20,28,.02);
+    }
+    html[data-theme="void"] .top-fixed,
+    html[data-theme="light"] .top-fixed{left:72px;}
+    html[data-theme="void"] body,
+    html[data-theme="light"] body{padding-left:72px;}
+  }
+
+  .dr-brand{
+    display:flex;align-items:center;justify-content:center;
+    width:32px;height:32px;margin-bottom:10px;color:#2fd9ec;flex-shrink:0;
+  }
+  .dr-brand svg{width:100%;height:100%;}
+  html[data-theme="light"] .dr-brand{color:#1f30e8;}
+  .dr-items{display:flex;flex-direction:column;gap:5px;flex:1 1 auto;overflow-y:auto;scrollbar-width:none;}
+  .dr-items::-webkit-scrollbar{display:none;}
+  .dr-item{
+    position:relative;width:42px;height:42px;border-radius:12px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    color:#888e99;background:transparent;cursor:pointer;
+    transition:background .18s,color .18s;
+  }
+  .dr-item svg{width:19px;height:19px;}
+  .dr-item:hover{background:rgba(255,255,255,.07);color:#f4f6f8;}
+  .dr-item.on{background:#2fd9ec;color:#04222a;}
+  html[data-theme="light"] .dr-item{color:#7a8094;}
+  html[data-theme="light"] .dr-item:hover{background:rgba(18,20,28,.06);color:#12141c;}
+  html[data-theme="light"] .dr-item.on{background:#1f30e8;color:#fff;}
+  .dr-tip{
+    position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);
+    background:#0a0b0d;color:#f4f6f8;font-size:11px;font-family:var(--mono);
+    padding:5px 10px;border-radius:7px;white-space:nowrap;
+    opacity:0;pointer-events:none;transition:opacity .15s;
+    box-shadow:0 8px 20px rgba(0,0,0,.4);z-index:5;
+  }
+  .dr-item:hover .dr-tip{opacity:1;}
+  html[data-theme="light"] .dr-tip{background:#12141c;color:#fff;}
+  .dr-top{margin-top:auto;flex-shrink:0;}
+
+  /* ---------- hub menu: bento — featured routes take a double-wide tile ---------- */
+  @media (min-width:860px){
+    html[data-theme="void"] .hub-card.feat,
+    html[data-theme="light"] .hub-card.feat{grid-column:span 2;}
+  }
+
+  /* ---------- bubble radar: two-column dashboard reflow ---------- */
+  @media (min-width:860px){
+    html[data-theme="void"] #bubble [data-bb="body"],
+    html[data-theme="light"] #bubble [data-bb="body"]{
+      display:grid;grid-template-columns:1fr 1fr;gap:0 20px;
+      grid-auto-flow:dense;align-items:start;
+    }
+    html[data-theme="void"] #bubble [data-bb="body"] > .bb-sec-h,
+    html[data-theme="light"] #bubble [data-bb="body"] > .bb-sec-h,
+    html[data-theme="void"] #bubble [data-bb="body"] > .bb-sec-p,
+    html[data-theme="light"] #bubble [data-bb="body"] > .bb-sec-p,
+    html[data-theme="void"] #bubble [data-bb="body"] > .bb-pending,
+    html[data-theme="light"] #bubble [data-bb="body"] > .bb-pending,
+    html[data-theme="void"] #bubble [data-bb="body"] > .bb-edu,
+    html[data-theme="light"] #bubble [data-bb="body"] > .bb-edu,
+    html[data-theme="void"] #bubble [data-bb="body"] > .bb-flowmap,
+    html[data-theme="light"] #bubble [data-bb="body"] > .bb-flowmap{
+      grid-column:1/-1;
+    }
+  }
+</style>
+<script>
+(function(){
+  'use strict';
+  if (document.querySelector('.dash-rail')) return;
+
+  var ICONS = {
+    home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+    start:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l2.9 6.6 7.1.7-5.4 4.7 1.6 7-6.2-3.8-6.2 3.8 1.6-7-5.4-4.7 7.1-.7z"/></svg>',
+    outlook:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>',
+    bubble:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg>',
+    chartlab:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V10"/><path d="M12 20V4"/><path d="M19 20v-7"/></svg>',
+    directory:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>',
+    top:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14l6-6 6 6"/></svg>'
+  };
+
+  var ITEMS = [
+    {id:'home',      icon:'home',      en:'Home',           th:'หน้าแรก'},
+    {id:'start',     icon:'start',     en:'Start Here',     th:'เริ่มต้น'},
+    {id:'outlook',   icon:'outlook',   en:'Market Outlook', th:'ภาพรวมตลาด'},
+    {id:'bubble',    icon:'bubble',    en:'Bubble Radar',   th:'เรดาร์ฟองสบู่'},
+    {id:'chartlab',  icon:'chartlab',  en:'Chart Lab',      th:'ห้องทดลองกราฟ'},
+    {id:'directory', icon:'directory', en:'Directory',      th:'หุ้นตัวอย่าง'}
+  ];
+
+  function L(){ return document.documentElement.getAttribute('lang') === 'th' ? 'th' : 'en'; }
+
+  function build(){
+    if (!document.body || document.querySelector('.dash-rail')) return false;
+
+    var rail = document.createElement('nav');
+    rail.className = 'dash-rail';
+    rail.setAttribute('aria-label', 'Dashboard navigation');
+
+    var mark = window.__spzMark ? window.__spzMark('dr-brand-mark') : '';
+    var topLbl = L() === 'th' ? 'ขึ้นบนสุด' : 'Back to top';
+    var html = '<span class="dr-brand">' + mark + '</span><div class="dr-items">';
+    for (var i = 0; i < ITEMS.length; i++){
+      var it = ITEMS[i], lbl = it[L()];
+      html += '<button type="button" class="dr-item" data-dr="' + it.id + '" aria-label="' + lbl + '">' +
+        ICONS[it.icon] + '<span class="dr-tip">' + lbl + '</span></button>';
+    }
+    html += '</div><button type="button" class="dr-item dr-top" data-dr-top="1" aria-label="' + topLbl + '">' +
+      ICONS.top + '<span class="dr-tip">' + topLbl + '</span></button>';
+    rail.innerHTML = html;
+    document.body.appendChild(rail);
+
+    rail.addEventListener('click', function(e){
+      var t = e.target;
+      while (t && t !== rail && !t.getAttribute) t = t.parentNode;
+      var node = t;
+      while (node && node !== rail && !node.hasAttribute('data-dr') && !node.hasAttribute('data-dr-top')) node = node.parentNode;
+      if (!node || node === rail) return;
+      if (node.hasAttribute('data-dr-top')){ window.scrollTo({ top:0, behavior:'smooth' }); return; }
+      var id = node.getAttribute('data-dr');
+      var link = document.querySelector('[data-route-to="' + id + '"]');
+      if (link) link.click(); else location.hash = '#/' + id;
+    });
+
+    function paintActive(){
+      var cur = 'home';
+      try { if (window.__spzNav && window.__spzNav.at) cur = window.__spzNav.at(); } catch(e){}
+      var btns = rail.querySelectorAll('[data-dr]');
+      for (var i = 0; i < btns.length; i++){
+        btns[i].classList.toggle('on', btns[i].getAttribute('data-dr') === cur);
+      }
+    }
+    paintActive();
+    window.addEventListener('hashchange', function(){ setTimeout(paintActive, 30); });
+    new MutationObserver(paintActive).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+    return true;
+  }
+
+  function boot(){
+    var tries = 0;
+    var iv = setInterval(function(){
+      if (build() || ++tries > 60) clearInterval(iv);
+    }, 300);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+
 </body>
 </html>
