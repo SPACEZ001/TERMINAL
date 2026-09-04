@@ -27614,6 +27614,7 @@ var GM = {
   }
   #bubble .bb-radarlegend .row span:first-child{color:var(--grey);}
   #bubble .bb-radarlegend .row span:last-child{font-family:var(--mono);font-weight:700;}
+  #bubble .bb-radarnote{font-size:11px;color:var(--grey-dim);line-height:1.6;margin-top:6px;font-style:italic;}
 
   #bubble .bb-sec-h{font-family:var(--mono);font-weight:800;font-size:14px;margin:30px 0 4px;}
   #bubble .bb-sec-p{font-size:12.5px;color:var(--grey);line-height:1.7;margin:0 0 16px;max-width:720px;}
@@ -27780,6 +27781,8 @@ var GM = {
     covFull:{en:'All 5 primary signals available',th:'มีข้อมูลครบทั้ง 5 ตัวชี้วัดหลัก'},
     covPart:{en:'{n} of 5 primary signals available - score is an average of only those',th:'มีข้อมูล {n} จาก 5 ตัวชี้วัดหลัก - คะแนนเฉลี่ยจากเท่าที่มี'},
     radarH:{en:'Shape of the risk',th:'รูปทรงความเสี่ยง'},
+    radarNote:{en:'These numbers are converted risk scores (0-100%), not the raw reading - see the actual figures in the cards below. For market breadth and the yield curve, a higher raw value is safer, so 0% there means that signal is currently in the safe zone, not that data is missing.',
+               th:'ตัวเลขตรงนี้คือ "คะแนนความเสี่ยง" ที่แปลงค่าแล้ว (0-100%) ไม่ใช่ค่าจริงของตัวชี้วัด ดูค่าจริงได้ที่การ์ดด้านล่าง สำหรับความกว้างของตลาดกับเส้นผลตอบแทนพันธบัตร ค่าจริงยิ่งสูงยิ่งปลอดภัย ดังนั้น 0% ตรงนี้แปลว่าสัญญาณนั้นปลอดภัยอยู่ตอนนี้ ไม่ใช่ไม่มีข้อมูล'},
     primaryH:{en:'The 5 signals behind the score',th:'5 สัญญาณที่ใช้คำนวณคะแนน'},
     primaryP:{en:'Equally weighted, on purpose - a simple average is easier to trust than a black-box formula.',
               th:'ให้น้ำหนักเท่ากันทุกตัวโดยตั้งใจ - ค่าเฉลี่ยง่ายๆ เชื่อถือได้มากกว่าสูตรลับที่มองไม่เห็น'},
@@ -27935,15 +27938,15 @@ var GM = {
         val: regime && isNum(regime.breadth_200) ? fmt(regime.breadth_200,0)+'%' : null,
         risk: regime && isNum(regime.breadth_200) ? clamp((70-regime.breadth_200)/(70-30)*100,0,100) : null,
         date: null, stale:false, hist:null,
-        expl:{en:'Share of tracked stocks actually in an uptrend, not just a handful of giants making headlines - a market carried by very few names is historically fragile.',
-              th:'สัดส่วนหุ้นที่อยู่ในขาขึ้นจริงๆ ไม่ใช่แค่หุ้นใหญ่ไม่กี่ตัวที่ขึ้นข่าว ตลาดที่แบกด้วยหุ้นน้อยตัวมักเปราะบางในอดีต'} },
+        expl:{en:'Share of tracked stocks actually in an uptrend, not just a handful of giants making headlines - a market carried by very few names is historically fragile. Higher is safer here, so once breadth is wide enough the risk score above floors at 0% - that means this signal is currently safe, not that data is missing.',
+              th:'สัดส่วนหุ้นที่อยู่ในขาขึ้นจริงๆ ไม่ใช่แค่หุ้นใหญ่ไม่กี่ตัวที่ขึ้นข่าว ตลาดที่แบกด้วยหุ้นน้อยตัวมักเปราะบางในอดีต ค่านี้ยิ่งสูงยิ่งปลอดภัย พอความกว้างมากพอ คะแนนเสี่ยงด้านบนจะตกไปที่ 0% ซึ่งแปลว่าสัญญาณนี้ปลอดภัยอยู่ตอนนี้ ไม่ใช่ไม่มีข้อมูล'} },
       { key:'curve', tag:'primary',
         nm:{en:'Yield curve (10y-3m)',th:'เส้นผลตอบแทนพันธบัตร (10ปี-3ด.)'},
         val: regime && isNum(regime.curve_10y_3m) ? (regime.curve_10y_3m>=0?'+':'')+fmt(regime.curve_10y_3m,2)+'pt' : null,
         risk: regime && isNum(regime.curve_10y_3m) ? clamp((0.5-regime.curve_10y_3m)/(0.5-(-1.5))*100,0,100) : null,
         date: null, stale:false, hist:null,
-        expl:{en:'Gap between long- and short-term US yields. Short paying more than long ("inverted") has preceded most US recessions historically, sometimes over a year later.',
-              th:'ส่วนต่างผลตอบแทนพันธบัตรสหรัฐฯ ระยะยาวกับระยะสั้น ถ้าระยะสั้นให้ผลตอบแทนสูงกว่า (เรียกว่า "กลับด้าน") มักเกิดก่อนเศรษฐกิจถดถอยสหรัฐฯ แทบทุกครั้งในอดีต บางทีล่วงหน้าเป็นปี'} }
+        expl:{en:'Gap between long- and short-term US yields. Short paying more than long ("inverted") has preceded most US recessions historically, sometimes over a year later. A positive, normal-shaped curve is the safe reading, so the risk score floors at 0% here too - a healthy sign, not a missing one.',
+              th:'ส่วนต่างผลตอบแทนพันธบัตรสหรัฐฯ ระยะยาวกับระยะสั้น ถ้าระยะสั้นให้ผลตอบแทนสูงกว่า (เรียกว่า "กลับด้าน") มักเกิดก่อนเศรษฐกิจถดถอยสหรัฐฯ แทบทุกครั้งในอดีต บางทีล่วงหน้าเป็นปี เส้นที่เป็นบวกแบบปกติ (ไม่กลับด้าน) คือค่าที่ปลอดภัย คะแนนเสี่ยงจึงตกไปที่ 0% เหมือนกัน เป็นสัญญาณที่ดี ไม่ใช่ข้อมูลหาย'} }
     ];
   }
 
@@ -28166,6 +28169,7 @@ var GM = {
               '<span style="color:' + (d.risk==null?'var(--grey)':riskColorVar(d.risk)) + '">' +
               (d.risk==null ? '—' : Math.round(d.risk) + '%') + '</span></div>';
           }).join('') +
+          '<div class="bb-radarnote">' + esc(tx(C.radarNote)) + '</div>' +
         '</div>' +
       '</div>';
 
