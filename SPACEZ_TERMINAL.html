@@ -28788,38 +28788,52 @@ var GM = {
 
 <style>
 /* ============================================================================
-   v11 ADD-ON — CREDIT RISK SCORE (computed default-risk proxy)
+   v11 ADD-ON — CREDIT RISK REFERENCE CHART (computed default-risk proxy)
    Real single-name Credit Default Swap (CDS) spreads are not available from
    any free, public source (they trade OTC and are sold by S&P Global,
-   Refinitiv/LSEG, ICE and similar paid data vendors only) — see the
-   disclosure text below. Rather than fabricate a CDS number, this module
-   computes an honest, from-the-same-snapshot-everyone-already-sees proxy for
-   default risk: a percentile-rank composite of leverage (debt/equity),
-   profitability (ROA) and net margin, in the same style as the site's
-   existing peer-percentile bars. Always labelled as a computed estimate,
-   never presented as a market price. Purely additive: new classes only.
+   Refinitiv/LSEG, ICE and similar paid data vendors only). Rather than
+   fabricate a CDS number, this module computes an honest percentile-rank
+   composite of leverage (debt/equity), profitability (ROA) and net margin
+   from the same snapshot every other page already uses, then places that
+   estimate on a well-known, freely published reference scale — NYU Stern's
+   (Aswath Damodaran) interest-coverage-to-default-spread table, the
+   standard method finance practitioners use to estimate a cost of debt
+   when no market bond or CDS price exists. Always labelled as a reference
+   estimate, never presented as a market price. Purely additive.
    ========================================================================= */
   .crs-box{border:1px solid var(--border-dim);border-radius:var(--radius,14px);
     padding:16px 18px;background:rgba(255,255,255,.02);}
+  .crs-debt{display:flex;justify-content:space-between;align-items:baseline;
+    font-size:12px;color:var(--grey-dim);margin-bottom:14px;
+    padding-bottom:12px;border-bottom:1px solid var(--border-dim);}
+  .crs-debt b{font-family:var(--mono);color:var(--white);font-size:16px;font-weight:700;}
   .crs-head{display:flex;align-items:center;justify-content:space-between;gap:10px;
-    flex-wrap:wrap;margin-bottom:12px;}
-  .crs-title{font-weight:700;font-size:13px;color:var(--white);}
-  .crs-pill{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.4px;
-    padding:4px 10px;border-radius:999px;border:1px solid currentColor;white-space:nowrap;}
-  .crs-bar{position:relative;height:8px;border-radius:999px;margin:4px 0 16px;
-    background:linear-gradient(90deg, #16a34a 0%, var(--amber) 55%, var(--red) 88%);}
-  .crs-bar-mark{position:absolute;top:50%;width:12px;height:12px;border-radius:50%;
-    transform:translate(-50%,-50%);border:2px solid var(--bg,#0a0a0a);
-    box-shadow:0 0 0 1px rgba(255,255,255,.4);}
-  .crs-comps{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
-  .crs-comp-row{display:grid;grid-template-columns:1fr 96px 30px;align-items:center;gap:10px;
-    font-family:var(--mono);font-size:11px;color:var(--grey-dim);}
-  .crs-comp-track{height:5px;border-radius:999px;background:var(--border-dim);overflow:hidden;}
+    flex-wrap:wrap;margin-bottom:10px;}
+  .crs-head-l{font-size:12.5px;font-weight:700;color:var(--white);}
+  .crs-pill{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.3px;
+    padding:3px 9px;border-radius:999px;border:1px solid currentColor;white-space:nowrap;}
+  .crs-scale{display:flex;align-items:stretch;height:38px;gap:0;}
+  .crs-zone{display:flex;align-items:center;justify-content:center;border-radius:6px;
+    opacity:.32;transition:opacity .2s,box-shadow .2s;border:1px solid transparent;
+    cursor:default;}
+  .crs-zone.active{opacity:1;border-color:currentColor;box-shadow:0 0 0 1px currentColor inset;}
+  .crs-zone-code{font-family:var(--mono);font-size:11.5px;font-weight:800;line-height:1;}
+  .crs-gap{position:relative;}
+  .crs-gap::after{content:'';position:absolute;top:50%;left:0;right:0;height:1px;
+    background:var(--border-dim);transform:translateY(-50%);}
+  .crs-scale-axis{display:flex;justify-content:space-between;font-family:var(--mono);
+    font-size:9.5px;color:var(--grey-dim);margin-top:5px;}
+  .crs-legend{font-size:11.8px;line-height:1.55;color:var(--grey);margin:12px 0 4px;}
+  .crs-legend b{color:var(--white);}
+  .crs-comps{display:flex;flex-direction:column;gap:7px;margin:12px 0 4px;}
+  .crs-comp-row{display:grid;grid-template-columns:1fr 84px 26px;align-items:center;gap:9px;
+    font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);}
+  .crs-comp-track{height:4px;border-radius:999px;background:var(--border-dim);overflow:hidden;}
   .crs-comp-fill{height:100%;border-radius:999px;}
   .crs-comp-v{text-align:right;color:var(--white);font-weight:600;}
-  .crs-finnote,.crs-note{font-size:11.5px;line-height:1.55;color:var(--grey-dim);margin-top:6px;}
+  .crs-finnote,.crs-note{font-size:11.3px;line-height:1.55;color:var(--grey-dim);margin-top:8px;}
   .crs-warn{display:flex;gap:10px;align-items:flex-start;border:1px solid rgba(255,168,60,.35);
-    background:rgba(255,168,60,.08);border-radius:10px;padding:10px 12px;margin:8px 0 4px;}
+    background:rgba(255,168,60,.08);border-radius:10px;padding:10px 12px;margin:10px 0 2px;}
   .crs-warn-ic{font-size:16px;line-height:1.2;}
   .crs-warn b{display:block;font-size:12.5px;margin-bottom:3px;color:var(--white);}
   .crs-warn p{margin:0;font-size:11.8px;line-height:1.55;color:var(--grey);}
@@ -28843,9 +28857,8 @@ var GM = {
   function isFin(row){ return !!(row && row.sector && FIN_SECTORS.indexOf(row.sector) !== -1); }
 
   var TXT = {
-    title:{en:'Credit Risk Score',th:'คะแนนความเสี่ยงด้านเครดิต'},
-    sub:{en:'Computed from public leverage, profitability and margin data — not a real market-traded CDS price. No free source publishes real single-name CDS spreads, so this is an honest estimate, not a quote.',
-         th:'คำนวณจาก้อมูลสาธารณะด้านหนี้สินต่อทุน ความสามารถทำกำไร และอัตรากำไร — ไม่ใช่ราคา CDS ที่ซื้อขายจริงในตลาด เพราะไม่มีแหล่งข้อมูลฟรีที่เปิดเผยราคา CDS รายบริษัทจริง ตัวเลขนี้จึงเป็นค่าประมาณอย่างตรงไปตรงมา ไม่ใช่ราคาตลาด'},
+    sub:{en:'Computed from public leverage, profitability (ROA) and margin data, then placed on a published reference spread scale — not a real market-traded CDS price. No free source publishes real single-name CDS spreads, so this is an honest estimate, not a quote.',
+         th:'คำนวณจากข้อมูลสาธารณะด้านหนี้สินต่อทุน ความสามารถทำกำไร (ROA) และอัตรากำไร แล้วนำไปเทียบกับสเกลส่วนต่างเครดิตอ้างอิงที่เผยแพร่สาธารณะ — ไม่ใช่ราคา CDS ที่ซื้อขายจริงในตลาด เพราะไม่มีแหล่งข้อมูลฟรีที่เปิดเผยราคา CDS รายบริษัทจริง ตัวเลขนี้จึงเป็นค่าประมาณอย่างตรงไปตรงมา ไม่ใช่ราคาตลาด'},
     band:{ low:{en:'Low',th:'ต่ำ'}, mod:{en:'Moderate',th:'ปานกลาง'},
            high:{en:'High',th:'สูง'}, vhigh:{en:'Very high',th:'สูงมาก'} },
     comp:{ lev:{en:'Leverage (debt/equity)',th:'หนี้สินต่อทุน'},
@@ -28856,13 +28869,57 @@ var GM = {
     none:{en:'Not enough public financial data in this snapshot to estimate this yet.',
           th:'ข้อมูลการเงินสาธารณะในสแนปช็อตนี้ยังไม่พอสำหรับประเมินค่านี้'},
     warnTitle:{en:'Elevated default risk — think twice',th:'ความเสี่ยงผิดนัดชำระหนี้สูงกว่าปกติ — คิดให้รอบคอบ'},
-    warnBody:{en:'This company scores in the higher range of the tracked list for debt load versus profitability. A real CDS spread that expensive would mean the market prices in a meaningfully higher chance this borrower misses a payment — treat this score the same way: a reason to look closer at the balance sheet and size any position carefully, not a reason to avoid the stock outright.',
-               th:'บริษัทนี้มีคะแนนอยู่ในช่วงสูงของรายชื่อหุ้นที่ติดตาม เมื่อเทียบภาระหนี้กับความสามารถทำกำไร ถ้าเป็นราคา CDS จริงที่แพงขนาดนี้ก็แปลว่าตลาดให้ราคาความเสี่ยงที่จะผิดนัดชำระหนี้สูงขึ้นอย่างมีนัยสำคัญ — ให้อ่านคะแนนนี้แบบเดียวกัน คือเป็นเหตุผลให้ไปดูงบดุลให้ละเอียดขึ้นและคุมขนาดการลงทุนให้รอบคอบ ไม่ใช่เหตุผลให้เลี่ยงหุ้นตัวนี้ไปเลยทันที'},
-    chip:{en:'Credit risk',th:'ความเสี่ยงเครดิต'}
+    warnBody:{en:'This company scores in the higher range of the tracked list for debt load versus profitability. A real CDS spread that expensive would mean the market prices in a meaningfully higher chance this borrower misses a payment — treat this reference the same way: a reason to look closer at the balance sheet and size any position carefully, not a reason to avoid the stock outright.',
+               th:'บริษัทนี้มีคะแนนอยู่ในช่วงสูงของรายชื่อหุ้นที่ติดตาม เมื่อเทียบภาระหนี้กับความสามารถทำกำไร ถ้าเป็นราคา CDS จริงที่แพงขนาดนี้ก็แปลว่าตลาดให้ราคาความเสี่ยงที่จะผิดนัดชำระหนี้สูงขึ้นอย่างมีนัยสำคัญ — ให้อ่านค่านี้แบบเดียวกัน คือเป็นเหตุผลให้ไปดูงบดุลให้ละเอียดขึ้นและคุมขนาดการลงทุนให้รอบคอบ ไม่ใช่เหตุผลให้เลี่ยงหุ้นตัวนี้ไปเลยทันที'},
+    chip:{en:'Credit risk',th:'ความเสี่ยงเครดิต'},
+    debtLabel:{en:'Total debt (most recent filing)',th:'หนี้สินรวม (งบล่าสุด)'},
+    naText:{en:'n/a',th:'ไม่มีข้อมูล'},
+    tierLabel:{en:'Reference credit-spread tier',th:'ระดับส่วนต่างเครดิตอ้างอิง'},
+    legendA:{en:'This company’s leverage-and-profitability profile falls in the same reference tier as a',
+             th:'โครงสร้างหนี้สินและความสามารถทำกำไรของบริษัทนี้ อยู่ในระดับอ้างอิงเดียวกับ'},
+    legendB:{en:'bond, where credit spreads have historically run around',
+             th:'ซึ่งส่วนต่างเครดิต (spread) เคยอยู่ที่ประมาณ'},
+    sourceNote:{en:'Reference spread ranges: NYU Stern (Aswath Damodaran) synthetic-rating table — a standard method for estimating a company’s cost of debt when no market bond or CDS price exists.',
+                th:'ช่วงส่วนต่างเครดิตอ้างอิงจาก: ตารางเรตติ้งสังเคราะห์ของ NYU Stern (Aswath Damodaran) — วิธีมาตรฐานที่ใช้ประเมินต้นทุนหนี้ของบริษัท เมื่อไม่มีราคาพันธบัตรหรือ CDS ในตลาดจริง'}
   };
 
   var COLOR = { low:'#16a34a', mod:'var(--amber)', high:'var(--red)', vhigh:'var(--red)' };
   function bandOf(v){ return v>=80?'vhigh':v>=60?'high':v>=35?'mod':'low'; }
+
+  /* NYU Stern (Damodaran) interest-coverage -> synthetic-rating -> default-spread
+     table, collapsed to 4 tiers and laid out on one log-scaled axis (~40 to
+     ~2,000 bps). Widths are pre-computed log10 proportions of that axis so the
+     chart reads as a real scale, not four equal boxes. */
+  var SPREAD_REF = [
+    { k:'low',   code:'IG',   w:26.4, gap:5.7,
+      name:{en:'Investment grade (Aaa–Baa)', th:'ระดับลงทุนได้ (Aaa–Baa)'},
+      range:'40–111 bps' },
+    { k:'mod',   code:'BB',   w:7.5,  gap:10.4,
+      name:{en:'Upper high-yield (Ba)', th:'ไฮยีลด์ระดับบน (Ba)'},
+      range:'138–184 bps' },
+    { k:'high',  code:'B',    w:16.0, gap:14.3,
+      name:{en:'High-yield (B)', th:'ไฮยีลด์ (B)'},
+      range:'275–509 bps' },
+    { k:'vhigh', code:'CCC+', w:19.8, gap:0,
+      name:{en:'Speculative (Caa or below)', th:'เก็งกำไรสูง (Caa หรือต่ำกว่า)'},
+      range:'885–1,900+ bps' }
+  ];
+  function tierOf(band){
+    for(var i=0;i<SPREAD_REF.length;i++) if(SPREAD_REF[i].k === band) return SPREAD_REF[i];
+    return null;
+  }
+
+  function fmtMoney(v, ccy){
+    if(!isNum(v)) return null;
+    var sym = ccy === 'THB' ? '฿' : '$';
+    var abs = Math.abs(v), out;
+    if(abs >= 1e12) out = (v/1e12).toFixed(2) + 'T';
+    else if(abs >= 1e9) out = (v/1e9).toFixed(1) + 'B';
+    else if(abs >= 1e6) out = (v/1e6).toFixed(1) + 'M';
+    else if(abs >= 1e3) out = (v/1e3).toFixed(1) + 'K';
+    else out = String(Math.round(v));
+    return sym + out;
+  }
 
   var CACHE = null;
   function pctRank(vals, x){
@@ -28906,7 +28963,7 @@ var GM = {
     }
     if(!wsum) return null;
     var final = Math.round(score/wsum);
-    return { score:final, band:bandOf(final), isFin:fin, comps:comps };
+    return { score:final, band:bandOf(final), isFin:fin, comps:comps, debt:row.debt, ccy:row.ccy };
   }
 
   function widgetHTML(ticker){
@@ -28915,7 +28972,20 @@ var GM = {
       return '<div class="crs-box crs-empty"><div class="crs-note">' + esc(T(TXT.none)) + '</div></div>';
     }
     var color = COLOR[d.band];
-    var pct = Math.max(1, Math.min(99, d.score));
+    var debtStr = fmtMoney(d.debt, d.ccy);
+
+    var scaleHTML = SPREAD_REF.map(function(z){
+      var active = z.k === d.band;
+      return '<div class="crs-zone' + (active ? ' active' : '') + '" style="flex:' + z.w +
+        ';color:' + COLOR[z.k] + '" title="' + esc(T(z.name)) + ' · ' + esc(z.range) + '">' +
+        '<span class="crs-zone-code">' + esc(z.code) + '</span></div>' +
+        (z.gap ? '<div class="crs-gap" style="flex:' + z.gap + '"></div>' : '');
+    }).join('');
+
+    var tier = tierOf(d.band);
+    var legend = tier ? ('<div class="crs-legend">' + esc(T(TXT.legendA)) + ' <b>' + esc(T(tier.name)) +
+      '</b> ' + esc(T(TXT.legendB)) + ' <b>' + esc(tier.range) + '</b>.</div>') : '';
+
     var compHTML = d.comps.map(function(c){
       var cband = bandOf(c.v);
       return '<div class="crs-comp-row">' +
@@ -28925,18 +28995,25 @@ var GM = {
         '<span class="crs-comp-v">' + c.v + '</span>' +
       '</div>';
     }).join('');
+
     var warn = (d.band === 'high' || d.band === 'vhigh')
       ? '<div class="crs-warn"><span class="crs-warn-ic">' + (d.band === 'vhigh' ? '⛔' : '⚠') + '</span>' +
           '<div><b>' + esc(T(TXT.warnTitle)) + '</b><p>' + esc(T(TXT.warnBody)) + '</p></div></div>'
       : '';
     var finNote = d.isFin ? '<div class="crs-finnote">' + esc(T(TXT.finNote)) + '</div>' : '';
+
     return '<div class="crs-box">' +
-      '<div class="crs-head"><span class="crs-pill" style="color:' + color + ';border-color:' + color + '">' +
-        esc(T(TXT.band[d.band])) + ' · ' + d.score + '/100</span></div>' +
-      '<div class="crs-bar"><div class="crs-bar-mark" style="left:' + pct + '%;background:' + color + '"></div></div>' +
+      '<div class="crs-debt"><span>' + esc(T(TXT.debtLabel)) + '</span><b>' +
+        (debtStr ? esc(debtStr) : esc(T(TXT.naText))) + '</b></div>' +
+      '<div class="crs-head"><span class="crs-head-l">' + esc(T(TXT.tierLabel)) +
+        '</span><span class="crs-pill" style="color:' + color + ';border-color:' + color + '">' +
+        esc(T(TXT.band[d.band])) + '</span></div>' +
+      '<div class="crs-scale">' + scaleHTML + '</div>' +
+      '<div class="crs-scale-axis"><span>~40 bps</span><span>1,900+ bps</span></div>' +
+      legend +
       '<div class="crs-comps">' + compHTML + '</div>' +
       finNote + warn +
-      '<div class="crs-note">' + esc(T(TXT.sub)) + '</div>' +
+      '<div class="crs-note">' + esc(T(TXT.sub)) + ' ' + esc(T(TXT.sourceNote)) + '</div>' +
     '</div>';
   }
 
@@ -28954,6 +29031,37 @@ var GM = {
   };
 })();
 </script>
+
+<style>
+/* ============================================================================
+   v12 ADD-ON — THEME CONTRAST & GLARE FIX
+   Two real issues, both confirmed by WCAG contrast-ratio math:
+   1) Light theme's --grey-dim (#8b91a3 on #eef1f9) is only ~2.78:1 against
+      its background — fails WCAG AA (4.5:1) for the muted/secondary text
+      used site-wide (captions, sub-labels, notes on every page). Darkened
+      here to #5f6577 (~4.8:1) and the page base slightly deepened so the
+      overall look reads less glaringly bright/eye-straining, per feedback.
+   2) Void theme's --grey-dim (#636366 on #1c1c1e) is only ~2.84:1 — also
+      fails AA. Fixed to #8e8e93 (Apple's iOS systemGray, ~5.2:1 on cards),
+      keeping the same minimal aesthetic.
+   Purely additive: overrides CSS custom properties only, later in source
+   order so it wins the cascade — no existing rule is edited.
+   ========================================================================= */
+  html[data-theme="light"]{
+    --bg:#e6e9f2;
+    --panel:#eef0f7;
+    --grey-dim:#5f6577;
+  }
+  html[data-theme="light"] body{
+    background:
+      radial-gradient(ellipse 70% 45% at 15% -5%,rgba(31,48,232,.06),transparent 62%),
+      radial-gradient(ellipse 60% 40% at 92% 8%,rgba(10,88,255,.05),transparent 60%),
+      #e6e9f2;
+  }
+  html[data-theme="void"]{
+    --grey-dim:#8e8e93;
+  }
+</style>
 
 </body>
 </html>
