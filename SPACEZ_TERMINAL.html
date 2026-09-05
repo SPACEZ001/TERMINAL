@@ -7148,6 +7148,22 @@ render: heavy series on Canvas2D/WebGL off the React tree; React only owns chrom
     renderScenario();
   });
 
+  /* lets other modules (Bubble Radar's deep-link button) jump straight to a
+     specific scenario, without duplicating the scenario data or render logic
+     here. "scenarios" is a router-driven section (data-route="scenarios",
+     hidden unless it is the active route) - the same #/ hash navigation the
+     site's own menu links use is what actually makes it visible, a plain
+     scrollIntoView() on a display:none section does nothing. */
+  window.__SPZ_SCENARIOS = {
+    open: function(index){
+      if (typeof index !== 'number' || index < 0 || index >= scenarios.length) index = 0;
+      currentScenario = index;
+      renderScenarioChips();
+      renderScenario();
+      location.hash = '/scenarios';
+    }
+  };
+
 
   /* ============ chain reaction — stacked shocks, animated capital flow ============ */
   const chainNodeY = [14, 94, 174, 254];      // top of each destination box
@@ -27719,11 +27735,16 @@ var GM = {
   #bubble .bb-scalewrap{position:relative;margin:14px 0 4px;}
   #bubble .bb-scalebar{
     position:relative;height:20px;border-radius:10px;overflow:hidden;
+    background:var(--glass);
+    box-shadow:inset 0 0 0 1px var(--border-dim), 0 0 14px rgba(0,0,0,.35);
+  }
+  #bubble .bb-scalebar::before{
+    content:'';position:absolute;inset:0;
     background:linear-gradient(90deg,
       var(--neon-2,var(--neon)) 0%, var(--neon-2,var(--neon)) 32%,
       var(--amber) 37%, var(--amber) 57%,
       var(--red) 62%, var(--red) 100%);
-    box-shadow:inset 0 0 0 1px var(--border-dim), 0 0 14px rgba(0,0,0,.35);
+    opacity:.26;
   }
   #bubble .bb-scaleticks{position:relative;height:14px;margin:2px 0 22px;}
   #bubble .bb-scaleticks span{
@@ -27737,8 +27758,14 @@ var GM = {
   }
   #bubble .bb-scalefill{
     position:absolute;top:0;bottom:0;left:0;width:0%;
-    background:rgba(255,255,255,.22);overflow:hidden;pointer-events:none;
-    transition:width 1.1s cubic-bezier(.2,.8,.2,1);
+    background:linear-gradient(90deg,
+      var(--neon-2,var(--neon)) 0%, var(--neon-2,var(--neon)) 32%,
+      var(--amber) 37%, var(--amber) 57%,
+      var(--red) 62%, var(--red) 100%);
+    background-size:100% 100%;
+    overflow:hidden;pointer-events:none;
+    box-shadow:0 0 10px rgba(255,255,255,.25);
+    transition:width 1.1s cubic-bezier(.2,.8,.2,1), background-size 1.1s cubic-bezier(.2,.8,.2,1);
   }
   #bubble .bb-scalefill::after{
     content:'';position:absolute;top:0;bottom:0;left:-45%;width:45%;
@@ -27789,6 +27816,53 @@ var GM = {
   #bubble .bb-edubox.lose .icon{color:var(--red);}
   #bubble .bb-edubox.hold .icon{color:var(--neon-2,var(--neon));}
   #bubble .bb-edubox.haven .icon{color:var(--amber);}
+
+  #bubble .bb-radar-inv{display:inline-block;margin-left:4px;font-style:normal;color:var(--grey-dim);cursor:help;font-size:11px;}
+  #bubble .bb-radar-inv:hover{color:var(--amber);}
+
+  #bubble .bb-burst{
+    border:1px solid var(--border-dim);border-radius:var(--radius);
+    background:var(--glass);padding:14px 18px;margin:14px 0 18px;
+  }
+  #bubble .bb-burstlist{margin:8px 0 0;padding-left:18px;}
+  #bubble .bb-burstlist li{font-size:12px;color:var(--grey);line-height:1.7;margin-bottom:6px;}
+  #bubble .bb-burstfoot{font-size:11.5px;color:var(--grey-dim);line-height:1.7;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border-dim);font-style:italic;}
+
+  #bubble .bb-fm-examples{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  #bubble .bb-fm-examples .lbl{font-size:11px;color:var(--grey-dim);margin-right:4px;}
+  #bubble .bb-fm-profit{margin-top:12px;padding-top:12px;border-top:1px dashed var(--border-dim);}
+  #bubble .bb-fm-profit p{margin:0 0 10px;font-size:12px;color:var(--grey);line-height:1.7;}
+  #bubble .bb-fm-jumpbtn{
+    font-family:var(--mono);font-size:11px;letter-spacing:.03em;
+    background:transparent;border:1px solid var(--border-dim);border-radius:20px;
+    color:var(--neon-2,var(--neon));padding:6px 14px;cursor:pointer;
+  }
+  #bubble .bb-fm-jumpbtn:hover{border-color:var(--neon-2,var(--neon));}
+
+  #bubble .bb-havenlist{display:flex;flex-direction:column;gap:5px;margin-top:4px;}
+  #bubble .bb-havenrow{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;}
+  #bubble .bb-havenrow .cat{color:var(--grey-dim);}
+  #bubble .bb-havenrow .tks{font-family:var(--mono);color:var(--white);}
+
+  #bubble .bb-arch{margin-top:6px;}
+  #bubble .bb-archgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:640px){ #bubble .bb-archgrid{grid-template-columns:1fr;} }
+  #bubble .bb-archbox{
+    border:1px solid var(--border-dim);border-radius:var(--radius);
+    background:var(--glass);padding:14px 16px;
+  }
+  #bubble .bb-archbox h4{margin:0 0 8px;font-size:13px;}
+
+  #bubble .bb-scenlink{
+    text-align:center;margin-top:26px;padding-top:20px;border-top:1px dashed var(--border-dim);
+  }
+  #bubble .bb-scenlink p{margin:0 0 12px;font-size:12.5px;color:var(--grey);}
+  #bubble .bb-scenbtn{
+    font-family:var(--mono);font-size:12px;letter-spacing:.03em;
+    background:var(--neon-2,var(--neon));color:#000;border:none;border-radius:24px;
+    padding:10px 20px;cursor:pointer;font-weight:700;
+  }
+  #bubble .bb-scenbtn:hover{filter:brightness(1.1);}
 </style>
 <script>
 (function(){
@@ -27822,8 +27896,8 @@ var GM = {
     covFull:{en:'All 5 primary signals available',th:'มีข้อมูลครบทั้ง 5 ตัวชี้วัดหลัก'},
     covPart:{en:'{n} of 5 primary signals available - score is an average of only those',th:'มีข้อมูล {n} จาก 5 ตัวชี้วัดหลัก - คะแนนเฉลี่ยจากเท่าที่มี'},
     radarH:{en:'Shape of the risk',th:'รูปทรงความเสี่ยง'},
-    radarNote:{en:'These numbers are converted risk scores (0-100%), not the raw reading - see the actual figures in the cards below. For market breadth and the yield curve, a higher raw value is safer, so 0% there means that signal is currently in the safe zone, not that data is missing.',
-               th:'ตัวเลขตรงนี้คือ "คะแนนความเสี่ยง" ที่แปลงค่าแล้ว (0-100%) ไม่ใช่ค่าจริงของตัวชี้วัด ดูค่าจริงได้ที่การ์ดด้านล่าง สำหรับความกว้างของตลาดกับเส้นผลตอบแทนพันธบัตร ค่าจริงยิ่งสูงยิ่งปลอดภัย ดังนั้น 0% ตรงนี้แปลว่าสัญญาณนั้นปลอดภัยอยู่ตอนนี้ ไม่ใช่ไม่มีข้อมูล'},
+    radarNote:{en:'These are converted risk scores (0-100%), not the raw readings - see actual figures in the cards below. <b>For market breadth and the yield curve, 0% is the safe reading, not missing data</b> - a higher raw value there is safer, so their spoke can sit at the center of the chart while everything is fine.',
+               th:'ตัวเลขตรงนี้คือ "คะแนนความเสี่ยง" ที่แปลงค่าแล้ว (0-100%) ไม่ใช่ค่าจริงของตัวชี้วัด ดูค่าจริงได้ที่การ์ดด้านล่าง <b>สำหรับความกว้างของตลาดกับเส้นผลตอบแทนพันธบัตร 0% คือค่าที่ปลอดภัย ไม่ใช่ข้อมูลหาย</b> เพราะค่าจริงยิ่งสูงยิ่งปลอดภัย แกนของสองตัวนี้จึงอาจอยู่ตรงกลางกราฟได้ทั้งที่ทุกอย่างปกติดี'},
     riskHistLabel:{en:'Risk score over time (0-100% scale)',th:'คะแนนความเสี่ยงย้อนหลัง (สเกล 0-100%)'},
     primaryH:{en:'The 5 signals behind the score',th:'5 สัญญาณที่ใช้คำนวณคะแนน'},
     primaryP:{en:'Equally weighted, on purpose - a simple average is easier to trust than a black-box formula.',
@@ -27838,11 +27912,11 @@ var GM = {
     eduP:{en:'Three broad groupings finance textbooks commonly describe, with real tickers this site already tracks where they exist. This is a description of how these groups have historically behaved, not a forecast or a recommendation - any of them can still fall, including the “defensive” one.',
           th:'สามกลุ่มกว้างๆ ที่ตำราการเงินมักอธิบายไว้ พร้อมหุ้นจริงที่เว็บนี้ติดตามอยู่ในแต่ละกลุ่ม (เท่าที่มี) นี่คือคำอธิบายพฤติกรรมในอดีตของแต่ละกลุ่ม ไม่ใช่การทำนายหรือคำแนะนำ - หุ้นกลุ่มไหนก็ยังลงได้เสมอ รวมถึงกลุ่ม "ป้องกันความเสี่ยง" ด้วย'},
     defH:{en:'Historically more defensive',th:'กลุ่มที่มักทนทานกว่าในอดีต'},
-    defP:{en:'People keep buying electricity, medicine and toilet paper in a downturn. These sectors have historically fallen less than the broad market during past corrections - though "less" still means they can fall.',
-          th:'คนยังต้องใช้ไฟฟ้า ยา และของใช้จำเป็นแม้เศรษฐกิจแย่ กลุ่มนี้ในอดีตมักลงน้อยกว่าตลาดโดยรวมช่วงตลาดปรับฐาน แต่ "น้อยกว่า" ก็ยังลงได้เหมือนกัน'},
+    defP:{en:'People keep buying electricity, medicine and toilet paper in a downturn. <b>This does not mean these stocks rise when a bubble bursts - it means they have historically fallen less than the broad market during past corrections.</b> "Less" still means down: every group on this page, including this one, can still lose money.',
+          th:'คนยังต้องใช้ไฟฟ้า ยา และของใช้จำเป็นแม้เศรษฐกิจแย่ <b>นี่ไม่ได้แปลว่าหุ้นกลุ่มนี้จะขึ้นตอนฟองสบู่แตก แต่แปลว่าในอดีตมันมักลงน้อยกว่าตลาดโดยรวมช่วงตลาดปรับฐาน</b> "น้อยกว่า" ก็ยังคือลง ทุกกลุ่มในหน้านี้ รวมถึงกลุ่มนี้ด้วย ยังขาดทุนได้เสมอ'},
     cycH:{en:'Historically more sensitive',th:'กลุ่มที่มักอ่อนไหวกว่าในอดีต'},
-    cycP:{en:'High-growth, high-valuation and highly-leveraged names tend to fall furthest when sentiment turns, because their prices depend more on optimism about the future than on today’s cash flow.',
-          th:'หุ้นเติบโตสูง มูลค่าตลาดสูง หรือใช้หนี้เยอะ มักลงแรงที่สุดเมื่อบรรยากาศตลาดเปลี่ยน เพราะราคาขึ้นอยู่กับความหวังในอนาคตมากกว่ากระแสเงินสดวันนี้'},
+    cycP:{en:'High-growth, high-valuation and highly-leveraged names tend to fall furthest when sentiment turns, because their prices depend more on optimism about the future than on today’s cash flow. Some do recover sharply once sentiment returns - but that recovery is never guaranteed, and plenty of names from past bubbles never got back to their old highs.',
+          th:'หุ้นเติบโตสูง มูลค่าตลาดสูง หรือใช้หนี้เยอะ มักลงแรงที่สุดเมื่อบรรยากาศตลาดเปลี่ยน เพราะราคาขึ้นอยู่กับความหวังในอนาคตมากกว่ากระแสเงินสดวันนี้ บางตัวก็ฟื้นตัวแรงเมื่อบรรยากาศกลับมาดี แต่การฟื้นตัวไม่ใช่เรื่องรับประกัน และหุ้นจำนวนไม่น้อยจากฟองสบู่รอบก่อนๆ ก็ไม่เคยกลับไปแตะจุดสูงสุดเดิมได้อีกเลย'},
     stale:{en:'last known value, source unreachable this run',th:'ค่าล่าสุดที่มี ดึงข้อมูลรอบนี้ไม่สำเร็จ'},
     nodata:{en:'No data yet - the daily fetch hasn’t run for this one.',th:'ยังไม่มีข้อมูล รอบดึงข้อมูลประจำวันยังไม่รันสำหรับตัวนี้'},
     asOf:{en:'as of',th:'ข้อมูล ณ'},
@@ -27867,11 +27941,37 @@ var GM = {
 
     flowmapH:{en:'If sentiment turns: where money has tended to go',th:'ถ้าบรรยากาศตลาดเปลี่ยน: เงินมักไหลไปทางไหน'},
     loseIcon:{en:'↓ TYPICALLY SOLD FIRST',th:'↓ มักถูกขายก่อน'},
-    holdIcon:{en:'↑ TYPICALLY HOLDS UP BETTER',th:'↑ มักทนทานกว่า'},
+    holdIcon:{en:'↓ TYPICALLY FALLS LESS (NOT UP)',th:'↓ มักลงน้อยกว่า (ไม่ใช่ขึ้น)'},
     havenIcon:{en:'→ TRADITIONAL REFUGE',th:'→ ที่หลบภัยดั้งเดิม'},
     safeH:{en:'Traditional safe havens',th:'สินทรัพย์ปลอดภัยดั้งเดิม'},
-    safeP:{en:'Cash and short-term T-bills, high-quality government bonds, and gold are historically where money has tended to move to - not just away from stocks - once fear takes over. This site doesn’t track these instruments, so there’s nothing to click through to here, but they’re worth knowing about.',
-           th:'เงินสดและตั๋วเงินคลังระยะสั้น พันธบัตรรัฐบาลคุณภาพสูง และทองคำ ในอดีตมักเป็นที่ที่เงินไหลเข้าไปหา ไม่ใช่แค่ไหลออกจากหุ้นเฉยๆ เมื่อความกลัวเข้าครอบงำตลาด เว็บนี้ยังไม่ได้ติดตามสินทรัพย์กลุ่มนี้ จึงไม่มีปุ่มให้กดดูเพิ่มตรงนี้ แต่ก็ควรรู้ไว้'}
+    safeP:{en:'Cash and short-term T-bills, high-quality government bonds, and gold are historically where money has tended to move to - not just away from stocks - once fear takes over. This site does not track live prices for these, but here are the ticker symbols people commonly reference for each:',
+           th:'เงินสดและตั๋วเงินคลังระยะสั้น พันธบัตรรัฐบาลคุณภาพสูง และทองคำ ในอดีตมักเป็นที่ที่เงินไหลเข้าไปหา ไม่ใช่แค่ไหลออกจากหุ้นเฉยๆ เมื่อความกลัวเข้าครอบงำตลาด เว็บนี้ไม่ได้ติดตามราคาสดของสิ่งเหล่านี้ แต่นี่คือสัญลักษณ์ (ticker) ที่คนทั่วไปมักอ้างอิงถึงในแต่ละกลุ่ม:'},
+    havenCash:{en:'Cash / T-bills',th:'เงินสด/ตั๋วเงินคลัง'},
+    havenBond:{en:'Government / long bonds',th:'พันธบัตรรัฐบาล/ระยะยาว'},
+    havenGold:{en:'Gold',th:'ทองคำ'},
+
+    burstH:{en:'What it typically looks like when a bubble actually deflates',th:'ถ้าฟองสบู่แตกจริงๆ มักจะมีหน้าตาแบบไหน'},
+    burstP:{en:'A rough, plain-language checklist drawn from past cycles - not a formula. None of these mean much alone; it is several of them showing up together that history treats as notable.',
+            th:'เช็คลิสต์แบบภาษาง่ายๆ จากรอบวิกฤตในอดีต ไม่ใช่สูตรคำนวณ แต่ละข้อเดี่ยวๆ ไม่ได้มีความหมายมากนัก แต่ถ้าหลายข้อเกิดพร้อมกัน ในอดีตมักถือว่าน่าจับตาเป็นพิเศษ'},
+    burstFoot:{en:'Rough historical pattern, nothing more: once several of these line up together, past cycles took anywhere from a few months to a couple of years before the actual downturn arrived - and a few times it never came at all. There is no reliable countdown here - treat it as "worth watching more closely", never a timer.',
+               th:'แนวโน้มคร่าวๆ จากอดีตเท่านั้น เมื่อหลายข้อด้านบนเกิดพร้อมกัน ในรอบก่อนๆ กว่าจะเห็นการปรับฐานจริงเคยใช้เวลาตั้งแต่ไม่กี่เดือนไปจนถึงสองสามปี และบางครั้งก็ไม่เกิดขึ้นเลยก็มี ไม่มีตัวนับเวลาที่เชื่อถือได้ตรงนี้ ให้มองเป็นสัญญาณ "ควรจับตาใกล้ขึ้น" ไม่ใช่นาฬิกานับถอยหลัง'},
+
+    radarInvTip:{en:'Higher raw value = safer here, so 0% risk is the good outcome, not missing data.',
+                 th:'ค่าจริงยิ่งสูงยิ่งปลอดภัยสำหรับตัวนี้ คะแนนเสี่ยง 0% จึงคือผลลัพธ์ที่ดี ไม่ใช่ข้อมูลหาย'},
+
+    fmExLbl:{en:'Defensive examples right now:',th:'ตัวอย่างกลุ่มป้องกันความเสี่ยงตอนนี้:'},
+    flowProfitP:{en:'This site does not forecast which group "wins" - nobody can know that in advance, and a confident percentage here would be a guess dressed up as data. What it can show is which sectors have the strongest price momentum right now (not a forecast of what comes next) - see "This month’s sector momentum" further down this page.',
+                 th:'เว็บนี้ไม่ทำนายว่ากลุ่มไหนจะ "ชนะ" เพราะไม่มีใครรู้ล่วงหน้าได้จริงๆ และถ้าใส่เปอร์เซ็นต์แบบมั่นใจตรงนี้ก็จะเป็นแค่การเดาที่แต่งให้ดูเหมือนข้อมูล สิ่งที่โชว์ได้คือกลุ่มไหนมีแรงส่งราคาแรงที่สุดตอนนี้ (ไม่ใช่การทำนายว่าจะเป็นยังไงต่อ) ดูได้ที่หัวข้อ "แรงส่งราคาแต่ละกลุ่มอุตสาหกรรมเดือนนี้" ด้านล่างของหน้านี้'},
+    flowProfitBtn:{en:'Jump to this month’s sector momentum ↓',th:'ไปที่แรงส่งราคาแต่ละกลุ่มเดือนนี้ ↓'},
+
+    archH:{en:'What tends to get bought instead',th:'สิ่งที่มักถูกซื้อแทน'},
+    archP:{en:'In this site’s own Stock Archetypes framework, "value" and "dividend" names are the ones that have historically attracted renewed interest once expensive growth stories fall out of favor - not a guarantee, just where that rotation has tended to land.',
+           th:'ในกรอบ "หมวดหุ้น" ของเว็บนี้เอง หุ้นกลุ่ม value (คุณค่า) และ dividend (ปันผล) เป็นกลุ่มที่ในอดีตมักได้รับความสนใจกลับมา เมื่อหุ้นเติบโตราคาแพงเริ่มหมดความนิยม ไม่ใช่การรับประกัน แค่เป็นจุดที่การหมุนเงินแบบนี้เคยไปลงเอย'},
+    valueLbl:{en:'Value stock examples',th:'ตัวอย่างหุ้นกลุ่ม Value'},
+    divLbl:{en:'Dividend stock examples',th:'ตัวอย่างหุ้นกลุ่ม Dividend'},
+
+    scenLead:{en:'Want to see one such unwind play out step by step?',th:'อยากเห็นสถานการณ์แบบนี้คลี่คลายไปทีละขั้นไหม'},
+    scenLinkLabel:{en:'Open "Tech Bubble Bursts" in the Market Shock Simulator →',th:'เปิดสถานการณ์ "ฟองสบู่หุ้นเทคแตก" ในตัวจำลองแรงกระแทกตลาด →'}
   };
 
   var RISK_LABEL = [
@@ -28037,6 +28137,25 @@ var GM = {
   var CYCLICAL_SECTORS = {'Technology':1,'Communication Services':1,'Consumer Cyclical':1,
                            'Financial Services':1,'Industrials':1,'Basic Materials':1,
                            'Energy':1,'Real Estate':1};
+
+  var BURST_SIGNS = [
+    {en:'Stock prices look expensive by historical yardsticks (CAPE, P/E, Buffett Indicator near record highs) - see the 5 signals above.',
+     th:'ราคาหุ้นแพงเมื่อเทียบกับมาตรฐานในอดีต (CAPE, P/E, Buffett Indicator ขึ้นไปใกล้จุดสูงสุดในประวัติศาสตร์) - ดู 5 สัญญาณด้านบน'},
+    {en:'Inflation runs hot enough that central banks are actively raising interest rates to cool it down.',
+     th:'เงินเฟ้อสูงจนธนาคารกลางต้องขึ้นดอกเบี้ยเพื่อสกัดมันอย่างจริงจัง'},
+    {en:'A handful of giant "story" stocks carry the whole index while most other stocks quietly lag behind (narrow breadth).',
+     th:'หุ้นเรื่องเล่าตัวใหญ่ไม่กี่ตัวแบกดัชนีทั้งตลาดไว้ ขณะที่หุ้นส่วนใหญ่แอบตามหลังเงียบๆ (ความกว้างของตลาดแคบ)'},
+    {en:'Borrowing to buy stocks (margin debt) is growing much faster than the market itself.',
+     th:'หนี้ที่กู้มาเล่นหุ้น (มาร์จิ้น) โตเร็วกว่าตัวตลาดเองอย่างเห็นได้ชัด'},
+    {en:'Volatility looks unusually calm and "this time is different" talk is everywhere - a sign of complacency, not of safety.',
+     th:'ความผันผวนดูสงบผิดปกติ และคำพูดแบบ "รอบนี้ไม่เหมือนเดิม" ได้ยินอยู่ทั่วไป - เป็นสัญญาณของความประมาท ไม่ใช่ความปลอดภัย'},
+    {en:'Speculative corners of the market heat up fast - meme-stock rallies, crowded IPOs, "everyone I know is trading" chatter.',
+     th:'มุมเก็งกำไรของตลาดร้อนแรงขึ้นเร็ว หุ้นกระแส/มีมหุ้นพุ่งแรง IPO คึกคักผิดปกติ กระแส "ใครๆ ก็เทรดกันหมด"'},
+    {en:'Riskier borrowers (junk-bond issuers) can suddenly borrow almost as cheaply as safe ones - credit standards have gone loose.',
+     th:'ผู้กู้ความเสี่ยงสูง (ผู้ออกหุ้นกู้ junk) กู้เงินได้ถูกเกือบเท่าผู้กู้ปลอดภัย - มาตรฐานการปล่อยสินเชื่อหย่อนลง'},
+    {en:'Short-term bonds paid more than long-term ones (an inverted yield curve) at some point earlier in the cycle.',
+     th:'พันธบัตรระยะสั้นเคยให้ผลตอบแทนสูงกว่าระยะยาว (เส้นผลตอบแทนกลับด้าน) ในบางช่วงก่อนหน้านี้ของวัฏจักร'}
+  ];
 
   function sparkline(hist, w, h){
     if (!hist || hist.length < 2) return '';
@@ -28322,11 +28441,13 @@ var GM = {
       '<div class="bb-radarbox">' + radarSVG(primary.map(function(d){return d.risk;})) +
         '<div class="bb-radarlegend">' +
           primary.map(function(d){
-            return '<div class="row"><span>' + esc(tx(d.nm)) + '</span>' +
+            var inv = (d.key === 'breadth' || d.key === 'curve');
+            return '<div class="row"><span>' + esc(tx(d.nm)) +
+              (inv ? '<i class="bb-radar-inv" title="' + esc(tx(C.radarInvTip)) + '">ⓘ</i>' : '') + '</span>' +
               '<span style="color:' + (d.risk==null?'var(--grey)':riskColorVar(d.risk)) + '">' +
               (d.risk==null ? '—' : Math.round(d.risk) + '%') + '</span></div>';
           }).join('') +
-          '<div class="bb-radarnote">' + esc(tx(C.radarNote)) + '</div>' +
+          '<div class="bb-radarnote">' + tx(C.radarNote) + '</div>' +
         '</div>' +
       '</div>';
 
@@ -28351,26 +28472,62 @@ var GM = {
 
     var defList = eduBucket(stocks, DEFENSIVE_SECTORS);
     var cycList = eduBucket(stocks, CYCLICAL_SECTORS);
+    var dir = window.__SPZ_DIR || {};
+    var valueEx = (dir.value || []).slice(0, 6);
+    var divEx = (dir.dividend || []).slice(0, 6);
+
+    var burstBlock =
+      '<div class="bb-burst"><div class="bb-sec-h" style="margin-top:18px;font-size:12.5px;">' + esc(tx(C.burstH)) + '</div>' +
+      '<div class="bb-sec-p">' + esc(tx(C.burstP)) + '</div>' +
+      '<ul class="bb-burstlist">' + BURST_SIGNS.map(function(x){ return '<li>' + esc(tx(x)) + '</li>'; }).join('') + '</ul>' +
+      '<div class="bb-burstfoot">' + esc(tx(C.burstFoot)) + '</div></div>';
+
+    var archBlock = (valueEx.length || divEx.length) ?
+      '<div class="bb-arch"><div class="bb-sec-h" style="margin-top:22px;font-size:12.5px;">' + esc(tx(C.archH)) + '</div>' +
+      '<div class="bb-sec-p">' + esc(tx(C.archP)) + '</div>' +
+      '<div class="bb-archgrid">' +
+        '<div class="bb-archbox"><h4>' + esc(tx(C.valueLbl)) + '</h4><div class="bb-tickers">' +
+          valueEx.map(function(s){ return '<button type="button" class="bb-tk" data-bb-open="' + esc(s.ticker) + '">' + esc(s.ticker) + '</button>'; }).join('') +
+        '</div></div>' +
+        '<div class="bb-archbox"><h4>' + esc(tx(C.divLbl)) + '</h4><div class="bb-tickers">' +
+          divEx.map(function(s){ return '<button type="button" class="bb-tk" data-bb-open="' + esc(s.ticker) + '">' + esc(s.ticker) + '</button>'; }).join('') +
+        '</div></div>' +
+      '</div></div>' : '';
+
     var eduBlock =
       '<div class="bb-sec-h">' + esc(tx(C.eduH)) + '</div>' +
       '<div class="bb-sec-p">' + esc(tx(C.eduP)) + '</div>' +
+      burstBlock +
       '<div class="bb-flowmap"><div class="bb-sec-h" style="margin-top:0;font-size:12.5px;">' + esc(tx(C.flowmapH)) + '</div>' +
-        flowMapSVG() + '</div>' +
+        flowMapSVG() +
+        (defList.length ? '<div class="bb-fm-examples"><span class="lbl">' + esc(tx(C.fmExLbl)) + '</span>' +
+          defList.slice(0,6).map(function(x){ return tickerChip(x[0], x[1]); }).join('') + '</div>' : '') +
+        '<div class="bb-fm-profit"><p>' + esc(tx(C.flowProfitP)) + '</p>' +
+          '<button type="button" id="bbJumpMomentum" class="bb-fm-jumpbtn">' + esc(tx(C.flowProfitBtn)) + '</button></div>' +
+      '</div>' +
       '<div class="bb-edu">' +
         '<div class="bb-edubox lose"><span class="icon">' + esc(tx(C.loseIcon)) + '</span>' +
-          '<h4>' + esc(tx(C.cycH)) + '</h4><p>' + esc(tx(C.cycP)) + '</p>' +
+          '<h4>' + esc(tx(C.cycH)) + '</h4><p>' + tx(C.cycP) + '</p>' +
           '<div class="bb-tickers">' + (cycList.length ? cycList.map(function(x){ return tickerChip(x[0], x[1]); }).join('')
             : '<span class="bb-nodata">' + esc(tx(C.nodata)) + '</span>') + '</div></div>' +
         '<div class="bb-edubox hold"><span class="icon">' + esc(tx(C.holdIcon)) + '</span>' +
-          '<h4>' + esc(tx(C.defH)) + '</h4><p>' + esc(tx(C.defP)) + '</p>' +
+          '<h4>' + esc(tx(C.defH)) + '</h4><p>' + tx(C.defP) + '</p>' +
           '<div class="bb-tickers">' + (defList.length ? defList.map(function(x){ return tickerChip(x[0], x[1]); }).join('')
             : '<span class="bb-nodata">' + esc(tx(C.nodata)) + '</span>') + '</div></div>' +
         '<div class="bb-edubox haven"><span class="icon">' + esc(tx(C.havenIcon)) + '</span>' +
-          '<h4>' + esc(tx(C.safeH)) + '</h4><p>' + esc(tx(C.safeP)) + '</p></div>' +
-      '</div>';
+          '<h4>' + esc(tx(C.safeH)) + '</h4><p>' + esc(tx(C.safeP)) + '</p>' +
+          '<div class="bb-havenlist">' +
+            '<div class="bb-havenrow"><span class="cat">' + esc(tx(C.havenCash)) + '</span><span class="tks">BIL · SHV</span></div>' +
+            '<div class="bb-havenrow"><span class="cat">' + esc(tx(C.havenBond)) + '</span><span class="tks">TLT · IEF</span></div>' +
+            '<div class="bb-havenrow"><span class="cat">' + esc(tx(C.havenGold)) + '</span><span class="tks">GLD · IAU</span></div>' +
+          '</div></div>' +
+      '</div>' +
+      archBlock +
+      '<div class="bb-scenlink"><p>' + esc(tx(C.scenLead)) + '</p>' +
+        '<button type="button" id="bbToScenario" class="bb-scenbtn">' + esc(tx(C.scenLinkLabel)) + '</button></div>';
 
     body.innerHTML = top + pendingBanner + scaleBlock + '<div class="bb-sec-h">' + esc(tx(C.radarH)) + '</div>' + radarBox +
-      primaryBlock + supportBlock + flowBlock + eduBlock;
+      primaryBlock + supportBlock + '<div id="bbFlowBlock">' + flowBlock + '</div>' + eduBlock;
 
     // animate the gauge arc and radar shape in on next frame
     requestAnimationFrame(function(){
@@ -28398,7 +28555,11 @@ var GM = {
         var sfill = body.querySelector('.bb-scalefill');
         if (sfill) {
           var sfin = sfill.getAttribute('data-final-width');
-          if (sfin) sfill.style.width = sfin;
+          if (sfin) {
+            var sfPos = parseFloat(sfin);
+            sfill.style.width = sfin;
+            sfill.style.backgroundSize = (sfPos > 0 ? (10000 / sfPos).toFixed(1) : 100) + '% 100%';
+          }
         }
         var fills = body.querySelectorAll('.bb-flowfill');
         for (var i=0;i<fills.length;i++){
@@ -28416,6 +28577,17 @@ var GM = {
         if (window.__SPZ_STOCK && window.__SPZ_STOCK.open) window.__SPZ_STOCK.open(t);
       });
     }
+
+    var jumpBtn = body.querySelector('#bbJumpMomentum');
+    if (jumpBtn) jumpBtn.addEventListener('click', function(){
+      var target = document.getElementById('bbFlowBlock');
+      if (target) target.scrollIntoView({ behavior:'smooth', block:'start' });
+    });
+    var scenBtn = body.querySelector('#bbToScenario');
+    if (scenBtn) scenBtn.addEventListener('click', function(){
+      if (window.__SPZ_SCENARIOS && window.__SPZ_SCENARIOS.open) window.__SPZ_SCENARIOS.open(15);
+      else location.hash = '/scenarios';
+    });
   }
 
   function build(){
