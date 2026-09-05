@@ -1229,7 +1229,7 @@
 
   /* ---------- back to top ---------- */
   .to-top{
-    position:fixed;right:18px;bottom:18px;z-index:60;
+    position:fixed;right:118px;bottom:18px;z-index:60;
     width:42px;height:42px;border-radius:50%;cursor:pointer;
     background:rgba(8,8,8,.86);border:1px solid var(--border);
     color:var(--neon);font-family:var(--mono);font-size:15px;
@@ -26525,7 +26525,7 @@ var GM = {
      ========================================================= -->
 <style>
   .sysx-trig{
-    position:fixed;right:68px;bottom:18px;z-index:60;
+    position:fixed;right:18px;bottom:18px;z-index:60;
     width:42px;height:42px;border-radius:50%;cursor:pointer;padding:0;
     background:rgba(8,8,8,.86);border:1px solid var(--border);
     color:var(--neon);display:flex;align-items:center;justify-content:center;
@@ -29207,9 +29207,10 @@ var GM = {
     border:none;color:#7a7d72;font-size:.95rem;cursor:pointer;border-radius:8px;line-height:1;}
   .cag-close:hover{color:#ff3b4e;background:rgba(255,59,78,.08);}
   /* matches .to-top / .sysx-trig exactly (same 42px circle, same row) so it
-     sits beside them instead of stacking on top — right:18px is to-top,
-     right:68px is the sysx status trigger, this is the next slot over */
-  #spzAdminTrigger{position:fixed;right:118px;bottom:18px;z-index:60;
+     sits beside them instead of stacking on top — right:18px is the sysx
+     status trigger (outermost), this sits right next to it, right:118px
+     is the back-to-top button (innermost, only shown once scrolled) */
+  #spzAdminTrigger{position:fixed;right:68px;bottom:18px;z-index:60;
     width:42px;height:42px;border-radius:50%;padding:0;cursor:pointer;
     background:rgba(8,8,8,.86);border:1px solid var(--border);
     color:var(--neon);font-size:16px;display:flex;align-items:center;justify-content:center;
@@ -29221,11 +29222,15 @@ var GM = {
   html[data-theme="light"] #spzAdminTrigger{background:var(--panel);}
 
   /* ---- visible label on a locked item, not just a desaturated look ---- */
-  .spz-lock-badge{display:inline-block;filter:none !important;
+  .spz-lock-badge{display:inline-flex;align-items:center;gap:4px;filter:none !important;
     background:rgba(255,176,32,.14);border:1px solid rgba(255,176,32,.4);
     color:#ffb020;font-family:'IBM Plex Mono',ui-monospace,monospace;
     font-size:.58rem;letter-spacing:.03em;padding:2px 7px;border-radius:20px;
     white-space:nowrap;margin:0 0 4px;}
+  .spz-lock-ico{display:inline-block;font-style:normal;line-height:1;
+    animation:spzLockIcoSpin 2.6s linear infinite;}
+  .spz-lock-ico::before{content:'⚙';}
+  @keyframes spzLockIcoSpin{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
 </style>
 
 <script>
@@ -29356,14 +29361,11 @@ var GM = {
   var TXT = {
     brand:'ACCESS GATE',
     enter:{en:'Enter',th:'เข้าสู่ระบบ'},
-    adminTrigger:'🔒',
     adminTriggerTitle:{en:'Admin login',th:'ระบบล็อกอินสำหรับแอดมิน'},
-    lockBadge:{en:'🔒 Under maintenance',th:'🔒 อยู่ระหว่างการปรับปรุง'},
+    lockBadge:{en:'Under maintenance',th:'อยู่ระหว่างการปรับปรุง'},
     errBad:{en:'Incorrect password',th:'รหัสผ่านไม่ถูกต้อง'},
     errEmpty:{en:'Enter a password first',th:'กรุณากรอกรหัสผ่าน'},
     errLock:{en:'Too many attempts — try again in ',th:'พยายามผิดหลายครั้งเกินไป ลองใหม่ในอีก '},
-    fine:{en:'The site itself is open to everyone — no password needed. This only unlocks Workbench, and it hides menus, not code: a correct password still runs code that already ships in this file. Encryption here proves tampering, it does not prove secrecy.',
-          th:'ตัวเว็บเปิดให้อ่านได้ฟรีอยู่แล้ว ไม่ต้องใส่รหัส ส่วนนี้ใช้ปลดล็อกเฉพาะ Workbench เท่านั้น และมันซ่อนแค่เมนู ไม่ใช่ซ่อนโค้ด — รหัสถูกก็แค่รันโค้ดที่อยู่ในไฟล์นี้อยู่แล้ว การเข้ารหัสตรงนี้ยืนยันว่าไม่ถูกแก้ไข ไม่ได้ยืนยันว่าเป็นความลับ'},
     fullT:{en:'ADMIN LOGIN',th:'ADMIN LOGIN'},
     fullS:{en:'50-FIELD MASTER KEY',th:'รหัสผ่าน 50 ช่อง'},
     bulk:{en:'📋 Paste all 50 at once',th:'📋 วางทีเดียว 50 ชุด'},
@@ -29493,7 +29495,6 @@ var GM = {
             '</div>' +
             '<div class="cag-err hidden" id="cagErrAdv"></div>' +
             '<button class="cag-btn" type="button" id="cagBtnAdv"><span data-x="enterAdv"></span></button>' +
-            '<div class="cag-fine" data-x="fine"></div>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -29587,14 +29588,12 @@ var GM = {
   }
 
   function paint(){
-    if(adminTrigger) adminTrigger.textContent = Tt(TXT.adminTrigger);
     if(!gate) return;
     gate.querySelectorAll('[data-x]').forEach(function(el){
       var k = el.getAttribute('data-x');
       var map = {
         brand: TXT.brand,
         status: (Lg() === 'th' ? 'ตรวจสอบสิทธิ์ผู้ดูแลระบบ' : 'Verifying admin credentials'),
-        fine: TXT.fine,
         fullT: TXT.fullT, fullS: TXT.fullS,
         bulk: TXT.bulk, mask: TXT.mask, clear: TXT.clear, spread: TXT.spread, bulkHint: TXT.bulkHint,
         enterAdv: TXT.enter
@@ -29663,12 +29662,15 @@ var GM = {
       if(locked && !badge){
         badge = document.createElement('span');
         badge.className = 'spz-lock-badge';
-        badge.textContent = label;
+        badge.innerHTML = '<i class="spz-lock-ico" aria-hidden="true"></i><span class="spz-lock-txt"></span>';
+        badge.querySelector('.spz-lock-txt').textContent = label;
+        badge.dataset.label = label;
         elm.insertBefore(badge, elm.firstChild);
       } else if(!locked && badge){
         badge.remove();
-      } else if(locked && badge && badge.textContent !== label){
-        badge.textContent = label;
+      } else if(locked && badge && badge.dataset.label !== label){
+        badge.querySelector('.spz-lock-txt').textContent = label;
+        badge.dataset.label = label;
       }
     });
   }
@@ -29746,7 +29748,9 @@ var GM = {
     adminTrigger = document.createElement('button');
     adminTrigger.id = 'spzAdminTrigger';
     adminTrigger.type = 'button';
-    adminTrigger.textContent = TXT.adminTrigger;
+    /* a small trend-chart glyph instead of a padlock — reads as just another
+       market/info icon, not as "this is a login button" */
+    adminTrigger.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 5"></polyline><polyline points="15 5 21 5 21 11"></polyline></svg>';
     adminTrigger.title = Tt(TXT.adminTriggerTitle);
     adminTrigger.setAttribute('aria-label', Tt(TXT.adminTriggerTitle));
     adminTrigger.addEventListener('click', openGate);
