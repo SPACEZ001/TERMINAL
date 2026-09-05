@@ -29367,7 +29367,10 @@ var GM = {
     errEmpty:{en:'Enter a password first',th:'กรุณากรอกรหัสผ่าน'},
     errLock:{en:'Too many attempts — try again in ',th:'พยายามผิดหลายครั้งเกินไป ลองใหม่ในอีก '},
     fullT:{en:'ADMIN LOGIN',th:'ADMIN LOGIN'},
-    fullS:{en:'50-FIELD MASTER KEY',th:'รหัสผ่าน 50 ช่อง'},
+    fullS:{en:'50 fields · 800 characters',th:'รหัสผ่าน 50 ช่อง · 800 ตัวอักษร'},
+    loggedT:{en:'ADMIN',th:'ADMIN'},
+    loggedS:{en:'You are signed in.',th:'คุณเข้าสู่ระบบแล้ว'},
+    logoutBtn:{en:'Log out',th:'ออกจากระบบ'},
     bulk:{en:'📋 Paste all 50 at once',th:'📋 วางทีเดียว 50 ชุด'},
     mask:{en:'👁 Show / hide',th:'👁 แสดง/ซ่อน'},
     clear:{en:'🗑 Clear all',th:'🗑 ล้างทั้งหมด'},
@@ -29478,6 +29481,11 @@ var GM = {
           '<div class="cag-div"></div>' +
           '<div class="cag-status"><i></i><span data-x="status"></span></div>' +
 
+          '<div class="cag-pane" id="cagPaneOut">' +
+            '<div class="cag-head"><div><b data-x="loggedT"></b><span data-x="loggedS"></span></div></div>' +
+            '<button class="cag-btn" type="button" id="cagBtnLogout" data-x="logoutBtn"></button>' +
+          '</div>' +
+
           '<div class="cag-pane active" id="cagPaneAdv">' +
             '<div class="cag-head"><div><b data-x="fullT"></b><span data-x="fullS"></span></div>' +
               '<div class="cag-count"><b id="cagAdvFilled">0</b> / 50</div></div>' +
@@ -29542,6 +29550,7 @@ var GM = {
     }
 
     gate.querySelector('#cagClose').addEventListener('click', function(){ gate.hidden = true; });
+    gate.querySelector('#cagBtnLogout').addEventListener('click', logout);
 
     gate.querySelector('#cagMaskBtn').addEventListener('click', function(){
       var show = advInputs[0] && advInputs[0].type === 'password';
@@ -29589,11 +29598,18 @@ var GM = {
 
   function paint(){
     if(!gate) return;
+    var loggedIn = currentTier === 'full';
+    var paneOut = gate.querySelector('#cagPaneOut');
+    if(paneOut) paneOut.classList.toggle('active', loggedIn);
+    if(paneAdv) paneAdv.classList.toggle('active', !loggedIn);
     gate.querySelectorAll('[data-x]').forEach(function(el){
       var k = el.getAttribute('data-x');
       var map = {
         brand: TXT.brand,
-        status: (Lg() === 'th' ? 'ตรวจสอบสิทธิ์ผู้ดูแลระบบ' : 'Verifying admin credentials'),
+        status: loggedIn
+          ? (Lg() === 'th' ? 'เข้าสู่ระบบแล้ว' : 'Signed in')
+          : (Lg() === 'th' ? 'ตรวจสอบสิทธิ์ผู้ดูแลระบบ' : 'Verifying admin credentials'),
+        loggedT: TXT.loggedT, loggedS: TXT.loggedS, logoutBtn: TXT.logoutBtn,
         fullT: TXT.fullT, fullS: TXT.fullS,
         bulk: TXT.bulk, mask: TXT.mask, clear: TXT.clear, spread: TXT.spread, bulkHint: TXT.bulkHint,
         enterAdv: TXT.enter
@@ -29617,6 +29633,11 @@ var GM = {
     advInputs.forEach(function(inp){ inp.value = ''; inp.classList.remove('filled'); });
     gate.hidden = true;
     applyTier(tier);
+  }
+
+  function logout(){
+    try { sessionStorage.removeItem('spacez.auth'); } catch(e){}
+    applyTier('basic');
   }
 
   function tryFull(){
@@ -29703,6 +29724,7 @@ var GM = {
   function applyTier(tier){
     currentTier = tier;
     paintLockVeils();
+    paint();
   }
 
   document.addEventListener('click', function(ev){
