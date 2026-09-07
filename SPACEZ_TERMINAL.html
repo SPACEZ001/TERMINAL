@@ -1871,6 +1871,32 @@
   .nav-pop::before{
     content:'';position:absolute;top:-12px;left:0;right:0;height:12px;
   }
+  /* star-dot texture across the whole opened menu panel — the same small
+     drifting tile trick as the dev-card, sparser since the panel is much
+     bigger. White dots read fine on the dark lime/void background; the
+     light theme override below swaps them for dark dots on its white
+     panel so they stay visible in all three site themes. */
+  .nav-pop::after{
+    content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+    border-radius:inherit;
+    background-image:
+      radial-gradient(1.2px 1.2px at 8% 18%,rgba(255,255,255,.9),transparent 60%),
+      radial-gradient(1.0px 1.0px at 46% 55%,rgba(255,255,255,.9),transparent 60%),
+      radial-gradient(1.4px 1.4px at 78% 12%,rgba(255,255,255,.9),transparent 60%);
+    background-size:110px 80px;
+    opacity:.5;
+    animation:navStarsDrift 55s linear infinite, spzStarTwinkle 2.8s ease-in-out infinite;
+  }
+  @keyframes navStarsDrift{0%{background-position:0 0;}100%{background-position:-110px -80px;}}
+  html[data-theme="light"] .nav-pop::after{
+    background-image:
+      radial-gradient(1.2px 1.2px at 8% 18%,rgba(20,24,40,.55),transparent 60%),
+      radial-gradient(1.0px 1.0px at 46% 55%,rgba(20,24,40,.55),transparent 60%),
+      radial-gradient(1.4px 1.4px at 78% 12%,rgba(20,24,40,.55),transparent 60%);
+    opacity:.4;
+  }
+  @media (prefers-reduced-motion: reduce){.nav-pop::after{animation:none;}}
+  .np-item,.np-sep{position:relative;z-index:1;}
   .np-item{
     display:flex;flex-direction:column;gap:3px;text-decoration:none;
     border:1px solid transparent;border-radius:10px;padding:11px 12px;
@@ -2476,10 +2502,36 @@
       radial-gradient(1.6px 1.6px at 55% 90%,#fff,transparent 60%),
       radial-gradient(1.3px 1.3px at 68% 48%,#fff,transparent 60%),
       radial-gradient(1.8px 1.8px at 83% 10%,#fff,transparent 60%),
-      radial-gradient(1.2px 1.2px at 96% 52%,#fff,transparent 60%);
+      radial-gradient(1.2px 1.2px at 96% 52%,#fff,transparent 60%),
+      radial-gradient(1.4px 1.4px at 15% 50%,#fff,transparent 60%),
+      radial-gradient(1.1px 1.1px at 45% 15%,#fff,transparent 60%),
+      radial-gradient(1.6px 1.6px at 63% 85%,#fff,transparent 60%),
+      radial-gradient(1.2px 1.2px at 76% 55%,#fff,transparent 60%),
+      radial-gradient(1.3px 1.3px at 3% 38%,#fff,transparent 60%),
+      radial-gradient(1.5px 1.5px at 92% 78%,#fff,transparent 60%);
     animation:spzStarTwinkle 2.3s ease-in-out infinite;
   }
   @keyframes spzStarTwinkle{0%,100%{filter:brightness(.65);}50%{filter:brightness(1.35);}}
+  /* a second, sparser layer of stars that actually drifts — a small tile
+     of dots repeated across the card, animated by background-position so
+     it slides slowly and wraps seamlessly: a star drifting off one edge
+     is simultaneously a star drifting in from the opposite edge, giving
+     the "some drift off, new ones take their place" look without needing
+     real per-star physics. Its twinkle runs out of phase with the layer
+     above so the two never pulse in sync. */
+  .dev-stars::before{
+    content:'';position:absolute;inset:0;
+    background-image:
+      radial-gradient(1.3px 1.3px at 12% 24%,#fff,transparent 60%),
+      radial-gradient(1.1px 1.1px at 55% 62%,#fff,transparent 60%),
+      radial-gradient(1.5px 1.5px at 82% 18%,#fff,transparent 60%),
+      radial-gradient(1.0px 1.0px at 32% 86%,#fff,transparent 60%);
+    background-size:130px 90px;
+    opacity:.8;
+    animation:devStarsDrift 46s linear infinite, spzStarTwinkle2 3.1s ease-in-out infinite;
+  }
+  @keyframes devStarsDrift{0%{background-position:0 0;}100%{background-position:-130px -90px;}}
+  @keyframes spzStarTwinkle2{0%,100%{filter:brightness(1.4);}50%{filter:brightness(.6);}}
   /* a small, still, photographic black hole: ::before draws the thin
      edge-on accretion-disk band, ::after draws the dark disc + bright rim
      + faint lensing rings on top of it, so the band vanishes behind the
@@ -2513,8 +2565,15 @@
      boot logo uses — a moving dashed outline, not a static image */
   .dev-wm{position:absolute;right:-12px;bottom:-18px;width:112px;height:auto;
     opacity:.13;color:var(--dc-accent);pointer-events:none;z-index:0;
-    animation:devWmDrift 9s ease-in-out infinite;}
-  @keyframes devWmDrift{0%,100%{transform:translate(0,0) rotate(0deg)}50%{transform:translate(-6px,-9px) rotate(3deg)}}
+    animation:devWmDrift 11s ease-in-out infinite;}
+  /* small, slow orbital drift — no rotation of the mark itself, just a
+     gentle loop through four points and back */
+  @keyframes devWmDrift{
+    0%,100%{transform:translate(0,0);}
+    25%{transform:translate(-6px,-4px);}
+    50%{transform:translate(-9px,3px);}
+    75%{transform:translate(-3px,6px);}
+  }
   .dev-wm .lg-p{stroke-dasharray:9 6;animation:devWmLine 3.2s linear infinite;}
   @keyframes devWmLine{to{stroke-dashoffset:-60px}}
 
@@ -2554,7 +2613,7 @@
   .dev-btn.bio:hover{background:rgba(77,216,255,.12);box-shadow:0 8px 20px rgba(77,216,255,.22);}
 
   @media (prefers-reduced-motion: reduce){
-    .dev-ring,.dev-live,.dev-wm,.dev-wm .lg-p,.dev-stars,.dev-hole::after{animation:none;}
+    .dev-ring,.dev-live,.dev-wm,.dev-wm .lg-p,.dev-stars,.dev-stars::before,.dev-hole::after{animation:none;}
   }
   @media(max-width:640px){
     .dev-card{padding:15px 14px 14px;}
