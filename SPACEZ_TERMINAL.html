@@ -2404,73 +2404,117 @@
   .theme-dot[data-theme="light"]{background:#fff;color:#1f30e8;border-color:rgba(18,20,28,.3);}
 
   /* ============================================================================
-     DEVELOPER CARD — executive graphite-and-gold plaque. Corner brackets +
-     a hairline gold border replace the old lime panel; the sweep that
-     crosses it now phases lime -> gold -> lime (filter:hue-rotate synced to
-     the same left-position keyframes) instead of a single flat colour.
+     DEVELOPER CARD — a physical "membership card" that cycles through five
+     tiers every ~6s each (silver -> gold -> red -> black+starfield ->
+     rainbow holo -> loop, 30s total), the way a loyalty-card ladder does.
+     One registered, inherited custom property per shared tone drives the
+     whole card at once (border, glow, corner brackets, ring, label,
+     watermark, grid) so everything stays in lockstep without a dozen
+     separate keyframe rules. The old single-colour sweeping scan line is
+     gone; the black tier gets its own starfield overlay and the rainbow
+     tier its own holographic shimmer overlay, each faded in only for its
+     own slice of the cycle. The card stays this same dark "executive" look
+     regardless of the site's light/dark/void theme — a membership card
+     doesn't recolour itself to match the wallet it's in.
      ========================================================================= */
+  @property --dc-accent{syntax:'<color>';inherits:true;initial-value:#ffd873;}
+  @property --dc-glow{syntax:'<color>';inherits:true;initial-value:rgba(255,199,92,.42);}
+  @property --dc-wash{syntax:'<color>';inherits:true;initial-value:rgba(255,199,92,.09);}
   .dev-card{
     position:relative;overflow:hidden;border-radius:16px;padding:18px 18px 16px;
+    --dc-accent:#ffd873;--dc-glow:rgba(255,199,92,.42);--dc-wash:rgba(255,199,92,.09);
     background:
-      radial-gradient(125% 85% at 12% 0%, rgba(255,199,92,.10), transparent 62%),
+      radial-gradient(125% 85% at 12% 0%, var(--dc-wash), transparent 62%),
       linear-gradient(180deg,#17181a,#0a0a0b);
-    border:1px solid rgba(255,199,92,.30);
-    box-shadow:inset 0 1px 0 rgba(255,199,92,.10), 0 12px 34px rgba(0,0,0,.45);
-    animation:devFramePulse 4s ease-in-out infinite;
+    border:1px solid color-mix(in srgb, var(--dc-accent) 42%, transparent);
+    box-shadow:inset 0 1px 0 var(--dc-wash), 0 12px 34px rgba(0,0,0,.45), 0 0 24px var(--dc-glow);
+    animation:devThemeCycle 30s linear infinite;
   }
   .dev-card.in-menu{grid-column:1/-1;margin-bottom:4px;}
   .dev-card.in-hub{min-height:172px;display:flex;flex-direction:column;justify-content:center;}
-  @keyframes devFramePulse{
-    0%,100%{box-shadow:inset 0 1px 0 rgba(255,199,92,.10), 0 12px 34px rgba(0,0,0,.45), 0 0 0 rgba(255,199,92,0);}
-    50%{box-shadow:inset 0 1px 0 rgba(255,199,92,.17), 0 12px 34px rgba(0,0,0,.45), 0 0 22px rgba(255,199,92,.16);}
+  /* five tiers, ~6s each (20% of the 30s loop): silver, gold, red,
+     black+stars, rainbow holo — then back to silver */
+  @keyframes devThemeCycle{
+    0%,15%{--dc-accent:#d7dee4;--dc-glow:rgba(215,222,228,.4);--dc-wash:rgba(215,222,228,.08);}
+    20%,35%{--dc-accent:#ffd873;--dc-glow:rgba(255,199,92,.42);--dc-wash:rgba(255,199,92,.09);}
+    40%,55%{--dc-accent:#ff5f6d;--dc-glow:rgba(255,95,109,.4);--dc-wash:rgba(255,95,109,.08);}
+    60%,75%{--dc-accent:#f4f6f1;--dc-glow:rgba(180,190,255,.38);--dc-wash:rgba(120,140,255,.05);}
+    80%,95%{--dc-accent:#c86bff;--dc-glow:rgba(200,107,255,.42);--dc-wash:rgba(200,107,255,.08);}
+    100%{--dc-accent:#d7dee4;--dc-glow:rgba(215,222,228,.4);--dc-wash:rgba(215,222,228,.08);}
   }
-  /* engraved-plaque corner brackets — the "executive" cue */
+  /* engraved-plaque corner brackets — the "executive" cue, tracks the tier */
   .dev-card::before,.dev-card::after{
     content:'';position:absolute;z-index:2;pointer-events:none;
     width:22px;height:22px;
   }
   .dev-card::before{top:9px;left:9px;border-radius:6px 0 0 0;
-    border-top:2px solid rgba(255,214,140,.55);border-left:2px solid rgba(255,214,140,.55);}
+    border-top:2px solid color-mix(in srgb, var(--dc-accent) 62%, transparent);
+    border-left:2px solid color-mix(in srgb, var(--dc-accent) 62%, transparent);}
   .dev-card::after{bottom:9px;right:9px;border-radius:0 0 6px 0;
-    border-bottom:2px solid rgba(255,214,140,.55);border-right:2px solid rgba(255,214,140,.55);}
-  html[data-theme="light"] .dev-card::before,html[data-theme="light"] .dev-card::after{
-    border-color:rgba(150,108,10,.5);
-  }
+    border-bottom:2px solid color-mix(in srgb, var(--dc-accent) 62%, transparent);
+    border-right:2px solid color-mix(in srgb, var(--dc-accent) 62%, transparent);}
 
   /* faint terminal grid, fading out toward the bottom of the card */
   .dev-grid{
     position:absolute;inset:0;z-index:0;pointer-events:none;
     background-image:
-      linear-gradient(rgba(255,199,92,.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,199,92,.05) 1px, transparent 1px);
+      linear-gradient(var(--dc-wash) 1px, transparent 1px),
+      linear-gradient(90deg, var(--dc-wash) 1px, transparent 1px);
     background-size:26px 26px;
     -webkit-mask-image:radial-gradient(125% 105% at 50% 0%, #000 28%, transparent 90%);
     mask-image:radial-gradient(125% 105% at 50% 0%, #000 28%, transparent 90%);
   }
-  /* the scan line itself: a thin blade that sweeps across, phasing
-     lime -> gold -> lime as it travels, then rests */
-  .dev-scan{
-    position:absolute;top:0;bottom:0;width:2px;z-index:3;pointer-events:none;
-    background:linear-gradient(180deg,transparent,rgba(204,255,0,.9) 22%,rgba(204,255,0,.9) 78%,transparent);
-    box-shadow:0 0 16px 3px rgba(204,255,0,.4);
-    animation:devScan 5.4s cubic-bezier(.45,0,.5,1) infinite;
+  /* black tier only: a small starfield, faded in/out with that slice of
+     the cycle, twinkling independently the whole time it's visible */
+  .dev-stars{
+    position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0;
+    background-image:
+      radial-gradient(1.6px 1.6px at 8% 22%,#fff,transparent 60%),
+      radial-gradient(1.2px 1.2px at 18% 68%,#fff,transparent 60%),
+      radial-gradient(1.8px 1.8px at 27% 12%,#fff,transparent 60%),
+      radial-gradient(1.1px 1.1px at 34% 44%,#fff,transparent 60%),
+      radial-gradient(1.5px 1.5px at 42% 78%,#fff,transparent 60%),
+      radial-gradient(1.3px 1.3px at 51% 30%,#fff,transparent 60%),
+      radial-gradient(1.7px 1.7px at 58% 60%,#fff,transparent 60%),
+      radial-gradient(1.2px 1.2px at 65% 15%,#fff,transparent 60%),
+      radial-gradient(1.4px 1.4px at 73% 82%,#fff,transparent 60%),
+      radial-gradient(1.1px 1.1px at 80% 38%,#fff,transparent 60%),
+      radial-gradient(1.6px 1.6px at 88% 66%,#fff,transparent 60%),
+      radial-gradient(1.3px 1.3px at 94% 20%,#fff,transparent 60%),
+      radial-gradient(1.2px 1.2px at 12% 90%,#fff,transparent 60%),
+      radial-gradient(1.5px 1.5px at 60% 92%,#fff,transparent 60%),
+      radial-gradient(1.1px 1.1px at 90% 88%,#fff,transparent 60%);
+    animation:devStarsPhase 30s linear infinite, spzStarTwinkle 2.3s ease-in-out infinite;
   }
-  @keyframes devScan{
-    0%{left:-2%;opacity:0;filter:hue-rotate(0deg);}
-    5%{opacity:1;}
-    23%{filter:hue-rotate(-32deg);}
-    42%{opacity:1;filter:hue-rotate(0deg);}
-    50%{left:102%;opacity:0;}
-    100%{left:102%;opacity:0;}
+  @keyframes devStarsPhase{
+    0%,58%{opacity:0;}
+    64%{opacity:1;}
+    72%{opacity:1;}
+    78%,100%{opacity:0;}
   }
-  .dev-card > *:not(.dev-grid):not(.dev-scan):not(.dev-wm){position:relative;z-index:1;}
+  @keyframes spzStarTwinkle{0%,100%{filter:brightness(.65);}50%{filter:brightness(1.35);}}
+  /* rainbow tier only: a holographic foil sheen, screen-blended so it adds
+     colour to the dark card instead of washing it out */
+  .dev-holo{
+    position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0;
+    background:linear-gradient(120deg,#ff5566,#ffd873,#7cff6b,#4dd8ff,#b46bff,#ff5566);
+    background-size:280% 280%;mix-blend-mode:screen;
+    animation:devHoloPhase 30s linear infinite, spzHoloShift 4.2s linear infinite;
+  }
+  @keyframes devHoloPhase{
+    0%,78%{opacity:0;}
+    84%{opacity:.4;}
+    93%{opacity:.4;}
+    98%,100%{opacity:0;}
+  }
+  @keyframes spzHoloShift{0%{background-position:0% 50%;}100%{background-position:100% 50%;}}
+  .dev-card > *:not(.dev-grid):not(.dev-stars):not(.dev-holo):not(.dev-wm){position:relative;z-index:1;}
 
   /* animated translucent site-mark watermark, drawn with the same SVG the
      boot logo uses — a moving dashed outline, not a static image */
   .dev-wm{position:absolute;right:-12px;bottom:-18px;width:112px;height:auto;
-    opacity:.13;color:#ffd68c;pointer-events:none;z-index:0;
+    opacity:.13;color:var(--dc-accent);pointer-events:none;z-index:0;
     animation:devWmDrift 9s ease-in-out infinite;}
-  html[data-theme="light"] .dev-wm{color:#8a6200;opacity:.11;}
   @keyframes devWmDrift{0%,100%{transform:translate(0,0) rotate(0deg)}50%{transform:translate(-6px,-9px) rotate(3deg)}}
   .dev-wm .lg-p{stroke-dasharray:9 6;animation:devWmLine 3.2s linear infinite;}
   @keyframes devWmLine{to{stroke-dashoffset:-60px}}
@@ -2479,7 +2523,8 @@
   .dev-ava{position:relative;width:56px;height:56px;flex-shrink:0;}
   .dev-ava img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;
     border:2px solid rgba(255,255,255,.16);}
-  .dev-ring{position:absolute;inset:-3px;border-radius:50%;border:2px solid rgba(255,199,92,.6);
+  .dev-ring{position:absolute;inset:-3px;border-radius:50%;
+    border:2px solid color-mix(in srgb, var(--dc-accent) 65%, transparent);
     animation:igPulse 2.6s ease-out infinite;pointer-events:none;}
   @keyframes igPulse{0%{transform:scale(1);opacity:.75}100%{transform:scale(1.75);opacity:0}}
   .dev-live{position:absolute;right:0;bottom:0;width:12px;height:12px;border-radius:50%;
@@ -2488,18 +2533,10 @@
 
   .dev-info{min-width:0;display:flex;flex-direction:column;gap:3px;}
   .dev-lab{font-family:var(--mono);font-size:8.5px;letter-spacing:2px;text-transform:uppercase;
-    color:#ffcf5c;text-shadow:0 0 12px rgba(255,199,92,.4);}
-  html[data-theme="light"] .dev-lab{color:#8a6200;text-shadow:none;}
-  .dev-name{font-family:var(--mono);font-size:15px;font-weight:800;letter-spacing:.3px;
-    background:linear-gradient(95deg,#f4f6f1,#ffd873 52%,#f4f6f1);
-    -webkit-background-clip:text;background-clip:text;color:transparent;
-    background-size:220% 100%;animation:igSlide 5.4s ease-in-out infinite;}
-  html[data-theme="light"] .dev-name{background:linear-gradient(95deg,#22261c,#8a6200 52%,#22261c);
-    -webkit-background-clip:text;background-clip:text;}
-  @keyframes igSlide{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+    color:var(--dc-accent);text-shadow:0 0 12px var(--dc-glow);}
+  .dev-name{font-family:var(--mono);font-size:15px;font-weight:800;letter-spacing:.3px;color:#f4f6f1;}
   .dev-name .dev-nick{font-weight:600;opacity:.82;}
-  .dev-role{font-size:11.4px;line-height:1.5;color:var(--grey);}
-  html[data-theme="light"] .dev-role{color:#4b5145;}
+  .dev-role{font-size:11.4px;line-height:1.5;color:#a9ae9f;}
 
   .dev-links{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;}
   .dev-btn{
@@ -2507,7 +2544,6 @@
     padding:9px 6px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.08);
     background:rgba(255,255,255,.03);transition:transform .18s,box-shadow .18s,background .18s;
   }
-  html[data-theme="light"] .dev-btn{background:rgba(18,20,28,.03);border-color:rgba(18,20,28,.1);}
   .dev-btn:hover{transform:translateY(-2px);}
   .dev-btn svg{width:18px;height:18px;}
   .dev-btn span{font-family:var(--mono);font-size:9.5px;letter-spacing:.3px;color:var(--grey);white-space:nowrap;}
@@ -2518,43 +2554,9 @@
   .dev-btn.bio{color:#4dd8ff;}
   .dev-btn.bio:hover{background:rgba(77,216,255,.12);box-shadow:0 8px 20px rgba(77,216,255,.22);}
 
-  /* soft afterglow that trails just behind the scan line — phases with it */
-  .dev-shine{
-    position:absolute;top:0;bottom:0;width:150px;z-index:2;pointer-events:none;
-    background:linear-gradient(90deg,transparent,rgba(204,255,0,.05) 60%,rgba(204,255,0,.13));
-    animation:igShine 5.4s cubic-bezier(.45,0,.5,1) infinite;
-  }
-  @keyframes igShine{
-    0%{left:-152px;opacity:0;filter:hue-rotate(0deg);}
-    5%{opacity:1;}
-    23%{filter:hue-rotate(-32deg);}
-    42%{opacity:1;filter:hue-rotate(0deg);}
-    50%{left:102%;opacity:0;}
-    100%{left:102%;opacity:0;}
-  }
-
-  html[data-theme="light"] .dev-card{
-    background:
-      radial-gradient(125% 85% at 12% 0%, rgba(180,130,20,.14), transparent 62%),
-      var(--panel);
-    border-color:rgba(180,130,20,.35);
-    box-shadow:inset 0 1px 0 rgba(180,130,20,.12), 0 12px 30px rgba(18,20,28,.09);
-  }
-  html[data-theme="light"] .dev-grid{
-    background-image:
-      linear-gradient(rgba(120,90,10,.07) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(120,90,10,.07) 1px, transparent 1px);
-  }
-  html[data-theme="light"] .dev-scan{
-    background:linear-gradient(180deg,transparent,rgba(150,110,10,.55) 22%,rgba(150,110,10,.55) 78%,transparent);
-    box-shadow:0 0 14px 3px rgba(180,130,20,.24);
-  }
-  html[data-theme="light"] .dev-shine{
-    background:linear-gradient(90deg,transparent,rgba(180,130,20,.06) 60%,rgba(180,130,20,.15));
-  }
   @media (prefers-reduced-motion: reduce){
-    .dev-ring,.dev-live,.dev-name,.dev-wm,.dev-wm .lg-p,.dev-shine,.dev-scan,.dev-card{animation:none;}
-    .dev-shine,.dev-scan{display:none;}
+    .dev-ring,.dev-live,.dev-wm,.dev-wm .lg-p,.dev-card,.dev-stars,.dev-holo{animation:none;}
+    .dev-stars,.dev-holo{display:none;}
   }
   @media(max-width:640px){
     .dev-card{padding:15px 14px 14px;}
@@ -14491,7 +14493,8 @@ var CL_UI = {
       var wm = window.__spzMark ? window.__spzMark('dev-wm', { stroke:true, w:1.4 }) : '';
       var wrap = el('div', 'dev-card ' + (cls || ''),
         '<span class="dev-grid"></span>' +
-        '<span class="dev-scan"></span>' +
+        '<span class="dev-stars"></span>' +
+        '<span class="dev-holo"></span>' +
         wm +
         '<div class="dev-top">' +
           '<span class="dev-ava"><img src="' + DEV_AVATAR + '" alt="" loading="lazy">' +
@@ -14508,8 +14511,7 @@ var CL_UI = {
           '<a class="dev-btn ig" href="https://www.instagram.com/spczterminal" target="_blank" rel="noopener noreferrer">' + DEV_IG_ICON + '<span>Instagram</span></a>' +
           '<a class="dev-btn fb" href="https://www.facebook.com/share/1GBykHfZ1V/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer">' + DEV_FB_ICON + '<span>Facebook</span></a>' +
           '<a class="dev-btn bio" href="https://linkbio.co/6120202qnLaXl" target="_blank" rel="noopener noreferrer">' + DEV_BIO_ICON + '<span>' + esc(th ? 'ลิงก์ทั้งหมด' : 'All Links') + '</span></a>' +
-        '</div>' +
-        '<span class="dev-shine"></span>');
+        '</div>');
       return wrap;
     }
     window.__spzBioCard = bioCard;
