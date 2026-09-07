@@ -14405,6 +14405,7 @@ var CL_UI = {
             '<span class="hc-d">' + esc(tx(r.d)) + '</span>' +
             '<span class="hc-go">' + esc(UI.open[L()]) + ' →</span>');
           c.type = 'button';
+          c.setAttribute('data-hub-go', r.id);
           c.addEventListener('click', function(){ route(r.id); });
           g.appendChild(c);
         })(ROUTES[i], i + 1);
@@ -30788,6 +30789,11 @@ var GM = {
      item's own text is what gets desaturated. ---- */
   .spz-locked-item{position:relative;cursor:not-allowed !important;}
   .spz-locked-item .np-head,.spz-locked-item .np-d{filter:grayscale(.85) brightness(.62);}
+  .spz-locked-item.hub-card > *:not(.spz-lock-badge){filter:grayscale(.85) brightness(.62);}
+  /* the hero-wheel CTA is a small inline pill, not a flex-column card —
+     stack the banner above the label instead of squeezing in beside it */
+  .hv-go.spz-locked-item{flex-direction:column;align-items:stretch;gap:6px;}
+  .hv-go.spz-locked-item .spz-lock-badge{border-radius:6px;padding:5px 10px;font-size:.6rem;}
   .spz-locked-item::before{
     content:'';position:absolute;inset:0;z-index:3;pointer-events:none;
     border-radius:12px;padding:5px;
@@ -31284,15 +31290,20 @@ var GM = {
   function extractRouteId(elm){
     var rt = elm.getAttribute && elm.getAttribute('data-route-to');
     if(rt) return rt;
+    var hv = elm.getAttribute && elm.getAttribute('data-hvgo');
+    if(hv) return hv;
+    var hg = elm.getAttribute && elm.getAttribute('data-hub-go');
+    if(hg) return hg;
     var href = elm.getAttribute && elm.getAttribute('href');
     var m = href && /^#\/([a-z0-9_-]+)$/i.exec(href);
     return m ? m[1] : null;
   }
   function isLockedRoute(id){ return currentTier === 'basic' && LOCKED_ROUTES.indexOf(id) !== -1; }
+  var LOCK_SEL = '[data-route-to], [data-hvgo], [data-hub-go], a[href^="#/"]';
 
   function paintLockVeils(){
     var label = Tt(TXT.lockBadge);
-    document.querySelectorAll('[data-route-to], a[href^="#/"]').forEach(function(elm){
+    document.querySelectorAll(LOCK_SEL).forEach(function(elm){
       var id = extractRouteId(elm);
       if(!id) return;
       var locked = isLockedRoute(id);
@@ -31348,7 +31359,7 @@ var GM = {
   }
 
   document.addEventListener('click', function(ev){
-    var t = ev.target, elm = t && t.closest && t.closest('[data-route-to], a[href^="#/"]');
+    var t = ev.target, elm = t && t.closest && t.closest(LOCK_SEL);
     if(!elm) return;
     var id = extractRouteId(elm);
     if(id && isLockedRoute(id)){
