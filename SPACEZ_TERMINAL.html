@@ -15097,8 +15097,14 @@ var CL_UI = {
     }
     window.__spzBioCard = bioCard;
 
+    /* one route (the admin Command Center) gets a visibly special treatment
+       in this list -- a distinct glowing card instead of a plain row -- so
+       it reads as the "everything in one place" screen rather than just
+       another item; see .np-item-special in the cockpit route's own CSS */
+    var SPECIAL_ITEMS = { cockpit:1 };
     function item(id, n, title, desc){
-      var a = el('a', 'np-item',
+      var cls = 'np-item' + (SPECIAL_ITEMS[id] ? ' np-item-special' : '');
+      var a = el('a', cls,
         '<span class="np-head"><span class="np-n">' + n + '</span>' +
         '<span class="np-t">' + esc(title) + '</span><span class="np-arrow">→</span></span>' +
         (desc ? '<span class="np-d">' + esc(desc) + '</span>' : ''));
@@ -31036,6 +31042,11 @@ var GM = {
     border-radius:10px;background:rgba(204,255,0,.045);}
   #correl .cm-ex-demo-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.8px;
     color:var(--grey-dim);text-transform:uppercase;margin-bottom:6px;}
+  #correl .cm-ex-pick{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:10px;
+    font-size:11.5px;color:var(--grey-dim);}
+  #correl .cm-ex-pick label{display:flex;align-items:center;gap:6px;}
+  #correl .cm-ex-pick .ctl-select{font-size:11px;padding:6px 8px;}
+  #correl .cm-ex-pick-x{color:var(--grey-dim);font-family:var(--mono);}
   #correl .cm-ex-demo-cap{font-size:12.5px;color:var(--white);line-height:1.65;min-height:18px;}
   html[data-theme="light"] #correl .cm-cv{color:#12141c;}
   html[data-theme="light"] #correl .cm-status-txt{color:#12141c;}
@@ -31101,6 +31112,10 @@ var GM = {
     exDemoLbl:{en:'WATCH: READING A ROW AGAINST A COLUMN',th:'ดูตัวอย่าง: อ่านแถวเทียบกับคอลัมน์'},
     exDemoFmt:{en:'Follow the <b>{row}</b> row (left side) across, and the <b>{col}</b> column (top) down — they meet at the highlighted square: <b>{v}</b> ({read}). Same name can sit in a row AND a column; you always read row → across, column → down, and the number where they cross is the answer.',
       th:'ลากตามแถว <b>{row}</b> (ทางซ้าย) ไปทางขวา แล้วลากตามคอลัมน์ <b>{col}</b> (ด้านบน) ลงมา — สองเส้นจะมาเจอกันที่ช่องที่ไฮไลต์: <b>{v}</b> ({read}) ชื่อเดียวกันจะโผล่ทั้งแถวและคอลัมน์ได้ แต่หลักการอ่านคือ แถว → ลากไปทางขวา, คอลัมน์ → ลากลงมา แล้วตัวเลขตรงจุดตัดคือคำตอบ'},
+    exPickRow:{en:'Row',th:'แถว'}, exPickCol:{en:'Column',th:'คอลัมน์'},
+    exPickHint:{en:'Or pick your own two to compare:',th:'หรือเลือกสองตัวเปรียบเทียบเองก็ได้:'},
+    exDemoSelf:{en:'That’s the same asset in both — pick two different ones to compare.',
+      th:'อันนี้เป็นตัวเดียวกันทั้งแถวและคอลัมน์ — เลือกสองตัวที่ต่างกันเพื่อเปรียบเทียบ'},
     netLive:{en:'LIVE',th:'สด'},
     statusH:{en:'CURRENT MARKET STATUS, FROM THIS MAP',th:'สรุปสถานะตลาดตอนนี้ จากแผนที่นี้'},
     statusHigh:{en:'Correlation is running high right now ({v} average) — most tracked assets have been moving as one block rather than going their own ways. This usually shows up when the whole market is fearful or euphoric at once. Spreading money across several of these assets buys you less protection than usual until this cools off.',
@@ -31354,6 +31369,11 @@ var GM = {
   }
   function exFmt(v){ return (v < 0 ? '-' : '') + Math.abs(v).toFixed(2).replace(/^0\./, '.'); }
   function exNameOf(k){ var f = EX.filter(function(e){ return e.k === k; })[0]; return f ? tx(f.t) : k; }
+  function exSelHTML(dataCm, def){
+    return '<select class="ctl-select" data-cm="' + dataCm + '">' + EX.map(function(e){
+      return '<option value="' + e.k + '"' + (e.k === def ? ' selected' : '') + '>' + esc(tx(e.t)) + '</option>';
+    }).join('') + '</select>';
+  }
 
   function exampleHTML(){
     var head = '<tr><th></th>' + EX.map(function(e){
@@ -31376,6 +31396,12 @@ var GM = {
         '<table class="cm-ex-grid" data-cm="exgrid">' + head + rows + '</table></div>' +
       '<div class="cm-ex-demo" data-cm="exdemo">' +
         '<div class="cm-ex-demo-lbl">' + esc(tx(T.exDemoLbl)) + '</div>' +
+        '<div class="cm-ex-pick">' +
+          '<span class="cm-ex-pick-hint">' + esc(tx(T.exPickHint)) + '</span>' +
+          '<label>' + esc(tx(T.exPickRow)) + exSelHTML('exrowsel', 'techA') + '</label>' +
+          '<span class="cm-ex-pick-x">×</span>' +
+          '<label>' + esc(tx(T.exPickCol)) + exSelHTML('excolsel', 'techB') + '</label>' +
+        '</div>' +
         '<div class="cm-ex-demo-cap" data-cm="exdemocap"></div>' +
       '</div>' +
       '<div class="cm-ex-cap">' + sw(0.88) + '<span>' + esc(tx(T.exCap1)) + '</span></div>' +
@@ -31388,19 +31414,19 @@ var GM = {
      lands on the cell where they meet, one pair at a time, with a plain
      sentence explaining the crossing — this is the direct answer to "how
      do I compare when the same name is in both a row and a column" ---- */
-  var exDemo = { iv:null, seq:['techA|techB','techA|bonds','techA|gold','gold|bonds'], idx:0 };
+  /* auto-cycles until the reader picks their own pair from the two
+     dropdowns below the grid, at which point auto-cycling stops and that
+     exact pair stays highlighted (see bind()) */
+  var exDemo = { iv:null, seq:['techA|techB','techA|bonds','techA|gold','gold|bonds'], idx:0, manual:false, rk:'techA', ck:'techB' };
 
   function stopExampleDemo(){
     if (exDemo.iv) { clearInterval(exDemo.iv); exDemo.iv = null; }
   }
 
-  function exDemoTick(){
+  function exDemoRender(rk, ck){
     var grid = sec && sec.querySelector('[data-cm="exgrid"]');
     var cap = sec && sec.querySelector('[data-cm="exdemocap"]');
     if (!grid || !cap) { stopExampleDemo(); return; }
-    var pair = exDemo.seq[exDemo.idx % exDemo.seq.length];
-    exDemo.idx++;
-    var parts = pair.split('|'), rk = parts[0], ck = parts[1];
     grid.querySelectorAll('.cm-ex-hi-row,.cm-ex-hi-col,.cm-ex-hi-cell').forEach(function(el){
       el.classList.remove('cm-ex-hi-row', 'cm-ex-hi-col', 'cm-ex-hi-cell');
     });
@@ -31411,6 +31437,7 @@ var GM = {
     if (rowTh) rowTh.classList.add('cm-ex-hi-row');
     if (colTh) colTh.classList.add('cm-ex-hi-col');
     if (cell) cell.classList.add('cm-ex-hi-cell');
+    if (rk === ck) { cap.textContent = tx(T.exDemoSelf); return; }
     var v = exVOf(rk, ck);
     var read = tx(readOf(v)) || '';
     cap.innerHTML = tx(T.exDemoFmt)
@@ -31418,9 +31445,27 @@ var GM = {
       .replace('{v}', exFmt(v)).replace('{read}', esc(read));
   }
 
+  function exDemoSyncSelects(){
+    var rs = sec && sec.querySelector('[data-cm="exrowsel"]');
+    var cs = sec && sec.querySelector('[data-cm="excolsel"]');
+    if (rs) rs.value = exDemo.rk;
+    if (cs) cs.value = exDemo.ck;
+  }
+
+  function exDemoTick(){
+    if (exDemo.manual) { exDemoRender(exDemo.rk, exDemo.ck); return; }
+    var pair = exDemo.seq[exDemo.idx % exDemo.seq.length];
+    exDemo.idx++;
+    var parts = pair.split('|');
+    exDemo.rk = parts[0]; exDemo.ck = parts[1];
+    exDemoRender(exDemo.rk, exDemo.ck);
+    exDemoSyncSelects();
+  }
+
   function mountExampleDemo(){
     stopExampleDemo();
     exDemo.idx = 0;
+    exDemo.manual = false;
     exDemoTick();
     exDemo.iv = setInterval(exDemoTick, 2600);
   }
@@ -31671,6 +31716,16 @@ var GM = {
         paint();
       });
     });
+    var exRowSel = body.querySelector('[data-cm="exrowsel"]');
+    var exColSel = body.querySelector('[data-cm="excolsel"]');
+    function onExPick(){
+      stopExampleDemo();
+      exDemo.manual = true;
+      exDemo.rk = exRowSel.value; exDemo.ck = exColSel.value;
+      exDemoRender(exDemo.rk, exDemo.ck);
+    }
+    if (exRowSel) exRowSel.addEventListener('change', onExPick);
+    if (exColSel) exColSel.addEventListener('change', onExPick);
   }
 
   function paint(){
@@ -31736,7 +31791,29 @@ var GM = {
       .observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
   }
 
-  window.__SPZ_CORREL = { repaint: paint };
+  /* small read-only summary for other modules (the admin Command Center)
+     to surface without recomputing the matrix themselves */
+  function summary(){
+    if (!state.data || state.data === false) return null;
+    var mx = buildMatrix();
+    var syms = mx.syms, M = mx.M;
+    if (syms.length < 3) return null;
+    var best = null, worst = null, vals = [];
+    for (var i = 0; i < syms.length; i++) {
+      for (var j = i + 1; j < syms.length; j++) {
+        var c = M[i][j];
+        if (!c || c.v === null) continue;
+        vals.push(c.v);
+        if (!best || c.v > best.v) best = { a:tx(syms[i]), b:tx(syms[j]), v:c.v };
+        if (!worst || c.v < worst.v) worst = { a:tx(syms[i]), b:tx(syms[j]), v:c.v };
+      }
+    }
+    if (!vals.length) return null;
+    var avgAbs = vals.reduce(function(s, v){ return s + Math.abs(v); }, 0) / vals.length;
+    return { avgAbs:avgAbs, pairs:vals.length, best:best, worst:worst, n:syms.length };
+  }
+
+  window.__SPZ_CORREL = { repaint: paint, summary: summary };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 1100); });
@@ -33374,10 +33451,14 @@ var GM = {
      stripes gave, in the language of the rest of the space theme. The tier that
      opens it sets the colour: blue for member, gold for admin. */
   .spz-locked-item{--lk:#6fd0ff;--lk-dim:rgba(111,208,255,.30);}
-  .spz-locked-item.spz-need-admin{--lk:#ffb85c;--lk-dim:rgba(255,184,92,.30);}
+  /* admin tier: kept monochrome (white glow on the dark themes) on purpose —
+     it used to be gold/amber, which read as too flashy against the site's
+     lime/void palette; a plain black+white treatment stays "special" without
+     fighting the rest of the theme's colour */
+  .spz-locked-item.spz-need-admin{--lk:#f4f6f1;--lk-dim:rgba(244,246,241,.26);}
   /* the pale tints need a darker ink to stay readable on the white theme */
   html[data-theme="light"] .spz-locked-item{--lk:#1a7fbf;--lk-dim:rgba(26,127,191,.38);}
-  html[data-theme="light"] .spz-locked-item.spz-need-admin{--lk:#9a6200;--lk-dim:rgba(154,98,0,.38);}
+  html[data-theme="light"] .spz-locked-item.spz-need-admin{--lk:#1c1c1e;--lk-dim:rgba(28,28,30,.30);}
   .spz-locked-item::before{
     content:'';position:absolute;inset:0;z-index:3;pointer-events:none;
     border-radius:12px;padding:2px;
@@ -33564,7 +33645,7 @@ var GM = {
      มาใส่ตรงนี้ (สร้างด้วย ADMIN_GENERATOR.html) */
   var VAULT_FULL = {"v":4,"s1":"mkdQcgClsnvkGyoBGGivQg==","s2":"9YocjP94X+KXzaDgEjSuGg==","s3":"hy15gzrBLmYFR2+cvfPPCA==","s4":"ky5slYhVrHQoXnN7itBYcg==","gates":[{"iv":"8ua/11yPR3cWSJKJEBQVhQ==","ct":"/RpQQax3SbFjk3XfRXL5DP9gJ6rQqkNt/72nKLY8b6Q="},{"iv":"JBpkOqWqQUGoNpvaBlMZhg==","ct":"nVsIciHOqQOZeoRiBpVa2MEpCDeP3npI3gG5YjD/z0M="},{"iv":"3pbyESaKph58+1raRCifUg==","ct":"N3RWhWpuNS9II+Knxy22n4sZfy75Zvpz1KFe3QMFSlk="},{"iv":"UBs3G4dOB8mAFjSRlyDRUQ==","ct":"5q+pIWVpnm52L5GAMp/4Q1L51D7ZlV4Gvypoei8dShA="},{"iv":"jqk5KZTuminXpYENqvBGPA==","ct":"s84YTT4n78TgNAZDV8fEb4sJNGEfYXZXICBRoQzik78="}],"ctrIv":"YtBFuzHAlM73O0uKkyqL2w==","iv":"ZqvmBtUJW2peCcUC","ct":"Yw9ZQfcOwU9A9jmBxghZgtyj2k5flNijg9Cnjungi45aNULy9mmGCiDf8V7jF5MhqyhdEK490/I="};
 
-  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily'];
+  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','cockpit'];
 
   /* ---------------- i18n ---------------- */
   function Lg(){ return document.documentElement.lang === 'th' ? 'th' : 'en'; }
@@ -34129,6 +34210,527 @@ var GM = {
 
   window.__spzRepaintAuthGate = paint;
   if(window.repaint && window.repaint.push) window.repaint.push(paint);
+})();
+</script>
+
+<!-- ============================================================
+     SPACEZ COMMAND CENTER  (menu: "ศูนย์บัญชาการ", admin only)
+     Additive only: a new route registered through window.__spzAddRoute, the
+     same mechanism every other screen in this file uses. Two small,
+     deliberate hooks touch shared code and nothing else: this route's id
+     was appended to LOCKED_ROUTES (admin gate) and the nav-menu's item()
+     got one conditional class so this one entry renders as a distinct
+     card in the popup -- both additive, nothing removed or restructured.
+
+     Writes nothing to disk and invents no new analysis or numbers: every
+     figure here is read straight from other screens' own already-computed
+     state -- window.__SPZ_LIVE (snapshot/marketStatus), window.__SPZ_REGIME
+     (gauges/score/alert), window.__SPZ_ANOMALY (rows), window.__SPZ_CORREL
+     (a small summary() getter added alongside this feature),
+     window.__SPZ_WATCH (headline), window.__SPZ_RANK/__SPZ_WHY (the exact
+     "What To Buy Now" ranking the desk screen already uses) and
+     window.SPZ_CYCLE. If a module hasn't booted yet its card just says so
+     -- the rest of the page still renders.
+
+     Deliberately NOT the standard centred 1280px column every other screen
+     uses (see the #cockpit{max-width:none} override below) -- this is the
+     one screen meant to be scanned left-to-right like a real terminal, so
+     its card grid uses the full viewport width.
+     ============================================================ -->
+<style>
+  #cockpit{max-width:none;}
+  #cockpit .cx-wrap{width:100%;box-sizing:border-box;margin:0 auto;padding:0 clamp(16px,3vw,48px) 90px;}
+  #cockpit .section-head{padding-top:34px;}
+  #cockpit .cx-head{display:flex;gap:24px;flex-wrap:wrap;align-items:center;justify-content:space-between;
+    margin:18px 0 8px;}
+  #cockpit .cx-head-l{flex:1 1 380px;}
+  #cockpit .cx-asof{font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);margin-top:8px;
+    display:flex;gap:14px;flex-wrap:wrap;}
+  #cockpit .cx-asof b{color:var(--white);font-weight:600;}
+  #cockpit .cx-pulse{display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto;}
+  #cockpit .cx-pulse canvas{display:block;}
+  #cockpit .cx-pulse-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.9px;text-transform:uppercase;
+    color:var(--grey-dim);}
+  #cockpit .cx-signal{border:1px solid var(--border-dim);border-radius:14px;padding:14px 18px;
+    margin:14px 0 4px;background:rgba(255,255,255,.02);border-left:3px solid var(--grey-dim);
+    font-size:13px;color:var(--white);line-height:1.65;display:flex;gap:10px;align-items:flex-start;}
+  #cockpit .cx-signal.warn{border-left-color:var(--amber,#ffb020);}
+  #cockpit .cx-signal.alert{border-left-color:var(--cx-red);box-shadow:0 0 0 1px color-mix(in srgb, var(--cx-red) 20%, transparent) inset;}
+  #cockpit .cx-signal-ico{flex:0 0 auto;font-size:15px;line-height:1.4;}
+  #cockpit .cx-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:16px;}
+  #cockpit .cx-card{border:1px solid var(--border-dim);border-radius:14px;padding:17px 19px;
+    background:rgba(255,255,255,.016);display:flex;flex-direction:column;gap:9px;}
+  #cockpit .cx-card.cx-wide{grid-column:1/-1;}
+  #cockpit .cx-lab{font-family:var(--mono);font-size:9.5px;letter-spacing:.85px;text-transform:uppercase;
+    color:var(--grey-dim);display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  #cockpit .cx-txt{font-size:12.8px;color:var(--white);line-height:1.72;}
+  #cockpit .cx-txt b{color:var(--white);}
+  #cockpit .cx-txt .up{color:var(--neon-2,#7CFFB2);font-weight:700;}
+  #cockpit .cx-txt .dn{color:var(--red,#ff3b4e);font-weight:700;}
+  #cockpit .cx-go{align-self:flex-start;font-family:var(--mono);font-size:10px;letter-spacing:.5px;
+    padding:6px 12px;border-radius:16px;border:1px solid var(--border-dim);background:transparent;
+    color:var(--grey);cursor:pointer;transition:all .14s;margin-top:2px;}
+  #cockpit .cx-go:hover{border-color:var(--cx-red);color:var(--white);}
+  #cockpit .cx-movers{display:flex;gap:18px;flex-wrap:wrap;}
+  #cockpit .cx-mcol{flex:1 1 120px;}
+  #cockpit .cx-mh{font-family:var(--mono);font-size:8.5px;letter-spacing:.6px;color:var(--grey-dim);
+    text-transform:uppercase;margin-bottom:5px;}
+  #cockpit .cx-mrow{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;
+    padding:3px 0;border-bottom:1px solid var(--border-dim);}
+  #cockpit .cx-mrow:last-child{border-bottom:none;}
+  #cockpit .cx-mkt{display:flex;gap:14px;font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);
+    margin-bottom:2px;}
+  #cockpit .cx-mkt b{color:var(--white);}
+  #cockpit .cx-mkt .cx-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;}
+  #cockpit .cx-gauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:7px 18px;}
+  #cockpit .cx-gauge-row{display:flex;gap:8px;align-items:flex-start;font-size:11px;line-height:1.55;color:var(--grey);}
+  #cockpit .cx-gauge-row b{color:var(--white);font-weight:600;}
+  #cockpit .cx-gdot{width:7px;height:7px;border-radius:50%;margin-top:5px;flex:0 0 auto;}
+  #cockpit .cx-gdot.ok{background:var(--neon-2,#30d158);}
+  #cockpit .cx-gdot.warn{background:var(--amber,#ffb020);}
+  #cockpit .cx-gdot.alert{background:var(--cx-red);}
+  #cockpit .cx-gdot.na{background:var(--grey-dim);}
+  #cockpit .cx-rank-row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;
+    border-bottom:1px solid var(--border-dim);}
+  #cockpit .cx-rank-row:last-child{border-bottom:none;}
+  #cockpit .cx-rank-l{font-size:12px;color:var(--white);}
+  #cockpit .cx-rank-l span{display:block;font-size:10.5px;color:var(--grey-dim);margin-top:2px;font-family:var(--body,inherit);}
+  #cockpit .cx-rank-r{font-family:var(--mono);font-size:12px;color:var(--grey-dim);white-space:nowrap;}
+  #cockpit .cx-note{font-size:10.8px;color:var(--grey-dim);line-height:1.6;margin-top:2px;}
+  html[data-theme="light"] #cockpit .cx-txt,html[data-theme="light"] #cockpit .cx-rank-l{color:#12141c;}
+
+  /* the one page whose accent is red instead of the site's lime/void-blue --
+     it is deliberately the "special" one, so it should not just look like a
+     re-tinted version of every other screen */
+  #cockpit{--cx-red:#ff2d4d;}
+  #cockpit .cx-head-l .eyebrow{color:var(--cx-red);}
+  #cockpit .cx-head-l .eyebrow .cursor{background:var(--cx-red);}
+
+  /* ---- the special nav-popup card for this one route (see item()'s
+     SPECIAL_ITEMS lookup) -- reuses the exact locked-item sweep/badge
+     system every admin route already has, just recoloured red for this
+     one entry so it reads as "the special one" while every other admin
+     item stays plain black+white ---- */
+  .np-item.np-item-special{
+    border-color:rgba(255,45,77,.32);
+    background:linear-gradient(135deg, rgba(255,45,77,.09), rgba(255,255,255,.014));
+  }
+  .np-item.np-item-special:hover{border-color:rgba(255,45,77,.55);background:rgba(255,45,77,.12);}
+  .np-item.np-item-special .np-t{color:var(--white);}
+  .np-item.np-item-special:hover .np-t{color:#ff2d4d;}
+  .np-item.np-item-special .np-n{color:#ff2d4d;}
+  .np-item-special.spz-need-admin{--lk:#ff2d4d;--lk-dim:rgba(255,45,77,.34);}
+  html[data-theme="light"] .np-item-special.spz-need-admin{--lk:#c81e3a;--lk-dim:rgba(200,30,58,.32);}
+</style>
+<script>
+(function(){
+  'use strict';
+  if (window.__SPZ_COCKPIT) return;
+
+  function L(){ return document.documentElement.getAttribute('lang') === 'th' ? 'th' : 'en'; }
+  function tx(o){ return o ? (o[L()] !== undefined ? o[L()] : o.en) : ''; }
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  var isNum = function(v){ return typeof v === 'number' && isFinite(v); };
+  function sgn(v, d){ return (v >= 0 ? '+' : '') + Number(v).toFixed(d === undefined ? 1 : d); }
+
+  var T = {
+    eyebrow:{en:'COMMAND CENTER',th:'ศูนย์บัญชาการ'},
+    h:{en:'Everything, On One Screen',th:'ทุกอย่างในหน้าเดียว'},
+    lede:{en:'Every gauge, scan and ranking this site already computes, gathered onto one wide screen instead of ten separate pages. Nothing here is new data or new analysis — each card just reads the same numbers the screen it names already shows, so this is a place to scan fast, not a replacement for opening the real page when something needs a closer look.',
+      th:'ตัวชี้วัด การสแกน และการจัดอันดับทุกอย่างที่เว็บนี้คำนวณไว้อยู่แล้ว รวบมาไว้ในหน้ากว้างหน้าเดียวแทนที่จะต้องเปิดสิบหน้าแยกกัน ทุกอย่างในนี้ไม่ใช่ข้อมูลใหม่หรือการวิเคราะห์ใหม่ — แต่ละการ์ดแค่อ่านตัวเลขชุดเดียวกับหน้าที่มันอ้างถึงอยู่แล้ว ให้ใช้เพื่อกวาดตาดูเร็วๆ ไม่ใช่ตัวแทนการเปิดหน้าจริงตอนอยากดูละเอียด'},
+    asof:{en:'Data as of',th:'ข้อมูล ณ'},
+    cycleFmt:{en:'{p} · {n}/{of} gauges agree · {d}d old',th:'{p} · {n}/{of} ตัวชี้วัดเห็นตรงกัน · ข้อมูลอายุ {d} วัน'},
+    waiting:{en:'Waiting for the first data sync…',th:'กำลังรอข้อมูลรอบแรก…'},
+    pulseCalm:{en:'CALM',th:'ปกติ'}, pulseWatch:{en:'WATCHFUL',th:'เฝ้าระวัง'}, pulseAlert:{en:'ALERT',th:'แจ้งเตือน'},
+
+    signalQuiet:{en:'Nothing unusual is standing out across the gauges, the anomaly scan or your last visit — a quiet reading right now.',
+      th:'ไม่มีอะไรผิดปกติเด่นชัดทั้งในตัวชี้วัด สแกนสัญญาณผิดปกติ หรือตั้งแต่ครั้งก่อนที่เปิดดู — ตอนนี้ค่อนข้างเงียบ'},
+
+    marketL:{en:'MARKET STATUS',th:'สถานะตลาด'},
+    setOpen:{en:'SET open',th:'ตลาดไทยเปิด'}, setClosed:{en:'SET closed',th:'ตลาดไทยปิด'},
+    usOpen:{en:'US open',th:'ตลาดสหรัฐฯ เปิด'}, usClosed:{en:'US closed',th:'ตลาดสหรัฐฯ ปิด'},
+    gainH:{en:'Up most',th:'ขึ้นมากที่สุด'}, loseH:{en:'Down most',th:'ลงมากที่สุด'},
+    noMovers:{en:'No change data available yet.',th:'ยังไม่มีข้อมูลการเปลี่ยนแปลง'},
+    goNow:{en:'Open What Now →',th:'เปิดหน้าตอนนี้เกิดอะไรขึ้น →'},
+
+    gaugesL:{en:'EARLY-WARNING GAUGES',th:'ตัวชี้วัดเตือนล่วงหน้า'},
+    gaugesNA:{en:'Turning Point Radar hasn’t loaded yet.',th:'สัญญาณเปลี่ยนทิศยังไม่โหลด'},
+    naReason:{en:'No data for this reading yet.',th:'ยังไม่มีข้อมูลสำหรับตัวนี้'},
+    goRegime:{en:'Open Turning Point Radar →',th:'เปิดหน้าสัญญาณเปลี่ยนทิศ →'},
+
+    anomL:{en:'ANOMALY SCAN',th:'สแกนสัญญาณผิดปกติ'},
+    anomTxt:{en:'<b class="warn" style="color:var(--amber,#ffb020);">{n}</b> tickers currently flagged with a pattern break.',
+      th:'ตอนนี้มี <b class="warn" style="color:var(--amber,#ffb020);">{n}</b> ตัวที่ถูกชี้ว่ามีรูปแบบผิดไปจากเดิม'},
+    anomZero:{en:'Nothing flagged right now.',th:'ตอนนี้ยังไม่พบอะไร'},
+    anomNA:{en:'Anomaly Scan hasn’t loaded yet.',th:'สแกนสัญญาณผิดปกติยังไม่โหลด'},
+    goAnom:{en:'Open Anomaly Scan →',th:'เปิดหน้าสแกนสัญญาณผิดปกติ →'},
+
+    correlL:{en:'CORRELATION SNAPSHOT',th:'สรุปความสัมพันธ์สินทรัพย์'},
+    correlTxt:{en:'Average pairwise correlation is <b>{v}</b> across {n} tracked assets. Most tied together: <b>{a}</b> × <b>{b}</b> ({abv}). Most opposite: <b>{c}</b> × <b>{d}</b> ({cdv}).',
+      th:'สหสัมพันธ์เฉลี่ยระหว่างคู่สินทรัพย์อยู่ที่ <b>{v}</b> จากสินทรัพย์ที่ติดตาม {n} ตัว ผูกกันแน่นที่สุด: <b>{a}</b> × <b>{b}</b> ({abv}) สวนทางกันที่สุด: <b>{c}</b> × <b>{d}</b> ({cdv})'},
+    correlNA:{en:'Correlation Map hasn’t loaded yet.',th:'แผนที่ความสัมพันธ์สินทรัพย์ยังไม่โหลด'},
+    goCorrel:{en:'Open Correlation Map →',th:'เปิดหน้าแผนที่ความสัมพันธ์สินทรัพย์ →'},
+
+    watchL:{en:'SINCE YOU LAST LOOKED',th:'ตั้งแต่ครั้งก่อนที่เปิดดู'},
+    watchTxt:{en:'{n} notable change(s): <b>{t}</b>',th:'มีการเปลี่ยนแปลงที่น่าสนใจ {n} รายการ: <b>{t}</b>'},
+    watchNone:{en:'Nothing has changed enough to flag since your last visit.',th:'ยังไม่มีอะไรเปลี่ยนมากพอจะแจ้งตั้งแต่ครั้งก่อน'},
+    goWatch:{en:'Open What Now →',th:'เปิดหน้าตอนนี้เกิดอะไรขึ้น →'},
+
+    rankL:{en:'WORTH A LOOK RIGHT NOW',th:'น่าดูตอนนี้'},
+    rankNote:{en:'The same ranking engine as What To Buy Now, run with its default settings — a starting point for your own research, not a recommendation to buy anything.',
+      th:'ใช้เครื่องมือจัดอันดับตัวเดียวกับหน้า "ตอนนี้ควรซื้ออะไร" ด้วยค่าเริ่มต้นของมัน — เป็นจุดเริ่มไปค้นคว้าต่อเอง ไม่ใช่คำแนะนำให้ซื้อ'},
+    rankNA:{en:'The ranking engine hasn’t loaded yet.',th:'เครื่องมือจัดอันดับยังไม่โหลด'},
+    goDesk:{en:'Open What To Buy Now →',th:'เปิดหน้าตอนนี้ควรซื้ออะไร →'},
+
+    foot:{en:'This screen fetches nothing new and computes nothing new — every figure is read from the exact module named on its card, live, each time that module refreshes. Treat it as a fast overview, and open the named screen for the full picture, the caveats, and the methodology behind any single number. Educational use only, not investment advice.',
+      th:'หน้านี้ไม่ได้ดึงข้อมูลใหม่หรือคำนวณอะไรใหม่ — ทุกตัวเลขอ่านมาจากโมดูลที่ระบุไว้ในการ์ดนั้นๆ แบบสด ทุกครั้งที่โมดูลนั้นรีเฟรช ให้ใช้หน้านี้เพื่อกวาดภาพรวมเร็วๆ แล้วไปเปิดหน้าจริงเพื่อดูรายละเอียด ข้อควรระวัง และวิธีคิดเบื้องหลังตัวเลขแต่ละตัว ใช้เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน'}
+  };
+
+  var sec = null;
+  var pulse = { raf:null, canvas:null, ctx:null, level:'calm', t:0 };
+
+  function snapshot(){
+    try { return (window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot()) || null; }
+    catch(e){ return null; }
+  }
+  function marketStatus(){
+    try { return (window.__SPZ_LIVE && window.__SPZ_LIVE.marketStatus && window.__SPZ_LIVE.marketStatus()) || null; }
+    catch(e){ return null; }
+  }
+  function regimeScore(){
+    try { return window.__SPZ_REGIME && window.__SPZ_REGIME.score && window.__SPZ_REGIME.score(); }
+    catch(e){ return null; }
+  }
+  function regimeAlert(){
+    try { return window.__SPZ_REGIME && window.__SPZ_REGIME.alert && window.__SPZ_REGIME.alert(); }
+    catch(e){ return null; }
+  }
+  function regimeGauges(){
+    try { return (window.__SPZ_REGIME && window.__SPZ_REGIME.gauges) || null; }
+    catch(e){ return null; }
+  }
+  function anomalyRows(){
+    try { return (window.__SPZ_ANOMALY && window.__SPZ_ANOMALY.rows && window.__SPZ_ANOMALY.rows()) || null; }
+    catch(e){ return null; }
+  }
+  function correlSummary(){
+    try { return (window.__SPZ_CORREL && window.__SPZ_CORREL.summary && window.__SPZ_CORREL.summary()) || null; }
+    catch(e){ return null; }
+  }
+  function watchHeadline(){
+    try { return (window.__SPZ_WATCH && window.__SPZ_WATCH.headline && window.__SPZ_WATCH.headline()) || null; }
+    catch(e){ return null; }
+  }
+  function rankTop(n){
+    try {
+      var r = window.__SPZ_RANK && window.__SPZ_RANK({});
+      return r ? r.slice(0, n) : null;
+    } catch(e){ return null; }
+  }
+  function rankWhy(r){
+    try { return (window.__SPZ_WHY && window.__SPZ_WHY(r)) || []; }
+    catch(e){ return []; }
+  }
+
+  function fmtTime(iso){
+    if (!iso) return '—';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return String(iso);
+    return d.toLocaleString(L() === 'th' ? 'th-TH' : 'en-GB',
+      { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', hour12:false });
+  }
+
+  function goBtn(id, label){
+    return '<button type="button" class="cx-go" data-cx-go="' + id + '">' + esc(label) + '</button>';
+  }
+
+  /* ---------------- header: cycle + freshness + the pulse ring ---------------- */
+  function overallLevel(){
+    var al = regimeAlert();
+    if (al && al.level === 'alert') return 'alert';
+    if (al && al.level === 'warn') return 'warn';
+    return 'calm';
+  }
+
+  function headHTML(){
+    var cyc = window.SPZ_CYCLE;
+    var cycTxt = '';
+    if (cyc) {
+      cycTxt = tx(T.cycleFmt)
+        .replace('{p}', esc(tx(cyc.label())))
+        .replace('{n}', cyc.confidence ? cyc.confidence.n : '—')
+        .replace('{of}', cyc.confidence ? cyc.confidence.of : '—')
+        .replace('{d}', cyc.days());
+    }
+    return '<div class="cx-head">' +
+      '<div class="cx-head-l">' +
+        '<div class="cx-asof"><span>' + esc(tx(T.asof)) + ' <b data-cx="asof">—</b></span>' +
+        (cycTxt ? '<span><b>' + esc(cycTxt) + '</b></span>' : '') + '</div>' +
+      '</div>' +
+      '<div class="cx-pulse"><canvas data-cx="pulse" width="96" height="96"></canvas>' +
+        '<div class="cx-pulse-lbl" data-cx="pulselbl"></div></div>' +
+    '</div>';
+  }
+
+  function signalHTML(){
+    var al = regimeAlert();
+    var level = al ? al.level : 'calm';
+    var txt = al && al.text ? esc(al.text) : esc(tx(T.signalQuiet));
+    var ico = level === 'alert' ? '▲' : level === 'warn' ? '●' : '◆';
+    return '<div class="cx-signal ' + (level === 'alert' ? 'alert' : level === 'warn' ? 'warn' : '') + '">' +
+      '<span class="cx-signal-ico">' + ico + '</span><span>' + txt + '</span></div>';
+  }
+
+  /* ---------------- cards ---------------- */
+  function marketHTML(){
+    var s = snapshot();
+    var ms = marketStatus();
+    var mktRow = ms ? '<div class="cx-mkt">' +
+      '<span><i class="cx-dot" style="background:' + (ms.us ? 'var(--neon-2,#30d158)' : 'var(--grey-dim)') + '"></i>' +
+        esc(tx(ms.us ? T.usOpen : T.usClosed)) + '</span>' +
+      '<span><i class="cx-dot" style="background:' + (ms.set ? 'var(--neon-2,#30d158)' : 'var(--grey-dim)') + '"></i>' +
+        esc(tx(ms.set ? T.setOpen : T.setClosed)) + '</span></div>' : '';
+    var body;
+    if (!s || !s.stocks) {
+      body = '<div class="cx-txt">' + esc(tx(T.noMovers)) + '</div>';
+    } else {
+      var rows = [];
+      Object.keys(s.stocks).forEach(function(tk){
+        var r = s.stocks[tk];
+        if (!r || r.stale || !isNum(r.chg_pct)) return;
+        rows.push({ tk:tk, chg:r.chg_pct });
+      });
+      if (!rows.length) {
+        body = '<div class="cx-txt">' + esc(tx(T.noMovers)) + '</div>';
+      } else {
+        rows.sort(function(a,b){ return b.chg - a.chg; });
+        var gainers = rows.slice(0, 3), losers = rows.slice(-3).reverse();
+        function rowHTML(r){
+          return '<div class="cx-mrow"><span>' + esc(r.tk) + '</span><span class="' +
+            (r.chg >= 0 ? 'up' : 'dn') + '" style="color:' +
+            (r.chg >= 0 ? 'var(--neon-2,#30d158)' : 'var(--red,#ff3b4e)') + '">' + sgn(r.chg, 1) + '%</span></div>';
+        }
+        body = '<div class="cx-movers">' +
+          '<div class="cx-mcol"><div class="cx-mh">' + esc(tx(T.gainH)) + '</div>' + gainers.map(rowHTML).join('') + '</div>' +
+          '<div class="cx-mcol"><div class="cx-mh">' + esc(tx(T.loseH)) + '</div>' + losers.map(rowHTML).join('') + '</div>' +
+        '</div>';
+      }
+    }
+    return '<div class="cx-card"><div class="cx-lab">' + esc(tx(T.marketL)) + '</div>' +
+      mktRow + body + goBtn('now', tx(T.goNow)) + '</div>';
+  }
+
+  function gaugesHTML(){
+    var gauges = regimeGauges(), sc = regimeScore();
+    if (!gauges || !sc) {
+      return '<div class="cx-card cx-wide"><div class="cx-lab">' + esc(tx(T.gaugesL)) + '</div>' +
+        '<div class="cx-txt">' + esc(tx(T.gaugesNA)) + '</div>' + goBtn('regime', tx(T.goRegime)) + '</div>';
+    }
+    var rows = gauges.map(function(g, i){
+      var st = sc.states[i] || 'na';
+      var read = st !== 'na' && g.m && g.m[st] ? tx(g.m[st]) : tx(T.naReason);
+      return '<div class="cx-gauge-row"><span class="cx-gdot ' + st + '"></span>' +
+        '<span><b>' + esc(tx(g.n)) + ':</b> ' + esc(read) + '</span></div>';
+    }).join('');
+    return '<div class="cx-card cx-wide"><div class="cx-lab"><span>' + esc(tx(T.gaugesL)) + '</span>' +
+      '<span>' + sc.alerts + ' alert · ' + sc.soft + ' watch</span></div>' +
+      '<div class="cx-gauges">' + rows + '</div>' + goBtn('regime', tx(T.goRegime)) + '</div>';
+  }
+
+  function anomHTML(){
+    var rows = anomalyRows();
+    var body;
+    if (rows) {
+      body = rows.length
+        ? tx(T.anomTxt).replace('{n}', String(rows.length))
+        : esc(tx(T.anomZero));
+    } else {
+      body = esc(tx(T.anomNA));
+    }
+    return '<div class="cx-card"><div class="cx-lab">' + esc(tx(T.anomL)) + '</div>' +
+      '<div class="cx-txt">' + body + '</div>' + goBtn('anomaly', tx(T.goAnom)) + '</div>';
+  }
+
+  function correlHTML(){
+    var sm = correlSummary();
+    var body;
+    if (sm && sm.best && sm.worst) {
+      body = tx(T.correlTxt)
+        .replace('{v}', sm.avgAbs.toFixed(2))
+        .replace('{n}', String(sm.n))
+        .replace('{a}', esc(sm.best.a)).replace('{b}', esc(sm.best.b)).replace('{abv}', sm.best.v.toFixed(2))
+        .replace('{c}', esc(sm.worst.a)).replace('{d}', esc(sm.worst.b)).replace('{cdv}', sm.worst.v.toFixed(2));
+    } else {
+      body = esc(tx(T.correlNA));
+    }
+    return '<div class="cx-card"><div class="cx-lab">' + esc(tx(T.correlL)) + '</div>' +
+      '<div class="cx-txt">' + body + '</div>' + goBtn('correl', tx(T.goCorrel)) + '</div>';
+  }
+
+  function watchHTML(){
+    var h = watchHeadline();
+    var body = h ? tx(T.watchTxt).replace('{n}', String(h.n)).replace('{t}', esc(h.text)) : esc(tx(T.watchNone));
+    return '<div class="cx-card"><div class="cx-lab">' + esc(tx(T.watchL)) + '</div>' +
+      '<div class="cx-txt">' + body + '</div>' + goBtn('now', tx(T.goWatch)) + '</div>';
+  }
+
+  function rankHTML(){
+    var top = rankTop(5);
+    if (!top) {
+      return '<div class="cx-card cx-wide"><div class="cx-lab">' + esc(tx(T.rankL)) + '</div>' +
+        '<div class="cx-txt">' + esc(tx(T.rankNA)) + '</div>' + goBtn('desk', tx(T.goDesk)) + '</div>';
+    }
+    var rows = top.map(function(r){
+      var why = rankWhy(r).slice(0, 2).join(' · ');
+      return '<div class="cx-rank-row"><div class="cx-rank-l">' + esc(r.s.tk) +
+        (why ? '<span>' + esc(why) + '</span>' : '') + '</div>' +
+        '<div class="cx-rank-r">' + r.total.toFixed(0) + '</div></div>';
+    }).join('');
+    return '<div class="cx-card cx-wide"><div class="cx-lab">' + esc(tx(T.rankL)) + '</div>' +
+      rows + '<div class="cx-note">' + esc(tx(T.rankNote)) + '</div>' + goBtn('desk', tx(T.goDesk)) + '</div>';
+  }
+
+  function bodyHTML(){
+    return signalHTML() +
+      '<div class="cx-grid">' +
+        marketHTML() + anomHTML() + correlHTML() + watchHTML() + gaugesHTML() + rankHTML() +
+      '</div>' +
+      '<div class="ss-foot">' + esc(tx(T.foot)) + '</div>';
+  }
+
+  function bind(body){
+    body.querySelectorAll('[data-cx-go]').forEach(function(b){
+      b.addEventListener('click', function(){ location.hash = '#/' + b.getAttribute('data-cx-go'); });
+    });
+  }
+
+  /* ---------------- the pulse ring: a small breathing indicator whose
+     speed and colour follow the same alert level the Turn Signal banner
+     already computes -- calm and slow when clear, faster and redder as
+     something actually needs attention. Continuous by construction (a
+     sine breathing curve, not random jitter) so it is never mistaken for
+     a frozen static icon. ---------------- */
+  function stopPulse(){
+    if (pulse.raf) { cancelAnimationFrame(pulse.raf); pulse.raf = null; }
+  }
+
+  function mountPulse(){
+    stopPulse();
+    var canvas = sec && sec.querySelector('[data-cx="pulse"]');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    pulse.canvas = canvas; pulse.ctx = ctx; pulse.t = 0;
+
+    function colorFor(level){
+      if (level === 'alert') return { core:'#ff2d4d', ring:'rgba(255,45,77,.55)', speed:2.6 };
+      if (level === 'warn') return { core:'#ffb020', ring:'rgba(255,176,32,.5)', speed:1.6 };
+      return { core:'#f4f6f1', ring:'rgba(244,246,241,.4)', speed:0.9 };
+    }
+
+    function tick(){
+      if (!canvas.isConnected) { stopPulse(); return; }
+      if (sec.offsetParent === null) { pulse.raf = requestAnimationFrame(tick); return; }
+      pulse.level = overallLevel();
+      var c = colorFor(pulse.level);
+      pulse.t += 0.028 * c.speed;
+      var W = canvas.width, H = canvas.height, cx = W / 2, cy = H / 2;
+      ctx.clearRect(0, 0, W, H);
+      var breathe = (Math.sin(pulse.t) + 1) / 2;
+      var coreR = 13 + breathe * 4;
+      for (var i = 2; i >= 0; i--) {
+        var ringR = coreR + 10 + i * 11 + breathe * 5;
+        var alpha = (1 - i / 3) * (0.28 - breathe * 0.08);
+        ctx.beginPath();
+        ctx.arc(cx, cy, Math.max(1, ringR), 0, Math.PI * 2);
+        ctx.strokeStyle = c.ring.replace(/[\d.]+\)$/, Math.max(0.03, alpha).toFixed(3) + ')');
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
+      ctx.fillStyle = c.core;
+      ctx.shadowBlur = 14; ctx.shadowColor = c.ring;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      pulse.raf = requestAnimationFrame(tick);
+    }
+    tick();
+  }
+
+  function paint(){
+    if (!sec) return;
+    var q = function(k){ return sec.querySelector('[data-cx="' + k + '"]'); };
+    if (q('eb')) q('eb').textContent = tx(T.eyebrow);
+    if (q('h')) q('h').textContent = tx(T.h);
+    if (q('lede')) q('lede').textContent = tx(T.lede);
+    var body = q('body');
+    if (!body) return;
+    var s = snapshot();
+    if (q('asof')) q('asof').textContent = s ? fmtTime(s.generated_at) : tx(T.waiting);
+    body.innerHTML = bodyHTML();
+    bind(body);
+    var lvl = overallLevel();
+    var lblEl = q('pulselbl');
+    if (lblEl) lblEl.textContent = tx(lvl === 'alert' ? T.pulseAlert : lvl === 'warn' ? T.pulseWatch : T.pulseCalm);
+    mountPulse();
+  }
+
+  function build(){
+    if (document.getElementById('cockpit')) return true;
+    if (!document.querySelector('.top-fixed') || !window.__spzAddRoute) return false;
+
+    sec = document.createElement('section');
+    sec.id = 'cockpit';
+    sec.setAttribute('data-route', 'cockpit');
+    sec.innerHTML =
+      '<div class="cx-wrap">' +
+        '<div class="section-head reveal in-view">' +
+          '<div class="eyebrow"><span class="cursor"></span><span data-cx="eb"></span></div>' +
+          '<h2 data-cx="h"></h2>' +
+          '<p class="lede" data-cx="lede"></p>' +
+          '<div class="rule"></div>' +
+        '</div>' +
+        headHTML() +
+        '<div data-cx="body"></div>' +
+      '</div>';
+    document.body.appendChild(sec);
+
+    window.__spzAddRoute({
+      id:'cockpit', feat:true, after:'daily',
+      t:{en:'Command Center',th:'ศูนย์บัญชาการ'},
+      d:{en:'Every gauge, scan and ranking on this site, gathered onto one wide screen — a fast overview, not a replacement for the pages it reads from. Admin-only.',
+         th:'ตัวชี้วัด การสแกน และการจัดอันดับทุกอย่างในเว็บนี้ รวบมาไว้ในหน้ากว้างหน้าเดียว — ไว้กวาดภาพรวมเร็วๆ ไม่ใช่ตัวแทนหน้าจริงที่มันอ้างอิงมา เฉพาะแอดมิน'}
+    });
+
+    sec.__render = paint;
+    paint();
+    return true;
+  }
+
+  function boot(){
+    var tries = 0;
+    var iv = setInterval(function(){
+      if (build() || ++tries > 60) clearInterval(iv);
+    }, 400);
+
+    document.addEventListener('spz:snapshot', function(){ paint(); });
+    var seed = setInterval(function(){
+      if (snapshot()) { paint(); clearInterval(seed); }
+    }, 600);
+    setTimeout(function(){ clearInterval(seed); }, 45000);
+
+    new MutationObserver(paint)
+      .observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+  }
+
+  window.__SPZ_COCKPIT = { repaint: paint };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 1200); });
+  } else {
+    setTimeout(boot, 1200);
+  }
 })();
 </script>
 
