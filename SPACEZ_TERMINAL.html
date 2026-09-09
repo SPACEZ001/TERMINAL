@@ -31007,6 +31007,13 @@ var GM = {
     tiedFmt:{en:'{a} and {b} — correlation {v} over {n} weeks',th:'{a} กับ {b} — สหสัมพันธ์ {v} จาก {n} สัปดาห์'},
     diversFmt:{en:'{a} — correlation {v} to S&P 500 over {n} weeks',th:'{a} — สหสัมพันธ์ {v} กับ S&P 500 จาก {n} สัปดาห์'},
     pickHint:{en:'Click any square for the plain-language read.',th:'คลิกช่องไหนก็ได้เพื่ออ่านคำอธิบายแบบง่าย'},
+    guideH:{en:'WHAT THIS IS, AND HOW TO READ IT',th:'หน้านี้คืออะไร แล้วอ่านยังไง'},
+    guideBody:{
+      en:'Every square below compares the asset on that row against the asset in that column — using the ticker at the top (SPY, XLK, GLD, …) and the same ticker on the left. The number inside, from -1 to +1, says how closely their weekly price moves have tracked each other over the window you pick above. Color does the same job as the number: deep green means the two have moved together almost every week; deep red means one has tended to rise while the other fell; a dull grey square near 0 means the two barely relate at all. Why this matters for you: if you already hold something and add more of a deep-green neighbor, you have not really spread your risk — both tend to fall on the same bad week. Adding something deep red, or near 0, does spread it, because a bad week for one is not usually a bad week for the other. Click any square to get the one-sentence plain-language version, or use the window buttons to see whether a relationship has held over the last year, three years, five years, or the whole history.',
+      th:'ทุกช่องด้านล่างคือการเทียบสินทรัพย์ในแถวนั้นกับสินทรัพย์ในคอลัมน์นั้น — ดูจากตัวย่อแถวบน (SPY, XLK, GLD, …) กับตัวย่อเดียวกันทางซ้าย ตัวเลขในช่อง ตั้งแต่ -1 ถึง +1 บอกว่าราคาทั้งสองขยับตามกันมากแค่ไหนในแต่ละสัปดาห์ ตลอดช่วงเวลาที่เลือกไว้ด้านบน สีก็บอกเรื่องเดียวกับตัวเลข: เขียวเข้มแปลว่าสองอย่างขยับไปด้วยกันแทบทุกสัปดาห์ แดงเข้มแปลว่าตัวหนึ่งมักขึ้นตอนอีกตัวลง ส่วนช่องสีเทาหม่นใกล้ 0 แปลว่าแทบไม่เกี่ยวกันเลย ทำไมเรื่องนี้ถึงสำคัญ: ถ้าคุณถืออะไรอยู่แล้วไปเพิ่มตัวที่เขียวเข้มกับมัน แปลว่ายังไม่ได้กระจายความเสี่ยงจริง เพราะสัปดาห์แย่ของตัวหนึ่งมักเป็นสัปดาห์แย่ของอีกตัวด้วย แต่ถ้าเพิ่มตัวที่แดงเข้มหรือใกล้ 0 นั่นคือกระจายความเสี่ยงจริง เพราะสัปดาห์แย่ของตัวหนึ่งมักไม่ใช่สัปดาห์แย่ของอีกตัว คลิกช่องไหนก็ได้เพื่ออ่านคำอธิบายแบบง่ายทีละคู่ หรือกดปุ่มช่วงเวลาด้านบนเพื่อดูว่าความสัมพันธ์นี้คงที่ไหมในรอบ 1 ปี 3 ปี 5 ปี หรือทั้งหมด'
+    },
+    legOpp:{en:'−1 · move opposite',th:'−1 · สวนทางกัน'},
+    legTogether:{en:'+1 · move together',th:'+1 · ไปด้วยกัน'},
     strong:{en:'strong tie — these have moved almost in lockstep',th:'ผูกกันแน่น — ขยับไปทางเดียวกันแทบตลอด'},
     mod:{en:'moderate tie — these tend to lean the same direction',th:'ผูกกันปานกลาง — มักเอียงไปทิศทางเดียวกัน'},
     weak:{en:'little relationship — knowing one tells you almost nothing about the other',th:'แทบไม่เกี่ยวกัน — รู้ตัวหนึ่งแทบไม่ช่วยเดาอีกตัว'},
@@ -31156,7 +31163,8 @@ var GM = {
         }).join('') + '</tr>';
     }).join('');
     return '<div class="cm-tablewrap"><table class="cm-grid">' + head + rows + '</table>' +
-      '<div class="cm-legend"><span>-1</span><span class="cm-legbar"></span><span>+1</span>' +
+      '<div class="cm-legend"><span>' + esc(tx(T.legOpp)) + '</span><span class="cm-legbar"></span><span>' +
+      esc(tx(T.legTogether)) + '</span>' +
       '<span style="margin-left:10px;">' + esc(tx(T.pickHint)) + '</span></div></div>';
   }
 
@@ -31182,11 +31190,19 @@ var GM = {
 
   var sec = null;
 
+  function guideHTML(){
+    return '<div class="cm-card" style="flex:1 1 100%;margin-bottom:18px;">' +
+      '<div class="cm-cl">' + esc(tx(T.guideH)) + '</div>' +
+      '<div class="cm-cv" style="font-weight:400;font-size:12.5px;line-height:1.75;color:var(--grey);">' +
+      esc(tx(T.guideBody)) + '</div></div>';
+  }
+
   function bodyHTML(){
     if (state.data === false) return '<div class="ss-empty">' + esc(tx(T.noFile)) + '</div>';
     if (!state.data) return '<div class="ss-empty">' + esc(tx(T.waiting)) + '</div>';
     var mx = buildMatrix();
-    return '<div class="ss-pills" style="margin-bottom:16px;">' + pillsHTML() + '</div>' +
+    return guideHTML() +
+      '<div class="ss-pills" style="margin-bottom:16px;">' + pillsHTML() + '</div>' +
       calloutsHTML(mx) + gridHTML(mx) + detailHTML(mx) +
       '<div class="ss-foot">' + esc(tx(T.foot)) + '</div>';
   }
