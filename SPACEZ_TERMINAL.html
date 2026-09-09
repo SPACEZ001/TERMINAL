@@ -34276,6 +34276,18 @@ var GM = {
      already-loaded pinned tickers -- no other user's data, nothing new
      fetched.
 
+     Third later addition: the special nav-popup card was recoloured from
+     red to a black card with a white sweep (still the same shared
+     --lk/--lk-dim lock-sweep system, just recoloured -- see
+     .np-item-special below), the correlation heat map got a proper
+     diverging colour scale plus in-cell numbers and a legend instead of
+     flat green/red opacity (still the exact same CR.matrix() values --
+     see heatShade()), and a real analytical price chart was added: the
+     same chart the individual-stock page (#stock) draws for one ticker
+     (real closes, 50/200-day averages, dashed 52-week band, RSI
+     subplot), copied here with its own switchable ticker since this is a
+     dashboard rather than one stock's own page -- see priceChartHTML().
+
      Deliberately NOT the standard centred 1280px column every other screen
      uses (see the #cockpit{max-width:none} override below) -- this is the
      one screen meant to be scanned left-to-right like a real terminal, so
@@ -34373,15 +34385,26 @@ var GM = {
   #cockpit .cx-chart-price{font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);margin-top:6px;}
   html[data-theme="light"] #cockpit .cx-chart-top{color:#12141c;}
 
-  /* ---- correlation heat map: a coloured grid instead of the text summary ---- */
+  /* ---- correlation heat map: a diverging colour scale (crimson -> dark
+     slate -> emerald) instead of flat green/red opacity, with the actual
+     number inside each cell, a muted diagonal and a scale legend ---- */
   #cockpit .cx-heat-scroll{overflow-x:auto;margin-top:6px;}
-  #cockpit .cx-heat{display:grid;gap:1px;background:var(--border-dim);border:1px solid var(--border-dim);
+  #cockpit .cx-heat{display:grid;gap:2px;background:var(--border-dim);border:1px solid var(--border-dim);
     border-radius:8px;overflow:hidden;width:max-content;min-width:100%;}
   #cockpit .cx-heat-hd{background:var(--panel,#0d0d10);font-family:var(--mono);font-size:8px;
-    padding:4px 3px;text-align:center;color:var(--grey-dim);white-space:nowrap;min-width:34px;}
+    padding:4px 3px;text-align:center;color:var(--grey-dim);white-space:nowrap;min-width:36px;}
   #cockpit .cx-heat-rowlab{text-align:right;padding-right:6px;}
-  #cockpit .cx-heat-cell{min-width:34px;min-height:20px;}
+  #cockpit .cx-heat-cell{min-width:36px;min-height:26px;display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.2px;transition:transform .12s;}
+  #cockpit .cx-heat-cell:not(.cx-heat-diag):hover{transform:scale(1.12);position:relative;z-index:2;
+    box-shadow:0 0 0 1px rgba(255,255,255,.4);}
+  #cockpit .cx-heat-cell.cx-heat-diag{background:rgba(255,255,255,.045);color:var(--grey-dim);font-weight:400;}
   html[data-theme="light"] #cockpit .cx-heat-hd{background:#f3f4f8;}
+  html[data-theme="light"] #cockpit .cx-heat-cell.cx-heat-diag{background:rgba(0,0,0,.045);}
+  #cockpit .cx-heat-legend{display:flex;align-items:center;gap:9px;margin-top:11px;
+    font-family:var(--mono);font-size:9px;color:var(--grey-dim);}
+  #cockpit .cx-heat-legend-bar{flex:1 1 auto;max-width:220px;height:7px;border-radius:4px;
+    background:linear-gradient(90deg, rgb(255,71,87), rgb(26,28,34), rgb(40,201,122));}
 
   /* ---- stock heat map: every tracked stock, grouped by sector ---- */
   #cockpit .cx-heat-group{margin-top:12px;}
@@ -34403,19 +34426,80 @@ var GM = {
 
   /* ---- the special nav-popup card for this one route (see item()'s
      SPECIAL_ITEMS lookup) -- reuses the exact locked-item sweep/badge
-     system every admin route already has, just recoloured red for this
-     one entry so it reads as "the special one" while every other admin
-     item stays plain black+white ---- */
+     system every admin route already has (--lk/--lk-dim drive that
+     shared sweep+badge). Recoloured to a solid black card with a crisp
+     white frame and a brighter white sweep/glow than the plain, dimmer
+     black+white every other admin item uses, so this one entry reads as
+     the premium, one-of-a-kind screen ---- */
   .np-item.np-item-special{
-    border-color:rgba(255,45,77,.32);
-    background:linear-gradient(135deg, rgba(255,45,77,.09), rgba(255,255,255,.014));
+    border-color:rgba(255,255,255,.26);
+    background:linear-gradient(135deg, rgba(0,0,0,.82), rgba(18,18,20,.38));
+    box-shadow:0 0 0 1px rgba(255,255,255,.04) inset, 0 0 20px rgba(255,255,255,.05);
   }
-  .np-item.np-item-special:hover{border-color:rgba(255,45,77,.55);background:rgba(255,45,77,.12);}
+  .np-item.np-item-special:hover{
+    border-color:rgba(255,255,255,.68);
+    background:linear-gradient(135deg, rgba(0,0,0,.92), rgba(24,24,27,.45));
+    box-shadow:0 0 0 1px rgba(255,255,255,.1) inset, 0 0 30px rgba(255,255,255,.16);
+  }
   .np-item.np-item-special .np-t{color:var(--white);}
-  .np-item.np-item-special:hover .np-t{color:#ff2d4d;}
-  .np-item.np-item-special .np-n{color:#ff2d4d;}
-  .np-item-special.spz-need-admin{--lk:#ff2d4d;--lk-dim:rgba(255,45,77,.34);}
-  html[data-theme="light"] .np-item-special.spz-need-admin{--lk:#c81e3a;--lk-dim:rgba(200,30,58,.32);}
+  .np-item.np-item-special:hover .np-t{color:#ffffff;}
+  .np-item.np-item-special .np-n{color:#f4f6f1;letter-spacing:.4px;}
+  /* the void and light themes give the "currently open" nav item a
+     theme-coloured border via an html[data-theme=...] rule, which -- with
+     its extra type selector -- outranks a plain class-only override on
+     specificity; !important keeps this card black+white in every theme
+     even while its own page is the one currently open */
+  .np-item.np-item-special.on{
+    border-color:rgba(255,255,255,.68) !important;
+    background:linear-gradient(135deg, rgba(0,0,0,.92), rgba(24,24,27,.45)) !important;
+    box-shadow:0 0 0 1px rgba(255,255,255,.1) inset, 0 0 30px rgba(255,255,255,.16);
+  }
+  .np-item.np-item-special.on .np-t{color:#ffffff;}
+  .np-item.np-item-special.on .np-n{background:#f4f6f1 !important;}
+  .np-item-special.spz-need-admin{--lk:#ffffff;--lk-dim:rgba(255,255,255,.42);}
+
+  /* ---- real analytical price chart: the exact chart the individual-stock
+     page draws (real closes + 50/200-day averages + 52-week band + RSI
+     subplot), reused here with a switchable ticker since this is a
+     dashboard rather than one stock's own page -- same colours, same
+     canvas-free SVG approach, same site background (just the cockpit's
+     own translucent card, nothing new) ---- */
+  #cockpit .cx-pc-tksel{font-family:var(--mono);font-size:10.5px;background:rgba(255,255,255,.04);
+    color:var(--white);border:1px solid var(--border-dim);border-radius:8px;padding:4px 8px;cursor:pointer;}
+  #cockpit .cx-pc-box{border:1px solid var(--border-dim);border-radius:12px;padding:14px 6px 10px;
+    background:rgba(255,255,255,.014);position:relative;}
+  #cockpit .cx-pc-hdrow{display:flex;align-items:baseline;gap:10px;padding:0 12px 4px;
+    font-family:var(--mono);font-size:13px;color:var(--white);}
+  #cockpit .cx-pc-hdrow b{font-size:14px;font-weight:700;}
+  #cockpit .cx-pc-px{color:var(--grey-dim);}
+  #cockpit .cx-pc-crow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:0 12px 10px;}
+  #cockpit .cx-pc-r{font-family:var(--mono);font-size:10px;padding:5px 11px;border-radius:16px;
+    border:1px solid var(--border-dim);color:var(--grey);background:transparent;cursor:pointer;}
+  #cockpit .cx-pc-r.on{border-color:var(--neon,#cf0);color:var(--neon,#cf0);}
+  #cockpit .cx-pc-leg{margin-left:auto;display:flex;gap:13px;font-family:var(--mono);font-size:9.5px;
+    color:var(--grey-dim);flex-wrap:wrap;}
+  #cockpit .cx-pc-leg i{display:inline-block;width:14px;height:2px;vertical-align:middle;margin-right:5px;}
+  #cockpit .cx-pc-svg{width:100%;display:block;overflow:visible;touch-action:pan-y;}
+  #cockpit .cx-pc-svg.price{height:260px;}
+  #cockpit .cx-pc-svg.rsi{height:74px;}
+  @media(max-width:700px){
+    #cockpit .cx-pc-svg.price{height:200px;}
+    #cockpit .cx-pc-svg.rsi{height:58px;}
+  }
+  #cockpit .cx-pc-pw,#cockpit .cx-pc-rw{position:relative;}
+  #cockpit .cx-pc-ax{position:absolute;font-family:var(--mono);font-size:9.5px;color:var(--grey-dim);
+    transform:translateY(-50%);pointer-events:none;white-space:nowrap;}
+  #cockpit .cx-pc-axd{position:absolute;font-family:var(--mono);font-size:9.5px;color:var(--grey-dim);
+    pointer-events:none;white-space:nowrap;}
+  #cockpit .cx-pc-rlab{font-family:var(--mono);font-size:9.5px;letter-spacing:1px;color:var(--grey-dim);
+    padding:10px 0 2px 8px;}
+  #cockpit .cx-pc-tip{position:absolute;pointer-events:none;background:rgba(10,10,12,.94);
+    border:1px solid var(--border-dim);border-radius:7px;padding:8px 11px;font-family:var(--mono);
+    font-size:10.5px;color:var(--white);line-height:1.65;opacity:0;transition:opacity .12s;
+    white-space:nowrap;z-index:5;}
+  #cockpit .cx-pc-tip.on{opacity:1;}
+  #cockpit .cx-pc-tip b{color:var(--neon,#cf0);}
+  html[data-theme="light"] #cockpit .cx-pc-hdrow{color:#12141c;}
 </style>
 <script>
 (function(){
@@ -34539,6 +34623,17 @@ var GM = {
       th:'ใช้เครื่องมือจัดอันดับตัวเดียวกับหน้า "ตอนนี้ควรซื้ออะไร" ด้วยค่าเริ่มต้นของมัน — เป็นจุดเริ่มไปค้นคว้าต่อเอง ไม่ใช่คำแนะนำให้ซื้อ'},
     rankNA:{en:'The ranking engine hasn’t loaded yet.',th:'เครื่องมือจัดอันดับยังไม่โหลด'},
     goDesk:{en:'Open What To Buy Now →',th:'เปิดหน้าตอนนี้ควรซื้ออะไร →'},
+
+    priceChartL:{en:'REAL PRICE CHART',th:'กราฟราคาจริง'},
+    priceChartNote:{en:'Real daily closes from the same snapshot the rest of the terminal uses — not the practice data in Chart Lab. While price holds above the slower moving average, the long-term trend is still up.',
+      th:'ราคาปิดรายวันจริงจากชุดข้อมูลเดียวกับที่ทั้งเว็บใช้ ไม่ใช่ข้อมูลฝึกหัดในห้องทดลองกราฟ ตราบใดที่ราคายังอยู่เหนือเส้นค่าเฉลี่ยเส้นช้า เทรนด์ระยะยาวยังถือว่าขึ้นอยู่'},
+    priceChartNA:{en:'No real price history available yet — live market data hasn’t loaded, or this symbol has none.',
+      th:'ยังไม่มีราคาย้อนหลังจริงให้แสดง — ข้อมูลตลาดสดยังไม่โหลด หรือสัญลักษณ์นี้ยังไม่มีประวัติ'},
+    pcR63:{en:'3 months',th:'3 เดือน'}, pcR252:{en:'1 year',th:'1 ปี'}, pcR504:{en:'2 years',th:'2 ปี'},
+    pcLegP:{en:'price',th:'ราคา'}, pcLeg50:{en:'50-day average',th:'เฉลี่ย 50 วัน'},
+    pcLeg200:{en:'200-day average',th:'เฉลี่ย 200 วัน'}, pcLegHi:{en:'52-week high / low',th:'สูง/ต่ำสุดรอบปี'},
+    pcRsiLab:{en:'RSI — buying pressure',th:'RSI — แรงซื้อ'},
+    goStockDetail:{en:'Open This Stock →',th:'เปิดหน้าดูหุ้นรายตัว →'},
 
     foot:{en:'This screen fetches nothing new and computes nothing new — every figure is read from the exact module named on its card, live, each time that module refreshes. Treat it as a fast overview, and open the named screen for the full picture, the caveats, and the methodology behind any single number. Educational use only, not investment advice.',
       th:'หน้านี้ไม่ได้ดึงข้อมูลใหม่หรือคำนวณอะไรใหม่ — ทุกตัวเลขอ่านมาจากโมดูลที่ระบุไว้ในการ์ดนั้นๆ แบบสด ทุกครั้งที่โมดูลนั้นรีเฟรช ให้ใช้หน้านี้เพื่อกวาดภาพรวมเร็วๆ แล้วไปเปิดหน้าจริงเพื่อดูรายละเอียด ข้อควรระวัง และวิธีคิดเบื้องหลังตัวเลขแต่ละตัว ใช้เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน'}
@@ -34894,6 +34989,259 @@ var GM = {
       '<div class="cx-note">' + esc(tx(T.chartsNote)) + '</div>' + goBtn('chartlab', tx(T.goStock)) + '</div>';
   }
 
+  /* ---------------- real analytical price chart: the exact chart the
+     individual-stock page (#stock) draws for one ticker -- real daily
+     closes (snapshot().stocks[tk].c against the shared calendar), 50/200
+     day moving averages, a dashed 52-week high/low band and an RSI
+     subplot, with the same 3-month/1-year/2-year toggle. The maths and
+     the SVG layout are copied from #stock's own chartHTML()/wireChart()
+     (nothing there is exported, so this is a small self-contained
+     duplicate of pure, already-shipped logic, not new analysis) --
+     the one addition is a ticker picker, since this is a dashboard
+     rather than one stock's own page. ---------------- */
+  var PC = { tk:null, range:252 };
+  var PC_W = 1000, PC_H = 300, PC_PAD_L = 6, PC_PAD_R = 62, PC_TOP = 12, PC_BOT = 22, PC_RH = 78;
+
+  function pcSeries(tk){
+    var s = snapshot(), row = s && s.stocks && s.stocks[tk];
+    if (!row || !row.c || !row.cal || !s.charts || !s.charts.cal || !s.charts.cal[row.cal]) return null;
+    var days = s.charts.cal[row.cal].split(','), raw = row.c.split(',');
+    var d = [], v = [];
+    for (var i = 0; i < raw.length && i < days.length; i++) {
+      if (raw[i] === '') continue;
+      var n = parseFloat(raw[i]);
+      if (n > 0) { d.push(days[i]); v.push(n); }
+    }
+    return v.length >= 40 ? { d:d, v:v } : null;
+  }
+  function pcSma(v, n){
+    var out = new Array(v.length), run = 0;
+    for (var i = 0; i < v.length; i++) {
+      run += v[i];
+      if (i >= n) run -= v[i - n];
+      out[i] = i >= n - 1 ? run / n : null;
+    }
+    return out;
+  }
+  function pcRsi(v, n){
+    var out = new Array(v.length), g = 0, l = 0, i;
+    for (i = 0; i < v.length; i++) out[i] = null;
+    if (v.length < n + 1) return out;
+    for (i = 1; i <= n; i++) { var ch = v[i] - v[i - 1]; if (ch >= 0) g += ch; else l -= ch; }
+    g /= n; l /= n;
+    out[n] = l === 0 ? 100 : 100 - 100 / (1 + g / l);
+    for (i = n + 1; i < v.length; i++) {
+      var c = v[i] - v[i - 1];
+      g = (g * (n - 1) + (c > 0 ? c : 0)) / n;
+      l = (l * (n - 1) + (c < 0 ? -c : 0)) / n;
+      out[i] = l === 0 ? 100 : 100 - 100 / (1 + g / l);
+    }
+    return out;
+  }
+  function pcDefaultTk(){
+    if (PC.tk && pcSeries(PC.tk)) return PC.tk;
+    var cands = [];
+    var top = rankTop(1);
+    if (top && top[0] && top[0].s) cands.push(top[0].s.tk);
+    cands.push('SPY', 'QQQ', 'NVDA');
+    var s = snapshot();
+    if (s && s.stocks) cands = cands.concat(Object.keys(s.stocks));
+    for (var i = 0; i < cands.length; i++) if (pcSeries(cands[i])) { PC.tk = cands[i]; return PC.tk; }
+    return null;
+  }
+  function pcTickerOptions(tk){
+    var s = snapshot(), stocks = s && s.stocks;
+    if (!stocks) return '';
+    return Object.keys(stocks).sort().map(function(k){
+      return '<option value="' + esc(k) + '"' + (k === tk ? ' selected' : '') + '>' + esc(k) + '</option>';
+    }).join('');
+  }
+  function goStockBtn(tk, label){
+    return '<button type="button" class="cx-go" data-cx-open-stock="' + esc(tk || '') + '">' + esc(label) + '</button>';
+  }
+  function priceChartHTML(){
+    var s = snapshot();
+    if (!s || !s.stocks) {
+      return '<div class="cx-card cx-wide"><div class="cx-lab">' + esc(tx(T.priceChartL)) + '</div>' +
+        '<div class="cx-txt">' + esc(tx(T.priceChartNA)) + '</div>' + goBtn('stock', tx(T.goStockDetail)) + '</div>';
+    }
+    var tk = pcDefaultTk();
+    var head = '<div class="cx-lab"><span>' + esc(tx(T.priceChartL)) + '</span>' +
+      (tk ? '<select class="cx-pc-tksel" data-cx-pc-tk>' + pcTickerOptions(tk) + '</select>' : '') + '</div>';
+    var ser = tk && pcSeries(tk);
+    if (!ser) {
+      return '<div class="cx-card cx-wide">' + head +
+        '<div class="cx-txt">' + esc(tx(T.priceChartNA)) + '</div>' + goBtn('stock', tx(T.goStockDetail)) + '</div>';
+    }
+    var row = s.stocks[tk] || {};
+    var ma50 = pcSma(ser.v, 50), ma200 = pcSma(ser.v, 200);
+    var n = ser.v.length, take = Math.min(PC.range, n), from = n - take;
+    var v = ser.v.slice(from), d = ser.d.slice(from);
+    var m50 = ma50.slice(from), m200 = ma200.slice(from);
+    var pool = v.slice();
+    m50.concat(m200).forEach(function(x){ if (isNum(x)) pool.push(x); });
+    var lo = Math.min.apply(null, pool), hi = Math.max.apply(null, pool);
+    var span = (hi - lo) || 1;
+    lo -= span * 0.06; hi += span * 0.06; span = hi - lo;
+    var iw = PC_W - PC_PAD_L - PC_PAD_R, ih = PC_H - PC_TOP - PC_BOT;
+    var X = function(i){ return PC_PAD_L + (take === 1 ? 0 : i / (take - 1) * iw); };
+    var Y = function(p){ return PC_TOP + (hi - p) / span * ih; };
+    function path(arr){
+      var str = '', open = false;
+      for (var i = 0; i < arr.length; i++) {
+        if (!isNum(arr[i])) { open = false; continue; }
+        str += (open ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(arr[i]).toFixed(1) + ' ';
+        open = true;
+      }
+      return str.trim();
+    }
+    var LX = (PC_W - PC_PAD_R + 8) / PC_W * 100;
+    var gy = '', glab = '';
+    for (var g = 0; g <= 4; g++) {
+      var p = lo + span * (g / 4), y = Y(p);
+      gy += '<line x1="' + PC_PAD_L + '" y1="' + y.toFixed(1) + '" x2="' + (PC_W - PC_PAD_R) +
+        '" y2="' + y.toFixed(1) + '" stroke="rgba(255,255,255,.055)" stroke-width="1"/>';
+      glab += '<span class="cx-pc-ax" style="left:' + LX.toFixed(2) + '%;top:' +
+        (y / PC_H * 100).toFixed(2) + '%">' + esc(p >= 100 ? p.toFixed(0) : p.toFixed(2)) + '</span>';
+    }
+    var band = '';
+    if (PC.range >= 252 && isNum(row.hi52) && isNum(row.lo52) && row.hi52 > lo && row.lo52 < hi) {
+      [row.hi52, row.lo52].forEach(function(price){
+        var y = Y(price);
+        if (y < PC_TOP - 4 || y > PC_H - PC_BOT + 4) return;
+        band += '<line x1="' + PC_PAD_L + '" y1="' + y.toFixed(1) + '" x2="' + (PC_W - PC_PAD_R) +
+          '" y2="' + y.toFixed(1) + '" stroke="rgba(255,176,32,.32)" stroke-width="1" stroke-dasharray="4 4"/>';
+      });
+    }
+    var area = 'M' + X(0).toFixed(1) + ' ' + (PC_H - PC_BOT) + ' ' +
+      v.map(function(p, i){ return 'L' + X(i).toFixed(1) + ' ' + Y(p).toFixed(1); }).join('') +
+      ' L' + X(take - 1).toFixed(1) + ' ' + (PC_H - PC_BOT) + ' Z';
+    var tick = '';
+    [0, Math.floor(take / 3), Math.floor(take * 2 / 3), take - 1].forEach(function(i, k){
+      if (i < 0 || i >= take) return;
+      var pos = k === 3 ? 'right:' + (PC_PAD_R / PC_W * 100).toFixed(2) + '%'
+                        : 'left:' + (X(i) / PC_W * 100).toFixed(2) + '%';
+      tick += '<span class="cx-pc-axd" style="' + pos + ';top:' +
+        ((PC_H - PC_BOT + 6) / PC_H * 100).toFixed(2) + '%' +
+        (k === 0 || k === 3 ? '' : ';transform:translateX(-50%)') + '">' + esc(d[i].slice(0, 7)) + '</span>';
+    });
+    var rsi = pcRsi(ser.v, 14).slice(from);
+    var rih = PC_RH - 16;
+    var RY = function(x){ return 8 + (100 - x) / 100 * rih; };
+    var rpath = '', ropen = false;
+    for (var i2 = 0; i2 < rsi.length; i2++) {
+      if (!isNum(rsi[i2])) { ropen = false; continue; }
+      rpath += (ropen ? 'L' : 'M') + X(i2).toFixed(1) + ' ' + RY(rsi[i2]).toFixed(1) + ' ';
+      ropen = true;
+    }
+    var chg = v.length > 1 && v[0] ? (v[v.length - 1] - v[0]) / v[0] * 100 : 0;
+    var crow = '<div class="cx-pc-crow">' +
+      [63, 252, 504].map(function(rr){
+        if (rr > n + 20) return '';
+        return '<button type="button" class="cx-pc-r' + (PC.range === rr ? ' on' : '') +
+          '" data-cx-pc-range="' + rr + '">' + esc(tx(T['pcR' + rr])) + '</button>';
+      }).join('') +
+      '<span class="cx-pc-leg">' +
+        '<span><i style="background:var(--neon,#cf0)"></i>' + esc(tx(T.pcLegP)) + '</span>' +
+        '<span><i style="background:#5ec8ff"></i>' + esc(tx(T.pcLeg50)) + '</span>' +
+        '<span><i style="background:#b98cff"></i>' + esc(tx(T.pcLeg200)) + '</span>' +
+        (band ? '<span><i style="background:var(--amber,#ffb020)"></i>' + esc(tx(T.pcLegHi)) + '</span>' : '') +
+      '</span></div>';
+    var priceNow = fmtRate(row.price) + (row.ccy ? ' ' + esc(row.ccy) : '');
+    var body =
+      '<div class="cx-pc-hdrow"><b>' + esc(tk) + '</b>' +
+        '<span class="cx-pc-px">' + priceNow + '</span>' +
+        '<span style="color:' + (chg >= 0 ? 'var(--neon-2,#7CFFB2)' : 'var(--red,#ff3b4e)') + '">' + sgn(chg, 1) + '%</span>' +
+      '</div>' +
+      crow +
+      '<div data-cx-pc="plot"><div class="cx-pc-pw">' +
+      '<svg class="cx-pc-svg price" viewBox="0 0 ' + PC_W + ' ' + PC_H + '" preserveAspectRatio="none" data-cx-pc="price">' +
+        '<defs><linearGradient id="cxPcFill" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0%" stop-color="var(--neon,#cf0)" stop-opacity=".20"/>' +
+          '<stop offset="100%" stop-color="var(--neon,#cf0)" stop-opacity="0"/>' +
+        '</linearGradient></defs>' +
+        gy + band +
+        '<path d="' + area + '" fill="url(#cxPcFill)"/>' +
+        '<path d="' + path(m200) + '" fill="none" stroke="#b98cff" stroke-width="1.4" vector-effect="non-scaling-stroke" opacity=".85"/>' +
+        '<path d="' + path(m50) + '" fill="none" stroke="#5ec8ff" stroke-width="1.4" vector-effect="non-scaling-stroke" opacity=".85"/>' +
+        '<path d="' + path(v) + '" fill="none" stroke="var(--neon,#cf0)" stroke-width="1.9" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' +
+        '<line data-cx-pc="cross" x1="0" y1="' + PC_TOP + '" x2="0" y2="' + (PC_H - PC_BOT) +
+          '" stroke="rgba(255,255,255,.45)" stroke-width="1" opacity="0"/>' +
+        '<circle data-cx-pc="dot" r="3.5" fill="var(--neon,#cf0)" opacity="0"/>' +
+      '</svg>' + glab + tick +
+      '</div>' +
+      '<div class="cx-pc-rlab">' + esc(tx(T.pcRsiLab)) + '</div>' +
+      '<div class="cx-pc-rw">' +
+      '<svg class="cx-pc-svg rsi" viewBox="0 0 ' + PC_W + ' ' + PC_RH + '" preserveAspectRatio="none">' +
+        '<line x1="' + PC_PAD_L + '" y1="' + RY(70) + '" x2="' + (PC_W - PC_PAD_R) + '" y2="' + RY(70) +
+          '" stroke="rgba(255,59,78,.3)" stroke-width="1" stroke-dasharray="3 3"/>' +
+        '<line x1="' + PC_PAD_L + '" y1="' + RY(30) + '" x2="' + (PC_W - PC_PAD_R) + '" y2="' + RY(30) +
+          '" stroke="rgba(124,255,178,.3)" stroke-width="1" stroke-dasharray="3 3"/>' +
+        '<path d="' + rpath.trim() + '" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.3" vector-effect="non-scaling-stroke"/>' +
+      '</svg>' +
+      '<span class="cx-pc-ax" style="left:' + LX.toFixed(2) + '%;top:' + (RY(70) / PC_RH * 100).toFixed(2) + '%">70</span>' +
+      '<span class="cx-pc-ax" style="left:' + LX.toFixed(2) + '%;top:' + (RY(30) / PC_RH * 100).toFixed(2) + '%">30</span>' +
+      '</div>' +
+      '<div class="cx-pc-tip" data-cx-pc="tip"></div>' +
+      '</div>';
+    return '<div class="cx-card cx-wide">' + head +
+      '<div class="cx-pc-box">' + body + '</div>' +
+      '<div class="cx-note">' + esc(tx(T.priceChartNote)) + '</div>' + goStockBtn(tk, tx(T.goStockDetail)) + '</div>';
+  }
+
+  /* the crosshair has to survive every repaint, so it is wired straight
+     after bodyHTML() is dropped into the DOM -- same pattern #stock uses
+     for its own chart. */
+  function wirePriceChart(body){
+    var plot = body.querySelector('[data-cx-pc="plot"]');
+    var svg = body.querySelector('[data-cx-pc="price"]');
+    if (!plot || !svg) return;
+    var tk = pcDefaultTk(), ser = tk && pcSeries(tk);
+    if (!ser) return;
+    var n = ser.v.length, take = Math.min(PC.range, n), from = n - take;
+    var v = ser.v.slice(from), d = ser.d.slice(from);
+    var m50 = pcSma(ser.v, 50).slice(from);
+    var pool = v.slice();
+    pcSma(ser.v, 50).slice(from).concat(pcSma(ser.v, 200).slice(from))
+      .forEach(function(x){ if (isNum(x)) pool.push(x); });
+    var lo = Math.min.apply(null, pool), hi = Math.max.apply(null, pool);
+    var span = (hi - lo) || 1;
+    lo -= span * 0.06; hi += span * 0.06; span = hi - lo;
+    var iw = PC_W - PC_PAD_L - PC_PAD_R, ih = PC_H - PC_TOP - PC_BOT;
+    var cross = svg.querySelector('[data-cx-pc="cross"]');
+    var dot = svg.querySelector('[data-cx-pc="dot"]');
+    var tip = body.querySelector('[data-cx-pc="tip"]');
+    var row = (snapshot() || {}).stocks && (snapshot() || {}).stocks[tk];
+    var ccy = row && row.ccy;
+
+    function move(ev){
+      var box = svg.getBoundingClientRect();
+      var cx = (ev.touches ? ev.touches[0].clientX : ev.clientX) - box.left;
+      var frac = Math.max(0, Math.min(1, (cx / box.width * PC_W - PC_PAD_L) / iw));
+      var i = Math.round(frac * (take - 1));
+      if (i < 0 || i >= take) return;
+      var x = PC_PAD_L + (take === 1 ? 0 : i / (take - 1) * iw);
+      var y = PC_TOP + (hi - v[i]) / span * ih;
+      cross.setAttribute('x1', x); cross.setAttribute('x2', x); cross.setAttribute('opacity', '1');
+      dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('opacity', '1');
+      tip.classList.add('on');
+      tip.innerHTML = '<b>' + esc(d[i]) + '</b><br>' + esc(fmtRate(v[i]) + (ccy ? ' ' + ccy : '')) +
+        (isNum(m50[i]) ? '<br>' + esc(tx(T.pcLeg50)) + ' ' + esc(fmtRate(m50[i]) + (ccy ? ' ' + ccy : '')) : '');
+      var px = x / PC_W * box.width;
+      tip.style.left = Math.max(4, Math.min(box.width - tip.offsetWidth - 4, px + 12)) + 'px';
+      tip.style.top = Math.max(4, y / PC_H * box.height - 14) + 'px';
+    }
+    function leave(){
+      cross.setAttribute('opacity', '0');
+      dot.setAttribute('opacity', '0');
+      tip.classList.remove('on');
+    }
+    svg.addEventListener('mousemove', move);
+    svg.addEventListener('mouseleave', leave);
+    svg.addEventListener('touchmove', move, { passive:true });
+    svg.addEventListener('touchend', leave);
+  }
+
   /* ---------------- credit market: HYG-LQD spread + per-stock risk scan ---------------- */
   function creditHTML(){
     var s = snapshot();
@@ -34986,7 +35334,23 @@ var GM = {
       goBtn('watchlist', tx(T.goWl)) + '</div>';
   }
 
-  /* ---------------- correlation heat map: same matrix, colour grid instead of text ---------------- */
+  /* ---------------- correlation heat map: same matrix (CR.matrix()), a
+     proper diverging colour scale instead of flat green/red opacity --
+     crimson at -1, a dark neutral slate at 0, emerald at +1, luminance
+     picked per-cell so the number stays readable either way. The real
+     Correlation Map page and its own corrColor()/CR.color getter are
+     untouched -- this is only a nicer rendering, here, of the exact same
+     v values. ---------------- */
+  function heatShade(v){
+    if (!isNum(v)) return { bg:'rgba(255,255,255,.035)', fg:'var(--grey-dim)' };
+    var t = Math.max(-1, Math.min(1, v)), a = Math.abs(t);
+    var neutral = [26, 28, 34], pos = [40, 201, 122], neg = [255, 71, 87];
+    var base = t >= 0 ? pos : neg;
+    var mix = function(i){ return Math.round(neutral[i] + (base[i] - neutral[i]) * a); };
+    var r = mix(0), g = mix(1), b = mix(2);
+    var lum = 0.299 * r + 0.587 * g + 0.114 * b;
+    return { bg:'rgb(' + r + ',' + g + ',' + b + ')', fg: lum > 140 ? '#0a0c10' : 'rgba(255,255,255,.94)' };
+  }
   function correlHeatHTML(){
     var CR = window.__SPZ_CORREL, mx = null;
     try { mx = CR && CR.matrix && CR.matrix(); } catch(e){ mx = null; }
@@ -34995,21 +35359,27 @@ var GM = {
         '<div class="cx-txt">' + esc(tx(T.corrHeatNA)) + '</div>' + goBtn('correl', tx(T.goCorrel)) + '</div>';
     }
     var syms = mx.syms, M = mx.M;
-    var colorFn = CR.color || function(){ return 'rgba(255,255,255,.04)'; };
     var cells = '<div class="cx-heat-hd"></div>' + syms.map(function(s){
       return '<div class="cx-heat-hd" title="' + esc(tx(s)) + '">' + esc(s.sym) + '</div>';
     }).join('');
     syms.forEach(function(rowS, i){
       cells += '<div class="cx-heat-hd cx-heat-rowlab" title="' + esc(tx(rowS)) + '">' + esc(rowS.sym) + '</div>';
       syms.forEach(function(colS, j){
+        if (i === j) {
+          cells += '<div class="cx-heat-cell cx-heat-diag" title="' + esc(rowS.sym) + '">—</div>';
+          return;
+        }
         var c = M[i][j], v = c ? c.v : null;
-        cells += '<div class="cx-heat-cell" style="background:' + colorFn(v) + '" title="' +
-          esc(rowS.sym) + ' × ' + esc(colS.sym) + ': ' + (v === null ? '—' : v.toFixed(2)) + '"></div>';
+        var sh = heatShade(v);
+        cells += '<div class="cx-heat-cell" style="background:' + sh.bg + ';color:' + sh.fg + '" title="' +
+          esc(rowS.sym) + ' × ' + esc(colS.sym) + ': ' + (v === null ? '—' : v.toFixed(2)) + '">' +
+          (v === null ? '—' : v.toFixed(2).replace(/^(-?)0\./, '$1.')) + '</div>';
       });
     });
     return '<div class="cx-card cx-wide"><div class="cx-lab">' + esc(tx(T.corrHeatL)) + '</div>' +
       '<div class="cx-heat-scroll"><div class="cx-heat" style="grid-template-columns:repeat(' + (syms.length + 1) + ',1fr);">' +
       cells + '</div></div>' +
+      '<div class="cx-heat-legend"><span>-1</span><span class="cx-heat-legend-bar"></span><span>+1</span></div>' +
       '<div class="cx-note">' + esc(tx(T.corrHeatNote)) + '</div>' + goBtn('correl', tx(T.goCorrel)) + '</div>';
   }
 
@@ -35073,7 +35443,7 @@ var GM = {
       '<div class="cx-grid">' +
         marketHTML() + macroHTML() + fxHTML() + flowHTML() + globeHTML() + inflHTML() +
         creditHTML() + bubbleHTML() + anomHTML() + correlHTML() + watchHTML() + watchTableHTML() +
-        gaugesHTML() + correlHeatHTML() + stockHeatHTML() + chartsHTML() + rankHTML() +
+        gaugesHTML() + correlHeatHTML() + stockHeatHTML() + chartsHTML() + priceChartHTML() + rankHTML() +
       '</div>' +
       '<div class="ss-foot">' + esc(tx(T.foot)) + '</div>';
   }
@@ -35082,6 +35452,19 @@ var GM = {
     body.querySelectorAll('[data-cx-go]').forEach(function(b){
       b.addEventListener('click', function(){ location.hash = '#/' + b.getAttribute('data-cx-go'); });
     });
+    body.querySelectorAll('[data-cx-open-stock]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var tk = b.getAttribute('data-cx-open-stock');
+        if (tk && window.__SPZ_STOCK && window.__SPZ_STOCK.open) window.__SPZ_STOCK.open(tk);
+        else location.hash = '#/stock';
+      });
+    });
+    var pcSel = body.querySelector('[data-cx-pc-tk]');
+    if (pcSel) pcSel.addEventListener('change', function(){ PC.tk = pcSel.value; paint(); });
+    body.querySelectorAll('[data-cx-pc-range]').forEach(function(b){
+      b.addEventListener('click', function(){ PC.range = parseInt(b.getAttribute('data-cx-pc-range'), 10); paint(); });
+    });
+    wirePriceChart(body);
   }
 
   /* ---------------- the pulse ring: a small breathing indicator whose
