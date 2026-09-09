@@ -19482,6 +19482,10 @@ var INFL = {
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 420); });
   else setTimeout(boot, 420);
+
+  /* read-only hook for the Command Center: the dated CPI / policy-rate /
+     currency table above, compiled by hand, unchanged by this addition. */
+  window.__SPZ_INFL = { countries: INFL.c, note: INFL.note };
 })();
 </script>
 
@@ -34232,6 +34236,18 @@ var GM = {
      window.SPZ_CYCLE. If a module hasn't booted yet its card just says so
      -- the rest of the page still renders.
 
+     Later addition: currency board, capital-flow (sector/country) and
+     macro/rates cards read the same market.json snapshot object
+     window.__SPZ_LIVE already fetches (its .ccy / .flows / .macro / .regime
+     fields -- the exact numbers the Currency Board, Capital Flow and World
+     Money Map screens already render from). The price charts read each
+     stock's own daily-close history (snapshot().stocks[tk].c), the same
+     series every stock card and chart tool on the site draws from. The
+     inflation & policy table reads window.__SPZ_INFL (a one-line getter
+     added to the Inflation & Currency Desk module for its already-typed,
+     dated CPI/policy-rate country table) -- still nothing invented, still
+     labelled as the dated hand-compiled snapshot it is.
+
      Deliberately NOT the standard centred 1280px column every other screen
      uses (see the #cockpit{max-width:none} override below) -- this is the
      one screen meant to be scanned left-to-right like a real terminal, so
@@ -34298,6 +34314,36 @@ var GM = {
   #cockpit .cx-rank-r{font-family:var(--mono);font-size:12px;color:var(--grey-dim);white-space:nowrap;}
   #cockpit .cx-note{font-size:10.8px;color:var(--grey-dim);line-height:1.6;margin-top:2px;}
   html[data-theme="light"] #cockpit .cx-txt,html[data-theme="light"] #cockpit .cx-rank-l{color:#12141c;}
+
+  /* ---- stat grid: macro/rates readouts (DXY, yields, VIX, indices) ---- */
+  #cockpit .cx-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:12px 16px;}
+  #cockpit .cx-stat{display:flex;flex-direction:column;gap:3px;}
+  #cockpit .cx-stat-l{font-family:var(--mono);font-size:9px;letter-spacing:.7px;text-transform:uppercase;color:var(--grey-dim);}
+  #cockpit .cx-stat-v{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--white);}
+  #cockpit .cx-stat-d{font-family:var(--mono);font-size:10.5px;font-weight:600;}
+  html[data-theme="light"] #cockpit .cx-stat-v{color:#12141c;}
+
+  /* ---- compact 4-column list: FX board / inflation & policy table ---- */
+  #cockpit .cx-fx-head{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:6px;
+    font-family:var(--mono);font-size:8.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--grey-dim);
+    padding:0 0 6px;border-bottom:1px solid var(--border-dim);margin-bottom:2px;}
+  #cockpit .cx-fx-head span:not(:first-child),#cockpit .cx-fx-row span:not(:first-child){text-align:right;}
+  #cockpit .cx-fx-list{display:flex;flex-direction:column;}
+  #cockpit .cx-fx-row{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:6px;align-items:baseline;
+    font-size:12px;color:var(--white);padding:6px 0;border-bottom:1px dashed rgba(255,255,255,.06);}
+  #cockpit .cx-fx-row:last-child{border-bottom:none;}
+  #cockpit .cx-fx-rate{font-family:var(--mono);color:var(--grey);}
+  html[data-theme="light"] #cockpit .cx-fx-row{color:#12141c;}
+
+  /* ---- real price sparklines pulled from each stock's own history ---- */
+  #cockpit .cx-chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;}
+  #cockpit .cx-chart{border:1px solid var(--border-dim);border-radius:10px;padding:11px 13px;background:rgba(255,255,255,.014);}
+  #cockpit .cx-chart-top{display:flex;justify-content:space-between;align-items:baseline;
+    font-family:var(--mono);font-size:12px;color:var(--white);margin-bottom:7px;}
+  #cockpit .cx-chart-top b{font-weight:700;}
+  #cockpit .cx-chart svg{width:100%;height:40px;display:block;}
+  #cockpit .cx-chart-price{font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);margin-top:6px;}
+  html[data-theme="light"] #cockpit .cx-chart-top{color:#12141c;}
 
   /* the one page whose accent is red instead of the site's lime/void-blue --
      it is deliberately the "special" one, so it should not just look like a
@@ -34376,6 +34422,37 @@ var GM = {
     watchNone:{en:'Nothing has changed enough to flag since your last visit.',th:'ยังไม่มีอะไรเปลี่ยนมากพอจะแจ้งตั้งแต่ครั้งก่อน'},
     goWatch:{en:'Open What Now →',th:'เปิดหน้าตอนนี้เกิดอะไรขึ้น →'},
 
+    macroL:{en:'MACRO & RATES',th:'มหภาคและอัตราดอกเบี้ย'},
+    macroNA:{en:'Live market data hasn’t loaded yet.',th:'ข้อมูลตลาดสดยังไม่โหลด'},
+    macroCurve:{en:'Yield curve (10y − 3m)',th:'เส้นผลตอบแทน (10 ปี − 3 เดือน)'},
+    goRegime2:{en:'Open Turning Point Radar →',th:'เปิดหน้าสัญญาณเปลี่ยนทิศ →'},
+
+    fxL:{en:'CURRENCY BOARD',th:'กระดานค่าเงิน'},
+    fxVsUsd:{en:'vs USD',th:'เทียบดอลลาร์'}, fxRate:{en:'RATE',th:'อัตรา'},
+    fx1d:{en:'1D',th:'1 วัน'}, fx1m:{en:'1M',th:'1 เดือน'},
+    fxNA:{en:'Live currency data hasn’t loaded yet.',th:'ข้อมูลค่าเงินสดยังไม่โหลด'},
+    goInfl:{en:'Open Currency Board →',th:'เปิดหน้ากระดานค่าเงิน →'},
+
+    flowL:{en:'CAPITAL FLOW — SECTORS',th:'เงินทุนไหล — กลุ่มอุตสาหกรรม'},
+    flowNA:{en:'The flow scanner hasn’t loaded yet.',th:'สแกนกระแสเงินยังไม่โหลด'},
+    goFlow:{en:'Open Capital Flow →',th:'เปิดหน้าเงินทุนไหล →'},
+
+    globeL:{en:'WORLD MONEY MAP',th:'แผนที่เงินโลก'},
+    globeNA:{en:'The world money scan hasn’t loaded yet.',th:'สแกนเงินโลกยังไม่โหลด'},
+    goGlobe:{en:'Open World Money Map →',th:'เปิดหน้าแผนที่เงินโลก →'},
+
+    inflL:{en:'INFLATION & POLICY RATES',th:'เงินเฟ้อและดอกเบี้ยนโยบาย'},
+    inflPolicy:{en:'Policy',th:'นโยบาย'}, inflReal:{en:'Real',th:'แท้จริง'},
+    inflNA:{en:'The inflation & currency desk hasn’t loaded yet.',th:'โต๊ะเงินเฟ้อและค่าเงินยังไม่โหลด'},
+    inflNote:{en:'Hand-compiled dated snapshot (central bank releases, national statistics offices) — not live, updates monthly at most. See the full table for exact dates.',
+      th:'รวบรวมด้วยมือเป็นภาพนิ่งตามวันที่ระบุ (จากประกาศธนาคารกลางและสำนักงานสถิติแห่งชาติ) ไม่ใช่ข้อมูลสด อัปเดตอย่างเร็วที่สุดเดือนละครั้ง ดูวันที่แน่นอนได้ที่ตารางเต็ม'},
+
+    chartsL:{en:'PRICE CHARTS',th:'กราฟราคา'},
+    chartsNA:{en:'Price history hasn’t loaded yet.',th:'ประวัติราคายังไม่โหลด'},
+    chartsNote:{en:'Actual daily closing prices for each symbol, most recent ~90 trading days — the same history each stock card and chart tool on this site draws from.',
+      th:'ราคาปิดรายวันจริงของแต่ละสัญลักษณ์ ย้อนหลังประมาณ 90 วันทำการล่าสุด — ประวัติชุดเดียวกับที่การ์ดหุ้นและเครื่องมือกราฟในเว็บนี้ใช้'},
+    goStock:{en:'Open Chart Lab →',th:'เปิดหน้าห้องทดลองกราฟ →'},
+
     rankL:{en:'WORTH A LOOK RIGHT NOW',th:'น่าดูตอนนี้'},
     rankNote:{en:'The same ranking engine as What To Buy Now, run with its default settings — a starting point for your own research, not a recommendation to buy anything.',
       th:'ใช้เครื่องมือจัดอันดับตัวเดียวกับหน้า "ตอนนี้ควรซื้ออะไร" ด้วยค่าเริ่มต้นของมัน — เป็นจุดเริ่มไปค้นคว้าต่อเอง ไม่ใช่คำแนะนำให้ซื้อ'},
@@ -34430,6 +34507,51 @@ var GM = {
   function rankWhy(r){
     try { return (window.__SPZ_WHY && window.__SPZ_WHY(r)) || []; }
     catch(e){ return []; }
+  }
+  function inflCountries(){
+    try { return (window.__SPZ_INFL && window.__SPZ_INFL.countries) || null; }
+    catch(e){ return null; }
+  }
+
+  function chgSpan(v, d){
+    if (!isNum(v)) return '<span style="color:var(--grey-dim)">—</span>';
+    return '<span style="color:' + (v >= 0 ? 'var(--neon-2,#7CFFB2)' : 'var(--red,#ff3b4e)') + '">' +
+      sgn(v, d === undefined ? 2 : d) + '%</span>';
+  }
+  function fmtRate(v){
+    if (!isNum(v)) return '—';
+    var d = v >= 500 ? 0 : v >= 20 ? 2 : 4;
+    return v.toLocaleString('en-US', { minimumFractionDigits:d, maximumFractionDigits:d });
+  }
+  /* a real line built from the same daily-close history every stock card
+     and chart tool on this site already carries (snapshot().stocks[tk].c) --
+     no new fetch, no synthetic data, just the last ~90 closes traced out. */
+  function stockSpark(tk){
+    var s = snapshot();
+    var row = s && s.stocks && s.stocks[tk];
+    if (!row || !row.c) return null;
+    var raw = row.c.split(',');
+    var vals = [];
+    for (var i = Math.max(0, raw.length - 90); i < raw.length; i++) {
+      if (raw[i] === '') continue;
+      var n = parseFloat(raw[i]);
+      if (isNum(n) && n > 0) vals.push(n);
+    }
+    if (vals.length < 10) return null;
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    var rng = (hi - lo) || 1, n2 = vals.length;
+    var pts = vals.map(function(v, i){
+      var x = (i / (n2 - 1)) * 100, y = 30 - ((v - lo) / rng) * 28;
+      return x.toFixed(2) + ',' + y.toFixed(2);
+    }).join(' ');
+    var chg = (vals[n2 - 1] - vals[0]) / vals[0] * 100;
+    var col = chg >= 0 ? 'var(--neon-2,#7CFFB2)' : 'var(--red,#ff3b4e)';
+    return {
+      tk:tk, price:vals[n2 - 1], chg:chg, ccy:row.ccy || '',
+      svg:'<svg viewBox="0 0 100 32" preserveAspectRatio="none">' +
+        '<polyline points="' + pts + '" fill="none" stroke="' + col +
+        '" stroke-width="1.7" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>'
+    };
   }
 
   function fmtTime(iso){
@@ -34567,6 +34689,130 @@ var GM = {
       '<div class="cx-txt">' + body + '</div>' + goBtn('correl', tx(T.goCorrel)) + '</div>';
   }
 
+  /* ---------------- macro & rates: DXY, yields, VIX, SET, S&P ---------------- */
+  function macroHTML(){
+    var s = snapshot();
+    var m = s && s.macro, rg = s && s.regime;
+    if (!m) {
+      return '<div class="cx-card cx-wide"><div class="cx-lab">' + esc(tx(T.macroL)) + '</div>' +
+        '<div class="cx-txt">' + esc(tx(T.macroNA)) + '</div>' + goBtn('regime', tx(T.goRegime2)) + '</div>';
+    }
+    function stat(lab, val, d1){
+      return '<div class="cx-stat"><span class="cx-stat-l">' + esc(lab) + '</span>' +
+        '<span class="cx-stat-v">' + val + '</span>' +
+        (isNum(d1) ? '<span class="cx-stat-d" style="color:' +
+          (d1 >= 0 ? 'var(--neon-2,#7CFFB2)' : 'var(--red,#ff3b4e)') + '">' + sgn(d1, 2) + '%</span>' : '') +
+      '</div>';
+    }
+    var curve = rg && isNum(rg.curve_10y_3m) ? rg.curve_10y_3m : null;
+    var stats =
+      stat('DXY', m.dxy && isNum(m.dxy.price) ? m.dxy.price.toFixed(2) : '—', m.dxy && m.dxy.d1) +
+      stat(tx({en:'US 10Y',th:'สหรัฐฯ 10 ปี'}), m.us10y && isNum(m.us10y.price) ? m.us10y.price.toFixed(2) + '%' : '—', m.us10y && m.us10y.d1) +
+      stat(tx({en:'US 3M',th:'สหรัฐฯ 3 เดือน'}), m.us3m && isNum(m.us3m.price) ? m.us3m.price.toFixed(2) + '%' : '—', m.us3m && m.us3m.d1) +
+      stat(tx(T.macroCurve), curve !== null ? sgn(curve, 2) : '—', null) +
+      stat('VIX', m.vix && isNum(m.vix.price) ? m.vix.price.toFixed(1) : '—', m.vix && m.vix.d1) +
+      stat('SET', m.set && isNum(m.set.price) ? m.set.price.toFixed(1) : '—', m.set && m.set.d1) +
+      stat('S&P 500', m.spx && isNum(m.spx.price) ? m.spx.price.toFixed(0) : '—', m.spx && m.spx.d1);
+    return '<div class="cx-card cx-wide"><div class="cx-lab">' + esc(tx(T.macroL)) + '</div>' +
+      '<div class="cx-stat-grid">' + stats + '</div>' + goBtn('regime', tx(T.goRegime2)) + '</div>';
+  }
+
+  /* ---------------- currency board ---------------- */
+  var FX_PICK = ['THB','EUR','JPY','CNY','GBP','KRW','SGD','AUD'];
+  function fxHTML(){
+    var s = snapshot();
+    var ccy = s && s.ccy;
+    if (!ccy || !ccy.THB) {
+      return '<div class="cx-card"><div class="cx-lab">' + esc(tx(T.fxL)) + '</div>' +
+        '<div class="cx-txt">' + esc(tx(T.fxNA)) + '</div>' + goBtn('infl', tx(T.goInfl)) + '</div>';
+    }
+    var rows = FX_PICK.filter(function(k){ return ccy[k]; }).map(function(k){
+      var r = ccy[k];
+      return '<div class="cx-fx-row"><span>' + esc(k) + '</span>' +
+        '<span class="cx-fx-rate">' + fmtRate(r.rate) + '</span>' +
+        chgSpan(r.d1) + chgSpan(r.m1) + '</div>';
+    }).join('');
+    return '<div class="cx-card"><div class="cx-lab"><span>' + esc(tx(T.fxL)) + '</span>' +
+      '<span>' + esc(tx(T.fxVsUsd)) + '</span></div>' +
+      '<div class="cx-fx-head"><span></span><span>' + esc(tx(T.fxRate)) + '</span>' +
+        '<span>' + esc(tx(T.fx1d)) + '</span><span>' + esc(tx(T.fx1m)) + '</span></div>' +
+      '<div class="cx-fx-list">' + rows + '</div>' + goBtn('infl', tx(T.goInfl)) + '</div>';
+  }
+
+  /* ---------------- capital flow: sector leaders / laggards ---------------- */
+  function flowGroupHTML(group, lab, na, route, btn){
+    var s = snapshot();
+    var list = s && s.flows && s.flows[group];
+    if (!list || !list.length) {
+      return '<div class="cx-card"><div class="cx-lab">' + esc(tx(lab)) + '</div>' +
+        '<div class="cx-txt">' + esc(tx(na)) + '</div>' + goBtn(route, tx(btn)) + '</div>';
+    }
+    var have = list.filter(function(r){ return isNum(r.m1); }).slice();
+    have.sort(function(a, b){ return b.m1 - a.m1; });
+    var inRows = have.slice(0, 3), outRows = have.slice(-3).reverse();
+    function row(r){
+      return '<div class="cx-mrow"><span>' + esc((r.flag ? r.flag + ' ' : '') + tx(r)) + '</span>' +
+        '<span style="color:' + (r.m1 >= 0 ? 'var(--neon-2,#7CFFB2)' : 'var(--red,#ff3b4e)') + '">' +
+        sgn(r.m1, 1) + '%</span></div>';
+    }
+    return '<div class="cx-card"><div class="cx-lab">' + esc(tx(lab)) + '</div>' +
+      '<div class="cx-movers"><div class="cx-mcol"><div class="cx-mh">' + esc(tx(T.gainH)) + '</div>' +
+        inRows.map(row).join('') + '</div>' +
+      '<div class="cx-mcol"><div class="cx-mh">' + esc(tx(T.loseH)) + '</div>' +
+        outRows.map(row).join('') + '</div></div>' + goBtn(route, tx(btn)) + '</div>';
+  }
+  function flowHTML(){ return flowGroupHTML('sector', T.flowL, T.flowNA, 'flow', T.goFlow); }
+  function globeHTML(){ return flowGroupHTML('country', T.globeL, T.globeNA, 'globe', T.goGlobe); }
+
+  /* ---------------- inflation & policy rates (dated, hand-compiled) ---------------- */
+  var INFL_PICK = ['thailand','united-states','euro-area','japan','china','india'];
+  function inflHTML(){
+    var all = inflCountries();
+    if (!all) {
+      return '<div class="cx-card"><div class="cx-lab">' + esc(tx(T.inflL)) + '</div>' +
+        '<div class="cx-txt">' + esc(tx(T.inflNA)) + '</div>' + goBtn('infl', tx(T.goInfl)) + '</div>';
+    }
+    var byU = {}; all.forEach(function(c){ byU[c.u] = c; });
+    var rows = INFL_PICK.map(function(u){
+      var c = byU[u];
+      if (!c || !isNum(c.cpi) || !isNum(c.rate)) return '';
+      var real = c.rate - c.cpi;
+      return '<div class="cx-fx-row"><span>' + esc((c.f ? c.f + ' ' : '') + tx(c.n)) + '</span>' +
+        '<span class="cx-fx-rate">' + c.cpi.toFixed(1) + '%</span>' +
+        '<span class="cx-fx-rate">' + c.rate.toFixed(2) + '%</span>' +
+        '<span style="color:' + (real >= 0 ? 'var(--neon-2,#7CFFB2)' : 'var(--red,#ff3b4e)') + '">' +
+        sgn(real, 1) + '%</span></div>';
+    }).join('');
+    return '<div class="cx-card"><div class="cx-lab">' + esc(tx(T.inflL)) + '</div>' +
+      '<div class="cx-fx-head"><span></span><span>CPI</span><span>' + esc(tx(T.inflPolicy)) +
+        '</span><span>' + esc(tx(T.inflReal)) + '</span></div>' +
+      '<div class="cx-fx-list">' + rows + '</div>' +
+      '<div class="cx-note">' + esc(tx(T.inflNote)) + '</div>' + goBtn('infl', tx(T.goInfl)) + '</div>';
+  }
+
+  /* ---------------- real price charts for a handful of symbols ---------------- */
+  function chartsHTML(){
+    var top = rankTop(4);
+    var syms = ['SPY', 'QQQ'];
+    if (top) top.forEach(function(r){ if (r && r.s && syms.indexOf(r.s.tk) === -1) syms.push(r.s.tk); });
+    syms = syms.slice(0, 6);
+    var cards = syms.map(function(tk){
+      var d = stockSpark(tk);
+      if (!d) return '';
+      return '<div class="cx-chart"><div class="cx-chart-top"><b>' + esc(tk) + '</b>' +
+        '<span style="color:' + (d.chg >= 0 ? 'var(--neon-2,#7CFFB2)' : 'var(--red,#ff3b4e)') + '">' +
+        sgn(d.chg, 1) + '%</span></div>' + d.svg +
+        '<div class="cx-chart-price">' + fmtRate(d.price) + (d.ccy ? ' ' + esc(d.ccy) : '') + '</div></div>';
+    }).filter(Boolean).join('');
+    if (!cards) {
+      return '<div class="cx-card cx-wide"><div class="cx-lab">' + esc(tx(T.chartsL)) + '</div>' +
+        '<div class="cx-txt">' + esc(tx(T.chartsNA)) + '</div>' + goBtn('chartlab', tx(T.goStock)) + '</div>';
+    }
+    return '<div class="cx-card cx-wide"><div class="cx-lab">' + esc(tx(T.chartsL)) + '</div>' +
+      '<div class="cx-chart-grid">' + cards + '</div>' +
+      '<div class="cx-note">' + esc(tx(T.chartsNote)) + '</div>' + goBtn('chartlab', tx(T.goStock)) + '</div>';
+  }
+
   function watchHTML(){
     var h = watchHeadline();
     var body = h ? tx(T.watchTxt).replace('{n}', String(h.n)).replace('{t}', esc(h.text)) : esc(tx(T.watchNone));
@@ -34593,7 +34839,8 @@ var GM = {
   function bodyHTML(){
     return signalHTML() +
       '<div class="cx-grid">' +
-        marketHTML() + anomHTML() + correlHTML() + watchHTML() + gaugesHTML() + rankHTML() +
+        marketHTML() + macroHTML() + fxHTML() + flowHTML() + globeHTML() + inflHTML() +
+        anomHTML() + correlHTML() + watchHTML() + gaugesHTML() + chartsHTML() + rankHTML() +
       '</div>' +
       '<div class="ss-foot">' + esc(tx(T.foot)) + '</div>';
   }
