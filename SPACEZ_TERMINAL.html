@@ -30980,7 +30980,36 @@ var GM = {
     font-size:9.5px;color:var(--grey-dim);flex-wrap:wrap;}
   #correl .cm-legbar{width:120px;height:9px;border-radius:5px;
     background:linear-gradient(90deg,#ff3b4e,#3a3a3a,#30d158);}
+  #correl .cm-ex-wrap{margin:0 0 20px;}
+  #correl .cm-ex-grid{border-collapse:collapse;font-family:var(--mono);font-size:10px;}
+  #correl .cm-ex-grid th,#correl .cm-ex-grid td{padding:0;text-align:center;}
+  #correl .cm-ex-grid th{color:var(--grey-dim);font-weight:600;font-size:9px;padding:3px;white-space:nowrap;}
+  #correl .cm-ex-grid th.cm-rowh{text-align:right;padding-right:6px;}
+  #correl .cm-ex-cell{width:52px;height:26px;min-width:52px;font-size:10px;font-weight:700;
+    border:1px solid rgba(0,0,0,.25);}
+  #correl .cm-ex-cell.cm-self{background:repeating-linear-gradient(45deg,rgba(255,255,255,.05),
+    rgba(255,255,255,.05) 4px,transparent 4px,transparent 8px);}
+  #correl .cm-ex-cap{display:flex;gap:8px;align-items:flex-start;margin-top:8px;font-size:11.5px;
+    color:var(--grey);line-height:1.6;}
+  #correl .cm-ex-sw{width:14px;height:14px;border-radius:3px;flex:0 0 auto;margin-top:2px;
+    border:1px solid rgba(0,0,0,.3);}
+  #correl .cm-status{border:1px solid var(--border-dim);border-radius:12px;padding:16px 18px;
+    background:rgba(255,255,255,.02);margin-bottom:20px;}
+  #correl .cm-status .cm-cl{margin-bottom:8px;}
+  #correl .cm-status-txt{font-size:13px;color:var(--white);line-height:1.7;}
+  #correl .cm-status-stats{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;
+    font-family:var(--mono);font-size:11px;color:var(--grey-dim);}
+  #correl .cm-net-wrap{border:1px solid var(--border-dim);border-radius:12px;padding:16px;
+    background:rgba(255,255,255,.012);margin-top:24px;}
+  #correl .cm-net-hint{font-size:11.5px;color:var(--grey-dim);line-height:1.6;margin-bottom:10px;}
+  #correl .cm-net-canvas{width:100%;height:auto;display:block;border-radius:8px;
+    background:rgba(255,255,255,.02);cursor:grab;touch-action:none;}
+  #correl .cm-net-canvas.dragging{cursor:grabbing;}
+  #correl .cm-net-info{margin-top:12px;padding:10px 12px;border:1px solid var(--border-dim);
+    border-radius:8px;font-size:12px;color:var(--grey);line-height:1.6;min-height:20px;}
+  #correl .cm-net-info b{color:var(--white);}
   html[data-theme="light"] #correl .cm-cv{color:#12141c;}
+  html[data-theme="light"] #correl .cm-status-txt{color:#12141c;}
 </style>
 <script>
 (function(){
@@ -31027,11 +31056,39 @@ var GM = {
     noFile:{en:'Backtest data isn’t available right now — try again after the next daily refresh.',
       th:'ยังดึงข้อมูล backtest ไม่ได้ตอนนี้ — ลองใหม่หลังรอบรีเฟรชถัดไป'},
     foot:{en:'Correlation is computed from weekly % changes and looks backward only — it shifts over time and is not a promise that two assets will keep moving the same way. A useful diversifier today can stop being one tomorrow. Educational use only, not investment advice.',
-      th:'สหสัมพันธ์คำนวณจากเปอร์เซ็นต์การเปลี่ยนแปลงรายสัปดาห์ และมองย้อนหลังเท่านั้น — ค่านี้เปลี่ยนไปตามเวลา ไม่ได้การันตีว่าสองสินทรัพย์จะขยับแบบเดิมต่อไป ตัวที่กระจายความเสี่ยงได้ดีวันนี้ อาจไม่ใช่พรุ่งนี้ก็ได้ ใช้เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน'}
+      th:'สหสัมพันธ์คำนวณจากเปอร์เซ็นต์การเปลี่ยนแปลงรายสัปดาห์ และมองย้อนหลังเท่านั้น — ค่านี้เปลี่ยนไปตามเวลา ไม่ได้การันตีว่าสองสินทรัพย์จะขยับแบบเดิมต่อไป ตัวที่กระจายความเสี่ยงได้ดีวันนี้ อาจไม่ใช่พรุ่งนี้ก็ได้ ใช้เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน'},
+    exH:{en:'TRY IT: A WORKED EXAMPLE',th:'ตัวอย่าง: ลองอ่านดู'},
+    exNote:{en:'Made-up numbers for teaching only — not real data. Read them the same way as the real map below.',
+      th:'ตัวเลขสมมติเพื่อสอนเท่านั้น ไม่ใช่ข้อมูลจริง — อ่านด้วยวิธีเดียวกับแผนที่จริงด้านล่าง'},
+    exTechA:{en:'Tech A',th:'หุ้นเทคฯ A'}, exTechB:{en:'Tech B',th:'หุ้นเทคฯ B'},
+    exGold:{en:'Gold',th:'ทองคำ'}, exBonds:{en:'Bonds',th:'พันธบัตร'},
+    exCap1:{en:'Tech A × Tech B = .88, deep green: two tech names that moved together almost every week — holding both barely spreads your risk.',
+      th:'หุ้นเทคฯ A × หุ้นเทคฯ B = .88 เขียวเข้ม — สองตัวนี้ขยับไปทางเดียวกันแทบทุกสัปดาห์ ถือทั้งคู่แทบไม่ได้กระจายความเสี่ยงเลย'},
+    exCap2:{en:'Tech A × Bonds = -.55, red: these tended to move opposite each other — holding both can cushion a stock sell-off.',
+      th:'หุ้นเทคฯ A × พันธบัตร = -.55 สีแดง — สองตัวนี้มักสวนทางกัน ถือคู่กันช่วยพยุงพอร์ตตอนหุ้นร่วง'},
+    exCap3:{en:'Tech A × Gold = .05, dull grey: barely related — a genuine diversifier for a tech-heavy portfolio.',
+      th:'หุ้นเทคฯ A × ทองคำ = .05 สีเทาหม่น — แทบไม่เกี่ยวกันเลย เป็นตัวกระจายความเสี่ยงที่แท้จริงสำหรับพอร์ตที่มีหุ้นเทคฯ เยอะ'},
+    statusH:{en:'CURRENT MARKET STATUS, FROM THIS MAP',th:'สรุปสถานะตลาดตอนนี้ จากแผนที่นี้'},
+    statusHigh:{en:'Correlation is running high right now ({v} average) — most tracked assets have been moving as one block rather than going their own ways. This usually shows up when the whole market is fearful or euphoric at once. Spreading money across several of these assets buys you less protection than usual until this cools off.',
+      th:'ตอนนี้สหสัมพันธ์เฉลี่ยอยู่ในระดับสูง ({v}) — สินทรัพย์ที่ติดตามส่วนใหญ่ขยับไปเป็นก้อนเดียวกันมากกว่าจะแยกทางกัน มักเกิดตอนตลาดกลัวหรือดีใจพร้อมกันทั้งกระดาน การกระจายเงินไปหลายสินทรัพย์ตอนนี้ช่วยป้องกันความเสี่ยงได้น้อยกว่าปกติ จนกว่าจะคลายตัวลง'},
+    statusMod:{en:'Correlation is at a middling level right now ({v} average) — some groups are moving together, others are clearly going their own way. There is still real room to reduce risk by choosing the right mix.',
+      th:'ตอนนี้สหสัมพันธ์เฉลี่ยอยู่ระดับปานกลาง ({v}) — บางกลุ่มขยับไปด้วยกัน บางกลุ่มแยกทางกันชัดเจน ยังพอกระจายความเสี่ยงได้จริงถ้าเลือกสัดส่วนให้เหมาะ'},
+    statusLow:{en:'Correlation is running low right now ({v} average) — each group has mostly been moving on its own drivers rather than following the market as a whole. This is the kind of environment where picking the right sector or stock matters more than guessing the market’s overall direction.',
+      th:'ตอนนี้สหสัมพันธ์เฉลี่ยอยู่ในระดับต่ำ ({v}) — แต่ละกลุ่มขยับตามปัจจัยของตัวเองมากกว่าจะตามตลาดโดยรวม เป็นช่วงที่การเลือกกลุ่ม/หุ้นให้ถูกมีผลมากกว่าการเดาทิศทางรวมของตลาด'},
+    statusPairs:{en:'{a} of {t} pairs are tightly bound (≥0.70) · {b} pairs are near-independent (≤0.20)',
+      th:'{a} จาก {t} คู่ ผูกกันแน่นมาก (≥0.70) · {b} คู่ แทบไม่เกี่ยวกันเลย (≤0.20)'},
+    netH:{en:'RELATIONSHIP NETWORK (LIVE, MOVES ON ITS OWN)',th:'แผนที่เครือข่ายความสัมพันธ์ (เคลื่อนไหวได้)'},
+    netHint:{en:'The same numbers as the grid above, drawn as a living map: assets that behave alike drift close together, assets that move opposite drift apart, and a line only appears between two assets tied closely enough to matter (0.35 or stronger) — green for together, red for opposite, thicker and darker for a stronger tie. Drag any circle to move it; hover or click one to see what it is tied to, and what it isn’t.',
+      th:'ตัวเลขชุดเดียวกับตารางด้านบน แต่วาดเป็นแผนที่ที่มีชีวิต — สินทรัพย์ที่ขยับคล้ายกันจะลอยเข้าใกล้กัน ตัวที่ขยับสวนทางจะลอยห่างกัน และจะมีเส้นเชื่อมก็ต่อเมื่อสองตัวผูกกันมากพอ (ตั้งแต่ 0.35 ขึ้นไป) — เขียวคือไปด้วยกัน แดงคือสวนทางกัน เส้นยิ่งหนา/เข้ม ยิ่งผูกกันแน่น ลากวงกลมไหนก็ได้เพื่อขยับดู ชี้หรือคลิกวงกลมไหนก็ได้เพื่อดูว่ามันผูกกับอะไร และไม่ผูกกับอะไร'},
+    netDefault:{en:'Hover or click any circle above to see what it is most tied to, and most independent from.',
+      th:'ชี้หรือคลิกวงกลมไหนก็ได้ด้านบน เพื่อดูว่ามันผูกกับอะไรมากที่สุด และเป็นอิสระจากอะไรมากที่สุด'},
+    netInfoFmt:{en:'<b>{n}</b> — closest to: {a} ({av}), {b} ({bv}) · most opposite: {c} ({cv})',
+      th:'<b>{n}</b> — ใกล้เคียงที่สุดกับ: {a} ({av}), {b} ({bv}) · สวนทางที่สุดกับ: {c} ({cv})'}
   };
 
   var WINDOWS = [52, 156, 260, 0];
   var state = { win:156, data:null, tried:false, sel:null };
+  var net = { raf:null, canvas:null, ctx:null, nodes:[], edges:[], hover:-1, pin:-1, dragging:-1, dragMoved:false };
 
   function fetchData(){
     if (state.data || state.tried) return;
@@ -31197,13 +31254,266 @@ var GM = {
       esc(tx(T.guideBody)) + '</div></div>';
   }
 
-  function bodyHTML(){
+  /* ---- a small, fixed, made-up example — same visual grammar as the real
+     grid, so the reader learns the format on numbers that can't surprise
+     them before meeting the real (larger, noisier) one below ---- */
+  function exampleHTML(){
+    var ex = [
+      { k:'techA', t:T.exTechA }, { k:'techB', t:T.exTechB },
+      { k:'gold', t:T.exGold }, { k:'bonds', t:T.exBonds }
+    ];
+    var vals = {
+      'techA|techB':0.88, 'techA|gold':0.05, 'techA|bonds':-0.55,
+      'techB|gold':0.10, 'techB|bonds':-0.48, 'gold|bonds':0.20
+    };
+    function vOf(a, b){
+      if (a === b) return 1;
+      var k1 = a + '|' + b, k2 = b + '|' + a;
+      return vals[k1] !== undefined ? vals[k1] : vals[k2];
+    }
+    function fmt(v){ return (v < 0 ? '-' : '') + Math.abs(v).toFixed(2).replace(/^0\./, '.'); }
+    var head = '<tr><th></th>' + ex.map(function(e){ return '<th>' + esc(tx(e.t)) + '</th>'; }).join('') + '</tr>';
+    var rows = ex.map(function(re){
+      return '<tr><th class="cm-rowh">' + esc(tx(re.t)) + '</th>' +
+        ex.map(function(ce){
+          if (re.k === ce.k) return '<td class="cm-ex-cell cm-self"></td>';
+          var v = vOf(re.k, ce.k);
+          return '<td class="cm-ex-cell" style="background:' + corrColor(v) + '">' + fmt(v) + '</td>';
+        }).join('') + '</tr>';
+    }).join('');
+    function sw(v){ return '<span class="cm-ex-sw" style="background:' + corrColor(v) + '"></span>'; }
+    return '<div class="cm-ex-wrap">' +
+      '<div class="cm-cl">' + esc(tx(T.exH)) + '</div>' +
+      '<div style="font-size:11.5px;color:var(--grey-dim);margin-bottom:10px;">' + esc(tx(T.exNote)) + '</div>' +
+      '<div class="cm-tablewrap" style="display:inline-block;">' +
+        '<table class="cm-ex-grid">' + head + rows + '</table></div>' +
+      '<div class="cm-ex-cap">' + sw(0.88) + '<span>' + esc(tx(T.exCap1)) + '</span></div>' +
+      '<div class="cm-ex-cap">' + sw(-0.55) + '<span>' + esc(tx(T.exCap2)) + '</span></div>' +
+      '<div class="cm-ex-cap">' + sw(0.05) + '<span>' + esc(tx(T.exCap3)) + '</span></div>' +
+    '</div>';
+  }
+
+  /* ---- one-paragraph reading of the live matrix: average |correlation|
+     across every pair, bucketed into plain language ---- */
+  function statusHTML(mx){
+    var syms = mx.syms, M = mx.M;
+    var vals = [], tight = 0, loose = 0;
+    for (var i = 0; i < syms.length; i++) {
+      for (var j = i + 1; j < syms.length; j++) {
+        var c = M[i][j];
+        if (!c || c.v === null) continue;
+        vals.push(c.v);
+        if (Math.abs(c.v) >= 0.7) tight++;
+        if (Math.abs(c.v) <= 0.2) loose++;
+      }
+    }
+    if (!vals.length) return '';
+    var avgAbs = vals.reduce(function(s, v){ return s + Math.abs(v); }, 0) / vals.length;
+    var bucket = avgAbs >= 0.45 ? T.statusHigh : (avgAbs >= 0.25 ? T.statusMod : T.statusLow);
+    var txt = tx(bucket).replace('{v}', avgAbs.toFixed(2));
+    var stats = tx(T.statusPairs).replace('{a}', tight).replace('{t}', vals.length).replace('{b}', loose);
+    return '<div class="cm-status">' +
+      '<div class="cm-cl">' + esc(tx(T.statusH)) + '</div>' +
+      '<div class="cm-status-txt">' + esc(txt) + '</div>' +
+      '<div class="cm-status-stats">' + esc(stats) + '</div></div>';
+  }
+
+  function netHTML(){
+    return '<div class="cm-net-wrap">' +
+      '<div class="cm-cl">' + esc(tx(T.netH)) + '</div>' +
+      '<div class="cm-net-hint">' + esc(tx(T.netHint)) + '</div>' +
+      '<canvas class="cm-net-canvas" data-cm="netcanvas" width="900" height="480"></canvas>' +
+      '<div class="cm-net-info" data-cm="netinfo">' + esc(tx(T.netDefault)) + '</div>' +
+    '</div>';
+  }
+
+  function stopNetwork(){
+    if (net.raf) { cancelAnimationFrame(net.raf); net.raf = null; }
+  }
+
+  /* ---- the same matrix, drawn as a force-directed network: ties pull
+     nodes together, everything else pushes apart, a gentle jitter keeps
+     it visibly alive instead of freezing solid ---- */
+  function mountNetwork(mx){
+    stopNetwork();
+    var canvas = sec && sec.querySelector('[data-cm="netcanvas"]');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    var W = canvas.width, H = canvas.height;
+    var syms = mx.syms;
+    net.canvas = canvas; net.ctx = ctx; net.hover = -1; net.pin = -1; net.dragging = -1;
+
+    var cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.32;
+    net.nodes = syms.map(function(s, i){
+      var ang = (i / syms.length) * Math.PI * 2;
+      return { en:s.en, th:s.th, sym:s.sym, x: cx + Math.cos(ang) * R, y: cy + Math.sin(ang) * R, vx:0, vy:0 };
+    });
+    net.edges = [];
+    for (var i = 0; i < syms.length; i++) {
+      for (var j = i + 1; j < syms.length; j++) {
+        var c = mx.M[i][j];
+        if (c && c.v !== null && Math.abs(c.v) >= 0.35) net.edges.push({ i:i, j:j, v:c.v });
+      }
+    }
+
+    function pos(evt){
+      var r = canvas.getBoundingClientRect();
+      var t = evt.touches && evt.touches[0];
+      var px = (t ? t.clientX : evt.clientX) - r.left;
+      var py = (t ? t.clientY : evt.clientY) - r.top;
+      return { x: px * (W / r.width), y: py * (H / r.height) };
+    }
+    function nearest(p){
+      var best = -1, bd = 26 * 26;
+      net.nodes.forEach(function(n, idx){
+        var dx = n.x - p.x, dy = n.y - p.y, d = dx * dx + dy * dy;
+        if (d < bd) { bd = d; best = idx; }
+      });
+      return best;
+    }
+    function updateInfo(){
+      var info = sec && sec.querySelector('[data-cm="netinfo"]');
+      if (!info) return;
+      var idx = net.hover !== -1 ? net.hover : net.pin;
+      if (idx === -1) { info.textContent = tx(T.netDefault); return; }
+      var row = mx.M[idx];
+      var pairs = [];
+      row.forEach(function(c, j){
+        if (j === idx || !c || c.v === null) return;
+        pairs.push({ j:j, v:c.v });
+      });
+      if (!pairs.length) { info.textContent = tx(T.netDefault); return; }
+      pairs.sort(function(a, b){ return b.v - a.v; });
+      var top = pairs.slice(0, 2);
+      var bottom = pairs[pairs.length - 1];
+      var n = tx(syms[idx]);
+      var a = top[0] ? tx(syms[top[0].j]) : '—', av = top[0] ? top[0].v.toFixed(2) : '—';
+      var b = top[1] ? tx(syms[top[1].j]) : '—', bv = top[1] ? top[1].v.toFixed(2) : '—';
+      var c = bottom ? tx(syms[bottom.j]) : '—', cv = bottom ? bottom.v.toFixed(2) : '—';
+      info.innerHTML = tx(T.netInfoFmt)
+        .replace('{n}', esc(n)).replace('{a}', esc(a)).replace('{av}', av)
+        .replace('{b}', esc(b)).replace('{bv}', bv).replace('{c}', esc(c)).replace('{cv}', cv);
+    }
+
+    function onDown(e){
+      var p = pos(e), idx = nearest(p);
+      if (idx !== -1) {
+        net.dragging = idx; net.dragMoved = false; canvas.classList.add('dragging');
+        if (e.cancelable) e.preventDefault();
+      }
+    }
+    function onMove(e){
+      var p = pos(e);
+      if (net.dragging !== -1) {
+        net.dragMoved = true;
+        var n = net.nodes[net.dragging];
+        n.x = Math.max(24, Math.min(W - 24, p.x));
+        n.y = Math.max(24, Math.min(H - 24, p.y));
+        n.vx = 0; n.vy = 0;
+        if (e.cancelable) e.preventDefault();
+      } else {
+        var hv = nearest(p);
+        if (hv !== net.hover) { net.hover = hv; updateInfo(); }
+      }
+    }
+    function onUp(){
+      if (net.dragging !== -1 && !net.dragMoved) net.pin = net.dragging;
+      net.dragging = -1; canvas.classList.remove('dragging');
+      updateInfo();
+    }
+    canvas.addEventListener('mousedown', onDown);
+    canvas.addEventListener('mousemove', onMove);
+    canvas.addEventListener('mouseup', onUp);
+    canvas.addEventListener('mouseleave', function(){
+      if (net.dragging !== -1) onUp();
+      if (net.hover !== -1) { net.hover = -1; updateInfo(); }
+    });
+    canvas.addEventListener('touchstart', onDown, { passive:false });
+    canvas.addEventListener('touchmove', onMove, { passive:false });
+    canvas.addEventListener('touchend', onUp);
+
+    function tick(){
+      if (!canvas.isConnected) { stopNetwork(); return; }
+      if (sec.offsetParent === null) { net.raf = requestAnimationFrame(tick); return; }
+      var nodes = net.nodes, n = nodes.length;
+      for (var i = 0; i < n; i++) {
+        if (i === net.dragging) continue;
+        var a = nodes[i], fx = 0, fy = 0;
+        for (var j = 0; j < n; j++) {
+          if (i === j) continue;
+          var b = nodes[j];
+          var dx = a.x - b.x, dy = a.y - b.y;
+          var d2 = dx * dx + dy * dy; if (d2 < 1) d2 = 1;
+          var d = Math.sqrt(d2);
+          var rep = 2600 / d2;
+          fx += (dx / d) * rep; fy += (dy / d) * rep;
+        }
+        fx += (cx - a.x) * 0.004; fy += (cy - a.y) * 0.004;
+        fx += (Math.random() - 0.5) * 0.6; fy += (Math.random() - 0.5) * 0.6;
+        a.vx = (a.vx + fx * 0.02) * 0.86;
+        a.vy = (a.vy + fy * 0.02) * 0.86;
+      }
+      net.edges.forEach(function(e){
+        var a = nodes[e.i], b = nodes[e.j];
+        var dx = b.x - a.x, dy = b.y - a.y;
+        var d = Math.sqrt(dx * dx + dy * dy) || 1;
+        var ideal = 60 + (1 - Math.abs(e.v)) * 220;
+        var f = (d - ideal) * 0.012;
+        var ux = dx / d, uy = dy / d;
+        if (e.i !== net.dragging) { a.vx += ux * f; a.vy += uy * f; }
+        if (e.j !== net.dragging) { b.vx -= ux * f; b.vy -= uy * f; }
+      });
+      for (var k = 0; k < n; k++) {
+        if (k === net.dragging) continue;
+        var nd = nodes[k];
+        nd.x += nd.vx; nd.y += nd.vy;
+        nd.x = Math.max(24, Math.min(W - 24, nd.x));
+        nd.y = Math.max(24, Math.min(H - 24, nd.y));
+      }
+      draw();
+      net.raf = requestAnimationFrame(tick);
+    }
+
+    function draw(){
+      ctx.clearRect(0, 0, W, H);
+      net.edges.forEach(function(e){
+        var a = net.nodes[e.i], b = net.nodes[e.j];
+        var strength = Math.abs(e.v);
+        var hi = (e.i === net.hover || e.j === net.hover || e.i === net.pin || e.j === net.pin);
+        ctx.strokeStyle = e.v >= 0
+          ? 'rgba(48,209,88,' + (0.15 + strength * 0.55) + ')'
+          : 'rgba(255,69,58,' + (0.15 + strength * 0.55) + ')';
+        ctx.lineWidth = (hi ? 1.4 : 0.6) + strength * 3.2;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      });
+      net.nodes.forEach(function(nd, idx){
+        var active = idx === net.hover || idx === net.pin;
+        ctx.beginPath();
+        ctx.arc(nd.x, nd.y, active ? 22 : 18, 0, Math.PI * 2);
+        ctx.fillStyle = active ? 'rgba(204,255,0,0.92)' : 'rgba(255,255,255,0.12)';
+        ctx.fill();
+        ctx.lineWidth = 1.4;
+        ctx.strokeStyle = active ? '#0a0a0a' : 'rgba(255,255,255,0.35)';
+        ctx.stroke();
+        ctx.fillStyle = active ? '#0a0a0a' : '#f5f5f7';
+        ctx.font = '700 10px monospace';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(nd.sym, nd.x, nd.y);
+      });
+    }
+
+    tick();
+  }
+
+  function bodyHTML(mx){
     if (state.data === false) return '<div class="ss-empty">' + esc(tx(T.noFile)) + '</div>';
-    if (!state.data) return '<div class="ss-empty">' + esc(tx(T.waiting)) + '</div>';
-    var mx = buildMatrix();
-    return guideHTML() +
+    if (!state.data || !mx) return '<div class="ss-empty">' + esc(tx(T.waiting)) + '</div>';
+    return guideHTML() + exampleHTML() + statusHTML(mx) +
       '<div class="ss-pills" style="margin-bottom:16px;">' + pillsHTML() + '</div>' +
-      calloutsHTML(mx) + gridHTML(mx) + detailHTML(mx) +
+      calloutsHTML(mx) + gridHTML(mx) + detailHTML(mx) + netHTML() +
       '<div class="ss-foot">' + esc(tx(T.foot)) + '</div>';
   }
 
@@ -31227,8 +31537,10 @@ var GM = {
     if (q('lede')) q('lede').textContent = tx(T.lede);
     var body = q('body');
     if (!body) return;
-    body.innerHTML = '<div class="spz-scan reveal in-view">' + bodyHTML() + '</div>';
+    var mx = (state.data && state.data !== false) ? buildMatrix() : null;
+    body.innerHTML = '<div class="spz-scan reveal in-view">' + bodyHTML(mx) + '</div>';
     bind(body);
+    if (mx) mountNetwork(mx); else stopNetwork();
   }
 
   function build(){
