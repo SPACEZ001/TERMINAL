@@ -30946,9 +30946,22 @@ var GM = {
      this is the one field in that file no existing screen turns into a
      correlation view; "regime" only uses it to ask which group led inside
      analogue windows, never a full pairwise map.
+
+     Also folds in a few individual stocks (STOCKS, currently NVDA/JPM/
+     TISCO) from the same window.__SPZ_LIVE snapshot every other admin
+     screen already listens for (data/market.json → stocks + charts.cal).
+     Those are daily closes on a US or TH trading calendar, so they are
+     resampled to one point per ISO week (isoWeek/stockWeeklySeries) before
+     joining the already-weekly ETF series; returnsOf() then keys every
+     return by ISO week instead of the raw date so mixed calendars still
+     line up in corr()'s exact-key match.
      ============================================================ -->
 <style>
-  #correl .cm-wrap{max-width:1180px;margin:0 auto;padding:0 24px 90px;}
+  /* the site-wide "section{max-width:1280px}" rule keeps most screens to a
+     readable column; this screen is a data grid that gets cramped there,
+     especially now that it carries more assets, so it gets a wider lane */
+  #correl{max-width:1900px;}
+  #correl .cm-wrap{max-width:1900px;margin:0 auto;padding:0 32px 90px;}
   @media(max-width:700px){#correl .cm-wrap{padding:0 14px 60px;}}
   #correl .cm-ctl{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 18px;}
   #correl .cm-call{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
@@ -30960,13 +30973,14 @@ var GM = {
   #correl .cm-cv b{font-family:var(--mono);}
   #correl .cm-cv .up{color:var(--neon-2,#7CFFB2);} #correl .cm-cv .dn{color:var(--red,#ff3b4e);}
   #correl .cm-tablewrap{overflow-x:auto;border:1px solid var(--border-dim);border-radius:12px;
-    padding:14px;background:rgba(255,255,255,.012);}
-  #correl table.cm-grid{border-collapse:collapse;font-family:var(--mono);font-size:10.5px;}
+    padding:18px;background:rgba(255,255,255,.012);
+    display:flex;flex-direction:column;align-items:center;}
+  #correl table.cm-grid{border-collapse:collapse;font-family:var(--mono);font-size:11.5px;margin:0 auto;}
   #correl table.cm-grid th, #correl table.cm-grid td{padding:0;text-align:center;}
-  #correl table.cm-grid th{color:var(--grey-dim);font-weight:600;font-size:9.5px;padding:4px 3px;
+  #correl table.cm-grid th{color:var(--grey-dim);font-weight:600;font-size:10.5px;padding:5px 4px;
     white-space:nowrap;}
-  #correl table.cm-grid th.cm-rowh{text-align:right;padding-right:8px;}
-  #correl .cm-cell{width:34px;height:28px;min-width:34px;cursor:pointer;font-size:9.5px;font-weight:700;
+  #correl table.cm-grid th.cm-rowh{text-align:right;padding-right:9px;}
+  #correl .cm-cell{width:42px;height:34px;min-width:42px;cursor:pointer;font-size:10.5px;font-weight:700;
     border:1px solid rgba(0,0,0,.25);transition:outline .1s;}
   #correl .cm-cell:hover{outline:2px solid var(--white,#fff);outline-offset:-2px;}
   #correl .cm-cell.cm-self{background:repeating-linear-gradient(45deg,rgba(255,255,255,.05),
@@ -30999,17 +31013,33 @@ var GM = {
   #correl .cm-status-txt{font-size:13px;color:var(--white);line-height:1.7;}
   #correl .cm-status-stats{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;
     font-family:var(--mono);font-size:11px;color:var(--grey-dim);}
-  #correl .cm-net-wrap{border:1px solid var(--border-dim);border-radius:12px;padding:16px;
-    background:rgba(255,255,255,.012);margin-top:24px;}
-  #correl .cm-net-hint{font-size:11.5px;color:var(--grey-dim);line-height:1.6;margin-bottom:10px;}
-  #correl .cm-net-canvas{width:100%;height:auto;display:block;border-radius:8px;
-    background:rgba(255,255,255,.02);cursor:grab;touch-action:none;}
+  #correl .cm-net-wrap{border:1px solid var(--border-dim);border-radius:14px;padding:18px 20px 20px;
+    background:radial-gradient(ellipse 60% 50% at 25% 0%,rgba(204,255,0,.055),transparent 65%),
+      rgba(255,255,255,.014);margin-top:26px;position:relative;}
+  #correl .cm-net-title-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:2px;}
+  #correl .cm-net-title-row .cm-cl{margin-bottom:0;}
+  #correl .cm-net-hint{font-size:11.5px;color:var(--grey-dim);line-height:1.6;margin:8px 0 12px;}
+  #correl .cm-net-canvas{width:100%;height:auto;display:block;border-radius:10px;
+    background:radial-gradient(ellipse at 50% 40%,rgba(255,255,255,.03),rgba(255,255,255,.008));
+    cursor:grab;touch-action:none;}
   #correl .cm-net-canvas.dragging{cursor:grabbing;}
   #correl .cm-net-info{margin-top:12px;padding:10px 12px;border:1px solid var(--border-dim);
     border-radius:8px;font-size:12px;color:var(--grey);line-height:1.6;min-height:20px;}
   #correl .cm-net-info b{color:var(--white);}
+  #correl .cm-ex-grid th.cm-ex-hi-row,#correl .cm-ex-grid th.cm-ex-hi-col{
+    color:var(--white);background:rgba(204,255,0,.16);border-radius:4px;
+    transition:background .35s,color .35s;}
+  #correl .cm-ex-cell{transition:outline .3s,transform .3s;}
+  #correl .cm-ex-cell.cm-ex-hi-cell{outline:2px solid rgba(204,255,0,.95);outline-offset:-2px;
+    transform:scale(1.1);position:relative;z-index:1;}
+  #correl .cm-ex-demo{margin:14px 0 4px;padding:12px 14px;border:1px solid var(--border-dim);
+    border-radius:10px;background:rgba(204,255,0,.045);}
+  #correl .cm-ex-demo-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.8px;
+    color:var(--grey-dim);text-transform:uppercase;margin-bottom:6px;}
+  #correl .cm-ex-demo-cap{font-size:12.5px;color:var(--white);line-height:1.65;min-height:18px;}
   html[data-theme="light"] #correl .cm-cv{color:#12141c;}
   html[data-theme="light"] #correl .cm-status-txt{color:#12141c;}
+  html[data-theme="light"] #correl .cm-ex-demo-cap{color:#12141c;}
 </style>
 <script>
 (function(){
@@ -31068,6 +31098,10 @@ var GM = {
       th:'หุ้นเทคฯ A × พันธบัตร = -.55 สีแดง — สองตัวนี้มักสวนทางกัน ถือคู่กันช่วยพยุงพอร์ตตอนหุ้นร่วง'},
     exCap3:{en:'Tech A × Gold = .05, dull grey: barely related — a genuine diversifier for a tech-heavy portfolio.',
       th:'หุ้นเทคฯ A × ทองคำ = .05 สีเทาหม่น — แทบไม่เกี่ยวกันเลย เป็นตัวกระจายความเสี่ยงที่แท้จริงสำหรับพอร์ตที่มีหุ้นเทคฯ เยอะ'},
+    exDemoLbl:{en:'WATCH: READING A ROW AGAINST A COLUMN',th:'ดูตัวอย่าง: อ่านแถวเทียบกับคอลัมน์'},
+    exDemoFmt:{en:'Follow the <b>{row}</b> row (left side) across, and the <b>{col}</b> column (top) down — they meet at the highlighted square: <b>{v}</b> ({read}). Same name can sit in a row AND a column; you always read row → across, column → down, and the number where they cross is the answer.',
+      th:'ลากตามแถว <b>{row}</b> (ทางซ้าย) ไปทางขวา แล้วลากตามคอลัมน์ <b>{col}</b> (ด้านบน) ลงมา — สองเส้นจะมาเจอกันที่ช่องที่ไฮไลต์: <b>{v}</b> ({read}) ชื่อเดียวกันจะโผล่ทั้งแถวและคอลัมน์ได้ แต่หลักการอ่านคือ แถว → ลากไปทางขวา, คอลัมน์ → ลากลงมา แล้วตัวเลขตรงจุดตัดคือคำตอบ'},
+    netLive:{en:'LIVE',th:'สด'},
     statusH:{en:'CURRENT MARKET STATUS, FROM THIS MAP',th:'สรุปสถานะตลาดตอนนี้ จากแผนที่นี้'},
     statusHigh:{en:'Correlation is running high right now ({v} average) — most tracked assets have been moving as one block rather than going their own ways. This usually shows up when the whole market is fearful or euphoric at once. Spreading money across several of these assets buys you less protection than usual until this cools off.',
       th:'ตอนนี้สหสัมพันธ์เฉลี่ยอยู่ในระดับสูง ({v}) — สินทรัพย์ที่ติดตามส่วนใหญ่ขยับไปเป็นก้อนเดียวกันมากกว่าจะแยกทางกัน มักเกิดตอนตลาดกลัวหรือดีใจพร้อมกันทั้งกระดาน การกระจายเงินไปหลายสินทรัพย์ตอนนี้ช่วยป้องกันความเสี่ยงได้น้อยกว่าปกติ จนกว่าจะคลายตัวลง'},
@@ -31088,7 +31122,42 @@ var GM = {
 
   var WINDOWS = [52, 156, 260, 0];
   var state = { win:156, data:null, tried:false, sel:null };
-  var net = { raf:null, canvas:null, ctx:null, nodes:[], edges:[], hover:-1, pin:-1, dragging:-1, dragMoved:false };
+  var net = { raf:null, canvas:null, ctx:null, nodes:[], edges:[], hover:-1, pin:-1, dragging:-1, dragMoved:false, t:0 };
+  var liveSnap = null;
+  /* individual stocks folded into the map alongside the sector ETFs, at the
+     user's request — resampled to weekly (see isoWeek/stockWeeklySeries)
+     so they line up with the ETFs' already-weekly history */
+  var STOCKS = ['NVDA', 'JPM', 'TISCO'];
+
+  /* first trading day found per ISO week, matching the same convention the
+     backtest job already uses server-side to build the ETF weekly series */
+  function isoWeek(ds){
+    var d = new Date(ds + 'T00:00:00Z');
+    var day = (d.getUTCDay() + 6) % 7;
+    d.setUTCDate(d.getUTCDate() - day + 3);
+    var firstThu = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+    var fDay = (firstThu.getUTCDay() + 6) % 7;
+    firstThu.setUTCDate(firstThu.getUTCDate() - fDay + 3);
+    var wk = 1 + Math.round((d - firstThu) / 6.048e8);
+    return d.getUTCFullYear() + '-W' + (wk < 10 ? '0' : '') + wk;
+  }
+
+  function stockWeeklySeries(snap, tk){
+    if (!snap || !snap.stocks || !snap.charts || !snap.charts.cal) return null;
+    var row = snap.stocks[tk];
+    if (!row || !row.c || !row.cal || !snap.charts.cal[row.cal]) return null;
+    var days = snap.charts.cal[row.cal].split(',');
+    var raw = row.c.split(',');
+    var out = [], seenWk = null;
+    for (var i = 0; i < raw.length && i < days.length; i++) {
+      if (raw[i] === '') continue;
+      var n = parseFloat(raw[i]);
+      if (!(n > 0)) continue;
+      var wk = isoWeek(days[i]);
+      if (wk !== seenWk) { out.push([days[i], n]); seenWk = wk; }
+    }
+    return out.length >= 60 ? out : null;
+  }
 
   function fetchData(){
     if (state.data || state.tried) return;
@@ -31112,6 +31181,14 @@ var GM = {
     if ((d.bench_series || []).length >= 60) {
       out.push({ sym:'SPY', en:'S&P 500', th:'S&P 500', s:d.bench_series });
     }
+    STOCKS.forEach(function(tk){
+      var ws = stockWeeklySeries(liveSnap, tk);
+      if (!ws) return;
+      var row = liveSnap.stocks[tk];
+      var nm = (row && row.name) || tk;
+      nm = nm.replace(/^[A-Za-z0-9.]+_/, '');
+      out.push({ sym:tk, en:nm, th:nm, s:ws });
+    });
     out.sort(function(a,b){ return a.sym === 'SPY' ? -1 : b.sym === 'SPY' ? 1 : a.sym.localeCompare(b.sym); });
     return out;
   }
@@ -31121,11 +31198,14 @@ var GM = {
     return s.length > state.win ? s.slice(s.length - state.win) : s;
   }
 
+  /* keyed by ISO week (not the raw date) so a US-calendar ETF and a
+     Thai-calendar stock that traded on different days of the same week
+     still line up when corr() matches return series by key */
   function returnsOf(s){
     var w = windowed(s), out = [];
     for (var i = 1; i < w.length; i++) {
       var a = w[i - 1][1], b = w[i][1];
-      if (a) out.push([w[i][0], (b - a) / a * 100]);
+      if (a) out.push([isoWeek(w[i][0]), (b - a) / a * 100]);
     }
     return out;
   }
@@ -31256,41 +31336,93 @@ var GM = {
 
   /* ---- a small, fixed, made-up example — same visual grammar as the real
      grid, so the reader learns the format on numbers that can't surprise
-     them before meeting the real (larger, noisier) one below ---- */
+     them before meeting the real (larger, noisier) one below. Kept at
+     module scope (not local to exampleHTML) so mountExampleDemo() below
+     can drive the same data as an animated row/column walkthrough ---- */
+  var EX = [
+    { k:'techA', t:T.exTechA }, { k:'techB', t:T.exTechB },
+    { k:'gold', t:T.exGold }, { k:'bonds', t:T.exBonds }
+  ];
+  var EX_VALS = {
+    'techA|techB':0.88, 'techA|gold':0.05, 'techA|bonds':-0.55,
+    'techB|gold':0.10, 'techB|bonds':-0.48, 'gold|bonds':0.20
+  };
+  function exVOf(a, b){
+    if (a === b) return 1;
+    var k1 = a + '|' + b, k2 = b + '|' + a;
+    return EX_VALS[k1] !== undefined ? EX_VALS[k1] : EX_VALS[k2];
+  }
+  function exFmt(v){ return (v < 0 ? '-' : '') + Math.abs(v).toFixed(2).replace(/^0\./, '.'); }
+  function exNameOf(k){ var f = EX.filter(function(e){ return e.k === k; })[0]; return f ? tx(f.t) : k; }
+
   function exampleHTML(){
-    var ex = [
-      { k:'techA', t:T.exTechA }, { k:'techB', t:T.exTechB },
-      { k:'gold', t:T.exGold }, { k:'bonds', t:T.exBonds }
-    ];
-    var vals = {
-      'techA|techB':0.88, 'techA|gold':0.05, 'techA|bonds':-0.55,
-      'techB|gold':0.10, 'techB|bonds':-0.48, 'gold|bonds':0.20
-    };
-    function vOf(a, b){
-      if (a === b) return 1;
-      var k1 = a + '|' + b, k2 = b + '|' + a;
-      return vals[k1] !== undefined ? vals[k1] : vals[k2];
-    }
-    function fmt(v){ return (v < 0 ? '-' : '') + Math.abs(v).toFixed(2).replace(/^0\./, '.'); }
-    var head = '<tr><th></th>' + ex.map(function(e){ return '<th>' + esc(tx(e.t)) + '</th>'; }).join('') + '</tr>';
-    var rows = ex.map(function(re){
-      return '<tr><th class="cm-rowh">' + esc(tx(re.t)) + '</th>' +
-        ex.map(function(ce){
-          if (re.k === ce.k) return '<td class="cm-ex-cell cm-self"></td>';
-          var v = vOf(re.k, ce.k);
-          return '<td class="cm-ex-cell" style="background:' + corrColor(v) + '">' + fmt(v) + '</td>';
+    var head = '<tr><th></th>' + EX.map(function(e){
+      return '<th data-excol="' + e.k + '">' + esc(tx(e.t)) + '</th>';
+    }).join('') + '</tr>';
+    var rows = EX.map(function(re){
+      return '<tr><th class="cm-rowh" data-exrow="' + re.k + '">' + esc(tx(re.t)) + '</th>' +
+        EX.map(function(ce){
+          if (re.k === ce.k) return '<td class="cm-ex-cell cm-self" data-excell="' + re.k + '|' + ce.k + '"></td>';
+          var v = exVOf(re.k, ce.k);
+          return '<td class="cm-ex-cell" data-excell="' + re.k + '|' + ce.k + '" style="background:' +
+            corrColor(v) + '">' + exFmt(v) + '</td>';
         }).join('') + '</tr>';
     }).join('');
     function sw(v){ return '<span class="cm-ex-sw" style="background:' + corrColor(v) + '"></span>'; }
     return '<div class="cm-ex-wrap">' +
       '<div class="cm-cl">' + esc(tx(T.exH)) + '</div>' +
       '<div style="font-size:11.5px;color:var(--grey-dim);margin-bottom:10px;">' + esc(tx(T.exNote)) + '</div>' +
-      '<div class="cm-tablewrap" style="display:inline-block;">' +
-        '<table class="cm-ex-grid">' + head + rows + '</table></div>' +
+      '<div class="cm-tablewrap" style="display:inline-flex;">' +
+        '<table class="cm-ex-grid" data-cm="exgrid">' + head + rows + '</table></div>' +
+      '<div class="cm-ex-demo" data-cm="exdemo">' +
+        '<div class="cm-ex-demo-lbl">' + esc(tx(T.exDemoLbl)) + '</div>' +
+        '<div class="cm-ex-demo-cap" data-cm="exdemocap"></div>' +
+      '</div>' +
       '<div class="cm-ex-cap">' + sw(0.88) + '<span>' + esc(tx(T.exCap1)) + '</span></div>' +
       '<div class="cm-ex-cap">' + sw(-0.55) + '<span>' + esc(tx(T.exCap2)) + '</span></div>' +
       '<div class="cm-ex-cap">' + sw(0.05) + '<span>' + esc(tx(T.exCap3)) + '</span></div>' +
     '</div>';
+  }
+
+  /* ---- animates the worked example: walks a row out, a column down, and
+     lands on the cell where they meet, one pair at a time, with a plain
+     sentence explaining the crossing — this is the direct answer to "how
+     do I compare when the same name is in both a row and a column" ---- */
+  var exDemo = { iv:null, seq:['techA|techB','techA|bonds','techA|gold','gold|bonds'], idx:0 };
+
+  function stopExampleDemo(){
+    if (exDemo.iv) { clearInterval(exDemo.iv); exDemo.iv = null; }
+  }
+
+  function exDemoTick(){
+    var grid = sec && sec.querySelector('[data-cm="exgrid"]');
+    var cap = sec && sec.querySelector('[data-cm="exdemocap"]');
+    if (!grid || !cap) { stopExampleDemo(); return; }
+    var pair = exDemo.seq[exDemo.idx % exDemo.seq.length];
+    exDemo.idx++;
+    var parts = pair.split('|'), rk = parts[0], ck = parts[1];
+    grid.querySelectorAll('.cm-ex-hi-row,.cm-ex-hi-col,.cm-ex-hi-cell').forEach(function(el){
+      el.classList.remove('cm-ex-hi-row', 'cm-ex-hi-col', 'cm-ex-hi-cell');
+    });
+    var rowTh = grid.querySelector('[data-exrow="' + rk + '"]');
+    var colTh = grid.querySelector('[data-excol="' + ck + '"]');
+    var cell = grid.querySelector('[data-excell="' + rk + '|' + ck + '"]') ||
+      grid.querySelector('[data-excell="' + ck + '|' + rk + '"]');
+    if (rowTh) rowTh.classList.add('cm-ex-hi-row');
+    if (colTh) colTh.classList.add('cm-ex-hi-col');
+    if (cell) cell.classList.add('cm-ex-hi-cell');
+    var v = exVOf(rk, ck);
+    var read = tx(readOf(v)) || '';
+    cap.innerHTML = tx(T.exDemoFmt)
+      .replace('{row}', esc(exNameOf(rk))).replace('{col}', esc(exNameOf(ck)))
+      .replace('{v}', exFmt(v)).replace('{read}', esc(read));
+  }
+
+  function mountExampleDemo(){
+    stopExampleDemo();
+    exDemo.idx = 0;
+    exDemoTick();
+    exDemo.iv = setInterval(exDemoTick, 2600);
   }
 
   /* ---- one-paragraph reading of the live matrix: average |correlation|
@@ -31320,9 +31452,10 @@ var GM = {
 
   function netHTML(){
     return '<div class="cm-net-wrap">' +
-      '<div class="cm-cl">' + esc(tx(T.netH)) + '</div>' +
+      '<div class="cm-net-title-row"><div class="cm-cl">' + esc(tx(T.netH)) + '</div>' +
+        '<span class="spz-tag spz-tag-rt">' + esc(tx(T.netLive)) + '</span></div>' +
       '<div class="cm-net-hint">' + esc(tx(T.netHint)) + '</div>' +
-      '<canvas class="cm-net-canvas" data-cm="netcanvas" width="900" height="480"></canvas>' +
+      '<canvas class="cm-net-canvas" data-cm="netcanvas" width="1320" height="700"></canvas>' +
       '<div class="cm-net-info" data-cm="netinfo">' + esc(tx(T.netDefault)) + '</div>' +
     '</div>';
   }
@@ -31345,9 +31478,11 @@ var GM = {
     net.canvas = canvas; net.ctx = ctx; net.hover = -1; net.pin = -1; net.dragging = -1;
 
     var cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.32;
+    net.t = 0;
     net.nodes = syms.map(function(s, i){
       var ang = (i / syms.length) * Math.PI * 2;
-      return { en:s.en, th:s.th, sym:s.sym, x: cx + Math.cos(ang) * R, y: cy + Math.sin(ang) * R, vx:0, vy:0 };
+      return { en:s.en, th:s.th, sym:s.sym, x: cx + Math.cos(ang) * R, y: cy + Math.sin(ang) * R,
+        vx:0, vy:0, ph: i * 2.399 + Math.random() * 6.28 };
     });
     net.edges = [];
     for (var i = 0; i < syms.length; i++) {
@@ -31365,7 +31500,7 @@ var GM = {
       return { x: px * (W / r.width), y: py * (H / r.height) };
     }
     function nearest(p){
-      var best = -1, bd = 26 * 26;
+      var best = -1, bd = 30 * 30;
       net.nodes.forEach(function(n, idx){
         var dx = n.x - p.x, dy = n.y - p.y, d = dx * dx + dy * dy;
         if (d < bd) { bd = d; best = idx; }
@@ -31436,6 +31571,7 @@ var GM = {
     function tick(){
       if (!canvas.isConnected) { stopNetwork(); return; }
       if (sec.offsetParent === null) { net.raf = requestAnimationFrame(tick); return; }
+      net.t += 0.028;
       var nodes = net.nodes, n = nodes.length;
       for (var i = 0; i < n; i++) {
         if (i === net.dragging) continue;
@@ -31446,11 +31582,14 @@ var GM = {
           var dx = a.x - b.x, dy = a.y - b.y;
           var d2 = dx * dx + dy * dy; if (d2 < 1) d2 = 1;
           var d = Math.sqrt(d2);
-          var rep = 2600 / d2;
+          var rep = 8600 / d2;
           fx += (dx / d) * rep; fy += (dy / d) * rep;
         }
         fx += (cx - a.x) * 0.004; fy += (cy - a.y) * 0.004;
-        fx += (Math.random() - 0.5) * 0.6; fy += (Math.random() - 0.5) * 0.6;
+        /* a smooth, deterministic sway per node -- unlike pure random jitter
+           (which tends to cancel out into an almost-static blur), this keeps
+           every node visibly, continuously drifting in its own slow orbit */
+        fx += Math.cos(net.t + a.ph) * 3.4; fy += Math.sin(net.t * 1.15 + a.ph * 1.3) * 3.4;
         a.vx = (a.vx + fx * 0.02) * 0.86;
         a.vy = (a.vy + fy * 0.02) * 0.86;
       }
@@ -31458,7 +31597,7 @@ var GM = {
         var a = nodes[e.i], b = nodes[e.j];
         var dx = b.x - a.x, dy = b.y - a.y;
         var d = Math.sqrt(dx * dx + dy * dy) || 1;
-        var ideal = 60 + (1 - Math.abs(e.v)) * 220;
+        var ideal = 95 + (1 - Math.abs(e.v)) * 230;
         var f = (d - ideal) * 0.012;
         var ux = dx / d, uy = dy / d;
         if (e.i !== net.dragging) { a.vx += ux * f; a.vy += uy * f; }
@@ -31482,24 +31621,29 @@ var GM = {
         var strength = Math.abs(e.v);
         var hi = (e.i === net.hover || e.j === net.hover || e.i === net.pin || e.j === net.pin);
         ctx.strokeStyle = e.v >= 0
-          ? 'rgba(48,209,88,' + (0.15 + strength * 0.55) + ')'
-          : 'rgba(255,69,58,' + (0.15 + strength * 0.55) + ')';
-        ctx.lineWidth = (hi ? 1.4 : 0.6) + strength * 3.2;
+          ? 'rgba(48,209,88,' + (0.16 + strength * 0.58) + ')'
+          : 'rgba(255,69,58,' + (0.16 + strength * 0.58) + ')';
+        ctx.lineWidth = (hi ? 2 : 0.8) + strength * 4;
+        if (hi) { ctx.shadowBlur = 10; ctx.shadowColor = e.v >= 0 ? 'rgba(48,209,88,.6)' : 'rgba(255,69,58,.6)'; }
         ctx.beginPath();
         ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
         ctx.stroke();
+        ctx.shadowBlur = 0;
       });
       net.nodes.forEach(function(nd, idx){
         var active = idx === net.hover || idx === net.pin;
+        var r = active ? 27 : 22;
+        if (active) { ctx.shadowBlur = 16; ctx.shadowColor = 'rgba(204,255,0,.85)'; }
         ctx.beginPath();
-        ctx.arc(nd.x, nd.y, active ? 22 : 18, 0, Math.PI * 2);
-        ctx.fillStyle = active ? 'rgba(204,255,0,0.92)' : 'rgba(255,255,255,0.12)';
+        ctx.arc(nd.x, nd.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = active ? 'rgba(204,255,0,0.94)' : 'rgba(255,255,255,0.13)';
         ctx.fill();
-        ctx.lineWidth = 1.4;
-        ctx.strokeStyle = active ? '#0a0a0a' : 'rgba(255,255,255,0.35)';
+        ctx.shadowBlur = 0;
+        ctx.lineWidth = 1.6;
+        ctx.strokeStyle = active ? '#0a0a0a' : 'rgba(255,255,255,0.38)';
         ctx.stroke();
         ctx.fillStyle = active ? '#0a0a0a' : '#f5f5f7';
-        ctx.font = '700 10px monospace';
+        ctx.font = '700 12px monospace';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(nd.sym, nd.x, nd.y);
       });
@@ -31540,7 +31684,7 @@ var GM = {
     var mx = (state.data && state.data !== false) ? buildMatrix() : null;
     body.innerHTML = '<div class="spz-scan reveal in-view">' + bodyHTML(mx) + '</div>';
     bind(body);
-    if (mx) mountNetwork(mx); else stopNetwork();
+    if (mx) { mountNetwork(mx); mountExampleDemo(); } else { stopNetwork(); stopExampleDemo(); }
   }
 
   function build(){
@@ -31580,6 +31724,14 @@ var GM = {
     var iv = setInterval(function(){
       if (build() || ++tries > 60) clearInterval(iv);
     }, 400);
+
+    document.addEventListener('spz:snapshot', function(e){ liveSnap = e.detail; paint(); });
+    var seed = setInterval(function(){
+      var s = (window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot()) || null;
+      if (s) { liveSnap = s; paint(); clearInterval(seed); }
+    }, 600);
+    setTimeout(function(){ clearInterval(seed); }, 45000);
+
     new MutationObserver(paint)
       .observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
   }
