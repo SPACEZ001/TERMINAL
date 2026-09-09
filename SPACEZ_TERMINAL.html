@@ -29466,7 +29466,12 @@ var GM = {
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 
-  window.__SPZ_WATCHLIST = { paint: function(){ paint(); }, reload: function(){ loadWatchlist(paint); } };
+  window.__SPZ_WATCHLIST = { paint: function(){ paint(); }, reload: function(){ loadWatchlist(paint); },
+    /* read-only: this browser's own already-loaded list (ticker -> alert
+       threshold), plus whether it is linked to a Telegram account at all --
+       for the Command Center's watchlist card. No new fetch, no other
+       user's data: same state.wl this page's own cards already render. */
+    state: function(){ return { wl: state.wl || null, chatId: state.chatId || null }; } };
 })();
 </script>
 
@@ -31817,7 +31822,10 @@ var GM = {
     return { avgAbs:avgAbs, pairs:vals.length, best:best, worst:worst, n:syms.length };
   }
 
-  window.__SPZ_CORREL = { repaint: paint, summary: summary };
+  window.__SPZ_CORREL = { repaint: paint, summary: summary,
+    /* read-only: the exact matrix this page already computes and its own
+       colour scale, for the Command Center's heat-map card. */
+    matrix: buildMatrix, color: corrColor };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 1100); });
@@ -34248,6 +34256,26 @@ var GM = {
      dated CPI/policy-rate country table) -- still nothing invented, still
      labelled as the dated hand-compiled snapshot it is.
 
+     Second later addition: two heat maps and three more cards, same rule.
+     The correlation heat map reads window.__SPZ_CORREL.matrix()/.color() --
+     two read-only getters added to that module alongside the earlier
+     summary() one, exposing the exact matrix and colour scale the
+     Correlation Map already computes and paints, just as a grid here
+     instead of the text summary. The stock heat map reads
+     snapshot().stocks directly (sector + today's % change, already on
+     every stock row -- no getter needed). Credit Market reads
+     snapshot().regime.credit_1m (the same HYG-vs-LQD number behind the
+     "Credit market" early-warning gauge) plus window.__SPZ_CREDIT.get(tk)
+     (the per-stock reference credit-risk estimate every stock card can
+     already show) looped once to surface the highest-scoring names.
+     Valuation Extremes reads window.__SPZ_BUBBLE.data() (CAPE, Buffett
+     Indicator, margin-debt growth -- already a public export, used
+     elsewhere on the site for the same purpose). My Watchlist reads
+     window.__SPZ_WATCHLIST.state() (a one-line getter added alongside
+     its existing paint/reload exports) for this same browser's own
+     already-loaded pinned tickers -- no other user's data, nothing new
+     fetched.
+
      Deliberately NOT the standard centred 1280px column every other screen
      uses (see the #cockpit{max-width:none} override below) -- this is the
      one screen meant to be scanned left-to-right like a real terminal, so
@@ -34344,6 +34372,27 @@ var GM = {
   #cockpit .cx-chart svg{width:100%;height:40px;display:block;}
   #cockpit .cx-chart-price{font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);margin-top:6px;}
   html[data-theme="light"] #cockpit .cx-chart-top{color:#12141c;}
+
+  /* ---- correlation heat map: a coloured grid instead of the text summary ---- */
+  #cockpit .cx-heat-scroll{overflow-x:auto;margin-top:6px;}
+  #cockpit .cx-heat{display:grid;gap:1px;background:var(--border-dim);border:1px solid var(--border-dim);
+    border-radius:8px;overflow:hidden;width:max-content;min-width:100%;}
+  #cockpit .cx-heat-hd{background:var(--panel,#0d0d10);font-family:var(--mono);font-size:8px;
+    padding:4px 3px;text-align:center;color:var(--grey-dim);white-space:nowrap;min-width:34px;}
+  #cockpit .cx-heat-rowlab{text-align:right;padding-right:6px;}
+  #cockpit .cx-heat-cell{min-width:34px;min-height:20px;}
+  html[data-theme="light"] #cockpit .cx-heat-hd{background:#f3f4f8;}
+
+  /* ---- stock heat map: every tracked stock, grouped by sector ---- */
+  #cockpit .cx-heat-group{margin-top:12px;}
+  #cockpit .cx-heat-group:first-child{margin-top:2px;}
+  #cockpit .cx-heat-glab{font-family:var(--mono);font-size:9px;letter-spacing:.6px;text-transform:uppercase;
+    color:var(--grey-dim);margin-bottom:6px;}
+  #cockpit .cx-heat-tiles{display:flex;flex-wrap:wrap;gap:4px;}
+  #cockpit .cx-heat-tile{min-width:66px;flex:1 1 66px;max-width:104px;border-radius:6px;padding:6px 8px;
+    font-family:var(--mono);font-size:10px;color:var(--white);display:flex;flex-direction:column;gap:2px;}
+  #cockpit .cx-heat-tile b{font-size:10.5px;font-weight:700;}
+  html[data-theme="light"] #cockpit .cx-heat-tile{color:#12141c;}
 
   /* the one page whose accent is red instead of the site's lime/void-blue --
      it is deliberately the "special" one, so it should not just look like a
@@ -34446,6 +34495,38 @@ var GM = {
     inflNA:{en:'The inflation & currency desk hasn’t loaded yet.',th:'โต๊ะเงินเฟ้อและค่าเงินยังไม่โหลด'},
     inflNote:{en:'Hand-compiled dated snapshot (central bank releases, national statistics offices) — not live, updates monthly at most. See the full table for exact dates.',
       th:'รวบรวมด้วยมือเป็นภาพนิ่งตามวันที่ระบุ (จากประกาศธนาคารกลางและสำนักงานสถิติแห่งชาติ) ไม่ใช่ข้อมูลสด อัปเดตอย่างเร็วที่สุดเดือนละครั้ง ดูวันที่แน่นอนได้ที่ตารางเต็ม'},
+
+    corrHeatL:{en:'CORRELATION HEAT MAP',th:'ฮีตแมพความสัมพันธ์สินทรัพย์'},
+    corrHeatNote:{en:'Same pairwise correlations as the summary above — green means moves together, red means moves opposite. Hover a cell for the exact number.',
+      th:'สหสัมพันธ์คู่เดียวกับสรุปด้านบน — เขียวคือเคลื่อนไหวไปด้วยกัน แดงคือสวนทางกัน วางเมาส์ที่ช่องเพื่อดูตัวเลขแน่นอน'},
+    corrHeatNA:{en:'The correlation map hasn’t loaded yet.',th:'แผนที่ความสัมพันธ์สินทรัพย์ยังไม่โหลด'},
+
+    stockHeatL:{en:'STOCK HEAT MAP',th:'ฮีตแมพหุ้นทั้งหมด'},
+    stockHeatNote:{en:'Every tracked stock, grouped by sector, coloured by today’s % move — green up, red down.',
+      th:'หุ้นที่ติดตามทั้งหมด จัดกลุ่มตามอุตสาหกรรม สีตามเปอร์เซ็นต์เปลี่ยนแปลงวันนี้ — เขียวขึ้น แดงลง'},
+    stockHeatNA:{en:'Live market data hasn’t loaded yet.',th:'ข้อมูลตลาดสดยังไม่โหลด'},
+    goDirectory:{en:'Open Stock Directory →',th:'เปิดหน้าไดเรกทอรีหุ้น →'},
+
+    creditL:{en:'CREDIT MARKET',th:'ตลาดหุ้นกู้'},
+    creditSpread:{en:'HYG vs LQD (1 month)',th:'HYG เทียบ LQD (1 เดือน)'},
+    creditRiskH:{en:'Highest estimated credit risk',th:'ความเสี่ยงเครดิตประเมินสูงสุด'},
+    creditNone:{en:'No tracked stock currently scores in the higher risk bands.',
+      th:'ตอนนี้ยังไม่มีหุ้นที่ติดตามอยู่ในระดับความเสี่ยงสูง'},
+    creditNote:{en:'The HYG–LQD spread is real market pricing. Per-stock risk is a reference estimate from leverage and profitability, not a traded price — see the full page for the method.',
+      th:'ส่วนต่าง HYG–LQD เป็นราคาตลาดจริง ส่วนความเสี่ยงรายตัวเป็นค่าประมาณอ้างอิงจากหนี้สินและความสามารถทำกำไร ไม่ใช่ราคาซื้อขายจริง — ดูวิธีคิดเต็มได้ที่หน้าเต็ม'},
+    creditNA:{en:'Live market data hasn’t loaded yet.',th:'ข้อมูลตลาดสดยังไม่โหลด'},
+    goStockCredit:{en:'Open Stocks →',th:'เปิดหน้าหุ้นตัวอย่าง →'},
+
+    bubbleL:{en:'VALUATION EXTREMES',th:'ระดับราคาตลาดสุดโต่ง'},
+    bubbleNote:{en:'Shiller CAPE, the Buffett Indicator and margin-debt growth — the same three the Bubble Radar tracks daily. High readings have preceded past bubbles, not a timing signal on their own.',
+      th:'Shiller CAPE, Buffett Indicator และการเติบโตของหนี้มาร์จิ้น — สามตัวเดียวกับที่ Bubble Radar ติดตามทุกวัน ค่าที่สูงเคยเกิดขึ้นก่อนฟองสบู่ในอดีต แต่ไม่ใช่สัญญาณจับจังหวะซื้อขาย'},
+    bubbleNA:{en:'Bubble Radar hasn’t loaded yet.',th:'Bubble Radar ยังไม่โหลด'},
+    goBubble:{en:'Open Bubble Radar →',th:'เปิดหน้า Bubble Radar →'},
+
+    wtL:{en:'MY WATCHLIST',th:'วอทช์ลิสต์ของฉัน'},
+    wtNone:{en:'Not connected to a personal watchlist on this browser yet — connect Telegram on the Watchlist page and live prices for your pinned stocks will show here too.',
+      th:'เบราว์เซอร์นี้ยังไม่ได้เชื่อมวอทช์ลิสต์ส่วนตัว — ไปเชื่อมต่อ Telegram ที่หน้าวอทช์ลิสต์ก่อน แล้วราคาสดของหุ้นที่ปักหมุดจะขึ้นที่นี่ด้วย'},
+    goWl:{en:'Open My Watchlist →',th:'เปิดหน้าวอทช์ลิสต์ของฉัน →'},
 
     chartsL:{en:'PRICE CHARTS',th:'กราฟราคา'},
     chartsNA:{en:'Price history hasn’t loaded yet.',th:'ประวัติราคายังไม่โหลด'},
@@ -34813,6 +34894,157 @@ var GM = {
       '<div class="cx-note">' + esc(tx(T.chartsNote)) + '</div>' + goBtn('chartlab', tx(T.goStock)) + '</div>';
   }
 
+  /* ---------------- credit market: HYG-LQD spread + per-stock risk scan ---------------- */
+  function creditHTML(){
+    var s = snapshot();
+    var rg = s && s.regime, stocks = s && s.stocks;
+    if (!rg) {
+      return '<div class="cx-card"><div class="cx-lab">' + esc(tx(T.creditL)) + '</div>' +
+        '<div class="cx-txt">' + esc(tx(T.creditNA)) + '</div>' + goBtn('stock', tx(T.goStockCredit)) + '</div>';
+    }
+    var spread = isNum(rg.credit_1m) ? rg.credit_1m : null;
+    var spreadCol = spread === null ? 'var(--grey-dim)' :
+      spread >= 0 ? 'var(--neon-2,#7CFFB2)' : spread <= -1.5 ? 'var(--red,#ff3b4e)' : 'var(--amber,#ffb020)';
+    var CR = window.__SPZ_CREDIT, risky = [];
+    if (CR && CR.get && stocks) {
+      Object.keys(stocks).forEach(function(tk){
+        var d = null; try { d = CR.get(tk); } catch(e){}
+        if (d && (d.band === 'high' || d.band === 'vhigh')) risky.push({ tk:tk, score:d.score, band:d.band });
+      });
+      risky.sort(function(a, b){ return b.score - a.score; });
+    }
+    var riskyBlock;
+    if (risky.length) {
+      var rows = risky.slice(0, 5).map(function(r){
+        var col = r.band === 'vhigh' ? 'var(--red,#ff3b4e)' : 'var(--amber,#ffb020)';
+        var lbl = r.band === 'vhigh' ? {en:'Very high',th:'สูงมาก'} : {en:'High',th:'สูง'};
+        return '<div class="cx-mrow"><span>' + esc(r.tk) + '</span><span style="color:' + col + '">' +
+          esc(tx(lbl)) + '</span></div>';
+      }).join('');
+      riskyBlock = '<div class="cx-mh" style="margin-top:8px;">' + esc(tx(T.creditRiskH)) + '</div>' + rows;
+    } else {
+      riskyBlock = '<div class="cx-txt" style="margin-top:6px;">' + esc(tx(T.creditNone)) + '</div>';
+    }
+    return '<div class="cx-card"><div class="cx-lab">' + esc(tx(T.creditL)) + '</div>' +
+      '<div class="cx-txt"><b>' + esc(tx(T.creditSpread)) + ':</b> <span style="color:' + spreadCol + '">' +
+      (spread === null ? '—' : sgn(spread, 2) + ' pts') + '</span></div>' + riskyBlock +
+      '<div class="cx-note">' + esc(tx(T.creditNote)) + '</div>' + goBtn('stock', tx(T.goStockCredit)) + '</div>';
+  }
+
+  /* ---------------- valuation extremes: Bubble Radar's own three signals ---------------- */
+  function bubbleData(){
+    try { return (window.__SPZ_BUBBLE && window.__SPZ_BUBBLE.data && window.__SPZ_BUBBLE.data()) || null; }
+    catch(e){ return null; }
+  }
+  function riskColor(v, lo, hi){
+    if (!isNum(v)) return 'var(--grey-dim)';
+    var r = Math.max(0, Math.min(100, (v - lo) / (hi - lo) * 100));
+    return r >= 66 ? 'var(--red,#ff3b4e)' : r >= 33 ? 'var(--amber,#ffb020)' : 'var(--neon-2,#7CFFB2)';
+  }
+  function bubbleHTML(){
+    var b = bubbleData();
+    if (!b) {
+      return '<div class="cx-card"><div class="cx-lab">' + esc(tx(T.bubbleL)) + '</div>' +
+        '<div class="cx-txt">' + esc(tx(T.bubbleNA)) + '</div>' + goBtn('bubble', tx(T.goBubble)) + '</div>';
+    }
+    var cape = b.cape, buff = b.buffett, md = b.margin_debt;
+    function stat2(lab, val, color){
+      return '<div class="cx-stat"><span class="cx-stat-l">' + esc(lab) + '</span>' +
+        '<span class="cx-stat-v" style="color:' + color + '">' + val + '</span></div>';
+    }
+    var stats =
+      stat2('Shiller CAPE', cape && isNum(cape.value) ? cape.value.toFixed(1) : '—', riskColor(cape && cape.value, 15, 45)) +
+      stat2(tx({en:'Buffett Indicator',th:'Buffett Indicator'}), buff && isNum(buff.value_pct) ? buff.value_pct.toFixed(0) + '%' : '—',
+        riskColor(buff && buff.value_pct, 80, 220)) +
+      stat2(tx({en:'Margin debt (YoY)',th:'หนี้มาร์จิ้น (YoY)'}), md && isNum(md.yoy_pct) ? sgn(md.yoy_pct, 1) + '%' : '—',
+        riskColor(md && md.yoy_pct, -10, 40));
+    return '<div class="cx-card"><div class="cx-lab">' + esc(tx(T.bubbleL)) + '</div>' +
+      '<div class="cx-stat-grid">' + stats + '</div>' +
+      '<div class="cx-note">' + esc(tx(T.bubbleNote)) + '</div>' + goBtn('bubble', tx(T.goBubble)) + '</div>';
+  }
+
+  /* ---------------- my watchlist: this browser's own pinned tickers, live ---------------- */
+  function watchTableHTML(){
+    var W = window.__SPZ_WATCHLIST, st = null;
+    try { st = W && W.state && W.state(); } catch(e){}
+    var tickers = (st && st.wl) ? Object.keys(st.wl) : [];
+    if (!st || !st.chatId || !tickers.length) {
+      return '<div class="cx-card"><div class="cx-lab">' + esc(tx(T.wtL)) + '</div>' +
+        '<div class="cx-txt">' + esc(tx(T.wtNone)) + '</div>' + goBtn('watchlist', tx(T.goWl)) + '</div>';
+    }
+    var s = snapshot();
+    var stocks = (s && s.stocks) || {};
+    var rows = tickers.map(function(tk){
+      var r = stocks[tk];
+      var chg = r && isNum(r.chg_pct) ? r.chg_pct : null;
+      var px = r && isNum(r.price) ? fmtRate(r.price) : '—';
+      return '<div class="cx-mrow"><span>' + esc(tk) + ' <span style="color:var(--grey-dim)">' + px + '</span></span>' +
+        '<span style="color:' + (chg === null ? 'var(--grey-dim)' : chg >= 0 ? 'var(--neon-2,#7CFFB2)' : 'var(--red,#ff3b4e)') + '">' +
+        (chg === null ? '—' : sgn(chg, 1) + '%') + '</span></div>';
+    }).join('');
+    return '<div class="cx-card"><div class="cx-lab">' + esc(tx(T.wtL)) + '</div>' + rows +
+      goBtn('watchlist', tx(T.goWl)) + '</div>';
+  }
+
+  /* ---------------- correlation heat map: same matrix, colour grid instead of text ---------------- */
+  function correlHeatHTML(){
+    var CR = window.__SPZ_CORREL, mx = null;
+    try { mx = CR && CR.matrix && CR.matrix(); } catch(e){ mx = null; }
+    if (!mx || !mx.syms || mx.syms.length < 3) {
+      return '<div class="cx-card cx-wide"><div class="cx-lab">' + esc(tx(T.corrHeatL)) + '</div>' +
+        '<div class="cx-txt">' + esc(tx(T.corrHeatNA)) + '</div>' + goBtn('correl', tx(T.goCorrel)) + '</div>';
+    }
+    var syms = mx.syms, M = mx.M;
+    var colorFn = CR.color || function(){ return 'rgba(255,255,255,.04)'; };
+    var cells = '<div class="cx-heat-hd"></div>' + syms.map(function(s){
+      return '<div class="cx-heat-hd" title="' + esc(tx(s)) + '">' + esc(s.sym) + '</div>';
+    }).join('');
+    syms.forEach(function(rowS, i){
+      cells += '<div class="cx-heat-hd cx-heat-rowlab" title="' + esc(tx(rowS)) + '">' + esc(rowS.sym) + '</div>';
+      syms.forEach(function(colS, j){
+        var c = M[i][j], v = c ? c.v : null;
+        cells += '<div class="cx-heat-cell" style="background:' + colorFn(v) + '" title="' +
+          esc(rowS.sym) + ' × ' + esc(colS.sym) + ': ' + (v === null ? '—' : v.toFixed(2)) + '"></div>';
+      });
+    });
+    return '<div class="cx-card cx-wide"><div class="cx-lab">' + esc(tx(T.corrHeatL)) + '</div>' +
+      '<div class="cx-heat-scroll"><div class="cx-heat" style="grid-template-columns:repeat(' + (syms.length + 1) + ',1fr);">' +
+      cells + '</div></div>' +
+      '<div class="cx-note">' + esc(tx(T.corrHeatNote)) + '</div>' + goBtn('correl', tx(T.goCorrel)) + '</div>';
+  }
+
+  /* ---------------- stock heat map: every tracked stock, grouped by sector ---------------- */
+  function stockHeatColor(v){
+    if (!isNum(v)) return 'rgba(255,255,255,.04)';
+    var t = Math.max(-5, Math.min(5, v)) / 5;
+    return t >= 0 ? 'rgba(48,209,88,' + (0.18 + 0.55 * t) + ')' : 'rgba(255,69,58,' + (0.18 + 0.55 * -t) + ')';
+  }
+  function stockHeatHTML(){
+    var s = snapshot();
+    var stocks = s && s.stocks;
+    if (!stocks) {
+      return '<div class="cx-card cx-wide"><div class="cx-lab">' + esc(tx(T.stockHeatL)) + '</div>' +
+        '<div class="cx-txt">' + esc(tx(T.stockHeatNA)) + '</div>' + goBtn('directory', tx(T.goDirectory)) + '</div>';
+    }
+    var bySec = {};
+    Object.keys(stocks).forEach(function(tk){
+      var r = stocks[tk];
+      if (!r || !isNum(r.chg_pct)) return;
+      var sec = r.sector || 'Other';
+      (bySec[sec] = bySec[sec] || []).push({ tk:tk, chg:r.chg_pct });
+    });
+    var groups = Object.keys(bySec).sort().map(function(sec){
+      var tiles = bySec[sec].sort(function(a, b){ return b.chg - a.chg; }).map(function(x){
+        return '<div class="cx-heat-tile" style="background:' + stockHeatColor(x.chg) + '" title="' +
+          esc(x.tk) + ' ' + sgn(x.chg, 1) + '%">' + esc(x.tk) + '<b>' + sgn(x.chg, 1) + '%</b></div>';
+      }).join('');
+      return '<div class="cx-heat-group"><div class="cx-heat-glab">' + esc(sec) + '</div>' +
+        '<div class="cx-heat-tiles">' + tiles + '</div></div>';
+    }).join('');
+    return '<div class="cx-card cx-wide"><div class="cx-lab">' + esc(tx(T.stockHeatL)) + '</div>' + groups +
+      '<div class="cx-note">' + esc(tx(T.stockHeatNote)) + '</div>' + goBtn('directory', tx(T.goDirectory)) + '</div>';
+  }
+
   function watchHTML(){
     var h = watchHeadline();
     var body = h ? tx(T.watchTxt).replace('{n}', String(h.n)).replace('{t}', esc(h.text)) : esc(tx(T.watchNone));
@@ -34840,7 +35072,8 @@ var GM = {
     return signalHTML() +
       '<div class="cx-grid">' +
         marketHTML() + macroHTML() + fxHTML() + flowHTML() + globeHTML() + inflHTML() +
-        anomHTML() + correlHTML() + watchHTML() + gaugesHTML() + chartsHTML() + rankHTML() +
+        creditHTML() + bubbleHTML() + anomHTML() + correlHTML() + watchHTML() + watchTableHTML() +
+        gaugesHTML() + correlHeatHTML() + stockHeatHTML() + chartsHTML() + rankHTML() +
       '</div>' +
       '<div class="ss-foot">' + esc(tx(T.foot)) + '</div>';
   }
