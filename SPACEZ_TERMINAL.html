@@ -15128,7 +15128,7 @@ var CL_UI = {
         { k:'learn',  t:{en:'Learn',th:'เรียนรู้'},
           ids:['guided', 'start', 'types', 'glossary', 'signals'] },
         { k:'market', t:{en:'Read the market',th:'อ่านตลาด'},
-          ids:['now', 'outlook', 'regime', 'anomaly', 'flow', 'globe', 'infl', 'desk', 'scenarios'] },
+          ids:['now', 'outlook', 'regime', 'anomaly', 'correl', 'rulelab', 'daily', 'flow', 'globe', 'infl', 'desk', 'scenarios'] },
         { k:'tools',  t:{en:'Workbench',th:'เครื่องมือ'},
           ids:['stock', 'watchlist', 'bubble', 'chartlab', 'directory', 'pro', 'proof'] }
       ];
@@ -27886,6 +27886,7 @@ var GM = {
      naming which half is which. */
   var STATUS = {
     now:'mixed', regime:'live', stock:'live', proof:'daily', anomaly:'live',
+    correl:'daily', rulelab:'daily', daily:'live',
     flow:'mixed', globe:'mixed', infl:'mixed', directory:'mixed', desk:'mixed',
     outlook:'frozen', scenarios:'frozen', pro:'frozen',
     types:'teach', glossary:'teach', signals:'teach', start:'teach', guided:'teach',
@@ -30933,6 +30934,1074 @@ var GM = {
 })();
 </script>
 
+<!-- ============================================================
+     SPACEZ CORRELATION MAP  (menu: "แผนที่ความสัมพันธ์สินทรัพย์", admin only)
+     Additive only: a new route registered through window.__spzAddRoute, the
+     same mechanism "now", "regime" and "anomaly" already use. Touches no
+     existing route's markup or script.
+
+     Reads data/backtest.json → sectors (14 sector/asset-class ETFs, weekly
+     closes, already fetched daily for the backtest job) plus bench_series
+     (SPY) and bench_series_th (SET, if present). Nothing new is fetched —
+     this is the one field in that file no existing screen turns into a
+     correlation view; "regime" only uses it to ask which group led inside
+     analogue windows, never a full pairwise map.
+     ============================================================ -->
+<style>
+  #correl .cm-wrap{max-width:1180px;margin:0 auto;padding:0 24px 90px;}
+  @media(max-width:700px){#correl .cm-wrap{padding:0 14px 60px;}}
+  #correl .cm-ctl{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 18px;}
+  #correl .cm-call{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+  #correl .cm-card{flex:1 1 220px;border:1px solid var(--border-dim);border-radius:12px;
+    padding:14px 16px;background:rgba(255,255,255,.018);}
+  #correl .cm-cl{font-family:var(--mono);font-size:9px;letter-spacing:.8px;color:var(--grey-dim);
+    text-transform:uppercase;margin-bottom:6px;}
+  #correl .cm-cv{font-size:14px;font-weight:700;color:var(--white);line-height:1.4;}
+  #correl .cm-cv b{font-family:var(--mono);}
+  #correl .cm-cv .up{color:var(--neon-2,#7CFFB2);} #correl .cm-cv .dn{color:var(--red,#ff3b4e);}
+  #correl .cm-tablewrap{overflow-x:auto;border:1px solid var(--border-dim);border-radius:12px;
+    padding:14px;background:rgba(255,255,255,.012);}
+  #correl table.cm-grid{border-collapse:collapse;font-family:var(--mono);font-size:10.5px;}
+  #correl table.cm-grid th, #correl table.cm-grid td{padding:0;text-align:center;}
+  #correl table.cm-grid th{color:var(--grey-dim);font-weight:600;font-size:9.5px;padding:4px 3px;
+    white-space:nowrap;}
+  #correl table.cm-grid th.cm-rowh{text-align:right;padding-right:8px;}
+  #correl .cm-cell{width:34px;height:28px;min-width:34px;cursor:pointer;font-size:9.5px;font-weight:700;
+    border:1px solid rgba(0,0,0,.25);transition:outline .1s;}
+  #correl .cm-cell:hover{outline:2px solid var(--white,#fff);outline-offset:-2px;}
+  #correl .cm-cell.cm-self{background:repeating-linear-gradient(45deg,rgba(255,255,255,.05),
+    rgba(255,255,255,.05) 4px,transparent 4px,transparent 8px);cursor:default;}
+  #correl .cm-cell.cm-na{color:var(--grey-dim);}
+  #correl .cm-detail{margin-top:14px;padding:12px 14px;border:1px solid var(--border-dim);
+    border-radius:10px;background:rgba(255,255,255,.02);font-size:12px;color:var(--grey);
+    line-height:1.6;min-height:20px;}
+  #correl .cm-detail b{color:var(--white);}
+  #correl .cm-legend{display:flex;align-items:center;gap:8px;margin-top:12px;font-family:var(--mono);
+    font-size:9.5px;color:var(--grey-dim);flex-wrap:wrap;}
+  #correl .cm-legbar{width:120px;height:9px;border-radius:5px;
+    background:linear-gradient(90deg,#ff3b4e,#3a3a3a,#30d158);}
+  html[data-theme="light"] #correl .cm-cv{color:#12141c;}
+</style>
+<script>
+(function(){
+  'use strict';
+  if (window.__SPZ_CORREL) return;
+
+  function L(){ return document.documentElement.getAttribute('lang') === 'th' ? 'th' : 'en'; }
+  function tx(o){ return o ? (o[L()] !== undefined ? o[L()] : o.en) : ''; }
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  var isNum = function(v){ return typeof v === 'number' && isFinite(v); };
+  function sgn(v, d){ return (v >= 0 ? '+' : '') + Number(v).toFixed(d === undefined ? 1 : d); }
+
+  var T = {
+    eyebrow:{en:'ASSET CORRELATION MAP',th:'แผนที่ความสัมพันธ์สินทรัพย์'},
+    h:{en:'What Moves Together, What Doesn’t',th:'อะไรขยับไปด้วยกัน อะไรไม่ไปด้วยกัน'},
+    lede:{en:'How closely 14 sector and asset-class ETFs — plus the S&P 500 itself — have tracked each other week to week. A reading near +1 means two things have moved almost in lockstep; near -1 means they have tended to move opposite each other; near 0 means little relationship at all. This is the same weekly price history the backtest engine already uses, just turned into a map instead of a single number.',
+      th:'ETF ตัวแทนกลุ่มอุตสาหกรรมและสินทรัพย์ 14 กลุ่ม บวก S&P 500 เอง เคยขยับตามกันมากแค่ไหนในแต่ละสัปดาห์ ค่าใกล้ +1 แปลว่าสองอย่างขยับไปด้วยกันเกือบตลอด ค่าใกล้ -1 แปลว่ามักขยับสวนทางกัน ค่าใกล้ 0 แปลว่าแทบไม่เกี่ยวกัน ข้อมูลชุดเดียวกับที่เครื่องมือ backtest ใช้อยู่แล้ว แค่เอามาทำเป็นแผนที่แทนตัวเลขเดียว'},
+    win52:{en:'1 year',th:'1 ปี'}, win156:{en:'3 years',th:'3 ปี'},
+    win260:{en:'5 years',th:'5 ปี'}, win0:{en:'All history',th:'ทั้งหมด'},
+    topPairH:{en:'MOST TIED TOGETHER',th:'ผูกกันแน่นที่สุด'},
+    oppPairH:{en:'MOST OPPOSITE',th:'สวนทางกันที่สุด'},
+    diversH:{en:'BEST DIVERSIFIER vs S&P 500',th:'กระจายความเสี่ยงจาก S&P 500 ได้ดีที่สุด'},
+    together:{en:'tend to move together',th:'มักขยับไปด้วยกัน'},
+    tiedFmt:{en:'{a} and {b} — correlation {v} over {n} weeks',th:'{a} กับ {b} — สหสัมพันธ์ {v} จาก {n} สัปดาห์'},
+    diversFmt:{en:'{a} — correlation {v} to S&P 500 over {n} weeks',th:'{a} — สหสัมพันธ์ {v} กับ S&P 500 จาก {n} สัปดาห์'},
+    pickHint:{en:'Click any square for the plain-language read.',th:'คลิกช่องไหนก็ได้เพื่ออ่านคำอธิบายแบบง่าย'},
+    strong:{en:'strong tie — these have moved almost in lockstep',th:'ผูกกันแน่น — ขยับไปทางเดียวกันแทบตลอด'},
+    mod:{en:'moderate tie — these tend to lean the same direction',th:'ผูกกันปานกลาง — มักเอียงไปทิศทางเดียวกัน'},
+    weak:{en:'little relationship — knowing one tells you almost nothing about the other',th:'แทบไม่เกี่ยวกัน — รู้ตัวหนึ่งแทบไม่ช่วยเดาอีกตัว'},
+    inv:{en:'tend to offset each other — one often rises while the other falls',th:'มักสวนทางกัน — ตัวหนึ่งขึ้นอีกตัวมักลง'},
+    detailFmt:{en:'{a} vs {b}: correlation {v} over {n} weekly returns — {read}.',
+      th:'{a} เทียบ {b}: สหสัมพันธ์ {v} จากผลตอบแทนรายสัปดาห์ {n} จุด — {read}'},
+    self:{en:'Same instrument.',th:'เป็นตัวเดียวกัน'},
+    na:{en:'Not enough overlapping history yet.',th:'ประวัติที่ทับกันยังไม่พอ'},
+    empty:{en:'Not enough shared weekly history to compute this window yet.',th:'ประวัติรายสัปดาห์ที่ทับกันยังไม่พอสำหรับช่วงนี้'},
+    waiting:{en:'Loading backtest history…',th:'กำลังโหลดข้อมูลย้อนหลัง…'},
+    noFile:{en:'Backtest data isn’t available right now — try again after the next daily refresh.',
+      th:'ยังดึงข้อมูล backtest ไม่ได้ตอนนี้ — ลองใหม่หลังรอบรีเฟรชถัดไป'},
+    foot:{en:'Correlation is computed from weekly % changes and looks backward only — it shifts over time and is not a promise that two assets will keep moving the same way. A useful diversifier today can stop being one tomorrow. Educational use only, not investment advice.',
+      th:'สหสัมพันธ์คำนวณจากเปอร์เซ็นต์การเปลี่ยนแปลงรายสัปดาห์ และมองย้อนหลังเท่านั้น — ค่านี้เปลี่ยนไปตามเวลา ไม่ได้การันตีว่าสองสินทรัพย์จะขยับแบบเดิมต่อไป ตัวที่กระจายความเสี่ยงได้ดีวันนี้ อาจไม่ใช่พรุ่งนี้ก็ได้ ใช้เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน'}
+  };
+
+  var WINDOWS = [52, 156, 260, 0];
+  var state = { win:156, data:null, tried:false, sel:null };
+
+  function fetchData(){
+    if (state.data || state.tried) return;
+    state.tried = true;
+    fetch('data/backtest.json?v=' + Math.floor(Date.now() / 3.6e6))
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){ state.data = d || false; paint(); })
+      .catch(function(){ state.data = false; paint(); });
+  }
+
+  /* ---- build the symbol list: sector ETFs + SPY (+ SET if present) ---- */
+  function symbols(){
+    var d = state.data; if (!d) return [];
+    var out = [];
+    var sec = d.sectors || {};
+    Object.keys(sec).forEach(function(sym){
+      if (sec[sym] && sec[sym].s && sec[sym].s.length >= 60) {
+        out.push({ sym:sym, en:sec[sym].en, th:sec[sym].th, s:sec[sym].s });
+      }
+    });
+    if ((d.bench_series || []).length >= 60) {
+      out.push({ sym:'SPY', en:'S&P 500', th:'S&P 500', s:d.bench_series });
+    }
+    out.sort(function(a,b){ return a.sym === 'SPY' ? -1 : b.sym === 'SPY' ? 1 : a.sym.localeCompare(b.sym); });
+    return out;
+  }
+
+  function windowed(s){
+    if (!state.win) return s;
+    return s.length > state.win ? s.slice(s.length - state.win) : s;
+  }
+
+  function returnsOf(s){
+    var w = windowed(s), out = [];
+    for (var i = 1; i < w.length; i++) {
+      var a = w[i - 1][1], b = w[i][1];
+      if (a) out.push([w[i][0], (b - a) / a * 100]);
+    }
+    return out;
+  }
+
+  function corr(a, b){
+    var mb = {}; b.forEach(function(p){ mb[p[0]] = p[1]; });
+    var xa = [], xb = [];
+    a.forEach(function(p){ if (mb[p[0]] !== undefined) { xa.push(p[1]); xb.push(mb[p[0]]); } });
+    var n = xa.length;
+    if (n < 20) return { v:null, n:n };
+    var ma = xa.reduce(function(s,v){ return s+v; },0) / n;
+    var mbv = xb.reduce(function(s,v){ return s+v; },0) / n;
+    var sxy=0, sxx=0, syy=0;
+    for (var i=0;i<n;i++){ var dx=xa[i]-ma, dy=xb[i]-mbv; sxy+=dx*dy; sxx+=dx*dx; syy+=dy*dy; }
+    if (!sxx || !syy) return { v:null, n:n };
+    return { v: sxy / Math.sqrt(sxx*syy), n:n };
+  }
+
+  function buildMatrix(){
+    var syms = symbols();
+    var rets = syms.map(function(s){ return returnsOf(s.s); });
+    var M = syms.map(function(){ return new Array(syms.length).fill(null); });
+    for (var i=0;i<syms.length;i++){
+      for (var j=i;j<syms.length;j++){
+        if (i === j) { M[i][j] = { v:1, n:rets[i].length }; continue; }
+        var c = corr(rets[i], rets[j]);
+        M[i][j] = c; M[j][i] = c;
+      }
+    }
+    return { syms:syms, M:M };
+  }
+
+  function corrColor(v){
+    if (v === null) return 'rgba(255,255,255,.04)';
+    var t = Math.max(-1, Math.min(1, v));
+    if (t >= 0) return 'rgba(48,209,88,' + (0.14 + 0.55 * t) + ')';
+    return 'rgba(255,69,58,' + (0.14 + 0.55 * -t) + ')';
+  }
+
+  function readOf(v){
+    if (v === null) return null;
+    if (v >= 0.7) return T.strong;
+    if (v >= 0.4) return T.mod;
+    if (v <= -0.4) return T.inv;
+    return T.weak;
+  }
+
+  function calloutsHTML(mx){
+    var syms = mx.syms, M = mx.M;
+    var best = null, worst = null;
+    var spyIx = -1;
+    syms.forEach(function(s, i){ if (s.sym === 'SPY') spyIx = i; });
+    var diversify = null;
+    for (var i=0;i<syms.length;i++){
+      for (var j=i+1;j<syms.length;j++){
+        var c = M[i][j];
+        if (!c || c.v === null) continue;
+        if (!best || c.v > best.v) best = { i:i, j:j, v:c.v, n:c.n };
+        if (!worst || c.v < worst.v) worst = { i:i, j:j, v:c.v, n:c.n };
+      }
+      if (spyIx !== -1 && i !== spyIx) {
+        var cs = M[i][spyIx];
+        if (cs && cs.v !== null && (!diversify || cs.v < diversify.v)) diversify = { i:i, v:cs.v, n:cs.n };
+      }
+    }
+    function nameOf(ix){ return esc(tx(syms[ix])); }
+    var cards = [];
+    if (best) cards.push('<div class="cm-card"><div class="cm-cl">' + esc(tx(T.topPairH)) + '</div>' +
+      '<div class="cm-cv">' + nameOf(best.i) + ' × ' + nameOf(best.j) + '<br><b class="up">' +
+      sgn(best.v * 100, 0).replace('+', '') + '%</b></div></div>');
+    if (worst) cards.push('<div class="cm-card"><div class="cm-cl">' + esc(tx(T.oppPairH)) + '</div>' +
+      '<div class="cm-cv">' + nameOf(worst.i) + ' × ' + nameOf(worst.j) + '<br><b class="' +
+      (worst.v < 0 ? 'dn' : 'up') + '">' + sgn(worst.v * 100, 0) + '%</b></div></div>');
+    if (diversify) cards.push('<div class="cm-card"><div class="cm-cl">' + esc(tx(T.diversH)) + '</div>' +
+      '<div class="cm-cv">' + nameOf(diversify.i) + '<br><b class="' +
+      (diversify.v < 0 ? 'dn' : 'up') + '">' + sgn(diversify.v * 100, 0) + '%</b></div></div>');
+    return cards.length ? '<div class="cm-call">' + cards.join('') + '</div>' : '';
+  }
+
+  function gridHTML(mx){
+    var syms = mx.syms, M = mx.M;
+    if (syms.length < 3) return '<div class="ss-empty">' + esc(tx(T.empty)) + '</div>';
+    var head = '<tr><th></th>' + syms.map(function(s){ return '<th>' + esc(s.sym) + '</th>'; }).join('') + '</tr>';
+    var rows = syms.map(function(rs, i){
+      return '<tr><th class="cm-rowh">' + esc(rs.sym) + '</th>' +
+        syms.map(function(cs, j){
+          var c = M[i][j];
+          if (i === j) return '<td class="cm-cell cm-self" title="' + esc(tx(T.self)) + '"></td>';
+          if (!c || c.v === null) return '<td class="cm-cell cm-na" data-cm-i="' + i + '" data-cm-j="' + j + '">—</td>';
+          return '<td class="cm-cell" data-cm-i="' + i + '" data-cm-j="' + j +
+            '" style="background:' + corrColor(c.v) + '">' + c.v.toFixed(2).replace(/^0\./, '.') + '</td>';
+        }).join('') + '</tr>';
+    }).join('');
+    return '<div class="cm-tablewrap"><table class="cm-grid">' + head + rows + '</table>' +
+      '<div class="cm-legend"><span>-1</span><span class="cm-legbar"></span><span>+1</span>' +
+      '<span style="margin-left:10px;">' + esc(tx(T.pickHint)) + '</span></div></div>';
+  }
+
+  function detailHTML(mx){
+    if (!state.sel) return '';
+    var syms = mx.syms, M = mx.M;
+    var i = state.sel.i, j = state.sel.j;
+    if (!syms[i] || !syms[j]) return '';
+    var c = M[i][j];
+    var read = c && c.v !== null ? tx(readOf(c.v)) : tx(T.na);
+    var v = c && c.v !== null ? c.v.toFixed(2) : '—';
+    return '<div class="cm-detail">' + esc(tx(T.detailFmt)
+      .replace('{a}', tx(syms[i])).replace('{b}', tx(syms[j]))
+      .replace('{v}', v).replace('{n}', c ? c.n : 0).replace('{read}', read)) + '</div>';
+  }
+
+  function pillsHTML(){
+    return WINDOWS.map(function(w){
+      return '<button type="button" class="ss-pill' + (state.win === w ? ' on' : '') +
+        '" data-cm-w="' + w + '">' + esc(tx(T['win' + w])) + '</button>';
+    }).join('');
+  }
+
+  var sec = null;
+
+  function bodyHTML(){
+    if (state.data === false) return '<div class="ss-empty">' + esc(tx(T.noFile)) + '</div>';
+    if (!state.data) return '<div class="ss-empty">' + esc(tx(T.waiting)) + '</div>';
+    var mx = buildMatrix();
+    return '<div class="ss-pills" style="margin-bottom:16px;">' + pillsHTML() + '</div>' +
+      calloutsHTML(mx) + gridHTML(mx) + detailHTML(mx) +
+      '<div class="ss-foot">' + esc(tx(T.foot)) + '</div>';
+  }
+
+  function bind(body){
+    body.querySelectorAll('[data-cm-w]').forEach(function(b){
+      b.addEventListener('click', function(){ state.win = parseInt(b.getAttribute('data-cm-w'), 10); paint(); });
+    });
+    body.querySelectorAll('[data-cm-i]').forEach(function(td){
+      td.addEventListener('click', function(){
+        state.sel = { i:parseInt(td.getAttribute('data-cm-i'),10), j:parseInt(td.getAttribute('data-cm-j'),10) };
+        paint();
+      });
+    });
+  }
+
+  function paint(){
+    if (!sec) return;
+    var q = function(k){ return sec.querySelector('[data-cm="' + k + '"]'); };
+    if (q('eb')) q('eb').textContent = tx(T.eyebrow);
+    if (q('h')) q('h').textContent = tx(T.h);
+    if (q('lede')) q('lede').textContent = tx(T.lede);
+    var body = q('body');
+    if (!body) return;
+    body.innerHTML = '<div class="spz-scan reveal in-view">' + bodyHTML() + '</div>';
+    bind(body);
+  }
+
+  function build(){
+    if (document.getElementById('correl')) return true;
+    if (!document.querySelector('.top-fixed') || !window.__spzAddRoute) return false;
+
+    sec = document.createElement('section');
+    sec.id = 'correl';
+    sec.setAttribute('data-route', 'correl');
+    sec.innerHTML =
+      '<div class="cm-wrap">' +
+        '<div class="section-head reveal in-view" style="padding-top:34px;">' +
+          '<div class="eyebrow"><span class="cursor"></span><span data-cm="eb"></span></div>' +
+          '<h2 data-cm="h"></h2>' +
+          '<p class="lede" data-cm="lede"></p>' +
+          '<div class="rule"></div>' +
+        '</div>' +
+        '<div data-cm="body"></div>' +
+      '</div>';
+    document.body.appendChild(sec);
+
+    window.__spzAddRoute({
+      id:'correl', feat:true, after:'anomaly',
+      t:{en:'Correlation Map',th:'แผนที่ความสัมพันธ์สินทรัพย์'},
+      d:{en:'A pairwise map of how 14 sector/asset-class ETFs and the S&P 500 have actually moved together — or not — week to week. Admin-only.',
+         th:'แผนที่เปรียบเทียบว่า ETF ตัวแทนกลุ่ม 14 กลุ่มกับ S&P 500 เคยขยับไปด้วยกันมากแค่ไหนในแต่ละสัปดาห์ เฉพาะแอดมิน'}
+    });
+
+    sec.__render = paint;
+    fetchData();
+    paint();
+    return true;
+  }
+
+  function boot(){
+    var tries = 0;
+    var iv = setInterval(function(){
+      if (build() || ++tries > 60) clearInterval(iv);
+    }, 400);
+    new MutationObserver(paint)
+      .observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+  }
+
+  window.__SPZ_CORREL = { repaint: paint };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 1100); });
+  } else {
+    setTimeout(boot, 1100);
+  }
+})();
+</script>
+
+<!-- ============================================================
+     SPACEZ RULE LAB  (menu: "ห้องทดลองกฎ", admin only)
+     Additive only: a new route registered through window.__spzAddRoute, the
+     same mechanism "now", "regime" and "proof" already use. Touches no
+     existing route's markup or script.
+
+     Reuses data/backtest.json → gauges + series + bench_series /
+     bench_series_th, the exact same fields Proof Lab already fetches and
+     re-verifies. Proof Lab only ever tests single gauges plus five fixed
+     preset combinations the site's author chose in advance. This screen
+     lets the reader pick ANY of their own combination of gauges and test
+     it the same rigorous way — its own small, independent copy of the
+     handful of pure statistics helpers Proof Lab already uses (median,
+     week alignment, episode scoring, grading), so nothing there is
+     touched or exported further.
+     ============================================================ -->
+<style>
+  #rulelab .rl-wrap{max-width:1180px;margin:0 auto;padding:0 24px 90px;}
+  @media(max-width:700px){#rulelab .rl-wrap{padding:0 14px 60px;}}
+  #rulelab .rl-panel{border:1px solid var(--border-dim);border-radius:12px;
+    padding:16px 18px;background:rgba(255,255,255,.018);margin-bottom:18px;}
+  #rulelab .rl-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
+  #rulelab .rl-row:last-child{margin-bottom:0;}
+  #rulelab .rl-lab{font-family:var(--mono);font-size:9.5px;letter-spacing:.8px;color:var(--grey-dim);
+    text-transform:uppercase;flex:0 0 100%;margin-bottom:2px;}
+  #rulelab .rl-chip{font-family:var(--mono);font-size:11px;padding:7px 12px;border-radius:18px;
+    border:1px solid var(--border-dim);background:transparent;color:var(--grey);cursor:pointer;
+    transition:all .14s;}
+  #rulelab .rl-chip:hover{color:var(--white);border-color:var(--border);}
+  #rulelab .rl-chip.on{background:var(--neon,#cf0);border-color:var(--neon,#cf0);color:#0a0a0a;font-weight:700;}
+  #rulelab .rl-h{font-family:var(--mono);font-size:11px;letter-spacing:.8px;padding:8px 15px;
+    border:1px solid var(--border-dim);border-radius:22px;background:transparent;color:var(--grey);
+    cursor:pointer;transition:all .16s;}
+  #rulelab .rl-h.on{background:var(--neon,#cf0);border-color:var(--neon,#cf0);color:#0a0a0a;font-weight:700;}
+  #rulelab .rl-h[disabled]{opacity:.4;cursor:default;}
+  #rulelab .rl-n{font-family:var(--mono);font-size:12px;padding:6px 10px;border-radius:8px;
+    border:1px solid var(--border-dim);background:rgba(255,255,255,.03);color:var(--white);width:52px;text-align:center;}
+  #rulelab .rl-run{font-family:var(--mono);font-size:11.5px;letter-spacing:1px;font-weight:700;
+    padding:10px 20px;border-radius:6px;border:1px solid var(--neon,#cf0);background:var(--neon,#cf0);
+    color:#0a0a0a;cursor:pointer;}
+  #rulelab .rl-run[disabled]{opacity:.5;cursor:default;}
+  #rulelab .rl-hint{font-size:11.5px;color:var(--grey-dim);}
+  #rulelab .rl-result{border:1px solid var(--border-dim);border-radius:14px;padding:20px;
+    background:rgba(255,255,255,.018);}
+  #rulelab .rl-rh{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;}
+  #rulelab .rl-grade{font-family:var(--mono);font-size:32px;font-weight:800;line-height:1;
+    width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    border:2px solid currentColor;flex:0 0 auto;}
+  #rulelab .rl-grade.g-A,#rulelab .rl-grade.g-B{color:var(--neon-2,#7CFFB2);}
+  #rulelab .rl-grade.g-C{color:var(--amber,#ffb020);}
+  #rulelab .rl-grade.g-D,#rulelab .rl-grade.g-F{color:var(--red,#ff3b4e);}
+  #rulelab .rl-grade.g-na{color:var(--grey-dim);}
+  #rulelab .rl-rule{font-size:13px;color:var(--white);font-weight:700;line-height:1.5;}
+  #rulelab .rl-sub{font-size:11px;color:var(--grey-dim);margin-top:3px;}
+  #rulelab .rl-nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px;margin:14px 0;}
+  #rulelab .rl-nl{font-family:var(--mono);font-size:8.5px;letter-spacing:.6px;color:var(--grey-dim);
+    text-transform:uppercase;margin-bottom:4px;}
+  #rulelab .rl-nv{font-family:var(--mono);font-size:17px;font-weight:700;color:var(--white);}
+  #rulelab .rl-nv.up{color:var(--neon-2,#7CFFB2);} #rulelab .rl-nv.dn{color:var(--red,#ff3b4e);}
+  #rulelab .rl-verdict{font-size:12.5px;color:var(--grey);line-height:1.6;margin:12px 0;}
+  #rulelab .rl-eps{font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);line-height:2;
+    margin-top:10px;word-break:break-word;}
+  #rulelab .rl-note{margin-top:14px;padding:12px 14px;border:1px dashed var(--border-dim);border-radius:10px;
+    font-size:11.5px;color:var(--grey-dim);line-height:1.6;}
+  html[data-theme="light"] #rulelab .rl-rule{color:#12141c;}
+</style>
+<script>
+(function(){
+  'use strict';
+  if (window.__SPZ_RULELAB) return;
+
+  function L(){ return document.documentElement.getAttribute('lang') === 'th' ? 'th' : 'en'; }
+  function tx(o){ return o ? (o[L()] !== undefined ? o[L()] : o.en) : ''; }
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  var isNum = function(v){ return typeof v === 'number' && isFinite(v); };
+  function sgn(v, d){ return (v >= 0 ? '+' : '') + Number(v).toFixed(d === undefined ? 1 : d); }
+
+  var T = {
+    eyebrow:{en:'RULE LAB',th:'ห้องทดลองกฎ'},
+    h:{en:'Build Your Own Warning Rule, Then Test It',th:'ประกอบกฎเตือนภัยของตัวเอง แล้วทดสอบย้อนหลัง'},
+    lede:{en:'Proof Lab grades each gauge alone and five combinations the site chose ahead of time. Here you pick any set of gauges yourself, decide how strict the rule should be, and this re-runs the exact same 12-25 year history to see what actually happened afterward — no guessing, no cherry-picking after the fact.',
+      th:'หน้าทดสอบเรดาร์ให้เกรดทีละตัวชี้วัดและชุดค่าผสม 5 แบบที่เว็บเลือกไว้ล่วงหน้า ส่วนหน้านี้ให้คุณเลือกตัวชี้วัดเองกี่ตัวก็ได้ กำหนดว่ากฎควรเข้มแค่ไหน แล้วรันย้อนหลัง 12-25 ปีชุดเดียวกันเพื่อดูว่าหลังจากนั้นเกิดอะไรขึ้นจริง — ไม่เดา ไม่เลือกข้อมูลย้อนหลังทีหลัง'},
+    pickH:{en:'PICK GAUGES',th:'เลือกตัวชี้วัด'},
+    logicH:{en:'RULE',th:'เงื่อนไข'},
+    logicAnd:{en:'ALL picked must be red',th:'ต้องแดง "ทั้งหมด" ที่เลือก'},
+    logicCount:{en:'At least this many red:',th:'แดงอย่างน้อยกี่ตัว:'},
+    horizonH:{en:'MEASURE THE MARKET OVER',th:'วัดตลาดในช่วง'},
+    h21:{en:'1 month',th:'1 เดือน'}, h63:{en:'3 months',th:'3 เดือน'},
+    h126:{en:'6 months',th:'6 เดือน'}, h252:{en:'12 months',th:'12 เดือน'},
+    marketH:{en:'MARKET',th:'ตลาด'}, mUS:{en:'US · S&P 500',th:'สหรัฐฯ · S&P 500'},
+    mTH:{en:'Thai · SET',th:'ไทย · SET'},
+    run:{en:'TEST THIS RULE',th:'ทดสอบกฎนี้'},
+    hint0:{en:'Pick at least one gauge above to test it.',th:'เลือกตัวชี้วัดอย่างน้อย 1 ตัวก่อนทดสอบ'},
+    running:{en:'Running…',th:'กำลังคำนวณ…'},
+    waiting:{en:'Loading backtest history…',th:'กำลังโหลดข้อมูลย้อนหลัง…'},
+    noFile:{en:'Backtest data isn’t available right now — try again after the next daily refresh.',
+      th:'ยังดึงข้อมูล backtest ไม่ได้ตอนนี้ — ลองใหม่หลังรอบรีเฟรชถัดไป'},
+    noSet:{en:'Thai history too short yet',th:'ข้อมูลไทยยังสั้นเกินไป'},
+    ruleAnd:{en:'When ALL of: {names} were red at once',th:'เมื่อ "ทุกตัว" ใน: {names} แดงพร้อมกัน'},
+    ruleCount:{en:'When at least {n} of: {names} were red',th:'เมื่ออย่างน้อย {n} ตัวจาก: {names} แดง'},
+    ep:{en:'EPISODES',th:'ครั้งที่เกิด'}, after:{en:'MEDIAN AFTER',th:'ค่ากลางหลังจากนั้น'},
+    base:{en:'USUAL MEDIAN',th:'ค่ากลางทั่วไป'}, edge:{en:'EDGE',th:'ส่วนต่าง'},
+    neg:{en:'FELL AFTERWARD',th:'ลงหลังจากนั้น'}, pval:{en:'p-VALUE (RAW)',th:'p-VALUE (ดิบ)'},
+    tooFew:{en:'Fewer than 3 episodes in the whole history — too few to grade or trust. Pick a looser rule (fewer gauges, or "at least N" instead of "all").',
+      th:'เกิดน้อยกว่า 3 ครั้งในประวัติทั้งหมด — น้อยเกินกว่าจะให้เกรดหรือเชื่อได้ ลองปรับกฎให้หลวมขึ้น (เลือกตัวชี้วัดน้อยลง หรือใช้ "อย่างน้อย N ตัว" แทน "ทั้งหมด")'},
+    gA:{en:'Historically this rule was followed by a meaningfully worse market than usual, consistently enough that it’s unlikely to be chance.',
+        th:'ในอดีตหลังกฎนี้ตลาดแย่กว่าปกติอย่างมีนัยสำคัญ สม่ำเสมอพอที่จะไม่ใช่แค่เรื่องบังเอิญ'},
+    gB:{en:'Historically this rule was followed by a somewhat worse market than usual.',
+        th:'ในอดีตหลังกฎนี้ตลาดแย่กว่าปกติในระดับหนึ่ง'},
+    gC:{en:'A small, inconsistent edge — worth watching, not worth trusting alone.',
+        th:'ส่วนต่างเล็กน้อยและไม่สม่ำเสมอ — เฝ้าดูได้ แต่อย่าเชื่อตัวเดียวโดด ๆ'},
+    gD:{en:'Barely any difference from a random time — this rule alone told you almost nothing.',
+        th:'แทบไม่ต่างจากช่วงเวลาสุ่ม — กฎนี้เดี่ยว ๆ แทบไม่บอกอะไรเลย'},
+    gF:{en:'The market historically did fine — or better — after this rule fired. It was not a warning.',
+        th:'ในอดีตตลาดกลับไปได้ดี — หรือดีกว่าปกติ — หลังกฎนี้ทำงาน มันไม่ใช่สัญญาณเตือน'},
+    epH:{en:'When this rule fired (first 12):',th:'ครั้งที่กฎนี้ทำงาน (12 ครั้งแรก):'},
+    note:{en:'This tests one rule you chose, once — there is no correction here for trying many combinations the way Proof Lab does, so treat a good-looking result with real caution, especially with few episodes. Historical patterns can and do stop working. Educational use only, not investment advice.',
+      th:'นี่คือการทดสอบกฎเดียวที่คุณเลือกเอง ไม่ได้ปรับแก้ทางสถิติสำหรับการลองหลายชุดค่าผสมแบบหน้าทดสอบเรดาร์ ดังนั้นแม้ผลจะดูดีก็ควรระวังไว้ก่อน โดยเฉพาะถ้าเกิดน้อยครั้ง รูปแบบในอดีตหยุดใช้ได้จริงเสมอ ใช้เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน'}
+  };
+
+  var state = { data:null, tried:false, picked:{}, mode:'and', n:2, horizon:63, bench:'SPY', result:null };
+
+  function fetchData(){
+    if (state.data || state.tried) return;
+    state.tried = true;
+    fetch('data/backtest.json?v=' + Math.floor(Date.now() / 3.6e6))
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){ state.data = d || false; paint(); })
+      .catch(function(){ state.data = false; paint(); });
+  }
+
+  function gauges(){
+    var d = state.data;
+    return (d && d.gauges || []).filter(function(g){ return g.thresholds; });
+  }
+
+  function median(xs){
+    if (!xs.length) return null;
+    var s = xs.slice().sort(function(a,b){ return a-b; });
+    var n = s.length;
+    return n % 2 ? s[(n-1)/2] : (s[n/2-1] + s[n/2]) / 2;
+  }
+  function stateOf(t, v){
+    if (!isNum(v)) return 'na';
+    if (t.dir === 'down') return v <= t.ok ? 'ok' : (v <= t.warn ? 'warn' : 'alert');
+    return v >= t.ok ? 'ok' : (v >= t.warn ? 'warn' : 'alert');
+  }
+  function isoWeek(ds){
+    var d = new Date(ds + 'T00:00:00Z');
+    if (isNaN(d.getTime())) return ds;
+    var dn = (d.getUTCDay() + 6) % 7;
+    d.setUTCDate(d.getUTCDate() - dn + 3);
+    var y = d.getUTCFullYear();
+    var t = Date.UTC(y, 0, 4);
+    var w = 1 + Math.round(((d.getTime() - t) / 864e5 - 3 + ((new Date(t).getUTCDay() + 6) % 7)) / 7);
+    return y + '-' + (w < 10 ? '0' : '') + w;
+  }
+  function hasSet(){ return (((state.data || {}).bench_series_th) || []).length > 200; }
+  function benchArr(){
+    var d = state.data || {};
+    return (state.bench === 'SET' && hasSet()) ? d.bench_series_th : (d.bench_series || []);
+  }
+  function posOn(arr, d){
+    var lo = 0, hi = arr.length;
+    while (lo < hi) { var m = (lo + hi) >> 1; if (arr[m][0] < d) lo = m + 1; else hi = m; }
+    return lo < arr.length ? lo : -1;
+  }
+  function forwardPool(arr, w){
+    var out = [];
+    for (var i = 0; i + w < arr.length; i++) {
+      var a = arr[i][1];
+      if (a) out.push((arr[i + w][1] - a) / a * 100);
+    }
+    return out;
+  }
+  var PTRIALS = 400;
+  function pValue(med, n, pool){
+    if (!isNum(med) || !pool.length || n < 2 || n > pool.length) return null;
+    var hits = 0, pick = new Array(n);
+    for (var i = 0; i < PTRIALS; i++) {
+      var used = {};
+      for (var j = 0; j < n; j++) {
+        var k;
+        do { k = (Math.random() * pool.length) | 0; } while (used[k]);
+        used[k] = 1;
+        pick[j] = pool[k];
+      }
+      if (median(pick) <= med) hits++;
+    }
+    return hits / PTRIALS;
+  }
+  function episodesFromFlags(flags, dates, cool){
+    var eps = [], prev = false, last = -1e9;
+    for (var i = 0; i < dates.length; i++) {
+      var f = !!flags[i];
+      if (f && !prev && (i - last) >= cool) { eps.push(dates[i]); last = i; }
+      prev = f;
+    }
+    return eps;
+  }
+  function scoreEpisodes(eps, arr, w){
+    var pool = forwardPool(arr, w);
+    var baseMed = median(pool);
+    var fwd = [];
+    eps.forEach(function(d){
+      var k = posOn(arr, d);
+      if (k < 0 || k + w >= arr.length) return;
+      var a = arr[k][1];
+      if (a) fwd.push({ d:d, r:(arr[k + w][1] - a) / a * 100 });
+    });
+    if (fwd.length < 2) return { n:fwd.length, base:baseMed, grade:'n/a' };
+    var rets = fwd.map(function(x){ return x.r; });
+    var med = median(rets);
+    return {
+      n: fwd.length, med: med, base: baseMed,
+      edge: baseMed === null ? null : med - baseMed,
+      negRate: rets.filter(function(r){ return r < 0; }).length / rets.length * 100,
+      p: pValue(med, fwd.length, pool), eps: eps
+    };
+  }
+  function gradeIt(r){
+    if (!isNum(r.edge) || r.n < 3) return 'n/a';
+    if (r.edge <= -4 && r.n >= 5 && isNum(r.p) && r.p <= 0.20) return 'A';
+    if (r.edge <= -2 && r.n >= 4 && isNum(r.p) && r.p <= 0.50) return 'B';
+    if (r.edge <= -0.75) return 'C';
+    if (r.edge < 0) return 'D';
+    return 'F';
+  }
+  var COOL_W = 8;
+
+  function weekTable(gs){
+    var d = state.data, weeks = {}, order = [];
+    gs.forEach(function(g){
+      ((d.series || {})[g.k] || []).forEach(function(p){
+        var wk = isoWeek(p[0]);
+        if (!weeks[wk]) { weeks[wk] = { d:p[0], st:{} }; order.push(wk); }
+        if (p[0] < weeks[wk].d) weeks[wk].d = p[0];
+        weeks[wk].st[g.k] = stateOf(g.thresholds, p[1]);
+      });
+    });
+    order.sort();
+    return order.map(function(wk){ return weeks[wk]; });
+  }
+
+  function runRule(){
+    var d = state.data;
+    var picked = gauges().filter(function(g){ return state.picked[g.k]; });
+    if (!picked.length) return null;
+    var tbl = weekTable(picked);
+    var flags = [], dates = [];
+    for (var i = 0; i < tbl.length; i++) {
+      var st = tbl[i].st;
+      var avail = 0, red = 0, missing = false;
+      picked.forEach(function(g){
+        var s = st[g.k];
+        if (!s || s === 'na') { missing = true; return; }
+        avail++;
+        if (s === 'alert') red++;
+      });
+      dates.push(tbl[i].d);
+      if (state.mode === 'and') {
+        flags.push(!missing && red === picked.length);
+      } else {
+        flags.push(!missing && red >= Math.min(state.n, picked.length));
+      }
+    }
+    var eps = episodesFromFlags(flags, dates, COOL_W);
+    var arr = benchArr() || [];
+    if (arr.length < 100) return { picked:picked, n:0, grade:'n/a', tooFew:true };
+    var weeks = Math.max(1, Math.round(state.horizon / 5));
+    var r = scoreEpisodes(eps, arr, weeks);
+    r.grade = gradeIt(r);
+    r.picked = picked;
+    r.onRate = flags.length ? (flags.filter(Boolean).length / flags.length * 100) : 0;
+    r.tooFew = r.n < 3;
+    return r;
+  }
+
+  function pickHTML(){
+    return gauges().map(function(g){
+      return '<button type="button" class="rl-chip' + (state.picked[g.k] ? ' on' : '') +
+        '" data-rl-g="' + esc(g.k) + '">' + esc(tx(g)) + '</button>';
+    }).join('');
+  }
+
+  function pickedCount(){ return Object.keys(state.picked).filter(function(k){ return state.picked[k]; }).length; }
+
+  function panelHTML(){
+    var pc = pickedCount();
+    return '<div class="rl-panel">' +
+      '<div class="rl-row"><span class="rl-lab">' + esc(tx(T.pickH)) + '</span>' + pickHTML() + '</div>' +
+      '<div class="rl-row"><span class="rl-lab">' + esc(tx(T.logicH)) + '</span>' +
+        '<button type="button" class="rl-chip' + (state.mode === 'and' ? ' on' : '') + '" data-rl-mode="and">' +
+          esc(tx(T.logicAnd)) + '</button>' +
+        '<button type="button" class="rl-chip' + (state.mode === 'count' ? ' on' : '') + '" data-rl-mode="count">' +
+          esc(tx(T.logicCount)) + '</button>' +
+        (state.mode === 'count' ? '<input class="rl-n" type="number" min="1" max="' + Math.max(1, pc) +
+          '" value="' + Math.min(state.n, Math.max(1, pc)) + '" data-rl="n">' : '') +
+      '</div>' +
+      '<div class="rl-row"><span class="rl-lab">' + esc(tx(T.horizonH)) + '</span>' +
+        [21,63,126,252].map(function(h){
+          return '<button type="button" class="rl-h' + (state.horizon === h ? ' on' : '') +
+            '" data-rl-h="' + h + '">' + esc(tx(T['h' + h])) + '</button>';
+        }).join('') +
+      '</div>' +
+      '<div class="rl-row"><span class="rl-lab">' + esc(tx(T.marketH)) + '</span>' +
+        '<button type="button" class="rl-h' + (state.bench === 'SPY' ? ' on' : '') + '" data-rl-bench="SPY">' +
+          esc(tx(T.mUS)) + '</button>' +
+        '<button type="button" class="rl-h' + (state.bench === 'SET' ? ' on' : '') + '" data-rl-bench="SET"' +
+          (hasSet() ? '' : ' disabled title="' + esc(tx(T.noSet)) + '"') + '>' + esc(tx(T.mTH)) + '</button>' +
+      '</div>' +
+      '<div class="rl-row">' +
+        '<button type="button" class="rl-run" data-rl="run"' + (pc ? '' : ' disabled') + '>' + esc(tx(T.run)) + '</button>' +
+        '<span class="rl-hint">' + (pc ? '' : esc(tx(T.hint0))) + '</span>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function resultHTML(){
+    var r = state.result;
+    if (!r) return '';
+    var names = r.picked.map(function(g){ return tx(g); }).join(', ');
+    var ruleTxt = state.mode === 'and'
+      ? tx(T.ruleAnd).replace('{names}', names)
+      : tx(T.ruleCount).replace('{n}', Math.min(state.n, r.picked.length)).replace('{names}', names);
+    if (r.tooFew) {
+      return '<div class="rl-result"><div class="rl-rh">' +
+        '<div class="rl-grade g-na">—</div>' +
+        '<div><div class="rl-rule">' + esc(ruleTxt) + '</div>' +
+        '<div class="rl-sub">' + (r.n || 0) + ' ' + esc(tx(T.ep).toLowerCase()) + '</div></div></div>' +
+        '<div class="rl-verdict">' + esc(tx(T.tooFew)) + '</div></div>';
+    }
+    var gKey = r.grade === 'n/a' ? 'na' : r.grade;
+    var gCopy = { A:T.gA, B:T.gB, C:T.gC, D:T.gD, F:T.gF }[r.grade] || null;
+    return '<div class="rl-result">' +
+      '<div class="rl-rh"><div class="rl-grade g-' + gKey + '">' + (r.grade === 'n/a' ? '—' : r.grade) + '</div>' +
+        '<div><div class="rl-rule">' + esc(ruleTxt) + '</div>' +
+        '<div class="rl-sub">' + r.n + ' ' + esc(tx(T.ep).toLowerCase()) + ' · ' +
+          esc(tx(T['h' + state.horizon])) + ' · ' + esc(tx(state.bench === 'SET' ? T.mTH : T.mUS)) + '</div></div></div>' +
+      '<div class="rl-nums">' +
+        '<div><div class="rl-nl">' + esc(tx(T.ep)) + '</div><div class="rl-nv">' + r.n + '</div></div>' +
+        '<div><div class="rl-nl">' + esc(tx(T.after)) + '</div><div class="rl-nv ' + (isNum(r.med) && r.med < 0 ? 'dn' : 'up') + '">' +
+          (isNum(r.med) ? sgn(r.med, 1) + '%' : '—') + '</div></div>' +
+        '<div><div class="rl-nl">' + esc(tx(T.base)) + '</div><div class="rl-nv">' +
+          (isNum(r.base) ? sgn(r.base, 1) + '%' : '—') + '</div></div>' +
+        '<div><div class="rl-nl">' + esc(tx(T.edge)) + '</div><div class="rl-nv ' + (isNum(r.edge) && r.edge < 0 ? 'dn' : 'up') + '">' +
+          (isNum(r.edge) ? sgn(r.edge, 1) + ' pts' : '—') + '</div></div>' +
+        '<div><div class="rl-nl">' + esc(tx(T.neg)) + '</div><div class="rl-nv">' +
+          (isNum(r.negRate) ? Math.round(r.negRate) + '%' : '—') + '</div></div>' +
+        '<div><div class="rl-nl">' + esc(tx(T.pval)) + '</div><div class="rl-nv">' +
+          (isNum(r.p) ? r.p.toFixed(2) : '—') + '</div></div>' +
+      '</div>' +
+      (gCopy ? '<div class="rl-verdict">' + esc(tx(gCopy)) + '</div>' : '') +
+      (r.eps && r.eps.length ? '<div class="rl-eps">' + esc(tx(T.epH)) + ' ' + r.eps.slice(0, 12).join(', ') + '</div>' : '') +
+      '<div class="rl-note">' + esc(tx(T.note)) + '</div>' +
+    '</div>';
+  }
+
+  function bodyHTML(){
+    if (state.data === false) return '<div class="ss-empty">' + esc(tx(T.noFile)) + '</div>';
+    if (!state.data) return '<div class="ss-empty">' + esc(tx(T.waiting)) + '</div>';
+    return panelHTML() + resultHTML();
+  }
+
+  var sec = null;
+
+  function bind(body){
+    body.querySelectorAll('[data-rl-g]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var k = b.getAttribute('data-rl-g');
+        state.picked[k] = !state.picked[k];
+        state.result = null;
+        paint();
+      });
+    });
+    body.querySelectorAll('[data-rl-mode]').forEach(function(b){
+      b.addEventListener('click', function(){ state.mode = b.getAttribute('data-rl-mode'); paint(); });
+    });
+    body.querySelectorAll('[data-rl-h]').forEach(function(b){
+      b.addEventListener('click', function(){ state.horizon = parseInt(b.getAttribute('data-rl-h'), 10); paint(); });
+    });
+    body.querySelectorAll('[data-rl-bench]').forEach(function(b){
+      if (b.disabled) return;
+      b.addEventListener('click', function(){ state.bench = b.getAttribute('data-rl-bench'); paint(); });
+    });
+    var nIn = body.querySelector('[data-rl="n"]');
+    if (nIn) nIn.addEventListener('change', function(){ state.n = Math.max(1, parseInt(nIn.value, 10) || 1); });
+    var runBtn = body.querySelector('[data-rl="run"]');
+    if (runBtn) runBtn.addEventListener('click', function(){
+      state.result = runRule();
+      paint();
+    });
+  }
+
+  function paint(){
+    if (!sec) return;
+    var q = function(k){ return sec.querySelector('[data-rl="' + k + '"]'); };
+    if (q('eb')) q('eb').textContent = tx(T.eyebrow);
+    if (q('h')) q('h').textContent = tx(T.h);
+    if (q('lede')) q('lede').textContent = tx(T.lede);
+    var body = q('body');
+    if (!body) return;
+    body.innerHTML = bodyHTML();
+    bind(body);
+  }
+
+  function build(){
+    if (document.getElementById('rulelab')) return true;
+    if (!document.querySelector('.top-fixed') || !window.__spzAddRoute) return false;
+
+    sec = document.createElement('section');
+    sec.id = 'rulelab';
+    sec.setAttribute('data-route', 'rulelab');
+    sec.innerHTML =
+      '<div class="rl-wrap">' +
+        '<div class="section-head reveal in-view" style="padding-top:34px;">' +
+          '<div class="eyebrow"><span class="cursor"></span><span data-rl="eb"></span></div>' +
+          '<h2 data-rl="h"></h2>' +
+          '<p class="lede" data-rl="lede"></p>' +
+          '<div class="rule"></div>' +
+        '</div>' +
+        '<div data-rl="body"></div>' +
+      '</div>';
+    document.body.appendChild(sec);
+
+    window.__spzAddRoute({
+      id:'rulelab', feat:true, after:'correl',
+      t:{en:'Rule Lab',th:'ห้องทดลองกฎ'},
+      d:{en:'Pick your own combination of early-warning gauges, choose how strict the rule is, and re-run 12-25 years of history to see what actually followed. Admin-only.',
+         th:'เลือกตัวชี้วัดเตือนล่วงหน้าผสมกันเอง กำหนดความเข้มของกฎ แล้วรันย้อนหลัง 12-25 ปีดูว่าหลังจากนั้นเกิดอะไรจริง เฉพาะแอดมิน'}
+    });
+
+    sec.__render = paint;
+    fetchData();
+    paint();
+    return true;
+  }
+
+  function boot(){
+    var tries = 0;
+    var iv = setInterval(function(){
+      if (build() || ++tries > 60) clearInterval(iv);
+    }, 400);
+    new MutationObserver(paint)
+      .observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+  }
+
+  window.__SPZ_RULELAB = { repaint: paint };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 1100); });
+  } else {
+    setTimeout(boot, 1100);
+  }
+})();
+</script>
+
+<!-- ============================================================
+     SPACEZ DAILY SUMMARY  (menu: "สรุปประจำวัน", admin only)
+     Additive only: a new route registered through window.__spzAddRoute, the
+     same mechanism every other screen in this file uses. Touches no
+     existing route's markup or script.
+
+     Writes nothing to disk and fetches nothing new — it is pure templating
+     over data every other screen already has in memory: the live
+     data/market.json snapshot (stocks, flows.sector, regime), plus, when
+     present, window.__SPZ_REGIME's already-computed score/alert (Turning
+     Point Radar) and window.__SPZ_ANOMALY's row count (Anomaly Scan). If
+     those two modules haven't booted yet this still works from the raw
+     snapshot alone.
+     ============================================================ -->
+<style>
+  #daily .dy-wrap{max-width:900px;margin:0 auto;padding:0 24px 90px;}
+  @media(max-width:700px){#daily .dy-wrap{padding:0 14px 60px;}}
+  #daily .dy-asof{font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);margin-bottom:18px;}
+  #daily .dy-card{border:1px solid var(--border-dim);border-radius:12px;padding:16px 18px;
+    background:rgba(255,255,255,.018);margin-bottom:14px;}
+  #daily .dy-lab{font-family:var(--mono);font-size:9px;letter-spacing:.8px;color:var(--grey-dim);
+    text-transform:uppercase;margin-bottom:8px;}
+  #daily .dy-txt{font-size:13.5px;color:var(--white);line-height:1.75;}
+  #daily .dy-txt b{color:var(--white);}
+  #daily .dy-txt .up{color:var(--neon-2,#7CFFB2);font-weight:700;}
+  #daily .dy-txt .dn{color:var(--red,#ff3b4e);font-weight:700;}
+  #daily .dy-txt .warn{color:var(--amber,#ffb020);font-weight:700;}
+  #daily .dy-movers{display:flex;gap:20px;flex-wrap:wrap;margin-top:10px;}
+  #daily .dy-mcol{flex:1 1 200px;}
+  #daily .dy-mh{font-family:var(--mono);font-size:9px;letter-spacing:.6px;color:var(--grey-dim);
+    text-transform:uppercase;margin-bottom:6px;}
+  #daily .dy-mrow{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;
+    padding:4px 0;border-bottom:1px solid var(--border-dim);}
+  #daily .dy-mrow:last-child{border-bottom:none;}
+  #daily .dy-go{font-family:var(--mono);font-size:10.5px;letter-spacing:.6px;padding:7px 14px;
+    border-radius:18px;border:1px solid var(--neon,#cf0);background:transparent;color:var(--neon,#cf0);
+    cursor:pointer;margin-top:10px;transition:all .14s;}
+  #daily .dy-go:hover{background:var(--neon,#cf0);color:#0a0a0a;}
+  html[data-theme="light"] #daily .dy-txt{color:#12141c;}
+</style>
+<script>
+(function(){
+  'use strict';
+  if (window.__SPZ_DAILY) return;
+
+  function L(){ return document.documentElement.getAttribute('lang') === 'th' ? 'th' : 'en'; }
+  function tx(o){ return o ? (o[L()] !== undefined ? o[L()] : o.en) : ''; }
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  var isNum = function(v){ return typeof v === 'number' && isFinite(v); };
+  function sgn(v, d){ return (v >= 0 ? '+' : '') + Number(v).toFixed(d === undefined ? 1 : d); }
+
+  var T = {
+    eyebrow:{en:'DAILY SUMMARY',th:'สรุปประจำวันอัตโนมัติ'},
+    h:{en:'The Last 30 Minutes, In Words',th:'สรุปข้อมูลรอบล่าสุดเป็นคำพูด'},
+    lede:{en:'A plain-language readout of the same snapshot every screen here already uses, written fresh each time the data refreshes — nothing here is written by a person and nothing here is a prediction. Think of it as the two-minute version of clicking through every other page.',
+      th:'สรุปข้อมูลชุดเดียวกับที่ทุกหน้าใช้อยู่แล้ว เขียนใหม่ทุกครั้งที่ข้อมูลรีเฟรช ไม่มีคนเขียน ไม่ใช่การคาดการณ์ ให้คิดว่าเป็นเวอร์ชัน 2 นาทีของการไล่ดูทุกหน้าทีละหน้า'},
+    asof:{en:'As of',th:'ข้อมูล ณ'},
+    waiting:{en:'Waiting for the first data sync…',th:'กำลังรอข้อมูลรอบแรก…'},
+    headlineL:{en:'HEADLINE',th:'ประเด็นหลัก'},
+    quiet:{en:'Nothing unusual is standing out in the early-warning gauges right now — a quiet day by that measure.',
+      th:'ตอนนี้ไม่มีอะไรผิดปกติเด่นชัดในตัวชี้วัดเตือนล่วงหน้า — วันนี้ค่อนข้างเงียบตามเกณฑ์นี้'},
+    scoreL:{en:'EARLY-WARNING GAUGES',th:'ตัวชี้วัดเตือนล่วงหน้า'},
+    scoreTxt:{en:'{a} of {k} gauges are flashing red and {s} are on watch — the rest read normal.',
+      th:'{a} จาก {k} ตัวชี้วัดกำลังแดง และอีก {s} ตัวอยู่ในระดับเฝ้าระวัง — ที่เหลืออ่านค่าปกติ'},
+    scoreNA:{en:'The early-warning gauges haven’t loaded yet — open Turning Point Radar to see them.',
+      th:'ตัวชี้วัดเตือนล่วงหน้ายังไม่โหลด — เปิดหน้าสัญญาณเปลี่ยนทิศเพื่อดู'},
+    moversL:{en:'BIGGEST MOVERS TODAY',th:'ขยับแรงที่สุดวันนี้'},
+    gainH:{en:'Up most',th:'ขึ้นมากที่สุด'}, loseH:{en:'Down most',th:'ลงมากที่สุด'},
+    noMovers:{en:'No daily change data available yet.',th:'ยังไม่มีข้อมูลการเปลี่ยนแปลงรายวัน'},
+    flowL:{en:'WHERE MONEY HAS LEANED, PAST MONTH',th:'เดือนที่ผ่านมา เงินเอียงไปทางไหน'},
+    flowTxt:{en:'Over the past month, money has favored <b class="up">{a}</b> ({av}%) and avoided <b class="dn">{b}</b> ({bv}%) the most among tracked sectors.',
+      th:'ในเดือนที่ผ่านมา เงินเอียงเข้า <b class="up">{a}</b> ({av}%) มากที่สุด และเลี่ยง <b class="dn">{b}</b> ({bv}%) มากที่สุดในกลุ่มที่ติดตาม'},
+    flowNA:{en:'Sector flow data isn’t available in this snapshot.',th:'สแนปช็อตนี้ยังไม่มีข้อมูลเงินไหลรายกลุ่ม'},
+    anomL:{en:'ANOMALY SCAN',th:'สแกนสัญญาณผิดปกติ'},
+    anomTxt:{en:'The anomaly scan is currently flagging <b class="warn">{n}</b> tickers with a pattern break — momentum divergence, a moving-average cross, or sitting right at a 52-week edge.',
+      th:'ตอนนี้สแกนสัญญาณผิดปกติกำลังชี้ <b class="warn">{n}</b> ตัวที่มีรูปแบบผิดไปจากเดิม — ไดเวอร์เจนซ์ของโมเมนตัม การตัดเส้นค่าเฉลี่ย หรืออยู่ติดขอบ 52 สัปดาห์'},
+    anomZero:{en:'The anomaly scan has nothing flagged right now.',th:'ตอนนี้สแกนสัญญาณผิดปกติยังไม่พบอะไร'},
+    anomNA:{en:'Open Anomaly Scan for the full breakdown.',th:'เปิดหน้าสแกนสัญญาณผิดปกติเพื่อดูรายละเอียดทั้งหมด'},
+    goAnom:{en:'Open Anomaly Scan →',th:'เปิดหน้าสแกนสัญญาณผิดปกติ →'},
+    goRegime:{en:'Open Turning Point Radar →',th:'เปิดหน้าสัญญาณเปลี่ยนทิศ →'},
+    foot:{en:'Every line above is generated from the same numbers shown elsewhere on this site — nothing is fetched separately and nothing is written by a person. It refreshes with each 30-minute snapshot. This is a summary, not a forecast, and not investment advice.',
+      th:'ทุกบรรทัดด้านบนสร้างจากตัวเลขชุดเดียวกับที่แสดงในหน้าอื่นของเว็บนี้ ไม่ได้ดึงข้อมูลแยก และไม่มีคนเขียน จะอัปเดตทุกรอบสแนปช็อต 30 นาที นี่คือบทสรุป ไม่ใช่การคาดการณ์ และไม่ใช่คำแนะนำการลงทุน'}
+  };
+
+  var snap = null;
+  var sec = null;
+
+  function snapshot(){
+    try { return (window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot()) || null; }
+    catch(e){ return null; }
+  }
+
+  function fmtTime(iso){
+    if (!iso) return '—';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return String(iso);
+    return d.toLocaleString(L() === 'th' ? 'th-TH' : 'en-GB',
+      { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', hour12:false });
+  }
+
+  function regimeScore(){
+    try { return window.__SPZ_REGIME && window.__SPZ_REGIME.score && window.__SPZ_REGIME.score(); }
+    catch(e){ return null; }
+  }
+  function regimeAlert(){
+    try { return window.__SPZ_REGIME && window.__SPZ_REGIME.alert && window.__SPZ_REGIME.alert(); }
+    catch(e){ return null; }
+  }
+  function anomalyRows(){
+    try { return (window.__SPZ_ANOMALY && window.__SPZ_ANOMALY.rows && window.__SPZ_ANOMALY.rows()) || null; }
+    catch(e){ return null; }
+  }
+
+  function headlineHTML(){
+    var al = regimeAlert();
+    var txt = al && al.text ? esc(al.text) : esc(tx(T.quiet));
+    return '<div class="dy-card"><div class="dy-lab">' + esc(tx(T.headlineL)) + '</div>' +
+      '<div class="dy-txt">' + txt + '</div></div>';
+  }
+
+  function scoreHTML(){
+    var sc = regimeScore();
+    var body;
+    if (sc && isNum(sc.known)) {
+      body = esc(tx(T.scoreTxt))
+        .replace('{a}', String(sc.alerts)).replace('{k}', String(sc.known)).replace('{s}', String(sc.soft));
+    } else {
+      body = esc(tx(T.scoreNA));
+    }
+    return '<div class="dy-card"><div class="dy-lab">' + esc(tx(T.scoreL)) + '</div>' +
+      '<div class="dy-txt">' + body + '</div>' +
+      '<button type="button" class="dy-go" data-dy-go="regime">' + esc(tx(T.goRegime)) + '</button></div>';
+  }
+
+  function moversHTML(){
+    var s = snap; if (!s) return '';
+    var rows = [];
+    var stocks = s.stocks || {};
+    Object.keys(stocks).forEach(function(tk){
+      var r = stocks[tk];
+      if (!r || r.stale || !isNum(r.chg_pct)) return;
+      rows.push({ tk:tk, name:r.name || '', chg:r.chg_pct });
+    });
+    if (!rows.length) {
+      return '<div class="dy-card"><div class="dy-lab">' + esc(tx(T.moversL)) + '</div>' +
+        '<div class="dy-txt">' + esc(tx(T.noMovers)) + '</div></div>';
+    }
+    rows.sort(function(a,b){ return b.chg - a.chg; });
+    var gainers = rows.slice(0, 3);
+    var losers = rows.slice(-3).reverse();
+    function rowHTML(r){
+      return '<div class="dy-mrow"><span>' + esc(r.tk) + '</span><span class="' +
+        (r.chg >= 0 ? 'up' : 'dn') + '">' + sgn(r.chg, 1) + '%</span></div>';
+    }
+    return '<div class="dy-card"><div class="dy-lab">' + esc(tx(T.moversL)) + '</div>' +
+      '<div class="dy-movers">' +
+        '<div class="dy-mcol"><div class="dy-mh">' + esc(tx(T.gainH)) + '</div>' + gainers.map(rowHTML).join('') + '</div>' +
+        '<div class="dy-mcol"><div class="dy-mh">' + esc(tx(T.loseH)) + '</div>' + losers.map(rowHTML).join('') + '</div>' +
+      '</div></div>';
+  }
+
+  function flowHTML(){
+    var s = snap; if (!s) return '';
+    var sect = (s.flows && s.flows.sector) || [];
+    var rows = sect.filter(function(r){ return r && r.en && isNum(r.m1); });
+    if (rows.length < 2) {
+      return '<div class="dy-card"><div class="dy-lab">' + esc(tx(T.flowL)) + '</div>' +
+        '<div class="dy-txt">' + esc(tx(T.flowNA)) + '</div></div>';
+    }
+    rows.sort(function(a,b){ return b.m1 - a.m1; });
+    var top = rows[0], bot = rows[rows.length - 1];
+    var txt = tx(T.flowTxt)
+      .replace('{a}', esc(tx({en:top.en, th:top.th || top.en})))
+      .replace('{av}', sgn(top.m1, 1))
+      .replace('{b}', esc(tx({en:bot.en, th:bot.th || bot.en})))
+      .replace('{bv}', sgn(bot.m1, 1));
+    return '<div class="dy-card"><div class="dy-lab">' + esc(tx(T.flowL)) + '</div>' +
+      '<div class="dy-txt">' + txt + '</div></div>';
+  }
+
+  function anomHTML(){
+    var rows = anomalyRows();
+    var body;
+    if (rows) {
+      body = rows.length
+        ? tx(T.anomTxt).replace('{n}', String(rows.length))
+        : esc(tx(T.anomZero));
+    } else {
+      body = esc(tx(T.anomNA));
+    }
+    return '<div class="dy-card"><div class="dy-lab">' + esc(tx(T.anomL)) + '</div>' +
+      '<div class="dy-txt">' + body + '</div>' +
+      '<button type="button" class="dy-go" data-dy-go="anomaly">' + esc(tx(T.goAnom)) + '</button></div>';
+  }
+
+  function bind(body){
+    body.querySelectorAll('[data-dy-go]').forEach(function(b){
+      b.addEventListener('click', function(){ location.hash = '#/' + b.getAttribute('data-dy-go'); });
+    });
+  }
+
+  function paint(){
+    if (!sec) return;
+    var q = function(k){ return sec.querySelector('[data-dy="' + k + '"]'); };
+    if (q('eb')) q('eb').textContent = tx(T.eyebrow);
+    if (q('h')) q('h').textContent = tx(T.h);
+    if (q('lede')) q('lede').textContent = tx(T.lede);
+    var body = q('body');
+    if (!body) return;
+    if (!snap) { body.innerHTML = '<div class="ss-empty">' + esc(tx(T.waiting)) + '</div>'; return; }
+    body.innerHTML =
+      '<div class="dy-asof">' + esc(tx(T.asof)) + ' ' + esc(fmtTime(snap.generated_at)) + '</div>' +
+      headlineHTML() + scoreHTML() + moversHTML() + flowHTML() + anomHTML() +
+      '<div class="ss-foot">' + esc(tx(T.foot)) + '</div>';
+    bind(body);
+  }
+
+  function build(){
+    if (document.getElementById('daily')) return true;
+    if (!document.querySelector('.top-fixed') || !window.__spzAddRoute) return false;
+
+    sec = document.createElement('section');
+    sec.id = 'daily';
+    sec.setAttribute('data-route', 'daily');
+    sec.innerHTML =
+      '<div class="dy-wrap">' +
+        '<div class="section-head reveal in-view" style="padding-top:34px;">' +
+          '<div class="eyebrow"><span class="cursor"></span><span data-dy="eb"></span></div>' +
+          '<h2 data-dy="h"></h2>' +
+          '<p class="lede" data-dy="lede"></p>' +
+          '<div class="rule"></div>' +
+        '</div>' +
+        '<div data-dy="body"></div>' +
+      '</div>';
+    document.body.appendChild(sec);
+
+    window.__spzAddRoute({
+      id:'daily', feat:true, after:'rulelab',
+      t:{en:'Daily Summary',th:'สรุปประจำวัน'},
+      d:{en:'A plain-language, auto-written readout of the latest snapshot — headline gauges, biggest movers, sector flow and anomaly count. Admin-only.',
+         th:'สรุปข้อมูลสแนปช็อตล่าสุดเป็นคำพูดแบบอัตโนมัติ — ตัวชี้วัดเด่น ขยับแรงที่สุด เงินไหลรายกลุ่ม และจำนวนสัญญาณผิดปกติ เฉพาะแอดมิน'}
+    });
+
+    sec.__render = paint;
+    paint();
+    return true;
+  }
+
+  function boot(){
+    var tries = 0;
+    var iv = setInterval(function(){
+      if (build() || ++tries > 60) clearInterval(iv);
+    }, 400);
+
+    document.addEventListener('spz:snapshot', function(e){
+      snap = e.detail;
+      paint();
+    });
+    var seed = setInterval(function(){
+      var s = snapshot();
+      if (s) { snap = s; paint(); clearInterval(seed); }
+    }, 600);
+    setTimeout(function(){ clearInterval(seed); }, 45000);
+
+    new MutationObserver(paint)
+      .observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+  }
+
+  window.__SPZ_DAILY = { repaint: paint };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 1100); });
+  } else {
+    setTimeout(boot, 1100);
+  }
+})();
+</script>
+
+
 <style>
 /* ============================================================================
    v9 ADD-ON — HAULIX-STYLE DASHBOARD REDESIGN
@@ -32015,7 +33084,7 @@ var GM = {
      มาใส่ตรงนี้ (สร้างด้วย ADMIN_GENERATOR.html) */
   var VAULT_FULL = {"v":4,"s1":"mkdQcgClsnvkGyoBGGivQg==","s2":"9YocjP94X+KXzaDgEjSuGg==","s3":"hy15gzrBLmYFR2+cvfPPCA==","s4":"ky5slYhVrHQoXnN7itBYcg==","gates":[{"iv":"8ua/11yPR3cWSJKJEBQVhQ==","ct":"/RpQQax3SbFjk3XfRXL5DP9gJ6rQqkNt/72nKLY8b6Q="},{"iv":"JBpkOqWqQUGoNpvaBlMZhg==","ct":"nVsIciHOqQOZeoRiBpVa2MEpCDeP3npI3gG5YjD/z0M="},{"iv":"3pbyESaKph58+1raRCifUg==","ct":"N3RWhWpuNS9II+Knxy22n4sZfy75Zvpz1KFe3QMFSlk="},{"iv":"UBs3G4dOB8mAFjSRlyDRUQ==","ct":"5q+pIWVpnm52L5GAMp/4Q1L51D7ZlV4Gvypoei8dShA="},{"iv":"jqk5KZTuminXpYENqvBGPA==","ct":"s84YTT4n78TgNAZDV8fEb4sJNGEfYXZXICBRoQzik78="}],"ctrIv":"YtBFuzHAlM73O0uKkyqL2w==","iv":"ZqvmBtUJW2peCcUC","ct":"Yw9ZQfcOwU9A9jmBxghZgtyj2k5flNijg9Cnjungi45aNULy9mmGCiDf8V7jF5MhqyhdEK490/I="};
 
-  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly'];
+  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily'];
 
   /* ---------------- i18n ---------------- */
   function Lg(){ return document.documentElement.lang === 'th' ? 'th' : 'en'; }
