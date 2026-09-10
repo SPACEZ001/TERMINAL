@@ -16196,6 +16196,27 @@ var CL_UI = {
       return a;
     }
 
+    /* the membership entry is a standing storefront link, not part of the
+       "table of contents" count -- it gets an icon badge instead of a
+       zero-padded number, and its own accent so it stands out without
+       reading as the same "admin-only" card the cockpit special item uses */
+    var MEMBER_BADGE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4-5h10l4 5-11 13L3 8z"/><path d="M3 8h18"/><path d="M9 3l3 5 3-5"/></svg>';
+    function memberItem(){
+      var th = L() === 'th';
+      var a = el('a', 'np-item np-item-member',
+        '<span class="np-head"><span class="np-n np-n-icon">' + MEMBER_BADGE_ICON + '</span>' +
+        '<span class="np-t">' + esc(th ? 'สมัครสมาชิก' : 'Membership') + '</span><span class="np-arrow">→</span></span>' +
+        '<span class="np-d">' + esc(th ? 'แพ็กเกจและสิทธิพิเศษ' : 'Plans and perks') + '</span>');
+      a.href = '#/membership';
+      a.setAttribute('data-route-to', 'membership');
+      a.addEventListener('click', function(e){
+        e.preventDefault();
+        menu.classList.remove('open');
+        route('membership');
+      });
+      return a;
+    }
+
     function paint(){
       menu.querySelector('[data-n="lbl"]').textContent = L() === 'th' ? 'เมนู' : 'Menu';
       pop.innerHTML = '';
@@ -16207,6 +16228,7 @@ var CL_UI = {
       pop.appendChild(hero);
       pop.appendChild(item('home', '00', L() === 'th' ? 'หน้าแรก' : 'Home',
         L() === 'th' ? 'สารบัญรวมทุกหน้า' : 'Index of every screen'));
+      pop.appendChild(memberItem());
       /* three groups, each in its own order, so a long menu stays readable */
       var GROUPS = [
         { k:'learn',  t:{en:'Learn',th:'เรียนรู้'},
@@ -16216,7 +16238,7 @@ var CL_UI = {
         { k:'tools',  t:{en:'Workbench',th:'เครื่องมือ'},
           ids:['stock', 'watchlist', 'bubble', 'chartlab', 'directory', 'pro', 'proof'] }
       ];
-      var used = {}, n = 0, g, i, r;
+      var used = { membership:1 }, n = 0, g, i, r;
       for(g = 0; g < GROUPS.length; g++){
         var rows = [];
         for(i = 0; i < GROUPS[g].ids.length; i++){
@@ -36309,6 +36331,25 @@ var GM = {
   .np-item.np-item-special .np-t{color:var(--white);}
   .np-item.np-item-special:hover .np-t{color:#ffffff;}
   .np-item.np-item-special .np-n{color:#f4f6f1;letter-spacing:.4px;}
+
+  /* ---- membership nav entry: its own gold/neon accent, separate from the
+     cockpit's black/white "admin" treatment above ---- */
+  .np-item.np-item-member{
+    border-color:rgba(204,255,0,.32);
+    background:linear-gradient(135deg, rgba(204,255,0,.10), rgba(204,255,0,.02));
+    box-shadow:0 0 0 1px rgba(204,255,0,.05) inset, 0 0 18px rgba(204,255,0,.10);
+  }
+  .np-item.np-item-member:hover{
+    border-color:rgba(204,255,0,.7);
+    box-shadow:0 0 0 1px rgba(204,255,0,.12) inset, 0 0 26px rgba(204,255,0,.22);
+  }
+  .np-item.np-item-member .np-t{color:var(--white);}
+  .np-item.np-item-member:hover .np-t{color:var(--neon);}
+  .np-item.np-item-member .np-n-icon{
+    background:var(--neon);display:inline-flex;align-items:center;justify-content:center;
+    width:17px;height:17px;padding:0;border-radius:5px;flex-shrink:0;
+  }
+  .np-item.np-item-member .np-n-icon svg{width:11px;height:11px;color:#080808;display:block;}
   /* the void and light themes give the "currently open" nav item a
      theme-coloured border via an html[data-theme=...] rule, which -- with
      its extra type selector -- outranks a plain class-only override on
@@ -37626,6 +37667,647 @@ var GM = {
     #infl .infl-legend{font-size:10.5px;gap:8px 14px;}
   }
 </style>
+
+<!-- ============================================================
+     SPACEZ MEMBERSHIP — plans & perks (menu: "สมัครสมาชิก")
+     Credit-card style tiers grounded in the real access system:
+     LOCKED_ROUTES / MEMBER_ROUTES already gate the site; this page just
+     explains and sells what those gates already do. No in-page payment —
+     CTAs point at the same three real contact channels bioCard() uses.
+     ============================================================ -->
+<style>
+  #membership .mem-wrap{max-width:1180px;margin:0 auto;padding:0 24px 100px;}
+  @media(max-width:700px){#membership .mem-wrap{padding:0 14px 70px;}}
+
+  /* ---- stat strip ---- */
+  #membership .mem-stats{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:0 0 46px;
+  }
+  #membership .mem-stat{
+    border:1px solid var(--border-dim);border-radius:12px;padding:16px 14px;
+    background:rgba(255,255,255,.02);text-align:center;
+  }
+  #membership .mem-stat-n{
+    font-family:var(--mono);font-size:26px;font-weight:800;color:var(--neon);
+    text-shadow:0 0 16px rgba(204,255,0,.28);
+  }
+  #membership .mem-stat-l{margin-top:4px;font-size:11px;color:var(--grey);line-height:1.4;}
+  @media(max-width:640px){
+    #membership .mem-stats{grid-template-columns:1fr;gap:10px;}
+  }
+
+  /* ---- card grid ---- */
+  #membership .mem-cards{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:18px;align-items:stretch;margin-bottom:56px;
+  }
+  @media(max-width:980px){#membership .mem-cards{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:560px){#membership .mem-cards{grid-template-columns:1fr;}}
+
+  #membership .mem-card{
+    position:relative;overflow:hidden;border-radius:18px;border:1px solid var(--border-dim);
+    padding:22px 20px 20px;display:flex;flex-direction:column;gap:14px;
+    background:rgba(255,255,255,.02);
+    transition:transform .25s ease, box-shadow .25s ease;
+  }
+  #membership .mem-card:hover{transform:translateY(-5px);}
+  #membership .mem-card.mem-top{transform:scale(1.035);z-index:1;}
+  #membership .mem-card.mem-top:hover{transform:scale(1.035) translateY(-5px);}
+  @media(max-width:980px){#membership .mem-card.mem-top{transform:none;}
+    #membership .mem-card.mem-top:hover{transform:translateY(-5px);}}
+
+  #membership .mem-card > *{position:relative;z-index:1;}
+  #membership .mem-icon{
+    width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.06);color:var(--white);flex-shrink:0;
+  }
+  #membership .mem-icon svg{width:19px;height:19px;}
+  #membership .mem-name{font-family:var(--mono);font-size:15px;font-weight:800;letter-spacing:.5px;
+    text-transform:uppercase;color:var(--white);}
+  #membership .mem-price{display:flex;align-items:baseline;gap:5px;}
+  #membership .mem-p-num{font-family:var(--mono);font-size:26px;font-weight:800;color:var(--white);}
+  #membership .mem-p-per{font-size:11.5px;color:var(--grey);}
+  #membership .mem-tag{font-size:12px;line-height:1.55;color:var(--grey);min-height:52px;}
+  #membership .mem-perks{list-style:none;display:flex;flex-direction:column;gap:8px;margin:2px 0 4px;flex:1;}
+  #membership .mem-perks li{
+    font-size:11.6px;line-height:1.5;color:var(--white);opacity:.88;
+    display:flex;gap:8px;align-items:flex-start;
+  }
+  #membership .mem-perks li::before{content:'✓';color:var(--neon);font-weight:800;flex-shrink:0;}
+  #membership .mem-card.mem-black .mem-perks li::before,
+  #membership .mem-card.mem-red .mem-perks li::before{color:#fff;}
+
+  #membership .mem-cta{margin-top:auto;padding-top:12px;border-top:1px solid var(--border-dim);}
+  #membership .mem-cta-btn{
+    display:block;width:100%;text-align:center;padding:11px 12px;border-radius:10px;
+    font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+    background:var(--neon);color:#0a0a0a;text-decoration:none;transition:transform .15s,box-shadow .2s;
+  }
+  #membership .mem-cta-btn:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(204,255,0,.28);}
+  #membership .mem-cta-note{display:block;text-align:center;margin-top:9px;font-size:10.3px;color:var(--grey);}
+  #membership .mem-contact{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+  #membership .mem-c-btn{
+    display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;
+    padding:8px 4px 7px;border-radius:10px;border:1px solid rgba(255,255,255,.09);
+    background:rgba(255,255,255,.03);transition:transform .16s,box-shadow .16s,background .16s;
+  }
+  #membership .mem-c-btn:hover{transform:translateY(-2px);}
+  #membership .mem-c-btn svg{width:15px;height:15px;}
+  #membership .mem-c-btn span{font-family:var(--mono);font-size:8px;letter-spacing:.2px;color:var(--grey);}
+  #membership .mem-c-btn.ig{color:#ee2a7b;} #membership .mem-c-btn.ig:hover{background:rgba(238,42,123,.12);}
+  #membership .mem-c-btn.fb{color:#1877F2;} #membership .mem-c-btn.fb:hover{background:rgba(24,119,242,.12);}
+  #membership .mem-c-btn.bio{color:#4dd8ff;} #membership .mem-c-btn.bio:hover{background:rgba(77,216,255,.12);}
+
+  /* ---- tier themes: plain (free) -> gray (member) -> red (ultra) -> black (obsidian) ---- */
+  #membership .mem-card.mem-plain{border-color:var(--border-dim);background:rgba(255,255,255,.018);}
+  #membership .mem-card.mem-plain .mem-icon{color:var(--grey);}
+
+  #membership .mem-card.mem-gray{
+    border-color:rgba(255,255,255,.16);
+    background:linear-gradient(180deg,#1c1d1e,#101112);
+  }
+
+  #membership .mem-card.mem-red{
+    border-color:color-mix(in srgb, var(--red) 46%, transparent);
+    background:linear-gradient(180deg, color-mix(in srgb, var(--red) 13%, #141415), #0d0d0e);
+    box-shadow:0 14px 32px rgba(0,0,0,.4), 0 0 22px color-mix(in srgb, var(--red) 26%, transparent);
+  }
+  #membership .mem-card.mem-red .mem-icon{background:color-mix(in srgb, var(--red) 30%, transparent);color:#fff;}
+  #membership .mem-card.mem-red .mem-p-num{color:#fff;}
+  #membership .mem-card.mem-red .mem-cta-btn{background:var(--red);color:#fff;}
+  #membership .mem-card.mem-red .mem-cta-btn:hover{box-shadow:0 8px 22px color-mix(in srgb, var(--red) 45%, transparent);}
+
+  /* the top, most expensive tier -- reuses the exact visual recipe the
+     "Status" dev-card uses elsewhere on this site (dot-grid + twin star
+     layers + a breathing radial wave), under its own class names since
+     every widget on this terminal owns its own styles */
+  #membership .mem-card.mem-black{
+    --mc-wash:rgba(170,180,210,.07);
+    border-color:rgba(255,255,255,.28);
+    background:
+      radial-gradient(125% 90% at 50% 0%, var(--mc-wash), transparent 65%),
+      linear-gradient(180deg,#18191b,#08080a);
+    box-shadow:inset 0 1px 0 var(--mc-wash), 0 18px 44px rgba(0,0,0,.55), 0 0 32px rgba(255,255,255,.16);
+  }
+  #membership .mem-card.mem-black .mem-icon{background:rgba(255,255,255,.1);color:#fff;}
+  #membership .mem-card.mem-black .mem-p-num{color:#fff;text-shadow:0 0 18px rgba(255,255,255,.3);}
+  #membership .mem-card.mem-black .mem-cta-btn{background:#fff;color:#0a0a0a;}
+  #membership .mem-card.mem-black .mem-cta-btn:hover{box-shadow:0 8px 24px rgba(255,255,255,.28);}
+
+  #membership .mem-grid{
+    position:absolute;inset:0;z-index:0;pointer-events:none;
+    background-image:radial-gradient(circle, var(--mc-wash) 1px, transparent 1.5px);
+    background-size:20px 20px;
+    -webkit-mask-image:radial-gradient(120% 100% at 50% 0%, #000 28%, transparent 88%);
+    mask-image:radial-gradient(120% 100% at 50% 0%, #000 28%, transparent 88%);
+  }
+  #membership .mem-stars{
+    position:absolute;inset:0;z-index:0;pointer-events:none;
+    background-image:
+      radial-gradient(1.5px 1.5px at 10% 18%,#fff,transparent 60%),
+      radial-gradient(1.2px 1.2px at 22% 62%,#fff,transparent 60%),
+      radial-gradient(1.7px 1.7px at 33% 10%,#fff,transparent 60%),
+      radial-gradient(1.1px 1.1px at 44% 48%,#fff,transparent 60%),
+      radial-gradient(1.4px 1.4px at 55% 82%,#fff,transparent 60%),
+      radial-gradient(1.3px 1.3px at 66% 28%,#fff,transparent 60%),
+      radial-gradient(1.6px 1.6px at 77% 58%,#fff,transparent 60%),
+      radial-gradient(1.2px 1.2px at 88% 16%,#fff,transparent 60%),
+      radial-gradient(1.3px 1.3px at 15% 88%,#fff,transparent 60%),
+      radial-gradient(1.5px 1.5px at 63% 92%,#fff,transparent 60%),
+      radial-gradient(1.1px 1.1px at 92% 70%,#fff,transparent 60%),
+      radial-gradient(1.4px 1.4px at 5% 45%,#fff,transparent 60%);
+    animation:memStarTwinkle 2.4s ease-in-out infinite;
+  }
+  @keyframes memStarTwinkle{0%,100%{filter:brightness(.65);}50%{filter:brightness(1.35);}}
+  #membership .mem-stars::before{
+    content:'';position:absolute;inset:0;
+    background-image:
+      radial-gradient(1.3px 1.3px at 20% 30%,#fff,transparent 60%),
+      radial-gradient(1.1px 1.1px at 60% 65%,#fff,transparent 60%),
+      radial-gradient(1.5px 1.5px at 85% 20%,#fff,transparent 60%);
+    background-size:120px 84px;opacity:.8;
+    animation:memStarsDrift 40s linear infinite, memStarTwinkle2 3s ease-in-out infinite;
+  }
+  @keyframes memStarsDrift{0%{background-position:0 0;}100%{background-position:-120px -84px;}}
+  @keyframes memStarTwinkle2{0%,100%{filter:brightness(1.4);}50%{filter:brightness(.6);}}
+  /* a soft breathing wave-glow instead of a light bar sweeping across --
+     the effect stays put and just pulses, so it never reads as a moving
+     highlight running through the card */
+  #membership .mem-wave{
+    position:absolute;inset:0;z-index:0;pointer-events:none;
+    background:radial-gradient(60% 45% at 50% 22%, rgba(255,255,255,.12), transparent 72%);
+    animation:memWaveBreathe 5s ease-in-out infinite;
+  }
+  @keyframes memWaveBreathe{0%,100%{opacity:.5;transform:scale(1);}50%{opacity:1;transform:scale(1.07);}}
+  @media (prefers-reduced-motion: reduce){
+    #membership .mem-stars,#membership .mem-stars::before,#membership .mem-wave{animation:none;}
+  }
+
+  /* ---- comparison table ---- */
+  #membership .mem-table-head{max-width:640px;margin-bottom:20px;}
+  #membership .mem-table-head h3{font-size:1.3rem;margin-bottom:8px;}
+  #membership .mem-table-head p{font-size:13px;color:var(--grey);line-height:1.6;}
+  #membership .mem-table-scroll{overflow-x:auto;border:1px solid var(--border-dim);border-radius:14px;}
+  #membership .mem-table{width:100%;border-collapse:collapse;min-width:640px;font-size:12.5px;}
+  #membership .mem-table th,#membership .mem-table td{padding:12px 14px;text-align:center;border-bottom:1px solid var(--border-dim);}
+  #membership .mem-table td:first-child,#membership .mem-table th:first-child{text-align:left;color:var(--white);}
+  #membership .mem-table thead th{
+    font-family:var(--mono);font-size:11px;letter-spacing:.6px;text-transform:uppercase;
+    color:var(--grey);background:rgba(255,255,255,.02);white-space:nowrap;
+  }
+  #membership .mem-table thead .mem-th-name{display:block;color:var(--white);font-size:12.5px;margin-bottom:2px;}
+  #membership .mem-table thead .mem-th-price{display:block;font-size:10.5px;color:var(--grey);}
+  #membership .mem-table tbody tr:last-child td{border-bottom:none;}
+  #membership .mem-table tbody tr:hover{background:rgba(255,255,255,.02);}
+  #membership .mem-yes{color:var(--neon);font-weight:800;}
+  #membership .mem-no{color:var(--grey-dim);}
+  #membership .mem-col-black{background:rgba(255,255,255,.035);}
+  #membership .mem-table thead th.mem-col-black{background:rgba(255,255,255,.06);}
+
+  #membership .mem-foot{margin-top:26px;max-width:720px;font-size:11.5px;line-height:1.7;color:var(--grey-dim);}
+
+  @media(max-width:640px){
+    #membership .mem-card{padding:18px 16px 16px;}
+    #membership .mem-p-num{font-size:22px;}
+  }
+</style>
+
+<script>
+(function(){
+  'use strict';
+  if (window.__SPZ_MEMBERSHIP) return;
+
+  function L(){ return document.documentElement.getAttribute('lang') === 'th' ? 'th' : 'en'; }
+  function tx(o){ return o ? (o[L()] !== undefined ? o[L()] : o.en) : ''; }
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function el(t, c, h){ var e = document.createElement(t); if (c) e.className = c; if (h != null) e.innerHTML = h; return e; }
+
+  var ICON_FREE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.2-2.4"/></svg>';
+  var ICON_MEMBER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>';
+  var ICON_ULTRA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>';
+  var ICON_OBSIDIAN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4-5h10l4 5-11 13L3 8z"/><path d="M3 8h18"/><path d="M9 3l3 5 3-5"/></svg>';
+
+  var DEV_IG_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1.1" fill="currentColor" stroke="none"/></svg>';
+  var DEV_FB_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M14.5 8.5H17V5h-2.5C11.6 5 10 6.6 10 9.2V11H8v3.5h2V21h3.5v-6.5H16l.6-3.5h-3.1V9.4c0-.6.3-.9 1-.9z"/></svg>';
+  var DEV_BIO_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M9.5 14.5l5-5"/><path d="M8.2 16a3.6 3.6 0 0 1 0-5.1l2-2a3.6 3.6 0 0 1 5.1 0"/><path d="M15.8 8a3.6 3.6 0 0 1 0 5.1l-2 2a3.6 3.6 0 0 1-5.1 0"/></svg>';
+
+  var COPY = {
+    eyebrow:{en:'Membership',th:'สมัครสมาชิก'},
+    h:{en:'Choose the plan that fits how you use this terminal',th:'เลือกแพ็กเกจที่ใช่กับวิธีที่คุณใช้เว็บนี้'},
+    lede:{en:'Everything below already exists on the site — this page just lays out what each tier actually unlocks. There is no card form here: message us on any channel below and the team will send you the sign-in steps.',
+          th:'ทุกอย่างด้านล่างมีอยู่จริงในเว็บนี้แล้ว หน้านี้แค่สรุปให้เห็นชัดว่าแต่ละแพ็กปลดล็อกอะไรบ้าง ไม่มีแบบฟอร์มกรอกบัตรในหน้านี้ — ทักแชทช่องทางไหนก็ได้ด้านล่าง แล้วทีมงานจะส่งขั้นตอนเข้าสู่ระบบให้'},
+    cmpH:{en:'Every tier, side by side',th:'เทียบทุกแพ็กในตารางเดียว'},
+    cmpL:{en:'The exact same lock the rest of the site uses — nothing here is a separate system.',
+          th:'ใช้ระบบล็อกเดียวกับที่เว็บใช้อยู่จริง ไม่ใช่ระบบแยกต่างหาก'},
+    foot:{en:'Prices are in Thai baht per month and may be adjusted; message a channel above to confirm current pricing and how to activate your tier. The Obsidian check-in is a personal read of the market from the site’s own analyst — education and opinion, never investment advice.',
+          th:'ราคาต่อเดือนเป็นบาทไทย และอาจมีการปรับเปลี่ยนได้ ทักช่องทางด้านบนเพื่อยืนยันราคาปัจจุบันและวิธีเปิดใช้งานแพ็กเกจ ส่วนการเช็คอินของแพ็ก Obsidian คือมุมมองส่วนตัวของนักวิเคราะห์เว็บนี้ เพื่อการศึกษาและความเห็นส่วนตัวเท่านั้น ไม่ใช่คำแนะนำการลงทุน'},
+    join:{en:'Message us to join',th:'ทักแชทเพื่อสมัคร'},
+    exploreFree:{en:'Explore for free',th:'สำรวจแบบฟรี'},
+    perMo:{en:'/ month',th:'/เดือน'},
+    free:{en:'Free',th:'ฟรี'}
+  };
+
+  var STATS = [
+    { n:19, s:{en:'live markets tracked on the Flow Map',th:'ตลาด/สกุลเงินที่ติดตามสดในแผนที่กระแสเงินทุน'} },
+    { n:11, s:{en:'early-warning gauges on the Turning-Point Radar',th:'ตัวชี้วัดเตือนล่วงหน้าในเรดาร์เปลี่ยนทิศ'} },
+    { n:16, s:{en:'advanced tool pages across Member + Ultra',th:'หน้าเครื่องมือขั้นสูงรวมเมมเบอร์และอัลตร้า'} }
+  ];
+
+  var TIERS = [
+    { id:'free', theme:'plain', icon:ICON_FREE,
+      name:{en:'Free',th:'ฟรี'}, price:0,
+      tag:{en:'Start reading the market today — no card, no code.',
+           th:'เริ่มอ่านตลาดได้เลยวันนี้ ไม่ต้องใช้บัตร ไม่ต้องมีรหัส'},
+      perks:[
+        {en:'Full learning library — guided tour, glossary, signal types',th:'คลังบทเรียนครบ — ทัวร์แนะนำ คำศัพท์ ประเภทสัญญาณ'},
+        {en:'Today + Outlook, updated live',th:'วันนี้ตลาดเป็นไง + แนวโน้ม อัปเดตสด'},
+        {en:'Capital Flow map — where the money is moving',th:'แผนที่กระแสเงินทุน — เงินกำลังไหลไปทางไหน'},
+        {en:'Inflation & Currency Desk',th:'โต๊ะเงินเฟ้อและค่าเงิน'}
+      ],
+      ctaRoute:'guided'
+    },
+    { id:'member', theme:'gray', icon:ICON_MEMBER,
+      name:{en:'Member',th:'เมมเบอร์'}, price:300,
+      tag:{en:'For traders who want single-stock tools and the early-warning radar.',
+           th:'สำหรับคนที่อยากได้เครื่องมือดูหุ้นรายตัวและเรดาร์เตือนล่วงหน้า'},
+      perks:[
+        {en:'Everything in Free',th:'ทุกอย่างในแพ็กฟรี'},
+        {en:'Stock pages, Watchlist, Bubble map, Chart Lab',th:'หน้าหุ้นรายตัว, Watchlist, Bubble map, Chart Lab'},
+        {en:'Stock directory across every market',th:'สารบัญหุ้นครบทุกตลาด'},
+        {en:'Turning-Point Radar — 11 early-warning gauges',th:'เรดาร์เปลี่ยนทิศ — 11 ตัวชี้วัดเตือนล่วงหน้า'}
+      ]
+    },
+    { id:'ultra', theme:'red', icon:ICON_ULTRA,
+      name:{en:'Ultra',th:'อัลตร้า'}, price:699,
+      tag:{en:'The full workbench — every scanner, map and lab on the terminal.',
+           th:'ครบทุกเครื่องมือขั้นสูง — สแกนเนอร์ แผนที่ และห้องทดลองทุกตัว'},
+      perks:[
+        {en:'Everything in Member',th:'ทุกอย่างในแพ็กเมมเบอร์'},
+        {en:'Global Money Map — live cross-border flow arcs',th:'แผนที่เงินทุนโลกแบบสด — เส้นกระแสเงินข้ามประเทศ'},
+        {en:'Pro Scanner, Proof Lab, Anomaly, Correlation, Rule Lab',th:'Pro Scanner, Proof Lab, จุดผิดปกติ, สหสัมพันธ์, Rule Lab'},
+        {en:'Daily Brief, Scenario planner, advanced Inflation Desk',th:'สรุปรายวัน, ฉากทัศน์, โต๊ะเงินเฟ้อขั้นสูง'}
+      ]
+    },
+    { id:'obsidian', theme:'black', top:true, icon:ICON_OBSIDIAN,
+      name:{en:'Obsidian',th:'ออบซิเดียน'}, price:899,
+      tag:{en:'Everything in Ultra, plus my own daily read of the market.',
+           th:'ทุกอย่างในอัลตร้า บวกมุมมองวิเคราะห์ส่วนตัวของผมทุกวัน'},
+      perks:[
+        {en:'Everything in Ultra — the entire terminal',th:'ทุกอย่างในอัลตร้า — ทั้งเว็บครบ'},
+        {en:'My personal daily market check-in (gold, crypto, index)',th:'เช็คอินวิเคราะห์ส่วนตัวจากผมทุกวัน (ทอง คริปโต ดัชนี)'},
+        {en:'First look at new tools before anyone else',th:'ได้ลองเครื่องมือใหม่ก่อนใคร'},
+        {en:'Priority DM about your own positions',th:'ทักถามเรื่องพอร์ตของคุณโดยตรง ได้คิวก่อน'}
+      ]
+    }
+  ];
+
+  var ROWS = [
+    { f:{en:'Learning library, guided tour, glossary',th:'คลังบทเรียน, ทัวร์แนะนำ, คำศัพท์'}, v:[1,1,1,1] },
+    { f:{en:'Today + Outlook',th:'วันนี้ตลาดเป็นไง + แนวโน้ม'}, v:[1,1,1,1] },
+    { f:{en:'Capital Flow map',th:'แผนที่กระแสเงินทุน'}, v:[1,1,1,1] },
+    { f:{en:'Inflation & Currency Desk',th:'โต๊ะเงินเฟ้อและค่าเงิน'}, v:[1,1,1,1] },
+    { f:{en:'Stock pages, Watchlist, Bubble map, Chart Lab, Directory',th:'หน้าหุ้น, Watchlist, Bubble map, Chart Lab, สารบัญหุ้น'}, v:[0,1,1,1] },
+    { f:{en:'Turning-Point Radar (11 gauges)',th:'เรดาร์เปลี่ยนทิศ (11 ตัวชี้วัด)'}, v:[0,1,1,1] },
+    { f:{en:'Global Money Map — live flow arcs',th:'แผนที่เงินทุนโลกแบบสด'}, v:[0,0,1,1] },
+    { f:{en:'Pro Scanner, Proof Lab, Anomaly, Correlation, Rule Lab, Daily Brief, Scenarios, Advanced Inflation Desk',
+         th:'Pro Scanner, Proof Lab, จุดผิดปกติ, สหสัมพันธ์, Rule Lab, สรุปรายวัน, ฉากทัศน์, โต๊ะเงินเฟ้อขั้นสูง'}, v:[0,0,1,1] },
+    { f:{en:'My personal daily market check-in',th:'เช็คอินวิเคราะห์ส่วนตัวจากผมทุกวัน'}, v:[0,0,0,1] }
+  ];
+
+  var CONTACT = [
+    { cls:'ig', href:'https://www.instagram.com/spczterminal', icon:DEV_IG_ICON, label:'Instagram' },
+    { cls:'fb', href:'https://www.facebook.com/share/1GBykHfZ1V/?mibextid=wwXIfr', icon:DEV_FB_ICON, label:'Facebook' },
+    { cls:'bio', href:'https://linkbio.co/6120202qnLaXl', icon:DEV_BIO_ICON, labelKey:'bio' }
+  ];
+
+  function priceHTML(tier){
+    if (tier.price === 0){
+      return '<span class="mem-p-num">' + esc(tx(COPY.free)) + '</span>';
+    }
+    return '<span class="mem-p-num">฿' + tier.price + '</span><span class="mem-p-per">' + esc(tx(COPY.perMo)) + '</span>';
+  }
+
+  function contactHTML(){
+    var th = L() === 'th';
+    var out = '';
+    for (var i = 0; i < CONTACT.length; i++){
+      var c = CONTACT[i];
+      var label = c.labelKey === 'bio' ? (th ? 'ลิงก์ทั้งหมด' : 'All Links') : c.label;
+      out += '<a class="mem-c-btn ' + c.cls + '" href="' + c.href + '" target="_blank" rel="noopener noreferrer">' +
+        c.icon + '<span>' + esc(label) + '</span></a>';
+    }
+    return out;
+  }
+
+  function cardHTML(tier, idx){
+    var th = L() === 'th';
+    var perksHTML = '';
+    for (var i = 0; i < tier.perks.length; i++) perksHTML += '<li>' + esc(tx(tier.perks[i])) + '</li>';
+
+    var ctaHTML;
+    if (tier.ctaRoute){
+      ctaHTML = '<a class="mem-cta-btn" href="#/' + tier.ctaRoute + '">' + esc(tx(COPY.exploreFree)) + '</a>';
+    } else {
+      ctaHTML = '<div class="mem-contact">' + contactHTML() + '</div>' +
+        '<span class="mem-cta-note">' + esc(tx(COPY.join)) + '</span>';
+    }
+
+    return '<div class="mem-card mem-' + tier.theme + (tier.top ? ' mem-top' : '') + ' reveal" style="transition-delay:' + (idx * 70) + 'ms">' +
+      (tier.theme === 'black' ? '<span class="mem-grid"></span><span class="mem-stars"></span><span class="mem-wave"></span>' : '') +
+      '<div class="mem-icon">' + tier.icon + '</div>' +
+      '<div class="mem-name">' + esc(tx(tier.name)) + '</div>' +
+      '<div class="mem-price">' + priceHTML(tier) + '</div>' +
+      '<p class="mem-tag">' + esc(tx(tier.tag)) + '</p>' +
+      '<ul class="mem-perks">' + perksHTML + '</ul>' +
+      '<div class="mem-cta">' + ctaHTML + '</div>' +
+    '</div>';
+  }
+
+  function tableHTML(){
+    var thNames = ['free','gray','red','black'];
+    var head = '<tr><th></th>';
+    for (var i = 0; i < TIERS.length; i++){
+      var t = TIERS[i];
+      head += '<th class="mem-col-' + thNames[i] + '"><span class="mem-th-name">' + esc(tx(t.name)) + '</span>' +
+        '<span class="mem-th-price">' + (t.price === 0 ? esc(tx(COPY.free)) : ('฿' + t.price)) + '</span></th>';
+    }
+    head += '</tr>';
+
+    var body = '';
+    for (var r = 0; r < ROWS.length; r++){
+      var row = ROWS[r];
+      body += '<tr><td>' + esc(tx(row.f)) + '</td>';
+      for (var c = 0; c < row.v.length; c++){
+        var cls = c === 3 ? ' class="mem-col-black"' : '';
+        body += '<td' + cls + '>' + (row.v[c] ? '<span class="mem-yes">✓</span>' : '<span class="mem-no">—</span>') + '</td>';
+      }
+      body += '</tr>';
+    }
+    return '<thead>' + head + '</thead><tbody>' + body + '</tbody>';
+  }
+
+  var sec, statsAnimated = false;
+
+  function animateStats(host){
+    if (statsAnimated) return;
+    statsAnimated = true;
+    var nodes = host.querySelectorAll('.mem-stat-n');
+    for (var i = 0; i < nodes.length; i++){
+      (function(node, target){
+        var t0 = null;
+        function step(ts){
+          if (!t0) t0 = ts;
+          var p = Math.min(1, (ts - t0) / 900);
+          var eased = 1 - Math.pow(1 - p, 3);
+          node.textContent = Math.round(target * eased);
+          if (p < 1) requestAnimationFrame(step);
+          else node.textContent = target;
+        }
+        requestAnimationFrame(step);
+      })(nodes[i], parseInt(nodes[i].getAttribute('data-target'), 10));
+    }
+  }
+
+  function paint(){
+    if (!sec) return;
+    var q = function(k){ return sec.querySelector('[data-mem="' + k + '"]'); };
+    if (q('eb')) q('eb').textContent = tx(COPY.eyebrow);
+    if (q('h')) q('h').textContent = tx(COPY.h);
+    if (q('lede')) q('lede').textContent = tx(COPY.lede);
+    if (q('cmpH')) q('cmpH').textContent = tx(COPY.cmpH);
+    if (q('cmpL')) q('cmpL').textContent = tx(COPY.cmpL);
+    if (q('foot')) q('foot').textContent = tx(COPY.foot);
+
+    var statsHost = q('stats');
+    if (statsHost){
+      var sHtml = '';
+      for (var i = 0; i < STATS.length; i++){
+        sHtml += '<div class="mem-stat reveal in-view" style="transition-delay:' + (i * 90) + 'ms">' +
+          '<div class="mem-stat-n" data-target="' + STATS[i].n + '">0</div>' +
+          '<div class="mem-stat-l">' + esc(tx(STATS[i].s)) + '</div></div>';
+      }
+      statsHost.innerHTML = sHtml;
+      setTimeout(function(){ animateStats(statsHost); }, 200);
+    }
+
+    var cardsHost = q('cards');
+    if (cardsHost){
+      var cHtml = '';
+      for (var j = 0; j < TIERS.length; j++) cHtml += cardHTML(TIERS[j], j);
+      cardsHost.innerHTML = cHtml;
+    }
+
+    var tableHost = q('table');
+    if (tableHost) tableHost.innerHTML = tableHTML();
+
+    var rv = sec.querySelectorAll('.reveal');
+    for (var k = 0; k < rv.length; k++) rv[k].classList.add('in-view');
+  }
+
+  function build(){
+    if (document.getElementById('membership')) return true;
+    if (!document.querySelector('.top-fixed') || !window.__spzAddRoute) return false;
+
+    sec = document.createElement('section');
+    sec.id = 'membership';
+    sec.setAttribute('data-route', 'membership');
+    sec.innerHTML =
+      '<div class="mem-wrap">' +
+        '<div class="section-head reveal in-view">' +
+          '<div class="eyebrow"><span class="cursor"></span><span data-mem="eb"></span></div>' +
+          '<h2 data-mem="h"></h2>' +
+          '<p class="lede" data-mem="lede"></p>' +
+          '<div class="rule"></div>' +
+        '</div>' +
+        '<div class="mem-stats" data-mem="stats"></div>' +
+        '<div class="mem-cards" data-mem="cards"></div>' +
+        '<div class="mem-table-head">' +
+          '<h3 data-mem="cmpH"></h3>' +
+          '<p data-mem="cmpL"></p>' +
+        '</div>' +
+        '<div class="mem-table-scroll"><table class="mem-table" data-mem="table"></table></div>' +
+        '<p class="mem-foot" data-mem="foot"></p>' +
+      '</div>';
+    document.body.appendChild(sec);
+
+    window.__spzAddRoute({
+      id:'membership', after:'home',
+      t:{en:'Membership — Plans & Perks',th:'สมัครสมาชิก — แพ็กเกจและสิทธิพิเศษ'},
+      d:{en:'Compare what Free, Member, Ultra and Obsidian unlock, and how to join.',
+         th:'เปรียบเทียบสิทธิ์ของฟรี เมมเบอร์ อัลตร้า และออบซิเดียน พร้อมวิธีสมัคร'}
+    });
+
+    sec.__render = paint;
+    paint();
+    return true;
+  }
+
+  function boot(){
+    var tries = 0;
+    var iv = setInterval(function(){
+      if (build() || ++tries > 60) clearInterval(iv);
+    }, 400);
+
+    new MutationObserver(paint)
+      .observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+  }
+
+  window.__SPZ_MEMBERSHIP = { repaint: paint };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 900); });
+  } else {
+    setTimeout(boot, 900);
+  }
+})();
+</script>
+
+<!-- ============================================================
+     SPACEZ LOGIN HINT — small animated first-visit callout pointing
+     at the existing Member/Admin login button (#spzAdminTrigger).
+     Shown once per browser, only to visitors who are not signed in.
+     ============================================================ -->
+<style>
+  #spzLoginHint{
+    position:fixed;right:14px;bottom:70px;z-index:59;
+    max-width:220px;padding:12px 30px 12px 14px;border-radius:14px;
+    background:rgba(10,10,10,.92);border:1px solid var(--border);
+    -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);cursor:pointer;
+    box-shadow:0 10px 30px rgba(0,0,0,.5), 0 0 22px rgba(204,255,0,.18);
+    opacity:0;transform:translateY(10px) scale(.94);pointer-events:none;
+    transition:opacity .35s ease,transform .35s ease;
+  }
+  #spzLoginHint.on{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;}
+  body.gm-live #spzLoginHint{bottom:156px;}
+  html[data-theme="void"] #spzLoginHint{background:rgba(4,4,4,.92);}
+  html[data-theme="light"] #spzLoginHint{background:rgba(255,255,255,.96);color:#0a0a0a;}
+  html[data-theme="light"] #spzLoginHint .lh-d{color:#4a4f45;}
+  #spzLoginHint .lh-bob{animation:lhBob 2.2s ease-in-out infinite;}
+  @keyframes lhBob{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
+  #spzLoginHint .lh-row{display:flex;align-items:center;gap:7px;}
+  #spzLoginHint .lh-arrow{font-size:15px;display:inline-block;animation:lhArrow 1.1s ease-in-out infinite;}
+  @keyframes lhArrow{0%,100%{transform:translate(0,0);}50%{transform:translate(3px,3px);}}
+  #spzLoginHint .lh-t{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.3px;color:var(--white);}
+  html[data-theme="light"] #spzLoginHint .lh-t{color:#0a0a0a;}
+  #spzLoginHint .lh-d{margin-top:4px;font-size:10.6px;line-height:1.5;color:var(--grey);}
+  #spzLoginHint .lh-close{
+    position:absolute;top:6px;right:7px;width:18px;height:18px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;color:var(--grey);font-size:13px;line-height:1;
+    background:rgba(255,255,255,.06);cursor:pointer;border:none;
+  }
+  #spzLoginHint .lh-close:hover{color:var(--white);background:rgba(255,255,255,.14);}
+  #spzLoginHint .lh-point{
+    position:absolute;right:26px;bottom:-6px;width:12px;height:12px;
+    background:rgba(10,10,10,.92);border-right:1px solid var(--border);border-bottom:1px solid var(--border);
+    transform:rotate(45deg);
+  }
+  html[data-theme="light"] #spzLoginHint .lh-point{background:rgba(255,255,255,.96);}
+  @media (prefers-reduced-motion: reduce){
+    #spzLoginHint .lh-bob,#spzLoginHint .lh-arrow{animation:none;}
+  }
+</style>
+
+<script>
+(function(){
+  'use strict';
+  if (window.__SPZ_LOGIN_HINT) return;
+  window.__SPZ_LOGIN_HINT = true;
+
+  function L(){ return document.documentElement.getAttribute('lang') === 'th' ? 'th' : 'en'; }
+  function tx(o){ return o ? (o[L()] !== undefined ? o[L()] : o.en) : ''; }
+
+  var SEEN_KEY = 'spacez.hint.seen';
+  var COPY = {
+    t:{en:'Click here to sign in',th:'คลิกเข้าสู่ระบบที่นี่'},
+    d:{en:'Unlock more tools with a Member or Admin login.',th:'ปลดล็อกเครื่องมือเพิ่มเติมด้วยการเข้าสู่ระบบเมมเบอร์หรือแอดมิน'}
+  };
+
+  function loggedIn(){
+    try {
+      var raw = sessionStorage.getItem('spacez.auth');
+      if (!raw) return false;
+      var o = JSON.parse(raw);
+      return !!(o && (o.tier === 'member' || o.tier === 'full'));
+    } catch(e){ return false; }
+  }
+  function seen(){
+    try { return !!localStorage.getItem(SEEN_KEY); } catch(e){ return true; }
+  }
+  function markSeen(){
+    try { localStorage.setItem(SEEN_KEY, '1'); } catch(e){}
+  }
+
+  var box, hideTimer;
+  function build(){
+    if (document.getElementById('spzLoginHint')) return true;
+    if (!document.getElementById('spzAdminTrigger')) return false;
+
+    box = document.createElement('div');
+    box.id = 'spzLoginHint';
+    box.innerHTML =
+      '<button type="button" class="lh-close" aria-label="close">×</button>' +
+      '<div class="lh-bob">' +
+        '<div class="lh-row"><span class="lh-arrow">👇</span><span class="lh-t" data-lh="t"></span></div>' +
+        '<div class="lh-d" data-lh="d"></div>' +
+      '</div>' +
+      '<span class="lh-point"></span>';
+    document.body.appendChild(box);
+    repaint();
+
+    box.addEventListener('click', function(e){
+      var closeBtn = e.target.closest ? e.target.closest('.lh-close') : null;
+      dismiss();
+      if (!closeBtn){
+        var t = document.getElementById('spzAdminTrigger');
+        if (t) t.click();
+      }
+    });
+
+    new MutationObserver(repaint)
+      .observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+
+    return true;
+  }
+
+  function repaint(){
+    if (!box) return;
+    var q = function(k){ return box.querySelector('[data-lh="' + k + '"]'); };
+    if (q('t')) q('t').textContent = tx(COPY.t);
+    if (q('d')) q('d').textContent = tx(COPY.d);
+  }
+
+  function dismiss(){
+    if (!box) return;
+    box.classList.remove('on');
+    clearTimeout(hideTimer);
+  }
+
+  function maybeShow(){
+    if (seen() || loggedIn()) return;
+    if (!build()) return;
+    markSeen();
+    setTimeout(function(){
+      if (loggedIn()) return;
+      box.classList.add('on');
+      hideTimer = setTimeout(function(){ box.classList.remove('on'); }, 12000);
+    }, 60);
+  }
+
+  function boot(){
+    var tries = 0;
+    var iv = setInterval(function(){
+      if (seen() || loggedIn()){ clearInterval(iv); return; }
+      if (document.getElementById('spzAdminTrigger') || ++tries > 40){
+        clearInterval(iv);
+        setTimeout(maybeShow, 1500);
+      }
+    }, 300);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+
 
 </body>
 </html>
