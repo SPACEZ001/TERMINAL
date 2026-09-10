@@ -24228,8 +24228,8 @@ var GM = {
           th:'แผนที่ด้านบนเขียนด้วยมือ เป็นภาพนิ่งเดือน ส.ค. 2026 จากรายงานกระแสเงินกองทุนจริง ส่วนแผนที่ด้านล่างนี้ใช้รูปทรงประเทศแบบเดียวกับหน้าเงินเฟ้อและค่าเงิน แล้ววาดเส้นโค้งขึ้นจาก 5 ตลาดที่โมเมนตัมอ่อนแรงสุด ไปยัง 5 ตลาดที่แข็งแกร่งสุดตามอันดับ คำนวณใหม่ทุกวันจากการเคลื่อนไหวราคา ETF ดัชนีของแต่ละประเทศ เส้นยิ่งหนาและจุดยิ่งวิ่งเร็ว = ส่วนต่างโมเมนตัมยิ่งมาก นี่คือภาพประกอบการหมุนเชิงเปรียบเทียบ ไม่ใช่การโอนเงินข้ามประเทศจริงหรือสัญญาณให้เทรด'},
     expand:{en:'⤢ Fullscreen',th:'⤢ เต็มจอ'},
     exit:{en:'✕ Exit fullscreen',th:'✕ ออกจากเต็มจอ'},
-    weak:{en:'OUTFLOW (weakest 5)',th:'เงินไหลออก (อ่อนแรงสุด 5)'},
-    strong:{en:'INFLOW (strongest 5)',th:'เงินไหลเข้า (แข็งแกร่งสุด 5)'},
+    weak:{en:'WEAKEST MOMENTUM (5)',th:'โมเมนตัมอ่อนแรงสุด (5)'},
+    strong:{en:'STRONGEST MOMENTUM (5)',th:'โมเมนตัมแข็งแกร่งสุด (5)'},
     other:{en:'other tracked markets',th:'ตลาดอื่นในชุดข้อมูล'},
     waiting:{en:'Waiting for the market snapshot…',th:'รอข้อมูลตลาด…'},
     legend:{en:'Built from flows.country — the same 19-country dataset used in the Live Flow Scan panel above. Germany’s marker sits inside the shared Euro-area landmass and Hong Kong’s position is hand-placed on the same map projection, since neither has its own outline on this basemap. Educational, not investment advice.',
@@ -24285,15 +24285,17 @@ var GM = {
     var tf = state.tf;
     var list = countryRows().filter(function(r){ return isNum(r[tf]) && GEO_XY[slug(r.en)]; });
     if (list.length < 4) return null;
+    /* always take the 5 lowest-momentum and 5 highest-momentum markets
+       (not "only the ones that happen to be negative / positive") --
+       otherwise a timeframe where most of the 19 markets are up (or most
+       are down) leaves only 1-2 pairs, which reads as broken/incomplete.
+       n is capped so the two groups can never overlap. */
     var asc = list.slice().sort(function(a, b){ return a[tf] - b[tf]; });
     var desc = list.slice().sort(function(a, b){ return b[tf] - a[tf]; });
-    var weak = asc.filter(function(r){ return r[tf] < 0; }).slice(0, 5);
-    var strong = desc.filter(function(r){ return r[tf] > 0; }).slice(0, 5);
-    if (!weak.length) weak = asc.slice(0, Math.min(3, asc.length));
-    if (!strong.length) strong = desc.slice(0, Math.min(3, desc.length));
-    var n = Math.min(weak.length, strong.length);
+    var n = Math.min(5, Math.floor(list.length / 2));
     if (!n) return null;
-    weak = weak.slice(0, n); strong = strong.slice(0, n);
+    var weak = asc.slice(0, n);
+    var strong = desc.slice(0, n);
     var wKeys = {}, sKeys = {}, i;
     for (i = 0; i < weak.length; i++) wKeys[slug(weak[i].en)] = true;
     for (i = 0; i < strong.length; i++) sKeys[slug(strong[i].en)] = true;
