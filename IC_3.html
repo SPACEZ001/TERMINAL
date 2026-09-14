@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IC_3 — ข้อสอบจำลอง IC Plain | SPACEZ</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#000; --panel:#0b0c0a; --panel2:#0e0f0c;
+  --lime:#c8f135; --mint:#4dff92; --amber:#ffc247; --red:#ff5566;
+  --white:#f2f6ea; --grey:#a4a99c; --grey-dim:#6c7165;
+  --border:rgba(200,241,53,.24); --border-dim:rgba(255,255,255,.09);
+}
+html,body{background:var(--bg);color:var(--white);height:100%;}
+body{font-family:'IBM Plex Sans Thai',sans-serif;line-height:1.6;overflow-x:hidden;min-height:100vh;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+button{font-family:inherit;cursor:pointer;}
+
+#bgStars{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    radial-gradient(2.0px 2.0px at 6% 14%,#fff,transparent 70%),
+    radial-gradient(1.5px 1.5px at 18% 62%,#fff,transparent 70%),
+    radial-gradient(2.3px 2.3px at 33% 28%,#fff,transparent 70%),
+    radial-gradient(1.6px 1.6px at 47% 78%,#fff,transparent 70%);
+  background-size:220px 180px;opacity:.4;
+  animation:starsDrift 120s linear infinite, twinkleA 4.4s ease-in-out infinite;
+}
+@keyframes starsDrift{0%{background-position:0 0;}100%{background-position:-220px -180px;}}
+@keyframes twinkleA{0%,100%{filter:brightness(.6);}50%{filter:brightness(1.1);}}
+@media(prefers-reduced-motion:reduce){#bgStars{animation:none;}}
+
+.app{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:0 18px 60px;min-height:100vh;
+  display:flex;flex-direction:column;}
+
+/* ---- topbar ---- */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 0;
+  border-bottom:1px solid var(--border-dim);}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit;}
+.brand .sq{width:30px;height:30px;border-radius:8px;background:var(--lime);color:#0a0a0a;
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;}
+.brand b{color:var(--lime);}
+.timer{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--mint);
+  border:1px solid rgba(77,255,146,.3);border-radius:999px;padding:6px 14px;background:rgba(77,255,146,.06);}
+.timer.low{color:var(--red);border-color:rgba(255,85,102,.4);background:rgba(255,85,102,.08);}
+
+/* ---- start screen ---- */
+#startScreen{flex:1;display:flex;flex-direction:column;justify-content:center;padding:30px 0;}
+#startScreen h1{font-size:1.7rem;margin-bottom:12px;}
+#startScreen h1 span{color:var(--lime);}
+#startScreen p{color:var(--grey);font-size:13.5px;max-width:600px;margin-bottom:20px;line-height:1.8;}
+.start-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:26px;}
+@media(max-width:640px){.start-grid{grid-template-columns:1fr;}}
+.start-card{background:var(--panel);border:1px solid var(--border-dim);border-radius:12px;padding:14px 16px;}
+.start-card .sc-n{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--grey-dim);text-transform:uppercase;}
+.start-card .sc-v{font-size:1.3rem;font-weight:800;color:var(--lime);margin:4px 0;}
+.start-card .sc-d{font-size:11.5px;color:var(--grey);}
+.btn-start{align-self:flex-start;background:var(--lime);color:#0a0a0a;border:none;border-radius:10px;
+  padding:14px 26px;font-weight:700;font-size:15px;transition:transform .15s,box-shadow .2s;}
+.btn-start:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(200,241,53,.3);}
+
+/* ---- exam screen ---- */
+#examScreen{display:none;flex:1;flex-direction:column;padding-top:16px;}
+#examScreen.show{display:flex;}
+.progress-row{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.progress-bar{flex:1;height:6px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden;}
+.progress-bar i{display:block;height:100%;background:var(--lime);border-radius:4px;transition:width .25s;}
+.progress-txt{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--grey-dim);white-space:nowrap;}
+.sec-badge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.6px;
+  text-transform:uppercase;color:var(--mint);border:1px solid rgba(77,255,146,.3);border-radius:999px;
+  padding:4px 11px;margin-bottom:14px;background:rgba(77,255,146,.06);}
+.sec-badge.ethics{color:var(--amber);border-color:rgba(255,194,71,.35);background:rgba(255,194,71,.07);}
+.q-card{background:var(--panel);border:1px solid var(--border-dim);border-radius:16px;padding:22px;margin-bottom:16px;}
+.q-num{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--grey-dim);margin-bottom:8px;}
+.q-text{font-size:15px;font-weight:600;line-height:1.7;margin-bottom:18px;}
+.choices{display:flex;flex-direction:column;gap:9px;}
+.choice{display:flex;align-items:center;gap:12px;text-align:left;background:rgba(255,255,255,.02);
+  border:1px solid var(--border-dim);border-radius:11px;padding:12px 14px;color:var(--white);
+  font-size:13.5px;transition:all .15s;}
+.choice:hover{border-color:rgba(200,241,53,.4);background:rgba(200,241,53,.04);}
+.choice .c-mark{flex:0 0 auto;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border-dim);
+  display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;
+  color:var(--grey-dim);}
+.choice.sel{border-color:var(--lime);background:rgba(200,241,53,.09);}
+.choice.sel .c-mark{border-color:var(--lime);background:var(--lime);color:#0a0a0a;}
+.nav-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;}
+.nav-btn{background:transparent;border:1px solid var(--border-dim);color:var(--white);border-radius:10px;
+  padding:10px 18px;font-size:13px;font-weight:600;transition:all .15s;}
+.nav-btn:hover:not(:disabled){border-color:var(--lime);color:var(--lime);}
+.nav-btn:disabled{opacity:.35;cursor:not-allowed;}
+.nav-btn.flag{margin-left:auto;color:var(--amber);border-color:rgba(255,194,71,.3);}
+.nav-btn.flag.on{background:rgba(255,194,71,.14);}
+.nav-btn.submit{background:var(--mint);color:#04140a;border:none;}
+.nav-btn.submit:hover{box-shadow:0 6px 20px rgba(77,255,146,.3);}
+
+/* ---- palette ---- */
+.palette-toggle{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--grey);
+  background:none;border:1px dashed var(--border-dim);border-radius:9px;padding:8px 12px;margin-bottom:10px;
+  align-self:flex-start;}
+.palette{display:none;grid-template-columns:repeat(10,1fr);gap:6px;margin-bottom:16px;
+  background:var(--panel);border:1px solid var(--border-dim);border-radius:12px;padding:14px;
+  max-height:220px;overflow-y:auto;}
+.palette.show{display:grid;}
+.p-cell{aspect-ratio:1;border-radius:6px;border:1px solid var(--border-dim);background:rgba(255,255,255,.03);
+  color:var(--grey-dim);font-family:'IBM Plex Mono',monospace;font-size:10.5px;display:flex;align-items:center;
+  justify-content:center;position:relative;}
+.p-cell.answered{border-color:rgba(77,255,146,.4);color:var(--mint);background:rgba(77,255,146,.08);}
+.p-cell.current{border-color:var(--lime);color:var(--lime);box-shadow:0 0 0 2px rgba(200,241,53,.25);}
+.p-cell.flagged::after{content:'';position:absolute;top:-2px;right:-2px;width:6px;height:6px;border-radius:50%;
+  background:var(--amber);}
+
+/* ---- results screen ---- */
+#resultScreen{display:none;flex:1;flex-direction:column;padding:30px 0;}
+#resultScreen.show{display:flex;}
+.verdict{border-radius:18px;padding:26px;margin-bottom:22px;text-align:center;border:1.5px solid;}
+.verdict.pass{background:rgba(77,255,146,.07);border-color:rgba(77,255,146,.4);}
+.verdict.fail{background:rgba(255,85,102,.07);border-color:rgba(255,85,102,.4);}
+.verdict .v-t{font-size:1.6rem;font-weight:800;margin-bottom:6px;}
+.verdict.pass .v-t{color:var(--mint);}
+.verdict.fail .v-t{color:var(--red);}
+.verdict .v-s{font-size:13px;color:var(--grey);}
+.res-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px;}
+@media(max-width:640px){.res-grid{grid-template-columns:1fr;}}
+.res-card{background:var(--panel);border:1px solid var(--border-dim);border-radius:14px;padding:16px;}
+.res-card.bad{border-color:rgba(255,85,102,.35);}
+.res-card .rc-l{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--grey-dim);text-transform:uppercase;}
+.res-card .rc-v{font-size:1.5rem;font-weight:800;margin:5px 0;}
+.res-card .rc-d{font-size:11.5px;color:var(--grey);}
+.review-toggle{background:transparent;border:1px solid var(--border-dim);color:var(--white);border-radius:10px;
+  padding:11px 18px;font-size:13px;font-weight:600;margin-bottom:16px;align-self:flex-start;}
+.review-toggle:hover{border-color:var(--lime);color:var(--lime);}
+.review-list{display:none;flex-direction:column;gap:10px;}
+.review-list.show{display:flex;}
+.rev-item{background:var(--panel);border:1px solid var(--border-dim);border-radius:12px;padding:14px 16px;}
+.rev-item.wrong{border-color:rgba(255,85,102,.3);}
+.rev-item .ri-q{font-size:13px;font-weight:600;margin-bottom:8px;}
+.rev-item .ri-a{font-size:12px;color:var(--grey);margin-bottom:3px;}
+.rev-item .ri-a b{color:var(--white);}
+.rev-item .ri-a.ok b{color:var(--mint);}
+.rev-item .ri-a.no b{color:var(--red);}
+.rev-item .ri-e{font-size:11.5px;color:var(--grey-dim);margin-top:8px;line-height:1.6;
+  border-top:1px solid var(--border-dim);padding-top:8px;}
+.restart-btn{margin-top:20px;background:var(--lime);color:#0a0a0a;border:none;border-radius:10px;
+  padding:13px 24px;font-weight:700;font-size:14px;align-self:flex-start;}
+
+/* ---- custom modal (LINE in-app browser safe, no window.confirm) ---- */
+.modal-back{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-back.show{display:flex;}
+.modal-box{max-width:400px;width:100%;background:var(--panel);border:1px solid var(--border);border-radius:16px;
+  padding:22px;}
+.modal-box h3{font-size:1.05rem;margin-bottom:10px;}
+.modal-box p{font-size:12.5px;color:var(--grey);line-height:1.7;margin-bottom:18px;}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;}
+.modal-actions button{border-radius:9px;padding:9px 16px;font-size:12.5px;font-weight:600;border:1px solid var(--border-dim);
+  background:transparent;color:var(--white);}
+.modal-actions .go{background:var(--mint);color:#04140a;border:none;}
+
+.calc-trig{
+  position:fixed;right:18px;bottom:18px;z-index:400;
+  width:46px;height:46px;border-radius:50%;cursor:pointer;padding:0;
+  background:rgba(8,8,8,.88);border:1px solid var(--border);color:var(--lime);
+  display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(8px);transition:box-shadow .2s,transform .15s;
+}
+.calc-trig svg{width:20px;height:20px;}
+.calc-trig:hover{box-shadow:0 0 18px rgba(200,241,53,.35);}
+.calc-trig:active{transform:scale(.92);}
+
+.calc-panel{
+  position:fixed;top:0;right:0;height:100vh;width:min(320px,92vw);z-index:500;
+  background:linear-gradient(180deg,#0d0e0a,#000);
+  border-left:1px solid var(--border);
+  box-shadow:-14px 0 40px rgba(0,0,0,.6);
+  transform:translateX(100%);transition:transform .32s cubic-bezier(.2,.9,.25,1);
+  display:flex;flex-direction:column;padding:18px 16px 22px;
+  overflow:hidden;
+}
+.calc-panel.show{transform:translateX(0);}
+.calc-panel-stars{
+  position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    radial-gradient(1.4px 1.4px at 12% 15%,#fff,transparent 60%),
+    radial-gradient(1.1px 1.1px at 30% 55%,#fff,transparent 60%),
+    radial-gradient(1.6px 1.6px at 55% 20%,#fff,transparent 60%),
+    radial-gradient(1.2px 1.2px at 72% 68%,#fff,transparent 60%),
+    radial-gradient(1.3px 1.3px at 88% 30%,#fff,transparent 60%),
+    radial-gradient(1.1px 1.1px at 20% 85%,#fff,transparent 60%),
+    radial-gradient(1.5px 1.5px at 63% 90%,#fff,transparent 60%);
+  opacity:.5;animation:calcStarTwinkle 3s ease-in-out infinite;
+}
+@keyframes calcStarTwinkle{0%,100%{opacity:.32;}50%{opacity:.68;}}
+.calc-panel > *{position:relative;z-index:1;}
+.calc-panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.calc-panel-title{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--lime);font-weight:700;}
+.calc-panel-close{width:28px;height:28px;border-radius:50%;border:1px solid var(--border-dim);background:transparent;color:var(--grey);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;}
+.calc-panel-close:hover{color:var(--lime);border-color:var(--lime);}
+
+.calc-screen{background:var(--panel);border:1px solid var(--border-dim);border-radius:12px;padding:16px 14px;margin-bottom:14px;text-align:right;}
+.calc-screen-prev{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--grey);min-height:16px;overflow-x:auto;white-space:nowrap;}
+.calc-screen-main{font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:700;color:var(--white);margin-top:4px;overflow-x:auto;white-space:nowrap;}
+
+.calc-keys{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;gap:8px;flex:1;}
+.ck{
+  border-radius:10px;border:1px solid var(--border-dim);background:var(--panel2);
+  color:var(--white);font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;
+  cursor:pointer;transition:transform .12s,background .15s;padding:0;min-height:44px;
+}
+.ck:hover{background:rgba(255,255,255,.06);}
+.ck:active{transform:scale(.94);}
+.ck-op{color:var(--lime);background:rgba(200,241,53,.06);}
+.ck-accent{background:rgba(200,241,53,.1);}
+.ck-eq{background:var(--lime);color:#0a0a0a;}
+.ck-eq:hover{background:var(--mint);}
+.ck-wide{grid-column:span 2;}
+
+body.calc-open{margin-right:min(320px,92vw);}
+body{transition:margin-right .32s cubic-bezier(.2,.9,.25,1);}
+@media(max-width:760px){body.calc-open{margin-right:0;}}
+</style>
+</head>
+<body>
+<div id="bgStars"></div>
+<div class="app">
+
+  <div class="topbar">
+    <a class="brand" href="IC_License.html"><span class="sq">S</span><span><b>IC_3</b> ข้อสอบจำลอง</span></a>
+    <span class="timer mono" id="timerDisp">02:30:00</span>
+  </div>
+
+  <div id="startScreen">
+    <h1>ข้อสอบจำลอง <span>IC Plain — ชุดที่ 3</span></h1>
+    <p>โครงสร้างและเกณฑ์ให้คะแนนจำลองตามข้อสอบจริง 100 ข้อ แบ่ง 3 ส่วน จับเวลา 2.5 ชั่วโมง
+       ตอบครบหรือไม่ครบก็กดส่งได้ ระบบจะแจ้งจำนวนข้อที่ยังไม่ได้ตอบก่อนส่งจริงเสมอ</p>
+    <div class="start-grid">
+      <div class="start-card"><span class="sc-n">ส่วนที่ 1</span><div class="sc-v">30 ข้อ</div><span class="sc-d">พื้นฐานการลงทุน + คำนวณ</span></div>
+      <div class="start-card"><span class="sc-n">ส่วนที่ 2</span><div class="sc-v">20 ข้อ</div><span class="sc-d">จรรยาบรรณ (ต้องผ่าน ≥14/20)</span></div>
+      <div class="start-card"><span class="sc-n">ส่วนที่ 3</span><div class="sc-v">50 ข้อ</div><span class="sc-d">ความรู้ผลิตภัณฑ์ตราสาร</span></div>
+    </div>
+    <button class="btn-start" id="btnStart">เริ่มทำข้อสอบ →</button>
+  </div>
+
+  <div id="examScreen">
+    <div class="progress-row">
+      <div class="progress-bar"><i id="progFill" style="width:1%"></i></div>
+      <span class="progress-txt mono" id="progTxt">1 / 100</span>
+    </div>
+    <span class="sec-badge" id="secBadge">ส่วนที่ 1 · พื้นฐานการลงทุน</span>
+    <div class="q-card">
+      <div class="q-num mono" id="qNum">ข้อ 1</div>
+      <div class="q-text" id="qText"></div>
+      <div class="choices" id="choicesWrap"></div>
+    </div>
+    <button class="palette-toggle" id="paletteToggle">☰ แสดงผังข้อสอบทั้งหมด</button>
+    <div class="palette" id="palette"></div>
+    <div class="nav-row">
+      <button class="nav-btn" id="btnPrev">← ก่อนหน้า</button>
+      <button class="nav-btn flag" id="btnFlag">🚩 ทำเครื่องหมาย</button>
+      <button class="nav-btn" id="btnNext">ถัดไป →</button>
+    </div>
+    <button class="nav-btn submit" id="btnSubmit" style="align-self:flex-end;">ส่งข้อสอบ</button>
+  </div>
+
+  <div id="resultScreen">
+    <div class="verdict" id="verdictBox">
+      <div class="v-t" id="verdictT"></div>
+      <div class="v-s" id="verdictS"></div>
+    </div>
+    <div class="res-grid">
+      <div class="res-card" id="rcOverall"><span class="rc-l">คะแนนรวม</span><div class="rc-v" id="rcOverallV"></div><span class="rc-d">เกณฑ์ผ่าน ≥ 70 / 100</span></div>
+      <div class="res-card" id="rcEthics"><span class="rc-l">จรรยาบรรณ</span><div class="rc-v" id="rcEthicsV"></div><span class="rc-d">เกณฑ์ผ่าน ≥ 14 / 20</span></div>
+      <div class="res-card"><span class="rc-l">เวลาที่ใช้</span><div class="rc-v" id="rcTime"></div><span class="rc-d">จากทั้งหมด 2.5 ชั่วโมง</span></div>
+    </div>
+    <button class="review-toggle" id="reviewToggle">ดูเฉลยรายข้อ</button>
+    <div class="review-list" id="reviewList"></div>
+    <button class="restart-btn" id="btnRestart">ทำใหม่อีกครั้ง</button>
+  </div>
+
+</div>
+
+<div class="modal-back" id="modalBack">
+  <div class="modal-box">
+    <h3 id="modalT"></h3>
+    <p id="modalP"></p>
+    <div class="modal-actions">
+      <button id="modalCancel">ยกเลิก</button>
+      <button class="go" id="modalGo">ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
+<button class="calc-trig" type="button" id="calcTrigger" aria-label="เปิดเครื่องคิดเลข">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><circle cx="8" cy="11" r=".6" fill="currentColor" stroke="none"/><circle cx="12" cy="11" r=".6" fill="currentColor" stroke="none"/><circle cx="16" cy="11" r=".6" fill="currentColor" stroke="none"/><circle cx="8" cy="15" r=".6" fill="currentColor" stroke="none"/><circle cx="12" cy="15" r=".6" fill="currentColor" stroke="none"/><circle cx="16" cy="15" r=".6" fill="currentColor" stroke="none"/><circle cx="8" cy="19" r=".6" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r=".6" fill="currentColor" stroke="none"/><circle cx="16" cy="19" r=".6" fill="currentColor" stroke="none"/></svg>
+</button>
+
+<div class="calc-panel" id="calcPanel">
+  <div class="calc-panel-stars"></div>
+  <div class="calc-panel-head">
+    <span class="calc-panel-title">เครื่องคิดเลข</span>
+    <button class="calc-panel-close" type="button" id="calcPanelClose">✕</button>
+  </div>
+  <div class="calc-screen">
+    <div class="calc-screen-prev" id="calcPrev">&nbsp;</div>
+    <div class="calc-screen-main" id="calcMain">0</div>
+  </div>
+  <div class="calc-keys">
+    <button class="ck ck-op" type="button" data-k="ac">AC</button>
+    <button class="ck ck-op" type="button" data-k="back">⌫</button>
+    <button class="ck ck-op" type="button" data-k="pct">%</button>
+    <button class="ck ck-op ck-accent" type="button" data-k="div">÷</button>
+
+    <button class="ck" type="button" data-k="7">7</button>
+    <button class="ck" type="button" data-k="8">8</button>
+    <button class="ck" type="button" data-k="9">9</button>
+    <button class="ck ck-op ck-accent" type="button" data-k="mul">×</button>
+
+    <button class="ck" type="button" data-k="4">4</button>
+    <button class="ck" type="button" data-k="5">5</button>
+    <button class="ck" type="button" data-k="6">6</button>
+    <button class="ck ck-op ck-accent" type="button" data-k="sub">−</button>
+
+    <button class="ck" type="button" data-k="1">1</button>
+    <button class="ck" type="button" data-k="2">2</button>
+    <button class="ck" type="button" data-k="3">3</button>
+    <button class="ck ck-op ck-accent" type="button" data-k="add">+</button>
+
+    <button class="ck ck-wide" type="button" data-k="0">0</button>
+    <button class="ck" type="button" data-k="dot">.</button>
+    <button class="ck ck-eq" type="button" data-k="eq">=</button>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ============================================================
+   QUESTION BANK — IC_3
+   s: 1=พื้นฐาน+คำนวณ(30) 2=จรรยาบรรณ(20) 3=ผลิตภัณฑ์(50)
+   c: choices[4]  a: correct index  e: explanation
+   ============================================================ */
+var RAW = [
+/* ---------- SECTION 1 : 30 ข้อ พื้นฐานการลงทุน + คำนวณ ---------- */
+{s:1,q:"คุณวิภาซื้อหุ้นที่ราคา 37 บาทต่อหุ้น ถือครองไว้ 1 ปี ระหว่างทางได้รับเงินปันผล 1.2 บาทต่อหุ้น แล้วจึงขายที่ราคา 40.8 บาท อัตราผลตอบแทนจากการถือครอง (HPR) เท่ากับเท่าใด",c:["10.27%","12.25%","13.51%","14.05%"],a:2,e:"HPR = (P1−P0+D)/P0 = (40.8−37+1.2)/37 = 5.0/37 ≈ 13.51% การคำนวณ HPR ต้องนำทั้งกำไรจากส่วนต่างราคาและเงินปันผลที่ได้รับมารวมกันก่อนหารด้วยราคาซื้อตั้งต้น"},
+{s:1,q:"กองทุนรวมแห่งหนึ่งมีมูลค่าสินทรัพย์รวม 486 ล้านบาท มีหนี้สินรวม 36 ล้านบาท และมีหน่วยลงทุนคงค้าง 15 ล้านหน่วย มูลค่าทรัพย์สินสุทธิต่อหน่วย (NAV ต่อหน่วย) เท่ากับเท่าใด",c:["28.13 บาท","30.00 บาท","32.40 บาท","34.80 บาท"],a:1,e:"NAV ต่อหน่วย = (สินทรัพย์รวม−หนี้สินรวม)/จำนวนหน่วยลงทุน = (486−36)/15 = 450/15 = 30.00 บาท ผู้ที่ลืมหักหนี้สินออกก่อนจะได้คำตอบ 32.40 บาทซึ่งไม่ถูกต้อง"},
+{s:1,q:"พันธบัตรมูลค่าที่ตราไว้ 1,000 บาท อัตราดอกเบี้ยหน้าตั๋ว 5.4% ต่อปี ปัจจุบันซื้อขายในตลาดที่ราคา 972 บาท อัตราผลตอบแทนปัจจุบัน (Current Yield) เท่ากับเท่าใด (ปัดเศษ 2 ตำแหน่ง)",c:["5.40%","5.56%","5.70%","6.00%"],a:1,e:"Current Yield = ดอกเบี้ยที่ได้รับต่อปี/ราคาตลาดปัจจุบัน = 54/972 ≈ 5.56% ค่านี้จะสูงกว่าอัตราดอกเบี้ยหน้าตั๋วเมื่อราคาตลาดต่ำกว่าราคาพาร์"},
+{s:1,q:"พันธบัตรอายุคงเหลือ 5 ปี มูลค่าไถ่ถอน 1,000 บาท อัตราดอกเบี้ยหน้าตั๋ว 6% ต่อปี ปัจจุบันราคาตลาด 940 บาท จงประมาณอัตราผลตอบแทนจนครบกำหนด (Approximate YTM)",c:["6.00%","6.85%","7.42%","8.10%"],a:2,e:"Approximate YTM = [ดอกเบี้ยต่อปี + (มูลค่าไถ่ถอน−ราคาตลาด)/อายุคงเหลือ] ÷ [(มูลค่าไถ่ถอน+ราคาตลาด)/2] = [60+(1000−940)/5]/[(1000+940)/2] = 72/970 ≈ 7.42%"},
+{s:1,q:"ในช่วง 3 ปีที่ผ่านมา กองทุนหนึ่งให้ผลตอบแทนรายปี 8%, 12% และ 10% ตามลำดับ ค่าเบี่ยงเบนมาตรฐาน (คำนวณแบบประชากร) ของผลตอบแทนชุดนี้ใกล้เคียงกับข้อใดมากที่สุด",c:["0.82%","1.63%","2.00%","2.67%"],a:1,e:"ค่าเฉลี่ย = 10% ส่วนเบี่ยงเบนแต่ละปีคือ −2, 2, 0 ยกกำลังสองรวมกันได้ 8 หารด้วยจำนวนข้อมูล 3 (แบบประชากร) ได้ความแปรปรวน 2.667 ถอดรากที่สองได้ประมาณ 1.63% หากใช้ฐาน n−1 แทนจะได้ 2.00% ซึ่งเป็นวิธีคำนวณแบบตัวอย่างไม่ใช่ประชากร"},
+{s:1,q:"หุ้นของบริษัทแห่งหนึ่งซื้อขายที่ราคา 82 บาท จ่ายเงินปันผลต่อหุ้น 3.28 บาทต่อปี อัตราเงินปันผลตอบแทน (Dividend Yield) เท่ากับเท่าใด",c:["2.00%","4.00%","6.00%","8.00%"],a:1,e:"Dividend Yield = เงินปันผลต่อหุ้น/ราคาตลาด = 3.28/82 = 4.00% เป็นตัวชี้วัดผลตอบแทนที่ได้จากเงินปันผลเทียบกับราคาหุ้นในปัจจุบัน"},
+{s:1,q:"หุ้นกู้อายุ 2 ปี มูลค่าไถ่ถอน 1,000 บาท จ่ายดอกเบี้ย 7% ต่อปีทุกสิ้นปี หากอัตราผลตอบแทนที่ตลาดต้องการ (YTM) เท่ากับ 9% ต่อปี ราคาที่เหมาะสมของหุ้นกู้นี้ใกล้เคียงกับข้อใด",c:["946.30 บาท","964.80 บาท","982.10 บาท","1,000.00 บาท"],a:1,e:"ราคาหุ้นกู้ = มูลค่าปัจจุบันของกระแสเงินสดทั้งหมด = 70/1.09 + 1,070/1.09² ≈ 64.22 + 900.60 ≈ 964.80 บาท เมื่อ YTM สูงกว่าอัตราดอกเบี้ยหน้าตั๋ว ราคาตลาดของหุ้นกู้จะต่ำกว่าราคาพาร์เสมอ"},
+{s:1,q:"หุ้นกู้ A มีอายุคงเหลือ 8 ปี อัตราดอกเบี้ยหน้าตั๋ว 4% ส่วนหุ้นกู้ B มีอายุคงเหลือ 3 ปี อัตราดอกเบี้ยหน้าตั๋ว 4% เท่ากัน หากอัตราดอกเบี้ยในตลาดเปลี่ยนแปลง หุ้นกู้ใดมีแนวโน้มราคาผันผวนมากกว่ากัน",c:["หุ้นกู้ A เพราะมีอายุคงเหลือยาวกว่าทำให้ Duration สูงกว่า","หุ้นกู้ B เพราะมีอายุคงเหลือสั้นกว่าทำให้ Duration สูงกว่า","ทั้งสองมีความผันผวนเท่ากันเนื่องจากอัตราดอกเบี้ยหน้าตั๋วเท่ากัน","หุ้นกู้ B เพราะราคาใกล้เคียงมูลค่าไถ่ถอนมากกว่า"],a:0,e:"Duration สะท้อนความไวของราคาต่อการเปลี่ยนแปลงอัตราดอกเบี้ย โดยตราสารหนี้ที่มีอายุคงเหลือยาวกว่าจะมีค่า Duration สูงกว่า (เมื่อคูปองใกล้เคียงกัน) จึงมีราคาผันผวนมากกว่าเมื่ออัตราดอกเบี้ยตลาดเปลี่ยนแปลง"},
+{s:1,q:"กองทุน X ให้ผลตอบแทนเฉลี่ย 11% ต่อปี มีส่วนเบี่ยงเบนมาตรฐาน 16% อัตราผลตอบแทนปราศจากความเสี่ยงเท่ากับ 3% ค่า Sharpe Ratio ของกองทุนนี้เท่ากับเท่าใด",c:["0.44","0.50","0.69","0.75"],a:1,e:"Sharpe Ratio = (ผลตอบแทนกองทุน−อัตราปราศจากความเสี่ยง)/ส่วนเบี่ยงเบนมาตรฐาน = (11−3)/16 = 0.50 ใช้วัดผลตอบแทนส่วนเกินต่อหน่วยความเสี่ยงรวม (Total Risk)"},
+{s:1,q:"กองทุน Y ให้ผลตอบแทนเฉลี่ย 14% ต่อปี มีค่า Beta 1.2 อัตราผลตอบแทนปราศจากความเสี่ยงเท่ากับ 2% ค่า Treynor Ratio ของกองทุนนี้เท่ากับเท่าใด",c:["8.33","10.00","11.67","12.00"],a:1,e:"Treynor Ratio = (ผลตอบแทนกองทุน−อัตราปราศจากความเสี่ยง)/Beta = (14−2)/1.2 = 10.00 ต่างจาก Sharpe Ratio ตรงที่ Treynor ใช้ Beta (ความเสี่ยงเชิงระบบ) แทนส่วนเบี่ยงเบนมาตรฐาน"},
+{s:1,q:"กองทุน Z มีผลตอบแทนจริง 13% ต่อปี ค่า Beta 1.1 อัตราผลตอบแทนปราศจากความเสี่ยง 2% และผลตอบแทนตลาด 10% ค่า Jensen's Alpha ของกองทุนนี้เท่ากับเท่าใด",c:["1.20%","2.20%","3.00%","3.80%"],a:1,e:"ผลตอบแทนที่คาดหวังตาม CAPM = Rf+Beta×(Rm−Rf) = 2+1.1×(10−2) = 10.8% Jensen's Alpha = ผลตอบแทนจริง−ผลตอบแทนที่คาดหวัง = 13−10.8 = 2.20% ค่าอัลฟาที่เป็นบวกแสดงว่ากองทุนทำผลงานได้ดีกว่าที่ CAPM คาดการณ์"},
+{s:1,q:"คุณประเสริฐได้รับผลตอบแทนที่เป็นตัวเงิน (Nominal Return) จากการลงทุน 9% ต่อปี ขณะที่อัตราเงินเฟ้อในปีนั้นเท่ากับ 3.5% อัตราผลตอบแทนที่แท้จริง (Real Return) ที่คำนวณอย่างแม่นยำเท่ากับเท่าใด",c:["5.31%","5.50%","6.00%","6.50%"],a:0,e:"Real Return = [(1+Nominal Return)/(1+อัตราเงินเฟ้อ)]−1 = (1.09/1.035)−1 ≈ 5.31% การนำ Nominal Return ลบด้วยเงินเฟ้อตรงๆ (9−3.5=5.5%) เป็นเพียงค่าประมาณที่ไม่แม่นยำ"},
+{s:1,q:"ผลตอบแทนของกองทุนใน 2 ปีเท่ากับ +30% และ −10% ตามลำดับ ค่าเฉลี่ยเรขาคณิต (Geometric Mean) ของผลตอบแทนนี้เท่ากับเท่าใด (ปัดเศษ)",c:["8.17%","10.00%","15.00%","20.00%"],a:0,e:"Geometric Mean = [(1+0.30)×(1−0.10)]^(1/2)−1 = (1.3×0.9)^0.5−1 = 1.17^0.5−1 ≈ 8.17% ค่าเฉลี่ยเลขคณิตธรรมดา (10%) มักสูงเกินจริงเมื่อผลตอบแทนมีความผันผวน จึงไม่สะท้อนผลตอบแทนทบต้นที่แท้จริง"},
+{s:1,q:"ตั๋วเงินคลัง (T-Bill) อายุ 91 วัน มูลค่าหน้าตั๋ว 1,000 บาท ประมูลได้ในราคา 987 บาท ผลตอบแทนส่วนลด (Bank Discount Yield) ต่อปีเท่ากับเท่าใด (ใช้ฐาน 360 วัน)",c:["4.71%","5.14%","5.42%","5.86%"],a:1,e:"Bank Discount Yield = [(มูลค่าหน้าตั๋ว−ราคาซื้อ)/มูลค่าหน้าตั๋ว] × (360/จำนวนวัน) = (13/1000) × (360/91) ≈ 5.14% วิธีนี้ใช้มูลค่าหน้าตั๋วเป็นฐาน ต่างจากอัตราผลตอบแทนที่แท้จริงซึ่งควรใช้ราคาซื้อเป็นฐาน"},
+{s:1,q:"กองทุน A มีผลตอบแทนเฉลี่ย 12% ส่วนเบี่ยงเบนมาตรฐาน 9% ส่วนกองทุน B มีผลตอบแทนเฉลี่ย 8% ส่วนเบี่ยงเบนมาตรฐาน 5% กองทุนใดมีความเสี่ยงต่อหน่วยผลตอบแทน (Coefficient of Variation) ต่ำกว่ากัน",c:["กองทุน A เพราะ CV เท่ากับ 0.75 ต่ำกว่ากองทุน B","กองทุน B เพราะ CV เท่ากับ 0.625 ต่ำกว่ากองทุน A","ทั้งสองกองทุนมี CV เท่ากัน","ไม่สามารถเปรียบเทียบได้เนื่องจากผลตอบแทนไม่เท่ากัน"],a:1,e:"CV = ส่วนเบี่ยงเบนมาตรฐาน/ผลตอบแทนเฉลี่ย ใช้เปรียบเทียบความเสี่ยงต่อหน่วยผลตอบแทนของสินทรัพย์ที่มีผลตอบแทนต่างกัน CV ของ A = 9/12 = 0.75 ส่วน CV ของ B = 5/8 = 0.625 กองทุน B จึงมีความเสี่ยงต่อหน่วยผลตอบแทนต่ำกว่า แม้ผลตอบแทนเฉลี่ยจะต่ำกว่าก็ตาม"},
+{s:1,q:"หุ้นสามัญตัวหนึ่งจ่ายเงินปันผลปีล่าสุด 2.4 บาทต่อหุ้น คาดว่าจะเติบโตในอัตราคงที่ปีละ 4% นักลงทุนต้องการอัตราผลตอบแทน 10% มูลค่าที่เหมาะสมของหุ้นตามแบบจำลอง Gordon Growth เท่ากับเท่าใด",c:["24.00 บาท","40.00 บาท","41.60 บาท","60.00 บาท"],a:2,e:"P = D1/(r−g) โดย D1 = D0×(1+g) = 2.4×1.04 = 2.496 บาท ดังนั้น P = 2.496/(0.10−0.04) = 2.496/0.06 ≈ 41.60 บาท ผู้ที่ใช้ D0 แทน D1 โดยไม่ปรับการเติบโตจะได้คำตอบ 40.00 บาทซึ่งคลาดเคลื่อน"},
+{s:1,q:"หุ้นบริษัทหนึ่งมีราคาตลาด 54 บาท มูลค่าตามบัญชีต่อหุ้น (Book Value per Share) เท่ากับ 36 บาท อัตราส่วนราคาต่อมูลค่าทางบัญชี (P/BV) เท่ากับเท่าใด",c:["1.2 เท่า","1.5 เท่า","1.8 เท่า","2.0 เท่า"],a:1,e:"P/BV = ราคาตลาดต่อหุ้น/มูลค่าตามบัญชีต่อหุ้น = 54/36 = 1.5 เท่า อัตราส่วนนี้สูงกว่า 1 หมายความว่าตลาดให้มูลค่าหุ้นสูงกว่ามูลค่าทางบัญชี"},
+{s:1,q:"ใบสำคัญแสดงสิทธิ (Warrant) ให้สิทธิซื้อหุ้นสามัญที่ราคาใช้สิทธิ 25 บาทต่อหุ้น ในอัตราการใช้สิทธิ 1 หน่วยต่อ 1 หุ้น ปัจจุบันหุ้นอ้างอิงซื้อขายที่ 29 บาท ขณะที่ตัว Warrant ซื้อขายที่ 5.50 บาท ส่วนเกินมูลค่า (Premium) ของ Warrant นี้เท่ากับเท่าใด",c:["0.50 บาท","1.50 บาท","4.00 บาท","5.50 บาท"],a:1,e:"มูลค่าที่แท้จริง (Intrinsic Value) = ราคาหุ้นอ้างอิง−ราคาใช้สิทธิ = 29−25 = 4.00 บาท ส่วนเกินมูลค่า (Premium) = ราคาตลาดของ Warrant−มูลค่าที่แท้จริง = 5.50−4.00 = 1.50 บาท"},
+{s:1,q:"ข้อใดกล่าวถึง ตลาดรอง (Secondary Market) ได้ถูกต้อง",c:["เป็นตลาดที่บริษัทระดมทุนใหม่จากการเสนอขายหุ้น IPO","เป็นตลาดซื้อขายเปลี่ยนมือหลักทรัพย์ที่ออกจำหน่ายไปแล้วระหว่างนักลงทุนด้วยกัน","เป็นตลาดที่ใช้เฉพาะการซื้อขายตราสารหนี้ภาครัฐเท่านั้น","เป็นตลาดที่ไม่มีการกำหนดราคาซื้อขายที่ชัดเจน"],a:1,e:"ตลาดรองคือแหล่งซื้อขายเปลี่ยนมือหลักทรัพย์ที่ออกจำหน่ายไปแล้ว เช่น ตลาดหลักทรัพย์แห่งประเทศไทย ต่างจากตลาดแรก (Primary Market) ซึ่งเป็นการระดมทุนใหม่ของบริษัทผู้ออกหลักทรัพย์"},
+{s:1,q:"เหตุการณ์ใดจัดเป็นความเสี่ยงที่ไม่เป็นระบบ (Unsystematic Risk) ซึ่งสามารถลดได้ด้วยการกระจายการลงทุน",c:["ธนาคารกลางปรับขึ้นอัตราดอกเบี้ยนโยบายทั้งประเทศ","สงครามการค้าระหว่างประเทศส่งผลกระทบต่อตลาดโดยรวม","ผู้บริหารระดับสูงของบริษัทหนึ่งลาออกกะทันหันจนกระทบผลประกอบการของบริษัทนั้น","อัตราเงินเฟ้อทั่วประเทศปรับตัวสูงขึ้นต่อเนื่อง"],a:2,e:"เหตุการณ์เฉพาะบริษัท เช่น ผู้บริหารลาออก จัดเป็นความเสี่ยงที่ไม่เป็นระบบ (Unsystematic Risk) ซึ่งสามารถลดผลกระทบได้ด้วยการกระจายการลงทุนในหลายหลักทรัพย์ ต่างจากปัจจัยเศรษฐกิจมหภาคในตัวเลือกอื่นซึ่งกระทบตลาดทั้งระบบ"},
+{s:1,q:"หลักการ Risk-Return Tradeoff ในการลงทุนมีความหมายตรงกับข้อใด",c:["นักลงทุนควรเลือกสินทรัพย์ที่ให้ผลตอบแทนสูงที่สุดโดยไม่ต้องคำนึงถึงความเสี่ยง","โดยทั่วไปสินทรัพย์ที่มีโอกาสให้ผลตอบแทนคาดหวังสูงกว่ามักมาพร้อมความเสี่ยงที่สูงกว่าด้วย","ความเสี่ยงและผลตอบแทนไม่มีความสัมพันธ์กันเลย","นักลงทุนควรลงทุนเฉพาะสินทรัพย์ที่ปราศจากความเสี่ยงเท่านั้น"],a:1,e:"หลักการนี้สะท้อนความสัมพันธ์ที่ว่า หากต้องการผลตอบแทนคาดหวังที่สูงขึ้น โดยทั่วไปนักลงทุนต้องยอมรับระดับความเสี่ยงที่สูงขึ้นตามไปด้วย เป็นหลักพื้นฐานในการวางแผนการลงทุน"},
+{s:1,q:"การกระจายการลงทุนในหลักทรัพย์ที่มีค่าสัมประสิทธิ์สหสัมพันธ์ (Correlation) ในลักษณะใดจะช่วยลดความเสี่ยงของพอร์ตโดยรวมได้มากที่สุด",c:["ค่าสหสัมพันธ์เท่ากับ +1","ค่าสหสัมพันธ์เท่ากับ 0","ค่าสหสัมพันธ์เท่ากับ −1","ค่าสหสัมพันธ์ไม่มีผลต่อความเสี่ยงของพอร์ตเลย"],a:2,e:"ยิ่งสินทรัพย์มีค่าสหสัมพันธ์ต่ำหรือติดลบมากเท่าใด การนำมารวมในพอร์ตยิ่งช่วยลดความเสี่ยงโดยรวมได้มากขึ้น กรณีสหสัมพันธ์เท่ากับ −1 คือเคลื่อนไหวตรงข้ามกันสมบูรณ์ จะช่วยลดความเสี่ยงของพอร์ตได้มากที่สุด"},
+{s:1,q:"การจัดสรรเงินลงทุน (Asset Allocation) หมายถึงกระบวนการใด",c:["การเลือกซื้อหุ้นรายตัวที่ให้ผลตอบแทนสูงสุดในแต่ละอุตสาหกรรม","การกำหนดสัดส่วนเงินลงทุนในสินทรัพย์ประเภทต่างๆ ให้สอดคล้องกับเป้าหมายและระดับความเสี่ยงที่ยอมรับได้ของผู้ลงทุน","การซื้อขายหลักทรัพย์ระยะสั้นเพื่อทำกำไรจากส่วนต่างราคา","การกู้ยืมเงินเพื่อเพิ่มปริมาณการลงทุนในหลักทรัพย์"],a:1,e:"Asset Allocation คือการวางแผนแบ่งสัดส่วนเงินลงทุนไปยังสินทรัพย์ประเภทต่างๆ เช่น เงินฝาก ตราสารหนี้ ตราสารทุน โดยพิจารณาจากเป้าหมายการลงทุนและระดับความเสี่ยงที่ผู้ลงทุนยอมรับได้เป็นหลัก"},
+{s:1,q:"คำสั่งซื้อขายประเภท Limit Order มีลักษณะตรงกับข้อใด",c:["เป็นคำสั่งที่ต้องการให้จับคู่ซื้อขายทันทีในราคาตลาด ณ ขณะนั้นไม่ว่าราคาใด","เป็นคำสั่งที่ระบุราคาที่ต้องการซื้อหรือขาย และจะจับคู่ได้ก็ต่อเมื่อราคาตลาดตรงตามหรือดีกว่าราคาที่กำหนด","เป็นคำสั่งที่ไม่มีการกำหนดราคาหรือเงื่อนไขใดๆ","เป็นคำสั่งที่ใช้ได้เฉพาะการซื้อขายตราสารหนี้เท่านั้น"],a:1,e:"Limit Order คือคำสั่งที่ผู้ลงทุนระบุราคาสูงสุดที่ยอมซื้อหรือราคาต่ำสุดที่ยอมขาย คำสั่งจะจับคู่ได้เมื่อราคาตลาดตรงตามหรือดีกว่าราคาที่กำหนดเท่านั้น ต่างจาก Market Order ที่ต้องการจับคู่ทันทีในราคาตลาด"},
+{s:1,q:"ข้อใดเป็นความแตกต่างที่สำคัญระหว่างกองทุนรวมแบบเปิด (Open-end Fund) และกองทุนรวมแบบปิด (Closed-end Fund)",c:["กองทุนรวมแบบเปิดสามารถซื้อขายหน่วยลงทุนกับบริษัทจัดการได้อย่างต่อเนื่องตามรอบที่กำหนด ส่วนกองทุนแบบปิดโดยทั่วไปไม่รับซื้อคืนหน่วยลงทุนก่อนครบอายุโครงการ","กองทุนรวมแบบปิดมีความเสี่ยงต่ำกว่ากองทุนแบบเปิดเสมอในทุกกรณี","กองทุนรวมแบบเปิดไม่สามารถลงทุนในตราสารหนี้ได้เลย","กองทุนรวมแบบปิดสามารถไถ่ถอนหน่วยลงทุนคืนได้ทุกวันทำการ"],a:0,e:"กองทุนรวมแบบเปิดเสนอขายและรับซื้อคืนหน่วยลงทุนอย่างต่อเนื่อง ส่วนกองทุนรวมแบบปิดจะกำหนดจำนวนหน่วยลงทุนที่แน่นอนและไม่รับซื้อคืนก่อนครบอายุโครงการ ผู้ถือหน่วยที่ต้องการสภาพคล่องต้องขายผ่านตลาดรองหากมีการจดทะเบียนไว้"},
+{s:1,q:"การซื้อขายหลักทรัพย์แบบ บัญชีมาร์จิ้น (Margin Account) หมายถึงข้อใด",c:["การซื้อขายที่ผู้ลงทุนต้องวางเงินสดเต็มจำนวนก่อนซื้อหลักทรัพย์ทุกครั้ง","การซื้อขายที่ผู้ลงทุนกู้ยืมเงินบางส่วนจากบริษัทหลักทรัพย์โดยวางหลักทรัพย์หรือเงินสดเป็นหลักประกัน","การซื้อขายที่จำกัดเฉพาะพันธบัตรรัฐบาลเท่านั้น","การซื้อขายที่ไม่มีการกำหนดวงเงินหรือหลักประกันใดๆ เลย"],a:1,e:"บัญชีมาร์จิ้นเปิดโอกาสให้ผู้ลงทุนกู้ยืมเงินบางส่วนจากบริษัทหลักทรัพย์เพื่อเพิ่มอำนาจซื้อ โดยต้องวางหลักทรัพย์หรือเงินสดเป็นหลักประกัน ซึ่งจะช่วยเพิ่มทั้งโอกาสผลตอบแทนและความเสี่ยงจากการใช้เลเวอเรจ"},
+{s:1,q:"เส้นอัตราผลตอบแทน (Yield Curve) ที่มีลักษณะ หัวกลับ (Inverted Yield Curve) โดยทั่วไปสะท้อนถึงสิ่งใด",c:["ตลาดคาดการณ์ว่าเศรษฐกิจจะเติบโตอย่างแข็งแกร่งต่อเนื่อง","ตลาดคาดการณ์ว่าอัตราดอกเบี้ยระยะสั้นจะสูงกว่าระยะยาว ซึ่งมักถูกมองว่าเป็นสัญญาณเตือนภาวะเศรษฐกิจถดถอย","อัตราดอกเบี้ยทุกช่วงอายุเท่ากันหมดไม่มีความแตกต่าง","พันธบัตรระยะยาวมีความเสี่ยงด้านเครดิตสูงกว่าระยะสั้นเสมอ"],a:1,e:"โดยปกติพันธบัตรระยะยาวจะให้ผลตอบแทนสูงกว่าระยะสั้น แต่เมื่อเส้นอัตราผลตอบแทนหัวกลับ อัตราดอกเบี้ยระยะสั้นจะสูงกว่าระยะยาว ซึ่งมักสะท้อนความกังวลของตลาดต่อภาวะเศรษฐกิจถดถอยในอนาคต"},
+{s:1,q:"กองทุนรวมตลาดเงิน (Money Market Fund) มีนโยบายการลงทุนสอดคล้องกับข้อใดมากที่สุด",c:["ลงทุนในหุ้นสามัญของบริษัทขนาดใหญ่เป็นหลักเพื่อผลตอบแทนสูงสุด","ลงทุนในตราสารหนี้ระยะสั้นที่มีคุณภาพดีและสภาพคล่องสูง โดยมีอายุคงเหลือไม่เกิน 1 ปี","ลงทุนในอสังหาริมทรัพย์และทองคำเป็นหลัก","ลงทุนในตราสารอนุพันธ์เพื่อเก็งกำไรระยะสั้นเป็นหลัก"],a:1,e:"กองทุนรวมตลาดเงินเน้นลงทุนในตราสารหนี้ระยะสั้นคุณภาพดีที่มีสภาพคล่องสูง เช่น ตั๋วเงินคลัง เงินฝาก โดยมีอายุคงเหลือไม่เกิน 1 ปี จึงมีความเสี่ยงต่ำที่สุดในบรรดากองทุนรวมประเภทต่างๆ"},
+{s:1,q:"นักลงทุนที่ลงทุนในหลักทรัพย์ต่างประเทศและต้องการป้องกันความเสี่ยงจากความผันผวนของอัตราแลกเปลี่ยน ควรใช้เครื่องมือใด",c:["สัญญาซื้อขายเงินตราต่างประเทศล่วงหน้า (FX Forward)","การกู้ยืมเงินบาทเพิ่มเติมเพื่อลงทุนต่อ","การถือครองเงินสดในบัญชีออมทรัพย์สกุลเงินบาท","การซื้อหุ้นกู้ด้อยสิทธิเพิ่มเติม"],a:0,e:"FX Forward เป็นสัญญาที่กำหนดอัตราแลกเปลี่ยนล่วงหน้าไว้ ช่วยให้นักลงทุนสามารถล็อกต้นทุนหรือมูลค่าเงินลงทุนที่แปลงกลับเป็นเงินบาทได้ ลดความเสี่ยงจากความผันผวนของอัตราแลกเปลี่ยนในอนาคต"},
+{s:1,q:"อัตราส่วนสภาพคล่อง (Current Ratio) คำนวณจากข้อใด และสะท้อนความสามารถด้านใดของกิจการ",c:["สินทรัพย์หมุนเวียน หารด้วย หนี้สินหมุนเวียน สะท้อนความสามารถในการชำระหนี้ระยะสั้น","กำไรสุทธิ หารด้วย ยอดขาย สะท้อนความสามารถในการทำกำไร","หนี้สินรวม หารด้วย ส่วนของผู้ถือหุ้น สะท้อนโครงสร้างเงินทุน","สินทรัพย์รวม หารด้วย จำนวนหุ้น สะท้อนมูลค่าตามบัญชีต่อหุ้น"],a:0,e:"Current Ratio = สินทรัพย์หมุนเวียน/หนี้สินหมุนเวียน เป็นอัตราส่วนที่ใช้วัดความสามารถของกิจการในการชำระหนี้สินระยะสั้นด้วยสินทรัพย์หมุนเวียนที่มีอยู่ ค่ายิ่งสูงยิ่งสะท้อนสภาพคล่องที่ดี"},
+/* ---------- SECTION 2 : 20 ข้อ จรรยาบรรณ ---------- */
+{s:2,q:"คุณวิภาเป็นผู้แนะนำการลงทุน ลูกค้ารายหนึ่งเป็นผู้เกษียณอายุที่ต้องการรายได้สม่ำเสมอและรับความเสี่ยงได้ต่ำ แต่ผลิตภัณฑ์ที่ให้ค่าธรรมเนียมสูงที่สุดแก่คุณวิภาคือกองทุนหุ้นความเสี่ยงสูง คุณวิภาควรทำอย่างไรจึงจะถูกต้องตามหลักจรรยาบรรณ",c:["แนะนำกองทุนหุ้นความเสี่ยงสูงเพราะให้ค่าธรรมเนียมสูงสุดแก่ตนเอง","แนะนำผลิตภัณฑ์ที่เหมาะสมกับระดับความเสี่ยงและเป้าหมายของลูกค้าเป็นสำคัญ แม้จะได้ค่าธรรมเนียมน้อยกว่า","ปล่อยให้ลูกค้าตัดสินใจเองโดยไม่ต้องให้ข้อมูลใดๆ ประกอบการตัดสินใจ","แนะนำผลิตภัณฑ์ตามที่ผู้บริหารสั่งโดยไม่พิจารณาความเหมาะสมของลูกค้า"],a:1,e:"จรรยาบรรณผู้แนะนำการลงทุนกำหนดให้ต้องคำนึงถึงผลประโยชน์ของลูกค้าเป็นสำคัญ (Client's Best Interest) และเสนอผลิตภัณฑ์ที่เหมาะสมกับฐานะการเงิน วัตถุประสงค์ และระดับความเสี่ยงที่ยอมรับได้ของลูกค้า มิใช่เลือกจากผลประโยชน์ของผู้แนะนำเอง"},
+{s:2,q:"บริษัทหลักทรัพย์ต้นสังกัดของคุณประเสริฐเป็นผู้จัดจำหน่ายหุ้นกู้ตัวหนึ่งที่คุณประเสริฐกำลังจะแนะนำให้ลูกค้าซื้อ ข้อใดคือแนวทางปฏิบัติที่ถูกต้อง",c:["ไม่ต้องเปิดเผยความเกี่ยวข้องใดๆ เพราะถือเป็นเรื่องภายในของบริษัท","เปิดเผยให้ลูกค้าทราบถึงความสัมพันธ์และผลประโยชน์ที่บริษัทอาจได้รับก่อนให้คำแนะนำ","หลีกเลี่ยงไม่แนะนำหุ้นกู้ตัวนี้แก่ลูกค้าทุกรายโดยไม่มีเหตุผลอันสมควร","แนะนำเฉพาะลูกค้าที่ไม่ช่างสงสัยหรือไม่ตรวจสอบข้อมูลเพิ่มเติม"],a:1,e:"เมื่อมีความขัดแย้งทางผลประโยชน์ (Conflict of Interest) ผู้แนะนำการลงทุนต้องเปิดเผยข้อเท็จจริงดังกล่าวให้ลูกค้าทราบอย่างชัดเจนก่อนตัดสินใจลงทุน เพื่อให้ลูกค้ามีข้อมูลครบถ้วนประกอบการตัดสินใจอย่างเป็นอิสระ"},
+{s:2,q:"ลูกค้าถามคุณวิภาว่ากองทุนที่แนะนำจะการันตีผลตอบแทน 8% ต่อปีได้หรือไม่ คุณวิภาควรตอบอย่างไรจึงจะถูกต้อง",c:["รับปากว่าจะได้ผลตอบแทน 8% แน่นอนเพื่อปิดการขายให้สำเร็จ","อธิบายว่าผลตอบแทนในอดีตหรือที่คาดการณ์ไม่ใช่การรับประกันผลตอบแทนในอนาคต และการลงทุนมีความเสี่ยง","บอกลูกค้าว่าไม่สามารถตอบคำถามนี้ได้และให้ไปหาข้อมูลเอง","เสนอให้ลูกค้าเซ็นสัญญาที่ระบุว่าบริษัทรับประกันผลตอบแทนดังกล่าวไว้"],a:1,e:"ผู้แนะนำการลงทุนต้องไม่ให้คำรับรองหรือรับประกันผลตอบแทนของการลงทุน เนื่องจากการลงทุนมีความเสี่ยงเสมอ และผลตอบแทนในอดีตไม่ได้เป็นเครื่องยืนยันผลตอบแทนในอนาคต"},
+{s:2,q:"เมื่อแนะนำผลิตภัณฑ์การลงทุนที่มีความเสี่ยงสูง ข้อใดเป็นการปฏิบัติที่ไม่ถูกต้องตามหลักจรรยาบรรณ",c:["อธิบายทั้งโอกาสได้รับผลตอบแทนและความเสี่ยงที่อาจเกิดขึ้นอย่างครบถ้วน","เน้นย้ำเฉพาะผลตอบแทนที่น่าดึงดูดใจ แต่ละเลยหรือปกปิดความเสี่ยงสำคัญของผลิตภัณฑ์","ให้เอกสารข้อมูลสำคัญของผลิตภัณฑ์ (Fact Sheet) แก่ลูกค้าก่อนตัดสินใจลงทุน","ตอบคำถามของลูกค้าด้วยข้อมูลที่ถูกต้องและตรงไปตรงมา"],a:1,e:"ผู้แนะนำการลงทุนต้องให้ข้อมูลที่ครบถ้วน ถูกต้อง และไม่บิดเบือน ทั้งด้านโอกาสผลตอบแทนและความเสี่ยง การเน้นเฉพาะด้านดีแล้วปกปิดความเสี่ยงถือเป็นการให้ข้อมูลที่ทำให้ลูกค้าเข้าใจผิด ซึ่งขัดต่อจรรยาบรรณ"},
+{s:2,q:"คุณประเสริฐได้รับการสอบถามจากเพื่อนที่ไม่ใช่ลูกค้าเกี่ยวกับพอร์ตการลงทุนและฐานะการเงินของลูกค้ารายหนึ่งของตน คุณประเสริฐควรทำอย่างไร",c:["เล่าข้อมูลให้ฟังเนื่องจากเป็นเพื่อนสนิทที่ไว้ใจได้","ปฏิเสธที่จะเปิดเผยข้อมูลลูกค้า เนื่องจากต้องรักษาความลับของลูกค้า เว้นแต่ได้รับความยินยอมหรือเป็นไปตามที่กฎหมายกำหนด","เปิดเผยเฉพาะตัวเลขคร่าวๆ โดยไม่ระบุชื่อลูกค้าก็เพียงพอแล้ว","โพสต์ข้อมูลสรุปพอร์ตการลงทุนลงโซเชียลมีเดียส่วนตัวเพื่อขอความเห็น"],a:1,e:"ผู้แนะนำการลงทุนมีหน้าที่รักษาความลับของข้อมูลลูกค้า จะเปิดเผยข้อมูลแก่บุคคลที่สามได้ก็ต่อเมื่อได้รับความยินยอมจากลูกค้าหรือเป็นไปตามที่กฎหมายกำหนดเท่านั้น"},
+{s:2,q:"ก่อนแนะนำผลิตภัณฑ์การลงทุนใดๆ แก่ลูกค้าใหม่ ผู้แนะนำการลงทุนต้องดำเนินการใดเป็นลำดับแรก",c:["เสนอขายผลิตภัณฑ์ที่มีค่าธรรมเนียมสูงที่สุดก่อนเพื่อสร้างยอดขาย","จัดทำแบบประเมินความเหมาะสมในการลงทุน (Suitability Test) เพื่อทำความรู้จักลูกค้า (KYC) และประเมินระดับความเสี่ยงที่ยอมรับได้","ขอสำเนาบัตรประชาชนเพียงอย่างเดียวโดยไม่ต้องประเมินความเสี่ยงเพิ่มเติม","ให้ลูกค้าเลือกผลิตภัณฑ์เองโดยไม่ต้องมีการประเมินใดๆ ก่อน"],a:1,e:"ก่อนให้คำแนะนำ ผู้แนะนำการลงทุนต้องทำความรู้จักลูกค้า (Know Your Customer) และจัดทำแบบประเมินความเหมาะสม (Suitability Test) เพื่อทราบวัตถุประสงค์ ฐานะการเงิน และระดับความเสี่ยงที่ยอมรับได้ก่อนเสนอผลิตภัณฑ์ใดๆ"},
+{s:2,q:"ข้อใดเข้าข่ายพฤติกรรมการสร้างราคาหลักทรัพย์เทียม (Market Manipulation) ซึ่งเป็นข้อห้ามตามจรรยาบรรณและกฎหมาย",c:["การส่งคำสั่งซื้อขายหลักทรัพย์ตามความต้องการลงทุนที่แท้จริงของลูกค้า","การจับคู่ซื้อขายกันเองระหว่างบัญชีที่ตนควบคุมเพื่อสร้างปริมาณซื้อขายเทียมและชักจูงให้ราคาหุ้นเคลื่อนไหวผิดปกติ","การให้ข้อมูลวิเคราะห์หลักทรัพย์ตามข้อมูลสาธารณะที่มีอยู่โดยทั่วไป","การแนะนำให้ลูกค้ากระจายการลงทุนในหลายหลักทรัพย์"],a:1,e:"การจับคู่ซื้อขายกันเองเพื่อสร้างปริมาณหรือราคาซื้อขายให้ผิดไปจากความเป็นจริง เป็นการสร้างราคาหลักทรัพย์เทียม (Market Manipulation) ซึ่งเป็นความผิดตามกฎหมายหลักทรัพย์และขัดต่อจรรยาบรรณอย่างร้ายแรง"},
+{s:2,q:"ลูกค้ารายหนึ่งขอให้คุณวิภาเปิดบัญชีซื้อขายหลักทรัพย์ในชื่อของบุคคลอื่นเพื่อปกปิดตัวตนที่แท้จริงของผู้ลงทุน คุณวิภาควรปฏิบัติอย่างไร",c:["ดำเนินการให้ตามที่ลูกค้าร้องขอ เนื่องจากเป็นความต้องการของลูกค้า","ปฏิเสธการดำเนินการดังกล่าว เนื่องจากเป็นการเปิดบัญชีแทน (Nominee Account) ซึ่งต้องห้ามตามหลักเกณฑ์","ดำเนินการให้แต่เก็บค่าธรรมเนียมเพิ่มเติมสำหรับความเสี่ยงที่รับ","แนะนำให้ลูกค้าไปดำเนินการที่บริษัทหลักทรัพย์อื่นแทน"],a:1,e:"การเปิดบัญชีในชื่อบุคคลอื่นเพื่อปกปิดตัวตนที่แท้จริงของผู้ลงทุน (Nominee Account) เป็นการกระทำที่ต้องห้าม เพราะขัดต่อหลักการรู้จักลูกค้าที่แท้จริงและอาจเกี่ยวข้องกับการหลีกเลี่ยงกฎหมายหรือการฟอกเงิน"},
+{s:2,q:"ตามหลักเกณฑ์การป้องกันและปราบปรามการฟอกเงิน ธุรกรรมที่เป็นเงินสดตั้งแต่จำนวนเท่าใดขึ้นไปที่ต้องมีการรายงานต่อสำนักงาน ปปง.",c:["500,000 บาทขึ้นไป","1,000,000 บาทขึ้นไป","2,000,000 บาทขึ้นไป","10,000,000 บาทขึ้นไป"],a:2,e:"ตามกฎหมายป้องกันและปราบปรามการฟอกเงิน ธุรกรรมที่เป็นเงินสดตั้งแต่ 2,000,000 บาทขึ้นไป ต้องถูกรายงานต่อสำนักงาน ปปง. โดยไม่คำนึงว่าธุรกรรมนั้นจะมีเหตุอันควรสงสัยหรือไม่ เพราะเป็นการรายงานตามเกณฑ์มูลค่าที่กฎหมายกำหนดไว้"},
+{s:2,q:"ธุรกรรมที่เกี่ยวกับทรัพย์สิน (Asset Transaction) ที่ต้องรายงานต่อสำนักงาน ปปง. ตามเกณฑ์ทั่วไป มีมูลค่าตั้งแต่เท่าใดขึ้นไป",c:["2,000,000 บาทขึ้นไป","3,000,000 บาทขึ้นไป","5,000,000 บาทขึ้นไป","20,000,000 บาทขึ้นไป"],a:2,e:"ธุรกรรมที่เกี่ยวกับทรัพย์สินตั้งแต่ 5,000,000 บาทขึ้นไป ต้องรายงานต่อสำนักงาน ปปง. ตามกฎหมายฟอกเงิน แม้ธุรกรรมนั้นจะไม่มีความผิดกฎหมายใดๆ ก็ตาม เพราะเป็นการรายงานเพื่อการเฝ้าระวังตามเกณฑ์มูลค่า ไม่ใช่การกล่าวหาว่าลูกค้ากระทำผิด"},
+{s:2,q:"คุณประเสริฐทราบข้อมูลภายในเกี่ยวกับการเข้าซื้อกิจการของบริษัทจดทะเบียนแห่งหนึ่งก่อนที่จะมีการเปิดเผยต่อสาธารณะ คุณประเสริฐควรปฏิบัติอย่างไร",c:["ซื้อหุ้นของบริษัทดังกล่าวทันทีเพื่อทำกำไรก่อนที่ข่าวจะประกาศ","แจ้งข้อมูลดังกล่าวให้ลูกค้าคนสนิททราบเพื่อให้ซื้อหุ้นล่วงหน้าไว้ก่อน","ไม่ใช้ข้อมูลภายในดังกล่าวเพื่อซื้อขายหลักทรัพย์หรือเปิดเผยแก่ผู้อื่นก่อนที่ข้อมูลจะเปิดเผยต่อสาธารณะ","ขายชอร์ตหุ้นของบริษัทคู่แข่งแทนเพื่อหลีกเลี่ยงความผิดทางกฎหมาย"],a:2,e:"การใช้ข้อมูลภายในที่ยังไม่เปิดเผยต่อสาธารณะเพื่อซื้อขายหลักทรัพย์หรือส่งต่อให้ผู้อื่นซื้อขาย (Insider Trading) เป็นความผิดตามกฎหมายหลักทรัพย์อย่างร้ายแรง ผู้แนะนำการลงทุนต้องงดเว้นการกระทำดังกล่าวโดยเด็ดขาด"},
+{s:2,q:"ลูกค้าอายุ 68 ปี แจ้งว่ารับความเสี่ยงได้ต่ำมากและต้องการรักษาเงินต้นไว้ แต่ผู้แนะนำการลงทุนกลับแนะนำให้ลงทุนในกองทุนรวมที่ใช้ตราสารอนุพันธ์ซึ่งมีความเสี่ยงสูงมาก การกระทำนี้ขัดต่อหลักจรรยาบรรณข้อใดเป็นสำคัญ",c:["หลักการรักษาความลับของลูกค้า","หลักความเหมาะสมของการลงทุน (Suitability) ที่ต้องสอดคล้องกับระดับความเสี่ยงที่ลูกค้ายอมรับได้","หลักการห้ามสร้างราคาหลักทรัพย์เทียม","หลักการรายงานธุรกรรมต่อสำนักงาน ปปง."],a:1,e:"การแนะนำผลิตภัณฑ์ที่มีความเสี่ยงสูงเกินกว่าระดับที่ลูกค้าระบุไว้ว่ายอมรับได้ ถือเป็นการละเมิดหลักความเหมาะสมของการลงทุน (Suitability) ซึ่งเป็นหัวใจสำคัญของการให้คำแนะนำการลงทุนอย่างมีความรับผิดชอบ"},
+{s:2,q:"บริษัทหลักทรัพย์ให้ค่าตอบแทนพิเศษแก่ผู้แนะนำการลงทุนที่ขายผลิตภัณฑ์ของบริษัทในเครือได้มากกว่าผลิตภัณฑ์ของบริษัทอื่น ในสถานการณ์นี้ผู้แนะนำการลงทุนควรปฏิบัติอย่างไร",c:["เลือกแนะนำผลิตภัณฑ์ในเครือให้ลูกค้าทุกรายโดยไม่พิจารณาความเหมาะสม เพื่อให้ได้ค่าตอบแทนพิเศษ","พิจารณาความเหมาะสมของผลิตภัณฑ์ต่อลูกค้าเป็นหลัก และเปิดเผยการได้รับค่าตอบแทนพิเศษดังกล่าวหากมีผลต่อการตัดสินใจของลูกค้า","ปกปิดการมีค่าตอบแทนพิเศษเพราะถือเป็นเรื่องภายในของบริษัท","ปฏิเสธไม่ขายผลิตภัณฑ์ใดๆ ของบริษัทในเครือเลยแม้ผลิตภัณฑ์นั้นจะเหมาะสมกับลูกค้า"],a:1,e:"เมื่อมีค่าตอบแทนพิเศษที่อาจก่อให้เกิดความขัดแย้งทางผลประโยชน์ ผู้แนะนำการลงทุนต้องยึดความเหมาะสมต่อลูกค้าเป็นหลักในการแนะนำ และเปิดเผยข้อเท็จจริงเรื่องค่าตอบแทนพิเศษให้ลูกค้าทราบอย่างโปร่งใส"},
+{s:2,q:"ผู้แนะนำการลงทุนรายหนึ่งออกเอกสารส่วนตัวรับรองว่าจะชดเชยผลขาดทุนให้ลูกค้าหากกองทุนที่แนะนำเกิดผลขาดทุน การกระทำนี้ถือว่าอย่างไร",c:["เป็นการปฏิบัติที่ดีเพราะช่วยสร้างความมั่นใจให้แก่ลูกค้า","เป็นการกระทำที่ไม่ถูกต้อง เนื่องจากผู้แนะนำการลงทุนต้องไม่รับประกันผลตอบแทนหรือรับรองการชดเชยผลขาดทุนใดๆ","เป็นเรื่องที่ทำได้หากลูกค้ายินยอมเป็นลายลักษณ์อักษรก่อน","เป็นเรื่องปกติที่ปฏิบัติกันทั่วไปในธุรกิจหลักทรัพย์"],a:1,e:"การรับรองหรือให้สัญญาที่จะชดเชยผลขาดทุนแก่ลูกค้าเป็นการกระทำที่ต้องห้ามโดยเด็ดขาด เพราะขัดต่อหลักการที่ว่าการลงทุนมีความเสี่ยงและผู้แนะนำการลงทุนต้องไม่รับประกันผลตอบแทนหรือผลขาดทุนใดๆ"},
+{s:2,q:"เอกสารส่งเสริมการขายกองทุนฉบับหนึ่งแสดงเฉพาะผลตอบแทนย้อนหลังที่สูงในช่วงตลาดขาขึ้น โดยไม่ได้กล่าวถึงความเสี่ยงหรือช่วงเวลาที่กองทุนเคยขาดทุน ผู้แนะนำการลงทุนที่นำเอกสารนี้ไปเสนอขายลูกค้าโดยไม่ชี้แจงเพิ่มเติมมีความเสี่ยงที่จะขัดต่อหลักจรรยาบรรณข้อใด",c:["หลักการรักษาความลับของลูกค้า","หลักการให้ข้อมูลที่ครบถ้วน ไม่บิดเบือน และไม่ทำให้ลูกค้าเข้าใจผิด","หลักการห้ามใช้ข้อมูลภายในเพื่อประโยชน์ส่วนตน","หลักการรายงานธุรกรรมขนาดใหญ่ต่อหน่วยงานกำกับดูแล"],a:1,e:"การนำเสนอเฉพาะข้อมูลด้านดีโดยละเลยความเสี่ยงสำคัญ ทำให้ลูกค้าได้รับข้อมูลที่ไม่ครบถ้วนและอาจเข้าใจผิดเกี่ยวกับความเสี่ยงที่แท้จริง ผู้แนะนำการลงทุนจึงมีหน้าที่ต้องชี้แจงข้อมูลเพิ่มเติมให้ครบถ้วนก่อนเสนอขาย"},
+{s:2,q:"คุณวิภานำรายชื่อและข้อมูลติดต่อของลูกค้าที่มีอยู่ในระบบบริษัทไปใช้ส่วนตัวเพื่อชักชวนลงทุนในธุรกิจอื่นที่ไม่เกี่ยวข้องกับบริษัท การกระทำนี้ขัดต่อหลักจรรยาบรรณข้อใด",c:["หลักความเหมาะสมของการลงทุน","หลักการรักษาความลับและการใช้ข้อมูลลูกค้าอย่างเหมาะสม โดยไม่นำไปใช้เพื่อประโยชน์ส่วนตนนอกขอบเขตหน้าที่","หลักการห้ามสร้างราคาหลักทรัพย์เทียม","หลักการรายงานธุรกรรมต่อสำนักงาน ปปง."],a:1,e:"ข้อมูลลูกค้าที่ได้มาจากการปฏิบัติหน้าที่ต้องถูกใช้เพื่อประโยชน์ในการให้บริการแก่ลูกค้าเท่านั้น การนำไปใช้เพื่อประโยชน์ส่วนตนในกิจการอื่นถือเป็นการละเมิดหลักการรักษาความลับและการใช้ข้อมูลลูกค้าอย่างเหมาะสม"},
+{s:2,q:"เมื่อฐานะการเงินหรือวัตถุประสงค์การลงทุนของลูกค้าเปลี่ยนแปลงไปอย่างมีนัยสำคัญ ผู้แนะนำการลงทุนควรปฏิบัติอย่างไร",c:["ไม่จำเป็นต้องทำอะไรเพราะได้ทำแบบประเมินความเสี่ยงไปแล้วในครั้งแรก","ทบทวนและปรับปรุงข้อมูลแบบประเมินความเหมาะสมของลูกค้าให้เป็นปัจจุบัน เพื่อให้คำแนะนำสอดคล้องกับสถานการณ์ล่าสุด","รอให้ลูกค้าเป็นฝ่ายแจ้งขอเปลี่ยนแปลงข้อมูลเองเท่านั้น","ยกเลิกการให้บริการแก่ลูกค้ารายนั้นทันทีโดยไม่ต้องแจ้งเหตุผล"],a:1,e:"เมื่อสถานการณ์ของลูกค้าเปลี่ยนแปลงไปอย่างมีนัยสำคัญ เช่น รายได้ อายุ หรือเป้าหมายการลงทุนเปลี่ยนไป ผู้แนะนำการลงทุนควรทบทวนแบบประเมินความเหมาะสมให้เป็นปัจจุบันเสมอ เพื่อให้คำแนะนำยังคงเหมาะสมกับลูกค้าอยู่เสมอ"},
+{s:2,q:"ผู้แนะนำการลงทุนโพสต์ข้อความในโซเชียลมีเดียชักชวนให้บุคคลทั่วไปเข้าซื้อหุ้นตัวหนึ่งพร้อมกันในเวลาที่กำหนด โดยมีเจตนาให้ราคาหุ้นปรับตัวขึ้นอย่างรวดเร็วเพื่อให้ตนเองขายทำกำไร การกระทำนี้เข้าข่ายความผิดใด",c:["การให้บริการที่ปรึกษาการลงทุนตามปกติทั่วไป","การสร้างราคาหรือปริมาณซื้อขายหลักทรัพย์อันเป็นเท็จ (Market Manipulation) ซึ่งเป็นความผิดตามกฎหมาย","การวิเคราะห์ปัจจัยพื้นฐานของหลักทรัพย์ตามปกติ","การให้ความรู้ทางการเงินแก่ประชาชนทั่วไปโดยสุจริต"],a:1,e:"การชักชวนบุคคลทั่วไปให้เข้าซื้อหุ้นพร้อมกันโดยมีเจตนาผลักดันราคาให้สูงขึ้นเทียมเพื่อประโยชน์ของตนเอง เข้าข่ายการสร้างราคาหรือปริมาณซื้อขายหลักทรัพย์อันเป็นเท็จ (Market Manipulation) ซึ่งเป็นความผิดร้ายแรงตามกฎหมายหลักทรัพย์"},
+{s:2,q:"ลูกค้ารายหนึ่งขอให้คุณประเสริฐแบ่งธุรกรรมเงินสดจำนวนมากออกเป็นหลายรายการย่อยเพื่อให้แต่ละรายการมีมูลค่าต่ำกว่าเกณฑ์ที่ต้องรายงานต่อสำนักงาน ปปง. คุณประเสริฐควรปฏิบัติอย่างไร",c:["ดำเนินการแบ่งธุรกรรมตามที่ลูกค้าร้องขอ เพื่อรักษาความสัมพันธ์ที่ดีกับลูกค้า","ปฏิเสธการดำเนินการดังกล่าว เนื่องจากเข้าข่ายการหลีกเลี่ยงการรายงานธุรกรรม (Structuring) ซึ่งเป็นความผิดตามกฎหมายฟอกเงิน","ดำเนินการให้แต่แจ้งลูกค้าว่าต้องเสียค่าธรรมเนียมเพิ่มเติม","เพิกเฉยและปล่อยให้ลูกค้าทำธุรกรรมตามปกติโดยไม่ต้องพิจารณาสิ่งใด"],a:1,e:"การจงใจแบ่งธุรกรรมออกเป็นหลายรายการย่อยเพื่อให้มูลค่าต่ำกว่าเกณฑ์ที่ต้องรายงาน (Structuring) เป็นการหลีกเลี่ยงกฎหมายป้องกันและปราบปรามการฟอกเงิน ผู้แนะนำการลงทุนต้องปฏิเสธและไม่ให้ความร่วมมือกับพฤติกรรมดังกล่าว"},
+{s:2,q:"หากผู้แนะนำการลงทุนได้รับทราบข้อมูลงบการเงินของบริษัทจดทะเบียนก่อนวันประกาศต่อตลาดหลักทรัพย์อย่างเป็นทางการจากญาติที่ทำงานอยู่ในบริษัทนั้น ข้อใดคือการปฏิบัติที่ถูกต้อง",c:["รีบแจ้งลูกค้ารายใหญ่ให้ซื้อหุ้นก่อนประกาศงบเพื่อสร้างผลตอบแทนที่ดี","งดเว้นการซื้อขายหลักทรัพย์ของบริษัทดังกล่าวและไม่เปิดเผยข้อมูลนั้นแก่บุคคลใดจนกว่าจะมีการเปิดเผยต่อสาธารณะแล้ว","ซื้อหุ้นในบัญชีของตนเองเพียงเล็กน้อยเพราะถือว่าไม่กระทบต่อตลาดโดยรวม","รอสามวันแล้วค่อยซื้อขายเพราะถือว่าข้อมูลไม่ใหม่แล้ว"],a:1,e:"ข้อมูลงบการเงินที่ยังไม่เปิดเผยต่อสาธารณะถือเป็นข้อมูลภายใน (Inside Information) ผู้แนะนำการลงทุนต้องไม่นำไปใช้ซื้อขายหลักทรัพย์หรือเปิดเผยแก่ผู้อื่นก่อนมีการเปิดเผยต่อสาธารณะอย่างเป็นทางการ ไม่ว่าจะได้รับข้อมูลมาจากช่องทางใดก็ตาม"},
+/* ---------- SECTION 3 : 50 ข้อ ความรู้ผลิตภัณฑ์ตราสาร ---------- */
+{s:3,q:"อันดับความน่าเชื่อถือ (Credit Rating) ระดับ AAA มีความหมายตรงกับข้อใด",c:["ตราสารหนี้ที่อยู่ในสถานะผิดนัดชำระหนี้แล้ว","ตราสารหนี้ที่มีความเสี่ยงด้านเครดิตต่ำที่สุดและมีความสามารถในการชำระหนี้สูงที่สุด","ตราสารหนี้ที่จัดอยู่ในกลุ่มเก็งกำไร (Speculative Grade)","ตราสารหนี้ที่ไม่มีการจัดอันดับความน่าเชื่อถือ"],a:1,e:"AAA เป็นอันดับความน่าเชื่อถือสูงสุด สะท้อนว่าผู้ออกตราสารหนี้มีความสามารถในการชำระดอกเบี้ยและเงินต้นได้ตรงตามกำหนดสูงที่สุด และมีความเสี่ยงด้านเครดิตต่ำที่สุดเมื่อเทียบกับอันดับอื่น"},
+{s:3,q:"ตราสารหนี้ที่มีอันดับความน่าเชื่อถือตั้งแต่ระดับใดขึ้นไปจึงจะถูกจัดอยู่ในกลุ่ม Investment Grade",c:["BBB- ขึ้นไป (หรือเทียบเท่า)","BB+ ขึ้นไป (หรือเทียบเท่า)","B ขึ้นไป (หรือเทียบเท่า)","CCC ขึ้นไป (หรือเทียบเท่า)"],a:0,e:"โดยทั่วไปตราสารหนี้ที่ได้รับการจัดอันดับตั้งแต่ BBB- (หรือเทียบเท่า Baa3) ขึ้นไปจัดเป็นกลุ่มระดับลงทุน (Investment Grade) ส่วนที่ต่ำกว่านั้นคือ BB+ ลงมาจัดเป็นกลุ่มเก็งกำไรหรือผลตอบแทนสูง (Speculative Grade / High Yield)"},
+{s:3,q:"อันดับความน่าเชื่อถือระดับ D สื่อความหมายถึงสถานะใดของผู้ออกตราสารหนี้",c:["มีความสามารถในการชำระหนี้ดีเยี่ยม","อยู่ระหว่างการพิจารณาปรับอันดับความน่าเชื่อถือ","อยู่ในภาวะผิดนัดชำระหนี้ (Default) แล้ว","เป็นตราสารหนี้ที่ออกโดยรัฐบาลเท่านั้น"],a:2,e:"อันดับความน่าเชื่อถือระดับ D หมายถึงผู้ออกตราสารอยู่ในภาวะผิดนัดชำระหนี้ (Default) แล้ว ไม่สามารถชำระดอกเบี้ยหรือเงินต้นได้ตามกำหนด ถือเป็นระดับความเสี่ยงด้านเครดิตสูงสุด"},
+{s:3,q:"ในการเปิดบัญชีซื้อขายหลักทรัพย์แบบมาร์จิ้น (Margin Account) อัตรามาร์จิ้นเริ่มต้น (Initial Margin) หมายถึงข้อใด",c:["สัดส่วนเงินสดขั้นต่ำที่ผู้ลงทุนต้องวางเป็นหลักประกันเมื่อเริ่มต้นซื้อหลักทรัพย์ด้วยเงินกู้ยืม","อัตราดอกเบี้ยที่บริษัทหลักทรัพย์เรียกเก็บจากเงินกู้ยืม","จำนวนหลักทรัพย์สูงสุดที่อนุญาตให้ซื้อขายได้ต่อวัน","ค่าธรรมเนียมการเปิดบัญชีซื้อขายหลักทรัพย์"],a:0,e:"Initial Margin คือสัดส่วนเงินสด (หรือหลักทรัพย์) ขั้นต่ำที่ผู้ลงทุนต้องวางเป็นหลักประกันเมื่อเริ่มต้นซื้อหลักทรัพย์ด้วยเงินกู้ยืมจากบริษัทหลักทรัพย์ ส่วนที่เหลือคือวงเงินที่กู้ยืมมา"},
+{s:3,q:"เมื่อมูลค่าหลักประกันในบัญชีมาร์จิ้นลดลงต่ำกว่าระดับ Maintenance Margin ที่กำหนด บริษัทหลักทรัพย์จะดำเนินการใด",c:["เพิ่มวงเงินให้กู้ยืมแก่ลูกค้าโดยอัตโนมัติ","เรียกให้ลูกค้านำเงินหรือหลักทรัพย์มาวางเพิ่มเป็นหลักประกัน (Margin Call)","ปิดบัญชีของลูกค้าทันทีโดยไม่แจ้งล่วงหน้า","ไม่มีการดำเนินการใดๆ เนื่องจากถือเป็นความเสี่ยงของลูกค้าเอง"],a:1,e:"เมื่อมูลค่าหลักประกันลดลงต่ำกว่า Maintenance Margin บริษัทหลักทรัพย์จะเรียกให้ลูกค้านำเงินสดหรือหลักทรัพย์มาวางเพิ่มเติมให้ครบตามอัตราที่กำหนด เรียกว่า Margin Call เพื่อรักษาระดับหลักประกันให้เพียงพอ"},
+{s:3,q:"หากลูกค้าไม่นำหลักประกันมาวางเพิ่มภายในระยะเวลาที่กำหนดหลังได้รับ Margin Call บริษัทหลักทรัพย์มีสิทธิดำเนินการใด",c:["ขายหลักทรัพย์ในบัญชีของลูกค้าเพื่อลดยอดหนี้ (Force Sell) โดยไม่ต้องรอความยินยอมเพิ่มเติมจากลูกค้า","ยกหนี้ทั้งหมดให้กับลูกค้าโดยไม่มีเงื่อนไข","เพิ่มวงเงินกู้ยืมให้ลูกค้าเพิ่มเติมโดยอัตโนมัติ","ระงับการซื้อขายของหลักทรัพย์ทั้งตลาดทันที"],a:0,e:"หากลูกค้าไม่นำหลักประกันมาวางเพิ่มตามกำหนด บริษัทหลักทรัพย์มีสิทธิบังคับขายหลักทรัพย์ในบัญชีของลูกค้า (Force Sell) เพื่อนำเงินมาลดยอดหนี้คงค้างให้กลับสู่ระดับหลักประกันที่กำหนด"},
+{s:3,q:"ข้อใดคือความแตกต่างที่สำคัญระหว่างใบสำคัญแสดงสิทธิอนุพันธ์ (Derivative Warrant หรือ DW) กับใบสำคัญแสดงสิทธิ (Warrant) ทั่วไป",c:["DW ออกโดยบริษัทหลักทรัพย์หรือสถาบันการเงินที่เป็นบุคคลที่สาม ส่วน Warrant ออกโดยบริษัทเจ้าของหุ้นอ้างอิงเอง","DW และ Warrant ออกโดยหน่วยงานเดียวกันเสมอไม่มีความแตกต่าง","DW ไม่มีวันหมดอายุ ในขณะที่ Warrant มีวันหมดอายุ","DW ซื้อขายได้เฉพาะในตลาดต่างประเทศเท่านั้น"],a:0,e:"DW ออกโดยบริษัทหลักทรัพย์หรือสถาบันการเงินที่เป็นบุคคลที่สามซึ่งไม่ใช่เจ้าของหุ้นอ้างอิง ในขณะที่ Warrant ออกโดยบริษัทเจ้าของหุ้นอ้างอิงเองเพื่อระดมทุนหรือให้สิทธิแก่ผู้ถือหุ้นเดิม"},
+{s:3,q:"เหตุใดการใช้สิทธิของ DW จึงไม่ก่อให้เกิดผลกระทบด้าน Dilution (การลดสัดส่วนการถือหุ้น) ต่อบริษัทเจ้าของหุ้นอ้างอิง ต่างจาก Warrant ที่บริษัทออกเอง",c:["เพราะ DW ชำระราคาเป็นเงินสดหรือส่งมอบหุ้นที่ผู้ออก DW ถือครองอยู่แล้ว โดยไม่มีการออกหุ้นใหม่จากบริษัทเจ้าของหุ้นอ้างอิง","เพราะ DW มีราคาต่ำกว่า Warrant เสมอในทุกกรณี","เพราะ DW ไม่สามารถใช้สิทธิได้จริงเมื่อครบกำหนดอายุ","เพราะผู้ถือ DW ไม่มีสิทธิใช้สิทธิซื้อหุ้นอ้างอิงเลยแม้แต่น้อย"],a:0,e:"เมื่อผู้ถือ DW ใช้สิทธิ ผู้ออก DW จะชำระเป็นเงินสดตามส่วนต่างราคาหรือส่งมอบหุ้นที่ตนถือครองไว้อยู่แล้วสำหรับป้องกันความเสี่ยง จึงไม่มีการออกหุ้นใหม่จากบริษัทเจ้าของหุ้นอ้างอิง ต่างจาก Warrant ที่บริษัทออกหุ้นใหม่เพื่อรองรับการใช้สิทธิซึ่งทำให้เกิด Dilution"},
+{s:3,q:"สมาคมตลาดตราสารหนี้ไทย (ThaiBMA) มีบทบาทหลักตรงกับข้อใด",c:["เป็นผู้ควบคุมดูแลการซื้อขายหุ้นสามัญในตลาดหลักทรัพย์แห่งประเทศไทย","เป็นศูนย์กลางข้อมูลตลาดตราสารหนี้ไทย รวมถึงการเผยแพร่ราคาอ้างอิงและเส้นอัตราผลตอบแทนของตราสารหนี้","เป็นผู้ออกใบอนุญาตผู้แนะนำการลงทุนให้แก่บุคลากรในธุรกิจหลักทรัพย์","เป็นหน่วยงานกำกับดูแลการป้องกันและปราบปรามการฟอกเงิน"],a:1,e:"ThaiBMA (Thai Bond Market Association) ทำหน้าที่เป็นศูนย์กลางข้อมูลตลาดตราสารหนี้ในประเทศไทย เผยแพร่ราคาอ้างอิง เส้นอัตราผลตอบแทน และข้อมูลการซื้อขายตราสารหนี้ เพื่อสนับสนุนความโปร่งใสของตลาดตราสารหนี้"},
+{s:3,q:"เครื่องหมาย XD ที่ปรากฏหน้าชื่อหลักทรัพย์ในตลาดหลักทรัพย์แห่งประเทศไทย มีความหมายตรงกับข้อใด",c:["วันที่ซื้อหุ้นแล้วจะไม่ได้รับสิทธิรับเงินปันผลในรอบที่ประกาศไว้","วันที่ซื้อหุ้นแล้วจะได้รับสิทธิจองซื้อหุ้นเพิ่มทุน","วันที่หลักทรัพย์ถูกห้ามซื้อขายเป็นการชั่วคราว","วันที่บริษัทมีการประชุมผู้ถือหุ้นประจำปี"],a:0,e:"XD (Excluding Dividend) หมายถึงวันที่ซื้อหุ้นแล้วผู้ซื้อจะไม่มีสิทธิได้รับเงินปันผลในรอบการจ่ายที่ประกาศไว้ เนื่องจากรายชื่อผู้ถือหุ้นที่มีสิทธิได้รับเงินปันผลได้ปิดไปก่อนหน้าแล้ว"},
+{s:3,q:"เครื่องหมาย XR หน้าชื่อหลักทรัพย์หมายถึงข้อใด",c:["วันที่ซื้อหุ้นแล้วไม่ได้รับสิทธิจองซื้อหุ้นสามัญเพิ่มทุน (Rights)","วันที่ซื้อหุ้นแล้วได้รับสิทธิรับเงินปันผลพิเศษเพิ่มเติม","วันที่หลักทรัพย์ถูกพักการซื้อขายชั่วคราว","วันสุดท้ายของการซื้อขายใบสำคัญแสดงสิทธิ"],a:0,e:"XR (Excluding Right) หมายถึงวันที่ซื้อหลักทรัพย์แล้วผู้ซื้อจะไม่ได้รับสิทธิในการจองซื้อหุ้นสามัญเพิ่มทุนที่บริษัทเสนอขายให้แก่ผู้ถือหุ้นเดิม เนื่องจากรายชื่อผู้มีสิทธิได้ปิดไปแล้ว"},
+{s:3,q:"เครื่องหมาย XW หน้าชื่อหลักทรัพย์หมายถึงข้อใด",c:["วันที่ซื้อหุ้นแล้วไม่ได้รับสิทธิจองซื้อใบสำคัญแสดงสิทธิ (Warrant) ที่แจกให้แก่ผู้ถือหุ้นเดิม","วันที่หลักทรัพย์เข้าซื้อขายวันแรกในตลาดหลักทรัพย์","วันที่บริษัทประกาศงบการเงินประจำปี","วันที่มีการควบรวมกิจการระหว่างบริษัท"],a:0,e:"XW (Excluding Warrant) หมายถึงวันที่ซื้อหลักทรัพย์แล้วผู้ซื้อจะไม่ได้รับสิทธิในการจองซื้อใบสำคัญแสดงสิทธิ (Warrant) ที่บริษัทจัดสรรให้แก่ผู้ถือหุ้นเดิมตามรายชื่อที่ปิดไปแล้ว"},
+{s:3,q:"เครื่องหมาย H (Halt) และ SP (Suspension) ที่ใช้ในการซื้อขายหลักทรัพย์แตกต่างกันอย่างไร",c:["H คือการห้ามซื้อขายชั่วคราวเพื่อรอข้อมูลสำคัญ มักใช้เวลาสั้นในวันเดียวกัน ส่วน SP คือการห้ามซื้อขายที่อาจใช้เวลานานกว่าจนกว่าประเด็นจะได้รับการชี้แจง","H และ SP มีความหมายเหมือนกันทุกประการไม่มีความแตกต่าง","H ใช้กับตราสารหนี้เท่านั้น ส่วน SP ใช้กับหุ้นสามัญเท่านั้น","H หมายถึงการเพิกถอนหลักทรัพย์ออกจากตลาดอย่างถาวร"],a:0,e:"H (Trading Halt) เป็นการห้ามซื้อขายชั่วคราวในระยะเวลาสั้น มักใช้เมื่อรอสารสนเทศสำคัญที่กำลังจะเผยแพร่ ส่วน SP (Suspension) เป็นการห้ามซื้อขายที่อาจใช้เวลานานกว่า จนกว่าประเด็นที่เป็นเหตุให้พักการซื้อขายจะได้รับการชี้แจงหรือแก้ไข"},
+{s:3,q:"เครื่องหมาย NP (Notice Pending) และ NR (Notice Received) เกี่ยวข้องกับเรื่องใด",c:["สถานะการรอเผยแพร่หรือได้รับแล้วซึ่งสารสนเทศสำคัญจากบริษัทจดทะเบียนที่ตลาดหลักทรัพย์กำหนดให้ต้องชี้แจงเพิ่มเติม","สถานะบัญชีมาร์จิ้นของนักลงทุนแต่ละราย","อัตราดอกเบี้ยเงินกู้ยืมเพื่อซื้อหลักทรัพย์ของบริษัทหลักทรัพย์","ระดับความเสี่ยงของกองทุนรวมตามเกณฑ์ ก.ล.ต."],a:0,e:"NP หมายถึงบริษัทจดทะเบียนยังไม่ได้ชี้แจงสารสนเทศสำคัญตามที่ตลาดหลักทรัพย์ร้องขอ ส่วน NR หมายถึงตลาดหลักทรัพย์ได้รับการชี้แจงสารสนเทศดังกล่าวจากบริษัทแล้ว ทั้งสองเครื่องหมายช่วยให้นักลงทุนทราบสถานะการเปิดเผยข้อมูลของบริษัท"},
+{s:3,q:"ตามเกณฑ์การจัดระดับความเสี่ยงกองทุนรวมของสำนักงาน ก.ล.ต. (8 ระดับ) กองทุนรวมตลาดเงิน (Money Market Fund) จัดอยู่ในระดับความเสี่ยงใด",c:["ระดับ 1 ความเสี่ยงต่ำที่สุด","ระดับ 4 ความเสี่ยงปานกลาง","ระดับ 6 ความเสี่ยงสูง","ระดับ 8 ความเสี่ยงสูงมาก"],a:0,e:"กองทุนรวมตลาดเงินที่ลงทุนในตราสารหนี้ระยะสั้นคุณภาพดีและมีสภาพคล่องสูง จัดอยู่ในระดับความเสี่ยงต่ำที่สุด (ระดับ 1) ตามเกณฑ์การจัดระดับความเสี่ยงกองทุนรวม 8 ระดับของสำนักงาน ก.ล.ต."},
+{s:3,q:"กองทุนรวมประเภทใดที่มักถูกจัดอยู่ในระดับความเสี่ยงสูงสุด (ระดับ 8) ตามเกณฑ์การจัดระดับความเสี่ยง",c:["กองทุนรวมตลาดเงินภายในประเทศ","กองทุนรวมตราสารหนี้ภาครัฐระยะสั้น","กองทุนรวมที่ลงทุนในสินค้าโภคภัณฑ์หรือทรัพย์สินทางเลือกที่มีความผันผวนสูง เช่น กองทุนน้ำมันที่ใช้สัญญาอนุพันธ์","กองทุนรวมผสมแบบระมัดระวังที่เน้นตราสารหนี้เป็นหลัก"],a:2,e:"กองทุนรวมที่ลงทุนในสินทรัพย์ทางเลือกหรือสินค้าโภคภัณฑ์ที่มีความผันผวนสูงมาก เช่น กองทุนน้ำมันหรือทองคำที่ใช้สัญญาซื้อขายล่วงหน้า มักถูกจัดอยู่ในระดับความเสี่ยงสูงสุด (ระดับ 8) ตามเกณฑ์การจัดระดับความเสี่ยง"},
+{s:3,q:"กองทุนรวมตราสารทุน (Equity Fund) ที่ลงทุนในหุ้นสามัญเป็นหลัก โดยทั่วไปจัดอยู่ในระดับความเสี่ยงประมาณใดตามเกณฑ์ 8 ระดับ",c:["ระดับ 1-2","ระดับ 3-4","ระดับ 6","ระดับ 8 เท่านั้น"],a:2,e:"กองทุนรวมตราสารทุนที่ลงทุนในหุ้นสามัญทั่วไปมักจัดอยู่ในระดับความเสี่ยงระดับ 6 ซึ่งสูงกว่ากองทุนตราสารหนี้และกองทุนผสม แต่ยังต่ำกว่ากองทุนทางเลือกหรือสินค้าโภคภัณฑ์ที่มีความผันผวนสูงกว่ามาก"},
+{s:3,q:"ราคาซื้อขายหลักทรัพย์ในตลาดหลักทรัพย์แห่งประเทศไทยในแต่ละวันถูกจำกัดด้วยเพดานราคาสูงสุด (Ceiling) และราคาต่ำสุด (Floor) โดยทั่วไปกำหนดไว้เท่าใดจากราคาปิดวันก่อนหน้า",c:["บวกลบ 10%","บวกลบ 15%","บวกลบ 30%","ไม่มีการจำกัดราคาซื้อขายเลย"],a:2,e:"ตลาดหลักทรัพย์แห่งประเทศไทยกำหนดเพดานและพื้นราคาซื้อขายรายวันไว้ที่บวกลบ 30% จากราคาปิดของวันทำการก่อนหน้า เพื่อป้องกันความผันผวนของราคาที่รุนแรงเกินไปในระหว่างวัน"},
+{s:3,q:"ช่วงราคาซื้อขายขั้นต่ำ (Tick Size) ในการซื้อขายหลักทรัพย์หมายถึงข้อใด",c:["จำนวนหุ้นขั้นต่ำที่ซื้อขายได้ต่อหนึ่งคำสั่ง","ส่วนต่างราคาขั้นต่ำที่อนุญาตให้เสนอซื้อขายเปลี่ยนแปลงได้ในแต่ละระดับราคา ซึ่งจะแปรผันตามระดับราคาของหลักทรัพย์","อัตราค่าธรรมเนียมการซื้อขายขั้นต่ำที่บริษัทหลักทรัพย์เรียกเก็บ","ระยะเวลาขั้นต่ำในการถือครองหลักทรัพย์ก่อนขายได้"],a:1,e:"Tick Size คือส่วนต่างราคาขั้นต่ำที่กำหนดให้เสนอซื้อขายเปลี่ยนแปลงได้ในแต่ละระดับราคา โดยหลักทรัพย์ที่มีราคาสูงกว่าจะมี Tick Size ที่กว้างกว่าหลักทรัพย์ราคาต่ำ เพื่อความเหมาะสมของการเสนอซื้อขาย"},
+{s:3,q:"บัญชีซื้อขายหลักทรัพย์ประเภท Cash Account มีลักษณะการชำระราคาตรงกับข้อใด",c:["ลูกค้าต้องวางเงินสดเต็มจำนวนไว้ล่วงหน้ากับบริษัทหลักทรัพย์ก่อนซื้อขายทุกครั้ง","ลูกค้าชำระราคาค่าซื้อหลักทรัพย์ภายในวันทำการที่กำหนดหลังการซื้อขาย โดยพิจารณาจากฐานะการเงินและวงเงินที่ได้รับอนุมัติไว้ล่วงหน้า","ลูกค้าสามารถกู้ยืมเงินจากบริษัทหลักทรัพย์ได้ตามวงเงินมาร์จิ้นที่กำหนด","ลูกค้าต้องซื้อขายผ่านนายหน้าต่างประเทศเท่านั้น"],a:1,e:"บัญชี Cash Account เป็นบัญชีที่บริษัทหลักทรัพย์อนุมัติวงเงินซื้อขายให้ลูกค้าล่วงหน้าตามฐานะการเงิน โดยลูกค้าต้องชำระราคาค่าซื้อภายในระยะเวลาที่กำหนดหลังวันซื้อขาย (โดยทั่วไป T+2)"},
+{s:3,q:"บัญชีซื้อขายหลักทรัพย์ประเภท Cash Balance แตกต่างจากบัญชี Cash Account ทั่วไปตรงกับข้อใด",c:["ลูกค้าต้องฝากเงินสดไว้ล่วงหน้ากับบริษัทหลักทรัพย์เต็มจำนวนก่อนจึงจะซื้อขายได้ ไม่มีการให้วงเงินเครดิต","ลูกค้าสามารถซื้อขายได้โดยไม่ต้องมีเงินในบัญชีเลย","เป็นบัญชีที่ใช้ได้เฉพาะการซื้อขายตราสารอนุพันธ์เท่านั้น","เป็นบัญชีที่มีอัตราดอกเบี้ยเงินกู้ยืมสูงกว่าบัญชีมาร์จิ้นเสมอ"],a:0,e:"บัญชี Cash Balance กำหนดให้ลูกค้าต้องฝากเงินสดไว้กับบริษัทหลักทรัพย์เต็มจำนวนก่อนซื้อขาย โดยวงเงินซื้อขายจะไม่เกินยอดเงินที่ฝากไว้ ไม่มีการให้วงเงินเครดิตเหมือนบัญชี Cash Account ทั่วไป"},
+{s:3,q:"บัญชี Credit Balance Account หรือบัญชีมาร์จิ้น เหมาะสมกับนักลงทุนลักษณะใด",c:["นักลงทุนที่ต้องการซื้อขายโดยใช้เงินทุนของตนเองทั้งหมดเท่านั้น","นักลงทุนที่ต้องการเพิ่มอำนาจซื้อโดยการกู้ยืมเงินจากบริษัทหลักทรัพย์ และยอมรับความเสี่ยงจากการใช้เลเวอเรจได้","นักลงทุนที่ไม่ต้องการรับความเสี่ยงใดๆ เลยแม้แต่น้อย","นักลงทุนที่ลงทุนเฉพาะกองทุนรวมตลาดเงินเท่านั้น"],a:1,e:"บัญชีมาร์จิ้น (Credit Balance Account) เหมาะกับนักลงทุนที่ต้องการเพิ่มอำนาจซื้อด้วยการกู้ยืมเงินจากบริษัทหลักทรัพย์ ซึ่งจะช่วยขยายผลกำไรได้มากขึ้นในภาวะตลาดขาขึ้น แต่ก็เพิ่มความเสี่ยงจากการขาดทุนที่มากขึ้นเช่นกันหากตลาดปรับตัวลง"},
+{s:3,q:"NVDR (Non-Voting Depositary Receipt) มีลักษณะสำคัญตรงกับข้อใด",c:["เป็นตราสารที่ผู้ถือมีสิทธิออกเสียงในที่ประชุมผู้ถือหุ้นเช่นเดียวกับผู้ถือหุ้นสามัญทุกประการ","เป็นตราสารที่ผู้ถือได้รับสิทธิประโยชน์ทางการเงินเทียบเท่าผู้ถือหุ้นสามัญ เช่น เงินปันผล แต่ไม่มีสิทธิออกเสียงในที่ประชุมผู้ถือหุ้น ช่วยให้นักลงทุนต่างชาติลงทุนได้แม้หุ้นจะเต็มสัดส่วนการถือครองของต่างชาติแล้ว","เป็นตราสารหนี้ระยะสั้นที่ออกโดยธนาคารพาณิชย์เพื่อระดมทุน","เป็นใบสำคัญแสดงสิทธิที่จะซื้อหุ้นเพิ่มทุนในอนาคต"],a:1,e:"NVDR เป็นตราสารที่ออกโดยบริษัทในเครือตลาดหลักทรัพย์แห่งประเทศไทย ผู้ถือ NVDR จะได้รับสิทธิประโยชน์ทางการเงินเทียบเท่าผู้ถือหุ้นสามัญ เช่น เงินปันผลและสิทธิจองซื้อหุ้นเพิ่มทุน แต่ไม่มีสิทธิออกเสียงในที่ประชุมผู้ถือหุ้น ทำให้นักลงทุนต่างชาติลงทุนได้แม้หุ้นตัวนั้นจะเต็มเพดานสัดส่วนการถือครองของต่างชาติแล้ว"},
+{s:3,q:"DR (Depositary Receipt) ที่จดทะเบียนซื้อขายในตลาดหลักทรัพย์แห่งประเทศไทย มีลักษณะตรงกับข้อใด",c:["เป็นตราสารที่ออกโดยบริษัทไทยเพื่อเสนอขายในต่างประเทศเท่านั้น","เป็นตราสารที่แสดงกรรมสิทธิ์หรือสิทธิในหลักทรัพย์ต่างประเทศ ทำให้นักลงทุนไทยสามารถลงทุนในหุ้นต่างประเทศผ่านการซื้อขายในสกุลเงินบาทบนกระดานซื้อขายภายในประเทศ","เป็นตราสารหนี้ที่ค้ำประกันโดยรัฐบาลต่างประเทศเท่านั้น","เป็นสัญญาซื้อขายล่วงหน้าที่อ้างอิงดัชนีต่างประเทศ"],a:1,e:"DR เป็นตราสารที่ผู้ออกในประเทศไทยนำหลักทรัพย์ต่างประเทศมาเป็นสินทรัพย์อ้างอิง ทำให้นักลงทุนไทยสามารถลงทุนในหุ้นต่างประเทศได้สะดวกขึ้นผ่านการซื้อขายในสกุลเงินบาทบนกระดานซื้อขายภายในประเทศโดยไม่ต้องเปิดบัญชีซื้อขายในต่างประเทศ"},
+{s:3,q:"TSR (Transferable Subscription Right) คือข้อใด",c:["ใบแสดงสิทธิในการจองซื้อหุ้นสามัญเพิ่มทุนที่สามารถซื้อขายเปลี่ยนมือในตลาดหลักทรัพย์ได้ก่อนใช้สิทธิ","ตราสารหนี้แปลงสภาพที่ไม่สามารถโอนสิทธิให้ผู้อื่นได้","ใบสำคัญแสดงสิทธิที่ออกให้แก่ผู้บริหารบริษัทเป็นการเฉพาะ","ใบรับฝากหลักทรัพย์ต่างประเทศที่ซื้อขายในประเทศไทย"],a:0,e:"TSR เป็นใบแสดงสิทธิที่บริษัทออกให้ผู้ถือหุ้นเดิมเพื่อจองซื้อหุ้นสามัญเพิ่มทุน โดยมีคุณสมบัติพิเศษคือสามารถซื้อขายเปลี่ยนมือในตลาดหลักทรัพย์ได้ในช่วงเวลาหนึ่งก่อนวันใช้สิทธิ ทำให้ผู้ถือหุ้นที่ไม่ต้องการใช้สิทธิสามารถขายสิทธินี้ให้ผู้อื่นแทนได้"},
+{s:3,q:"ตั๋วเงินคลัง (Treasury Bill) มีลักษณะสำคัญตรงกับข้อใด",c:["เป็นตราสารหนี้ระยะยาวอายุมากกว่า 10 ปี ที่จ่ายดอกเบี้ยแบบคงที่ทุกปี","เป็นตราสารหนี้ภาครัฐระยะสั้น โดยทั่วไปอายุไม่เกิน 1 ปี ที่ออกในราคาส่วนลดจากมูลค่าที่ตราไว้และไม่มีการจ่ายดอกเบี้ยเป็นงวด","เป็นตราสารทุนที่ออกโดยกระทรวงการคลังเพื่อระดมทุน","เป็นตราสารอนุพันธ์ที่อ้างอิงอัตราดอกเบี้ยในตลาด"],a:1,e:"ตั๋วเงินคลังเป็นตราสารหนี้ภาครัฐระยะสั้น อายุโดยทั่วไปไม่เกิน 1 ปี ออกจำหน่ายในราคาต่ำกว่ามูลค่าที่ตราไว้ (ราคาส่วนลด) และไม่มีการจ่ายดอกเบี้ยเป็นงวด ผู้ถือจะได้รับผลตอบแทนจากส่วนต่างระหว่างราคาซื้อกับมูลค่าไถ่ถอนเมื่อครบกำหนด"},
+{s:3,q:"ตั๋วแลกเงิน (Bill of Exchange หรือ B/E) ที่ใช้ในการระดมทุนระยะสั้นของภาคเอกชนมีลักษณะตรงกับข้อใด",c:["เป็นตราสารที่บริษัทออกเพื่อสั่งให้บุคคลหนึ่งจ่ายเงินตามจำนวนที่ระบุแก่ผู้ทรงตั๋วเมื่อถึงกำหนด มักใช้ระดมทุนระยะสั้นแทนการกู้ยืมจากธนาคารพาณิชย์","เป็นหุ้นบุริมสิทธิที่มีสิทธิได้รับเงินปันผลก่อนผู้ถือหุ้นสามัญ","เป็นสัญญาซื้อขายล่วงหน้าที่ซื้อขายในตลาดสัญญาซื้อขายล่วงหน้า","เป็นกองทุนรวมที่ลงทุนในอสังหาริมทรัพย์เป็นหลัก"],a:0,e:"ตั๋วแลกเงินเป็นตราสารทางการเงินที่บริษัทผู้ออกใช้สั่งให้บุคคลหนึ่งจ่ายเงินตามจำนวนที่ระบุแก่ผู้ทรงตั๋วเมื่อถึงกำหนด นิยมใช้เป็นเครื่องมือระดมทุนระยะสั้นของภาคเอกชนแทนการกู้ยืมเงินจากธนาคารพาณิชย์โดยตรง"},
+{s:3,q:"หุ้นกู้แปลงสภาพ (Convertible Debenture) ให้สิทธิแก่ผู้ถือตรงกับข้อใด",c:["สิทธิได้รับดอกเบี้ยสูงกว่าหุ้นกู้ทั่วไปเสมอโดยไม่มีเงื่อนไข","สิทธิในการแปลงสภาพหุ้นกู้เป็นหุ้นสามัญของบริษัทผู้ออกตามอัตราและเงื่อนไขที่กำหนดไว้ล่วงหน้า","สิทธิในการออกเสียงในที่ประชุมผู้ถือหุ้นทันทีที่ถือครองหุ้นกู้","สิทธิเรียกร้องคืนเงินต้นก่อนเจ้าหนี้รายอื่นทุกกรณี"],a:1,e:"หุ้นกู้แปลงสภาพให้สิทธิแก่ผู้ถือในการแปลงสภาพหุ้นกู้เป็นหุ้นสามัญของบริษัทผู้ออกตามอัตราและระยะเวลาที่กำหนดไว้ล่วงหน้า ทำให้ผู้ถือมีโอกาสได้รับประโยชน์จากการเพิ่มขึ้นของราคาหุ้นสามัญนอกเหนือจากดอกเบี้ยที่ได้รับตามปกติ"},
+{s:3,q:"หุ้นกู้ด้อยสิทธิ (Subordinated Debenture) มีลักษณะเด่นตรงกับข้อใด",c:["ผู้ถือมีสิทธิได้รับชำระคืนเงินต้นก่อนเจ้าหนี้สามัญรายอื่นทั้งหมด","ในกรณีบริษัทเลิกกิจการ ผู้ถือหุ้นกู้ด้อยสิทธิจะได้รับชำระคืนหลังเจ้าหนี้สามัญรายอื่น แต่ก่อนผู้ถือหุ้นบุริมสิทธิและหุ้นสามัญ","เป็นตราสารที่ปลอดความเสี่ยงด้านเครดิตโดยสิ้นเชิง","มีลำดับการได้รับชำระหนี้เหมือนกับเงินฝากธนาคารทุกประการ"],a:1,e:"หุ้นกู้ด้อยสิทธิมีลำดับสิทธิเรียกร้องในการชำระหนี้ต่ำกว่าเจ้าหนี้สามัญ (Senior Debt) หากบริษัทเลิกกิจการหรือล้มละลาย ผู้ถือหุ้นกู้ด้อยสิทธิจะได้รับชำระคืนหลังเจ้าหนี้สามัญรายอื่น แต่ยังคงมีสิทธิก่อนผู้ถือหุ้นบุริมสิทธิและผู้ถือหุ้นสามัญ จึงมีความเสี่ยงสูงกว่าหุ้นกู้ทั่วไปและมักให้ผลตอบแทนที่สูงกว่าเป็นการชดเชย"},
+{s:3,q:"ความเสี่ยงด้านอัตราดอกเบี้ย (Interest Rate Risk) ของตราสารหนี้ หมายถึงข้อใด",c:["ความเสี่ยงที่ผู้ออกตราสารหนี้จะผิดนัดชำระหนี้","ความเสี่ยงที่ราคาตราสารหนี้จะเปลี่ยนแปลงในทิศทางตรงกันข้ามกับการเปลี่ยนแปลงของอัตราดอกเบี้ยในตลาด","ความเสี่ยงจากการไม่สามารถขายตราสารหนี้ได้ในราคาที่เหมาะสม","ความเสี่ยงจากการเปลี่ยนแปลงของอัตราแลกเปลี่ยนเงินตราต่างประเทศ"],a:1,e:"ความเสี่ยงด้านอัตราดอกเบี้ยเกิดจากความสัมพันธ์แบบผกผันระหว่างราคาตราสารหนี้กับอัตราดอกเบี้ยในตลาด กล่าวคือเมื่ออัตราดอกเบี้ยตลาดปรับตัวสูงขึ้น ราคาตราสารหนี้ที่ถืออยู่จะปรับตัวลดลง และในทางกลับกัน"},
+{s:3,q:"ความเสี่ยงด้านเครดิต (Credit Risk) ของตราสารหนี้ หมายถึงข้อใด",c:["ความเสี่ยงที่ผู้ออกตราสารหนี้ไม่สามารถชำระดอกเบี้ยหรือเงินต้นคืนได้ตามกำหนด","ความเสี่ยงจากการเปลี่ยนแปลงของอัตราดอกเบี้ยในตลาด","ความเสี่ยงจากการที่ไม่มีผู้ซื้อขายในตลาดรอง","ความเสี่ยงจากการนำดอกเบี้ยที่ได้รับไปลงทุนต่อในอัตราที่ต่ำลง"],a:0,e:"ความเสี่ยงด้านเครดิตคือความเสี่ยงที่ผู้ออกตราสารหนี้จะไม่สามารถชำระดอกเบี้ยหรือเงินต้นคืนได้ตามกำหนด อันดับความน่าเชื่อถือ (Credit Rating) เป็นเครื่องมือหนึ่งที่ช่วยประเมินระดับความเสี่ยงด้านนี้"},
+{s:3,q:"ความเสี่ยงด้านสภาพคล่อง (Liquidity Risk) ของตราสารหนี้ หมายถึงข้อใด",c:["ความเสี่ยงที่ผู้ถือจะไม่สามารถซื้อขายเปลี่ยนมือตราสารหนี้นั้นได้ในเวลาที่ต้องการโดยไม่เสียราคาอย่างมีนัยสำคัญ เนื่องจากปริมาณการซื้อขายในตลาดรองมีน้อย","ความเสี่ยงจากการผิดนัดชำระหนี้ของผู้ออกตราสาร","ความเสี่ยงจากอัตราแลกเปลี่ยนเงินตราต่างประเทศ","ความเสี่ยงจากการเปลี่ยนแปลงนโยบายภาษีของภาครัฐ"],a:0,e:"ความเสี่ยงด้านสภาพคล่องเกี่ยวข้องกับความยากง่ายในการซื้อขายเปลี่ยนมือตราสารหนี้ในตลาดรอง ตราสารหนี้ที่มีปริมาณการซื้อขายน้อยจะมีความเสี่ยงด้านสภาพคล่องสูง ผู้ถืออาจต้องขายในราคาที่ต่ำกว่ามูลค่าที่แท้จริงหากต้องการเงินสดอย่างเร่งด่วน"},
+{s:3,q:"ความเสี่ยงจากการลงทุนต่อ (Reinvestment Risk) เกิดขึ้นในสถานการณ์ใด",c:["เมื่อผู้ออกตราสารหนี้มีอันดับความน่าเชื่อถือปรับลดลง","เมื่อดอกเบี้ยหรือเงินต้นที่ได้รับคืนต้องนำไปลงทุนต่อในช่วงที่อัตราดอกเบี้ยตลาดปรับตัวลดลงกว่าตอนลงทุนครั้งแรก ทำให้ผลตอบแทนโดยรวมลดลง","เมื่อไม่มีผู้ซื้อตราสารหนี้ในตลาดรองเลย","เมื่ออัตราแลกเปลี่ยนเงินตราต่างประเทศผันผวนรุนแรง"],a:1,e:"ความเสี่ยงจากการลงทุนต่อเกิดขึ้นเมื่อกระแสเงินสดที่ได้รับจากตราสารหนี้ เช่น ดอกเบี้ยหรือเงินต้นที่ครบกำหนด ต้องถูกนำไปลงทุนต่อในช่วงที่อัตราดอกเบี้ยตลาดต่ำกว่าตอนลงทุนครั้งแรก ทำให้ผลตอบแทนโดยรวมของพอร์ตลดลงจากที่คาดการณ์ไว้"},
+{s:3,q:"ความเสี่ยงจากการไถ่ถอนก่อนกำหนด (Call Risk) ส่งผลกระทบต่อผู้ถือตราสารหนี้อย่างไร",c:["ทำให้ผู้ถือได้รับดอกเบี้ยสูงขึ้นตลอดอายุตราสารอย่างแน่นอน","ผู้ออกอาจไถ่ถอนตราสารหนี้ก่อนครบกำหนดเมื่ออัตราดอกเบี้ยตลาดลดลง ทำให้ผู้ถือต้องนำเงินไปลงทุนใหม่ในอัตราดอกเบี้ยที่ต่ำกว่าเดิม","ทำให้ผู้ถือไม่สามารถขายตราสารหนี้ได้เลยตลอดอายุ","ไม่มีผลกระทบใดๆ ต่อผู้ถือตราสารหนี้เลย"],a:1,e:"ตราสารหนี้ที่มีเงื่อนไข Call Option ให้สิทธิผู้ออกไถ่ถอนก่อนครบกำหนด ผู้ออกมักใช้สิทธินี้เมื่ออัตราดอกเบี้ยตลาดลดลงเพื่อออกตราสารใหม่ในอัตราดอกเบี้ยที่ต่ำกว่า ซึ่งทำให้ผู้ถือตราสารเดิมต้องนำเงินไปลงทุนใหม่ในภาวะดอกเบี้ยต่ำลง เป็นความเสี่ยงที่ควรพิจารณาก่อนลงทุน"},
+{s:3,q:"ความเสี่ยงด้านเงินเฟ้อ (Inflation Risk หรือ Purchasing Power Risk) ของการลงทุนในตราสารหนี้ที่จ่ายดอกเบี้ยคงที่ หมายถึงข้อใด",c:["ความเสี่ยงที่อำนาจซื้อที่แท้จริงของกระแสเงินสดที่ได้รับจะลดลง หากอัตราเงินเฟ้อสูงกว่าอัตราดอกเบี้ยที่ได้รับ","ความเสี่ยงที่ผู้ออกตราสารจะผิดนัดชำระหนี้","ความเสี่ยงจากอัตราแลกเปลี่ยนเงินตราต่างประเทศ","ความเสี่ยงจากการเปลี่ยนแปลงกฎหมายภาษี"],a:0,e:"ตราสารหนี้ที่จ่ายดอกเบี้ยคงที่มีความเสี่ยงว่าหากอัตราเงินเฟ้อในอนาคตสูงกว่าอัตราดอกเบี้ยที่ได้รับ อำนาจซื้อที่แท้จริงของกระแสเงินสดที่ผู้ถือได้รับจะลดลง แม้จำนวนเงินที่ได้รับเป็นตัวเลขจะเท่าเดิมก็ตาม"},
+{s:3,q:"ข้อใดถูกต้องเกี่ยวกับการซื้อคืนหน่วยลงทุนของกองทุนรวมแบบปิด (Closed-end Fund)",c:["ผู้ถือหน่วยลงทุนสามารถขายคืนหน่วยลงทุนให้บริษัทจัดการได้ทุกวันทำการเช่นเดียวกับกองทุนแบบเปิด","โดยทั่วไปบริษัทจัดการจะไม่รับซื้อคืนหน่วยลงทุนก่อนครบอายุโครงการ ผู้ถือหน่วยที่ต้องการสภาพคล่องต้องขายผ่านตลาดรองหากมีการจดทะเบียนไว้","กองทุนรวมแบบปิดสามารถเพิ่มจำนวนหน่วยลงทุนได้ตลอดเวลาตามความต้องการของตลาด","กองทุนรวมแบบปิดมีความเสี่ยงต่ำกว่ากองทุนแบบเปิดเสมอในทุกกรณี"],a:1,e:"กองทุนรวมแบบปิดมีจำนวนหน่วยลงทุนคงที่ตามที่เสนอขายครั้งแรก และโดยทั่วไปบริษัทจัดการจะไม่รับซื้อคืนหน่วยลงทุนก่อนครบอายุโครงการ ผู้ถือหน่วยลงทุนที่ต้องการสภาพคล่องระหว่างทางต้องขายหน่วยลงทุนผ่านตลาดรองหากกองทุนนั้นมีการจดทะเบียนซื้อขายไว้"},
+{s:3,q:"การจัดประเภทกองทุนรวมตาม นโยบายการลงทุน แบ่งออกเป็นกลุ่มใดบ้างโดยทั่วไป",c:["กองทุนรวมตราสารหนี้ กองทุนรวมตราสารทุน กองทุนรวมผสม และกองทุนรวมทางเลือก","กองทุนรวมแบบเปิดและกองทุนรวมแบบปิดเท่านั้น","กองทุนรวมที่จ่ายเงินปันผลและกองทุนรวมที่ไม่จ่ายเงินปันผลเท่านั้น","กองทุนรวมในประเทศและกองทุนรวมต่างประเทศเท่านั้น"],a:0,e:"การจัดประเภทกองทุนรวมตามนโยบายการลงทุนแบ่งตามประเภทของสินทรัพย์ที่ลงทุนเป็นหลัก ได้แก่ กองทุนรวมตราสารหนี้ กองทุนรวมตราสารทุน กองทุนรวมผสม และกองทุนรวมทางเลือก ซึ่งมีระดับความเสี่ยงและผลตอบแทนคาดหวังแตกต่างกันไป"},
+{s:3,q:"การจัดประเภทกองทุนรวมตาม ประเภททรัพย์สินที่ลงทุน อาจรวมถึงกองทุนประเภทใดต่อไปนี้",c:["กองทุนรวมตลาดเงิน กองทุนรวมพันธบัตรรัฐบาล กองทุนรวมอสังหาริมทรัพย์ กองทุนรวมทองคำ และกองทุน ETF","กองทุนรวมที่แบ่งตามอายุของผู้ถือหน่วยลงทุนเท่านั้น","กองทุนรวมที่แบ่งตามจำนวนผู้จัดการกองทุนที่ดูแลเท่านั้น","กองทุนรวมที่แบ่งตามสกุลเงินที่ใช้ชำระค่าธรรมเนียมเท่านั้น"],a:0,e:"การจัดประเภทกองทุนรวมตามประเภททรัพย์สินที่ลงทุนพิจารณาจากสินทรัพย์อ้างอิงเป็นหลัก เช่น กองทุนรวมตลาดเงิน กองทุนรวมพันธบัตรรัฐบาล กองทุนรวมอสังหาริมทรัพย์ กองทุนรวมทองคำ และกองทุนรวมดัชนี (ETF) ซึ่งแต่ละประเภทมีลักษณะความเสี่ยงเฉพาะตัวตามสินทรัพย์ที่ลงทุน"},
+{s:3,q:"กองทุนรวมที่แบ่งตาม นโยบายการจ่ายเงินปันผล แบ่งออกเป็นข้อใด",c:["กองทุนรวมที่จ่ายเงินปันผลและกองทุนรวมที่ไม่จ่ายเงินปันผล (สะสมมูลค่าไว้ในกองทุน)","กองทุนรวมแบบเปิดและกองทุนรวมแบบปิด","กองทุนรวมในประเทศและกองทุนรวมต่างประเทศ","กองทุนรวมที่ลงทุนในหุ้นและกองทุนรวมที่ลงทุนในตราสารหนี้"],a:0,e:"กองทุนรวมที่มีนโยบายจ่ายเงินปันผลจะกระจายผลกำไรบางส่วนให้ผู้ถือหน่วยลงทุนเป็นระยะ ในขณะที่กองทุนที่ไม่จ่ายเงินปันผลจะสะสมผลกำไรไว้ในกองทุนเพื่อเพิ่มมูลค่าหน่วยลงทุน (NAV) แทน เหมาะกับผู้ลงทุนที่มีเป้าหมายแตกต่างกัน"},
+{s:3,q:"ในวัฏจักรเศรษฐกิจ (Economic Cycle) ช่วง ฟื้นตัว (Recovery) มีลักษณะเด่นตรงกับข้อใด",c:["กิจกรรมทางเศรษฐกิจเริ่มปรับตัวดีขึ้นจากจุดต่ำสุด การผลิตและการจ้างงานเริ่มขยายตัว","เศรษฐกิจเติบโตถึงจุดสูงสุดและเริ่มมีสัญญาณเงินเฟ้อสูงต่อเนื่อง","กิจกรรมทางเศรษฐกิจหดตัวลงต่อเนื่องและอัตราว่างงานปรับตัวสูงขึ้น","เศรษฐกิจไม่มีการเปลี่ยนแปลงใดๆ ในทุกด้าน"],a:0,e:"ช่วงฟื้นตัว (Recovery) เป็นช่วงที่เศรษฐกิจเริ่มปรับตัวดีขึ้นหลังผ่านจุดต่ำสุดของวัฏจักร การผลิต การจ้างงาน และความเชื่อมั่นของผู้บริโภคเริ่มขยายตัว เป็นสัญญาณเริ่มต้นก่อนเข้าสู่ช่วงเติบโตเต็มที่ (Boom/Peak)"},
+{s:3,q:"ช่วง ถดถอย/ตกต่ำ (Recession/Trough) ของวัฏจักรเศรษฐกิจ โดยทั่วไปนักลงทุนมักปรับพอร์ตไปในทิศทางใด",c:["เพิ่มน้ำหนักการลงทุนในหุ้นกลุ่มวัฏจักร (Cyclical) ที่มีความอ่อนไหวต่อเศรษฐกิจสูง","ลดความเสี่ยงโดยเพิ่มน้ำหนักในสินทรัพย์ที่มีความมั่นคง เช่น พันธบัตรรัฐบาลหรือหุ้นกลุ่มปัจจัยพื้นฐานที่จำเป็น (Defensive)","กู้ยืมเงินเพิ่มเพื่อลงทุนในหุ้นเก็งกำไรให้มากที่สุดเท่าที่ทำได้","ไม่มีความจำเป็นต้องปรับเปลี่ยนกลยุทธ์การลงทุนใดๆ เลย"],a:1,e:"ในช่วงเศรษฐกิจถดถอย นักลงทุนมักลดความเสี่ยงในพอร์ตโดยเพิ่มน้ำหนักในสินทรัพย์ที่มั่นคงกว่า เช่น พันธบัตรรัฐบาลหรือหุ้นกลุ่ม Defensive ที่ความต้องการสินค้าไม่ผันผวนตามภาวะเศรษฐกิจมากนัก เช่น สินค้าอุปโภคบริโภคจำเป็นและสาธารณูปโภค"},
+{s:3,q:"วัฏจักรอุตสาหกรรม (Industry Life Cycle) ในช่วง เติบโต (Growth Stage) มีลักษณะตรงกับข้อใด",c:["ยอดขายและกำไรของอุตสาหกรรมขยายตัวในอัตราที่รวดเร็ว มีผู้เล่นใหม่เข้าสู่ตลาดจำนวนมาก","ยอดขายเริ่มลดลงและบริษัทในอุตสาหกรรมทยอยเลิกกิจการ","อุตสาหกรรมมีส่วนแบ่งตลาดคงที่และการแข่งขันด้านราคาสูง กำไรเติบโตช้าลง","อุตสาหกรรมยังไม่มีสินค้าหรือบริการเข้าสู่ตลาดเลย"],a:0,e:"ในช่วงเติบโต (Growth Stage) ของวัฏจักรอุตสาหกรรม ยอดขายและกำไรของธุรกิจในอุตสาหกรรมนั้นขยายตัวอย่างรวดเร็ว และมักดึงดูดให้มีผู้เล่นรายใหม่เข้าสู่ตลาดเพิ่มขึ้นเพื่อแย่งชิงส่วนแบ่งการเติบโตนั้น"},
+{s:3,q:"ในช่วง อิ่มตัว (Maturity Stage) ของวัฏจักรอุตสาหกรรม ลักษณะสำคัญที่นักลงทุนควรพิจารณาคือข้อใด",c:["อัตราการเติบโตของยอดขายเริ่มชะลอตัวลง การแข่งขันสูงขึ้น บริษัทที่แข็งแกร่งด้านต้นทุนและส่วนแบ่งตลาดจะได้เปรียบ","ยอดขายเติบโตแบบก้าวกระโดดอย่างต่อเนื่องไม่มีขีดจำกัด","ยังไม่มีผู้ประกอบการรายใดเข้าสู่ตลาดในช่วงนี้เลย","ไม่มีความเสี่ยงด้านการแข่งขันใดๆ เกิดขึ้นในอุตสาหกรรมเลย"],a:0,e:"ในช่วงอิ่มตัว อัตราการเติบโตของยอดขายในอุตสาหกรรมจะชะลอตัวลงเมื่อเทียบกับช่วงเติบโต การแข่งขันด้านราคาและส่วนแบ่งตลาดจะรุนแรงขึ้น บริษัทที่มีความได้เปรียบด้านต้นทุนและส่วนแบ่งตลาดที่มั่นคงจะสามารถรักษาความสามารถในการทำกำไรได้ดีกว่าคู่แข่ง"},
+{s:3,q:"นักลงทุนไทยที่ต้องการลงทุนในหลักทรัพย์ต่างประเทศสามารถทำได้ผ่านช่องทางใดบ้าง",c:["ลงทุนผ่านกองทุนรวมที่ลงทุนในต่างประเทศ (Fund of Funds หรือ Feeder Fund) หรือลงทุนโดยตรงผ่านบริษัทหลักทรัพย์ที่ได้รับใบอนุญาตให้บริการซื้อขายหลักทรัพย์ต่างประเทศ","ลงทุนได้เฉพาะผ่านการโอนเงินไปยังบัญชีธนาคารต่างประเทศด้วยตนเองเท่านั้น","ไม่สามารถลงทุนในหลักทรัพย์ต่างประเทศได้เลยภายใต้กฎหมายไทย","ต้องขอใบอนุญาตประกอบธุรกิจหลักทรัพย์ด้วยตนเองก่อนจึงจะลงทุนได้"],a:0,e:"นักลงทุนไทยสามารถลงทุนในหลักทรัพย์ต่างประเทศได้ผ่านสองช่องทางหลัก คือลงทุนทางอ้อมผ่านกองทุนรวมที่ลงทุนในต่างประเทศ เช่น Fund of Funds หรือ Feeder Fund หรือลงทุนโดยตรงผ่านบริษัทหลักทรัพย์ที่ได้รับใบอนุญาตให้บริการซื้อขายหลักทรัพย์ต่างประเทศ"},
+{s:3,q:"เครื่องมือป้องกันความเสี่ยงจากอัตราแลกเปลี่ยนประเภทใดที่ให้สิทธิ (ไม่ใช่ข้อผูกพัน) แก่ผู้ถือในการซื้อหรือขายเงินตราต่างประเทศตามราคาที่ตกลงไว้",c:["สัญญาซื้อขายเงินตราต่างประเทศล่วงหน้า (FX Forward)","สิทธิเลือกซื้อขายเงินตราต่างประเทศ (Currency Option)","การกู้ยืมเงินสกุลต่างประเทศเพื่อลงทุน","การฝากเงินสกุลต่างประเทศระยะยาวไว้กับธนาคาร"],a:1,e:"Currency Option ให้สิทธิแก่ผู้ถือ (แต่ไม่ใช่ข้อผูกพัน) ในการซื้อหรือขายเงินตราต่างประเทศตามราคาใช้สิทธิที่กำหนดไว้ ต่างจาก FX Forward ซึ่งเป็นข้อผูกพันที่ทั้งสองฝ่ายต้องปฏิบัติตามสัญญาเมื่อครบกำหนดไม่ว่าตลาดจะเคลื่อนไหวไปทางใด"},
+{s:3,q:"เครื่องมือวิเคราะห์ Porter's Five Forces ใช้ในการวิเคราะห์สิ่งใดเป็นหลัก",c:["ความสามารถในการชำระหนี้ของบริษัทจากงบการเงิน","สภาพการแข่งขันและความน่าดึงดูดของอุตสาหกรรม โดยพิจารณาจากอำนาจต่อรองของผู้ซื้อ ผู้ขาย คู่แข่งรายใหม่ สินค้าทดแทน และการแข่งขันภายในอุตสาหกรรม","แนวโน้มราคาหุ้นในระยะสั้นจากการวิเคราะห์กราฟทางเทคนิค","อัตราเงินเฟ้อและนโยบายการเงินของประเทศ"],a:1,e:"Porter's Five Forces เป็นกรอบการวิเคราะห์สภาพการแข่งขันและความน่าดึงดูดของอุตสาหกรรม โดยพิจารณาจากแรงกดดัน 5 ด้าน ได้แก่ อำนาจต่อรองของผู้ซื้อ อำนาจต่อรองของผู้ขาย ภัยคุกคามจากคู่แข่งรายใหม่ ภัยคุกคามจากสินค้าทดแทน และความรุนแรงของการแข่งขันภายในอุตสาหกรรม"},
+{s:3,q:"เครื่องมือวิเคราะห์ SWOT Analysis ใช้พิจารณาปัจจัยใดของกิจการ",c:["จุดแข็ง จุดอ่อน โอกาส และอุปสรรค ทั้งจากปัจจัยภายในและภายนอกองค์กร","เฉพาะอัตราส่วนทางการเงินของบริษัทเท่านั้น","เฉพาะแนวโน้มราคาหุ้นในอดีตเท่านั้น","เฉพาะโครงสร้างผู้ถือหุ้นของบริษัทเท่านั้น"],a:0,e:"SWOT Analysis เป็นเครื่องมือวิเคราะห์ที่พิจารณาจุดแข็ง (Strengths) และจุดอ่อน (Weaknesses) ซึ่งเป็นปัจจัยภายในองค์กร ร่วมกับโอกาส (Opportunities) และอุปสรรค (Threats) ซึ่งเป็นปัจจัยภายนอกที่ส่งผลต่อธุรกิจ เพื่อใช้ประกอบการวิเคราะห์ศักยภาพของกิจการ"},
+{s:3,q:"ทฤษฎีดาว (Dow Theory) จำแนกแนวโน้มราคาหลักทรัพย์ (Trend) ออกเป็นกี่ประเภทและมีอะไรบ้าง",c:["2 ประเภท ได้แก่ แนวโน้มขาขึ้นและแนวโน้มขาลงเท่านั้น","3 ประเภท ได้แก่ แนวโน้มหลัก (Primary) แนวโน้มรอง (Secondary) และแนวโน้มย่อย (Minor)","4 ประเภท แบ่งตามช่วงเวลาของแต่ละไตรมาส","ไม่มีการจำแนกประเภทแนวโน้มไว้อย่างชัดเจน"],a:1,e:"ตามทฤษฎีดาว แนวโน้มราคาหลักทรัพย์แบ่งออกเป็น 3 ประเภทตามระยะเวลา ได้แก่ แนวโน้มหลัก (Primary Trend) ที่กินเวลานานเป็นปี แนวโน้มรอง (Secondary Trend) ที่เป็นการปรับฐานระยะกลาง และแนวโน้มย่อย (Minor Trend) ที่เป็นความผันผวนระยะสั้นในแต่ละวัน"},
+{s:3,q:"กลยุทธ์การลงทุนแบบ Core-Satellite Approach มีแนวคิดหลักตรงกับข้อใด",c:["แบ่งพอร์ตเป็นส่วนหลัก (Core) ที่ลงทุนระยะยาวเน้นความมั่นคงตามดัชนีอ้างอิง และส่วนเสริม (Satellite) ที่ลงทุนเชิงรุกเพื่อเพิ่มโอกาสผลตอบแทนส่วนเกิน","ลงทุนกระจุกตัวในหุ้นตัวเดียวที่มีปัจจัยพื้นฐานดีที่สุดเพียงตัวเดียว","กู้ยืมเงินทั้งหมดมาลงทุนในสินทรัพย์เสี่ยงสูงเพื่อเพิ่มผลตอบแทน","ไม่มีการวางแผนแบ่งสัดส่วนพอร์ตการลงทุนใดๆ"],a:0,e:"Core-Satellite Approach แบ่งพอร์ตออกเป็นสองส่วน คือส่วนหลัก (Core) ซึ่งเป็นสัดส่วนใหญ่ที่ลงทุนระยะยาวเน้นความมั่นคงและสอดคล้องกับดัชนีอ้างอิง และส่วนเสริม (Satellite) ซึ่งเป็นสัดส่วนย่อยที่ลงทุนเชิงรุกมากขึ้นเพื่อสร้างโอกาสผลตอบแทนส่วนเกินเหนือดัชนี"},
+{s:3,q:"กลยุทธ์การลงทุนแบบถัวเฉลี่ยต้นทุน (Dollar Cost Averaging หรือ DCA) หมายถึงข้อใด",c:["การลงทุนเงินก้อนใหญ่ครั้งเดียวในจังหวะที่คาดว่าราคาต่ำที่สุด","การทยอยลงทุนด้วยจำนวนเงินที่เท่ากันอย่างสม่ำเสมอในแต่ละงวดเวลา โดยไม่คำนึงถึงระดับราคาตลาด ณ ขณะนั้น ซึ่งช่วยลดผลกระทบจากความผันผวนของจังหวะการลงทุน","การกู้ยืมเงินมาลงทุนเพิ่มเติมทุกครั้งที่ราคาตลาดปรับตัวลดลง","การขายหลักทรัพย์ทั้งหมดทันทีที่ราคาปรับตัวลดลงเพียงเล็กน้อย"],a:1,e:"DCA คือการทยอยลงทุนด้วยจำนวนเงินเท่ากันในแต่ละงวดเวลาอย่างสม่ำเสมอ โดยไม่พยายามจับจังหวะตลาด ทำให้ต้นทุนเฉลี่ยของหน่วยลงทุนที่ได้มาถูกกระจายไปตามระดับราคาต่างๆ ช่วยลดความเสี่ยงจากการลงทุนผิดจังหวะเพียงครั้งเดียว"},
+];
+
+var SECMETA = {
+  1:{t:"ส่วนที่ 1 · พื้นฐานการลงทุน + คำนวณ",cls:""},
+  2:{t:"ส่วนที่ 2 · จรรยาบรรณ",cls:"ethics"},
+  3:{t:"ส่วนที่ 3 · ความรู้ผลิตภัณฑ์ตราสาร",cls:""}
+};
+
+/* deep-clone shuffle ของตัวเลือกในแต่ละข้อ เพื่อไม่ให้เฉลยอยู่ตำแหน่งเดิมทุกครั้ง */
+function shuffleChoices(item){
+  var idx = [0,1,2,3];
+  for(var i = idx.length - 1; i > 0; i--){
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = idx[i]; idx[i] = idx[j]; idx[j] = t;
+  }
+  var newChoices = idx.map(function(k){ return item.c[k]; });
+  var newAnswer = idx.indexOf(item.a);
+  return {s:item.s, q:item.q, c:newChoices, a:newAnswer, e:item.e};
+}
+
+var QUESTIONS = RAW.map(function(item){
+  var clone = JSON.parse(JSON.stringify(item));
+  return shuffleChoices(clone);
+});
+
+var TOTAL = QUESTIONS.length; /* 100 */
+var DURATION = 2.5 * 60 * 60; /* seconds */
+var answers = new Array(TOTAL).fill(null);
+var flags = new Array(TOTAL).fill(false);
+var current = 0;
+var timeLeft = DURATION;
+var timerId = null;
+var started = false;
+
+var elStart = document.getElementById('startScreen');
+var elExam = document.getElementById('examScreen');
+var elResult = document.getElementById('resultScreen');
+var elTimer = document.getElementById('timerDisp');
+var elProgFill = document.getElementById('progFill');
+var elProgTxt = document.getElementById('progTxt');
+var elSecBadge = document.getElementById('secBadge');
+var elQNum = document.getElementById('qNum');
+var elQText = document.getElementById('qText');
+var elChoices = document.getElementById('choicesWrap');
+var elPalette = document.getElementById('palette');
+var elModalBack = document.getElementById('modalBack');
+var elModalT = document.getElementById('modalT');
+var elModalP = document.getElementById('modalP');
+var elModalGo = document.getElementById('modalGo');
+var elModalCancel = document.getElementById('modalCancel');
+
+function fmtTime(sec){
+  var h = Math.floor(sec / 3600);
+  var m = Math.floor((sec % 3600) / 60);
+  var s = Math.floor(sec % 60);
+  function p2(n){ return n < 10 ? '0' + n : '' + n; }
+  return p2(h) + ':' + p2(m) + ':' + p2(s);
+}
+
+function tick(){
+  timeLeft--;
+  elTimer.textContent = fmtTime(Math.max(0, timeLeft));
+  elTimer.classList.toggle('low', timeLeft <= 300);
+  if(timeLeft <= 0){
+    clearInterval(timerId);
+    finishExam();
+  }
+}
+
+function renderQuestion(){
+  var item = QUESTIONS[current];
+  var meta = SECMETA[item.s];
+  elSecBadge.textContent = meta.t;
+  elSecBadge.className = 'sec-badge' + (meta.cls ? ' ' + meta.cls : '');
+  elQNum.textContent = 'ข้อ ' + (current + 1) + ' จาก ' + TOTAL;
+  elQText.textContent = item.q;
+  elChoices.innerHTML = '';
+  item.c.forEach(function(choiceText, i){
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'choice' + (answers[current] === i ? ' sel' : '');
+    btn.setAttribute('data-choice-idx', i);
+    btn.setAttribute('role', 'radio');
+    btn.setAttribute('aria-checked', answers[current] === i ? 'true' : 'false');
+    btn.innerHTML = '<span class="c-mark">' + String.fromCharCode(65 + i) + '</span><span>' + choiceText + '</span>';
+    elChoices.appendChild(btn);
+  });
+  elProgFill.style.width = (((current + 1) / TOTAL) * 100) + '%';
+  elProgTxt.textContent = (current + 1) + ' / ' + TOTAL;
+  document.getElementById('btnPrev').disabled = current === 0;
+  document.getElementById('btnNext').textContent = current === TOTAL - 1 ? 'ไปหน้าสรุป' : 'ถัดไป →';
+  document.getElementById('btnFlag').classList.toggle('on', flags[current]);
+  renderPalette();
+}
+
+function renderPalette(){
+  elPalette.innerHTML = '';
+  for(var i = 0; i < TOTAL; i++){
+    var cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'p-cell' +
+      (answers[i] !== null ? ' answered' : '') +
+      (i === current ? ' current' : '') +
+      (flags[i] ? ' flagged' : '');
+    cell.setAttribute('data-goto', i);
+    cell.textContent = i + 1;
+    elPalette.appendChild(cell);
+  }
+}
+
+elChoices.addEventListener('click', function(e){
+  var btn = e.target.closest('[data-choice-idx]');
+  if(!btn) return;
+  answers[current] = parseInt(btn.getAttribute('data-choice-idx'), 10);
+  renderQuestion();
+});
+
+document.getElementById('btnPrev').addEventListener('click', function(){
+  if(current > 0){ current--; renderQuestion(); window.scrollTo({top:0,behavior:'smooth'}); }
+});
+document.getElementById('btnNext').addEventListener('click', function(){
+  if(current < TOTAL - 1){ current++; renderQuestion(); window.scrollTo({top:0,behavior:'smooth'}); }
+  else { openPaletteFull(); }
+});
+document.getElementById('btnFlag').addEventListener('click', function(){
+  flags[current] = !flags[current];
+  renderQuestion();
+});
+document.getElementById('paletteToggle').addEventListener('click', function(){
+  elPalette.classList.toggle('show');
+});
+elPalette.addEventListener('click', function(e){
+  var cell = e.target.closest('[data-goto]');
+  if(!cell) return;
+  current = parseInt(cell.getAttribute('data-goto'), 10);
+  renderQuestion();
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+function openPaletteFull(){
+  elPalette.classList.add('show');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ---- custom modal helper (no window.confirm — LINE in-app browser safe) ---- */
+var modalResolve = null;
+function askModal(title, text){
+  elModalT.textContent = title;
+  elModalP.textContent = text;
+  elModalBack.classList.add('show');
+  return new Promise(function(resolve){ modalResolve = resolve; });
+}
+elModalGo.addEventListener('click', function(){
+  elModalBack.classList.remove('show');
+  if(modalResolve) modalResolve(true);
+});
+elModalCancel.addEventListener('click', function(){
+  elModalBack.classList.remove('show');
+  if(modalResolve) modalResolve(false);
+});
+
+document.getElementById('btnSubmit').addEventListener('click', function(){
+  var unanswered = answers.filter(function(a){ return a === null; }).length;
+  var msg = unanswered > 0
+    ? 'ยังเหลือ ' + unanswered + ' ข้อที่ยังไม่ได้ตอบ ต้องการส่งข้อสอบเลยหรือไม่?'
+    : 'ตอบครบทุกข้อแล้ว ต้องการส่งข้อสอบเลยหรือไม่?';
+  askModal('ยืนยันส่งข้อสอบ', msg).then(function(ok){
+    if(ok){ clearInterval(timerId); finishExam(); }
+  });
+});
+
+document.getElementById('btnStart').addEventListener('click', function(){
+  started = true;
+  elStart.style.display = 'none';
+  elExam.classList.add('show');
+  timerId = setInterval(tick, 1000);
+  renderQuestion();
+});
+
+function finishExam(){
+  elExam.classList.remove('show');
+  elResult.classList.add('show');
+
+  var overallCorrect = 0, ethicsCorrect = 0, ethicsTotal = 0;
+  var reviewHTML = '';
+  QUESTIONS.forEach(function(item, i){
+    var correct = answers[i] === item.a;
+    if(correct) overallCorrect++;
+    if(item.s === 2){ ethicsTotal++; if(correct) ethicsCorrect++; }
+    var userAnsText = answers[i] === null ? '(ไม่ได้ตอบ)' : item.c[answers[i]];
+    reviewHTML +=
+      '<div class="rev-item' + (correct ? '' : ' wrong') + '">' +
+        '<div class="ri-q">ข้อ ' + (i + 1) + '. ' + item.q + '</div>' +
+        '<div class="ri-a ' + (correct ? 'ok' : 'no') + '">คำตอบของคุณ: <b>' + userAnsText + '</b></div>' +
+        (correct ? '' : '<div class="ri-a ok">คำตอบที่ถูกต้อง: <b>' + item.c[item.a] + '</b></div>') +
+        '<div class="ri-e">' + item.e + '</div>' +
+      '</div>';
+  });
+
+  var overallPass = overallCorrect >= 70;
+  var ethicsPass = ethicsCorrect >= 14;
+  var finalPass = overallPass && ethicsPass;
+
+  var verdictBox = document.getElementById('verdictBox');
+  verdictBox.className = 'verdict ' + (finalPass ? 'pass' : 'fail');
+  document.getElementById('verdictT').textContent = finalPass ? '✓ ผ่านเกณฑ์' : '✕ ยังไม่ผ่านเกณฑ์';
+  document.getElementById('verdictS').textContent = finalPass
+    ? 'ทำได้ครบทั้งเกณฑ์คะแนนรวมและเกณฑ์จรรยาบรรณ — ทำได้ดีมาก'
+    : (!overallPass && !ethicsPass
+        ? 'คะแนนรวมและคะแนนจรรยาบรรณยังไม่ถึงเกณฑ์ทั้งคู่'
+        : (!overallPass ? 'คะแนนรวมยังไม่ถึงเกณฑ์ 70 ข้อ' : 'คะแนนจรรยาบรรณยังไม่ถึงเกณฑ์ 14 ข้อ แม้คะแนนรวมจะผ่าน'));
+
+  document.getElementById('rcOverallV').textContent = overallCorrect + ' / 100';
+  document.getElementById('rcOverallV').style.color = overallPass ? 'var(--mint)' : 'var(--red)';
+  document.getElementById('rcOverall').className = 'res-card' + (overallPass ? '' : ' bad');
+
+  document.getElementById('rcEthicsV').textContent = ethicsCorrect + ' / ' + ethicsTotal;
+  document.getElementById('rcEthicsV').style.color = ethicsPass ? 'var(--mint)' : 'var(--red)';
+  document.getElementById('rcEthics').className = 'res-card' + (ethicsPass ? '' : ' bad');
+
+  document.getElementById('rcTime').textContent = fmtTime(DURATION - timeLeft);
+  document.getElementById('reviewList').innerHTML = reviewHTML;
+}
+
+document.getElementById('reviewToggle').addEventListener('click', function(){
+  document.getElementById('reviewList').classList.toggle('show');
+});
+
+document.getElementById('btnRestart').addEventListener('click', function(){
+  askModal('เริ่มทำข้อสอบใหม่', 'คำตอบทั้งหมดในรอบนี้จะถูกล้าง ต้องการเริ่มใหม่หรือไม่?').then(function(ok){
+    if(!ok) return;
+    window.location.reload();
+  });
+});
+
+(function(){
+  var state = { display: '0', prev: null, op: null, resetNext: false };
+  var mainEl = document.getElementById('calcMain');
+  var prevEl = document.getElementById('calcPrev');
+  function render(){
+    if (mainEl) mainEl.textContent = state.display;
+    if (prevEl) prevEl.textContent = (state.prev !== null && state.op) ? (state.prev + ' ' + state.op) : '\u00A0';
+  }
+  function compute(a, b, op){
+    a = parseFloat(a); b = parseFloat(b);
+    var r;
+    if (op === '+') r = a + b;
+    else if (op === '\u2212') r = a - b;
+    else if (op === '\u00D7') r = a * b;
+    else if (op === '\u00F7') r = (b === 0) ? NaN : a / b;
+    else r = b;
+    if (isNaN(r)) return 'Error';
+    r = Math.round(r * 1e10) / 1e10;
+    return r;
+  }
+  var opMap = { div:'\u00F7', mul:'\u00D7', sub:'\u2212', add:'+' };
+  function press(k){
+    if (k >= '0' && k <= '9'){
+      if (state.display === '0' || state.resetNext){ state.display = k; state.resetNext = false; }
+      else if (state.display.length < 14){ state.display += k; }
+      render(); return;
+    }
+    if (k === 'dot'){
+      if (state.resetNext){ state.display = '0.'; state.resetNext = false; }
+      else if (state.display.indexOf('.') === -1){ state.display += '.'; }
+      render(); return;
+    }
+    if (k === 'ac'){ state = { display:'0', prev:null, op:null, resetNext:false }; render(); return; }
+    if (k === 'back'){
+      if (!state.resetNext) state.display = state.display.length > 1 ? state.display.slice(0, -1) : '0';
+      render(); return;
+    }
+    if (k === 'pct'){ state.display = String(parseFloat(state.display) / 100); render(); return; }
+    if (opMap[k]){
+      if (state.op && state.prev !== null && !state.resetNext){
+        state.display = String(compute(state.prev, state.display, state.op));
+      }
+      state.prev = state.display; state.op = opMap[k]; state.resetNext = true;
+      render(); return;
+    }
+    if (k === 'eq'){
+      if (state.op && state.prev !== null){
+        state.display = String(compute(state.prev, state.display, state.op));
+        state.prev = null; state.op = null; state.resetNext = true;
+      }
+      render(); return;
+    }
+  }
+  document.querySelectorAll('.ck').forEach(function(btn){
+    btn.addEventListener('click', function(){ press(btn.getAttribute('data-k')); });
+  });
+  var calcTrig = document.getElementById('calcTrigger');
+  var calcPanel = document.getElementById('calcPanel');
+  var calcClose = document.getElementById('calcPanelClose');
+  function calcOpen(){ if (calcPanel) calcPanel.classList.add('show'); document.body.classList.add('calc-open'); }
+  function calcHide(){ if (calcPanel) calcPanel.classList.remove('show'); document.body.classList.remove('calc-open'); }
+  if (calcTrig) calcTrig.addEventListener('click', function(){
+    if (calcPanel && calcPanel.classList.contains('show')) calcHide(); else calcOpen();
+  });
+  if (calcClose) calcClose.addEventListener('click', calcHide);
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && calcPanel && calcPanel.classList.contains('show')) calcHide();
+  });
+})();
+
+})();
+</script>
+</body>
+</html>
