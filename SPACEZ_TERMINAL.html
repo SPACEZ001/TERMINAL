@@ -48,6 +48,22 @@
     var seen = parseInt(localStorage.getItem('spacez.lastSeen') || '0', 10);
     window.__spzSessionFresh = !!(seen && (Date.now() - seen) <= STALE_MS);
   } catch(e){}
+
+  /* Same-turn fix for a visible flash-on-load: the bare :root palette
+     (no data-theme set) reads as a brighter "lime" look, and the saved
+     theme (void by default) previously wasn't applied until initTheme()
+     ran deep in the body after DOMContentLoaded -- late enough that the
+     browser could paint at least one frame in the untstyled lime look
+     first. Resolving and setting html[data-theme] right here, before
+     <body> is even parsed, means the very first paint already uses the
+     right theme. initTheme() (later in the file) is unchanged and still
+     builds the theme-switch UI; it just re-applies the same value. */
+  try {
+    var THEMES_EARLY = ['void', 'lime', 'light'];
+    var savedTheme = localStorage.getItem('ma.theme') || 'void';
+    if (THEMES_EARLY.indexOf(savedTheme) === -1) savedTheme = 'void';
+    document.documentElement.dataset.theme = savedTheme;
+  } catch(e){}
 })();
 </script>
 <meta name="description" content="SPACEZ TERMINAL — bilingual stock education terminal: beginner guide, market cycle outlook, chart lab, 29 core metrics, 13 chart signals and what-if simulators.">
@@ -1568,7 +1584,8 @@
     color:#080808;background:var(--neon);border-radius:999px;padding:7px 15px;
     cursor:pointer;flex-shrink:0;font-weight:700;white-space:nowrap;transition:box-shadow .2s;
   }
-  .tools-btn:hover{box-shadow:0 0 18px rgba(204,255,0,.4);}
+  .tools-btn{position:relative;overflow:hidden;}
+  .tools-btn:hover{color:#eaf6ff;box-shadow:0 0 18px rgba(159,214,255,.45);}
   .modal-back{
     position:fixed;inset:0;z-index:200;background:rgba(4,4,4,.86);
     backdrop-filter:blur(7px);display:none;padding:24px 16px;overflow-y:auto;
@@ -2074,13 +2091,13 @@
   .nav-links.menu-mode{width:auto;gap:0;}
   .navmenu{position:relative;}
   .nav-trig{
-    display:flex;align-items:center;gap:8px;cursor:pointer;
+    display:flex;align-items:center;gap:8px;cursor:pointer;position:relative;overflow:hidden;
     font-family:var(--mono);font-size:12px;letter-spacing:1.6px;text-transform:uppercase;
     color:var(--grey);background:rgba(255,255,255,.03);
     border:1px solid var(--border-dim);border-radius:999px;padding:7px 15px;
     transition:all .2s;white-space:nowrap;
   }
-  .nav-trig:hover,.navmenu.open .nav-trig{color:var(--neon);border-color:var(--border);}
+  .nav-trig:hover,.navmenu.open .nav-trig{color:#cfe9ff;border-color:var(--border);}
   .nav-burger{display:flex;flex-direction:column;gap:3px;flex-shrink:0;}
   .nav-burger i{display:block;width:13px;height:1.5px;background:currentColor;border-radius:1px;transition:transform .25s,opacity .25s;}
   .navmenu.open .nav-burger i:nth-child(1){transform:translateY(4.5px) rotate(45deg);}
@@ -2225,7 +2242,7 @@
   html[data-theme="light"] .nav-cluster{background:rgba(0,0,0,.035);}
   .nav-cluster .nav-links-wrap{flex:0 0 auto;overflow:visible;}
   .nav-cluster .nav-trig{padding:6px 13px;border-color:transparent;background:transparent;}
-  .nav-cluster .nav-trig:hover,.nav-cluster .navmenu.open .nav-trig{background:rgba(204,255,0,.09);}
+  .nav-cluster .nav-trig:hover,.nav-cluster .navmenu.open .nav-trig{background:rgba(10,14,26,.55);}
   .nav-cluster .tools-btn{padding:6px 13px;font-size:11px;}
   .nav-cluster .theme-switch{margin-left:0;max-width:none;gap:6px;padding:0 4px;}
   .nav-cluster .lang-toggle,.nav-cluster #langToggle{margin:0;flex-shrink:0;}
@@ -3940,12 +3957,12 @@
      ========================================================================= */
   .nv-pair{display:flex;align-items:center;gap:3px;flex-shrink:0;}
   .nv-b{
-    width:30px;height:30px;border-radius:50%;cursor:pointer;
+    width:30px;height:30px;border-radius:50%;cursor:pointer;position:relative;overflow:hidden;
     display:flex;align-items:center;justify-content:center;
     color:var(--grey);background:rgba(255,255,255,.03);
     border:1px solid var(--border-dim);transition:all .18s;padding:0;
   }
-  .nv-b:hover:not(:disabled){color:var(--neon);border-color:var(--border);background:rgba(204,255,0,.09);}
+  .nv-b:hover:not(:disabled){color:#cfe9ff;border-color:var(--border);background:rgba(10,14,26,.55);}
   .nv-b:active:not(:disabled){transform:scale(.9);}
   .nv-b:disabled{opacity:.26;cursor:not-allowed;}
   .nv-ico{font-family:var(--mono);font-size:19px;line-height:1;margin-top:-2px;}
@@ -3969,6 +3986,45 @@
   @media (prefers-reduced-motion: reduce){
     .nv-b:active:not(:disabled){transform:none;}
     .nv-pair.floating{transition:none;}
+  }
+
+
+  /* ============================================================================
+     v22 -- SPACE HOVER/CLICK EFFECT for the persistent nav controls
+     Applies to the hamburger menu (.nav-trig), the back/forward chevrons
+     (.nv-b) and the Tools pill (.tools-btn). Replaces their old plain
+     green hover state with a small starfield fade-in plus, on click, a
+     one-shot diagonal "shooting star" sweep (JS-toggled .spz-spark class,
+     wired once via event delegation near the end of <body> so it works no
+     matter which script built the button). Tools keeps its solid green
+     base fill (per design decision) -- only the hover/click layer changes.
+     ============================================================================ */
+  .nav-trig > *, .nv-b > *, .tools-btn{ position:relative; z-index:1; }
+  .nav-trig::before, .nv-b::before, .tools-btn::before{
+    content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:
+      radial-gradient(1.3px 1.3px at 16% 30%, #fff 55%, transparent),
+      radial-gradient(1.1px 1.1px at 74% 60%, #9fe8ff 55%, transparent),
+      radial-gradient(1px 1px at 40% 78%, #fff 55%, transparent),
+      radial-gradient(1.5px 1.5px at 85% 24%, #8ecbff 55%, transparent),
+      radial-gradient(1px 1px at 58% 14%, #fff 55%, transparent),
+      radial-gradient(1.1px 1.1px at 28% 55%, #9fe8ff 55%, transparent);
+    background-color:#05060d;
+    opacity:0;transition:opacity .3s ease;
+  }
+  .nav-trig:hover::before,.navmenu.open .nav-trig::before,
+  .nv-b:hover:not(:disabled)::before,
+  .tools-btn:hover::before{ opacity:.92;animation:spzTwinkle 2.4s ease-in-out infinite; }
+  @keyframes spzTwinkle{0%,100%{opacity:.92}50%{opacity:.62}}
+  .spz-spark::after{
+    content:'';position:absolute;top:-45%;left:-65%;width:20px;height:190%;z-index:2;
+    background:linear-gradient(115deg,transparent 0%,rgba(255,255,255,.9) 45%,rgba(159,214,255,.95) 58%,transparent 100%);
+    transform:rotate(18deg);pointer-events:none;animation:spzSpark .6s ease-out;
+  }
+  @keyframes spzSpark{0%{left:-65%;opacity:0}18%{opacity:1}100%{left:135%;opacity:0}}
+  @media (prefers-reduced-motion: reduce){
+    .nav-trig::before,.nv-b::before,.tools-btn::before{animation:none;}
+    .spz-spark::after{animation:none;display:none;}
   }
 
 
@@ -22982,7 +23038,7 @@ var GM = {
      Everything degrades gracefully back to the built-in static numbers.
      ============================================================ -->
 <style>
-  #spzLiveBar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 20px;
+  #spzLiveBar{position:relative;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 20px;
     background:rgba(8,8,8,0.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
     border-bottom:1px solid var(--border-dim);
     font-family:var(--mono);font-size:11px;letter-spacing:.4px;color:var(--grey);}
@@ -23036,7 +23092,34 @@ var GM = {
     #spzLiveBar.is-loading #spzRefreshBtn .lb-spin{animation:none;}
     #spzLiveBar .spz-dot{animation:none;}
   }
-  #spzLiveBar .spz-spacer{flex:1 1 auto;}
+  #spzLiveBar .lb-status{cursor:pointer;}
+  #spzLiveBar .lb-more{display:inline-block;opacity:.6;font-size:9px;margin-left:1px;transition:transform .2s ease;}
+  #spzLiveBar:hover .lb-more,#spzLiveBar:focus-within .lb-more,#spzLiveBar.lb-pop-open .lb-more{transform:rotate(180deg);opacity:.9;}
+
+  /* ---------- collapsible detail popup -----------------------------------
+     The long quotes/funda/market-clock readout plus the Refresh/API-key
+     buttons used to sit inline and eat a full-width row. They now live in
+     a floating card that only appears on hover/focus/tap, so by default
+     the bar is just the single compact status pill (LIVE / SYNCING / สด
+     etc). ------------------------------------------------------------- */
+  #spzLiveBar .lb-pop{
+    position:absolute;top:100%;left:20px;margin-top:6px;z-index:80;
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    max-width:min(720px,calc(100vw - 40px));
+    padding:12px 16px;border-radius:14px;
+    background:rgba(8,8,8,.96);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    border:1px solid var(--border-dim);box-shadow:0 18px 46px rgba(0,0,0,.55);
+    opacity:0;visibility:hidden;transform:translateY(-4px);pointer-events:none;
+    transition:opacity .18s ease,transform .18s ease,visibility 0s linear .18s;
+  }
+  html[data-theme="light"] #spzLiveBar .lb-pop{background:rgba(246,247,243,.98);}
+  #spzLiveBar:hover .lb-pop,#spzLiveBar:focus-within .lb-pop,#spzLiveBar.lb-pop-open .lb-pop{
+    opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto;
+    transition:opacity .18s ease,transform .18s ease;
+  }
+  @media(max-width:900px){
+    #spzLiveBar .lb-pop{left:10px;right:10px;max-width:none;}
+  }
   #spzKeyPanel{display:none;padding:14px 20px 16px;background:rgba(8,8,8,0.94);
     backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
     border-bottom:1px solid var(--border-dim);font-family:var(--mono);font-size:11.5px;color:var(--grey);}
@@ -23065,7 +23148,6 @@ var GM = {
   html[data-theme="light"] #spzLiveBar .spz-state{color:#12141c;}
   html[data-theme="light"] #spzKeyPanel input{background:var(--panel);color:#12141c;}
   html[data-theme="light"] .stock-card .spz-px{color:#12141c;}
-  #spzLiveBar .spz-short{display:none;opacity:.8;}
   /* freshness tags — one visual language for "how fresh is this number".
      Oval frame with a faint tinted fill, rather than a plain rectangle, and
      pinned to the right end of whatever header row it lives in so it reads
@@ -23091,8 +23173,6 @@ var GM = {
   .spz-legend span.spz-lg{display:inline-flex;align-items:center;gap:7px;}
   @media(max-width:900px){
     #spzLiveBar{padding:7px 14px;font-size:10px;gap:8px;flex-wrap:nowrap;}
-    #spzLiveBar .spz-src{display:none;}          /* keep the bar one row tall */
-    #spzLiveBar .spz-short{display:inline;}
     #spzKeyPanel{padding:12px 14px;}
   }
 </style>
@@ -23549,12 +23629,12 @@ var GM = {
     bar = document.createElement('div');
     bar.id = 'spzLiveBar';
     bar.innerHTML =
-      '<span class="lb-chip lb-status"><span class="spz-dot"></span><span class="spz-state">…</span></span>' +
-      '<span class="lb-chip spz-src" id="spzSrc"></span>' +
-      '<span class="spz-short"></span>' +
-      '<span class="spz-spacer"></span>' +
-      '<button type="button" id="spzRefreshBtn"><span class="lb-spin">⟳</span><span class="lb-lbl"></span></button>' +
-      '<button type="button" id="spzKeyBtn"><span class="lb-ic">⚙</span><span class="lb-lbl"></span></button>';
+      '<span class="lb-chip lb-status" tabindex="0"><span class="spz-dot"></span><span class="spz-state">…</span><span class="lb-more">▾</span></span>' +
+      '<div class="lb-pop">' +
+        '<span class="lb-chip spz-src" id="spzSrc"></span>' +
+        '<button type="button" id="spzRefreshBtn"><span class="lb-spin">⟳</span><span class="lb-lbl"></span></button>' +
+        '<button type="button" id="spzKeyBtn"><span class="lb-ic">⚙</span><span class="lb-lbl"></span></button>' +
+      '</div>';
 
     panel = document.createElement('div');
     panel.id = 'spzKeyPanel';
@@ -23604,6 +23684,26 @@ var GM = {
       msgEl.className = 'spz-kp-msg'; msgEl.textContent = S('cleared');
       refreshAll(true);
     });
+
+    /* the popup opens on hover/focus via CSS alone (desktop) -- this adds
+       a tap-to-toggle path for touch devices, where :hover never fires,
+       plus click-outside-to-close so a tap elsewhere dismisses it. */
+    var statusChip = bar.querySelector('.lb-status');
+    if (statusChip) {
+      statusChip.addEventListener('click', function(e){
+        e.stopPropagation();
+        bar.classList.toggle('lb-pop-open');
+      });
+      statusChip.addEventListener('keydown', function(e){
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); statusChip.click(); }
+      });
+    }
+    document.addEventListener('click', function(e){
+      if (bar && bar.classList.contains('lb-pop-open') && !bar.contains(e.target)) {
+        bar.classList.remove('lb-pop-open');
+      }
+    });
+
     paintBar();
   }
 
@@ -23697,7 +23797,8 @@ var GM = {
 
   function paintBar(){
     if (!bar) return;
-    bar.className = 'is-' + (state.mode === 'loading' ? 'loading' : state.mode === 'live' ? 'live' : 'static');
+    bar.className = 'is-' + (state.mode === 'loading' ? 'loading' : state.mode === 'live' ? 'live' : 'static') +
+      (bar.classList.contains('lb-pop-open') ? ' lb-pop-open' : '');
     bar.querySelector('.spz-state').textContent =
       state.mode === 'loading' ? S('loading') : state.mode === 'live' ? S('live') : S('stat');
     var ms = marketStatus();
@@ -31043,6 +31144,19 @@ var GM = {
   .sysx-wave.bad i{background:#ff5c5c;animation-play-state:paused;transform:scaleY(.3);opacity:.4;}
   @media (prefers-reduced-motion: reduce){.sysx-wave i{animation:none;}}
   .sysx-wave-lbl{font-size:10.5px;color:var(--grey-dim);margin-top:4px;display:block;}
+  .sysx-summary{display:flex;align-items:center;gap:10px;margin:0 0 16px;}
+  .sysx-sumbar{flex:1;height:6px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;display:flex;}
+  .sysx-sumbar span{display:block;height:100%;}
+  .sysx-sumbar .seg-ok{background:var(--neon-2,#7CFFB2);}
+  .sysx-sumbar .seg-warn{background:#ffd24a;}
+  .sysx-sumbar .seg-bad{background:#ff5c5c;}
+  .sysx-sumtxt{font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);white-space:nowrap;flex:none;}
+  .sysx-group{margin-top:16px;}
+  .sysx-group:first-of-type{margin-top:0;}
+  .sysx-group-h{display:flex;align-items:center;gap:7px;margin-bottom:8px;}
+  .sysx-group-h svg{width:13px;height:13px;flex:none;opacity:.75;color:var(--grey-dim);}
+  .sysx-group-lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--grey-dim);white-space:nowrap;}
+  .sysx-group-line{flex:1;height:1px;background:var(--border-dim);}
   @media(max-width:480px){.sysx-box{padding:18px 16px 20px;}}
 </style>
 <script>
@@ -31063,7 +31177,8 @@ var GM = {
          online:'Online', offline:'Offline', conn:'Connection',
          localT:'Your device time', session:'This session', sessionD:'time since you opened this page',
          bubble:'Bubble Radar data', bubbleOk:'Updated', bubbleWarn:'Pending first run',
-         bubbleNextToday:'next update today', bubbleNextTomorrow:'next update tomorrow' },
+         bubbleNextToday:'next update today', bubbleNextTomorrow:'next update tomorrow',
+         sumNormal:'normal', grpFeeds:'Data feeds', grpMarkets:'Markets', grpSession:'Session & device' },
     th:{ eb:'สถานะระบบ', note:'แต่ละส่วนของหน้านี้ตอนนี้กำลังทำงานยังไงบ้าง — ไม่ใช่สัญญาณลงทุน',
          quotes:'ระบบราคาหุ้น', quotesOk:'สด', quotesLoad:'กำลังซิงก์…', quotesWarn:'ใช้ค่าอ้างอิง — ยังไม่ต่อราคาสด',
          funda:'ข้อมูลพื้นฐานบริษัท', fundaOk:'ซิงก์แล้ว', fundaWarn:'ยังไม่โหลด',
@@ -31077,7 +31192,8 @@ var GM = {
          online:'ออนไลน์', offline:'ออฟไลน์', conn:'การเชื่อมต่อ',
          localT:'เวลาที่เครื่องคุณ', session:'เซสชันนี้', sessionD:'เวลาที่คุณเปิดหน้านี้มา',
          bubble:'ข้อมูลเรดาร์ฟองสบู่', bubbleOk:'อัปเดตแล้ว', bubbleWarn:'รอรอบแรก',
-         bubbleNextToday:'อัปเดตรอบถัดไปวันนี้', bubbleNextTomorrow:'อัปเดตรอบถัดไปพรุ่งนี้' }
+         bubbleNextToday:'อัปเดตรอบถัดไปวันนี้', bubbleNextTomorrow:'อัปเดตรอบถัดไปพรุ่งนี้',
+         sumNormal:'ปกติ', grpFeeds:'ฟีดข้อมูล', grpMarkets:'ตลาดหุ้น', grpSession:'เซสชันและอุปกรณ์' }
   };
   var WD_EN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var MO_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -31158,6 +31274,16 @@ var GM = {
       (detail ? '<span class="sysx-d">' + esc(detail) + '</span>' : '') +
       (extraHTML || '') +
       '</span></div>';
+  }
+
+  /* small line-icons for the three modal sections below -- plain <path>
+     strokes only (no emoji), matching the site's other de-emoji'd icon
+     work: bar-signal for feeds, a globe for markets, a clock for session. */
+  var ICO_FEED = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M2 12v-2M5.5 12V7M9 12V4M12.5 12V2"/></svg>';
+  var ICO_MKT  = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M8 1.3a6.7 6.7 0 100 13.4 6.7 6.7 0 000-13.4z"/><path d="M1.5 8h13M8 1.3c1.8 1.8 2.8 4.2 2.8 6.7s-1 4.9-2.8 6.7c-1.8-1.8-2.8-4.2-2.8-6.7s1-4.9 2.8-6.7z"/></svg>';
+  var ICO_SESS = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13z"/><path d="M8 4.5V8l3 1.8"/></svg>';
+  function groupHead(icon, label){
+    return '<div class="sysx-group-h">' + icon + '<span class="sysx-group-lbl">' + esc(label) + '</span><span class="sysx-group-line"></span></div>';
   }
 
   /* Bubble Radar's once-a-day CAPE/Buffett/margin-debt fetch, read the
@@ -31260,23 +31386,57 @@ var GM = {
       return row(info.open ? 'mkt' : '', label, val, det);
     }
 
+    /* overall-health summary bar: how many of the 4 real health signals
+       (price feed, fundamentals, auto-sync, bubble radar) are currently
+       ok/warn/bad -- market-open state and device/session info aren't
+       "health", so they're excluded from this score. */
+    var bubCls = 'warn';
+    try {
+      var bd = window.__SPZ_BUBBLE && window.__SPZ_BUBBLE.data && window.__SPZ_BUBBLE.data();
+      var bHas = !!(bd && ((bd.cape && bd.cape.value != null) ||
+        (bd.margin_debt && bd.margin_debt.yoy_pct != null) || (bd.buffett && bd.buffett.value_pct != null)));
+      bubCls = bHas ? 'ok' : 'warn';
+    } catch(e){}
+    var healthCls = [qCls, fCls, sCls, bubCls];
+    var okN = 0, warnN = 0, badN = 0;
+    healthCls.forEach(function(c){ if(c === 'ok') okN++; else if(c === 'bad') badN++; else warnN++; });
+    var totalN = healthCls.length;
+    var pct = function(n){ return totalN ? Math.round(n / totalN * 100) : 0; };
+    var summaryHTML =
+      '<div class="sysx-summary"><div class="sysx-sumbar">' +
+      '<span class="seg-ok" style="width:' + pct(okN) + '%"></span>' +
+      '<span class="seg-warn" style="width:' + pct(warnN) + '%"></span>' +
+      '<span class="seg-bad" style="width:' + pct(badN) + '%"></span>' +
+      '</div><span class="sysx-sumtxt">' + okN + '/' + totalN + ' ' + esc(S('sumNormal')) + '</span></div>';
+
     var html =
       '<div class="sysx-top"><span class="sysx-eb">' + esc(S('eb')) + '</span>' +
       '<button type="button" class="sysx-x" aria-label="' + esc(S('close')) + '">&times;</button></div>' +
       '<div class="sysx-note">' + esc(S('note')) + '</div>' +
+      summaryHTML +
+      '<div class="sysx-group">' +
+      groupHead(ICO_FEED, S('grpFeeds')) +
       '<div class="sysx-list">' +
       row(qCls, S('quotes'), qVal, qDet) +
       row(fCls, S('funda'), fVal, fDet) +
       row(sCls, S('sync'), sVal, sDet, waveHTML, true) +
       bubbleRowHTML() +
+      '</div></div>' +
+      '<div class="sysx-group">' +
+      groupHead(ICO_MKT, S('grpMarkets')) +
+      '<div class="sysx-list">' +
       mktRow(S('setMkt'), sess.set) +
       mktRow(S('usMkt'), sess.us) +
       row('info', S('clock'), sess.bkkClock, sess.bkkDate) +
+      '</div></div>' +
+      '<div class="sysx-group">' +
+      groupHead(ICO_SESS, S('grpSession')) +
+      '<div class="sysx-list">' +
       row(tickerCount !== null ? 'info' : 'warn', S('tickers'), tickerCount !== null ? String(tickerCount) : '—', S('tickersD')) +
       row(isOnline ? 'ok' : 'bad', S('conn'), isOnline ? S('online') : S('offline'), null) +
       row('info', S('localT'), localClock, localDate) +
       row('info', S('session'), formatDur(sessionMin), S('sessionD')) +
-      '</div>';
+      '</div></div>';
     root.innerHTML = html;
     var xBtn = root.querySelector('.sysx-x');
     if(xBtn) xBtn.addEventListener('click', closePop);
@@ -39833,6 +39993,25 @@ var GM = {
   document.addEventListener('visibilitychange', function(){
     if (document.visibilityState === 'visible') check();
   });
+})();
+</script>
+<script>
+/* ---------- nav space-fx: one-shot "shooting star" spark on click ----------
+   Event delegation on document, so it works for the hamburger menu, the
+   back/forward chevrons and the Tools pill no matter which of the several
+   scripts built that particular button or when. Purely cosmetic -- never
+   calls preventDefault/stopPropagation, so every button's real click
+   handler still runs normally. */
+(function(){
+  'use strict';
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('.nav-trig, .nv-b, .tools-btn');
+    if (!btn || btn.disabled) return;
+    btn.classList.remove('spz-spark');
+    void btn.offsetWidth;
+    btn.classList.add('spz-spark');
+    setTimeout(function(){ btn.classList.remove('spz-spark'); }, 650);
+  }, true);
 })();
 </script>
 </body>
