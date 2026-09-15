@@ -1095,9 +1095,16 @@
 #spzUpdateToast{
   position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(140%);
   z-index:900;display:flex;align-items:center;gap:14px;
-  background:rgba(9,10,8,.97);backdrop-filter:blur(14px);
-  border:1px solid var(--border);border-radius:999px;padding:12px 12px 12px 20px;
-  box-shadow:0 20px 50px rgba(0,0,0,.6);
+  background:
+    radial-gradient(1.3px 1.3px at 10% 26%, #fff 60%, transparent),
+    radial-gradient(1.1px 1.1px at 32% 70%, #9fe8ff 60%, transparent),
+    radial-gradient(1.5px 1.5px at 56% 18%, #fff 60%, transparent),
+    radial-gradient(1.1px 1.1px at 76% 58%, #8ecbff 60%, transparent),
+    radial-gradient(1.3px 1.3px at 92% 32%, #fff 60%, transparent),
+    rgba(9,10,8,.97);
+  backdrop-filter:blur(14px);
+  border:1px solid rgba(159,214,255,.32);border-radius:999px;padding:12px 12px 12px 20px;
+  box-shadow:0 20px 50px rgba(0,0,0,.6), 0 0 22px rgba(159,214,255,.14);
   transition:transform .4s cubic-bezier(.2,.9,.25,1);
   font-family:var(--mono);font-size:12.5px;color:var(--white);max-width:92vw;
 }
@@ -1106,15 +1113,21 @@
   box-shadow:0 0 8px var(--neon-2);flex-shrink:0;animation:sutPulse 1.6s ease-in-out infinite;}
 @keyframes sutPulse{0%,100%{opacity:1;}50%{opacity:.35;}}
 #spzUpdateToast button{font-family:var(--mono);cursor:pointer;white-space:nowrap;flex-shrink:0;}
-#spzUpdateRefresh{background:var(--neon);color:#080808;font-size:12px;font-weight:700;
-  border:none;border-radius:999px;padding:8px 16px;}
-#spzUpdateRefresh:hover{filter:brightness(1.1);}
+#spzUpdateRefresh{position:relative;overflow:hidden;background:#05060d;color:#eaf6ff;font-size:12px;font-weight:700;
+  border:1px solid rgba(159,214,255,.55);border-radius:999px;padding:8px 16px;
+  box-shadow:0 0 14px rgba(159,214,255,.25);}
+#spzUpdateRefresh:hover{filter:brightness(1.15);box-shadow:0 0 20px rgba(159,214,255,.4);}
+#spzUpdateRefresh::after{
+  content:'';position:absolute;top:-40%;left:-60%;width:38%;height:180%;pointer-events:none;
+  background:linear-gradient(100deg, transparent, rgba(255,255,255,.55) 45%, rgba(159,214,255,.35) 58%, transparent);
+  transform:skewX(-16deg);animation:toolsSweep 3.6s ease-in-out infinite;
+}
 #spzUpdateDismiss{background:none;border:none;color:var(--grey);font-size:17px;line-height:1;padding:4px 6px;}
 #spzUpdateDismiss:hover{color:var(--white);}
 @media(max-width:520px){
   #spzUpdateToast{flex-wrap:wrap;justify-content:center;text-align:center;padding:14px 18px;bottom:14px;}
 }
-@media(prefers-reduced-motion:reduce){#spzUpdateToast{transition:none;}.sut-dot{animation:none;}}
+@media(prefers-reduced-motion:reduce){#spzUpdateToast{transition:none;}.sut-dot{animation:none;}#spzUpdateRefresh::after{animation:none;display:none;}}
 </style>
 <style>
 /* ============================================================
@@ -4001,7 +4014,7 @@
      ============================================================================ */
   .nav-trig > *, .nv-b > *, .tools-btn{ position:relative; z-index:1; }
   .nav-trig::before, .nv-b::before, .tools-btn::before{
-    content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;
     background:
       radial-gradient(1.3px 1.3px at 16% 30%, #fff 55%, transparent),
       radial-gradient(1.1px 1.1px at 74% 60%, #9fe8ff 55%, transparent),
@@ -4014,17 +4027,31 @@
   }
   .nav-trig:hover::before,.navmenu.open .nav-trig::before,
   .nv-b:hover:not(:disabled)::before,
-  .tools-btn:hover::before{ opacity:.92;animation:spzTwinkle 2.4s ease-in-out infinite; }
-  @keyframes spzTwinkle{0%,100%{opacity:.92}50%{opacity:.62}}
+  .tools-btn:hover::before{ opacity:.92; }
   .spz-spark::after{
     content:'';position:absolute;top:-45%;left:-65%;width:20px;height:190%;z-index:2;
     background:linear-gradient(115deg,transparent 0%,rgba(255,255,255,.9) 45%,rgba(159,214,255,.95) 58%,transparent 100%);
     transform:rotate(18deg);pointer-events:none;animation:spzSpark .6s ease-out;
   }
   @keyframes spzSpark{0%{left:-65%;opacity:0}18%{opacity:1}100%{left:135%;opacity:0}}
+
+  /* Tools keeps its solid accent fill; this adds a slow, continuous
+     light-sweep across it (independent of hover) so the button always
+     has a bit of life to it -- borrows the exact technique used for the
+     membership pricing cards' .mem-sweep beam. Tools is excluded from
+     the one-shot .spz-spark click effect (see the click handler near
+     the end of <body>) since this replaces it for that one button. */
+  .tools-btn::after{
+    content:'';position:absolute;top:-40%;left:-60%;width:38%;height:180%;z-index:2;pointer-events:none;
+    background:linear-gradient(100deg, transparent, rgba(255,255,255,.55) 45%, rgba(159,214,255,.4) 58%, transparent);
+    transform:skewX(-16deg);
+    animation:toolsSweep 4.4s ease-in-out infinite;
+  }
+  @keyframes toolsSweep{0%{left:-60%;}35%{left:130%;}100%{left:130%;}}
   @media (prefers-reduced-motion: reduce){
     .nav-trig::before,.nv-b::before,.tools-btn::before{animation:none;}
     .spz-spark::after{animation:none;display:none;}
+    .tools-btn::after{animation:none;display:none;}
   }
 
 
@@ -23039,10 +23066,9 @@ var GM = {
      ============================================================ -->
 <style>
   #spzLiveBar{position:relative;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 20px;
-    background:rgba(8,8,8,0.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-    border-bottom:1px solid var(--border-dim);
+    background:transparent;
     font-family:var(--mono);font-size:11px;letter-spacing:.4px;color:var(--grey);}
-  html[data-theme="light"] #spzLiveBar{background:rgba(246,247,243,.9);}
+  html[data-theme="light"] #spzLiveBar{background:transparent;}
 
   /* ---------- status chips — small pills instead of one long text line ---------- */
   #spzLiveBar .lb-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 8px;
@@ -23143,7 +23169,6 @@ var GM = {
   .sc-metric.spz-fresh b{color:var(--neon,#cf0);}
   .sc-metric b.spz-na{color:var(--grey-dim)!important;font-size:11px;letter-spacing:.5px;cursor:help;
     border-bottom:1px dotted currentColor;}
-  html[data-theme="light"] #spzLiveBar{background:rgba(240,241,236,.9);}
   html[data-theme="light"] #spzKeyPanel{background:rgba(246,247,243,.96);}
   html[data-theme="light"] #spzLiveBar .spz-state{color:#12141c;}
   html[data-theme="light"] #spzKeyPanel input{background:var(--panel);color:#12141c;}
@@ -31113,13 +31138,14 @@ var GM = {
   }
   .sysx-x:hover{color:var(--red);border-color:var(--red);}
   .sysx-note{font-size:12px;color:var(--grey-dim);line-height:1.5;margin-bottom:16px;}
-  .sysx-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;}
+  .sysx-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
   .sysx-row.wide{grid-column:1/-1;}
   .sysx-row{display:flex;align-items:flex-start;gap:11px;padding:11px 13px;
     border:1px solid var(--border-dim);border-radius:12px;background:rgba(255,255,255,.02);}
   html[data-theme="light"] .sysx-row{background:rgba(18,20,28,.025);}
   .sysx-dot{width:12px;height:12px;border-radius:50%;flex:none;margin-top:4px;background:var(--grey-dim);}
-  .sysx-dot.ok{background:var(--neon-2,#7CFFB2);box-shadow:0 0 7px rgba(124,255,178,.55);}
+  .sysx-dot.ok{background:var(--neon-2,#7CFFB2);box-shadow:0 0 7px rgba(124,255,178,.55);animation:sysxBreathe 2.6s ease-in-out infinite;}
+  @keyframes sysxBreathe{0%,100%{box-shadow:0 0 7px rgba(124,255,178,.55);opacity:1;}50%{box-shadow:0 0 13px rgba(124,255,178,.85);opacity:.86;}}
   .sysx-dot.warn{background:#ffd24a;box-shadow:0 0 7px rgba(255,210,74,.5);}
   .sysx-dot.bad{background:#ff5c5c;box-shadow:0 0 7px rgba(255,92,92,.55);animation:sysxPulse 1.4s ease-out infinite;}
   .sysx-dot.mkt{background:#7fd1ff;box-shadow:0 0 7px rgba(127,209,255,.5);}
@@ -31142,7 +31168,7 @@ var GM = {
   @keyframes sysxWave{0%,100%{transform:scaleY(.4);opacity:.5;}50%{transform:scaleY(1);opacity:1;}}
   .sysx-wave.warn i{background:#ffd24a;animation-duration:1.9s;}
   .sysx-wave.bad i{background:#ff5c5c;animation-play-state:paused;transform:scaleY(.3);opacity:.4;}
-  @media (prefers-reduced-motion: reduce){.sysx-wave i{animation:none;}}
+  @media (prefers-reduced-motion: reduce){.sysx-wave i{animation:none;}.sysx-dot.ok{animation:none;}}
   .sysx-wave-lbl{font-size:10.5px;color:var(--grey-dim);margin-top:4px;display:block;}
   .sysx-summary{display:flex;align-items:center;gap:10px;margin:0 0 16px;}
   .sysx-sumbar{flex:1;height:6px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;display:flex;}
@@ -31157,7 +31183,7 @@ var GM = {
   .sysx-group-h svg{width:13px;height:13px;flex:none;opacity:.75;color:var(--grey-dim);}
   .sysx-group-lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--grey-dim);white-space:nowrap;}
   .sysx-group-line{flex:1;height:1px;background:var(--border-dim);}
-  @media(max-width:480px){.sysx-box{padding:18px 16px 20px;}}
+  @media(max-width:480px){.sysx-box{padding:18px 16px 20px;}.sysx-list{grid-template-columns:1fr;}}
 </style>
 <script>
 (function(){
@@ -31418,8 +31444,8 @@ var GM = {
       groupHead(ICO_FEED, S('grpFeeds')) +
       '<div class="sysx-list">' +
       row(qCls, S('quotes'), qVal, qDet) +
+      row(sCls, S('sync'), sVal, sDet, waveHTML) +
       row(fCls, S('funda'), fVal, fDet) +
-      row(sCls, S('sync'), sVal, sDet, waveHTML, true) +
       bubbleRowHTML() +
       '</div></div>' +
       '<div class="sysx-group">' +
@@ -31427,7 +31453,7 @@ var GM = {
       '<div class="sysx-list">' +
       mktRow(S('setMkt'), sess.set) +
       mktRow(S('usMkt'), sess.us) +
-      row('info', S('clock'), sess.bkkClock, sess.bkkDate) +
+      row('info', S('clock'), sess.bkkClock, sess.bkkDate, null, true) +
       '</div></div>' +
       '<div class="sysx-group">' +
       groupHead(ICO_SESS, S('grpSession')) +
@@ -40005,7 +40031,7 @@ var GM = {
 (function(){
   'use strict';
   document.addEventListener('click', function(e){
-    var btn = e.target.closest('.nav-trig, .nv-b, .tools-btn');
+    var btn = e.target.closest('.nav-trig, .nv-b');
     if (!btn || btn.disabled) return;
     btn.classList.remove('spz-spark');
     void btn.offsetWidth;
