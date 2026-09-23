@@ -475,8 +475,15 @@
   #cmpPrintSheet .cmp-summary-wrap{font-size:10.6px;color:#333;line-height:1.75;padding:12px 14px;background:#f5f5f5;border-radius:6px;border:1px solid #ccc;}
   #cmpPrintSheet .cmp-summary-wrap b{color:#161616;}
 
-  /* ---- Round 9: running header repeated on every printed page ---- */
-  #cmpPrintSheet .cmp-runhead{display:none;}
+  /* ---- Round 9 rev.2: same <table>+<thead> repeating-header technique as
+     #printreport (see the detailed comment on its own rule) -- position:fixed
+     doesn't repeat per page in Safari's print engine and mis-places the one
+     copy it draws, so the sheet is wrapped in a table whose <thead> every
+     browser (Safari included) has repeated across printed pages for decades. */
+  #cmpPrintSheet .cmp-sheet-table{width:100%;border-collapse:collapse;border-spacing:0;}
+  #cmpPrintSheet .cmp-sheet-table td{padding:0;border:0;}
+  #cmpPrintSheet .cmp-sheet-table thead{display:none;}
+  #cmpPrintSheet .cmp-runhead{display:flex;align-items:center;gap:7px;}
 
   @media print{
     /* Round 9: force exact background colors on real Print/Save-as-PDF too --
@@ -492,19 +499,16 @@
       display:block !important;position:static !important;max-width:none !important;
       width:100% !important;padding:0 !important;margin:0 !important;
     }
+    #cmpPrintSheet .cmp-sheet-table thead{display:table-header-group;}
     #cmpPrintSheet .cmp-runhead{
-      display:flex !important;align-items:center;gap:7px;
-      position:fixed;top:0;left:0;right:0;
-      padding-bottom:6px;margin-bottom:6px;border-bottom:1px solid #999;
+      padding-bottom:6px;margin-bottom:10px;border-bottom:1px solid #999;
       font-size:8.3px;color:#666;background:#fff;
     }
     #cmpPrintSheet .cmp-runhead img{width:13px;height:auto;flex:0 0 auto;}
     #cmpPrintSheet .cmp-runhead b{color:#161616;font-weight:800;letter-spacing:1px;margin-right:4px;}
     #cmpPrintSheet .cmp-runhead span{margin-left:auto;}
     #cmpPrintSheet .cmp-runhead span + span{margin-left:14px;}
-    /* extra top margin (vs. the 12mm everywhere else) leaves room for the
-       fixed running header on every page, including page 1 */
-    @page{ size:A4; margin:24mm 14mm 12mm 14mm; }
+    @page{ size:A4; margin:14mm 14mm 12mm 14mm; }
 
     /* Round 9 fix: a rank-item box could land right at a page boundary and get
        silently fragmented (its top line dropped) even with break-inside:avoid
@@ -10137,13 +10141,18 @@ render: heavy series on Canvas2D/WebGL off the React tree; React only owns chrom
     const rankClone = document.getElementById('compareRanking');
     const summaryClone = document.getElementById('compareSummaryText');
 
-    return '<div class="cmp-sheet">' +
-      '<div class="cmp-runhead">' +
+    const cmpRunheadHTML = '<div class="cmp-runhead">' +
         '<img src="' + CMP_LOGO + '" alt="">' +
         '<b>' + cmpEsc(tr['compare.pdf.brand']) + '</b>' +
         '<span>' + cmpEsc(tr['compare.pdf.generated']) + ': ' + cmpEsc(now.toLocaleString(lang === 'th' ? 'th-TH' : 'en-US')) + '</span>' +
         '<span>' + cmpEsc(tr['compare.pdf.dataAsOf']) + ': ' + cmpEsc(dataAsOf) + '</span>' +
-      '</div>' +
+      '</div>';
+
+    /* Round 9 (rev. 2): position:fixed doesn't repeat per printed page in
+       Safari (and mis-places the one copy it does draw) -- use a <table>
+       with a <thead> instead, which every browser repeats on each page. */
+    return '<table class="cmp-sheet-table"><thead><tr><td>' + cmpRunheadHTML + '</td></tr></thead><tbody><tr><td>' +
+      '<div class="cmp-sheet">' +
       '<div class="cmp-head">' +
         '<img class="cmp-logo" src="' + CMP_LOGO + '" alt="">' +
         '<div class="cmp-brand">' + cmpEsc(tr['compare.pdf.brand']) + '</div>' +
@@ -10166,7 +10175,8 @@ render: heavy series on Canvas2D/WebGL off the React tree; React only owns chrom
       '<div class="cmp-sec-h">' + cmpEsc(tr['compare.pdf.summaryH']) + '</div>' +
       '<div class="cmp-summary-wrap">' + (summaryClone ? summaryClone.innerHTML : '') + '</div>' +
       '<div class="cmp-foot">' + cmpEsc(tr['compare.disclaimer']) + '</div>' +
-    '</div>';
+      '</div>' +
+    '</td></tr></tbody></table>';
   }
 
   function cmpDoDownload(){
@@ -41756,19 +41766,24 @@ var qrcode = function() {
 
   html[data-theme="light"] #printreport .pr-controls{background:rgba(0,0,0,.02);}
 
-  /* ---- Round 9: running header repeated on every printed page ---- */
-  #printreport .pr-runhead{display:none;}
+  /* ---- Round 9 rev.2: the print sheet is wrapped in a <table> (see
+     reportHTML in JS) purely so its <thead> repeats on every printed page --
+     a position:fixed strip was tried first, but Safari's print engine
+     (WebKit) doesn't repeat position:fixed content per page and mis-places
+     even the single copy it draws. A table's <thead> has repeated across
+     printed pages in every browser, Safari included, since the 1990s. */
+  #printreport .pr-sheet-table{width:100%;max-width:800px;border-collapse:collapse;border-spacing:0;}
+  #printreport .pr-sheet-table td{padding:0;border:0;}
+  #printreport .pr-sheet-table thead{display:none;}
+  #printreport .pr-runhead{display:flex;align-items:center;gap:7px;}
 
   /* ---- the real print / Save-as-PDF output ---- */
   @media print{
-    /* extra top margin (vs. the 12mm everywhere else) leaves room for the
-       fixed running header below to sit in its own space on every page,
-       including page 1, without overlapping the report's own content */
-    @page{ size:A4; margin:24mm 14mm 12mm 14mm; }
+    @page{ size:A4; margin:14mm 14mm 12mm 14mm; }
+    #printreport .pr-sheet-table{max-width:none !important;width:100% !important;}
+    #printreport .pr-sheet-table thead{display:table-header-group;}
     #printreport .pr-runhead{
-      display:flex !important;align-items:center;gap:7px;
-      position:fixed;top:0;left:0;right:0;
-      padding-bottom:6px;margin-bottom:6px;border-bottom:1px solid #999;
+      padding-bottom:6px;margin-bottom:10px;border-bottom:1px solid #999;
       font-size:8.3px;color:#666;background:#fff;
     }
     #printreport .pr-runhead img{width:13px;height:auto;flex:0 0 auto;}
@@ -42179,10 +42194,14 @@ var qrcode = function() {
   }
 
   function runningHeadHTML(now, snap){
-    /* Round 9: a slim strip repeated at the top of every PRINTED page (via
-       position:fixed, print-only) so the logo/brand/dates identify the page
-       even after it's been separated from the rest of a multi-page report --
-       the full letterhead in .pr-head below stays a page-1-only intro block. */
+    /* Round 9 (rev. 2): a slim strip that repeats at the top of every PRINTED
+       page. First tried as position:fixed, but that only works in Chromium --
+       Safari's print engine (WebKit) doesn't repeat position:fixed content
+       per page at all, and mis-places the single copy it does draw. The
+       cross-browser-reliable trick is a <thead> on the print sheet's own
+       table wrapper (see reportHTML): browsers have repeated table headers
+       across printed pages since the 1990s, Safari included. This div is now
+       simply the content of that <thead> cell -- no special positioning. */
     return '<div class="pr-runhead">' +
         '<img src="' + PR_LOGO + '" alt="">' +
         '<b>' + esc(T(UI.brand)) + '</b>' +
@@ -42195,8 +42214,8 @@ var qrcode = function() {
     var now = new Date();
     var snap = null;
     try { snap = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot(); } catch(e){}
-    return '<div class="pr-sheet" data-style="' + esc(styleId) + '">' +
-      runningHeadHTML(now, snap) +
+    return '<table class="pr-sheet-table"><thead><tr><td>' + runningHeadHTML(now, snap) + '</td></tr></thead><tbody><tr><td>' +
+      '<div class="pr-sheet" data-style="' + esc(styleId) + '">' +
       '<div class="pr-head">' +
         '<img class="pr-logo" src="' + PR_LOGO + '" alt="">' +
         '<div class="pr-brand">' + esc(T(UI.brand)) + '</div>' +
@@ -42232,7 +42251,8 @@ var qrcode = function() {
       })() +
       fxGridHTML() +
       qrContactPageHTML() +
-    '</div>';
+      '</div>' +
+    '</td></tr></tbody></table>';
   }
 
   function pickListHTML(){
