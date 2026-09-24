@@ -4360,8 +4360,24 @@
     label:function(p){ return LBL[p || CFG.phase]; },
     isLive:function(){ return CFG.phase === CFG.live; },
 
+    /* asOf used to be a plain hardcoded string that nobody remembered to
+       bump, so this banner would silently drift out of date (seen: showing
+       "16 days old" while the live market snapshot underneath was actually
+       fresh from the last half hour). Now it reads the same generated_at
+       timestamp the rest of the site already trusts (window.__SPZ_LIVE,
+       fed by data/market.json, refreshed every 30 min by the market-data
+       GitHub Action) and only falls back to the static date if that live
+       snapshot isn't loaded yet. No invented number -- same real timestamp
+       already shown elsewhere on the site. */
+    asOfDisplay:function(){
+      try {
+        var snap = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot();
+        if(snap && snap.generated_at) return new Date(snap.generated_at).toISOString().slice(0, 10);
+      } catch(e){}
+      return CFG.asOf;
+    },
     days:function(){
-      var d = new Date(CFG.asOf + 'T00:00:00Z');
+      var d = new Date(CFG.asOfDisplay() + 'T00:00:00Z');
       return Math.max(0, Math.floor((Date.now() - d.getTime()) / 86400000));
     },
     level:function(){
@@ -4456,7 +4472,7 @@
 
       var lv = CFG.level(), d = CFG.days();
       var key = lv === 'ok' ? 'freshOk' : (lv === 'warn' ? 'freshWarn' : 'freshOld');
-      var msg = T(TXT[key]).replace('%D', CFG.asOf).replace(/%N/g, d);
+      var msg = T(TXT[key]).replace('%D', CFG.asOfDisplay()).replace(/%N/g, d);
       var html = '<div class="spz-fresh ' + lv + '"><span class="spz-ic">' +
         (lv === 'ok' ? '◆' : (lv === 'warn' ? '⚠' : '⚠')) + '</span>' + esc(msg) + '</div>';
 
@@ -4488,6 +4504,17 @@
       }, 300);
     }
     document.addEventListener('spz:cycle', repaint);
+    /* the freshness banner above (asOfDisplay/days) reads the live market
+       snapshot's own generated_at once it's loaded -- but the banner is
+       first painted at boot, before that snapshot has necessarily arrived
+       over the network, and nothing was re-painting it afterward. That's
+       the actual reason it could sit showing a stale date indefinitely
+       ("16 days old") even though the underlying data was fine: the
+       banner just never got a second look. data/market.json's own loader
+       already fires 'spz:snapshot' every time it loads or refreshes
+       (first load, plus its 10-minute auto-reload) -- listening for that
+       here is what makes this banner genuinely self-updating. */
+    document.addEventListener('spz:snapshot', banners);
     new MutationObserver(repaint).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
     document.addEventListener('click', function(e){
       var a = e.target.closest && e.target.closest('[data-route-to]');
@@ -32986,24 +33013,32 @@ var GM = {
     animation:bbScaleSweep 2.2s ease-in-out infinite;
   }
   @keyframes bbScaleSweep{ 0%{ left:-45%; } 100%{ left:105%; } }
-  /* the comet marking the current score, riding right at the edge of the fill */
+  /* the comet marking the current score, riding right at the edge of the fill.
+     v1 sat at top:-6px with an 11px dot and up to a 30px/10px box-shadow --
+     against a 22px-tall bar that put most of the glow floating above the
+     tube (reported: "หลุดกรอบ...มันหมุน" -- looks out of frame, spinning).
+     Fixed: centered vertically on the bar itself, glow radius cut way down
+     so it reads as a marker riding the tube rather than a blob hovering
+     over it, and recolored from stark white to a refined warm gold/pearl
+     tone -- the tube's own risk gradient (green/amber/red) is untouched. */
   #bubble .bb-scalepointer{
-    position:absolute;top:-6px;left:0%;width:11px;height:11px;
+    position:absolute;top:50%;left:0%;width:12px;height:12px;
     border-radius:50%;
-    background:radial-gradient(circle at 34% 32%, #fff 0%, #fff 35%, rgba(255,255,255,.15) 70%, transparent 78%);
-    box-shadow:0 0 6px 2px rgba(255,255,255,.9), 0 0 16px 6px rgba(255,255,255,.5), 0 0 30px 10px rgba(255,255,255,.22);
-    transform:translateX(-50%);transition:left 1.1s cubic-bezier(.2,.8,.2,1);
-    animation:bbPointerPulse 1.6s ease-in-out infinite;
+    background:radial-gradient(circle at 38% 32%, #fff8e4 0%, #ffe9ab 40%, #eeb654 74%, rgba(238,182,84,.2) 90%, transparent 100%);
+    box-shadow:0 0 3px 1px rgba(255,226,160,.9), 0 0 7px 2px rgba(255,199,96,.5), 0 0 12px 3px rgba(240,175,70,.28);
+    transform:translate(-50%,-50%);transition:left 1.1s cubic-bezier(.2,.8,.2,1);
+    animation:bbPointerPulse 2.4s ease-in-out infinite;
+    z-index:2;
   }
   #bubble .bb-scalepointer::after{
     /* a faint tail trailing back toward zero, like a comet's streak */
-    content:'';position:absolute;top:50%;right:100%;width:26px;height:2px;margin-top:-1px;
-    background:linear-gradient(90deg,transparent,rgba(255,255,255,.35));
+    content:'';position:absolute;top:50%;right:100%;width:20px;height:2px;margin-top:-1px;
+    background:linear-gradient(90deg,transparent,rgba(255,214,130,.4));
     border-radius:2px;
   }
   @keyframes bbPointerPulse{
-    0%,100%{ box-shadow:0 0 6px 2px rgba(255,255,255,.9), 0 0 16px 6px rgba(255,255,255,.5), 0 0 30px 10px rgba(255,255,255,.22); }
-    50%{ box-shadow:0 0 9px 3px rgba(255,255,255,1), 0 0 22px 9px rgba(255,255,255,.7), 0 0 38px 15px rgba(255,255,255,.32); }
+    0%,100%{ box-shadow:0 0 3px 1px rgba(255,226,160,.9), 0 0 7px 2px rgba(255,199,96,.5), 0 0 12px 3px rgba(240,175,70,.28); }
+    50%{ box-shadow:0 0 4px 1px rgba(255,226,160,1), 0 0 9px 3px rgba(255,199,96,.68), 0 0 15px 4px rgba(240,175,70,.36); }
   }
   #bubble .bb-scalerows{display:flex;flex-direction:column;gap:10px;}
   #bubble .bb-scalerow{
@@ -36784,9 +36819,19 @@ var GM = {
   .cag-admin-links{width:100%;display:flex;flex-direction:column;gap:7px;}
   .cag-admin-link{width:100%;background:transparent;border:1px solid rgba(204,255,0,.28);border-radius:11px;padding:10px;
     color:var(--cag-accent);font-family:'Inter',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s,border-color .15s;}
+    display:flex;align-items:center;justify-content:center;gap:7px;transition:background .15s,border-color .15s;
+    position:relative;overflow:hidden;}
   .cag-admin-link:hover{border-color:var(--cag-accent);background:color-mix(in srgb, var(--cag-accent) 10%, transparent);}
   #cagAdminLinks.hidden{display:none;}
+  /* infographic-style icon in place of the old emoji, plus a light sheen
+     sweep on hover so the two admin shortcuts feel a bit more "finished". */
+  .cag-admin-ico{width:15px;height:15px;flex:0 0 auto;color:var(--cag-accent);
+    filter:drop-shadow(0 0 3px color-mix(in srgb, var(--cag-accent) 55%, transparent));}
+  .cag-admin-link::after{
+    content:'';position:absolute;top:0;bottom:0;left:-60%;width:36%;
+    background:linear-gradient(115deg,transparent,rgba(255,255,255,.22),transparent);
+    transform:skewX(-18deg);transition:left .6s ease;pointer-events:none;}
+  .cag-admin-link:hover::after{left:130%;}
 
   .cag-tiers{display:flex;gap:8px;width:100%;}
   .cag-tier{flex:1;text-align:center;border:1px dashed #24262b;border-radius:10px;padding:7px 5px;
@@ -37150,8 +37195,8 @@ var GM = {
     loggedT:{en:'ADMIN',th:'ADMIN'},
     loggedS:{en:'You are signed in.',th:'คุณเข้าสู่ระบบแล้ว'},
     logoutBtn:{en:'Log out',th:'ออกจากระบบ'},
-    adminAddAnalysis:{en:'+ Add Analysis',th:'+ เพิ่มบทวิเคราะห์'},
-    adminPrintReport:{en:'🖨 Print Report',th:'🖨 พิมพ์รายงาน'},
+    adminAddAnalysis:{en:'Add Analysis',th:'เพิ่มบทวิเคราะห์'},
+    adminPrintReport:{en:'Print Report',th:'พิมพ์รายงาน'},
     bulk:{en:'📋 Paste all 50 at once',th:'📋 วางทีเดียว 50 ชุด'},
     mask:{en:'👁 Show / hide',th:'👁 แสดง/ซ่อน'},
     clear:{en:'🗑 Clear all',th:'🗑 ล้างทั้งหมด'},
@@ -37278,8 +37323,14 @@ var GM = {
           '<div class="cag-pane" id="cagPaneOut">' +
             '<div class="cag-head"><div><b data-x="loggedT"></b><span data-x="loggedS"></span></div></div>' +
             '<div class="cag-admin-links hidden" id="cagAdminLinks">' +
-              '<button class="cag-admin-link" type="button" id="cagBtnAddAnalysis" data-x="adminAddAnalysis"></button>' +
-              '<button class="cag-admin-link" type="button" id="cagBtnPrintReport" data-x="adminPrintReport"></button>' +
+              '<button class="cag-admin-link" type="button" id="cagBtnAddAnalysis">' +
+                '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h5l5 5v12a1 1 0 01-1 1H8a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M13 3v5h5"/><path d="M12 12.5v5M9.4 15h5.2"/></svg>' +
+                '<span data-x="adminAddAnalysis"></span>' +
+              '</button>' +
+              '<button class="cag-admin-link" type="button" id="cagBtnPrintReport">' +
+                '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9V3.5h11V9"/><path d="M5.5 17.5h-2a1 1 0 01-1-1v-6a1 1 0 011-1h17a1 1 0 011 1v6a1 1 0 01-1 1h-2"/><path d="M6.5 14h11v6.5h-11z"/></svg>' +
+                '<span data-x="adminPrintReport"></span>' +
+              '</button>' +
             '</div>' +
             '<button class="cag-btn" type="button" id="cagBtnLogout" data-x="logoutBtn"></button>' +
             '<button class="cag-ghost hidden" type="button" id="cagUpgradeBtn" data-x="upgradeBtn"></button>' +
@@ -41887,6 +41938,21 @@ var qrcode = function() {
   #printreport .pr-idea-phase{border:1px solid #ccc;border-radius:6px;padding:8px 12px;margin-top:8px;break-inside:avoid;page-break-inside:avoid;}
   #printreport .pr-idea-phase.now{border-color:#161616;border-width:1.5px;background:#f7f7f7;}
   #printreport .pr-idea-phase-name{font-size:11.5px;font-weight:800;color:#161616;}
+
+  /* ---- Round 13: long-term-hold reframe -- supporting metrics strip,
+     the "when not to sell" two-column list, the Bubble tier legend table,
+     and the emerging-growth watchlist share the report's existing table
+     and narrative-box styling above, plus these few of their own. ---- */
+  #printreport .pr-idea-metrics-lbl{font-size:9px;letter-spacing:.6px;text-transform:uppercase;color:#888;margin-top:10px;}
+  #printreport .pr-idea-metrics{margin-top:4px;}
+  #printreport .pr-idea-dontsell-col{margin-top:10px;break-inside:avoid;page-break-inside:avoid;}
+  #printreport .pr-idea-dontsell-col b{font-size:10.5px;color:#161616;}
+  #printreport .pr-idea-list{margin:6px 0 0;padding-left:18px;font-size:10.3px;color:#333;line-height:1.7;}
+  #printreport .pr-idea-list li{margin-bottom:3px;}
+  #printreport .pr-idea-dontsell-col.warn b{color:#a8321f;}
+  #printreport .pr-idea-list-warn{border-left:2px solid #c0392b;padding-left:16px;}
+  #printreport .pr-idea-tier-table{margin-top:10px;}
+  #printreport .pr-idea-tier-table td:first-child{font-family:var(--mono,monospace);font-weight:700;white-space:nowrap;}
   #printreport table.pr-table{width:100%;border-collapse:collapse;font-size:10.3px;}
   #printreport table.pr-table th{
     text-align:left;font-size:8.8px;letter-spacing:.6px;text-transform:uppercase;color:#666;
@@ -42161,18 +42227,55 @@ var qrcode = function() {
     /* ---- Round 12: Investment Idea Report -- a third report type, built
        entirely from signals this site already computes live (Stock Picks
        ranking + its "why" reasoning, the Market Cycle phase model, the
-       Bubble Radar composite score). No figure on this report is invented
-       for it; everything traces back to a page already on the site. ---- */
-    typeIdea:{en:'Investment Idea',th:'แนวคิดการลงทุน'},
-    ideaTitle:{en:'Investment Idea Report',th:'รายงานแนวคิดการลงทุน'},
-    ideaSub:{en:'Built From This Site’s Own Live Signals — Not Investment Advice',th:'สร้างจากสัญญาณสดของเว็บนี้เอง — ไม่ใช่คำแนะนำการลงทุน'},
-    ideaTopH:{en:'Today’s Top-Ranked Opportunity',th:'หุ้นเด่นอันดับ 1 ของวันนี้'},
+       Bubble Radar composite score, and the real per-stock fundamentals
+       already sitting in window.__SPZ_DIR -- P/E, dividend yield, ROE,
+       D/E, net margin, P/B). No figure on this report is invented for it;
+       everything traces back to a page or a dataset already on the site.
+       Round 13: renamed per the user's request (just wanted a title that
+       says "which stocks to invest in"), reframed around long-term
+       buy-and-hold reasoning with real supporting numbers shown under
+       every pick, added a "when not to sell" section separating genuine
+       invalidation triggers from common unfounded fears, and added an
+       honestly-framed "highest market-priced growth" watchlist in place
+       of a literal "future unicorn" list -- this site has no data on
+       company size or listing age, so it can't identify company stage;
+       what it CAN show honestly is which already-public Growth names the
+       market is pricing at the richest earnings multiple right now. ---- */
+    typeIdea:{en:'Stock Picks',th:'หุ้นน่าลงทุน'},
+    ideaTitle:{en:'Which Stocks To Invest In',th:'ควรลงทุนหุ้นอะไรดี'},
+    ideaSub:{en:'Long-Term Picks Built From This Site’s Own Live Signals — Not Investment Advice',
+             th:'หุ้นสำหรับถือระยะยาว สร้างจากสัญญาณสดของเว็บนี้เอง — ไม่ใช่คำแนะนำการลงทุน'},
+    ideaTopH:{en:'Today’s Top-Ranked Long-Term Pick',th:'หุ้นเด่นอันดับ 1 สำหรับถือระยะยาววันนี้'},
     ideaTopLede:{en:'The highest-scoring name right now from this site’s own Stock Picks ranking model — momentum, trend, RSI and sector flow, equally weighted. A rank, not a guarantee: it can change tomorrow as the inputs move, and every name here can still lose money.',
                  th:'หุ้นที่ได้คะแนนสูงสุดตอนนี้จากโมเดลจัดอันดับ Stock Picks ของเว็บนี้เอง ให้น้ำหนักเท่ากันกับโมเมนตัม เทรนด์ RSI และกระแสเงินกลุ่มอุตสาหกรรม เป็นแค่อันดับ ไม่ใช่การการันตี พรุ่งนี้อันดับเปลี่ยนได้ตามข้อมูลที่เปลี่ยนไป และหุ้นทุกตัวในรายงานนี้ยังขาดทุนได้เสมอ'},
     ideaWhyLbl:{en:'Why it ranks here',th:'เหตุผลที่ติดอันดับ'},
+    ideaHoldLbl:{en:'The case for holding long-term',th:'เหตุผลที่ควรถือระยะยาว'},
+    ideaMetricsLbl:{en:'Supporting numbers — judge it yourself',th:'ตัวเลขพื้นฐานประกอบ — ไว้ตัดสินใจด้วยตัวเอง'},
     ideaNoPick:{en:'Ranking engine not ready yet — open Stock Picks once, then come back and regenerate this report.',
                 th:'เครื่องมือจัดอันดับยังไม่พร้อม ลองเปิดหน้า Stock Picks ก่อนหนึ่งครั้ง แล้วค่อยกลับมาสร้างรายงานนี้ใหม่'},
-    ideaOthersH:{en:'Other Names Worth a Look',th:'ชื่ออื่นที่น่าสนใจ'},
+    ideaOthersH:{en:'5–6 More Long-Term Candidates',th:'อีก 5–6 ตัวเลือกสำหรับถือระยะยาว'},
+    /* ---- "when not to sell" ---- */
+    ideaDontSellH:{en:'When Not To Sell',th:'เมื่อไหร่ไม่ควรขาย'},
+    ideaDontSellLede:{en:'The hardest part of holding long-term is not buying — it’s sitting still. These two lists separate the noise that scares people into selling too early from the real signals that mean the original reason for buying no longer holds.',
+                       th:'ส่วนที่ยากที่สุดของการถือระยะยาวไม่ใช่การซื้อ แต่คือการนิ่งได้ รายการทั้งสองนี้แยกความกังวลที่มักทำให้คนขายเร็วเกินไป ออกจากสัญญาณจริงที่แปลว่าเหตุผลเดิมที่ซื้อมาใช้ไม่ได้อีกต่อไป'},
+    ideaFearsLbl:{en:'Common fears that usually aren’t a reason to sell',th:'ความกังวลทั่วไปที่มักไม่ใช่เหตุผลให้ขาย'},
+    ideaFear1:{en:'A single red day, or a stretch of a few red days in a row — normal noise, not a trend.',
+               th:'ราคาแดงวันเดียวหรือแดงต่อกันหลายวัน — เป็นความผันผวนปกติ ไม่ใช่แนวโน้ม'},
+    ideaFear2:{en:'Scary headlines or political news with no direct link to this company’s own numbers.',
+               th:'ข่าวการเมืองหรือข่าวน่ากลัวที่ไม่ได้เกี่ยวข้องโดยตรงกับตัวเลขของบริษัทนี้'},
+    ideaFear3:{en:'A broad market pullback that drags this stock down along with almost everything else.',
+               th:'ตลาดโดยรวมปรับฐาน แล้วลากหุ้นตัวนี้ลงไปด้วยพร้อมกับหุ้นเกือบทุกตัว'},
+    ideaFear4:{en:'One weaker-than-expected quarter, if the multi-year trend and the fundamentals below are still intact.',
+               th:'ผลประกอบการรายไตรมาสแย่กว่าคาดเพียงครั้งเดียว หากแนวโน้มระยะยาวและปัจจัยพื้นฐานด้านล่างยังคงแข็งแรงอยู่'},
+    ideaTriggersLbl:{en:'Genuine signs the original thesis may be invalidated',th:'สัญญาณจริงที่บ่งบอกว่าเหตุผลเดิมอาจใช้ไม่ได้แล้ว'},
+    ideaTrigger1:{en:'Price sustainably breaks below its 200-day moving average while its own sector is also losing money flow — not just one bad week.',
+                  th:'ราคาหลุดต่ำกว่าเส้นค่าเฉลี่ย 200 วันอย่างต่อเนื่อง พร้อมกับกลุ่มอุตสาหกรรมของหุ้นตัวนี้มีเงินไหลออกด้วย — ไม่ใช่แค่แย่ไปสัปดาห์เดียว'},
+    ideaTrigger2:{en:'The company’s own fundamentals visibly worsen: margins compress, debt-to-equity climbs sharply, or ROE falls a lot from where it sits today.',
+                  th:'ปัจจัยพื้นฐานของบริษัทแย่ลงชัดเจน เช่น มาร์จิ้นบีบแคบลง หนี้สินต่อทุนพุ่งขึ้นแรง หรือ ROE ลดลงมากจากระดับปัจจุบัน'},
+    ideaTrigger3:{en:'It drops out of this site’s top-ranked names for a sustained stretch, not just a single daily refresh.',
+                  th:'หลุดออกจากรายชื่อหุ้นเด่นของเว็บนี้ต่อเนื่องเป็นช่วงเวลาหนึ่ง ไม่ใช่แค่รอบอัปเดตเดียว'},
+    ideaTrigger4:{en:'The original reason it was picked (dividend income, or a growth story) changes materially, and the new reality no longer fits your own goal for holding it.',
+                  th:'เหตุผลเดิมที่เลือกหุ้นตัวนี้ (รายได้จากปันผล หรือเรื่องราวการเติบโต) เปลี่ยนไปอย่างมีนัยสำคัญ จนไม่ตรงกับเป้าหมายการถือของคุณอีกต่อไป'},
     ideaPlaybookH:{en:'If the Cycle Shifts: A Rotation Playbook',th:'ถ้าวัฏจักรเปลี่ยน: แนวทางการหมุนเงินลงทุน'},
     ideaPlaybookLede:{en:'What has historically led and lagged in each phase of the market cycle — this is not a prediction of which phase comes next, just a reference to check against if conditions change. Today’s phase (from the same read used above) is marked.',
                        th:'กลุ่มที่มักนำและมักตามหลังในแต่ละช่วงของวัฏจักรตลาดตามข้อมูลในอดีต ไม่ใช่การทำนายว่าช่วงถัดไปจะเป็นช่วงไหน แค่เป็นข้อมูลอ้างอิงไว้เช็คหากสถานการณ์เปลี่ยน ช่วงปัจจุบัน (จากมุมมองเดียวกับด้านบน) ทำเครื่องหมายไว้ให้แล้ว'},
@@ -42181,7 +42284,26 @@ var qrcode = function() {
     ideaBubbleLede:{en:'How stretched valuations look right now by this site’s own blended signal (see the Bubble Radar page for full detail on what feeds it). A high score does not time a top — it only means more historical warning signs are lit at once.',
                     th:'ตลาดตอนนี้ "ตึง" แค่ไหนตามคะแนนรวมของเว็บนี้เอง (ดูรายละเอียดเต็มที่หน้าเรดาร์ฟองสบู่) คะแนนสูงไม่ได้แปลว่าตลาดกำลังจะกลับตัว แค่แปลว่ามีสัญญาณเตือนในอดีตติดสว่างพร้อมกันมากขึ้นเท่านั้น'},
     ideaBubbleNoData:{en:'Bubble Radar score not available yet — open the Bubble Radar page once to warm up the data, then regenerate this report.',
-                       th:'ยังไม่มีคะแนนเรดาร์ฟองสบู่ ลองเปิดหน้าเรดาร์ฟองสบู่ก่อนหนึ่งครั้งเพื่อให้ข้อมูลพร้อม แล้วค่อยสร้างรายงานนี้ใหม่'}
+                       th:'ยังไม่มีคะแนนเรดาร์ฟองสบู่ ลองเปิดหน้าเรดาร์ฟองสบู่ก่อนหนึ่งครั้งเพื่อให้ข้อมูลพร้อม แล้วค่อยสร้างรายงานนี้ใหม่'},
+    ideaTierRangeCol:{en:'Score range',th:'ช่วงคะแนน'},
+    ideaTierLevelCol:{en:'Level',th:'ระดับ'},
+    ideaTierMeansCol:{en:'What it means',th:'ความหมาย'},
+    /* same four bands and wording as the live Bubble Radar page's own tier
+       table (SCALE_TIERS / tierLow / tierMod / tierHigh / tierVHigh) --
+       duplicated here on purpose since this print module is a separate
+       scope, kept word-for-word so the two never disagree. */
+    ideaTierLow:{en:'Most signals sit within normal historical ranges.',th:'สัญญาณส่วนใหญ่อยู่ในช่วงปกติของประวัติศาสตร์'},
+    ideaTierMod:{en:'Some signals are stretched — common mid-cycle in a long bull run, and can stay here for years.',
+                 th:'สัญญาณบางตัวเริ่มตึง — พบได้ทั่วไปในช่วงกลางวัฏจักรตลาดกระทิงยาว และอยู่ระดับนี้ได้นานเป็นปี'},
+    ideaTierHigh:{en:'Most signals are stretched together — similar readings showed up before 2000 and 2007–08, but also years ahead of those peaks.',
+                  th:'สัญญาณส่วนใหญ่ตึงพร้อมกัน — เคยเกิดขึ้นก่อนปี 2000 และ 2007–08 แต่ก็เคยเกิดล่วงหน้าหลายปีก่อนจุดพีคเหล่านั้นด้วยเช่นกัน'},
+    ideaTierVHigh:{en:'Nearly every signal is at a historical extreme at once — rare, and has coincided with major market tops, though what followed took anywhere from months to a couple of years to unfold.',
+                   th:'แทบทุกสัญญาณอยู่ในระดับสุดขั้วทางประวัติศาสตร์พร้อมกัน — เกิดขึ้นไม่บ่อย และมักเกิดพร้อมจุดสูงสุดสำคัญของตลาด แม้สิ่งที่ตามมาจะใช้เวลาตั้งแต่ไม่กี่เดือนถึงสองสามปีกว่าจะเห็นผล'},
+    ideaEmergingH:{en:'Emerging Growth Watchlist',th:'หุ้นเติบโตแฝงที่น่าจับตา'},
+    ideaEmergingLede:{en:'This site has no data on a company’s size or how new its listing is, so it can’t point directly at "the next unicorn". What it can show honestly: among the Growth names already on this site, these are the ones the market is currently pricing at the richest earnings multiple (P/E) — meaning investors are paying the most upfront for future growth that hasn’t shown up in profit yet. That is exactly the profile of a stock with the most room to run if the growth arrives — and the furthest to fall if it doesn’t.',
+                      th:'เว็บนี้ไม่มีข้อมูลขนาดบริษัทหรือว่าหุ้นเพิ่งเข้าตลาดมานานแค่ไหน จึงไม่สามารถชี้ตัว "ยูนิคอร์นตัวต่อไป" ได้ตรงๆ สิ่งที่บอกได้อย่างตรงไปตรงมาคือ ในกลุ่มหุ้นเติบโตที่มีอยู่ในเว็บนี้ นี่คือหุ้นที่ตลาดตีมูลค่า (P/E) แพงที่สุดในตอนนี้ ซึ่งหมายความว่านักลงทุนยอมจ่ายล่วงหน้ามากที่สุดสำหรับการเติบโตในอนาคตที่ยังไม่เกิดเป็นกำไรจริง เป็นโปรไฟล์แบบเดียวกับหุ้นที่มีโอกาสวิ่งแรงถ้าการเติบโตมาถึงจริง — และก็ร่วงแรงที่สุดถ้ามันไม่มาถึง'},
+    ideaEmergingNoData:{en:'Not enough live fundamental data to build this list right now.',
+                         th:'ข้อมูลพื้นฐานสดยังไม่พอสำหรับสร้างรายการนี้ในตอนนี้'}
   };
 
   var sec = null;
@@ -43128,18 +43250,152 @@ var qrcode = function() {
     '</div>';
   }
 
-  /* ---- Round 12: Investment Idea Report -- "which name looks best right
-     now, and why" plus a cycle-based rotation reference, assembled purely
-     from data this site already computes elsewhere (Stock Picks ranking +
-     its own "why" reasoning, the Market Cycle phase model, the Bubble
-     Radar composite). No new data source, no invented figures -- every
-     number here already has its own page on the site backing it. ---- */
+  /* ---- Round 13: real per-stock fundamentals for the Idea Report -- looks
+     a ticker up in window.__SPZ_DIR (the same directory Stock Directory and
+     the Market Summary report's Fundamentals Reference table already read)
+     and returns its raw record, or null. No new data source. ---- */
+  function dirRecordFor(tk){
+    var dir = window.__SPZ_DIR || {};
+    var cats = ['value', 'growth', 'dividend', 'defensive'];
+    for(var c = 0; c < cats.length; c++){
+      var list = dir[cats[c]] || [];
+      for(var i = 0; i < list.length; i++) if(list[i].ticker === tk) return { s:list[i], cat:cats[c] };
+    }
+    return null;
+  }
+
+  /* the same six columns already used by the Fundamentals Reference table
+     (colPe/colDiv/colRoe/colDe/colMg/colPb), rendered here as a compact
+     strip so each pick's real numbers sit right under its narrative. */
+  function fundMetricsStripHTML(s){
+    if(!s) return '';
+    var cells = [
+      [T(UI.colPe), s.pe || '—'],
+      [T(UI.colDiv), s.div || s.div_en || '—'],
+      [T(UI.colRoe), s.roe || '—'],
+      [T(UI.colDe), s.de_ratio || '—'],
+      [T(UI.colMg), s.net_margin ? s.net_margin + '%' : '—'],
+      [T(UI.colPb), s.pb_ratio || '—']
+    ];
+    return '<div class="pr-regime-strip pr-idea-metrics">' + cells.map(function(c){
+      return '<div class="pr-regime-cell"><div class="pr-regime-lbl">' + esc(c[0]) + '</div><div class="pr-regime-val">' + esc(c[1]) + '</div></div>';
+    }).join('') + '</div>';
+  }
+
+  /* a short, plain-language long-term-hold narrative built only from the
+     real numbers in the directory record above -- no invented forecast,
+     just what the dividend field and the fundamental scores already say. */
+  function holdThesisHTML(s){
+    if(!s) return '';
+    var bits = [];
+    var divTxt = s.div || null;
+    if(divTxt){
+      bits.push(L() === 'th'
+        ? 'จ่ายปันผล ' + divTxt + ' ต่อปี — มีกระแสเงินสดกลับมาระหว่างที่ถือยาว แม้ราคาจะยังไม่ขยับตามที่หวัง'
+        : 'Pays a ' + divTxt + ' annual dividend — some cash comes back while the position is held, even in a quiet stretch for the price.');
+    } else {
+      bits.push(L() === 'th'
+        ? 'ไม่จ่ายปันผล เพราะเลือกเก็บกำไรไว้ลงทุนต่อเพื่อการเติบโต — เหมาะกับกรอบเวลาที่ยาวขึ้นและรับความผันผวนของราคาได้มากกว่า'
+        : 'Pays no dividend — profit is reinvested for growth instead, which suits a longer time horizon and a higher tolerance for price swings.');
+    }
+    var roeN = parseFloat(s.roe), mgN = parseFloat(s.net_margin), deN = parseFloat(s.de_ratio);
+    if(isNum(roeN) && roeN >= 15){
+      bits.push(L() === 'th'
+        ? 'ROE ' + s.roe + ' สะท้อนว่าบริษัทใช้เงินทุนของผู้ถือหุ้นสร้างกำไรได้อย่างมีประสิทธิภาพ'
+        : 'An ROE of ' + s.roe + ' shows the business turns shareholder capital into profit efficiently.');
+    }
+    if(isNum(mgN) && mgN >= 20){
+      bits.push(L() === 'th'
+        ? 'มาร์จิ้นสุทธิ ' + s.net_margin + '% ถือว่าหนา ให้พื้นที่รองรับต้นทุนที่อาจเพิ่มขึ้นได้โดยไม่กระทบกำไรมากนัก'
+        : 'A ' + s.net_margin + '% net margin leaves room to absorb rising costs without profit collapsing.');
+    }
+    if(isNum(deN) && deN <= 0.5){
+      bits.push(L() === 'th'
+        ? 'หนี้สินต่อทุนต่ำ (' + s.de_ratio + ' เท่า) ทำให้บริษัทมีความยืดหยุ่นทางการเงินสูงในช่วงเศรษฐกิจไม่ดี'
+        : 'A low debt-to-equity ratio (' + s.de_ratio + 'x) gives the business more room to keep operating through a rough economic stretch.');
+    }
+    return bits.length ? '<div class="pr-dd-narrative"><b>' + esc(T(UI.ideaHoldLbl)) + ':</b> ' + esc(bits.join(' ')) + '</div>' : '';
+  }
+
+  /* the two "when not to sell" lists -- generic, evergreen guidance, not
+     tied to any single ticker, so it renders once for the whole report. */
+  function dontSellHTML(){
+    var fears = [UI.ideaFear1, UI.ideaFear2, UI.ideaFear3, UI.ideaFear4];
+    var triggers = [UI.ideaTrigger1, UI.ideaTrigger2, UI.ideaTrigger3, UI.ideaTrigger4];
+    var fearsList = '<ul class="pr-idea-list">' + fears.map(function(f){ return '<li>' + esc(T(f)) + '</li>'; }).join('') + '</ul>';
+    var trigList = '<ul class="pr-idea-list pr-idea-list-warn">' + triggers.map(function(t){ return '<li>' + esc(T(t)) + '</li>'; }).join('') + '</ul>';
+    return '<div class="pr-sec-h">' + esc(T(UI.ideaDontSellH)) + '</div>' +
+      '<div class="pr-flow-note">' + esc(T(UI.ideaDontSellLede)) + '</div>' +
+      '<div class="pr-idea-dontsell-col"><b>' + esc(T(UI.ideaFearsLbl)) + '</b>' + fearsList + '</div>' +
+      '<div class="pr-idea-dontsell-col warn"><b>' + esc(T(UI.ideaTriggersLbl)) + '</b>' + trigList + '</div>';
+  }
+
+  /* the Bubble Radar tier legend, word-for-word the same four bands shown
+     on the live page (SCALE_TIERS), duplicated here since this print
+     module is a separate scope from the Bubble Radar module. */
+  function bubbleTierLegendHTML(){
+    var rows = [
+      ['0–35%', {en:'Low',th:'ต่ำ'}, UI.ideaTierLow],
+      ['35–60%', {en:'Moderate',th:'ปานกลาง'}, UI.ideaTierMod],
+      ['60–80%', {en:'High',th:'สูง'}, UI.ideaTierHigh],
+      ['80–100%', {en:'Very high',th:'สูงมาก'}, UI.ideaTierVHigh]
+    ];
+    var body = rows.map(function(r){
+      return '<tr><td>' + esc(r[0]) + '</td><td>' + esc(T(r[1])) + '</td><td>' + esc(T(r[2])) + '</td></tr>';
+    }).join('');
+    return '<table class="pr-table pr-idea-tier-table"><thead><tr>' +
+        '<th>' + esc(T(UI.ideaTierRangeCol)) + '</th><th>' + esc(T(UI.ideaTierLevelCol)) + '</th><th>' + esc(T(UI.ideaTierMeansCol)) + '</th>' +
+      '</tr></thead><tbody>' + body + '</tbody></table>';
+  }
+
+  /* honestly-framed "emerging growth" list: real Growth-category names,
+     ranked by their real P/E (already in window.__SPZ_DIR) since a richer
+     multiple is the one real, non-invented proxy this site's data has for
+     "the market is pricing in a lot of future growth it hasn't proven
+     yet" -- explicitly NOT a claim about company size or stage, which
+     this site has no data on at all. */
+  function emergingGrowthHTML(excludeTickers){
+    var dir = window.__SPZ_DIR || {};
+    var exclude = {};
+    (excludeTickers || []).forEach(function(tk){ exclude[tk] = true; });
+    var list = (dir.growth || []).filter(function(s){
+      return !exclude[s.ticker] && isNum(parseFloat(s.pe));
+    });
+    list.sort(function(a, b){ return parseFloat(b.pe) - parseFloat(a.pe); });
+    list = list.slice(0, 3);
+    if(!list.length) return '<div class="pr-empty">' + esc(T(UI.ideaEmergingNoData)) + '</div>';
+    var rows = list.map(function(s){
+      var live = liveRow(s.ticker);
+      return '<tr>' +
+        '<td><span class="pr-tk">' + esc(s.ticker) + '</span><br><span class="pr-nm">' + esc(T({en:s.name_en, th:s.name_th})) + '</span></td>' +
+        '<td>' + fmtPx(live ? live.price : null) + '</td>' +
+        '<td class="' + chgCls(live ? live.chg : null) + '">' + fmtChg(live ? live.chg : null) + '</td>' +
+        '<td>' + esc(s.pe || '—') + '</td>' +
+        '<td>' + esc(s.roe || '—') + '</td>' +
+        '<td>' + esc(s.net_margin ? s.net_margin + '%' : '—') + '</td>' +
+      '</tr>';
+    }).join('');
+    return '<table class="pr-table"><thead><tr>' +
+        '<th>' + esc(T(UI.colTk)) + '</th><th>' + esc(T(UI.colPx)) + '</th><th>' + esc(T(UI.colChg)) + '</th>' +
+        '<th>' + esc(T(UI.colPe)) + '</th><th>' + esc(T(UI.colRoe)) + '</th><th>' + esc(T(UI.colMg)) + '</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  /* ---- Round 12/13: Investment Idea Report -- "which stocks should I
+     invest in and why" plus a cycle-based rotation reference and an
+     emerging-growth watchlist, assembled purely from data this site
+     already computes elsewhere (Stock Picks ranking + its own "why"
+     reasoning, the real per-stock fundamentals in window.__SPZ_DIR, the
+     Market Cycle phase model, the Bubble Radar composite). No new data
+     source, no invented figures -- every number here already has its own
+     page on the site backing it. ---- */
   function ideaReportHTML(){
     var now = new Date();
     var snap = null;
     try { snap = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot(); } catch(e){}
     var picks = topPicks(6);
     var topPick = picks[0];
+    var pickedTickers = picks.map(function(p){ return p.s.tk; });
 
     var topSectionHTML;
     if(!topPick){
@@ -43147,6 +43403,7 @@ var qrcode = function() {
     } else {
       var tk = topPick.s.tk, live = liveRow(tk), why = [];
       try { why = window.__SPZ_WHY ? window.__SPZ_WHY(topPick) : []; } catch(e){}
+      var rec = dirRecordFor(tk);
       topSectionHTML =
         '<div class="pr-idea-pick">' +
           '<div class="pr-idea-pick-head">' +
@@ -43157,6 +43414,8 @@ var qrcode = function() {
           '<div class="pr-idea-pick-px">' + fmtPx(live ? live.price : null) +
             ' <span class="' + chgCls(live ? live.chg : null) + '">' + fmtChg(live ? live.chg : null) + '</span></div>' +
           (why.length ? '<div class="pr-dd-narrative"><b>' + esc(T(UI.ideaWhyLbl)) + ':</b> ' + esc(why.join(' · ')) + '</div>' : '') +
+          (rec ? holdThesisHTML(rec.s) : '') +
+          (rec ? '<div class="pr-idea-metrics-lbl">' + esc(T(UI.ideaMetricsLbl)) + '</div>' + fundMetricsStripHTML(rec.s) : '') +
         '</div>' +
         singleStockDeepDive(tk);
     }
@@ -43167,20 +43426,25 @@ var qrcode = function() {
       for(var i = 1; i < picks.length; i++){
         var r = picks[i], s = r.s, lv = liveRow(s.tk), w2 = [];
         try { w2 = window.__SPZ_WHY ? window.__SPZ_WHY(r) : []; } catch(e){}
+        var rrec = dirRecordFor(s.tk);
         restRows += '<tr>' +
           '<td><span class="pr-tk">' + esc(s.tk) + '</span><br><span class="pr-nm">' + esc(T(s.nm)) + '</span></td>' +
           '<td>' + fmtPx(lv ? lv.price : null) + '</td>' +
           '<td class="' + chgCls(lv ? lv.chg : null) + '">' + fmtChg(lv ? lv.chg : null) + '</td>' +
           '<td class="pr-score">' + Math.round(r.total) + '/100</td>' +
+          '<td>' + (rrec ? esc(rrec.s.pe || '—') : '—') + '</td>' +
+          '<td>' + (rrec ? esc(rrec.s.div || rrec.s.div_en || '—') : '—') + '</td>' +
           '<td class="pr-why">' + esc(w2.join(' · ')) + '</td>' +
         '</tr>';
       }
       othersHTML = '<div class="pr-sec-h">' + esc(T(UI.ideaOthersH)) + '</div>' +
         '<table class="pr-table"><thead><tr>' +
           '<th>' + esc(T(UI.colTk)) + '</th><th>' + esc(T(UI.colPx)) + '</th><th>' + esc(T(UI.colChg)) + '</th>' +
-          '<th>' + esc(T(UI.colScore)) + '</th><th>' + esc(T(UI.colWhy)) + '</th>' +
+          '<th>' + esc(T(UI.colScore)) + '</th><th>' + esc(T(UI.colPe)) + '</th><th>' + esc(T(UI.colDiv)) + '</th><th>' + esc(T(UI.colWhy)) + '</th>' +
         '</tr></thead><tbody>' + restRows + '</tbody></table>';
     }
+
+    var dontSellHTMLBlock = dontSellHTML();
 
     var cyclePlaybookHTML = (function(){
       var sig; try { sig = cycleSignal(); } catch(e){ sig = null; }
@@ -43208,6 +43472,8 @@ var qrcode = function() {
         '</div>';
     }
 
+    var emergingHTML = emergingGrowthHTML(pickedTickers);
+
     return '<div class="pr-sheet" data-style="' + esc(styleId) + '">' +
       '<div class="pr-head">' +
         '<img class="pr-logo" src="' + PR_LOGO + '" alt="">' +
@@ -43224,12 +43490,18 @@ var qrcode = function() {
       '<div class="pr-flow-note">' + esc(T(UI.ideaTopLede)) + '</div>' +
       topSectionHTML +
       othersHTML +
+      dontSellHTMLBlock +
+      '<div class="pr-sec-h">' + esc(T(UI.ideaEmergingH)) + '</div>' +
+      '<div class="pr-flow-note">' + esc(T(UI.ideaEmergingLede)) + '</div>' +
+      emergingHTML +
       marketCycleHTML() +
       '<div class="pr-sec-h">' + esc(T(UI.ideaPlaybookH)) + '</div>' +
       '<div class="pr-flow-note">' + esc(T(UI.ideaPlaybookLede)) + '</div>' +
       cyclePlaybookHTML +
       '<div class="pr-sec-h">' + esc(T(UI.ideaBubbleH)) + '</div>' +
+      '<div class="pr-flow-note">' + esc(T(UI.ideaBubbleLede)) + '</div>' +
       bubbleHTML +
+      bubbleTierLegendHTML() +
       glossaryHTML() +
       '<div class="pr-foot">' + esc(T(UI.disclaimer)) + '</div>' +
       qrContactPageHTML() +
@@ -44949,6 +45221,16 @@ var qrcode = function() {
   .jed-tradelevels{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px;margin-bottom:18px;}
   .jed-tradelevels .jed-field{margin-bottom:0;}
   @media(max-width:520px){ .jed-tradelevels{grid-template-columns:1fr;} }
+  /* color-coded trade-level fields, purely cosmetic: the wave-count
+     invalidation point reads as a warning (red), SL/TP read as the
+     defined risk/reward levels (green) -- makes the form easier to scan
+     at a glance while filling it in. */
+  .jed-tradelevels .jed-field.jed-lvl-invalid label{color:var(--red);}
+  .jed-tradelevels .jed-field.jed-lvl-invalid input{border-left:3px solid var(--red);}
+  .jed-tradelevels .jed-field.jed-lvl-sl label,
+  .jed-tradelevels .jed-field.jed-lvl-tp label{color:var(--neon-2,#2ecc71);}
+  .jed-tradelevels .jed-field.jed-lvl-sl input,
+  .jed-tradelevels .jed-field.jed-lvl-tp input{border-left:3px solid var(--neon-2,#2ecc71);}
 
   .jed-list{max-width:640px;margin:26px auto 0;display:flex;flex-direction:column;gap:10px;}
   .jed-row{
@@ -44978,6 +45260,10 @@ var qrcode = function() {
   .jrnl-lvl-chip.tf{border-color:var(--neon);color:var(--neon);}
   .jrnl-lvl-chip.tf b{color:var(--neon);}
   .jrnl-lvl-chip.wave{border-color:var(--amber,#e0a030);}
+  .jrnl-lvl-chip.invalid{border-color:var(--red);color:var(--red);}
+  .jrnl-lvl-chip.invalid b{color:var(--red);}
+  .jrnl-lvl-chip.sl,.jrnl-lvl-chip.tp{border-color:var(--neon-2,#2ecc71);color:var(--neon-2,#2ecc71);}
+  .jrnl-lvl-chip.sl b,.jrnl-lvl-chip.tp b{color:var(--neon-2,#2ecc71);}
 
   /* ---- sidebar filter groups (public log) ---- */
   .jrnl-filter-group{display:flex;flex-direction:column;gap:4px;}
@@ -45142,6 +45428,8 @@ var qrcode = function() {
   .jrp-levels{display:flex;flex-wrap:wrap;gap:8px 14px;margin:0 0 4px;font-size:10.5px;color:#666;}
   .jrp-levels b{color:#161616;}
   .jrp-levels .jrp-chip{border:1px solid #ccc;border-radius:20px;padding:2px 9px;}
+  .jrp-levels .invalid,.jrp-levels .invalid b{color:#c0392b;}
+  .jrp-levels .sl,.jrp-levels .sl b,.jrp-levels .tp,.jrp-levels .tp b{color:#1a8f4c;}
   .jrp-related{
     margin-top:14px;border:1px solid #ddd;border-radius:6px;padding:10px 14px;
     display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px 16px;font-size:11px;color:#444;
@@ -45243,9 +45531,9 @@ var qrcode = function() {
   function cardLevelsHtml(e){
     var parts = [];
     if(e.timeframe) parts.push('<span class="jrnl-lvl-chip tf"><b>' + esc(T(UI.reportTimeframe)) + ':</b> ' + esc(e.timeframe) + '</span>');
-    if(e.invalidPoint) parts.push('<span class="jrnl-lvl-chip"><b>' + esc(T(UI.reportInvalid)) + ':</b> ' + esc(e.invalidPoint) + '</span>');
-    if(e.sl) parts.push('<span class="jrnl-lvl-chip"><b>' + esc(T(UI.reportSL)) + ':</b> ' + esc(e.sl) + '</span>');
-    if(e.tp) parts.push('<span class="jrnl-lvl-chip"><b>' + esc(T(UI.reportTP)) + ':</b> ' + esc(e.tp) + '</span>');
+    if(e.invalidPoint) parts.push('<span class="jrnl-lvl-chip invalid"><b>' + esc(T(UI.reportInvalid)) + ':</b> ' + esc(e.invalidPoint) + '</span>');
+    if(e.sl) parts.push('<span class="jrnl-lvl-chip sl"><b>' + esc(T(UI.reportSL)) + ':</b> ' + esc(e.sl) + '</span>');
+    if(e.tp) parts.push('<span class="jrnl-lvl-chip tp"><b>' + esc(T(UI.reportTP)) + ':</b> ' + esc(e.tp) + '</span>');
     if(e.waveView) parts.push('<span class="jrnl-lvl-chip wave"><b>' + esc(T(UI.reportWaveView)) + ':</b> ' + esc(e.waveView) + '</span>');
     return parts.length ? '<div class="jrnl-card-levels">' + parts.join('') + '</div>' : '';
   }
@@ -45684,9 +45972,9 @@ var qrcode = function() {
 
     var levelParts = [];
     if(entry.timeframe) levelParts.push('<span><b>' + esc(T(UI.reportTimeframe)) + ':</b> ' + esc(entry.timeframe) + '</span>');
-    if(entry.invalidPoint) levelParts.push('<span><b>' + esc(T(UI.reportInvalid)) + ':</b> ' + esc(entry.invalidPoint) + '</span>');
-    if(entry.sl) levelParts.push('<span><b>' + esc(T(UI.reportSL)) + ':</b> ' + esc(entry.sl) + '</span>');
-    if(entry.tp) levelParts.push('<span><b>' + esc(T(UI.reportTP)) + ':</b> ' + esc(entry.tp) + '</span>');
+    if(entry.invalidPoint) levelParts.push('<span class="invalid"><b>' + esc(T(UI.reportInvalid)) + ':</b> ' + esc(entry.invalidPoint) + '</span>');
+    if(entry.sl) levelParts.push('<span class="sl"><b>' + esc(T(UI.reportSL)) + ':</b> ' + esc(entry.sl) + '</span>');
+    if(entry.tp) levelParts.push('<span class="tp"><b>' + esc(T(UI.reportTP)) + ':</b> ' + esc(entry.tp) + '</span>');
     if(entry.waveView) levelParts.push('<span><b>' + esc(T(UI.reportWaveView)) + ':</b> ' + esc(entry.waveView) + '</span>');
     var levelsHtml = levelParts.length ? '<div class="jrp-levels">' + levelParts.join('') + '</div>' : '';
 
@@ -45969,13 +46257,13 @@ var qrcode = function() {
             '<input type="text" data-je="tags" placeholder="' + esc(T(UI.fieldTagsPh)) + '"></div>' +
           '<div class="jed-tradelevels-h">' + esc(T(UI.tradeLevelsH)) + '</div>' +
           '<div class="jed-tradelevels">' +
-            '<div class="jed-field"><label>' + esc(T(UI.fieldInvalid)) + '</label>' +
+            '<div class="jed-field jed-lvl-invalid"><label>' + esc(T(UI.fieldInvalid)) + '</label>' +
               '<input type="text" data-je="invalid" placeholder="' + esc(T(UI.fieldInvalidPh)) + '"></div>' +
             '<div class="jed-field"><label>' + esc(T(UI.fieldWaveView)) + '</label>' +
               '<input type="text" data-je="waveView" placeholder="' + esc(T(UI.fieldWaveViewPh)) + '"></div>' +
-            '<div class="jed-field"><label>' + esc(T(UI.fieldSL)) + '</label>' +
+            '<div class="jed-field jed-lvl-sl"><label>' + esc(T(UI.fieldSL)) + '</label>' +
               '<input type="text" data-je="sl" placeholder="' + esc(T(UI.fieldSLPh)) + '"></div>' +
-            '<div class="jed-field"><label>' + esc(T(UI.fieldTP)) + '</label>' +
+            '<div class="jed-field jed-lvl-tp"><label>' + esc(T(UI.fieldTP)) + '</label>' +
               '<input type="text" data-je="tp" placeholder="' + esc(T(UI.fieldTPPh)) + '"></div>' +
           '</div>' +
           '<div class="jed-field"><label>' + esc(T(UI.fieldImage)) + '</label>' +
