@@ -44610,7 +44610,6 @@ var qrcode = function() {
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-storage-compat.js"></script>
 <style>
   .jrnl-shell{display:flex;gap:22px;max-width:1280px;margin:0 auto;align-items:flex-start;}
   .jrnl-side{flex:0 0 230px;position:sticky;top:calc(var(--spz-topH,80px) + 18px);display:flex;flex-direction:column;gap:14px;}
@@ -44716,7 +44715,29 @@ var qrcode = function() {
     appId: "1:532665084478:web:73aeb1d4c79ab306ee3f6f"
   };
 
-  var fbApp = null, fbDb = null, fbAuth = null, fbStorage = null;
+  /* ======================= Cloudinary config -- placeholder =======================
+     Images are hosted on Cloudinary's free tier instead of Firebase Storage (Firebase
+     Storage now requires the paid Blaze plan). Get these two values from a free
+     Cloudinary account -> Settings -> Upload -> add an "unsigned" upload preset.
+     Neither value is a secret; both are meant to be public in client-side code. ==== */
+  var CLOUDINARY_CONFIG = {
+    cloudName: "REPLACE_ME",
+    uploadPreset: "REPLACE_ME"
+  };
+  function cloudinaryConfigured(){ return !!(CLOUDINARY_CONFIG.cloudName && CLOUDINARY_CONFIG.cloudName !== 'REPLACE_ME'); }
+  function cloudinaryUpload(file){
+    var fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+    return fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CONFIG.cloudName + '/image/upload', { method:'POST', body: fd })
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(!data || !data.secure_url) throw new Error((data && data.error && data.error.message) || 'upload failed');
+        return data.secure_url;
+      });
+  }
+
+  var fbApp = null, fbDb = null, fbAuth = null;
   function fbConfigured(){ return !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== 'REPLACE_ME'); }
   function fbInit(){
     if(fbApp) return fbApp;
@@ -44725,7 +44746,6 @@ var qrcode = function() {
       fbApp = firebase.apps && firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
       fbDb = firebase.firestore();
       fbAuth = firebase.auth();
-      fbStorage = firebase.storage();
     } catch(e){ fbApp = null; }
     return fbApp;
   }
@@ -44769,6 +44789,7 @@ var qrcode = function() {
     saveErr:{en:'Could not save — try again.',th:'บันทึกไม่สำเร็จ — ลองใหม่อีกครั้ง'},
     saveOk:{en:'Saved.',th:'บันทึกแล้ว'},
     needBoth:{en:'Add an image and write something first.',th:'ใส่รูปและเขียนบทวิเคราะห์ก่อน'},
+    imgNotConfigured:{en:'Image hosting is not connected yet — save without an image, or ask to finish setup.',th:'ยังไม่ได้เชื่อมต่อระบบฝากรูป — บันทึกแบบไม่มีรูปไปก่อน หรือแจ้งให้ตั้งค่าให้เสร็จ'},
     yourEntries:{en:'Your entries',th:'บทวิเคราะห์ของคุณ'},
     del:{en:'Delete',th:'ลบ'},
     delConfirm:{en:'Delete this entry? This cannot be undone.',th:'ลบบทวิเคราะห์นี้เลยไหม ย้อนกลับไม่ได้'}
@@ -44990,6 +45011,7 @@ var qrcode = function() {
         var asset = body.querySelector('[data-je="asset"]').value.trim();
         var text = body.querySelector('[data-je="text"]').value.trim();
         if(!pickedFile && !text){ msg.className = 'jed-msg err'; msg.textContent = T(UI.needBoth); return; }
+        if(pickedFile && !cloudinaryConfigured()){ msg.className = 'jed-msg err'; msg.textContent = T(UI.imgNotConfigured); return; }
         saveBtn.disabled = true;
         msg.className = 'jed-msg'; msg.textContent = T(UI.saving);
 
@@ -45001,9 +45023,7 @@ var qrcode = function() {
         }
 
         var work = pickedFile
-          ? fbStorage.ref('journal/' + Date.now() + '_' + pickedFile.name).put(pickedFile)
-              .then(function(snap){ return snap.ref.getDownloadURL(); })
-              .then(writeDoc)
+          ? cloudinaryUpload(pickedFile).then(writeDoc)
           : writeDoc(null);
 
         work.then(function(){
