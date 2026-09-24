@@ -32407,6 +32407,44 @@ var GM = {
     color:var(--neon);text-decoration:none;border-bottom:1px solid transparent;
   }
   #watchlist .wl-opentg:hover{border-color:var(--neon);}
+
+  #watchlist .wl-conn-strip{display:flex;flex-wrap:wrap;gap:12px;margin:22px 0 8px;}
+  #watchlist .wl-conn-card{
+    flex:1 1 260px;border:1px solid var(--border-dim);border-radius:var(--radius);
+    background:var(--glass);padding:14px 16px;
+  }
+  #watchlist .wl-conn-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+  #watchlist .wl-conn-label{font-family:var(--mono);font-weight:800;font-size:13px;letter-spacing:.02em;}
+  #watchlist .wl-conn-label.line{color:#06C755;}
+  #watchlist .wl-conn-label.tg{color:#2AABEE;}
+  #watchlist .wl-conn-status{font-size:11.5px;color:var(--grey);margin-bottom:8px;}
+  #watchlist .wl-conn-status.ok{color:var(--neon-2,var(--neon));}
+  #watchlist .wl-conn-btn{
+    background:transparent;border:1px solid var(--border-dim);color:var(--white);
+    border-radius:8px;padding:8px 14px;font-family:var(--mono);font-size:12px;font-weight:700;
+    cursor:pointer;text-decoration:none;display:inline-block;
+  }
+  #watchlist .wl-conn-btn:hover{border-color:var(--neon);color:var(--neon);}
+  #watchlist .wl-conn-btn.line-btn{border-color:#06C755;color:#06C755;}
+  #watchlist .wl-conn-btn.line-btn:hover{background:#06C755;color:#08130a;}
+  #watchlist .wl-conn-forget{
+    font-size:11px;color:var(--grey);text-decoration:underline;cursor:pointer;
+    background:none;border:none;padding:0;font-family:var(--mono);
+  }
+  #watchlist .wl-line-qr{margin-top:4px;text-align:center;}
+  #watchlist .wl-line-qr-wrap{
+    width:170px;height:170px;margin:0 auto 10px;border-radius:12px;overflow:hidden;
+    background:#fff;display:flex;align-items:center;justify-content:center;
+  }
+  #watchlist .wl-line-qr-wrap img{width:100%;height:100%;display:block;}
+  #watchlist .wl-line-status{font-size:11.5px;color:#8fe0a8;min-height:16px;}
+  #watchlist .wl-line-status.err{color:#ff6b6b;margin-bottom:8px;}
+  #watchlist .wl-line-spin{
+    display:inline-block;width:11px;height:11px;border:2px solid rgba(143,224,168,.3);
+    border-top-color:#8fe0a8;border-radius:50%;animation:wlLineSpin .8s linear infinite;
+    vertical-align:-2px;margin-right:6px;
+  }
+  @keyframes wlLineSpin{to{transform:rotate(360deg);}}
 </style>
 <script>
 (function(){
@@ -32443,6 +32481,26 @@ var GM = {
   }
   function forgetUid(){ try{ localStorage.removeItem(UID_KEY); }catch(e){} }
   function linkDeepLink(uid){ return 'https://t.me/' + BOT + '?start=link_' + encodeURIComponent(uid); }
+
+  /* ---- LINE QR session-link (see line-qr-worker.js): a small Cloudflare
+     Worker backend that turns a QR scan in the LINE app into a linked
+     browser session, mirroring the Telegram uid/chat_id link above but for
+     LINE. Session persists via sessionStorage; an explicit "log out" (or
+     the code's own expiry) is what unlinks it, matching the Telegram flow's
+     "forget this browser". ---------------------------------------------- */
+  var WORKER_BASE = 'https://spacez-line-link.spacezblack.workers.dev';
+  var LINE_STORAGE_KEY = 'spz_line_link';
+  function lineWorkerReady(){ return WORKER_BASE.indexOf('REPLACE-ME') === -1; }
+  function lineApi(path){ return WORKER_BASE.replace(/\/$/, '') + path; }
+  function lineSaveSession(){
+    try { sessionStorage.setItem(LINE_STORAGE_KEY, JSON.stringify({ code: state.line.code, displayName: state.line.displayName })); }
+    catch(e){}
+  }
+  function lineLoadSession(){
+    try { var raw = sessionStorage.getItem(LINE_STORAGE_KEY); return raw ? JSON.parse(raw) : null; }
+    catch(e){ return null; }
+  }
+  function lineClearSession(){ try { sessionStorage.removeItem(LINE_STORAGE_KEY); } catch(e){} }
 
   function cmdText(kind, t){
     var th = L() === 'th';
@@ -32521,17 +32579,30 @@ var GM = {
     lbList:{en:'See your whole list',th:'ดูรายการทั้งหมด'},
     lbHelp:{en:'Show every command',th:'ดูคำสั่งทั้งหมด'},
     opentg:{en:'Open the Telegram chat directly',th:'เปิดแชท Telegram โดยตรง'},
-    connectLede:{en:'Each person’s watchlist is tied to their own Telegram account, so what you pin here is yours alone — nobody else sees it, and you don’t see anyone else’s. Tap the button below, then tap Start/Confirm in the chat that opens.',
-                 th:'วอทช์ลิสต์ของแต่ละคนผูกกับบัญชี Telegram ของตัวเอง สิ่งที่คุณปักหมุดจะเป็นของคุณคนเดียว คนอื่นไม่เห็นของคุณ และคุณก็ไม่เห็นของคนอื่น กดปุ่มด้านล่างแล้วกด Start/ยืนยันในแชทที่เปิดขึ้นมาได้เลยค่ะ'},
+    connectLede:{en:'Each connection is tied to your own account, so what you pin here is yours alone — nobody else sees it, and you don’t see anyone else’s. Connect Telegram for full add/remove control from the chat, or connect LINE to quickly view your list by scanning a QR code.',
+                 th:'การเชื่อมต่อแต่ละช่องทางผูกกับบัญชีของคุณเอง สิ่งที่คุณปักหมุดจะเป็นของคุณคนเดียว คนอื่นไม่เห็นของคุณ และคุณก็ไม่เห็นของคนอื่น เชื่อมต่อ Telegram เพื่อเพิ่ม/ลบหุ้นผ่านแชทได้เต็มรูปแบบ หรือเชื่อมต่อ LINE เพื่อดูรายการของคุณเร็วๆ ด้วยการสแกน QR'},
     connectBtn:{en:'Connect Telegram',th:'เชื่อมต่อ Telegram'},
     connectPendingH:{en:'Waiting for confirmation…',th:'กำลังรอการยืนยัน…'},
     connectPendingB:{en:'Tap the button again if the chat didn’t open, then tap Start there. This page checks again automatically every minute.',
                      th:'ถ้าแชทไม่เปิดให้กดปุ่มอีกครั้ง แล้วกด Start ในแชท หน้านี้จะเช็คซ้ำให้อัตโนมัติทุกๆ นาทีค่ะ'},
-    connectedNote:{en:'Connected to your own Telegram ✓',th:'เชื่อมต่อ Telegram ของคุณแล้ว ✓'},
+    connectedNote:{en:'Connected ✓',th:'เชื่อมต่อแล้ว ✓'},
     forgetBtn:{en:'Forget this browser',th:'ลืมการเชื่อมต่อในเบราว์เซอร์นี้'},
     notConnH:{en:'Not connected yet',th:'ยังไม่ได้เชื่อมต่อ'},
-    notConnB:{en:'Connect your own Telegram to see and manage your personal watchlist here.',
-              th:'เชื่อมต่อ Telegram ของคุณเพื่อดูและจัดการวอทช์ลิสต์ส่วนตัวของคุณที่นี่'}
+    notConnB:{en:'Connect Telegram or LINE below to see and manage your personal watchlist here.',
+              th:'เชื่อมต่อ Telegram หรือ LINE ด้านล่างเพื่อดูและจัดการวอทช์ลิสต์ส่วนตัวของคุณที่นี่'},
+    tgLabel:{en:'Telegram',th:'Telegram'},
+    lineLabel:{en:'LINE',th:'LINE'},
+    connectLineBtn:{en:'Connect LINE',th:'เชื่อมต่อ LINE'},
+    lineConnectedNote:{en:'Connected ✓',th:'เชื่อมต่อแล้ว ✓'},
+    lineNotConn:{en:'Not connected',th:'ยังไม่ได้เชื่อมต่อ'},
+    lineWaiting:{en:'Waiting for scan…',th:'รอการสแกนอยู่ค่ะ…'},
+    lineExpired:{en:'Code expired — tap Connect LINE again.',th:'โค้ดหมดอายุแล้ว กดเชื่อมต่อ LINE อีกครั้งนะคะ'},
+    lineErr:{en:'Could not reach the LINE link service. Tap to try again.',
+             th:'เชื่อมต่อระบบ LINE ไม่ได้ตอนนี้ กดเพื่อลองใหม่นะคะ'},
+    lineNotReady:{en:'LINE connect isn’t switched on yet.',th:'ฟีเจอร์เชื่อมต่อ LINE ยังไม่เปิดใช้งานค่ะ'},
+    lineForget:{en:'Log out of LINE',th:'ออกจากระบบ LINE'},
+    lineViewOnlyNote:{en:'Shown from LINE — add or remove tickers via Telegram for now.',
+                      th:'แสดงรายการจาก LINE — การเพิ่ม/ลบหุ้นตอนนี้ยังต้องทำผ่าน Telegram นะคะ'}
   };
 
   var FLAG_COPY = {
@@ -32574,7 +32645,8 @@ var GM = {
     return out;
   }
 
-  var sec, state = { wl:null, stocks:null, exampleTicker:'', links:null, uid:null, chatId:null };
+  var sec, state = { wl:null, stocks:null, exampleTicker:'', links:null, uid:null, chatId:null,
+    line:{ status:'idle', code:null, loginUrl:null, displayName:null, tickers:[] }, lineUiOpen:false, linePoll:null };
 
   function loadLinks(cb){
     fetch('data/telegram_links.json?v=' + Math.floor(Date.now()/60000))
@@ -32611,6 +32683,97 @@ var GM = {
     return (s && s.stocks) || null;
   }
 
+  function lineStopPolling(){ if(state.linePoll){ clearInterval(state.linePoll); state.linePoll = null; } }
+
+  function lineStartPending(){
+    state.line.status = 'pending';
+    state.line.code = null;
+    state.line.loginUrl = null;
+    if(!lineWorkerReady()){ paint(); return; }
+    paint();
+    fetch(lineApi('/api/session/new'))
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        state.line.code = data.code;
+        state.line.loginUrl = data.loginUrl;
+        paint();
+        lineStopPolling();
+        state.linePoll = setInterval(linePollStatus, 2500);
+      })
+      .catch(function(){ state.line.status = 'error'; paint(); });
+  }
+
+  function linePollStatus(){
+    if(!state.line.code) return;
+    fetch(lineApi('/api/session/status?code=' + encodeURIComponent(state.line.code)))
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(data.status === 'linked'){
+          lineStopPolling();
+          state.line.displayName = data.displayName || '';
+          lineFetchData();
+        } else if(data.status === 'not_found'){
+          lineStopPolling();
+          state.line.status = 'expired';
+          paint();
+        }
+      })
+      .catch(function(){ /* transient network hiccup - just try again next tick */ });
+  }
+
+  function lineFetchData(){
+    fetch(lineApi('/api/session/data?code=' + encodeURIComponent(state.line.code)))
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        state.line.status = 'linked';
+        state.line.tickers = data.tickers || [];
+        state.line.displayName = data.displayName || state.line.displayName;
+        lineSaveSession();
+        paint();
+      })
+      .catch(function(){ state.line.status = 'error'; paint(); });
+  }
+
+  function lineRestoreFromWorker(saved){
+    state.line.code = saved.code;
+    state.line.displayName = saved.displayName;
+    fetch(lineApi('/api/session/status?code=' + encodeURIComponent(saved.code)))
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(data.status === 'linked'){
+          fetch(lineApi('/api/session/data?code=' + encodeURIComponent(saved.code)))
+            .then(function(r){ return r.json(); })
+            .then(function(dd){
+              state.line.status = 'linked';
+              state.line.tickers = dd.tickers || [];
+              state.line.displayName = dd.displayName || state.line.displayName;
+              paint();
+            })
+            .catch(function(){});
+        } else {
+          lineClearSession();
+          state.line = { status:'idle', code:null, loginUrl:null, displayName:null, tickers:[] };
+          paint();
+        }
+      })
+      .catch(function(){ /* worker unreachable - keep whatever we had locally, retry next reload */ });
+  }
+
+  function lineLogout(){
+    var code = state.line.code;
+    lineStopPolling();
+    lineClearSession();
+    state.line = { status:'idle', code:null, loginUrl:null, displayName:null, tickers:[] };
+    state.lineUiOpen = false;
+    paint();
+    if(code && lineWorkerReady()){
+      fetch(lineApi('/api/session/logout'), {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ code: code })
+      }).catch(function(){});
+    }
+  }
+
   function cardHTML(t, s, stocks){
     var chgCls = !s || !isNum(s.chg_pct) ? 'fl' : (s.chg_pct > 0 ? 'up' : s.chg_pct < 0 ? 'dn' : 'fl');
     var flags = flagsOf(t, s, stocks || {});
@@ -32638,6 +32801,90 @@ var GM = {
     '</div>';
   }
 
+  function lineCardHTML(t, s){
+    var chgCls = !s || !isNum(s.chg_pct) ? 'fl' : (s.chg_pct > 0 ? 'up' : s.chg_pct < 0 ? 'dn' : 'fl');
+    return '<div class="wl-card" data-wl-tk="' + esc(t) + '">' +
+      '<div class="wl-top"><span class="wl-tk">$' + esc(t) + '</span>' +
+      (s ? '<span class="wl-px">' + esc(price(s.price)) + '</span>' : '') + '</div>' +
+      (s ? ('<span class="wl-nm">' + esc((s.name||'').slice(0,42)) + '</span>' +
+            '<span class="wl-chg ' + chgCls + '">' + esc(pct(s.chg_pct)) + '</span>')
+          : '<span class="wl-nm">' + esc(tx(C.unknownNote)) + '</span>') +
+      '<div class="wl-btns">' +
+        '<button type="button" class="wl-btn open" data-wl-open="' + esc(t) + '">' + esc(tx(C.open)) + '</button>' +
+      '</div></div>';
+  }
+
+  /* ---- the two-channel "Connect" strip shown at the top of the page in
+     every state: Telegram (full add/remove-by-chat control, existing
+     per-visitor uid -> chat_id -> watchlist.json lookup) and LINE (QR scan
+     via the Cloudflare Worker, view-only for now). Both render side by
+     side so connecting either one happens from right here, instead of a
+     separate floating button elsewhere on the site. --------------------- */
+  function connStripHTML(uid, chatId, hadUid, lineSt){
+    var tgBlock;
+    if(chatId){
+      tgBlock = '<div class="wl-conn-status ok">' + esc(tx(C.connectedNote)) + '</div>' +
+        '<button type="button" class="wl-conn-forget" data-wl="forgetTg">' + esc(tx(C.forgetBtn)) + '</button>';
+    } else {
+      var uid2 = uid || getUid(true);
+      var dl = linkDeepLink(uid2);
+      tgBlock = '<div class="wl-conn-status">' + esc(tx(hadUid ? C.connectPendingH : C.lineNotConn)) + '</div>' +
+        '<a class="wl-conn-btn" href="' + dl + '" target="_blank" rel="noopener noreferrer">' + esc(tx(C.connectBtn)) + '</a>';
+    }
+
+    var lineBlock;
+    if(lineSt.status === 'linked'){
+      lineBlock = '<div class="wl-conn-status ok">' + esc(tx(C.lineConnectedNote)) +
+        (lineSt.displayName ? ' · ' + esc(lineSt.displayName) : '') + '</div>' +
+        '<button type="button" class="wl-conn-forget" data-wl="forgetLine">' + esc(tx(C.lineForget)) + '</button>';
+    } else if(state.lineUiOpen){
+      if(!lineWorkerReady()){
+        lineBlock = '<div class="wl-line-status err">' + esc(tx(C.lineNotReady)) + '</div>';
+      } else if(lineSt.status === 'error' || lineSt.status === 'expired'){
+        lineBlock = '<div class="wl-line-status err">' + esc(tx(lineSt.status === 'expired' ? C.lineExpired : C.lineErr)) + '</div>' +
+          '<button type="button" class="wl-conn-btn line-btn" data-wl="lineConnect">' + esc(tx(C.connectLineBtn)) + '</button>';
+      } else {
+        var qrImg = lineSt.loginUrl
+          ? '<img src="https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=' + encodeURIComponent(lineSt.loginUrl) + '" alt="QR">'
+          : '';
+        lineBlock = '<div class="wl-line-qr">' +
+          '<div class="wl-line-qr-wrap">' + qrImg + '</div>' +
+          '<div class="wl-line-status"><span class="wl-line-spin"></span>' + esc(tx(C.lineWaiting)) + '</div>' +
+        '</div>';
+      }
+    } else {
+      lineBlock = '<div class="wl-conn-status">' + esc(tx(C.lineNotConn)) + '</div>' +
+        '<button type="button" class="wl-conn-btn line-btn" data-wl="lineConnect">' + esc(tx(C.connectLineBtn)) + '</button>';
+    }
+
+    return '<div class="wl-conn-strip">' +
+      '<div class="wl-conn-card"><div class="wl-conn-top"><span class="wl-conn-label tg">' + esc(tx(C.tgLabel)) + '</span></div>' + tgBlock + '</div>' +
+      '<div class="wl-conn-card"><div class="wl-conn-top"><span class="wl-conn-label line">' + esc(tx(C.lineLabel)) + '</span></div>' + lineBlock + '</div>' +
+    '</div>';
+  }
+
+  function wireConnStrip(body){
+    var forgetTg = body.querySelector('[data-wl="forgetTg"]');
+    if(forgetTg){
+      forgetTg.addEventListener('click', function(){
+        forgetUid();
+        state.uid = null;
+        state.chatId = null;
+        state.wl = {};
+        paint();
+      });
+    }
+    var forgetLine = body.querySelector('[data-wl="forgetLine"]');
+    if(forgetLine) forgetLine.addEventListener('click', lineLogout);
+    var lineConnectBtn = body.querySelector('[data-wl="lineConnect"]');
+    if(lineConnectBtn){
+      lineConnectBtn.addEventListener('click', function(){
+        state.lineUiOpen = true;
+        lineStartPending();
+      });
+    }
+  }
+
   function paint(){
     if(!sec) return;
     var body = sec.querySelector('[data-wl="body"]');
@@ -32652,20 +32899,37 @@ var GM = {
 
     var uid = state.uid !== undefined ? state.uid : getUid(false);
     var chatId = state.chatId;
+    var hadUid = !!uid;
+    var lineSt = state.line || { status:'idle' };
+    var strip = connStripHTML(uid, chatId, hadUid, lineSt);
 
-    if(!chatId){
-      var hadUid = !!uid;
-      var uid2 = uid || getUid(true);
-      var dl = linkDeepLink(uid2);
-      body.innerHTML =
-        '<div class="wl-empty">' +
-          '<b>' + esc(tx(hadUid ? C.connectPendingH : C.notConnH)) + '</b><br>' +
-          esc(tx(hadUid ? C.connectPendingB : C.notConnB)) + '<br><br>' +
+    if(!chatId && lineSt.status !== 'linked'){
+      body.innerHTML = strip +
+        '<div class="wl-empty" style="margin-top:6px;">' +
+          '<b>' + esc(tx(C.notConnH)) + '</b><br>' +
+          esc(tx(C.notConnB)) + '<br><br>' +
           esc(tx(C.connectLede)) +
-          '<div style="margin-top:16px;">' +
-            '<a class="wl-addbtn" href="' + dl + '" target="_blank" rel="noopener noreferrer">' + esc(tx(C.connectBtn)) + '</a>' +
-          '</div>' +
         '</div>';
+      wireConnStrip(body);
+      return;
+    }
+
+    if(!chatId && lineSt.status === 'linked'){
+      var lineTickers = lineSt.tickers || [];
+      var lineGrid = lineTickers.length
+        ? '<div class="wl-grid">' + lineTickers.map(function(t){ return lineCardHTML(t, stocks ? stocks[t] : null); }).join('') + '</div>'
+        : '<div class="wl-empty"><b>' + esc(tx(C.emptyH)) + '</b><br>' + esc(tx(C.emptyB)) + '</div>';
+      body.innerHTML = strip +
+        '<div class="wl-addnote" style="margin:14px 0;">' + esc(tx(C.lineViewOnlyNote)) + '</div>' +
+        lineGrid;
+      wireConnStrip(body);
+      var openBtnsLine = body.querySelectorAll('[data-wl-open]');
+      for(var iL=0;iL<openBtnsLine.length;iL++){
+        openBtnsLine[iL].addEventListener('click', function(){
+          var t = this.getAttribute('data-wl-open');
+          if(window.__SPZ_STOCK && window.__SPZ_STOCK.open) window.__SPZ_STOCK.open(t);
+        });
+      }
       return;
     }
 
@@ -32702,25 +32966,8 @@ var GM = {
       '<a class="wl-opentg" href="' + plainTgLink() + '" target="_blank" rel="noopener noreferrer">' + esc(tx(C.opentg)) + ' →</a>' +
     '</div>';
 
-    var connectedStrip =
-      '<div class="wl-addnote" style="margin-bottom:10px;">' +
-        esc(tx(C.connectedNote)) + ' · ' +
-        '<a href="#" data-wl="forget" style="color:var(--grey);text-decoration:underline;">' + esc(tx(C.forgetBtn)) + '</a>' +
-      '</div>';
-
-    body.innerHTML = connectedStrip + addBox + grid + howto;
-
-    var forgetLink = body.querySelector('[data-wl="forget"]');
-    if(forgetLink){
-      forgetLink.addEventListener('click', function(e){
-        e.preventDefault();
-        forgetUid();
-        state.uid = null;
-        state.chatId = null;
-        state.wl = {};
-        paint();
-      });
-    }
+    body.innerHTML = strip + addBox + grid + howto;
+    wireConnStrip(body);
 
     var openBtns = body.querySelectorAll('[data-wl-open]');
     for(var i=0;i<openBtns.length;i++){
@@ -32812,6 +33059,11 @@ var GM = {
     new MutationObserver(function(){ try { sec.__render(); } catch(e){} })
       .observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
 
+    if(lineWorkerReady()){
+      var savedLine = lineLoadSession();
+      if(savedLine && savedLine.code) lineRestoreFromWorker(savedLine);
+    }
+
     return true;
   }
 
@@ -32827,10 +33079,15 @@ var GM = {
 
   window.__SPZ_WATCHLIST = { paint: function(){ paint(); }, reload: function(){ loadWatchlist(paint); },
     /* read-only: this browser's own already-loaded list (ticker -> alert
-       threshold), plus whether it is linked to a Telegram account at all --
-       for the Command Center's watchlist card. No new fetch, no other
-       user's data: same state.wl this page's own cards already render. */
-    state: function(){ return { wl: state.wl || null, chatId: state.chatId || null }; } };
+       threshold), plus whether it is linked to a Telegram account at all,
+       plus the LINE-linked ticker list if that's connected instead -- for
+       the Command Center's watchlist card. No new fetch, no other user's
+       data: same state this page's own cards already render. */
+    state: function(){
+      return { wl: state.wl || null, chatId: state.chatId || null,
+        line: { status: (state.line && state.line.status) || 'idle',
+                tickers: (state.line && state.line.tickers) || [] } };
+    } };
 })();
 </script>
 
@@ -39266,7 +39523,13 @@ var GM = {
     var W = window.__SPZ_WATCHLIST, st = null;
     try { st = W && W.state && W.state(); } catch(e){}
     var tickers = (st && st.wl) ? Object.keys(st.wl) : [];
-    if (!st || !st.chatId || !tickers.length) {
+    /* Telegram (full list, own thresholds) takes priority; if that's not
+       connected but LINE is, fall back to LINE's ticker list so the card
+       isn't empty just because the visitor chose the other channel. */
+    if ((!st || !st.chatId || !tickers.length) && st && st.line && st.line.status === 'linked' && st.line.tickers.length) {
+      tickers = st.line.tickers.slice();
+    }
+    if (!st || !tickers.length) {
       return '<div class="cx-card"><div class="cx-lab">' + esc(tx(T.wtL)) + '</div>' +
         '<div class="cx-txt">' + esc(tx(T.wtNone)) + '</div>' + goBtn('watchlist', tx(T.goWl)) + '</div>';
     }
@@ -46773,294 +47036,6 @@ var qrcode = function() {
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 50); });
   else setTimeout(boot, 50);
-})();
-</script>
-
-<!-- ===== SPACEZ TERMINAL — LINE QR session link (personal watchlist) =====
-     Scan-to-link: a floating button opens a QR code; scanning it with LINE
-     on the owner's phone (LINE Login OAuth, handled by a small Cloudflare
-     Worker backend) links THIS browser tab to her real watchlist from
-     data/watchlist.json. A page refresh keeps the link (sessionStorage);
-     only an explicit "logout" or the link's own expiry requires re-scanning.
-     See line-qr-worker.js for the backend this calls. -->
-<style>
-  #spzLineFab{
-    position:fixed;right:18px;bottom:18px;z-index:9400;
-    display:flex;align-items:center;gap:8px;
-    background:#06C755;color:#fff;border:none;border-radius:999px;
-    padding:11px 16px 11px 12px;font-family:var(--mono,monospace);font-size:12.5px;
-    font-weight:700;letter-spacing:.3px;cursor:pointer;
-    box-shadow:0 4px 18px rgba(6,199,85,.4);
-  }
-  #spzLineFab:hover{filter:brightness(1.08);}
-  #spzLineFab .sll-dot{width:8px;height:8px;border-radius:50%;background:#fff;opacity:.55;}
-  #spzLineFab.linked .sll-dot{background:#fff;opacity:1;box-shadow:0 0 0 3px rgba(255,255,255,.25);}
-  #spzLineFab svg{width:16px;height:16px;flex:0 0 auto;}
-
-  #spzLineModal{position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;
-    background:rgba(4,6,10,.72);backdrop-filter:blur(3px);padding:20px;}
-  #spzLineModal[hidden]{display:none !important;}
-  #spzLineModal *{box-sizing:border-box;}
-  .sll-card{width:100%;max-width:360px;background:var(--panel,#12151c);border:1px solid var(--border-dim,#2a2f3a);
-    border-radius:16px;padding:22px;font-family:var(--mono,monospace);color:var(--text,#e8e8e8);
-    text-align:center;position:relative;}
-  .sll-close{position:absolute;top:10px;right:12px;background:none;border:none;color:#888;font-size:20px;cursor:pointer;line-height:1;}
-  .sll-title{font-size:15px;font-weight:800;margin-bottom:4px;}
-  .sll-sub{font-size:12px;color:#999;margin-bottom:16px;line-height:1.6;}
-  .sll-qr-wrap{width:220px;height:220px;margin:0 auto 14px;border-radius:12px;overflow:hidden;
-    background:#fff;display:flex;align-items:center;justify-content:center;}
-  .sll-qr-wrap img{width:100%;height:100%;display:block;}
-  .sll-status{font-size:11.5px;color:#8fe0a8;min-height:16px;margin-bottom:6px;}
-  .sll-status.err{color:#ff6b6b;}
-  .sll-hint{font-size:10.5px;color:#777;line-height:1.6;}
-  .sll-linked-name{font-size:16px;font-weight:800;color:#06C755;margin:4px 0 14px;}
-  .sll-ticklist{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;max-height:220px;overflow:auto;}
-  .sll-tick{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.04);
-    border:1px solid var(--border-dim,#2a2f3a);border-radius:8px;padding:9px 12px;cursor:pointer;text-align:left;}
-  .sll-tick:hover{border-color:#06C755;}
-  .sll-tick b{font-size:13px;}
-  .sll-tick span{font-size:11px;color:#888;}
-  .sll-empty{font-size:12px;color:#888;padding:20px 0;}
-  .sll-logout{width:100%;background:none;border:1px solid var(--border-dim,#2a2f3a);color:#999;
-    border-radius:8px;padding:9px;font-family:var(--mono,monospace);font-size:11.5px;cursor:pointer;}
-  .sll-logout:hover{border-color:#ff6b6b;color:#ff6b6b;}
-  .sll-spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(143,224,168,.3);
-    border-top-color:#8fe0a8;border-radius:50%;animation:sllSpin .8s linear infinite;vertical-align:-2px;margin-right:6px;}
-  @keyframes sllSpin{to{transform:rotate(360deg);}}
-</style>
-
-<button type="button" id="spzLineFab" title="LINE">
-  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 5.94 2 10.8c0 4.37 3.6 8.03 8.46 8.72.33.07.78.22.9.5.1.26.07.66.03.92l-.15.9c-.04.26-.2 1.03.9.56 1.1-.47 5.94-3.5 8.1-6 1.5-1.66 2.2-3.34 2.2-5.6C22.44 5.94 17.96 2 12 2z"/></svg>
-  <span class="sll-dot"></span>
-  <span data-sll="fabLabel">เชื่อมต่อ LINE</span>
-</button>
-
-<div id="spzLineModal" hidden>
-  <div class="sll-card">
-    <button type="button" class="sll-close" data-sll="close">&times;</button>
-    <div data-sll="body"></div>
-  </div>
-</div>
-
-<script>
-(function(){
-  function L(){ return document.documentElement.lang === 'th' ? 'th' : 'en'; }
-  function T(o){ return o ? (o[L()] || o.en) : ''; }
-  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-  var WORKER_BASE = 'https://spacez-line-link.spacezblack.workers.dev';
-
-  var UI = {
-    fabIdle:   {en:'Connect LINE', th:'เชื่อมต่อ LINE'},
-    fabLinked: {en:'My List',      th:'รายการของฉัน'},
-    title:     {en:'Link your LINE',     th:'เชื่อมต่อ LINE ของคุณ'},
-    sub:       {en:'Open LINE on your phone and scan this QR code to link your personal watchlist to this browser.',
-                th:'เปิด LINE บนมือถือแล้วสแกน QR นี้ เพื่อเชื่อมรายการหุ้นของคุณเข้ากับเบราว์เซอร์นี้'},
-    waiting:   {en:'Waiting for scan…', th:'รอการสแกนอยู่ค่ะ…'},
-    linkedAs:  {en:'Linked as', th:'เชื่อมต่อในชื่อ'},
-    yourList:  {en:'Your tracked stocks', th:'หุ้นที่คุณติดตามอยู่'},
-    empty:     {en:'No tickers on your watchlist yet.', th:'ยังไม่มีหุ้นในวอทช์ลิสต์ของคุณค่ะ'},
-    logout:    {en:'Log out of this browser', th:'ออกจากระบบในเบราว์เซอร์นี้'},
-    expired:   {en:'QR expired — reopen to get a new one.', th:'QR หมดอายุแล้ว ปิดแล้วเปิดใหม่อีกครั้งนะคะ'},
-    err:       {en:'Could not reach the link service. Try again in a moment.',
-                th:'เชื่อมต่อระบบไม่ได้ตอนนี้ ลองใหม่อีกครั้งนะคะ'},
-    notReady:  {en:'This feature isn’t switched on yet.', th:'ฟีเจอร์นี้ยังไม่เปิดใช้งานค่ะ'},
-  };
-
-  var STORAGE_KEY = 'spz_line_link';
-  var state = { status:'idle', code:null, displayName:null, tickers:[] };
-  var pollTimer = null;
-
-  var fab, modal, bodyEl;
-
-  function saveSession(){
-    try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ code: state.code, displayName: state.displayName }));
-    } catch(e){}
-  }
-  function loadSession(){
-    try {
-      var raw = sessionStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch(e){ return null; }
-  }
-  function clearSession(){
-    try { sessionStorage.removeItem(STORAGE_KEY); } catch(e){}
-  }
-
-  function workerReady(){ return WORKER_BASE.indexOf('REPLACE-ME') === -1; }
-
-  function api(path){ return WORKER_BASE.replace(/\/$/, '') + path; }
-
-  function paintFab(){
-    if(!fab) return;
-    fab.classList.toggle('linked', state.status === 'linked');
-    var label = fab.querySelector('[data-sll="fabLabel"]');
-    if(label) label.textContent = state.status === 'linked'
-      ? (state.displayName || T(UI.fabLinked))
-      : T(UI.fabIdle);
-  }
-
-  function renderIdleBody(){
-    bodyEl.innerHTML =
-      '<div class="sll-title">' + esc(T(UI.title)) + '</div>' +
-      '<div class="sll-sub">' + esc(T(UI.sub)) + '</div>' +
-      '<div class="sll-qr-wrap" data-sll="qrwrap"></div>' +
-      '<div class="sll-status" data-sll="status"><span class="sll-spin"></span>' + esc(T(UI.waiting)) + '</div>';
-  }
-
-  function renderLinkedBody(){
-    var list = state.tickers.length
-      ? state.tickers.map(function(tk){
-          return '<button type="button" class="sll-tick" data-sll-tk="' + esc(tk) + '">' +
-            '<b>$' + esc(tk) + '</b><span>&rarr;</span></button>';
-        }).join('')
-      : '<div class="sll-empty">' + esc(T(UI.empty)) + '</div>';
-    bodyEl.innerHTML =
-      '<div class="sll-title">' + esc(T(UI.yourList)) + '</div>' +
-      '<div class="sll-linked-name">' + esc(T(UI.linkedAs)) + ': ' + esc(state.displayName || '') + '</div>' +
-      '<div class="sll-ticklist">' + list + '</div>' +
-      '<button type="button" class="sll-logout" data-sll="logout">' + esc(T(UI.logout)) + '</button>';
-    bodyEl.querySelectorAll('[data-sll-tk]').forEach(function(b){
-      b.addEventListener('click', function(){
-        var tk = b.getAttribute('data-sll-tk');
-        closeModal();
-        if(window.__SPZ_STOCK && window.__SPZ_STOCK.open) window.__SPZ_STOCK.open(tk);
-        else location.hash = '#/stock';
-      });
-    });
-    var logoutBtn = bodyEl.querySelector('[data-sll="logout"]');
-    if(logoutBtn) logoutBtn.addEventListener('click', doLogout);
-  }
-
-  function renderMessageBody(msg, isErr){
-    bodyEl.innerHTML =
-      '<div class="sll-title">' + esc(T(UI.title)) + '</div>' +
-      '<div class="sll-status' + (isErr ? ' err' : '') + '" style="margin-top:30px;">' + esc(msg) + '</div>';
-  }
-
-  function openModal(){
-    modal.hidden = false;
-    if(state.status === 'linked') { renderLinkedBody(); return; }
-    if(!workerReady()){ renderMessageBody(T(UI.notReady), true); return; }
-    startPending();
-  }
-  function closeModal(){
-    modal.hidden = true;
-    stopPolling();
-  }
-
-  function stopPolling(){ if(pollTimer){ clearInterval(pollTimer); pollTimer = null; } }
-
-  function startPending(){
-    renderIdleBody();
-    fetch(api('/api/session/new'))
-      .then(function(r){ return r.json(); })
-      .then(function(data){
-        state.code = data.code;
-        var qrWrap = bodyEl.querySelector('[data-sll="qrwrap"]');
-        if(qrWrap){
-          var img = document.createElement('img');
-          img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(data.loginUrl);
-          img.alt = 'QR';
-          qrWrap.appendChild(img);
-        }
-        stopPolling();
-        pollTimer = setInterval(pollStatus, 2500);
-      })
-      .catch(function(){ renderMessageBody(T(UI.err), true); });
-  }
-
-  function pollStatus(){
-    if(!state.code) return;
-    fetch(api('/api/session/status?code=' + encodeURIComponent(state.code)))
-      .then(function(r){ return r.json(); })
-      .then(function(data){
-        if(data.status === 'linked'){
-          stopPolling();
-          state.displayName = data.displayName || '';
-          fetchData();
-        } else if(data.status === 'not_found'){
-          stopPolling();
-          var statusEl = bodyEl.querySelector('[data-sll="status"]');
-          if(statusEl){ statusEl.textContent = T(UI.expired); statusEl.classList.add('err'); }
-        }
-      })
-      .catch(function(){ /* transient network hiccup - just try again next tick */ });
-  }
-
-  function fetchData(){
-    fetch(api('/api/session/data?code=' + encodeURIComponent(state.code)))
-      .then(function(r){ return r.json(); })
-      .then(function(data){
-        state.status = 'linked';
-        state.tickers = data.tickers || [];
-        state.displayName = data.displayName || state.displayName;
-        saveSession();
-        paintFab();
-        renderLinkedBody();
-      })
-      .catch(function(){ renderMessageBody(T(UI.err), true); });
-  }
-
-  function restoreFromWorker(saved){
-    state.code = saved.code;
-    state.displayName = saved.displayName;
-    fetch(api('/api/session/status?code=' + encodeURIComponent(saved.code)))
-      .then(function(r){ return r.json(); })
-      .then(function(data){
-        if(data.status === 'linked'){
-          fetch(api('/api/session/data?code=' + encodeURIComponent(saved.code)))
-            .then(function(r){ return r.json(); })
-            .then(function(dd){
-              state.status = 'linked';
-              state.tickers = dd.tickers || [];
-              state.displayName = dd.displayName || state.displayName;
-              paintFab();
-            })
-            .catch(function(){});
-        } else {
-          clearSession();
-          state = { status:'idle', code:null, displayName:null, tickers:[] };
-          paintFab();
-        }
-      })
-      .catch(function(){ /* worker unreachable - keep whatever we had locally, retry next reload */ });
-  }
-
-  function doLogout(){
-    var code = state.code;
-    stopPolling();
-    clearSession();
-    state = { status:'idle', code:null, displayName:null, tickers:[] };
-    paintFab();
-    closeModal();
-    if(code && workerReady()){
-      fetch(api('/api/session/logout'), {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ code: code })
-      }).catch(function(){});
-    }
-  }
-
-  function build(){
-    fab = document.getElementById('spzLineFab');
-    modal = document.getElementById('spzLineModal');
-    bodyEl = modal.querySelector('[data-sll="body"]');
-    fab.addEventListener('click', openModal);
-    modal.querySelector('[data-sll="close"]').addEventListener('click', closeModal);
-    modal.addEventListener('click', function(ev){ if(ev.target === modal) closeModal(); });
-    new MutationObserver(paintFab).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
-
-    if(workerReady()){
-      var saved = loadSession();
-      if(saved && saved.code) restoreFromWorker(saved);
-    }
-    paintFab();
-  }
-
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build);
-  else build();
 })();
 </script>
 </body>
