@@ -10,13 +10,14 @@ on:
   workflow_dispatch:          # run it by hand from the Actions tab
     inputs:
       test_alerts:
-        description: 'ส่งข้อความตัวอย่างทุกแบบไป Telegram (โหมดทดสอบ)'
+        description: 'ส่งข้อความตัวอย่างทุกแบบไป Telegram + LINE (โหมดทดสอบ)'
         type: boolean
         default: false
   push:
     paths:
       - 'scripts/fetch_market.py'
       - 'scripts/alerts_telegram.py'
+      - 'scripts/alerts_line.py'
       - '.github/workflows/market-data.yml'
 
 permissions:
@@ -36,6 +37,12 @@ jobs:
       # to skip itself entirely rather than run half-configured.
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      # Same idea as the Telegram secrets above, for the LINE Official
+      # Account broadcast channel (scripts/alerts_line.py). TELEGRAM_CHAT_ID
+      # is also read by alerts_line.py itself, purely to look up the site
+      # owner's own watchlist bucket in data/watchlist.json - no message is
+      # ever sent to Telegram from that script.
+      LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
       # Optional repository Variables; blank falls back to the script defaults.
       ALERT_ENABLE: ${{ vars.ALERT_ENABLE }}
       ALERT_MOVE_PCT: ${{ vars.ALERT_MOVE_PCT }}
@@ -67,6 +74,15 @@ jobs:
         continue-on-error: true
         run: python scripts/alerts_telegram.py
 
+      # Same skip-when-unconfigured pattern as the Telegram step above, and
+      # deliberately independent of it - this is a broadcast to the LINE
+      # Official Account's own friend list, a completely separate audience
+      # from the one Telegram chat id.
+      - name: Send LINE alerts
+        if: ${{ env.LINE_CHANNEL_ACCESS_TOKEN != '' }}
+        continue-on-error: true
+        run: python scripts/alerts_line.py
+
       # Pushing plain `git push` from the default branch works for a normal
       # run, but fails two ways that are not real problems:
       #   - re-running an older run checks out that commit, so HEAD is behind
@@ -81,13 +97,14 @@ jobs:
           git config user.name  "spacez-market-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          if [ -z "$(git status --porcelain data/market.json data/alerts_state.json)" ]; then
+          if [ -z "$(git status --porcelain data/market.json data/alerts_state.json data/alerts_state_line.json)" ]; then
             echo "no change"
             exit 0
           fi
 
           git add data/market.json
           [ -f data/alerts_state.json ] && git add data/alerts_state.json
+          [ -f data/alerts_state_line.json ] && git add data/alerts_state_line.json
           git commit -m "data: market snapshot $(date -u '+%Y-%m-%d %H:%M UTC')"
 
           for attempt in 1 2 3; do
