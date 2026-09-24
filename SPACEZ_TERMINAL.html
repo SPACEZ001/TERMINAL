@@ -475,15 +475,15 @@
   #cmpPrintSheet .cmp-summary-wrap{font-size:10.6px;color:#333;line-height:1.75;padding:12px 14px;background:#f5f5f5;border-radius:6px;border:1px solid #ccc;}
   #cmpPrintSheet .cmp-summary-wrap b{color:#161616;}
 
-  /* ---- Round 9 rev.2: same <table>+<thead> repeating-header technique as
-     #printreport (see the detailed comment on its own rule) -- position:fixed
-     doesn't repeat per page in Safari's print engine and mis-places the one
-     copy it draws, so the sheet is wrapped in a table whose <thead> every
-     browser (Safari included) has repeated across printed pages for decades. */
-  #cmpPrintSheet .cmp-sheet-table{width:100%;border-collapse:collapse;border-spacing:0;}
-  #cmpPrintSheet .cmp-sheet-table td{padding:0;border:0;}
-  #cmpPrintSheet .cmp-sheet-table thead{display:none;}
-  #cmpPrintSheet .cmp-runhead{display:flex;align-items:center;gap:7px;}
+  /* ---- Round 10: beginner glossary page ---- */
+  #cmpPrintSheet .cmp-gloss-page{}
+  @media print{ #cmpPrintSheet .cmp-gloss-page{page-break-before:always;} }
+  #cmpPrintSheet .cmp-gloss-note{font-size:9.5px;color:#666;margin-bottom:10px;line-height:1.5;}
+  #cmpPrintSheet .cmp-gloss-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;}
+  #cmpPrintSheet .cmp-gloss-cell{border:1px solid #ccc;border-radius:6px;padding:9px 11px;break-inside:avoid;page-break-inside:avoid;}
+  #cmpPrintSheet .cmp-gloss-t{font-size:10.5px;font-weight:800;color:#161616;margin-bottom:4px;}
+  #cmpPrintSheet .cmp-gloss-d{font-size:9.6px;color:#555;line-height:1.55;}
+  @media(max-width:640px){ #cmpPrintSheet .cmp-gloss-grid{grid-template-columns:1fr;} }
 
   @media print{
     /* Round 9: force exact background colors on real Print/Save-as-PDF too --
@@ -499,15 +499,6 @@
       display:block !important;position:static !important;max-width:none !important;
       width:100% !important;padding:0 !important;margin:0 !important;
     }
-    #cmpPrintSheet .cmp-sheet-table thead{display:table-header-group;}
-    #cmpPrintSheet .cmp-runhead{
-      padding-bottom:6px;margin-bottom:10px;border-bottom:1px solid #999;
-      font-size:8.3px;color:#666;background:#fff;
-    }
-    #cmpPrintSheet .cmp-runhead img{width:13px;height:auto;flex:0 0 auto;}
-    #cmpPrintSheet .cmp-runhead b{color:#161616;font-weight:800;letter-spacing:1px;margin-right:4px;}
-    #cmpPrintSheet .cmp-runhead span{margin-left:auto;}
-    #cmpPrintSheet .cmp-runhead span + span{margin-left:14px;}
     @page{ size:A4; margin:14mm 14mm 12mm 14mm; }
 
     /* Round 9 fix: a rank-item box could land right at a page boundary and get
@@ -3900,7 +3891,7 @@
   /* ---------- the cue that travels with you ----------
      Guided mode used to drop the reader onto a full screen and say nothing.
      This card rides along and names the one thing to look at. */
-  .gm-cue{position:fixed;right:18px;bottom:104px;z-index:46;width:min(340px,calc(100vw - 36px));
+  .gm-cue{position:fixed;right:18px;bottom:160px;z-index:46;width:min(340px,calc(100vw - 36px));
     border:1px solid var(--border);border-radius:13px;overflow:hidden;
     background:linear-gradient(160deg,rgba(18,20,14,.97),rgba(10,10,10,.97));
     box-shadow:0 18px 48px rgba(0,0,0,.55);
@@ -3924,13 +3915,13 @@
     padding:9px;border-radius:6px;cursor:pointer;border:1px solid var(--border-dim);
     background:transparent;color:var(--grey);}
   .gm-cue-n button.pri{border-color:var(--neon);background:var(--neon);color:#0a0a0a;font-weight:700;}
-  .gm-peek{position:fixed;right:18px;bottom:104px;z-index:45;font-family:var(--mono);font-size:10.5px;
+  .gm-peek{position:fixed;right:18px;bottom:160px;z-index:45;font-family:var(--mono);font-size:10.5px;
     letter-spacing:1px;padding:10px 14px;border-radius:20px;cursor:pointer;
     border:1px solid var(--border);background:rgba(10,10,10,.94);color:var(--neon);
     display:none;box-shadow:0 10px 30px rgba(0,0,0,.5);}
   .gm-peek.show{display:block;}
   @media(max-width:640px){
-    .gm-cue,.gm-peek{right:10px;left:10px;bottom:96px;width:auto;}
+    .gm-cue,.gm-peek{right:10px;left:10px;bottom:160px;width:auto;}
   }
   html[data-theme="light"] .gm-cue{background:rgba(255,255,255,.98);}
   html[data-theme="light"] .gm-cue-h b{color:#12141c;}
@@ -10129,6 +10120,27 @@ render: heavy series on Canvas2D/WebGL off the React tree; React only owns chrom
       '<div class="cmp-chart-note">' + cmpEsc(translations[lang]['compare.pdf.chartNote']) + '</div>';
   }
 
+  /* ---- Round 10: shares the same beginner-glossary term list the Print
+     Report module publishes on window.__SPZ_GLOSSARY, formatted with this
+     module's own escaping/lang plumbing since it lives in a separate
+     closure. Content stays identical across both reports either way. ---- */
+  function cmpGlossaryHTML(lang){
+    var terms = window.__SPZ_GLOSSARY || [];
+    if(!terms.length) return '';
+    var cells = terms.map(function(g){
+      var e = g[lang] || g.en;
+      return '<div class="cmp-gloss-cell"><div class="cmp-gloss-t">' + cmpEsc(e.t) + '</div><div class="cmp-gloss-d">' + cmpEsc(e.d) + '</div></div>';
+    }).join('');
+    var h = lang === 'th' ? 'คำศัพท์สำคัญ อธิบายง่ายๆ' : 'Key Terms, Explained';
+    var note = lang === 'th' ? 'เพิ่งเริ่มอ่าน? เริ่มตรงนี้ก่อน — คำอธิบายง่ายๆ ของตัวเลขที่ใช้ในรายงานนี้'
+                              : 'New to this? Start here — plain-language definitions of the figures used in this report.';
+    return '<div class="cmp-gloss-page">' +
+      '<div class="cmp-sec-h">' + cmpEsc(h) + '</div>' +
+      '<div class="cmp-gloss-note">' + cmpEsc(note) + '</div>' +
+      '<div class="cmp-gloss-grid">' + cells + '</div>' +
+    '</div>';
+  }
+
   function cmpReportHTML(sel, values, bestWorst, finalScores){
     const lang = currentLang;
     const tr = translations[lang];
@@ -10141,18 +10153,7 @@ render: heavy series on Canvas2D/WebGL off the React tree; React only owns chrom
     const rankClone = document.getElementById('compareRanking');
     const summaryClone = document.getElementById('compareSummaryText');
 
-    const cmpRunheadHTML = '<div class="cmp-runhead">' +
-        '<img src="' + CMP_LOGO + '" alt="">' +
-        '<b>' + cmpEsc(tr['compare.pdf.brand']) + '</b>' +
-        '<span>' + cmpEsc(tr['compare.pdf.generated']) + ': ' + cmpEsc(now.toLocaleString(lang === 'th' ? 'th-TH' : 'en-US')) + '</span>' +
-        '<span>' + cmpEsc(tr['compare.pdf.dataAsOf']) + ': ' + cmpEsc(dataAsOf) + '</span>' +
-      '</div>';
-
-    /* Round 9 (rev. 2): position:fixed doesn't repeat per printed page in
-       Safari (and mis-places the one copy it does draw) -- use a <table>
-       with a <thead> instead, which every browser repeats on each page. */
-    return '<table class="cmp-sheet-table"><thead><tr><td>' + cmpRunheadHTML + '</td></tr></thead><tbody><tr><td>' +
-      '<div class="cmp-sheet">' +
+    return '<div class="cmp-sheet">' +
       '<div class="cmp-head">' +
         '<img class="cmp-logo" src="' + CMP_LOGO + '" alt="">' +
         '<div class="cmp-brand">' + cmpEsc(tr['compare.pdf.brand']) + '</div>' +
@@ -10174,9 +10175,9 @@ render: heavy series on Canvas2D/WebGL off the React tree; React only owns chrom
       '</div>' +
       '<div class="cmp-sec-h">' + cmpEsc(tr['compare.pdf.summaryH']) + '</div>' +
       '<div class="cmp-summary-wrap">' + (summaryClone ? summaryClone.innerHTML : '') + '</div>' +
+      cmpGlossaryHTML(lang) +
       '<div class="cmp-foot">' + cmpEsc(tr['compare.disclaimer']) + '</div>' +
-      '</div>' +
-    '</td></tr></tbody></table>';
+    '</div>';
   }
 
   function cmpDoDownload(){
@@ -25352,7 +25353,7 @@ var GM = {
       '<div class="rc-tf" data-rc="tf"></div>' +
       '<div class="rc-body" data-rc="body"></div>' +
       '<p class="rc-legend" data-rc="legend"></p>' +
-      '<details class="rc-explain">' +
+      '<details class="rc-explain" open>' +
         '<summary data-rc="explainSum"></summary>' +
         '<div class="rc-explain-body">' +
           '<p data-rc="explainBody"></p>' +
@@ -41733,6 +41734,23 @@ var qrcode = function() {
   #printreport .pr-tech-i{display:inline-flex;align-items:center;gap:6px;font-size:9.6px;font-weight:700;color:#333;}
   #printreport .pr-tech-i i{display:inline-block;width:16px;height:2.5px;border-radius:2px;}
 
+  /* ---- Round 10: beginner glossary page + market-cycle / gold-report badge ---- */
+  #printreport .pr-gloss-page{}
+  @media print{
+    #printreport .pr-gloss-page{page-break-before:always;}
+  }
+  #printreport .pr-gloss-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;}
+  #printreport .pr-gloss-cell{border:1px solid #ccc;border-radius:6px;padding:9px 11px;break-inside:avoid;page-break-inside:avoid;}
+  #printreport .pr-gloss-t{font-size:10.5px;font-weight:800;color:#161616;margin-bottom:4px;}
+  #printreport .pr-gloss-d{font-size:9.6px;color:#555;line-height:1.55;}
+  @media(max-width:640px){ #printreport .pr-gloss-grid{grid-template-columns:1fr;} }
+  #printreport .pr-cycle-now{
+    font-size:15px;font-weight:800;color:#161616;margin-top:10px;padding:8px 12px;
+    border:1.5px solid #161616;border-radius:6px;display:inline-block;
+  }
+  #printreport .pr-cycle-now.pr-up{color:#0a7f45;border-color:#0a7f45;}
+  #printreport .pr-cycle-now.pr-down{color:#c81e4a;border-color:#c81e4a;}
+
   /* ---- Round 8: optional final QR-code / contact page, minimal & formal ---- */
   #printreport .pr-qr-page{
     margin-top:26px;padding:36px 30px 30px;border:1px solid #161616;border-radius:8px;
@@ -41766,30 +41784,9 @@ var qrcode = function() {
 
   html[data-theme="light"] #printreport .pr-controls{background:rgba(0,0,0,.02);}
 
-  /* ---- Round 9 rev.2: the print sheet is wrapped in a <table> (see
-     reportHTML in JS) purely so its <thead> repeats on every printed page --
-     a position:fixed strip was tried first, but Safari's print engine
-     (WebKit) doesn't repeat position:fixed content per page and mis-places
-     even the single copy it draws. A table's <thead> has repeated across
-     printed pages in every browser, Safari included, since the 1990s. */
-  #printreport .pr-sheet-table{width:100%;max-width:800px;border-collapse:collapse;border-spacing:0;}
-  #printreport .pr-sheet-table td{padding:0;border:0;}
-  #printreport .pr-sheet-table thead{display:none;}
-  #printreport .pr-runhead{display:flex;align-items:center;gap:7px;}
-
   /* ---- the real print / Save-as-PDF output ---- */
   @media print{
     @page{ size:A4; margin:14mm 14mm 12mm 14mm; }
-    #printreport .pr-sheet-table{max-width:none !important;width:100% !important;}
-    #printreport .pr-sheet-table thead{display:table-header-group;}
-    #printreport .pr-runhead{
-      padding-bottom:6px;margin-bottom:10px;border-bottom:1px solid #999;
-      font-size:8.3px;color:#666;background:#fff;
-    }
-    #printreport .pr-runhead img{width:13px;height:auto;flex:0 0 auto;}
-    #printreport .pr-runhead b{color:#161616;font-weight:800;letter-spacing:1px;margin-right:4px;}
-    #printreport .pr-runhead span{margin-left:auto;}
-    #printreport .pr-runhead span + span{margin-left:14px;}
     /* Round 9: without this, most browsers' real Print/Save-as-PDF flow
        (as opposed to this file's own dev-time headless PDF export) treats
        "background graphics" as OFF by default -- silently dropping every
@@ -41898,15 +41895,92 @@ var qrcode = function() {
     techH:{en:'Technical Chart — Price vs. Moving Averages',th:'กราฟเทคนิค — ราคาเทียบเส้นค่าเฉลี่ยเคลื่อนที่'},
     techPrice:{en:'Price',th:'ราคา'},
     techSma50:{en:'50-Day MA',th:'ค่าเฉลี่ย 50 วัน'},
-    techSma200:{en:'200-Day MA',th:'ค่าเฉลี่ย 200 วัน'}
+    techSma200:{en:'200-Day MA',th:'ค่าเฉลี่ย 200 วัน'},
+
+    /* ---- Round 10: report-type selector + Gold Analysis Report ---- */
+    typeLbl:{en:'Report',th:'รายงาน'},
+    typeMarket:{en:'Market Summary',th:'สรุปภาพรวมตลาด'},
+    typeGold:{en:'Gold Analysis',th:'วิเคราะห์ทองคำ'},
+    goldTitle:{en:'Gold Market Analysis Report',th:'รายงานวิเคราะห์ตลาดทองคำ'},
+    goldSub:{en:'Internal / Admin Report — Not Investment Advice',th:'รายงานภายใน / เฉพาะแอดมิน — ไม่ใช่คำแนะนำการลงทุน'},
+    goldPriceH:{en:'Gold — Price & Momentum',th:'ทองคำ — ราคาและโมเมนตัม'},
+    goldPriceNote:{en:'Tracked via the SPDR Gold Shares ETF (GLD), the same live feed already used elsewhere on this site — not a separate data source.',
+                   th:'ติดตามผ่านกองทุน SPDR Gold Shares (GLD) ใช้ชุดข้อมูลสดชุดเดียวกับที่เว็บนี้ใช้อยู่แล้วในหน้าอื่น ไม่ได้ดึงจากแหล่งใหม่'},
+    goldMacroH:{en:'Macro Backdrop — Rates & the Dollar',th:'ภาพเศรษฐกิจมหภาค — ดอกเบี้ยและดอลลาร์'},
+    goldMacroNote:{en:'Gold pays no coupon, so it competes directly with yield-bearing assets and the dollar. These four series are the ones that matter most.',
+                   th:'ทองคำไม่มีดอกเบี้ยจ่าย จึงแข่งขันโดยตรงกับสินทรัพย์ที่มีผลตอบแทนและกับดอลลาร์ สี่ตัวชี้วัดนี้คือตัวที่สำคัญที่สุด'},
+    goldFlowH:{en:'Where the Money Is Flowing — Risk vs. Safe-Haven',th:'เงินทุนกำลังไหลไปทางไหน — สินทรัพย์เสี่ยง vs ปลอดภัย'},
+    goldFlowNote:{en:'1-month momentum across the safe-haven group gold sits in, and the risk-asset group money leaves when it moves toward gold. Same asset-flow data used by the Capital Flow page.',
+                  th:'โมเมนตัม 1 เดือนของกลุ่มสินทรัพย์ปลอดภัยที่ทองคำอยู่ เทียบกับกลุ่มสินทรัพย์เสี่ยงที่เงินมักไหลออกเมื่อไหลเข้าทองคำ ใช้ข้อมูลชุดเดียวกับหน้ากระแสเงินทุน'},
+    goldForecastH:{en:'Outlook & What Could Change It',th:'มุมมองไปข้างหน้า และอะไรจะเปลี่ยนมัน'},
+    goldForecastLede:{en:'Built live from the drivers below, not a fixed script — the read updates automatically as these numbers move.',
+                       th:'ประเมินสดจากตัวชี้วัดด้านล่าง ไม่ใช่บทที่เขียนตายตัว — มุมมองนี้จะเปลี่ยนไปเองเมื่อตัวเลขเหล่านี้เปลี่ยน'},
+    goldVerdictUp:{en:'Constructive for gold',th:'เอื้อต่อทองคำ'},
+    goldVerdictDown:{en:'Facing headwinds',th:'เจอแรงกดดัน'},
+    goldVerdictMixed:{en:'Two-sided, no clear lean',th:'สองด้าน ยังไม่ชัดเจน'},
+    goldCbH:{en:'Central Banks & the Institutional View',th:'ธนาคารกลางและมุมมองนักลงทุนสถาบัน'},
+    goldCbStructural:{en:'Central banks — led in recent years by emerging-market reserve managers such as China, India, Poland and Turkey — have been steady net buyers of gold, diversifying reserves away from any single currency. That is a slow-moving, structural source of demand that sits underneath day-to-day investor positioning, not a substitute for it.',
+                       th:'ธนาคารกลางหลายแห่ง — โดยเฉพาะประเทศตลาดเกิดใหม่อย่างจีน อินเดีย โปแลนด์ และตุรกี — เป็นผู้ซื้อทองคำสุทธิต่อเนื่องในช่วงหลายปีที่ผ่านมา เพื่อกระจายทุนสำรองออกจากสกุลเงินใดสกุลเงินหนึ่ง นี่คือแรงซื้อเชิงโครงสร้างที่เคลื่อนไหวช้า ซ้อนอยู่ใต้การซื้อขายของนักลงทุนรายวัน ไม่ใช่ตัวแทนของมัน'},
+    goldRateHikeLbl:{en:'If the policy path is still tightening:',th:'ถ้าแนวทางนโยบายยังคงตึงตัว:'},
+    goldRateHikeNote:{en:'Gold pays no interest, so when real yields rise the opportunity cost of holding it goes up — and a stronger dollar makes it pricier for foreign buyers too. The exception: if hikes are racing to catch up with inflation and real yields stay negative, gold can hold up or even rise anyway.',
+                       th:'ทองคำไม่มีดอกเบี้ยจ่าย เมื่อดอกเบี้ยที่แท้จริงสูงขึ้น ต้นทุนค่าเสียโอกาสจากการถือทองก็สูงขึ้นตาม และดอลลาร์ที่แข็งค่ายังทำให้ทองแพงขึ้นสำหรับผู้ซื้อต่างประเทศด้วย ข้อยกเว้นคือถ้าขึ้นดอกเบี้ยเพื่อไล่ตามเงินเฟ้อที่สูงมาก จนดอกเบี้ยที่แท้จริงยังติดลบอยู่ ทองคำก็อาจทรงตัวหรือขึ้นได้เหมือนกัน'},
+    goldRateCutLbl:{en:'If the policy path is turning toward easing:',th:'ถ้าแนวทางนโยบายกำลังหันไปผ่อนคลาย:'},
+    goldRateCutNote:{en:'Lower real yields shrink the opportunity cost of holding a non-yielding asset, and a weaker dollar makes gold cheaper for foreign buyers. Cuts often arrive alongside growth worries too, which adds safe-haven demand on top.',
+                      th:'ดอกเบี้ยที่แท้จริงต่ำลงทำให้ต้นทุนค่าเสียโอกาสของการถือสินทรัพย์ที่ไม่มีดอกเบี้ยลดลง และดอลลาร์ที่อ่อนค่าทำให้ทองคำถูกลงสำหรับผู้ซื้อต่างประเทศ การลดดอกเบี้ยมักมาพร้อมความกังวลเรื่องเศรษฐกิจด้วย ซึ่งยิ่งเพิ่มแรงซื้อสินทรัพย์ปลอดภัย'},
+    goldRiskH:{en:'Key Risks to This Read',th:'ความเสี่ยงต่อมุมมองนี้'},
+    goldRisk1:{en:'A spiking VIX can also force leveraged holders to sell gold to raise cash for margin calls — a liquidity event that looks identical to safe-haven buying in the data until it reverses.',
+               th:'VIX ที่พุ่งขึ้นแรงอาจทำให้ผู้ถือสถานะที่ใช้เลเวอเรจต้องขายทองคำเพื่อหาเงินสดมาวางหลักประกัน ซึ่งหน้าตาในข้อมูลจะดูเหมือนแรงซื้อสินทรัพย์ปลอดภัย จนกว่ามันจะกลับทิศ'},
+    goldRisk2:{en:'This report has no live inflation print — real yields are inferred from the direction of nominal yields alone, which can mislead if inflation expectations move sharply.',
+               th:'รายงานนี้ไม่มีตัวเลขเงินเฟ้อสดแบบเรียลไทม์ — ดอกเบี้ยที่แท้จริงจึงประเมินจากทิศทางของดอกเบี้ยตัวเงิน (nominal) เพียงอย่างเดียว ซึ่งอาจคลาดเคลื่อนได้ถ้าคาดการณ์เงินเฟ้อเปลี่ยนแรง'},
+    goldRisk3:{en:'A single-month reading can reverse quickly. Weigh this against your own time horizon, and re-check every figure at its primary source before acting on it.',
+               th:'ตัวเลขรอบเดือนเดียวพลิกกลับได้เร็ว ให้ชั่งน้ำหนักกับกรอบเวลาลงทุนของตัวเอง และตรวจทานทุกตัวเลขจากแหล่งต้นทางก่อนตัดสินใจจริง'},
+    cycleH:{en:'Where We Are in the Market Cycle',th:'ตอนนี้ตลาดอยู่ตรงไหนของวัฏจักร'},
+    cycleNote:{en:'A live read from breadth, the yield curve and cyclical-vs-defensive leadership — not a forecast, and it can flip within a quarter.',
+               th:'ประเมินสดจากความกว้างของตลาด เส้นอัตราผลตอบแทน และการนำของหุ้นวัฏจักรเทียบหุ้นตั้งรับ — ไม่ใช่การพยากรณ์ และพลิกได้ภายในไตรมาสเดียว'},
+    cycleLead:{en:'Historically leads in this phase',th:'กลุ่มที่มักนำตลาดในช่วงนี้'},
+    cycleLag:{en:'Historically lags in this phase',th:'กลุ่มที่มักตามหลังในช่วงนี้'},
+    glossaryH:{en:'Key Terms, Explained',th:'คำศัพท์สำคัญ อธิบายง่ายๆ'},
+    glossaryNote:{en:'New to this? Start here — plain-language definitions of the figures used throughout this report.',
+                  th:'เพิ่งเริ่มอ่าน? เริ่มตรงนี้ก่อน — คำอธิบายง่ายๆ ของตัวเลขที่ใช้ตลอดทั้งรายงานนี้'}
   };
 
   var sec = null;
   var mode = 'full';               /* 'full' | 'select' */
+  var reportType = 'market';       /* Round 10: 'market' | 'gold' -- which report to generate */
   var picked = {};                 /* ticker -> true, used only in 'select' mode */
   var pickQuery = '';              /* live filter text for the ticker search box */
   var styleId = 'formal';          /* fixed -- Round 8: user asked to drop the classic/technical style choices and keep formal only */
   var includeQrPage = true;        /* Round 8: optional final QR/contact page, on by default, user-toggleable */
+
+  /* ---- Round 10: shared beginner glossary -- exposed on window so the
+     separate Compare Stocks report module (its own scope, its own i18n
+     system) can render the exact same term list without duplicating the
+     copy. Kept short and print-friendly; the full essay-length versions
+     of these definitions already live in the on-site Learn glossary. ---- */
+  if(!window.__SPZ_GLOSSARY){
+    window.__SPZ_GLOSSARY = [
+      { en:{t:'P/E — Price to Earnings', d:'Share price divided by profit per share. A rough answer to "how many years of today\'s profit am I paying for". Only meaningful compared with other companies in the same industry.'},
+        th:{t:'P/E — ราคาต่อกำไร', d:'ราคาหุ้นหารด้วยกำไรต่อหุ้น บอกคร่าวๆ ว่า "จ่ายเงินซื้อกำไรล่วงหน้ากี่ปี" มีความหมายก็ต่อเมื่อเทียบกับบริษัทในอุตสาหกรรมเดียวกัน'} },
+      { en:{t:'ROE — Return on Equity', d:'Net profit divided by shareholders\' equity. Shows how efficiently a company turns the money shareholders put in into profit — higher is generally better, but check debt levels too.'},
+        th:{t:'ROE — ผลตอบแทนต่อส่วนของผู้ถือหุ้น', d:'กำไรสุทธิหารด้วยส่วนของผู้ถือหุ้น บอกว่าบริษัทใช้เงินทุนของผู้ถือหุ้นสร้างกำไรได้มีประสิทธิภาพแค่ไหน ยิ่งสูงยิ่งดี แต่ควรดูระดับหนี้ประกอบด้วย'} },
+      { en:{t:'D/E — Debt to Equity', d:'Total debt divided by shareholders\' equity. Below 1.0x is generally conservative; above 2.0x means the business leans heavily on borrowed money and is more fragile in downturns.'},
+        th:{t:'D/E — หนี้สินต่อทุน', d:'หนี้สินรวมหารด้วยส่วนของผู้ถือหุ้น ต่ำกว่า 1.0 เท่า ถือว่าระมัดระวัง สูงกว่า 2.0 เท่า แปลว่าธุรกิจพึ่งพาเงินกู้มาก และเปราะบางกว่าในช่วงเศรษฐกิจไม่ดี'} },
+      { en:{t:'P/B — Price to Book', d:'Share price divided by book (accounting) value per share. Below 1.0x can mean the market thinks the assets are overstated or troubled; well above 1.0x is normal for profitable, asset-light businesses.'},
+        th:{t:'P/B — ราคาต่อมูลค่าทางบัญชี', d:'ราคาหุ้นหารด้วยมูลค่าทางบัญชีต่อหุ้น ต่ำกว่า 1.0 เท่า อาจแปลว่าตลาดมองว่าสินทรัพย์ตีมูลค่าสูงเกินจริงหรือมีปัญหา ส่วนธุรกิจที่กำไรดีและใช้สินทรัพย์น้อยมักมีค่านี้สูงกว่า 1.0 เท่าเป็นปกติ'} },
+      { en:{t:'RSI — Relative Strength Index', d:'A 0–100 momentum gauge. Above 70 is usually read as overbought, below 30 as oversold — a stretch warning, not a guaranteed reversal.'},
+        th:{t:'RSI — ดัชนีความแข็งแกร่งสัมพัทธ์', d:'มาตรวัดโมเมนตัมตั้งแต่ 0–100 เกิน 70 มักตีความว่าซื้อมากเกินไป ต่ำกว่า 30 คือขายมากเกินไป เป็นสัญญาณเตือนว่าตึงเกินไป ไม่ใช่การยืนยันว่าจะกลับตัวแน่นอน'} },
+      { en:{t:'Moving Average (MA50 / MA200)', d:'The average price over the last 50 or 200 trading days, smoothing out daily noise. Price above its 200-day average is the textbook definition of an uptrend; a 50-day average crossing above the 200-day is called a "golden cross".'},
+        th:{t:'เส้นค่าเฉลี่ยเคลื่อนที่ (MA50 / MA200)', d:'ราคาเฉลี่ยของ 50 หรือ 200 วันทำการล่าสุด ช่วยกรองความผันผวนรายวันออก ราคาที่อยู่เหนือเส้น 200 วันถือเป็นขาขึ้นตามตำรา ส่วนเส้น 50 วันตัดขึ้นเหนือเส้น 200 วันเรียกว่า "โกลเด้นครอส"'} },
+      { en:{t:'DXY — US Dollar Index', d:'Measures the dollar against a basket of major currencies. Gold and DXY usually move opposite each other, since gold is priced in dollars worldwide.'},
+        th:{t:'DXY — ดัชนีค่าเงินดอลลาร์', d:'วัดค่าเงินดอลลาร์เทียบกับตะกร้าสกุลเงินหลัก ทองคำกับ DXY มักเคลื่อนไหวสวนทางกัน เพราะทองคำตั้งราคาเป็นดอลลาร์ทั่วโลก'} },
+      { en:{t:'Real Yield vs. Nominal Yield', d:'The nominal yield is the interest rate printed on a bond. The real yield subtracts expected inflation from it. Gold competes with the real yield, since gold pays no interest at all.'},
+        th:{t:'ดอกเบี้ยที่แท้จริง เทียบ ดอกเบี้ยตัวเงิน', d:'ดอกเบี้ยตัวเงินคืออัตราที่ระบุบนพันธบัตร ส่วนดอกเบี้ยที่แท้จริงคือดอกเบี้ยตัวเงินหักด้วยเงินเฟ้อที่คาดการณ์ไว้ ทองคำแข่งขันกับดอกเบี้ยที่แท้จริงโดยตรง เพราะทองคำไม่มีดอกเบี้ยจ่ายเลย'} },
+      { en:{t:'Yield Curve (10Y–3M)', d:'The gap between the 10-year and 3-month US Treasury yields. A positive gap is normal; a negative (inverted) gap has historically preceded most US recessions, often by a year or more.'},
+        th:{t:'เส้นอัตราผลตอบแทน (10ปี−3เดือน)', d:'ส่วนต่างระหว่างผลตอบแทนพันธบัตรสหรัฐอายุ 10 ปี กับ 3 เดือน ปกติจะเป็นบวก ถ้าติดลบ (กลับหัว) ในอดีตมักเกิดก่อนภาวะถดถอยของสหรัฐฯ ล่วงหน้าเป็นปีหรือมากกว่านั้น'} },
+      { en:{t:'VIX & Safe-Haven Demand', d:'The VIX tracks expected S&P 500 volatility and is nicknamed the "fear gauge". When it rises sharply, investors often rotate into safe havens — gold, the dollar, long government bonds — at the expense of riskier assets.'},
+        th:{t:'VIX และแรงซื้อสินทรัพย์ปลอดภัย', d:'VIX วัดความผันผวนที่คาดการณ์ไว้ของ S&P 500 มีชื่อเล่นว่า "ดัชนีความกลัว" เมื่อ VIX พุ่งขึ้นแรง นักลงทุนมักย้ายเงินเข้าสินทรัพย์ปลอดภัย เช่น ทองคำ ดอลลาร์ พันธบัตรรัฐบาลระยะยาว โดยแลกกับสินทรัพย์เสี่ยง'} }
+    ];
+  }
 
   var PR_SITE_URL = 'https://spacez001.github.io/TERMINAL/';
   var PR_IG_URL = 'https://www.instagram.com/spczterminal';
@@ -42193,29 +42267,11 @@ var qrcode = function() {
       '-' + String(d.getHours()).padStart(2,'0') + String(d.getMinutes()).padStart(2,'0');
   }
 
-  function runningHeadHTML(now, snap){
-    /* Round 9 (rev. 2): a slim strip that repeats at the top of every PRINTED
-       page. First tried as position:fixed, but that only works in Chromium --
-       Safari's print engine (WebKit) doesn't repeat position:fixed content
-       per page at all, and mis-places the single copy it does draw. The
-       cross-browser-reliable trick is a <thead> on the print sheet's own
-       table wrapper (see reportHTML): browsers have repeated table headers
-       across printed pages since the 1990s, Safari included. This div is now
-       simply the content of that <thead> cell -- no special positioning. */
-    return '<div class="pr-runhead">' +
-        '<img src="' + PR_LOGO + '" alt="">' +
-        '<b>' + esc(T(UI.brand)) + '</b>' +
-        '<span>' + esc(T(UI.generated)) + ': ' + esc(now.toLocaleString(L() === 'th' ? 'th-TH' : 'en-US')) + '</span>' +
-        '<span>' + esc(T(UI.asof)) + ': ' + esc(snap && snap.generated_at ? new Date(snap.generated_at).toLocaleString(L() === 'th' ? 'th-TH' : 'en-US') : '—') + '</span>' +
-      '</div>';
-  }
-
   function reportHTML(){
     var now = new Date();
     var snap = null;
     try { snap = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot(); } catch(e){}
-    return '<table class="pr-sheet-table"><thead><tr><td>' + runningHeadHTML(now, snap) + '</td></tr></thead><tbody><tr><td>' +
-      '<div class="pr-sheet" data-style="' + esc(styleId) + '">' +
+    return '<div class="pr-sheet" data-style="' + esc(styleId) + '">' +
       '<div class="pr-head">' +
         '<img class="pr-logo" src="' + PR_LOGO + '" alt="">' +
         '<div class="pr-brand">' + esc(T(UI.brand)) + '</div>' +
@@ -42231,6 +42287,7 @@ var qrcode = function() {
       tapeHTML() +
       marketChartHTML() +
       regimeHTML() +
+      marketCycleHTML() +
       '<div class="pr-sec-h">' + esc(T(UI.picksH)) + '</div>' +
       picksHTML() +
       (function(){
@@ -42243,6 +42300,7 @@ var qrcode = function() {
       })() +
       '<div class="pr-sec-h">' + esc(T(UI.dirH)) + '</div>' +
       directoryHTML() +
+      glossaryHTML() +
       '<div class="pr-foot">' + esc(T(UI.disclaimer)) + '</div>' +
       (function(){
         var pickedTickers = Object.keys(picked).filter(function(k){ return picked[k]; });
@@ -42251,8 +42309,7 @@ var qrcode = function() {
       })() +
       fxGridHTML() +
       qrContactPageHTML() +
-      '</div>' +
-    '</td></tr></tbody></table>';
+    '</div>';
   }
 
   function pickListHTML(){
@@ -42395,6 +42452,284 @@ var qrcode = function() {
       '</div>';
   }
 
+  function fmtSigned(v, d){
+    if(!isNum(v)) return '—';
+    d = d === undefined ? 2 : d;
+    return (v >= 0 ? '+' : '') + v.toFixed(d);
+  }
+
+  function findAssetRow(list, en){
+    for(var i = 0; i < list.length; i++){ if(list[i].en === en) return list[i]; }
+    return null;
+  }
+
+  /* ---- Round 10: beginner glossary page, shared by both report types ---- */
+  function glossaryHTML(){
+    var terms = window.__SPZ_GLOSSARY || [];
+    if(!terms.length) return '';
+    var cells = terms.map(function(g){
+      var e = g[L()] || g.en;
+      return '<div class="pr-gloss-cell"><div class="pr-gloss-t">' + esc(e.t) + '</div><div class="pr-gloss-d">' + esc(e.d) + '</div></div>';
+    }).join('');
+    return '<div class="pr-gloss-page">' +
+      '<div class="pr-sec-h">' + esc(T(UI.glossaryH)) + '</div>' +
+      '<div class="pr-flow-note">' + esc(T(UI.glossaryNote)) + '</div>' +
+      '<div class="pr-gloss-grid">' + cells + '</div>' +
+    '</div>';
+  }
+
+  /* ---- Round 10: Market Cycle section -- reuses the same 4-phase /
+     lead-lag framework already published on the on-site Market Outlook
+     page, paired with a LIVE phase read computed from snap.regime (not
+     the on-site page's own hand-curated "here" field, which is an
+     editorial call re-set by hand -- this one recomputes on its own
+     every time the report is generated). ---- */
+  var CYCLE_PHASES = [
+    { id:'early', n:{en:'Early Cycle — Recovery',th:'ต้นวัฏจักร — ฟื้นตัว'},
+      lead:{en:['Cyclicals','Consumer discretionary','Financials','Small caps'],th:['หุ้นวัฏจักร','สินค้าฟุ่มเฟือย','การเงิน','หุ้นเล็ก']},
+      lag:{en:['Utilities','Consumer staples'],th:['สาธารณูปโภค','สินค้าจำเป็น']} },
+    { id:'mid', n:{en:'Mid Cycle — Broad Expansion',th:'กลางวัฏจักร — ขยายตัวกว้าง'},
+      lead:{en:['Technology','Industrials','Capital goods','Communication'],th:['เทคโนโลยี','อุตสาหกรรม','สินค้าทุน','สื่อสาร']},
+      lag:{en:['Deep cyclicals','Highly leveraged names'],th:['หุ้นวัฏจักรจัด','หุ้นที่หนี้สูงมาก']} },
+    { id:'late', n:{en:'Late Cycle — Costs Bite',th:'ปลายวัฏจักร — ต้นทุนเริ่มกัด'},
+      lead:{en:['Energy','Materials','Healthcare','Staples'],th:['พลังงาน','วัสดุ','สุขภาพ','สินค้าจำเป็น']},
+      lag:{en:['Consumer discretionary','Long-duration growth'],th:['สินค้าฟุ่มเฟือย','หุ้นเติบโตระยะยาวไกล']} },
+    { id:'rec', n:{en:'Recession / Contraction Risk',th:'ความเสี่ยงถดถอย / หดตัว'},
+      lead:{en:['Utilities','Staples','Healthcare','Quality balance sheets'],th:['สาธารณูปโภค','สินค้าจำเป็น','สุขภาพ','งบดุลแข็งแรง']},
+      lag:{en:['Cyclicals','High debt','Unprofitable growth'],th:['หุ้นวัฏจักร','หนี้สูง','หุ้นโตที่ยังขาดทุน']} }
+  ];
+
+  function cyclePhaseFor(id){
+    for(var i = 0; i < CYCLE_PHASES.length; i++){ if(CYCLE_PHASES[i].id === id) return CYCLE_PHASES[i]; }
+    return CYCLE_PHASES[1];
+  }
+
+  function cycleSignal(){
+    var snap; try { snap = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot(); } catch(e){}
+    var r = snap && snap.regime;
+    if(!r) return null;
+    var score = 0, curveInv = isNum(r.curve_10y_3m) && r.curve_10y_3m < 0;
+    var drivers = [];
+    if(isNum(r.cyclical_vs_defensive_1m)){
+      score += r.cyclical_vs_defensive_1m > 0 ? 1 : -1;
+      drivers.push([T({en:'Cyclicals vs Defensives (1M)',th:'หุ้นวัฏจักร vs ตั้งรับ (1 เดือน)'}), fmtSigned(r.cyclical_vs_defensive_1m, 2) + '%']);
+    }
+    if(isNum(r.cyclical_vs_defensive_3m)){
+      score += r.cyclical_vs_defensive_3m > 0 ? 1 : -1;
+      drivers.push([T({en:'Cyclicals vs Defensives (3M)',th:'หุ้นวัฏจักร vs ตั้งรับ (3 เดือน)'}), fmtSigned(r.cyclical_vs_defensive_3m, 2) + '%']);
+    }
+    if(isNum(r.curve_10y_3m)){
+      score += curveInv ? -2 : 1;
+      drivers.push([T(UI.regCurve), fmtSigned(r.curve_10y_3m, 2)]);
+    }
+    if(isNum(r.breadth_200)){
+      score += r.breadth_200 >= 60 ? 1 : (r.breadth_200 <= 40 ? -1 : 0);
+      drivers.push([T(UI.regBreadth), r.breadth_200.toFixed(0) + '%']);
+    }
+    var phaseId = curveInv && score <= -1 ? 'rec' : (score >= 2 ? 'early' : score <= -2 ? 'late' : 'mid');
+    return { phaseId:phaseId, drivers:drivers };
+  }
+
+  function marketCycleHTML(){
+    var sig = cycleSignal();
+    if(!sig) return '';
+    var phase = cyclePhaseFor(sig.phaseId);
+    var driverCells = sig.drivers.map(function(d){
+      return '<div class="pr-regime-cell"><div class="pr-regime-lbl">' + esc(d[0]) + '</div><div class="pr-regime-val">' + esc(d[1]) + '</div></div>';
+    }).join('');
+    var leadList = T(phase.lead).join(' · '), lagList = T(phase.lag).join(' · ');
+    return '<div class="pr-sec-h">' + esc(T(UI.cycleH)) + '</div>' +
+      '<div class="pr-flow-note">' + esc(T(UI.cycleNote)) + '</div>' +
+      '<div class="pr-cycle-now">' + esc(T(phase.n)) + '</div>' +
+      '<div class="pr-regime-strip">' + driverCells + '</div>' +
+      '<div class="pr-dd-narrative"><b>' + esc(T(UI.cycleLead)) + ':</b> ' + esc(leadList) + '<br>' +
+        '<b>' + esc(T(UI.cycleLag)) + ':</b> ' + esc(lagList) + '</div>';
+  }
+
+  /* ---- Round 10: Gold Analysis Report -- built entirely from data
+     already live on this site (snap.flows.asset's "Gold" / "Long
+     Treasuries" / "US dollar" rows -- the exact same rows the Risk-On /
+     Risk-Off Compass on the Capital Flow page already reads -- plus
+     snap.macro.dxy / us10y / us3m / vix and snap.regime). No new data
+     source, nothing invented; the forecast section is a transparent,
+     rule-based read of those live numbers, not a fixed script, so it
+     moves on its own as the numbers move. ---- */
+  function goldPriceHTML(){
+    var snap; try { snap = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot(); } catch(e){}
+    var list = (snap && snap.flows && snap.flows.asset) || [];
+    var g = findAssetRow(list, 'Gold');
+    if(!g) return '<div class="pr-empty">' + esc(T({en:'Live gold data not available right now.',th:'ยังไม่มีข้อมูลทองคำสดในตอนนี้'})) + '</div>';
+    var ladder = [['1D', g.d1], ['1W', g.w1], ['1M', g.m1], ['3M', g.m3], ['6M', g.m6], ['YTD', g.ytd]];
+    var valid = ladder.filter(function(x){ return isNum(x[1]); });
+    var maxAbs = Math.max.apply(null, valid.map(function(x){ return Math.abs(x[1]); })) || 1;
+    var rows = valid.map(function(x){
+      var v = x[1], w = Math.min(100, Math.abs(v) / maxAbs * 100);
+      var cls = v >= 0 ? 'pr-flow-up' : 'pr-flow-dn';
+      return '<div class="pr-flow-row">' +
+        '<div class="pr-flow-name">' + esc(x[0]) + '</div>' +
+        '<div class="pr-flow-bar-wrap"><div class="pr-flow-bar ' + cls + '" style="width:' + w.toFixed(0) + '%"></div></div>' +
+        '<div class="pr-flow-val ' + (v >= 0 ? 'pr-up' : 'pr-down') + '">' + fmtSigned(v, 1) + '%</div></div>';
+    }).join('');
+    var cells = [
+      [T({en:'Price (GLD)',th:'ราคา (GLD)'}), '$' + fmtPx(g.price)],
+      ['RSI', isNum(g.rsi) ? g.rsi.toFixed(0) : '—'],
+      [T({en:'vs 50D MA',th:'เทียบ MA 50 วัน'}), isNum(g.vs_ma50) ? fmtSigned(g.vs_ma50, 1) + '%' : '—'],
+      [T({en:'vs 200D MA',th:'เทียบ MA 200 วัน'}), isNum(g.vs_ma200) ? fmtSigned(g.vs_ma200, 1) + '%' : '—'],
+      [T({en:'52W Range Pos.',th:'ตำแหน่งในกรอบ 52 สัปดาห์'}), isNum(g.range_pos) ? g.range_pos.toFixed(0) + '%' : '—']
+    ];
+    var cellsHTML = cells.map(function(c){
+      return '<div class="pr-regime-cell"><div class="pr-regime-lbl">' + esc(c[0]) + '</div><div class="pr-regime-val">' + esc(c[1]) + '</div></div>';
+    }).join('');
+    return '<div class="pr-flow-note">' + esc(T(UI.goldPriceNote)) + '</div>' +
+      '<div class="pr-regime-strip">' + cellsHTML + '</div>' +
+      '<div class="pr-flow-wrap" style="margin-top:12px;">' + rows + '</div>';
+  }
+
+  function goldMacroHTML(){
+    var snap; try { snap = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot(); } catch(e){}
+    var m = snap && snap.macro, r = snap && snap.regime;
+    if(!m) return '';
+    var cells = [];
+    if(m.dxy && isNum(m.dxy.price)) cells.push(['DXY', m.dxy.price.toFixed(2), isNum(m.dxy.m1) ? (fmtSigned(m.dxy.m1, 1) + '% (1M)') : '']);
+    if(m.us10y && isNum(m.us10y.price)) cells.push([T(UI.reg10y), m.us10y.price.toFixed(2) + '%', isNum(m.us10y.m1) ? (fmtSigned(m.us10y.m1, 1) + '% (1M)') : '']);
+    if(m.us3m && isNum(m.us3m.price)) cells.push([T({en:'US 3M Yield',th:'ผลตอบแทน 3 เดือนสหรัฐ'}), m.us3m.price.toFixed(2) + '%', '']);
+    if(r && isNum(r.curve_10y_3m)) cells.push([T(UI.regCurve), fmtSigned(r.curve_10y_3m, 2), '']);
+    var vixV = null;
+    if(m){ if(isNum(m.vix)) vixV = m.vix; else if(m.vix && isNum(m.vix.price)) vixV = m.vix.price; }
+    if(isNum(vixV)) cells.push(['VIX', vixV.toFixed(1), '']);
+    if(!cells.length) return '';
+    var cellsHTML = cells.map(function(c){
+      return '<div class="pr-regime-cell"><div class="pr-regime-lbl">' + esc(c[0]) + '</div><div class="pr-regime-val">' + esc(c[1]) +
+        (c[2] ? ('<br><span style="font-size:8.5px;font-weight:400;color:#888;">' + esc(c[2]) + '</span>') : '') + '</div></div>';
+    }).join('');
+    return '<div class="pr-flow-note">' + esc(T(UI.goldMacroNote)) + '</div>' +
+      '<div class="pr-regime-strip">' + cellsHTML + '</div>';
+  }
+
+  function goldFlowHTML(){
+    var snap; try { snap = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot(); } catch(e){}
+    var list = (snap && snap.flows && snap.flows.asset) || [];
+    if(!list.length) return '';
+    var wanted = ['Gold', 'Long Treasuries', 'US dollar', 'US tech / Nasdaq', 'Emerging markets', 'US small cap', 'High-yield credit'];
+    var rows = wanted.map(function(en){ return findAssetRow(list, en); }).filter(function(row){ return row && isNum(row.m1); });
+    if(!rows.length) return '';
+    var maxAbs = Math.max.apply(null, rows.map(function(row){ return Math.abs(row.m1); })) || 1;
+    var rowsHTML = rows.map(function(row){
+      var v = row.m1, w = Math.min(100, Math.abs(v) / maxAbs * 100);
+      var cls = v >= 0 ? 'pr-flow-up' : 'pr-flow-dn';
+      var name = esc(T({en:row.en, th:row.th}));
+      return '<div class="pr-flow-row">' +
+        '<div class="pr-flow-name">' + name + '</div>' +
+        '<div class="pr-flow-bar-wrap"><div class="pr-flow-bar ' + cls + '" style="width:' + w.toFixed(0) + '%"></div></div>' +
+        '<div class="pr-flow-val ' + (v >= 0 ? 'pr-up' : 'pr-down') + '">' + fmtSigned(v, 1) + '%</div></div>';
+    }).join('');
+    return '<div class="pr-flow-note">' + esc(T(UI.goldFlowNote)) + '</div>' +
+      '<div class="pr-flow-wrap">' + rowsHTML + '</div>';
+  }
+
+  function goldForecastHTML(){
+    var snap; try { snap = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot(); } catch(e){}
+    var m = snap && snap.macro, r = snap && snap.regime;
+    var list = (snap && snap.flows && snap.flows.asset) || [];
+    if(!m && !r) return '';
+    var score = 0, bullets = [];
+
+    if(m && m.dxy && isNum(m.dxy.m1)){
+      var dxyM1 = m.dxy.m1, dxyDown = dxyM1 < 0;
+      score += dxyDown ? 1 : -1;
+      bullets.push((dxyDown ? '▲ ' : '▼ ') + T({
+        en:'DXY has ' + (dxyDown ? 'fallen' : 'risen') + ' ' + Math.abs(dxyM1).toFixed(1) + '% over 1 month — a ' + (dxyDown ? 'weaker' : 'stronger') + ' dollar is typically a ' + (dxyDown ? 'tailwind' : 'headwind') + ' for dollar-priced gold.',
+        th:'DXY ' + (dxyDown ? 'อ่อนค่าลง' : 'แข็งค่าขึ้น') + ' ' + Math.abs(dxyM1).toFixed(1) + '% ในรอบ 1 เดือน — ดอลลาร์ที่' + (dxyDown ? 'อ่อนค่า' : 'แข็งค่า') + 'มักเป็น' + (dxyDown ? 'แรงหนุน' : 'แรงกดดัน') + 'ต่อทองคำซึ่งตั้งราคาเป็นดอลลาร์'
+      }));
+    }
+    if(m && m.us10y && isNum(m.us10y.m1) && isNum(m.us10y.price)){
+      var y10m1 = m.us10y.m1, y10Down = y10m1 < 0;
+      score += y10Down ? 1 : -1;
+      bullets.push((y10Down ? '▲ ' : '▼ ') + T({
+        en:'The US 10-year yield is at ' + m.us10y.price.toFixed(2) + '% and has ' + (y10Down ? 'fallen' : 'risen') + ' ' + Math.abs(y10m1).toFixed(1) + '% over the past month — ' + (y10Down ? 'falling yields lower' : 'rising yields raise') + ' the opportunity cost of holding non-yielding gold.',
+        th:'ผลตอบแทนพันธบัตรสหรัฐ 10 ปี อยู่ที่ ' + m.us10y.price.toFixed(2) + '% และ' + (y10Down ? 'ลดลง' : 'เพิ่มขึ้น') + ' ' + Math.abs(y10m1).toFixed(1) + '% ในรอบ 1 เดือน — ดอกเบี้ยที่' + (y10Down ? 'ลดลงช่วยลด' : 'เพิ่มขึ้นเพิ่ม') + 'ต้นทุนค่าเสียโอกาสของการถือทองคำที่ไม่มีดอกเบี้ย'
+      }));
+    }
+    var curveInv = r && isNum(r.curve_10y_3m) && r.curve_10y_3m < 0;
+    if(r && isNum(r.curve_10y_3m)){
+      score += curveInv ? 1 : 0;
+      bullets.push((curveInv ? '▲ ' : '· ') + T({
+        en:'The 10Y-3M yield curve is ' + (curveInv ? ('inverted at ' + r.curve_10y_3m.toFixed(2) + ' — historically a recession-risk signal that supports safe-haven demand') : ('positive at +' + r.curve_10y_3m.toFixed(2) + ', a normal shape that does not by itself argue for safe-haven flows')) + '.',
+        th:'เส้นอัตราผลตอบแทน 10ปี-3เดือน ' + (curveInv ? ('กลับหัวที่ ' + r.curve_10y_3m.toFixed(2) + ' — ในอดีตเป็นสัญญาณความเสี่ยงถดถอยที่หนุนแรงซื้อสินทรัพย์ปลอดภัย') : ('เป็นบวกที่ +' + r.curve_10y_3m.toFixed(2) + ' รูปทรงปกติ ไม่ได้บ่งชี้แรงซื้อสินทรัพย์ปลอดภัยด้วยตัวเอง'))
+      }));
+    }
+    var vixV = null;
+    if(m){ if(isNum(m.vix)) vixV = m.vix; else if(m.vix && isNum(m.vix.price)) vixV = m.vix.price; }
+    var vixRow = findAssetRow(list, 'Volatility (VIX)');
+    var vixM1 = vixRow && isNum(vixRow.m1) ? vixRow.m1 : null;
+    if(isNum(vixV) && isNum(vixM1)){
+      score += vixM1 > 0 ? 1 : -1;
+      bullets.push((vixM1 > 0 ? '▲ ' : '▼ ') + T({
+        en:'VIX is at ' + vixV.toFixed(1) + ' and ' + (vixM1 > 0 ? 'rising' : 'falling') + ' (' + fmtSigned(vixM1, 1) + '% over 1 month) — ' + (vixM1 > 0 ? 'a firming fear gauge tends to pull money toward gold' : 'a calming fear gauge tends to reduce urgency for safe havens') + '.',
+        th:'VIX อยู่ที่ ' + vixV.toFixed(1) + ' และกำลัง' + (vixM1 > 0 ? 'สูงขึ้น' : 'ลดลง') + ' (' + fmtSigned(vixM1, 1) + '% ในรอบ 1 เดือน) — ' + (vixM1 > 0 ? 'ดัชนีความกลัวที่สูงขึ้นมักดึงเงินเข้าหาทองคำ' : 'ดัชนีความกลัวที่สงบลงมักลดความเร่งด่วนของแรงซื้อสินทรัพย์ปลอดภัย')
+      }));
+    }
+    if(r && isNum(r.cyclical_vs_defensive_1m)){
+      var cvd = r.cyclical_vs_defensive_1m, defLead = cvd < 0;
+      score += defLead ? 1 : -1;
+      bullets.push((defLead ? '▲ ' : '▼ ') + T({
+        en:'Defensive sectors are ' + (defLead ? 'outperforming' : 'underperforming') + ' cyclicals by ' + Math.abs(cvd).toFixed(1) + '% over 1 month — ' + (defLead ? 'a defensive tilt that usually travels with safe-haven demand' : 'a cyclical tilt that usually travels with risk-on positioning, away from gold') + '.',
+        th:'หุ้นกลุ่มตั้งรับ' + (defLead ? 'ทำผลงานดีกว่า' : 'แย่กว่า') + 'หุ้นกลุ่มวัฏจักรอยู่ ' + Math.abs(cvd).toFixed(1) + '% ในรอบ 1 เดือน — ' + (defLead ? 'ภาพตั้งรับแบบนี้มักมาพร้อมแรงซื้อสินทรัพย์ปลอดภัย' : 'ภาพวัฏจักรแบบนี้มักมาพร้อมการเปิดรับความเสี่ยง ซึ่งมักหนีจากทองคำ')
+      }));
+    }
+
+    var verdict = score >= 2 ? T(UI.goldVerdictUp) : (score <= -2 ? T(UI.goldVerdictDown) : T(UI.goldVerdictMixed));
+    var verdictCls = score >= 2 ? 'pr-up' : (score <= -2 ? 'pr-down' : '');
+
+    var rateNote = '';
+    if(m && m.us10y && isNum(m.us10y.m1) && m.us10y.m1 > 0.5){
+      rateNote = '<div class="pr-dd-narrative"><b>' + esc(T(UI.goldRateHikeLbl)) + '</b> ' + esc(T(UI.goldRateHikeNote)) + '</div>';
+    } else if(m && m.us10y && isNum(m.us10y.m1) && m.us10y.m1 < -0.5){
+      rateNote = '<div class="pr-dd-narrative"><b>' + esc(T(UI.goldRateCutLbl)) + '</b> ' + esc(T(UI.goldRateCutNote)) + '</div>';
+    }
+
+    return '<div class="pr-flow-note">' + esc(T(UI.goldForecastLede)) + '</div>' +
+      '<div class="pr-cycle-now ' + verdictCls + '">' + esc(verdict) + '</div>' +
+      bullets.map(function(b){ return '<div class="pr-dd-narrative" style="margin-top:8px;">' + esc(b) + '</div>'; }).join('') +
+      rateNote;
+  }
+
+  function goldReportHTML(){
+    var now = new Date();
+    var snap = null;
+    try { snap = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot(); } catch(e){}
+    return '<div class="pr-sheet" data-style="' + esc(styleId) + '">' +
+      '<div class="pr-head">' +
+        '<img class="pr-logo" src="' + PR_LOGO + '" alt="">' +
+        '<div class="pr-brand">' + esc(T(UI.brand)) + '</div>' +
+        '<div class="pr-title">' + esc(T(UI.goldTitle)) + '</div>' +
+        '<div class="pr-sub">' + esc(T(UI.goldSub)) + '</div>' +
+        '<div class="pr-meta">' +
+          '<span>' + esc(T(UI.generated)) + ': ' + esc(now.toLocaleString(L() === 'th' ? 'th-TH' : 'en-US')) + '</span>' +
+          '<span>' + esc(T(UI.asof)) + ': ' + esc(snap && snap.generated_at ? new Date(snap.generated_at).toLocaleString(L() === 'th' ? 'th-TH' : 'en-US') : '—') + '</span>' +
+          '<span>' + esc(T(UI.serial)) + ': ' + esc(serial()) + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="pr-sec-h">' + esc(T(UI.goldPriceH)) + '</div>' +
+      goldPriceHTML() +
+      '<div class="pr-sec-h">' + esc(T(UI.goldMacroH)) + '</div>' +
+      goldMacroHTML() +
+      '<div class="pr-sec-h">' + esc(T(UI.goldFlowH)) + '</div>' +
+      goldFlowHTML() +
+      '<div class="pr-sec-h">' + esc(T(UI.goldForecastH)) + '</div>' +
+      goldForecastHTML() +
+      '<div class="pr-sec-h">' + esc(T(UI.goldCbH)) + '</div>' +
+      '<div class="pr-dd-narrative">' + esc(T(UI.goldCbStructural)) + '</div>' +
+      '<div class="pr-sec-h">' + esc(T(UI.goldRiskH)) + '</div>' +
+      '<div class="pr-dd-narrative">' + esc(T(UI.goldRisk1)) + '</div>' +
+      '<div class="pr-dd-narrative" style="margin-top:8px;">' + esc(T(UI.goldRisk2)) + '</div>' +
+      '<div class="pr-dd-narrative" style="margin-top:8px;">' + esc(T(UI.goldRisk3)) + '</div>' +
+      glossaryHTML() +
+      '<div class="pr-foot">' + esc(T(UI.disclaimer)) + '</div>' +
+      qrContactPageHTML() +
+    '</div>';
+  }
+
   function doPrint(){
     document.body.classList.add('spz-printing-report');
     var done = false;
@@ -42410,7 +42745,7 @@ var qrcode = function() {
 
   function renderReport(){
     var host = sec && sec.querySelector('[data-pr="sheet"]');
-    if(host) host.innerHTML = reportHTML();
+    if(host) host.innerHTML = reportType === 'gold' ? goldReportHTML() : reportHTML();
   }
 
   function paint(){
@@ -42419,6 +42754,9 @@ var qrcode = function() {
     if(q('eb')) q('eb').textContent = T(UI.eb);
     if(q('h')) q('h').textContent = T(UI.h);
     if(q('lede')) q('lede').textContent = T(UI.lede);
+    if(q('typeLbl')) q('typeLbl').textContent = T(UI.typeLbl);
+    if(q('typeMarket')) q('typeMarket').textContent = T(UI.typeMarket);
+    if(q('typeGold')) q('typeGold').textContent = T(UI.typeGold);
     if(q('modeLbl')) q('modeLbl').textContent = T(UI.modeLbl);
     if(q('modeFull')) q('modeFull').textContent = T(UI.modeFull);
     if(q('modeSelect')) q('modeSelect').textContent = T(UI.modeSelect);
@@ -42430,6 +42768,11 @@ var qrcode = function() {
     if(q('qrToggleLbl')) q('qrToggleLbl').textContent = T(UI.qrToggleLbl);
     if(q('qrToggle')) q('qrToggle').checked = includeQrPage;
     if(q('hint')) q('hint').textContent = T(UI.hint);
+    var typeMarketBtn = q('typeMarket'), typeGoldBtn = q('typeGold');
+    if(typeMarketBtn) typeMarketBtn.classList.toggle('on', reportType === 'market');
+    if(typeGoldBtn) typeGoldBtn.classList.toggle('on', reportType === 'gold');
+    var modeWrap = q('modeWrap');
+    if(modeWrap) modeWrap.style.display = reportType === 'gold' ? 'none' : '';
     var modeFullBtn = q('modeFull'), modeSelectBtn = q('modeSelect'), pickHost = q('picklist');
     if(modeFullBtn) modeFullBtn.classList.toggle('on', mode === 'full');
     if(modeSelectBtn) modeSelectBtn.classList.toggle('on', mode === 'select');
@@ -42442,6 +42785,8 @@ var qrcode = function() {
     if(!sec) return;
     sec.addEventListener('click', function(ev){
       var t = ev.target;
+      if(t.closest('[data-pr="typeMarket"]')){ reportType = 'market'; paint(); return; }
+      if(t.closest('[data-pr="typeGold"]')){ reportType = 'gold'; paint(); return; }
       if(t.closest('[data-pr="modeFull"]')){ mode = 'full'; paint(); return; }
       if(t.closest('[data-pr="modeSelect"]')){ mode = 'select'; paint(); return; }
       if(t.closest('[data-pr="selAll"]')){
@@ -42485,19 +42830,26 @@ var qrcode = function() {
           '<div class="rule"></div>' +
         '</div>' +
         '<div class="pr-controls pr-onlyscreen">' +
-          '<div class="pr-row">' +
-            '<span class="pr-label" data-pr="modeLbl"></span>' +
-            '<button type="button" class="pr-modebtn" data-pr="modeFull"></button>' +
-            '<button type="button" class="pr-modebtn" data-pr="modeSelect"></button>' +
+          '<div class="pr-row" style="margin-bottom:10px;">' +
+            '<span class="pr-label" data-pr="typeLbl"></span>' +
+            '<button type="button" class="pr-modebtn" data-pr="typeMarket"></button>' +
+            '<button type="button" class="pr-modebtn" data-pr="typeGold"></button>' +
           '</div>' +
-          '<div class="pr-row" data-pr="pickWrap" style="display:block;">' +
-            '<div class="pr-row" style="margin-bottom:8px;">' +
-              '<span class="pr-label" data-pr="pickLbl"></span>' +
-              '<button type="button" class="pr-mini" data-pr="selAll"></button>' +
-              '<button type="button" class="pr-mini" data-pr="clearAll"></button>' +
+          '<div data-pr="modeWrap">' +
+            '<div class="pr-row">' +
+              '<span class="pr-label" data-pr="modeLbl"></span>' +
+              '<button type="button" class="pr-modebtn" data-pr="modeFull"></button>' +
+              '<button type="button" class="pr-modebtn" data-pr="modeSelect"></button>' +
             '</div>' +
-            '<input type="text" class="pr-search" data-pr="pickSearch" autocomplete="off">' +
-            '<div class="pr-picklist" data-pr="picklist"></div>' +
+            '<div class="pr-row" data-pr="pickWrap" style="display:block;">' +
+              '<div class="pr-row" style="margin-bottom:8px;">' +
+                '<span class="pr-label" data-pr="pickLbl"></span>' +
+                '<button type="button" class="pr-mini" data-pr="selAll"></button>' +
+                '<button type="button" class="pr-mini" data-pr="clearAll"></button>' +
+              '</div>' +
+              '<input type="text" class="pr-search" data-pr="pickSearch" autocomplete="off">' +
+              '<div class="pr-picklist" data-pr="picklist"></div>' +
+            '</div>' +
           '</div>' +
           '<div class="pr-row" style="margin-top:2px;">' +
             '<label class="pr-checklbl">' +
