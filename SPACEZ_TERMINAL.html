@@ -44642,7 +44642,7 @@ var qrcode = function() {
     color:var(--neon);border:1px solid var(--neon);border-radius:20px;padding:3px 11px;
   }
   .jrnl-card-date{font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);}
-  .jrnl-card-text{white-space:pre-wrap;font-size:13.5px;line-height:1.75;color:var(--grey);}
+  .jrnl-card-text{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;font-size:13.5px;line-height:1.75;color:var(--grey);}
   .jrnl-empty{
     border:1px dashed var(--border-dim);border-radius:var(--radius);padding:40px 20px;
     text-align:center;color:var(--grey-dim);font-size:13px;
@@ -44743,6 +44743,14 @@ var qrcode = function() {
   /* ---- card tag chips (public log) ---- */
   .jrnl-card-tags{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px;}
   .jrnl-tag-chip{font-family:var(--mono);font-size:9.5px;letter-spacing:.5px;color:var(--grey-dim);border:1px solid var(--border-dim);border-radius:20px;padding:2px 9px;}
+
+  /* ---- timeframe + Elliott-Wave trade-level chips (public log + shared view) ---- */
+  .jrnl-card-levels{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;}
+  .jrnl-lvl-chip{font-family:var(--mono);font-size:10px;letter-spacing:.3px;color:var(--grey);border:1px solid var(--border-dim);border-radius:20px;padding:3px 10px;background:rgba(255,255,255,.03);}
+  .jrnl-lvl-chip b{color:var(--white);font-weight:700;margin-right:2px;}
+  .jrnl-lvl-chip.tf{border-color:var(--neon);color:var(--neon);}
+  .jrnl-lvl-chip.tf b{color:var(--neon);}
+  .jrnl-lvl-chip.wave{border-color:var(--amber,#e0a030);}
 
   /* ---- sidebar filter groups (public log) ---- */
   .jrnl-filter-group{display:flex;flex-direction:column;gap:4px;}
@@ -44913,7 +44921,7 @@ var qrcode = function() {
   }
   .jrp-related b{color:#161616;}
   .jrp-related-src{font-size:9px;color:#999;}
-  .jrp-text{font-size:12.5px;line-height:1.8;color:#222;white-space:pre-wrap;}
+  .jrp-text{font-size:12.5px;line-height:1.8;color:#222;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;}
   .jrp-chart-block{margin-top:14px;border:1px solid #a8a8a8;border-radius:6px;padding:12px 14px 10px;}
   .jrp-chart-svg{display:block;width:100%;}
   .jrp-chart-axis{display:flex;justify-content:space-between;font-size:8.6px;color:#888;margin-top:4px;}
@@ -45000,6 +45008,19 @@ var qrcode = function() {
   function fmtDate(d){
     try { return d.toLocaleString(L() === 'th' ? 'th-TH' : 'en-US', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
     catch(e){ return ''; }
+  }
+
+  /* renders the timeframe + optional Elliott-Wave trade-levels (WC Invalid / SL / TP /
+     Wave View) as a row of small chips under a public-facing card; shared between the
+     feed cards and the single shareable-entry view so both stay in sync */
+  function cardLevelsHtml(e){
+    var parts = [];
+    if(e.timeframe) parts.push('<span class="jrnl-lvl-chip tf"><b>' + esc(T(UI.reportTimeframe)) + ':</b> ' + esc(e.timeframe) + '</span>');
+    if(e.invalidPoint) parts.push('<span class="jrnl-lvl-chip"><b>' + esc(T(UI.reportInvalid)) + ':</b> ' + esc(e.invalidPoint) + '</span>');
+    if(e.sl) parts.push('<span class="jrnl-lvl-chip"><b>' + esc(T(UI.reportSL)) + ':</b> ' + esc(e.sl) + '</span>');
+    if(e.tp) parts.push('<span class="jrnl-lvl-chip"><b>' + esc(T(UI.reportTP)) + ':</b> ' + esc(e.tp) + '</span>');
+    if(e.waveView) parts.push('<span class="jrnl-lvl-chip wave"><b>' + esc(T(UI.reportWaveView)) + ':</b> ' + esc(e.waveView) + '</span>');
+    return parts.length ? '<div class="jrnl-card-levels">' + parts.join('') + '</div>' : '';
   }
 
   var UI = {
@@ -45343,6 +45364,7 @@ var qrcode = function() {
             '<span class="jrnl-card-date">' + esc(fmtDate(e.createdAt)) + '</span></span></div>' +
             (outcomeHtml ? '<div style="margin-top:6px;">' + outcomeHtml + '</div>' : '') +
             tagsHtml +
+            cardLevelsHtml(e) +
             '<div class="jrnl-card-text"></div>' +
             '<div class="jrnl-card-actions"><button type="button" class="jrnl-share-btn" data-share></button></div>' +
           '</div>');
@@ -45371,6 +45393,8 @@ var qrcode = function() {
             tags: Array.isArray(v.tags) ? v.tags : [],
             pinned: !!v.pinned,
             outcome: v.outcome || 'pending',
+            timeframe: v.timeframe || '', invalidPoint: v.invalidPoint || '',
+            sl: v.sl || '', tp: v.tp || '', waveView: v.waveView || '',
             createdAt: v.createdAt && v.createdAt.toDate ? v.createdAt.toDate() : new Date()
           };
         });
@@ -46019,6 +46043,7 @@ var qrcode = function() {
           '<span class="jrnl-card-date">' + esc(fmtDate(e.createdAt)) + '</span></span></div>' +
           (outcomeHtml ? '<div style="margin-top:6px;">' + outcomeHtml + '</div>' : '') +
           tagsHtml +
+          cardLevelsHtml(e) +
           '<div class="jrnl-card-text"></div>' +
           '<div class="jrnl-card-actions"><button type="button" class="jrnl-share-btn" data-share></button></div>' +
         '</div>');
@@ -46074,6 +46099,8 @@ var qrcode = function() {
           id: doc.id, asset: v.asset || '', text: v.text || '', imageUrl: v.imageUrl || '',
           tags: Array.isArray(v.tags) ? v.tags : [],
           pinned: !!v.pinned, outcome: v.outcome || 'pending',
+          timeframe: v.timeframe || '', invalidPoint: v.invalidPoint || '',
+          sl: v.sl || '', tp: v.tp || '', waveView: v.waveView || '',
           createdAt: v.createdAt && v.createdAt.toDate ? v.createdAt.toDate() : new Date()
         };
         paint();
