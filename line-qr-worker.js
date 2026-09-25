@@ -18,6 +18,16 @@
  *   ALLOWED_ORIGIN               (Variable — the site's origin, e.g.
  *                                https://spacez001.github.io, so only that
  *                                site's pages can call this API)
+ *   ADMIN_USERS_KEY              (Secret — a password you make up, used ONLY
+ *                                by the site's "Connected Users" admin page.
+ *                                Deliberately separate from the site's own
+ *                                50-field admin code: that code is checked
+ *                                entirely in the browser and proves nothing
+ *                                to this Worker, so the admin list/edit
+ *                                endpoints below need their own real,
+ *                                server-checked secret. Set this to any long
+ *                                random string and enter that same string
+ *                                once in the Connected Users page.)
  *
  *   OWNER_WATCHLIST_KEY is no longer used by this file (see below) but you
  *   don't need to remove it from the Worker's settings -- it's harmless to
@@ -66,6 +76,26 @@
  * likes on any public post elsewhere. Only *adding or removing your own*
  * like (POST /api/likes/toggle) needs a linked LINE session, so nobody can
  * like a post as somebody else.
+ *
+ * CONNECTED-USERS ADMIN PAGE
+ * --------------------------
+ * Every account that ever completes a LINE login gets a small persistent
+ * "profile:<userId>" record here (display name/photo -- kept fresh on every
+ * login even after a 30-day session expires -- a UID, an optional access-
+ * until date, and self-editable Facebook/Instagram handles), and its userId
+ * is added to a "users:index" list. GET /api/admin/users reads that whole
+ * index and returns everyone's profile + holdings; POST /api/admin/users/update
+ * lets the admin set a person's UID or access-until date. Both endpoints
+ * check the request's X-Admin-Key header against env.ADMIN_USERS_KEY --
+ * this is a real server-side secret, separate from the site's own client-
+ * side admin code, since this data (other people's names/photos/holdings)
+ * must never be servable to just anyone who finds this Worker's URL.
+ * A UID is auto-generated (random 5-7 digits) the first time someone logs
+ * in; the admin can change it to anything memorable (their own, say) later.
+ * POST /api/session/profile is the one self-service write a LINE-linked
+ * visitor can make without the admin key -- their own Facebook/Instagram
+ * handles, gated the same way as watchlist add/remove (a valid linked
+ * session code, checked via getLinkedSession).
  */
 
 const PENDING_TTL_SECONDS = 5 * 60;          // time to scan the QR before it expires
@@ -88,7 +118,7 @@ function corsHeaders(env) {
   return {
     "Access-Control-Allow-Origin": env.ALLOWED_ORIGIN || "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, X-Admin-Key",
     "Vary": "Origin",
   };
 }
@@ -141,6 +171,89 @@ async function getUserWatchlist(userId, env) {
 
 async function putUserWatchlist(userId, tickers, env) {
   await env.SESSIONS.put("wl:" + userId, JSON.stringify(tickers));
+}
+
+/* ---------------------- per-user profile (Connected Users) ---------------------- */
+
+const MAX_SOCIAL_LEN = 80;
+
+function randomUid() {
+  // 5-7 digit random string, never starting with 0 -- auto-assigned the
+  // first time someone logs in; the admin can freely change it afterwards.
+  const len = 5 + Math.floor(Math.random() * 3);
+  let s = String(1 + Math.floor(Math.random() * 9));
+  for (let i = 1; i < len; i++) s += String(Math.floor(Math.random() * 10));
+  return s;
+}
+
+function sanitizeUid(v) {
+  if (typeof v !== "string") return null;
+  const clean = v.trim().replace(/[^A-Za-z0-9_-]/g, "").slice(0, 20);
+  return clean || null;
+}
+
+function sanitizeSocial(v) {
+  if (typeof v !== "string") return "";
+  return v.trim().slice(0, MAX_SOCIAL_LEN);
+}
+
+function sanitizeDate(v) {
+  // expects "YYYY-MM-DD" or null/empty to clear it
+  if (v === null || v === undefined || v === "") return null;
+  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v.trim())) return undefined; // undefined = invalid
+  return v.trim();
+}
+
+async function getProfile(userId, env) {
+  const raw = await env.SESSIONS.get("profile:" + userId);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (e) { return null; }
+}
+
+async function putProfile(userId, profile, env) {
+  await env.SESSIONS.put("profile:" + userId, JSON.stringify(profile));
+}
+
+async function getUserIndex(env) {
+  const raw = await env.SESSIONS.get("users:index");
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) { return []; }
+}
+
+async function addUserToIndex(userId, env) {
+  const ids = await getUserIndex(env);
+  if (ids.indexOf(userId) === -1) {
+    ids.push(userId);
+    await env.SESSIONS.put("users:index", JSON.stringify(ids));
+  }
+}
+
+/* Called after every successful LINE login (handleCallback). Keeps the
+   profile's name/photo fresh, assigns a UID the very first time, and never
+   overwrites fields the admin or the user already set. */
+async function upsertProfileOnLogin(userId, displayName, pictureUrl, env) {
+  await addUserToIndex(userId, env);
+  const existing = await getProfile(userId, env);
+  const profile = {
+    uid: (existing && existing.uid) || randomUid(),
+    displayName: displayName || (existing && existing.displayName) || "",
+    pictureUrl: pictureUrl || (existing && existing.pictureUrl) || "",
+    facebook: (existing && existing.facebook) || "",
+    instagram: (existing && existing.instagram) || "",
+    accessUntil: (existing && existing.accessUntil) || null,
+    linkedAt: (existing && existing.linkedAt) || Date.now(),
+    updatedAt: Date.now(),
+  };
+  await putProfile(userId, profile, env);
+  return profile;
+}
+
+function isAdminKeyValid(request, env) {
+  const key = request.headers.get("X-Admin-Key") || "";
+  return !!env.ADMIN_USERS_KEY && key === env.ADMIN_USERS_KEY;
 }
 
 async function handleNewSession(env) {
@@ -222,6 +335,11 @@ async function handleCallback(request, env) {
       { expirationTtl: SESSION_TTL_SECONDS }
     );
 
+    // keep the persistent Connected-Users record fresh (name/photo, UID
+    // assigned on first login) -- independent of this session's own TTL,
+    // so the admin list still shows this person after their session expires.
+    await upsertProfileOnLogin(profile.userId, profile.displayName || "", profile.pictureUrl || "", env);
+
     return html(
       "<div style=\"font-size:40px;margin-bottom:8px;\">✅</div>" +
         "<h2>เชื่อมต่อสำเร็จค่ะ</h2>" +
@@ -255,7 +373,16 @@ async function handleData(request, env) {
   }
   const wl = await getUserWatchlist(sess.userId, env);
   const tickers = Object.keys(wl);
-  return json({ displayName: sess.displayName || null, pictureUrl: sess.pictureUrl || null, tickers }, env);
+  const profile = await getProfile(sess.userId, env);
+  return json({
+    displayName: sess.displayName || null,
+    pictureUrl: sess.pictureUrl || null,
+    tickers,
+    uid: profile ? profile.uid : null,
+    facebook: profile ? profile.facebook || "" : "",
+    instagram: profile ? profile.instagram || "" : "",
+    accessUntil: profile ? profile.accessUntil || null : null,
+  }, env);
 }
 
 async function handleWatchlistAdd(request, env) {
@@ -350,6 +477,84 @@ async function handleLikeToggle(request, env) {
   }, env);
 }
 
+/* ------------------- self-service profile edit (LINE-linked visitor) ------------------- */
+
+async function handleProfileUpdate(request, env) {
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const sess = await getLinkedSession(body.code, env);
+  if (!sess) return json({ error: "not_linked" }, env, 401);
+
+  let profile = await getProfile(sess.userId, env);
+  if (!profile) profile = await upsertProfileOnLogin(sess.userId, sess.displayName || "", sess.pictureUrl || "", env);
+
+  if (typeof body.facebook === "string") profile.facebook = sanitizeSocial(body.facebook);
+  if (typeof body.instagram === "string") profile.instagram = sanitizeSocial(body.instagram);
+  profile.updatedAt = Date.now();
+  await putProfile(sess.userId, profile, env);
+
+  return json({ ok: true, uid: profile.uid, facebook: profile.facebook || "", instagram: profile.instagram || "" }, env);
+}
+
+/* ------------------------- admin: Connected Users page ------------------------- */
+
+async function handleAdminUsersList(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  const ids = await getUserIndex(env);
+  const users = [];
+  for (const userId of ids) {
+    const profile = await getProfile(userId, env);
+    if (!profile) continue;
+    const wl = await getUserWatchlist(userId, env);
+    users.push({
+      userId,
+      uid: profile.uid || null,
+      displayName: profile.displayName || "",
+      pictureUrl: profile.pictureUrl || "",
+      facebook: profile.facebook || "",
+      instagram: profile.instagram || "",
+      accessUntil: profile.accessUntil || null,
+      linkedAt: profile.linkedAt || null,
+      tickers: Object.keys(wl),
+    });
+  }
+  return json({ users }, env);
+}
+
+async function handleAdminUsersUpdate(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const userId = (body.userId || "").trim();
+  if (!userId) return json({ error: "bad_request" }, env, 400);
+  const profile = await getProfile(userId, env);
+  if (!profile) return json({ error: "not_found" }, env, 404);
+
+  if (typeof body.uid === "string") {
+    const uid = sanitizeUid(body.uid);
+    if (!uid) return json({ error: "invalid_uid" }, env, 400);
+    if (uid !== profile.uid) {
+      const ids = await getUserIndex(env);
+      for (const otherId of ids) {
+        if (otherId === userId) continue;
+        const other = await getProfile(otherId, env);
+        if (other && other.uid === uid) return json({ error: "uid_taken" }, env, 400);
+      }
+    }
+    profile.uid = uid;
+  }
+
+  if ("accessUntil" in body) {
+    const d = sanitizeDate(body.accessUntil);
+    if (d === undefined) return json({ error: "invalid_date" }, env, 400);
+    profile.accessUntil = d;
+  }
+
+  profile.updatedAt = Date.now();
+  await putProfile(userId, profile, env);
+  return json({ ok: true, profile }, env);
+}
+
 async function handleLogout(request, env) {
   let code = "";
   try {
@@ -377,6 +582,9 @@ export default {
     if (url.pathname === "/api/session/watchlist/remove" && request.method === "POST") return handleWatchlistRemove(request, env);
     if (url.pathname === "/api/likes" && request.method === "GET") return handleLikesGet(request, env);
     if (url.pathname === "/api/likes/toggle" && request.method === "POST") return handleLikeToggle(request, env);
+    if (url.pathname === "/api/session/profile" && request.method === "POST") return handleProfileUpdate(request, env);
+    if (url.pathname === "/api/admin/users" && request.method === "GET") return handleAdminUsersList(request, env);
+    if (url.pathname === "/api/admin/users/update" && request.method === "POST") return handleAdminUsersUpdate(request, env);
 
     return json({ error: "not_found" }, env, 404);
   },

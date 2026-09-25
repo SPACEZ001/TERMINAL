@@ -32708,6 +32708,30 @@ var GM = {
     font-size:11px;color:var(--grey);text-decoration:underline;cursor:pointer;
     background:none;border:none;padding:0;font-family:var(--mono);
   }
+  #watchlist .wl-conn-btnrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  #watchlist .wl-conn-editbtn{
+    font-size:11px;color:var(--grey);text-decoration:underline;cursor:pointer;
+    background:none;border:none;padding:0;font-family:var(--mono);
+  }
+  #watchlist .wl-conn-editbtn:hover, #watchlist .wl-conn-forget:hover{color:var(--neon);}
+  #watchlist .wl-conn-profile-panel{margin-top:12px;padding-top:12px;border-top:1px dashed var(--border-dim);display:flex;flex-direction:column;gap:8px;}
+  #watchlist .wl-conn-profile-panel.hidden{display:none;}
+  #watchlist .wl-conn-profile-uid{font-size:10.5px;color:var(--grey-dim);}
+  #watchlist .wl-conn-profile-uid b{color:var(--white);font-family:var(--mono);}
+  #watchlist .wl-conn-profile-input{
+    font-family:var(--mono);font-size:12px;border:1px solid var(--border-dim);border-radius:8px;
+    padding:8px 10px;background:rgba(255,255,255,.03);color:var(--white);outline:none;width:100%;
+  }
+  #watchlist .wl-conn-profile-input:focus{border-color:var(--neon);}
+  #watchlist .wl-conn-profile-row{display:flex;align-items:center;gap:10px;}
+  #watchlist .wl-conn-profile-save{
+    font-family:var(--mono);font-size:11px;font-weight:700;border:1px solid var(--neon);border-radius:8px;
+    padding:6px 14px;cursor:pointer;background:transparent;color:var(--neon);
+  }
+  #watchlist .wl-conn-profile-save:hover{background:rgba(204,255,0,.08);}
+  #watchlist .wl-conn-profile-status{font-size:10.5px;color:var(--grey-dim);}
+  #watchlist .wl-conn-profile-status.ok{color:var(--neon-2,var(--neon));}
+  #watchlist .wl-conn-profile-status.err{color:#ff6b6b;}
   #watchlist .wl-line-status{font-size:11.5px;color:#8fe0a8;min-height:16px;}
   #watchlist .wl-line-status.err{color:#ff6b6b;margin-bottom:8px;}
   #watchlist .wl-line-spin{
@@ -33109,6 +33133,13 @@ var GM = {
              th:'เชื่อมต่อระบบ LINE ไม่ได้ตอนนี้ กดเพื่อลองใหม่นะคะ'},
     lineNotReady:{en:'LINE connect isn’t switched on yet.',th:'ฟีเจอร์เชื่อมต่อ LINE ยังไม่เปิดใช้งานค่ะ'},
     lineForget:{en:'Log out of LINE',th:'ออกจากระบบ LINE'},
+    lineEditProfileBtn:{en:'Edit profile',th:'แก้ไขโปรไฟล์'},
+    lineProfileUidLabel:{en:'Your UID (tell this to admin to request access)',th:'UID ของคุณ (แจ้งแอดมินเพื่อขอสิทธิ์การใช้งาน)'},
+    lineProfileFbPh:{en:'Facebook (optional)',th:'Facebook (ถ้ามี)'},
+    lineProfileIgPh:{en:'Instagram (optional)',th:'Instagram (ถ้ามี)'},
+    lineProfileSaveBtn:{en:'Save',th:'บันทึก'},
+    lineProfileSaved:{en:'Saved',th:'บันทึกแล้ว'},
+    lineProfileSaveErr:{en:'Could not save — try again.',th:'บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง'},
     lineOwnListNote:{en:'This is your own personal list, linked to your LINE account — separate from a Telegram-linked list, even on the same browser. Add or remove tickers right here.',
                      th:'นี่คือรายการส่วนตัวของคุณเอง ผูกกับบัญชี LINE ของคุณ — แยกจากรายการที่เชื่อมผ่าน Telegram แม้จะเป็นเบราว์เซอร์เดียวกันก็ตาม เพิ่ม/ลบหุ้นได้จากตรงนี้เลย'},
     lineAddH:{en:'Add a stock to your list',th:'เพิ่มหุ้นเข้าไลสต์ของคุณ'},
@@ -33390,6 +33421,9 @@ var GM = {
         state.line.tickers = data.tickers || [];
         state.line.displayName = data.displayName || state.line.displayName;
         state.line.pictureUrl = data.pictureUrl || state.line.pictureUrl;
+        state.line.uid = data.uid || state.line.uid || null;
+        state.line.facebook = data.facebook || '';
+        state.line.instagram = data.instagram || '';
         lineSaveSession();
         paint();
         paintLineModal();
@@ -33431,6 +33465,25 @@ var GM = {
         state.line.tickers = res.d.tickers || [];
         paint();
         if(cb) cb(null, state.line.tickers);
+      })
+      .catch(function(){ if(cb) cb('network'); });
+  }
+
+  /* ---- self-service edit: a LINE-linked visitor can add their own social
+     handles (shown to the admin on the Connected Users page), never anything
+     the admin controls (UID, access date) -- those stay admin-only server side. */
+  function lineUpdateProfile(facebook, instagram, cb){
+    if(!state.line.code) { if(cb) cb('not_linked'); return; }
+    fetch(lineApi('/api/session/profile'), {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ code: state.line.code, facebook: facebook, instagram: instagram })
+    })
+      .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+      .then(function(res){
+        if(!res.ok){ if(cb) cb(res.d && res.d.error || 'error'); return; }
+        state.line.facebook = res.d.facebook || '';
+        state.line.instagram = res.d.instagram || '';
+        if(cb) cb(null);
       })
       .catch(function(){ if(cb) cb('network'); });
   }
@@ -33477,6 +33530,9 @@ var GM = {
               state.line.tickers = dd.tickers || [];
               state.line.displayName = dd.displayName || state.line.displayName;
               state.line.pictureUrl = dd.pictureUrl || state.line.pictureUrl;
+              state.line.uid = dd.uid || state.line.uid || null;
+              state.line.facebook = dd.facebook || '';
+              state.line.instagram = dd.instagram || '';
               paint();
               lineNotify();
             })
@@ -34268,6 +34324,19 @@ var GM = {
      via the Cloudflare Worker, view-only for now). Both render side by
      side so connecting either one happens from right here, instead of a
      separate floating button elsewhere on the site. --------------------- */
+  function profilePanelHTML(lineSt){
+    if(lineSt.status !== 'linked') return '';
+    return '<div class="wl-conn-profile-panel hidden" data-wl="profilePanel">' +
+      '<div class="wl-conn-profile-uid">' + esc(tx(C.lineProfileUidLabel)) + ': <b>' + esc(lineSt.uid || '—') + '</b></div>' +
+      '<input type="text" class="wl-conn-profile-input" data-wl="profileFb" placeholder="' + esc(tx(C.lineProfileFbPh)) + '" value="' + esc(lineSt.facebook || '') + '" maxlength="80">' +
+      '<input type="text" class="wl-conn-profile-input" data-wl="profileIg" placeholder="' + esc(tx(C.lineProfileIgPh)) + '" value="' + esc(lineSt.instagram || '') + '" maxlength="80">' +
+      '<div class="wl-conn-profile-row">' +
+        '<button type="button" class="wl-conn-profile-save" data-wl="profileSave">' + esc(tx(C.lineProfileSaveBtn)) + '</button>' +
+        '<span class="wl-conn-profile-status" data-wl="profileStatus"></span>' +
+      '</div>' +
+    '</div>';
+  }
+
   function connStripHTML(uid, chatId, hadUid, lineSt){
     var tgBlock;
     if(chatId){
@@ -34288,7 +34357,11 @@ var GM = {
       var avatarThumb = lineSt.pictureUrl ? '<img src="' + esc(lineSt.pictureUrl) + '" alt="" class="wl-conn-avatar">' : '';
       lineBlock = '<div class="wl-conn-status ok">' + avatarThumb + esc(tx(C.lineConnectedNote)) +
         (lineSt.displayName ? ' · ' + esc(lineSt.displayName) : '') + '</div>' +
-        '<button type="button" class="wl-conn-forget" data-wl="forgetLine">' + esc(tx(C.lineForget)) + '</button>';
+        '<div class="wl-conn-btnrow">' +
+          '<button type="button" class="wl-conn-forget" data-wl="forgetLine">' + esc(tx(C.lineForget)) + '</button>' +
+          '<button type="button" class="wl-conn-editbtn" data-wl="editProfile">' + esc(tx(C.lineEditProfileBtn)) + '</button>' +
+        '</div>' +
+        profilePanelHTML(lineSt);
     } else if(lineSt.status === 'pending'){
       lineBlock = '<div class="wl-conn-status">' + esc(tx(C.lineWaiting)) + '</div>' +
         '<button type="button" class="wl-conn-btn line-btn" data-wl="lineConnect">' + esc(tx(C.connectLineBtn)) + '</button>';
@@ -34323,6 +34396,29 @@ var GM = {
     var lineConnectBtn = body.querySelector('[data-wl="lineConnect"]');
     if(lineConnectBtn){
       lineConnectBtn.addEventListener('click', openLineModal);
+    }
+    var editBtn = body.querySelector('[data-wl="editProfile"]');
+    if(editBtn){
+      editBtn.addEventListener('click', function(){
+        var panel = body.querySelector('[data-wl="profilePanel"]');
+        if(panel) panel.classList.toggle('hidden');
+      });
+    }
+    var profileSave = body.querySelector('[data-wl="profileSave"]');
+    if(profileSave){
+      profileSave.addEventListener('click', function(){
+        var fbInput = body.querySelector('[data-wl="profileFb"]');
+        var igInput = body.querySelector('[data-wl="profileIg"]');
+        var statusEl = body.querySelector('[data-wl="profileStatus"]');
+        var fb = fbInput ? fbInput.value.trim() : '';
+        var ig = igInput ? igInput.value.trim() : '';
+        if(statusEl){ statusEl.className = 'wl-conn-profile-status'; statusEl.textContent = '…'; }
+        lineUpdateProfile(fb, ig, function(err){
+          if(!statusEl) return;
+          if(err){ statusEl.classList.add('err'); statusEl.textContent = tx(C.lineProfileSaveErr); return; }
+          statusEl.classList.add('ok'); statusEl.textContent = tx(C.lineProfileSaved);
+        });
+      });
     }
   }
 
@@ -34639,7 +34735,8 @@ var GM = {
     open: function(){ openLineModal(); },
     state: function(){
       return { status: state.line.status, displayName: state.line.displayName || null,
-        pictureUrl: state.line.pictureUrl || null, tickers: (state.line.tickers || []).slice() };
+        pictureUrl: state.line.pictureUrl || null, tickers: (state.line.tickers || []).slice(),
+        uid: state.line.uid || null, facebook: state.line.facebook || '', instagram: state.line.instagram || '' };
     },
     logout: function(){ lineLogout(); },
     like: function(postId, cb){ lineLikeToggle(postId, cb); },
@@ -39081,7 +39178,7 @@ var GM = {
      มาใส่ตรงนี้ (สร้างด้วย ADMIN_GENERATOR.html) */
   var VAULT_FULL = {"v":4,"s1":"mkdQcgClsnvkGyoBGGivQg==","s2":"9YocjP94X+KXzaDgEjSuGg==","s3":"hy15gzrBLmYFR2+cvfPPCA==","s4":"ky5slYhVrHQoXnN7itBYcg==","gates":[{"iv":"8ua/11yPR3cWSJKJEBQVhQ==","ct":"/RpQQax3SbFjk3XfRXL5DP9gJ6rQqkNt/72nKLY8b6Q="},{"iv":"JBpkOqWqQUGoNpvaBlMZhg==","ct":"nVsIciHOqQOZeoRiBpVa2MEpCDeP3npI3gG5YjD/z0M="},{"iv":"3pbyESaKph58+1raRCifUg==","ct":"N3RWhWpuNS9II+Knxy22n4sZfy75Zvpz1KFe3QMFSlk="},{"iv":"UBs3G4dOB8mAFjSRlyDRUQ==","ct":"5q+pIWVpnm52L5GAMp/4Q1L51D7ZlV4Gvypoei8dShA="},{"iv":"jqk5KZTuminXpYENqvBGPA==","ct":"s84YTT4n78TgNAZDV8fEb4sJNGEfYXZXICBRoQzik78="}],"ctrIv":"YtBFuzHAlM73O0uKkyqL2w==","iv":"ZqvmBtUJW2peCcUC","ct":"Yw9ZQfcOwU9A9jmBxghZgtyj2k5flNijg9Cnjungi45aNULy9mmGCiDf8V7jF5MhqyhdEK490/I="};
 
-  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','cockpit','controlgrid','printreport','journal','journalNew','journalView'];
+  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','cockpit','controlgrid','printreport','journal','journalNew','journalView','connectedusers'];
 
   /* ---------------- i18n ---------------- */
   function Lg(){ return document.documentElement.lang === 'th' ? 'th' : 'en'; }
@@ -39126,6 +39223,7 @@ var GM = {
     adminAddAnalysis:{en:'Add Analysis',th:'เพิ่มบทวิเคราะห์'},
     adminPrintReport:{en:'Print Report',th:'พิมพ์รายงาน'},
     adminCompareDownload:{en:'Compare Stocks PDF',th:'ดาวน์โหลด PDF เปรียบเทียบหุ้น'},
+    adminConnectedUsers:{en:'Connected Users',th:'ผู้ใช้ที่เชื่อมต่อ LINE'},
     bulk:{en:'📋 Paste all 50 at once',th:'📋 วางทีเดียว 50 ชุด'},
     mask:{en:'👁 Show / hide',th:'👁 แสดง/ซ่อน'},
     clear:{en:'🗑 Clear all',th:'🗑 ล้างทั้งหมด'},
@@ -39276,6 +39374,10 @@ var GM = {
                 '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M20 19H2"/><path d="M17.5 5l2.5 2.5L22.5 5"/></svg>' +
                 '<span data-x="adminCompareDownload"></span>' +
               '</button>' +
+              '<button class="cag-admin-link" type="button" id="cagBtnConnectedUsers">' +
+                '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>' +
+                '<span data-x="adminConnectedUsers"></span>' +
+              '</button>' +
             '</div>' +
             '<button class="cag-btn" type="button" id="cagBtnLogout" data-x="logoutBtn"></button>' +
             '<button class="cag-ghost hidden" type="button" id="cagUpgradeBtn" data-x="upgradeBtn"></button>' +
@@ -39372,6 +39474,7 @@ var GM = {
     // in the comparator module) -- this shortcut just gets an already-logged-in
     // admin to the picker; the actual download still needs stocks selected there.
     gate.querySelector('#cagBtnCompareDownload').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/directory'; });
+    gate.querySelector('#cagBtnConnectedUsers').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/connectedusers'; });
 
     gate.querySelector('#cagMaskBtn').addEventListener('click', function(){
       var show = advInputs[0] && advInputs[0].type === 'password';
@@ -39541,7 +39644,7 @@ var GM = {
         loggedS: currentTier === 'full' ? TXT.loggedS : currentTier === 'member' ? TXT.memberLoggedS : TXT.lineLoggedS,
         logoutBtn: TXT.logoutBtn, upgradeBtn: TXT.upgradeBtn,
         adminAddAnalysis: TXT.adminAddAnalysis, adminPrintReport: TXT.adminPrintReport,
-        adminCompareDownload: TXT.adminCompareDownload,
+        adminCompareDownload: TXT.adminCompareDownload, adminConnectedUsers: TXT.adminConnectedUsers,
         tabMember: TXT.tabMember, tabFull: TXT.tabFull, tabLine: TXT.tabLine,
         lineName: lineNameTxt, lineStatus: lineStatusTxt, lineBtn: lineBtnTxt,
         memberT: TXT.memberT, memberS: TXT.memberS, memberCodeHint: TXT.memberCodeHint,
@@ -45757,6 +45860,422 @@ var qrcode = function() {
     var seed = setInterval(function(){ if(window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot()){ paint(); clearInterval(seed); } }, 600);
     setTimeout(function(){ clearInterval(seed); }, 45000);
     new MutationObserver(paint).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 1200); });
+  } else {
+    setTimeout(boot, 1200);
+  }
+})();
+</script>
+
+<!-- ============================================================
+     SPACEZ CONNECTED USERS  (menu: "ผู้ใช้ที่เชื่อมต่อ LINE" / "Connected Users",
+     admin only). Additive only: a new route registered through
+     window.__spzAddRoute, the same mechanism every other screen in this file
+     uses. This route's id ('connectedusers') was appended to LOCKED_ROUTES
+     (admin gate) so a member/LINE-linked visitor is bounced back to #/now
+     even if they guess the hash directly -- only currentTier === 'full' can
+     ever reach this page's content.
+
+     Beyond that client-side gate, the data itself (every LINE-linked
+     visitor's name/photo/holdings) is only ever served by the Worker to a
+     request carrying a SEPARATE server-checked secret (env.ADMIN_USERS_KEY,
+     sent as the X-Admin-Key header) -- the page's own 50-field admin code
+     proves nothing to the backend, so without this second key a request
+     straight to the Worker (bypassing this page entirely) gets nothing back.
+     The key is entered once per browser tab (kept in sessionStorage, never
+     written into this file) and is set up by pasting the updated
+     line-qr-worker.js into the Cloudflare dashboard and adding
+     ADMIN_USERS_KEY as a new Secret there. ============================ -->
+<style>
+  #connectedusers .cx-wrap{max-width:1080px;margin:0 auto;padding:0 24px 100px;}
+  @media(max-width:700px){#connectedusers .cx-wrap{padding:0 14px 70px;}}
+
+  #connectedusers .cu-keygate{
+    max-width:420px;margin:40px auto 0;text-align:center;
+    border:1px solid var(--border-dim);border-radius:var(--radius,14px);
+    background:var(--glass,rgba(255,255,255,.035));padding:32px 26px;
+  }
+  #connectedusers .cu-keygate-icon{font-size:28px;margin-bottom:10px;}
+  #connectedusers .cu-keygate-lede{font-size:12.5px;color:var(--grey);line-height:1.7;margin-bottom:16px;}
+  #connectedusers .cu-key-input{
+    display:block;width:100%;font-family:var(--mono);font-size:13px;letter-spacing:1px;
+    border:1px solid var(--border-dim);border-radius:10px;padding:11px 12px;margin-bottom:12px;
+    background:rgba(255,255,255,.03);color:var(--white);outline:none;text-align:center;
+    box-sizing:border-box;
+  }
+  #connectedusers .cu-key-input:focus{border-color:var(--neon);}
+  #connectedusers .cu-key-btn{
+    font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.4px;
+    border:none;border-radius:12px;padding:12px 22px;cursor:pointer;width:100%;
+    background:var(--neon);color:#080808;
+  }
+  #connectedusers .cu-key-err{margin-top:12px;font-size:11.5px;color:#ff5a72;}
+
+  #connectedusers .cu-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:22px;}
+  #connectedusers .cu-search{
+    flex:1 1 220px;font-family:var(--mono);font-size:12px;
+    border:1px solid var(--border-dim);border-radius:10px;padding:9px 12px;
+    background:rgba(255,255,255,.03);color:var(--white);outline:none;box-sizing:border-box;
+  }
+  #connectedusers .cu-search:focus{border-color:var(--neon);}
+  #connectedusers .cu-filter{
+    font-family:var(--mono);font-size:11.5px;
+    border:1px solid var(--border-dim);border-radius:10px;padding:9px 10px;
+    background:rgba(255,255,255,.03);color:var(--white);outline:none;
+  }
+  #connectedusers .cu-count{font-family:var(--mono);font-size:11px;color:var(--grey-dim);margin-left:auto;}
+
+  #connectedusers .cu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+  #connectedusers .cu-card{
+    border:1px solid var(--border-dim);border-radius:var(--radius,14px);
+    background:var(--glass,rgba(255,255,255,.035));padding:18px;
+  }
+  #connectedusers .cu-card-top{display:flex;align-items:center;gap:14px;margin-bottom:12px;}
+  #connectedusers .cu-avatar{width:64px;height:64px;border-radius:50%;object-fit:cover;flex:0 0 auto;background:rgba(255,255,255,.06);}
+  #connectedusers .cu-avatar-fallback{
+    width:64px;height:64px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.06);font-size:22px;font-weight:800;color:var(--grey);
+  }
+  #connectedusers .cu-name{font-size:15px;font-weight:800;color:var(--white);}
+  #connectedusers .cu-uid{font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);margin-top:2px;}
+  #connectedusers .cu-status{display:inline-block;margin-top:4px;font-size:9.5px;font-weight:700;letter-spacing:.4px;padding:2px 8px;border-radius:10px;}
+  #connectedusers .cu-status.active{background:rgba(0,255,102,.1);color:var(--neon-2,var(--neon));}
+  #connectedusers .cu-status.none{background:rgba(255,255,255,.06);color:var(--grey-dim);}
+  #connectedusers .cu-status.expired{background:rgba(255,90,114,.1);color:#ff5a72;}
+
+  #connectedusers .cu-holdings{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+  #connectedusers .cu-chip{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid var(--border-dim);color:var(--grey);}
+  #connectedusers .cu-empty-holdings{font-size:11px;color:var(--grey-dim);font-style:italic;}
+
+  #connectedusers .cu-social{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--grey);margin-bottom:12px;}
+  #connectedusers .cu-social span b{color:var(--grey-dim);font-weight:700;margin-right:4px;}
+
+  #connectedusers .cu-edit-row{border-top:1px solid var(--border-dim);padding-top:12px;display:flex;flex-direction:column;gap:8px;}
+  #connectedusers .cu-edit-field{display:flex;align-items:center;gap:8px;}
+  #connectedusers .cu-edit-field label{flex:0 0 78px;font-family:var(--mono);font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--grey-dim);}
+  #connectedusers .cu-edit-field input{
+    flex:1;font-family:var(--mono);font-size:11.5px;
+    border:1px solid var(--border-dim);border-radius:8px;padding:6px 9px;
+    background:rgba(255,255,255,.03);color:var(--white);outline:none;box-sizing:border-box;
+  }
+  #connectedusers .cu-edit-field input:focus{border-color:var(--neon);}
+  #connectedusers .cu-save-row{display:flex;align-items:center;gap:10px;margin-top:2px;}
+  #connectedusers .cu-save-btn{
+    font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.3px;
+    border:1px solid var(--neon);border-radius:8px;padding:7px 16px;cursor:pointer;
+    background:transparent;color:var(--neon);
+  }
+  #connectedusers .cu-save-btn:hover{background:rgba(204,255,0,.08);}
+  #connectedusers .cu-save-status{font-size:10.5px;color:var(--grey-dim);}
+  #connectedusers .cu-save-status.ok{color:var(--neon-2,var(--neon));}
+  #connectedusers .cu-save-status.err{color:#ff5a72;}
+
+  #connectedusers .cu-loading, #connectedusers .cu-empty{text-align:center;padding:60px 0;color:var(--grey-dim);font-size:12.5px;}
+</style>
+<script>
+(function(){
+  'use strict';
+
+  var WORKER_BASE = 'https://spacez-line-link.spacezblack.workers.dev';
+  var ADMIN_KEY_STORAGE = 'spz_admin_users_key';
+
+  function L(){ return document.documentElement.getAttribute('lang') === 'th' ? 'th' : 'en'; }
+  function T(o){ return o ? (o[L()] || o.en) : ''; }
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  var UI = {
+    eb:{en:'Admin Only',th:'เฉพาะแอดมิน'},
+    h:{en:'Connected Users',th:'ผู้ใช้ที่เชื่อมต่อ LINE'},
+    lede:{en:'Everyone who has linked their LINE account — their photo, holdings, and account status. Members and LINE-linked visitors never see this page.',
+          th:'รายชื่อทุกคนที่เชื่อมต่อ LINE ไว้กับเว็บ — รูป หุ้นที่ถือ และสถานะบัญชี เมมเบอร์และผู้ที่ล็อกอินผ่าน LINE จะมองไม่เห็นหน้านี้'},
+    keyLede:{en:'This page needs its own admin key, separate from your site password, so nobody can pull this list by calling the backend directly.',
+             th:'หน้านี้ต้องใช้รหัสแอดมินเฉพาะของมันเอง แยกจากรหัสผ่านเว็บไซต์ เพื่อไม่ให้ใครดึงรายชื่อนี้ได้โดยตรงจาก backend'},
+    keyPh:{en:'Admin users key',th:'รหัสแอดมินสำหรับหน้านี้'},
+    keySubmit:{en:'Unlock',th:'ปลดล็อก'},
+    keyErrBad:{en:'Incorrect key — try again.',th:'รหัสไม่ถูกต้อง ลองใหม่อีกครั้ง'},
+    keyErrNet:{en:'Could not reach the server — try again.',th:'เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ ลองใหม่อีกครั้ง'},
+    searchPh:{en:'Search by name, UID or ticker…',th:'ค้นหาชื่อ, UID หรือหุ้น…'},
+    filterAll:{en:'All',th:'ทั้งหมด'},
+    filterActive:{en:'Access active',th:'มีสิทธิ์ใช้งาน'},
+    filterExpired:{en:'No active access',th:'ไม่มีสิทธิ์ใช้งานตอนนี้'},
+    count:{en:'{n} connected',th:'เชื่อมต่อแล้ว {n} คน'},
+    noHoldings:{en:'No holdings yet',th:'ยังไม่มีหุ้นในลิสต์'},
+    statusActive:{en:'Access until {d}',th:'มีสิทธิ์ถึง {d}'},
+    statusNone:{en:'No access set',th:'ยังไม่ได้ให้สิทธิ์'},
+    statusExpired:{en:'Expired {d}',th:'หมดอายุ {d}'},
+    uidLabel:{en:'UID',th:'UID'},
+    accessLabel:{en:'Access until',th:'สิทธิ์ถึงวันที่'},
+    saveBtn:{en:'Save',th:'บันทึก'},
+    saveOk:{en:'Saved',th:'บันทึกแล้ว'},
+    saveErrTaken:{en:'That UID is already used',th:'UID นี้มีคนใช้แล้ว'},
+    saveErrBad:{en:'Could not save — try again.',th:'บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง'},
+    loading:{en:'Loading…',th:'กำลังโหลด…'},
+    empty:{en:'Nobody has linked LINE yet.',th:'ยังไม่มีใครเชื่อมต่อ LINE'},
+    noMatch:{en:'No one matches that search.',th:'ไม่พบผลลัพธ์ที่ตรงกับการค้นหา'},
+    adminOnly:{en:'This page is only available to the site admin.',th:'หน้านี้ใช้ได้เฉพาะแอดมินของเว็บไซต์เท่านั้น'}
+  };
+
+  var sec = null;
+  var users = null;        // loaded list, or null if not loaded yet
+  var loadError = null;    // null | 'bad' | 'net'
+  var searchQuery = '';
+  var filterMode = 'all';
+  var loading = false;
+
+  function fmtDate(d){
+    if(!d) return '';
+    try {
+      var dt = new Date(d + 'T00:00:00');
+      return dt.toLocaleDateString(L() === 'th' ? 'th-TH' : 'en-US', { year:'numeric', month:'short', day:'numeric' });
+    } catch(e){ return d; }
+  }
+
+  function accessState(u){
+    if(!u.accessUntil) return 'none';
+    var today = new Date().toISOString().slice(0, 10);
+    return u.accessUntil >= today ? 'active' : 'expired';
+  }
+
+  function getAdminKey(){
+    try { return sessionStorage.getItem(ADMIN_KEY_STORAGE) || ''; } catch(e){ return ''; }
+  }
+  function setAdminKey(k){
+    try { sessionStorage.setItem(ADMIN_KEY_STORAGE, k); } catch(e){}
+  }
+  function clearAdminKey(){
+    try { sessionStorage.removeItem(ADMIN_KEY_STORAGE); } catch(e){}
+  }
+
+  function fetchUsers(){
+    var key = getAdminKey();
+    if(!key) return;
+    loading = true; loadError = null; paint();
+    fetch(WORKER_BASE + '/api/admin/users', { headers:{ 'X-Admin-Key': key } })
+      .then(function(r){
+        if(r.status === 401){ clearAdminKey(); loadError = 'bad'; users = null; loading = false; paint(); return null; }
+        if(!r.ok) throw new Error('bad_status');
+        return r.json();
+      })
+      .then(function(data){
+        if(!data) return;
+        users = data.users || [];
+        loading = false;
+        paint();
+      })
+      .catch(function(){ loadError = 'net'; loading = false; paint(); });
+  }
+
+  function keyGateHTML(){
+    return '<div class="cu-keygate">' +
+      '<div class="cu-keygate-icon">🔑</div>' +
+      '<p class="cu-keygate-lede">' + esc(T(UI.keyLede)) + '</p>' +
+      '<input type="password" class="cu-key-input" data-cu="keyInput" autocomplete="off" spellcheck="false" placeholder="' + esc(T(UI.keyPh)) + '">' +
+      '<button type="button" class="cu-key-btn" data-cu="keySubmit">' + esc(T(UI.keySubmit)) + '</button>' +
+      (loadError ? '<div class="cu-key-err">' + esc(T(loadError === 'bad' ? UI.keyErrBad : UI.keyErrNet)) + '</div>' : '') +
+    '</div>';
+  }
+
+  function userCardHTML(u){
+    var avatar = u.pictureUrl
+      ? '<img class="cu-avatar" src="' + esc(u.pictureUrl) + '" alt="">'
+      : '<div class="cu-avatar-fallback">' + esc((u.displayName || '?').charAt(0).toUpperCase()) + '</div>';
+    var state = accessState(u);
+    var statusHTML = state === 'active'
+      ? '<span class="cu-status active">' + esc(T(UI.statusActive).replace('{d}', fmtDate(u.accessUntil))) + '</span>'
+      : state === 'expired'
+        ? '<span class="cu-status expired">' + esc(T(UI.statusExpired).replace('{d}', fmtDate(u.accessUntil))) + '</span>'
+        : '<span class="cu-status none">' + esc(T(UI.statusNone)) + '</span>';
+    var holdingsHTML = u.tickers && u.tickers.length
+      ? u.tickers.map(function(t){ return '<span class="cu-chip">$' + esc(t) + '</span>'; }).join('')
+      : '<span class="cu-empty-holdings">' + esc(T(UI.noHoldings)) + '</span>';
+    var socialHTML = '';
+    if(u.facebook) socialHTML += '<span><b>FB</b>' + esc(u.facebook) + '</span>';
+    if(u.instagram) socialHTML += '<span><b>IG</b>' + esc(u.instagram) + '</span>';
+
+    return '<div class="cu-card" data-cu-user="' + esc(u.userId) + '">' +
+      '<div class="cu-card-top">' +
+        avatar +
+        '<div>' +
+          '<div class="cu-name">' + esc(u.displayName || '—') + '</div>' +
+          '<div class="cu-uid">UID: ' + esc(u.uid || '—') + '</div>' +
+          statusHTML +
+        '</div>' +
+      '</div>' +
+      '<div class="cu-holdings">' + holdingsHTML + '</div>' +
+      (socialHTML ? '<div class="cu-social">' + socialHTML + '</div>' : '') +
+      '<div class="cu-edit-row">' +
+        '<div class="cu-edit-field"><label>' + esc(T(UI.uidLabel)) + '</label><input type="text" data-cu="uidInput" value="' + esc(u.uid || '') + '" maxlength="20"></div>' +
+        '<div class="cu-edit-field"><label>' + esc(T(UI.accessLabel)) + '</label><input type="date" data-cu="accessInput" value="' + esc(u.accessUntil || '') + '"></div>' +
+        '<div class="cu-save-row">' +
+          '<button type="button" class="cu-save-btn" data-cu="saveBtn">' + esc(T(UI.saveBtn)) + '</button>' +
+          '<span class="cu-save-status" data-cu="saveStatus"></span>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function filteredUsers(){
+    if(!users) return [];
+    var q = searchQuery.trim().toLowerCase();
+    return users.filter(function(u){
+      if(filterMode === 'active' && accessState(u) !== 'active') return false;
+      if(filterMode === 'expired' && accessState(u) === 'active') return false;
+      if(!q) return true;
+      var hay = [u.displayName, u.uid, u.facebook, u.instagram].concat(u.tickers || []).join(' ').toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+  }
+
+  function listHTML(){
+    var list = filteredUsers();
+    var countText = T(UI.count).replace('{n}', users.length);
+    var gridHTML = !list.length
+      ? '<div class="cu-empty">' + esc(T(users.length ? UI.noMatch : UI.empty)) + '</div>'
+      : '<div class="cu-grid" data-cu="grid">' + list.map(userCardHTML).join('') + '</div>';
+    return '<div class="cu-toolbar">' +
+        '<input type="text" class="cu-search" data-cu="search" placeholder="' + esc(T(UI.searchPh)) + '" value="' + esc(searchQuery) + '">' +
+        '<select class="cu-filter" data-cu="filter">' +
+          '<option value="all"' + (filterMode === 'all' ? ' selected' : '') + '>' + esc(T(UI.filterAll)) + '</option>' +
+          '<option value="active"' + (filterMode === 'active' ? ' selected' : '') + '>' + esc(T(UI.filterActive)) + '</option>' +
+          '<option value="expired"' + (filterMode === 'expired' ? ' selected' : '') + '>' + esc(T(UI.filterExpired)) + '</option>' +
+        '</select>' +
+        '<span class="cu-count">' + esc(countText) + '</span>' +
+      '</div>' + gridHTML;
+  }
+
+  function bodyHTML(){
+    if(window.__SPZ_TIER && window.__SPZ_TIER() !== 'full') return '<div class="cu-empty">' + esc(T(UI.adminOnly)) + '</div>';
+    if(loading) return '<div class="cu-loading">' + esc(T(UI.loading)) + '</div>';
+    if(!getAdminKey() || !users) return keyGateHTML();
+    return listHTML();
+  }
+
+  function wireGridCards(){
+    var grid = sec.querySelector('[data-cu="grid"]');
+    if(!grid) return;
+    Array.prototype.forEach.call(grid.querySelectorAll('.cu-card'), function(card){
+      var saveBtn = card.querySelector('[data-cu="saveBtn"]');
+      if(!saveBtn) return;
+      saveBtn.addEventListener('click', function(){
+        var userId = card.getAttribute('data-cu-user');
+        var uid = card.querySelector('[data-cu="uidInput"]').value.trim();
+        var accessUntil = card.querySelector('[data-cu="accessInput"]').value || null;
+        var statusEl = card.querySelector('[data-cu="saveStatus"]');
+        statusEl.className = 'cu-save-status'; statusEl.textContent = '…';
+        fetch(WORKER_BASE + '/api/admin/users/update', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json', 'X-Admin-Key': getAdminKey() },
+          body: JSON.stringify({ userId: userId, uid: uid, accessUntil: accessUntil })
+        }).then(function(r){ return r.json().then(function(data){ return { ok:r.ok, data:data }; }); })
+          .then(function(res){
+            if(!res.ok){
+              statusEl.classList.add('err');
+              statusEl.textContent = res.data && res.data.error === 'uid_taken' ? T(UI.saveErrTaken) : T(UI.saveErrBad);
+              return;
+            }
+            statusEl.classList.add('ok');
+            statusEl.textContent = T(UI.saveOk);
+            var match = users.filter(function(x){ return x.userId === userId; })[0];
+            if(match){ match.uid = uid; match.accessUntil = accessUntil; }
+          })
+          .catch(function(){ statusEl.classList.add('err'); statusEl.textContent = T(UI.saveErrBad); });
+      });
+    });
+  }
+
+  function renderListOnly(){
+    var body = sec.querySelector('[data-cu="body"]');
+    if(!body) return;
+    var caretEl = document.activeElement;
+    var wasSearch = caretEl && caretEl.getAttribute && caretEl.getAttribute('data-cu') === 'search';
+    var caret = wasSearch ? caretEl.selectionStart : null;
+    body.innerHTML = listHTML();
+    wireBody();
+    if(wasSearch){
+      var reInput = sec.querySelector('[data-cu="search"]');
+      if(reInput){ reInput.focus(); try { reInput.setSelectionRange(caret, caret); } catch(e){} }
+    }
+  }
+
+  function wireBody(){
+    var keyInput = sec.querySelector('[data-cu="keyInput"]');
+    if(keyInput){
+      keyInput.addEventListener('keydown', function(ev){ if(ev.key === 'Enter') submitKey(); });
+    }
+    var keySubmit = sec.querySelector('[data-cu="keySubmit"]');
+    if(keySubmit) keySubmit.addEventListener('click', submitKey);
+
+    var searchInput = sec.querySelector('[data-cu="search"]');
+    if(searchInput){
+      searchInput.addEventListener('input', function(ev){ searchQuery = ev.target.value; renderListOnly(); });
+    }
+    var filterSelect = sec.querySelector('[data-cu="filter"]');
+    if(filterSelect){
+      filterSelect.addEventListener('change', function(ev){ filterMode = ev.target.value; renderListOnly(); });
+    }
+    wireGridCards();
+  }
+
+  function submitKey(){
+    var input = sec.querySelector('[data-cu="keyInput"]');
+    var key = input ? input.value.trim() : '';
+    if(!key) return;
+    setAdminKey(key);
+    fetchUsers();
+  }
+
+  function paint(){
+    if(!sec) return;
+    var eb = sec.querySelector('[data-cu="eb"]'), h = sec.querySelector('[data-cu="h"]'), lede = sec.querySelector('[data-cu="lede"]');
+    if(eb) eb.textContent = T(UI.eb);
+    if(h) h.textContent = T(UI.h);
+    if(lede) lede.textContent = T(UI.lede);
+    var body = sec.querySelector('[data-cu="body"]');
+    if(!body) return;
+    body.innerHTML = bodyHTML();
+    var keyInput = sec.querySelector('[data-cu="keyInput"]');
+    if(keyInput) keyInput.focus();
+    wireBody();
+  }
+
+  function build(){
+    if(document.getElementById('connectedusers')) return true;
+    if(!document.querySelector('.top-fixed') || !window.__spzAddRoute) return false;
+
+    sec = document.createElement('section');
+    sec.id = 'connectedusers';
+    sec.setAttribute('data-route', 'connectedusers');
+    sec.innerHTML =
+      '<div class="cx-wrap">' +
+        '<div class="section-head reveal in-view">' +
+          '<div class="eyebrow"><span class="cursor"></span><span data-cu="eb"></span></div>' +
+          '<h2 data-cu="h"></h2>' +
+          '<p class="lede" data-cu="lede"></p>' +
+          '<div class="rule"></div>' +
+        '</div>' +
+        '<div data-cu="body"></div>' +
+      '</div>';
+    document.body.appendChild(sec);
+
+    window.__spzAddRoute({
+      id:'connectedusers', feat:true, after:'printreport',
+      t: UI.h,
+      d:{en:'Every visitor who has linked LINE — photo, holdings, UID and access status. Admin-only, invisible to members and LINE-linked visitors.',
+         th:'ทุกคนที่เชื่อมต่อ LINE ไว้ — รูป หุ้นที่ถือ UID และสถานะสิทธิ์การใช้งาน เฉพาะแอดมิน เมมเบอร์และผู้ล็อกอินผ่าน LINE มองไม่เห็น'}
+    });
+
+    paint();
+    if(getAdminKey()) fetchUsers();
+    return true;
+  }
+
+  function boot(){
+    var tries = 0;
+    var iv = setInterval(function(){ if(build() || ++tries > 60) clearInterval(iv); }, 400);
+    new MutationObserver(function(){ if(sec) paint(); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
   }
 
   if(document.readyState === 'loading'){
