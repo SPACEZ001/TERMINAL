@@ -177,13 +177,32 @@ async function putUserWatchlist(userId, tickers, env) {
 
 const MAX_SOCIAL_LEN = 80;
 
-function randomUid() {
-  // 5-7 digit random string, never starting with 0 -- auto-assigned the
-  // first time someone logs in; the admin can freely change it afterwards.
-  const len = 5 + Math.floor(Math.random() * 3);
+function randomUid(len) {
+  // random string of `len` digits, never starting with 0 -- auto-assigned
+  // the first time someone logs in; the admin can freely change it after.
   let s = String(1 + Math.floor(Math.random() * 9));
   for (let i = 1; i < len; i++) s += String(Math.floor(Math.random() * 10));
   return s;
+}
+
+// Auto-generated UIDs start at 5-7 digits; if every random draw at a given
+// length collides with someone already in the index (only plausible once
+// there are thousands of accounts), this grows one digit at a time rather
+// than looping forever on the same crowded range.
+async function generateUniqueUid(env) {
+  const ids = await getUserIndex(env);
+  const taken = new Set();
+  for (const id of ids) {
+    const p = await getProfile(id, env);
+    if (p && p.uid) taken.add(p.uid);
+  }
+  let len = 5 + Math.floor(Math.random() * 3);
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const candidate = randomUid(len);
+    if (!taken.has(candidate)) return candidate;
+    if ((attempt + 1) % 20 === 0) len++; // crowded at this length -- widen the range
+  }
+  return randomUid(len + 4); // astronomically unlikely fallback
 }
 
 function sanitizeUid(v) {
@@ -235,20 +254,38 @@ async function addUserToIndex(userId, env) {
    profile's name/photo fresh, assigns a UID the very first time, and never
    overwrites fields the admin or the user already set. */
 async function upsertProfileOnLogin(userId, displayName, pictureUrl, env) {
-  await addUserToIndex(userId, env);
   const existing = await getProfile(userId, env);
+  // generateUniqueUid scans the index -- add this user to it AFTER that scan
+  // so a first-time login never sees (and can never collide with) itself.
+  const uid = (existing && existing.uid) || (await generateUniqueUid(env));
+  await addUserToIndex(userId, env);
   const profile = {
-    uid: (existing && existing.uid) || randomUid(),
+    uid,
     displayName: displayName || (existing && existing.displayName) || "",
     pictureUrl: pictureUrl || (existing && existing.pictureUrl) || "",
     facebook: (existing && existing.facebook) || "",
     instagram: (existing && existing.instagram) || "",
     accessUntil: (existing && existing.accessUntil) || null,
+    // "rights" is a purely decorative badge for now (see handleAdminUsersUpdate) --
+    // one of the RIGHTS_LEVELS ids, or null for the plain Free look. Admin-only,
+    // never touched by the user or by login.
+    rights: (existing && existing.rights) || null,
     linkedAt: (existing && existing.linkedAt) || Date.now(),
     updatedAt: Date.now(),
   };
   await putProfile(userId, profile, env);
   return profile;
+}
+
+// Kept in sync with the site's own membership tiers (TIERS in the
+// #membership module) plus one extra, site-only "admin" badge -- so a UID's
+// assigned "rights" always maps to a real, recognizable label.
+const RIGHTS_LEVELS = ["member", "pass", "ultra", "cryptolab", "stocklab", "academy", "admin"];
+
+function sanitizeRights(v) {
+  if (v === null) return null;
+  if (typeof v !== "string") return undefined; // undefined = invalid
+  return RIGHTS_LEVELS.indexOf(v) !== -1 ? v : undefined;
 }
 
 function isAdminKeyValid(request, env) {
@@ -514,6 +551,7 @@ async function handleAdminUsersList(request, env) {
       facebook: profile.facebook || "",
       instagram: profile.instagram || "",
       accessUntil: profile.accessUntil || null,
+      rights: profile.rights || null,
       linkedAt: profile.linkedAt || null,
       tickers: Object.keys(wl),
     });
@@ -548,6 +586,12 @@ async function handleAdminUsersUpdate(request, env) {
     const d = sanitizeDate(body.accessUntil);
     if (d === undefined) return json({ error: "invalid_date" }, env, 400);
     profile.accessUntil = d;
+  }
+
+  if ("rights" in body) {
+    const r = sanitizeRights(body.rights);
+    if (r === undefined) return json({ error: "invalid_rights" }, env, 400);
+    profile.rights = r;
   }
 
   profile.updatedAt = Date.now();
