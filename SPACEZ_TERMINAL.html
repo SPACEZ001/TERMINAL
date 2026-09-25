@@ -32697,11 +32697,13 @@ var GM = {
              th:'เชื่อมต่อระบบ LINE ไม่ได้ตอนนี้ กดเพื่อลองใหม่นะคะ'},
     lineNotReady:{en:'LINE connect isn’t switched on yet.',th:'ฟีเจอร์เชื่อมต่อ LINE ยังไม่เปิดใช้งานค่ะ'},
     lineForget:{en:'Log out of LINE',th:'ออกจากระบบ LINE'},
-    lineViewOnlyNote:{en:'Shown from LINE — add or remove tickers via Telegram for now.',
-                      th:'แสดงรายการจาก LINE — การเพิ่ม/ลบหุ้นตอนนี้ยังต้องทำผ่าน Telegram นะคะ'},
-    lineHowtoH:{en:'Adding or removing a stock (via Telegram, for now)',th:'วิธีเพิ่ม/ลบหุ้น (ตอนนี้ทำผ่าน Telegram)'},
-    lineHowtoLede:{en:'LINE can show your list, but adding and removing still goes through the Telegram bot — connect Telegram above, or just send it one of these from any chat with it.',
-                   th:'LINE แสดงรายการของคุณได้ แต่การเพิ่ม/ลบยังต้องผ่านบอท Telegram — เชื่อมต่อ Telegram ด้านบน หรือส่งคำสั่งด้านล่างนี้ในแชทกับบอทได้เลย'},
+    lineOwnListNote:{en:'This is your own personal list, linked to your LINE account — separate from a Telegram-linked list, even on the same browser. Add or remove tickers right here.',
+                     th:'นี่คือรายการส่วนตัวของคุณเอง ผูกกับบัญชี LINE ของคุณ — แยกจากรายการที่เชื่อมผ่าน Telegram แม้จะเป็นเบราว์เซอร์เดียวกันก็ตาม เพิ่ม/ลบหุ้นได้จากตรงนี้เลย'},
+    lineAddPh:{en:'e.g. PTT, AAPL…',th:'เช่น PTT, AAPL…'},
+    lineAddBtn:{en:'Add',th:'เพิ่ม'},
+    lineAddErrInvalid:{en:'That doesn’t look like a valid ticker.',th:'รูปแบบชื่อหุ้นนี้ดูไม่ถูกต้องค่ะ'},
+    lineAddErrFull:{en:'Your list is full (60 max) — remove one first.',th:'รายการเต็มแล้ว (สูงสุด 60 ตัว) เอาออกสักตัวก่อนนะคะ'},
+    lineAddErrNet:{en:'Could not reach the server — try again.',th:'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ลองใหม่อีกครั้งนะคะ'},
     title:{en:'Link your LINE',th:'เชื่อมต่อ LINE ของคุณ'},
     lineSub:{en:'Open LINE on your phone and scan this code to link your watchlist to this browser.',
              th:'เปิด LINE บนมือถือแล้วสแกนโค้ดนี้ เพื่อเชื่อมวอทช์ลิสต์ของคุณเข้ากับเบราว์เซอร์นี้'},
@@ -32942,6 +32944,70 @@ var GM = {
       .catch(function(){ state.line.status = 'error'; paint(); paintLineModal(); });
   }
 
+  /* ---- LINE-linked users manage their OWN watchlist directly (no Telegram
+     needed) via the Worker's per-account KV bucket added alongside this UI.
+     Both helpers optimistically leave the grid alone until the Worker
+     confirms the change, then repaint from its response so state.line.tickers
+     is always exactly what the server has -- never guessed locally. -------- */
+  function lineAddTicker(ticker, cb){
+    if(!state.line.code) { if(cb) cb('not_linked'); return; }
+    fetch(lineApi('/api/session/watchlist/add'), {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ code: state.line.code, ticker: ticker })
+    })
+      .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+      .then(function(res){
+        if(!res.ok){ if(cb) cb(res.d && res.d.error || 'error'); return; }
+        state.line.tickers = res.d.tickers || [];
+        paint();
+        if(cb) cb(null, state.line.tickers);
+      })
+      .catch(function(){ if(cb) cb('network'); });
+  }
+
+  function lineRemoveTicker(ticker, cb){
+    if(!state.line.code) { if(cb) cb('not_linked'); return; }
+    fetch(lineApi('/api/session/watchlist/remove'), {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ code: state.line.code, ticker: ticker })
+    })
+      .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+      .then(function(res){
+        if(!res.ok){ if(cb) cb(res.d && res.d.error || 'error'); return; }
+        state.line.tickers = res.d.tickers || [];
+        paint();
+        if(cb) cb(null, state.line.tickers);
+      })
+      .catch(function(){ if(cb) cb('network'); });
+  }
+
+  /* ---- likes on journal posts, via the same shared LINE session. Exposed
+     on window.__SPZ_LINE (below) so the Journal module never needs to know
+     the session code or talk to the Worker itself -- one place holds the
+     LINE identity, everything else just asks it to act. --------------- */
+  function lineLikeToggle(postId, cb){
+    if(!state.line.code) { if(cb) cb('not_linked'); return; }
+    fetch(lineApi('/api/likes/toggle'), {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ code: state.line.code, postId: postId })
+    })
+      .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+      .then(function(res){
+        if(!res.ok){ if(cb) cb(res.d && res.d.error || 'error'); return; }
+        if(cb) cb(null, res.d);
+      })
+      .catch(function(){ if(cb) cb('network'); });
+  }
+
+  function lineLikesGet(postId, cb){
+    var qs = '/api/likes?postId=' + encodeURIComponent(postId) +
+      (state.line.code ? '&code=' + encodeURIComponent(state.line.code) : '');
+    fetch(lineApi(qs))
+      .then(function(r){ return r.json(); })
+      .then(function(d){ if(cb) cb(null, d); })
+      .catch(function(){ if(cb) cb('network'); });
+  }
+
   function lineRestoreFromWorker(saved){
     state.line.code = saved.code;
     state.line.displayName = saved.displayName;
@@ -33024,6 +33090,7 @@ var GM = {
           : '<span class="wl-nm">' + esc(tx(C.unknownNote)) + '</span>') +
       '<div class="wl-btns">' +
         '<button type="button" class="wl-btn open" data-wl-open="' + esc(t) + '">' + esc(tx(C.open)) + '</button>' +
+        '<button type="button" class="wl-btn rm" data-wl-line-rm="' + esc(t) + '">' + esc(tx(C.remove)) + '</button>' +
       '</div></div>';
   }
 
@@ -33220,24 +33287,24 @@ var GM = {
       var lineGrid = lineTickers.length
         ? '<div class="wl-grid">' + lineTickers.map(function(t){ return lineCardHTML(t, stocks ? stocks[t] : null); }).join('') + '</div>'
         : '<div class="wl-empty"><b>' + esc(tx(C.emptyH)) + '</b><br>' + esc(tx(C.emptyB)) + '</div>';
-      /* LINE only shows the list (no add/remove backend yet) -- so unlike
-         the Telegram branch below, spell out the actual commands right
-         here too, not just "use Telegram", since without an example the
-         instruction is not actionable. */
-      var lineHowto = '<div class="wl-howto">' +
-        '<div class="wl-howto-h">' + esc(tx(C.lineHowtoH)) + '</div>' +
-        '<p class="wl-howto-lede">' + esc(tx(C.lineHowtoLede)) + '</p>' +
-        '<div class="wl-howto-rows">' +
-          howtoRowHTML('lineAdd', tx(C.lbAdd), cmdText('add', exT)) +
-          howtoRowHTML('lineRemove', tx(C.lbRemove), cmdText('remove', exT)) +
-        '</div>' +
-        '<a class="wl-opentg" href="' + plainTgLink() + '" target="_blank" rel="noopener noreferrer">' + esc(tx(C.opentg)) + ' →</a>' +
-      '</div>';
+      /* LINE-linked users now manage their own list right here -- a real
+         add/remove round-trip to the Worker's per-account bucket, no
+         Telegram command needed (Telegram is still its own separate list,
+         see lineOwnListNote below). */
+      var lineAddBox =
+        '<div class="wl-add">' +
+          '<input type="text" list="wlTickers" data-wl="lineInput" placeholder="' + esc(tx(C.lineAddPh)) + '">' +
+          '<button type="button" class="wl-addbtn" data-wl="lineAddBtn">' + esc(tx(C.lineAddBtn)) + '</button>' +
+          '<span class="wl-line-status" data-wl="lineAddStatus"></span>' +
+          '<datalist id="wlTickers">' + (stocks ? Object.keys(stocks).sort().map(function(k){
+            return '<option value="' + esc(k) + '">';
+          }).join('') : '') + '</datalist>' +
+        '</div>';
       body.innerHTML = strip +
-        '<div class="wl-addnote" style="margin:14px 0;">' + esc(tx(C.lineViewOnlyNote)) + '</div>' +
+        '<div class="wl-addnote" style="margin:14px 0;">' + esc(tx(C.lineOwnListNote)) + '</div>' +
+        lineAddBox +
         portfolioAnalysisHTML(lineTickers, stocks) +
-        lineGrid +
-        lineHowto;
+        lineGrid;
       wireConnStrip(body);
       var openBtnsLine = body.querySelectorAll('[data-wl-open]');
       for(var iL=0;iL<openBtnsLine.length;iL++){
@@ -33246,15 +33313,39 @@ var GM = {
           if(window.__SPZ_STOCK && window.__SPZ_STOCK.open) window.__SPZ_STOCK.open(t);
         });
       }
-      var lineHowtoCopyBtns = body.querySelectorAll('[data-wl-copy]');
-      for(var lc=0; lc<lineHowtoCopyBtns.length; lc++){
+
+      var lineErrMap = { invalid_ticker:C.lineAddErrInvalid, list_full:C.lineAddErrFull, network:C.lineAddErrNet, error:C.lineAddErrNet };
+      var lineInput = body.querySelector('[data-wl="lineInput"]');
+      var lineAddBtn = body.querySelector('[data-wl="lineAddBtn"]');
+      var lineAddStatus = body.querySelector('[data-wl="lineAddStatus"]');
+      function doLineAdd(){
+        var t = (lineInput.value || '').trim();
+        if(!t || lineAddBtn.disabled) return;
+        lineAddBtn.disabled = true;
+        lineAddStatus.textContent = '';
+        lineAddStatus.classList.remove('err');
+        lineAddTicker(t, function(err){
+          lineAddBtn.disabled = false;
+          if(err){
+            lineAddStatus.textContent = tx(lineErrMap[err] || C.lineAddErrNet);
+            lineAddStatus.classList.add('err');
+          } else {
+            lineInput.value = '';
+          }
+        });
+      }
+      if(lineAddBtn) lineAddBtn.addEventListener('click', doLineAdd);
+      if(lineInput) lineInput.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); doLineAdd(); } });
+
+      var lineRmBtns = body.querySelectorAll('[data-wl-line-rm]');
+      for(var lr=0; lr<lineRmBtns.length; lr++){
         (function(btn){
           btn.addEventListener('click', function(){
-            var key = btn.getAttribute('data-wl-copy');
-            var codeEl = body.querySelector('[data-wl-ex="' + key + '"]');
-            copyText(codeEl ? codeEl.textContent : '', btn);
+            if(btn.disabled) return;
+            btn.disabled = true;
+            lineRemoveTicker(btn.getAttribute('data-wl-line-rm'), function(){ /* paint() already refreshed the grid */ });
           });
-        })(lineHowtoCopyBtns[lc]);
+        })(lineRmBtns[lr]);
       }
       return;
     }
@@ -33427,7 +33518,9 @@ var GM = {
       return { status: state.line.status, displayName: state.line.displayName || null,
         pictureUrl: state.line.pictureUrl || null, tickers: (state.line.tickers || []).slice() };
     },
-    logout: function(){ lineLogout(); }
+    logout: function(){ lineLogout(); },
+    like: function(postId, cb){ lineLikeToggle(postId, cb); },
+    likesGet: function(postId, cb){ lineLikesGet(postId, cb); }
   };
 })();
 </script>
@@ -37513,15 +37606,22 @@ var GM = {
   .cag-tier.line:hover{border-color:#06C755;background:rgba(6,199,85,.08);}
 
   .cag-line-row{
-    display:flex;align-items:center;gap:8px;width:100%;margin:2px 0 12px;
-    border:1px solid rgba(6,199,85,.3);border-radius:10px;padding:9px 12px;
+    display:flex;align-items:center;gap:12px;width:100%;margin:2px 0 12px;
+    border:1px solid rgba(6,199,85,.3);border-radius:12px;padding:12px 14px;transition:background .15s;
   }
-  .cag-line-avatar{width:22px;height:22px;border-radius:50%;object-fit:cover;flex:0 0 auto;border:1px solid #06C755;}
+  /* a small "board" feel once linked -- a soft green wash + a noticeably
+     bigger avatar (was 22px, easy to miss) so her own name+photo actually
+     read as a mini profile, not just a status dot. */
+  .cag-line-row.linked{background:rgba(6,199,85,.07);}
+  .cag-line-avatar{width:48px;height:48px;border-radius:50%;object-fit:cover;flex:0 0 auto;border:2px solid #06C755;}
   .cag-line-avatar.hidden{display:none;}
-  .cag-line-status{flex:1;font-size:.72rem;color:var(--cag-dim);font-family:'Inter',sans-serif;}
+  .cag-line-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .cag-line-name{font-size:.84rem;font-weight:700;color:#f4f6f1;font-family:'Inter',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cag-line-name:empty{display:none;}
+  .cag-line-status{font-size:.7rem;color:var(--cag-dim);font-family:'Inter',sans-serif;}
   .cag-line-btn{
     background:transparent;border:1px solid #06C755;color:#06C755;border-radius:8px;
-    padding:6px 11px;font-family:'Inter',sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;white-space:nowrap;
+    padding:6px 11px;font-family:'Inter',sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;white-space:nowrap;flex:0 0 auto;
   }
   .cag-line-btn:hover{background:#06C755;color:#08130a;}
   .cag-fine{width:100%;text-align:center;font-size:.55rem;color:#4a4c47;letter-spacing:.05em;line-height:1.7;}
@@ -38012,7 +38112,10 @@ var GM = {
             '<div class="cag-head"><div><b data-x="loggedT"></b><span data-x="loggedS"></span></div></div>' +
             '<div class="cag-line-row" id="cagLineRow">' +
               '<img class="cag-line-avatar hidden" id="cagLineAvatar" alt="">' +
-              '<span class="cag-line-status" data-x="lineStatus"></span>' +
+              '<div class="cag-line-info">' +
+                '<span class="cag-line-name" id="cagLineName" data-x="lineName"></span>' +
+                '<span class="cag-line-status" data-x="lineStatus"></span>' +
+              '</div>' +
               '<button type="button" class="cag-line-btn" id="cagLineRowBtn" data-x="lineBtn"></button>' +
             '</div>' +
             '<div class="cag-admin-links hidden" id="cagAdminLinks">' +
@@ -38246,11 +38349,12 @@ var GM = {
     // intentionally not a real tier tab and never takes the .on state that
     // Member/Full use -- linked status is communicated by #cagLineRow below
     // instead, which is visible on this pane regardless of which tab is active.
-    var lineStatusTxt = lineLinked
-      ? Tt(TXT.lineRowConnected) + (lineSt.displayName ? ' · ' + lineSt.displayName : '')
-      : Tt(TXT.lineRowNote);
+    var lineNameTxt = lineLinked ? (lineSt.displayName || '') : '';
+    var lineStatusTxt = lineLinked ? Tt(TXT.lineRowConnected) : Tt(TXT.lineRowNote);
     var lineBtnTxt = lineLinked ? Tt(TXT.lineRowLogout) : Tt(TXT.lineRowConnect);
     var lineAvatarEl = gate.querySelector('#cagLineAvatar');
+    var lineRowEl = gate.querySelector('#cagLineRow');
+    if(lineRowEl) lineRowEl.classList.toggle('linked', lineLinked);
     if(lineAvatarEl){
       if(lineLinked && lineSt.pictureUrl){ lineAvatarEl.src = lineSt.pictureUrl; lineAvatarEl.classList.remove('hidden'); }
       else { lineAvatarEl.removeAttribute('src'); lineAvatarEl.classList.add('hidden'); }
@@ -38269,7 +38373,7 @@ var GM = {
         adminAddAnalysis: TXT.adminAddAnalysis, adminPrintReport: TXT.adminPrintReport,
         adminCompareDownload: TXT.adminCompareDownload,
         tabMember: TXT.tabMember, tabFull: TXT.tabFull, tabLine: TXT.tabLine,
-        lineStatus: lineStatusTxt, lineBtn: lineBtnTxt,
+        lineName: lineNameTxt, lineStatus: lineStatusTxt, lineBtn: lineBtnTxt,
         memberT: TXT.memberT, memberS: TXT.memberS, memberCodeHint: TXT.memberCodeHint,
         enterMember: TXT.enter, toFullLink: TXT.toFullLink, toMemberLink: TXT.toMemberLink,
         fullT: TXT.fullT, fullS: TXT.fullS,
@@ -46114,13 +46218,33 @@ var qrcode = function() {
   }
   .jrnl-outcome-badge.correct{color:#7CFFB2;border-color:#7CFFB2;}
   .jrnl-outcome-badge.incorrect{color:#ff5a6e;border-color:#ff5a6e;}
-  .jrnl-card-actions{display:flex;justify-content:flex-end;margin-top:10px;}
+  .jrnl-card-actions{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:10px;flex-wrap:wrap;}
   .jrnl-share-btn{
     font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;
     color:var(--grey-dim);background:none;border:1px solid var(--border-dim);border-radius:8px;
     padding:6px 11px;cursor:pointer;transition:color .2s,border-color .2s;
   }
   .jrnl-share-btn:hover{color:var(--neon);border-color:var(--neon);}
+
+  /* ---- like button + liker avatars, LINE-authenticated (see the shared
+     window.__SPZ_LINE API the Watchlist module exposes). Liking needs a
+     linked LINE account so nobody can like as someone else; seeing who
+     already liked needs no login at all. ------------------------------- */
+  .jrnl-like-wrap{display:flex;align-items:center;gap:8px;}
+  .jrnl-like-btn{
+    font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;
+    color:var(--grey-dim);background:none;border:1px solid var(--border-dim);border-radius:8px;
+    padding:6px 11px;cursor:pointer;transition:color .2s,border-color .2s;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .jrnl-like-btn:hover{color:#06C755;border-color:#06C755;}
+  .jrnl-like-btn.liked{color:#06C755;border-color:#06C755;background:rgba(6,199,85,.08);}
+  .jrnl-like-btn:disabled{opacity:.6;cursor:default;}
+  .jrnl-like-icon{width:12px;height:12px;flex:0 0 auto;}
+  .jrnl-like-btn.liked .jrnl-like-icon{fill:#06C755;}
+  .jrnl-like-avatars{display:flex;align-items:center;gap:3px;}
+  .jrnl-like-avatars img{width:18px;height:18px;border-radius:50%;object-fit:cover;border:1px solid var(--border-dim);}
+  .jrnl-like-more{font-family:var(--mono);font-size:9.5px;color:var(--grey-dim);}
 
   /* ---- single-entry share view ---- */
   .jrnl-view-back{
@@ -46265,6 +46389,68 @@ var qrcode = function() {
     uploadPreset: "uheaqpmw"
   };
   function cloudinaryConfigured(){ return !!(CLOUDINARY_CONFIG.cloudName && CLOUDINARY_CONFIG.cloudName !== 'REPLACE_ME'); }
+
+  /* ======================= likes (via the shared LINE session) =======================
+     Liking a post needs a linked LINE account (window.__SPZ_LINE, exposed by the
+     Watchlist module -- there is only ever ONE LINE session/modal on the whole
+     site, and this module reuses it rather than building a second login flow).
+     Seeing who already liked a post needs no login at all. The Watchlist module
+     may not have booted yet when a journal card first renders, so every call
+     goes through withLineApi(), which retries briefly instead of failing silently. */
+  function withLineApi(cb, tries){
+    tries = tries || 0;
+    if(window.__SPZ_LINE){ cb(window.__SPZ_LINE); return; }
+    if(tries > 20) return; /* give up quietly after ~10s -- the like button just stays inert */
+    setTimeout(function(){ withLineApi(cb, tries + 1); }, 500);
+  }
+
+  function paintLikeUI(root, data){
+    var btn = root.querySelector('.jrnl-like-btn');
+    if(!btn) return;
+    var countEl = root.querySelector('.jrnl-like-count');
+    var avEl = root.querySelector('.jrnl-like-avatars');
+    btn.classList.toggle('liked', !!data.youLiked);
+    if(countEl) countEl.textContent = data.count > 0 ? data.count : '';
+    if(avEl){
+      var likers = (data.likes || []).filter(function(l){ return l.pictureUrl; }).slice(0, 5);
+      avEl.innerHTML = likers.map(function(l){
+        return '<img src="' + esc(l.pictureUrl) + '" alt="" title="' + esc(l.displayName || '') + '">';
+      }).join('') + (data.count > likers.length ? '<span class="jrnl-like-more">+' + (data.count - likers.length) + '</span>' : '');
+    }
+  }
+
+  function likeWrapHTML(){
+    return '<div class="jrnl-like-wrap">' +
+      '<button type="button" class="jrnl-like-btn">' +
+        '<svg class="jrnl-like-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+          '<path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z"/>' +
+        '</svg>' +
+        '<span class="jrnl-like-count"></span>' +
+      '</button>' +
+      '<span class="jrnl-like-avatars"></span>' +
+    '</div>';
+  }
+
+  function wireLike(root, postId){
+    var btn = root.querySelector('.jrnl-like-btn');
+    if(!btn) return;
+    btn.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      withLineApi(function(LINE){
+        var st = LINE.state();
+        if(st.status !== 'linked'){ LINE.open(); return; }
+        if(btn.disabled) return;
+        btn.disabled = true;
+        LINE.like(postId, function(err, data){
+          btn.disabled = false;
+          if(!err && data) paintLikeUI(root, data);
+        });
+      });
+    });
+    withLineApi(function(LINE){
+      LINE.likesGet(postId, function(err, data){ if(!err && data) paintLikeUI(root, data); });
+    });
+  }
   function cloudinaryUpload(file){
     var fd = new FormData();
     fd.append('file', file);
@@ -46655,7 +46841,7 @@ var qrcode = function() {
             tagsHtml +
             cardLevelsHtml(e) +
             '<div class="jrnl-card-text"></div>' +
-            '<div class="jrnl-card-actions"><button type="button" class="jrnl-share-btn" data-share></button></div>' +
+            '<div class="jrnl-card-actions">' + likeWrapHTML() + '<button type="button" class="jrnl-share-btn" data-share></button></div>' +
           '</div>');
         card.querySelector('.jrnl-card-text').textContent = e.text || '';
         card.querySelector('[data-share]').textContent = T(UI.share);
@@ -46663,6 +46849,7 @@ var qrcode = function() {
           ev.stopPropagation();
           location.href = shareUrlFor(e.id);
         });
+        wireLike(card, e.id);
         if(e.imageUrl){
           var img = card.querySelector('.jrnl-card-img');
           img.addEventListener('click', function(){ openLightbox(e.imageUrl); });
@@ -47334,9 +47521,10 @@ var qrcode = function() {
           tagsHtml +
           cardLevelsHtml(e) +
           '<div class="jrnl-card-text"></div>' +
-          '<div class="jrnl-card-actions"><button type="button" class="jrnl-share-btn" data-share></button></div>' +
+          '<div class="jrnl-card-actions">' + likeWrapHTML() + '<button type="button" class="jrnl-share-btn" data-share></button></div>' +
         '</div>');
       card.querySelector('.jrnl-card-text').textContent = e.text || '';
+      wireLike(card, e.id);
       var shareBtn = card.querySelector('[data-share]');
       shareBtn.textContent = T(UI.share);
       shareBtn.addEventListener('click', function(ev){
