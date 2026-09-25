@@ -1710,7 +1710,10 @@
   .hc-dial{position:relative;width:38px;height:38px;flex:none;color:var(--hue);}
   .hc-dial svg{width:100%;height:100%;display:block;}
   .hc-dial .hc-track{opacity:.22;}
-  .hc-dial .hc-arc{animation:hcSpin 16s linear infinite;transform-origin:50% 50%;}
+  /* fill-box pins the rotation origin to the circle's own geometry instead
+     of the SVG viewport -- without it, some engines wobble the ring off its
+     true centre as it spins (looked like it "drifted" while scrolling). */
+  .hc-dial .hc-arc{animation:hcSpin 16s linear infinite;transform-box:fill-box;transform-origin:center;}
   .hub-card:hover .hc-dial .hc-arc{animation-duration:4s;}
   .hc-dial .hc-n{
     position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
@@ -2320,7 +2323,7 @@
   .nav-pop{
     position:absolute;top:calc(100% + 12px);left:0;z-index:120;
     width:min(94vw,660px);
-    background:rgba(9,10,8,.97);backdrop-filter:blur(16px);
+    background:rgba(8,9,11,.97);backdrop-filter:blur(16px);
     border:1px solid var(--border);border-radius:14px;
     box-shadow:0 24px 64px rgba(0,0,0,.66);
     padding:12px;
@@ -2472,11 +2475,18 @@
     .nav-cluster .nav-trig{padding:6px 10px;}
   }
 
-  /* ---------- scrim: blur the page behind the open menu ---------- */
+  /* ---------- scrim: blur the page behind the open menu ----------
+     Was rgba(6,7,5,.42) with saturate(.75) -- a near-black but slightly
+     green-biased (G>R>B) tint sitting over a page full of neon-green glow
+     elements, desaturated only 25%. On some external displays (different
+     gamma/colour profile than a MacBook's own screen) that residual green
+     bled through visibly. Rebalanced to a neutral, slightly cool "space"
+     black and desaturated harder so the cast doesn't depend on the
+     monitor. ---------------------------------------------------------- */
   .nav-scrim{
     position:fixed;inset:0;z-index:40;
-    background:rgba(6,7,5,.42);
-    backdrop-filter:blur(5px) saturate(.75);-webkit-backdrop-filter:blur(5px) saturate(.75);
+    background:rgba(6,7,9,.46);
+    backdrop-filter:blur(5px) saturate(.4);-webkit-backdrop-filter:blur(5px) saturate(.4);
     opacity:0;visibility:hidden;transition:opacity .24s ease,visibility .24s;
   }
   html[data-theme="light"] .nav-scrim{background:rgba(224,226,218,.5);}
@@ -2484,7 +2494,7 @@
   body.nav-open .top-fixed{z-index:60;}
   .nav-pop{z-index:130;}
   @media (prefers-reduced-motion: reduce){
-    .nav-scrim{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(6,7,5,.62);}
+    .nav-scrim{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(6,7,9,.66);}
   }
 
   /* theme dots inside the cluster stay on one row */
@@ -17202,11 +17212,19 @@ var CL_UI = {
     { hex:'#ffb020', bg:'rgba(255,176,32,.09)' },
     { hex:'#c792ea', bg:'rgba(199,146,234,.09)' }
   ];
+  /* the -90deg starting offset used to be a static SVG "transform"
+     attribute on .hc-arc, but a CSS transform (the hcSpin animation) on the
+     same element overrides that attribute rather than combining with it --
+     the ring would spin around a point that visibly drifted from its true
+     centre instead of staying put. Baking the same quarter-turn start into
+     stroke-dashoffset instead means the animation's own "transform" is the
+     only transform ever applied to the element, so it always rotates
+     cleanly around its own centre. */
   var HUB_RING =
     '<svg viewBox="0 0 40 40" aria-hidden="true">' +
       '<circle class="hc-track" cx="20" cy="20" r="16" fill="none" stroke="currentColor" stroke-width="2.4"/>' +
       '<circle class="hc-arc" cx="20" cy="20" r="16" fill="none" stroke="currentColor" stroke-width="2.4" ' +
-        'stroke-linecap="round" stroke-dasharray="78 100.5" transform="rotate(-90 20 20)"/>' +
+        'stroke-linecap="round" stroke-dasharray="78 100.5" stroke-dashoffset="25.133"/>' +
     '</svg>';
 
   function buildHub(){
@@ -32431,12 +32449,6 @@ var GM = {
     font-size:11px;color:var(--grey);text-decoration:underline;cursor:pointer;
     background:none;border:none;padding:0;font-family:var(--mono);
   }
-  #watchlist .wl-line-qr{margin-top:4px;text-align:center;}
-  #watchlist .wl-line-qr-wrap{
-    width:170px;height:170px;margin:0 auto 10px;border-radius:12px;overflow:hidden;
-    background:#fff;display:flex;align-items:center;justify-content:center;
-  }
-  #watchlist .wl-line-qr-wrap img{width:100%;height:100%;display:block;}
   #watchlist .wl-line-status{font-size:11.5px;color:#8fe0a8;min-height:16px;}
   #watchlist .wl-line-status.err{color:#ff6b6b;margin-bottom:8px;}
   #watchlist .wl-line-spin{
@@ -32445,6 +32457,87 @@ var GM = {
     vertical-align:-2px;margin-right:6px;
   }
   @keyframes wlLineSpin{to{transform:rotate(360deg);}}
+
+  /* ---- portfolio analysis: sector composition + an aggregate risk read
+     across every held ticker, sitting above the per-stock cards (which
+     already carry their OWN individual flags via .wl-flag). This block is
+     the "zoomed out" view she asked for -- which group each holding
+     belongs to, and whether the list as a whole leans concentrated or
+     flagged, built entirely from data already loaded for the cards below
+     (flagsOf()/stocksSnapshot()), so it needs no new backend call. ----- */
+  #watchlist .wl-pa{
+    border:1px solid var(--border-dim);border-radius:var(--radius);
+    background:var(--glass);padding:18px 20px;margin:18px 0 22px;
+  }
+  #watchlist .wl-pa-h{font-family:var(--mono);font-weight:800;font-size:14px;color:var(--white);margin:0 0 4px;}
+  #watchlist .wl-pa-lede{font-size:12px;color:var(--grey);line-height:1.6;margin:0 0 16px;max-width:680px;}
+  #watchlist .wl-pa-block{margin-bottom:16px;}
+  #watchlist .wl-pa-block:last-child{margin-bottom:0;}
+  #watchlist .wl-pa-label{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--grey-dim);margin:0 0 10px;}
+  #watchlist .wl-pa-sectors{display:flex;flex-direction:column;gap:9px;}
+  #watchlist .wl-pa-sector-row{display:flex;align-items:center;gap:10px;}
+  #watchlist .wl-pa-sector-name{flex:0 0 130px;font-size:12px;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #watchlist .wl-pa-sector-track{flex:1;height:7px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden;}
+  #watchlist .wl-pa-sector-bar{height:100%;border-radius:5px;background:var(--neon);}
+  #watchlist .wl-pa-sector-pct{flex:0 0 68px;text-align:right;font-family:var(--mono);font-size:11.5px;color:var(--grey);}
+  #watchlist .wl-pa-note{font-size:12px;line-height:1.6;border-left:2px solid var(--border-dim);padding-left:10px;color:var(--grey);}
+  #watchlist .wl-pa-note.bad{border-color:var(--red);color:var(--white);}
+  #watchlist .wl-pa-note.warn{border-color:var(--amber);color:var(--white);}
+  #watchlist .wl-pa-note.good{border-color:var(--neon-2,var(--neon));color:var(--white);}
+  #watchlist .wl-pa-risk-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:8px;}
+  #watchlist .wl-pa-risk-row:last-child{margin-bottom:0;}
+  #watchlist .wl-pa-risk-tag{flex:0 0 auto;font-family:var(--mono);font-size:11px;letter-spacing:.04em;width:108px;}
+  #watchlist .wl-pa-risk-tag.high{color:var(--red);}
+  #watchlist .wl-pa-risk-tag.medium{color:var(--amber);}
+  #watchlist .wl-pa-risk-tag.low{color:var(--neon-2,var(--neon));}
+  #watchlist .wl-pa-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  #watchlist .wl-pa-chip{
+    font-family:var(--mono);font-size:11.5px;padding:4px 10px;border-radius:20px;
+    border:1px solid var(--border-dim);background:transparent;color:var(--white);cursor:pointer;
+  }
+  #watchlist .wl-pa-chip:hover{border-color:var(--neon);color:var(--neon);}
+  #watchlist .wl-pa-chip.high{border-color:color-mix(in srgb, var(--red) 45%, transparent);}
+  #watchlist .wl-pa-chip.medium{border-color:color-mix(in srgb, var(--amber) 45%, transparent);}
+  #watchlist .wl-pa-chip.low{border-color:color-mix(in srgb, var(--neon-2,var(--neon)) 40%, transparent);}
+  #watchlist .wl-pa-none{font-size:12px;color:var(--grey-dim);}
+
+  /* ---- big centered popup for the LINE QR, instead of a small inline box:
+     easier to scan, and gives the connect flow its own clear moment
+     instead of competing with the rest of the page. ------------------- */
+  #wlLineModal{
+    position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;
+    background:rgba(4,6,10,.74);backdrop-filter:blur(4px);padding:20px;
+  }
+  #wlLineModal[hidden]{display:none !important;}
+  #wlLineModal *{box-sizing:border-box;}
+  .wllm-card{
+    width:100%;max-width:400px;background:var(--panel,#12151c);border:1px solid var(--border-dim);
+    border-radius:18px;padding:28px 26px;font-family:var(--mono);color:var(--white);
+    text-align:center;position:relative;
+  }
+  .wllm-close{position:absolute;top:12px;right:14px;background:none;border:none;color:var(--grey);font-size:22px;cursor:pointer;line-height:1;}
+  .wllm-title{font-size:17px;font-weight:800;margin-bottom:6px;color:#06C755;}
+  .wllm-avatar{width:64px;height:64px;border-radius:50%;object-fit:cover;margin:0 auto 12px;display:block;border:2px solid #06C755;}
+  .wl-conn-avatar{width:20px;height:20px;border-radius:50%;object-fit:cover;vertical-align:-5px;margin-right:6px;border:1px solid #06C755;}
+  .wllm-sub{font-size:12.5px;color:var(--grey);margin-bottom:20px;line-height:1.6;}
+  .wllm-qr-wrap{
+    width:100%;max-width:280px;aspect-ratio:1/1;margin:0 auto 18px;border-radius:16px;overflow:hidden;
+    background:#fff;display:flex;align-items:center;justify-content:center;
+  }
+  .wllm-qr-wrap img{width:100%;height:100%;display:block;}
+  .wllm-status{font-size:13px;color:#8fe0a8;min-height:18px;}
+  .wllm-status.err{color:#ff6b6b;}
+  .wllm-status.ok{color:#8fe0a8;font-weight:700;}
+  .wllm-spin{
+    display:inline-block;width:13px;height:13px;border:2px solid rgba(143,224,168,.3);
+    border-top-color:#8fe0a8;border-radius:50%;animation:wlLineSpin .8s linear infinite;
+    vertical-align:-2px;margin-right:7px;
+  }
+  .wllm-retry{
+    margin-top:14px;background:transparent;border:1px solid #06C755;color:#06C755;
+    border-radius:9px;padding:9px 16px;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;
+  }
+  .wllm-retry:hover{background:#06C755;color:#08130a;}
 </style>
 <script>
 (function(){
@@ -32493,8 +32586,11 @@ var GM = {
   function lineWorkerReady(){ return WORKER_BASE.indexOf('REPLACE-ME') === -1; }
   function lineApi(path){ return WORKER_BASE.replace(/\/$/, '') + path; }
   function lineSaveSession(){
-    try { sessionStorage.setItem(LINE_STORAGE_KEY, JSON.stringify({ code: state.line.code, displayName: state.line.displayName })); }
-    catch(e){}
+    try {
+      sessionStorage.setItem(LINE_STORAGE_KEY, JSON.stringify({
+        code: state.line.code, displayName: state.line.displayName, pictureUrl: state.line.pictureUrl
+      }));
+    } catch(e){}
   }
   function lineLoadSession(){
     try { var raw = sessionStorage.getItem(LINE_STORAGE_KEY); return raw ? JSON.parse(raw) : null; }
@@ -32602,7 +32698,30 @@ var GM = {
     lineNotReady:{en:'LINE connect isn’t switched on yet.',th:'ฟีเจอร์เชื่อมต่อ LINE ยังไม่เปิดใช้งานค่ะ'},
     lineForget:{en:'Log out of LINE',th:'ออกจากระบบ LINE'},
     lineViewOnlyNote:{en:'Shown from LINE — add or remove tickers via Telegram for now.',
-                      th:'แสดงรายการจาก LINE — การเพิ่ม/ลบหุ้นตอนนี้ยังต้องทำผ่าน Telegram นะคะ'}
+                      th:'แสดงรายการจาก LINE — การเพิ่ม/ลบหุ้นตอนนี้ยังต้องทำผ่าน Telegram นะคะ'},
+    lineHowtoH:{en:'Adding or removing a stock (via Telegram, for now)',th:'วิธีเพิ่ม/ลบหุ้น (ตอนนี้ทำผ่าน Telegram)'},
+    lineHowtoLede:{en:'LINE can show your list, but adding and removing still goes through the Telegram bot — connect Telegram above, or just send it one of these from any chat with it.',
+                   th:'LINE แสดงรายการของคุณได้ แต่การเพิ่ม/ลบยังต้องผ่านบอท Telegram — เชื่อมต่อ Telegram ด้านบน หรือส่งคำสั่งด้านล่างนี้ในแชทกับบอทได้เลย'},
+    title:{en:'Link your LINE',th:'เชื่อมต่อ LINE ของคุณ'},
+    lineSub:{en:'Open LINE on your phone and scan this code to link your watchlist to this browser.',
+             th:'เปิด LINE บนมือถือแล้วสแกนโค้ดนี้ เพื่อเชื่อมวอทช์ลิสต์ของคุณเข้ากับเบราว์เซอร์นี้'},
+
+    paH:{en:'Portfolio analysis',th:'วิเคราะห์พอร์ตของคุณ'},
+    paLede:{en:'Built from the same sector and risk data as the cards below — which group your money is in, and how concentrated or flagged the list looks as a whole.',
+            th:'สร้างจากข้อมูลกลุ่มอุตสาหกรรมและสัญญาณเสี่ยงชุดเดียวกับการ์ดด้านล่าง — เงินของคุณอยู่ในกลุ่มไหนบ้าง และภาพรวมทั้งลิสต์กระจุกตัวหรือมีสัญญาณเสี่ยงมากแค่ไหน'},
+    paSectorLabel:{en:'Sector allocation',th:'สัดส่วนตามกลุ่มอุตสาหกรรม'},
+    paSectorOther:{en:'Uncategorized',th:'ยังไม่จัดกลุ่ม'},
+    paConcHigh:{en:'Concentrated: {p}% of this list sits in a single sector ({s}). A move against that sector hits most of the list at once.',
+                th:'กระจุกตัวสูง: {p}% ของลิสต์นี้อยู่ในกลุ่มเดียว ({s}) ถ้ากลุ่มนี้ร่วง จะกระทบลิสต์ส่วนใหญ่พร้อมกัน'},
+    paConcMed:{en:'Somewhat concentrated: {p}% of this list is in {s}. Worth knowing before adding more from the same group.',
+               th:'กระจุกตัวปานกลาง: {p}% ของลิสต์อยู่ในกลุ่ม {s} ควรรู้ไว้ก่อนเพิ่มหุ้นกลุ่มเดียวกันอีก'},
+    paConcOk:{en:'Reasonably spread across sectors — no single group dominates the list.',
+              th:'กระจายกลุ่มอุตสาหกรรมได้พอสมควร ไม่มีกลุ่มไหนครองลิสต์นี้มากเกินไป'},
+    paRiskLabel:{en:'Risk read, ticker by ticker',th:'ประเมินความเสี่ยงรายตัว'},
+    paRiskHigh:{en:'Flagged (bearish signal)',th:'มีสัญญาณเสี่ยง (แนวโน้มลบ)'},
+    paRiskMed:{en:'Worth watching',th:'ควรจับตา'},
+    paRiskLow:{en:'Looks steady',th:'ดูนิ่ง'},
+    paNone:{en:'Not enough signal data yet for these tickers.',th:'ยังไม่มีข้อมูลสัญญาณพอสำหรับหุ้นกลุ่มนี้'}
   };
 
   var FLAG_COPY = {
@@ -32646,7 +32765,9 @@ var GM = {
   }
 
   var sec, state = { wl:null, stocks:null, exampleTicker:'', links:null, uid:null, chatId:null,
-    line:{ status:'idle', code:null, loginUrl:null, displayName:null, tickers:[] }, lineUiOpen:false, linePoll:null };
+    line:{ status:'idle', code:null, loginUrl:null, displayName:null, pictureUrl:null, tickers:[] },
+    linePoll:null, lineModalOpen:false };
+  var lineModal, lineModalBody;
 
   function loadLinks(cb){
     fetch('data/telegram_links.json?v=' + Math.floor(Date.now()/60000))
@@ -32685,22 +32806,99 @@ var GM = {
 
   function lineStopPolling(){ if(state.linePoll){ clearInterval(state.linePoll); state.linePoll = null; } }
 
+  /* ---- the big centered QR popup. Built once and appended to <body> (so
+     it isn't clipped by the section's own layout), opened from the
+     "Connect LINE" button and closed on success (after a short "linked ✓"
+     beat), on the X, on a click outside the card, or on Escape. ------- */
+  function buildLineModal(){
+    if(lineModal) return;
+    lineModal = document.createElement('div');
+    lineModal.id = 'wlLineModal';
+    lineModal.hidden = true;
+    lineModal.innerHTML =
+      '<div class="wllm-card">' +
+        '<button type="button" class="wllm-close" data-wllm="close">&times;</button>' +
+        '<div data-wllm="body"></div>' +
+      '</div>';
+    document.body.appendChild(lineModal);
+    lineModalBody = lineModal.querySelector('[data-wllm="body"]');
+    lineModal.querySelector('[data-wllm="close"]').addEventListener('click', closeLineModal);
+    lineModal.addEventListener('click', function(ev){ if(ev.target === lineModal) closeLineModal(); });
+    document.addEventListener('keydown', function(ev){
+      if(ev.key === 'Escape' && !lineModal.hidden) closeLineModal();
+    });
+  }
+
+  function openLineModal(){
+    buildLineModal();
+    state.lineModalOpen = true;
+    lineModal.hidden = false;
+    if(state.line.status === 'linked'){
+      paintLineModal();
+    } else {
+      lineStartPending();
+    }
+  }
+
+  function closeLineModal(){
+    state.lineModalOpen = false;
+    if(lineModal) lineModal.hidden = true;
+  }
+
+  function paintLineModal(){
+    if(!lineModal || lineModal.hidden || !lineModalBody) return;
+    var st = state.line;
+    if(st.status === 'linked'){
+      var avatarImg = st.pictureUrl
+        ? '<img src="' + esc(st.pictureUrl) + '" alt="" class="wllm-avatar">'
+        : '';
+      lineModalBody.innerHTML =
+        avatarImg +
+        '<div class="wllm-title">LINE</div>' +
+        '<div class="wllm-status ok">' + esc(tx(C.lineConnectedNote)) +
+          (st.displayName ? ' · ' + esc(st.displayName) : '') + '</div>';
+      setTimeout(function(){ if(state.lineModalOpen) closeLineModal(); }, 1200);
+    } else if(!lineWorkerReady()){
+      lineModalBody.innerHTML = '<div class="wllm-title">LINE</div><div class="wllm-status err">' + esc(tx(C.lineNotReady)) + '</div>';
+    } else if(st.status === 'error' || st.status === 'expired'){
+      lineModalBody.innerHTML =
+        '<div class="wllm-title">LINE</div>' +
+        '<div class="wllm-status err">' + esc(tx(st.status === 'expired' ? C.lineExpired : C.lineErr)) + '</div>' +
+        '<button type="button" class="wllm-retry" data-wllm="retry">' + esc(tx(C.connectLineBtn)) + '</button>';
+      var retryBtn = lineModalBody.querySelector('[data-wllm="retry"]');
+      if(retryBtn) retryBtn.addEventListener('click', lineStartPending);
+    } else if(st.loginUrl){
+      lineModalBody.innerHTML =
+        '<div class="wllm-title">' + esc(tx(C.title)) + '</div>' +
+        '<div class="wllm-sub">' + esc(tx(C.lineSub)) + '</div>' +
+        '<div class="wllm-qr-wrap"><img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' +
+          encodeURIComponent(st.loginUrl) + '" alt="QR"></div>' +
+        '<div class="wllm-status"><span class="wllm-spin"></span>' + esc(tx(C.lineWaiting)) + '</div>';
+    } else {
+      lineModalBody.innerHTML =
+        '<div class="wllm-title">' + esc(tx(C.title)) + '</div>' +
+        '<div class="wllm-status"><span class="wllm-spin"></span>' + esc(tx(C.lineWaiting)) + '</div>';
+    }
+  }
+
   function lineStartPending(){
     state.line.status = 'pending';
     state.line.code = null;
     state.line.loginUrl = null;
-    if(!lineWorkerReady()){ paint(); return; }
+    if(!lineWorkerReady()){ paint(); paintLineModal(); return; }
     paint();
+    paintLineModal();
     fetch(lineApi('/api/session/new'))
       .then(function(r){ return r.json(); })
       .then(function(data){
         state.line.code = data.code;
         state.line.loginUrl = data.loginUrl;
         paint();
+        paintLineModal();
         lineStopPolling();
         state.linePoll = setInterval(linePollStatus, 2500);
       })
-      .catch(function(){ state.line.status = 'error'; paint(); });
+      .catch(function(){ state.line.status = 'error'; paint(); paintLineModal(); });
   }
 
   function linePollStatus(){
@@ -32716,10 +32914,17 @@ var GM = {
           lineStopPolling();
           state.line.status = 'expired';
           paint();
+          paintLineModal();
         }
       })
       .catch(function(){ /* transient network hiccup - just try again next tick */ });
   }
+
+  // Fired whenever state.line changes in a way another module might care
+  // about -- the corner-trigger auth gate (#spzAuthGate) listens for this
+  // so its own LINE tab/row stays in sync no matter which UI (this page's
+  // connect strip, its QR modal, or the corner gate itself) made the change.
+  function lineNotify(){ try { document.dispatchEvent(new CustomEvent('spz:line')); } catch(e){} }
 
   function lineFetchData(){
     fetch(lineApi('/api/session/data?code=' + encodeURIComponent(state.line.code)))
@@ -32728,15 +32933,19 @@ var GM = {
         state.line.status = 'linked';
         state.line.tickers = data.tickers || [];
         state.line.displayName = data.displayName || state.line.displayName;
+        state.line.pictureUrl = data.pictureUrl || state.line.pictureUrl;
         lineSaveSession();
         paint();
+        paintLineModal();
+        lineNotify();
       })
-      .catch(function(){ state.line.status = 'error'; paint(); });
+      .catch(function(){ state.line.status = 'error'; paint(); paintLineModal(); });
   }
 
   function lineRestoreFromWorker(saved){
     state.line.code = saved.code;
     state.line.displayName = saved.displayName;
+    state.line.pictureUrl = saved.pictureUrl || null;
     fetch(lineApi('/api/session/status?code=' + encodeURIComponent(saved.code)))
       .then(function(r){ return r.json(); })
       .then(function(data){
@@ -32747,13 +32956,16 @@ var GM = {
               state.line.status = 'linked';
               state.line.tickers = dd.tickers || [];
               state.line.displayName = dd.displayName || state.line.displayName;
+              state.line.pictureUrl = dd.pictureUrl || state.line.pictureUrl;
               paint();
+              lineNotify();
             })
             .catch(function(){});
         } else {
           lineClearSession();
-          state.line = { status:'idle', code:null, loginUrl:null, displayName:null, tickers:[] };
+          state.line = { status:'idle', code:null, loginUrl:null, displayName:null, pictureUrl:null, tickers:[] };
           paint();
+          lineNotify();
         }
       })
       .catch(function(){ /* worker unreachable - keep whatever we had locally, retry next reload */ });
@@ -32763,9 +32975,10 @@ var GM = {
     var code = state.line.code;
     lineStopPolling();
     lineClearSession();
-    state.line = { status:'idle', code:null, loginUrl:null, displayName:null, tickers:[] };
-    state.lineUiOpen = false;
+    state.line = { status:'idle', code:null, loginUrl:null, displayName:null, pictureUrl:null, tickers:[] };
+    closeLineModal();
     paint();
+    lineNotify();
     if(code && lineWorkerReady()){
       fetch(lineApi('/api/session/logout'), {
         method:'POST', headers:{'Content-Type':'application/json'},
@@ -32814,6 +33027,101 @@ var GM = {
       '</div></div>';
   }
 
+  function fmt1(o, map){
+    var s = tx(o);
+    for(var k in map) s = s.split('{' + k + '}').join(map[k]);
+    return s;
+  }
+
+  /* ---- portfolio analysis: the "zoomed out" view above the per-stock
+     cards -- which sector each holding sits in, whether the list leans
+     concentrated in one group, and a risk-tier read built from the exact
+     same flagsOf() signals already shown per-card (bearish/bullish
+     divergence, golden/death cross, below its 200-day average, and how it
+     compares with its own sector this month). No new data source: this is
+     the same stocks snapshot + flag logic, just rolled up across the whole
+     list instead of one ticker at a time. ------------------------------ */
+  function portfolioAnalysisHTML(tickers, stocks){
+    if(!tickers.length) return '';
+    stocks = stocks || {};
+
+    var bySector = {}, sectorOrder = [];
+    var tiers = { high:[], medium:[], low:[] };
+    var known = 0;
+
+    tickers.forEach(function(t){
+      var s = stocks[t];
+      var sector = (s && s.sector) || null;
+      var key = sector || '__other';
+      if(!bySector[key]){ bySector[key] = 0; sectorOrder.push(key); }
+      bySector[key]++;
+
+      if(s) known++;
+      var flags = flagsOf(t, s || {}, stocks);
+      var bad = flags.filter(function(f){ return f.k === 'bad'; }).length;
+      var warn = flags.filter(function(f){ return f.k === 'warn'; }).length;
+      var tier = bad > 0 ? 'high' : (warn > 0 ? 'medium' : 'low');
+      tiers[tier].push(t);
+    });
+
+    var total = tickers.length;
+    var sectorRows = sectorOrder
+      .sort(function(a, b){ return bySector[b] - bySector[a]; })
+      .map(function(key){
+        var count = bySector[key];
+        var pct = Math.round((count / total) * 100);
+        var label = key === '__other' ? tx(C.paSectorOther) : key;
+        return { key:key, label:label, count:count, pct:pct };
+      });
+
+    var sectorsHTML = sectorRows.map(function(row){
+      return '<div class="wl-pa-sector-row">' +
+        '<span class="wl-pa-sector-name">' + esc(row.label) + '</span>' +
+        '<span class="wl-pa-sector-track"><span class="wl-pa-sector-bar" style="width:' + row.pct + '%"></span></span>' +
+        '<span class="wl-pa-sector-pct">' + row.pct + '% · ' + row.count + '</span>' +
+      '</div>';
+    }).join('');
+
+    var top = sectorRows[0];
+    var concCls = 'good', concText = tx(C.paConcOk);
+    if(top && sectorRows.length > 1 && top.key !== '__other'){
+      if(top.pct >= 50){
+        concCls = 'bad';
+        concText = fmt1(C.paConcHigh, { p:top.pct, s:top.label });
+      } else if(top.pct >= 35){
+        concCls = 'warn';
+        concText = fmt1(C.paConcMed, { p:top.pct, s:top.label });
+      }
+    } else if(top && sectorRows.length === 1 && top.key !== '__other' && total >= 2){
+      concCls = 'bad';
+      concText = fmt1(C.paConcHigh, { p:100, s:top.label });
+    }
+
+    var riskRowsHTML = ['high','medium','low'].map(function(tier){
+      if(!tiers[tier].length) return '';
+      var tagText = tier === 'high' ? C.paRiskHigh : tier === 'medium' ? C.paRiskMed : C.paRiskLow;
+      var chips = tiers[tier].map(function(t){
+        return '<button type="button" class="wl-pa-chip ' + tier + '" data-wl-open="' + esc(t) + '">$' + esc(t) + '</button>';
+      }).join('');
+      return '<div class="wl-pa-risk-row"><span class="wl-pa-risk-tag ' + tier + '">' + esc(tx(tagText)) + '</span>' +
+        '<span class="wl-pa-chips">' + chips + '</span></div>';
+    }).join('');
+
+    return '<div class="wl-pa">' +
+      '<div class="wl-pa-h">' + esc(tx(C.paH)) + '</div>' +
+      '<p class="wl-pa-lede">' + esc(tx(C.paLede)) + '</p>' +
+      '<div class="wl-pa-block">' +
+        '<div class="wl-pa-label">' + esc(tx(C.paSectorLabel)) + '</div>' +
+        '<div class="wl-pa-sectors">' + sectorsHTML + '</div>' +
+        '<div class="wl-pa-note ' + concCls + '" style="margin-top:10px;">' + esc(concText) + '</div>' +
+      '</div>' +
+      (known ? '<div class="wl-pa-block">' +
+        '<div class="wl-pa-label">' + esc(tx(C.paRiskLabel)) + '</div>' +
+        riskRowsHTML +
+      '</div>' : '<div class="wl-pa-block"><p class="wl-pa-none">' + esc(tx(C.paNone)) + '</p></div>') +
+    '</div>';
+  }
+
   /* ---- the two-channel "Connect" strip shown at the top of the page in
      every state: Telegram (full add/remove-by-chat control, existing
      per-visitor uid -> chat_id -> watchlist.json lookup) and LINE (QR scan
@@ -32832,26 +33140,22 @@ var GM = {
         '<a class="wl-conn-btn" href="' + dl + '" target="_blank" rel="noopener noreferrer">' + esc(tx(C.connectBtn)) + '</a>';
     }
 
+    /* the card itself only ever shows a short status line -- the QR (when
+       there is one to show) lives in the big centered #wlLineModal popup,
+       not squeezed in here. */
     var lineBlock;
     if(lineSt.status === 'linked'){
-      lineBlock = '<div class="wl-conn-status ok">' + esc(tx(C.lineConnectedNote)) +
+      var avatarThumb = lineSt.pictureUrl ? '<img src="' + esc(lineSt.pictureUrl) + '" alt="" class="wl-conn-avatar">' : '';
+      lineBlock = '<div class="wl-conn-status ok">' + avatarThumb + esc(tx(C.lineConnectedNote)) +
         (lineSt.displayName ? ' · ' + esc(lineSt.displayName) : '') + '</div>' +
         '<button type="button" class="wl-conn-forget" data-wl="forgetLine">' + esc(tx(C.lineForget)) + '</button>';
-    } else if(state.lineUiOpen){
-      if(!lineWorkerReady()){
-        lineBlock = '<div class="wl-line-status err">' + esc(tx(C.lineNotReady)) + '</div>';
-      } else if(lineSt.status === 'error' || lineSt.status === 'expired'){
-        lineBlock = '<div class="wl-line-status err">' + esc(tx(lineSt.status === 'expired' ? C.lineExpired : C.lineErr)) + '</div>' +
-          '<button type="button" class="wl-conn-btn line-btn" data-wl="lineConnect">' + esc(tx(C.connectLineBtn)) + '</button>';
-      } else {
-        var qrImg = lineSt.loginUrl
-          ? '<img src="https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=' + encodeURIComponent(lineSt.loginUrl) + '" alt="QR">'
-          : '';
-        lineBlock = '<div class="wl-line-qr">' +
-          '<div class="wl-line-qr-wrap">' + qrImg + '</div>' +
-          '<div class="wl-line-status"><span class="wl-line-spin"></span>' + esc(tx(C.lineWaiting)) + '</div>' +
-        '</div>';
-      }
+    } else if(lineSt.status === 'pending'){
+      lineBlock = '<div class="wl-conn-status">' + esc(tx(C.lineWaiting)) + '</div>' +
+        '<button type="button" class="wl-conn-btn line-btn" data-wl="lineConnect">' + esc(tx(C.connectLineBtn)) + '</button>';
+    } else if(lineSt.status === 'error' || lineSt.status === 'expired'){
+      lineBlock = '<div class="wl-conn-status" style="color:#ff6b6b;">' +
+        esc(tx(lineSt.status === 'expired' ? C.lineExpired : C.lineErr)) + '</div>' +
+        '<button type="button" class="wl-conn-btn line-btn" data-wl="lineConnect">' + esc(tx(C.connectLineBtn)) + '</button>';
     } else {
       lineBlock = '<div class="wl-conn-status">' + esc(tx(C.lineNotConn)) + '</div>' +
         '<button type="button" class="wl-conn-btn line-btn" data-wl="lineConnect">' + esc(tx(C.connectLineBtn)) + '</button>';
@@ -32878,10 +33182,7 @@ var GM = {
     if(forgetLine) forgetLine.addEventListener('click', lineLogout);
     var lineConnectBtn = body.querySelector('[data-wl="lineConnect"]');
     if(lineConnectBtn){
-      lineConnectBtn.addEventListener('click', function(){
-        state.lineUiOpen = true;
-        lineStartPending();
-      });
+      lineConnectBtn.addEventListener('click', openLineModal);
     }
   }
 
@@ -32919,9 +33220,24 @@ var GM = {
       var lineGrid = lineTickers.length
         ? '<div class="wl-grid">' + lineTickers.map(function(t){ return lineCardHTML(t, stocks ? stocks[t] : null); }).join('') + '</div>'
         : '<div class="wl-empty"><b>' + esc(tx(C.emptyH)) + '</b><br>' + esc(tx(C.emptyB)) + '</div>';
+      /* LINE only shows the list (no add/remove backend yet) -- so unlike
+         the Telegram branch below, spell out the actual commands right
+         here too, not just "use Telegram", since without an example the
+         instruction is not actionable. */
+      var lineHowto = '<div class="wl-howto">' +
+        '<div class="wl-howto-h">' + esc(tx(C.lineHowtoH)) + '</div>' +
+        '<p class="wl-howto-lede">' + esc(tx(C.lineHowtoLede)) + '</p>' +
+        '<div class="wl-howto-rows">' +
+          howtoRowHTML('lineAdd', tx(C.lbAdd), cmdText('add', exT)) +
+          howtoRowHTML('lineRemove', tx(C.lbRemove), cmdText('remove', exT)) +
+        '</div>' +
+        '<a class="wl-opentg" href="' + plainTgLink() + '" target="_blank" rel="noopener noreferrer">' + esc(tx(C.opentg)) + ' →</a>' +
+      '</div>';
       body.innerHTML = strip +
         '<div class="wl-addnote" style="margin:14px 0;">' + esc(tx(C.lineViewOnlyNote)) + '</div>' +
-        lineGrid;
+        portfolioAnalysisHTML(lineTickers, stocks) +
+        lineGrid +
+        lineHowto;
       wireConnStrip(body);
       var openBtnsLine = body.querySelectorAll('[data-wl-open]');
       for(var iL=0;iL<openBtnsLine.length;iL++){
@@ -32929,6 +33245,16 @@ var GM = {
           var t = this.getAttribute('data-wl-open');
           if(window.__SPZ_STOCK && window.__SPZ_STOCK.open) window.__SPZ_STOCK.open(t);
         });
+      }
+      var lineHowtoCopyBtns = body.querySelectorAll('[data-wl-copy]');
+      for(var lc=0; lc<lineHowtoCopyBtns.length; lc++){
+        (function(btn){
+          btn.addEventListener('click', function(){
+            var key = btn.getAttribute('data-wl-copy');
+            var codeEl = body.querySelector('[data-wl-ex="' + key + '"]');
+            copyText(codeEl ? codeEl.textContent : '', btn);
+          });
+        })(lineHowtoCopyBtns[lc]);
       }
       return;
     }
@@ -32952,6 +33278,7 @@ var GM = {
         return cardHTML(t, stocks ? stocks[t] : null, stocks);
       }).join('') + '</div>';
     }
+    var portfolioAnalysis = portfolioAnalysisHTML(tickers, stocks);
 
     var howto = '<div class="wl-howto">' +
       '<div class="wl-howto-h">' + esc(tx(C.howtoH)) + '</div>' +
@@ -32966,7 +33293,7 @@ var GM = {
       '<a class="wl-opentg" href="' + plainTgLink() + '" target="_blank" rel="noopener noreferrer">' + esc(tx(C.opentg)) + ' →</a>' +
     '</div>';
 
-    body.innerHTML = strip + addBox + grid + howto;
+    body.innerHTML = strip + addBox + portfolioAnalysis + grid + howto;
     wireConnStrip(body);
 
     var openBtns = body.querySelectorAll('[data-wl-open]');
@@ -33088,6 +33415,20 @@ var GM = {
         line: { status: (state.line && state.line.status) || 'idle',
                 tickers: (state.line && state.line.tickers) || [] } };
     } };
+
+  /* ---- shared with other modules (right now: the corner admin/member
+     login trigger's "Login via LINE" tab) so there is exactly ONE LINE
+     session, ONE QR popup, and ONE place that talks to the Worker --
+     connecting from the corner trigger and connecting from this page are
+     the same login, not two separate ones. ---------------------------- */
+  window.__SPZ_LINE = {
+    open: function(){ openLineModal(); },
+    state: function(){
+      return { status: state.line.status, displayName: state.line.displayName || null,
+        pictureUrl: state.line.pictureUrl || null, tickers: (state.line.tickers || []).slice() };
+    },
+    logout: function(){ lineLogout(); }
+  };
 })();
 </script>
 
@@ -37131,17 +37472,22 @@ var GM = {
   /* admin-only shortcuts shown inside the "you're signed in" pane -- quick jump to
      the Asset Analysis Log's add-entry form and the site-wide Print Report tool,
      without needing to find them in the main menu first */
-  .cag-admin-links{width:100%;display:flex;flex-direction:column;gap:7px;}
-  .cag-admin-link{width:100%;background:transparent;border:1px solid rgba(204,255,0,.28);border-radius:11px;padding:10px;
-    color:var(--cag-accent);font-family:'Inter',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;
+  .cag-admin-links{width:100%;display:flex;flex-direction:column;gap:7px;
+    /* a dedicated steel-blue accent for these admin shortcuts, separate from
+       --cag-accent's neon lime -- three lime-bordered buttons in a row read
+       as "unfinished"; a cooler, quieter tone reads more like a pro admin
+       tool. Scoped to just this block so nothing else in the gate changes. */
+    --cag-admin-accent:#6fb8e8;}
+  .cag-admin-link{width:100%;background:transparent;border:1px solid color-mix(in srgb, var(--cag-admin-accent) 32%, transparent);border-radius:11px;padding:10px;
+    color:var(--cag-admin-accent);font-family:'Inter',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;
     display:flex;align-items:center;justify-content:center;gap:7px;transition:background .15s,border-color .15s;
     position:relative;overflow:hidden;}
-  .cag-admin-link:hover{border-color:var(--cag-accent);background:color-mix(in srgb, var(--cag-accent) 10%, transparent);}
+  .cag-admin-link:hover{border-color:var(--cag-admin-accent);background:color-mix(in srgb, var(--cag-admin-accent) 10%, transparent);}
   #cagAdminLinks.hidden{display:none;}
   /* infographic-style icon in place of the old emoji, plus a light sheen
      sweep on hover so the two admin shortcuts feel a bit more "finished". */
-  .cag-admin-ico{width:15px;height:15px;flex:0 0 auto;color:var(--cag-accent);
-    filter:drop-shadow(0 0 3px color-mix(in srgb, var(--cag-accent) 55%, transparent));}
+  .cag-admin-ico{width:15px;height:15px;flex:0 0 auto;color:var(--cag-admin-accent);
+    filter:drop-shadow(0 0 3px color-mix(in srgb, var(--cag-admin-accent) 55%, transparent));}
   .cag-admin-link::after{
     content:'';position:absolute;top:0;bottom:0;left:-60%;width:36%;
     background:linear-gradient(115deg,transparent,rgba(255,255,255,.22),transparent);
@@ -37159,6 +37505,25 @@ var GM = {
   .cag-tier.on{border-style:solid;}
   .cag-tier.m.on{border-color:var(--cag-accent-2);background:color-mix(in srgb, var(--cag-accent-2) 8%, transparent);}
   .cag-tier.f.on{border-color:var(--cag-accent);background:color-mix(in srgb, var(--cag-accent) 8%, transparent);}
+  /* the LINE tab isn't a real "tier" tab -- it never gets .on, it just pops
+     open the same shared QR popup the Watchlist page uses. Kept in its own
+     brand green so it doesn't look like a third password mode. */
+  .cag-tier.line b{color:#06C755;}
+  .cag-tier.line{border-color:rgba(6,199,85,.3);}
+  .cag-tier.line:hover{border-color:#06C755;background:rgba(6,199,85,.08);}
+
+  .cag-line-row{
+    display:flex;align-items:center;gap:8px;width:100%;margin:2px 0 12px;
+    border:1px solid rgba(6,199,85,.3);border-radius:10px;padding:9px 12px;
+  }
+  .cag-line-avatar{width:22px;height:22px;border-radius:50%;object-fit:cover;flex:0 0 auto;border:1px solid #06C755;}
+  .cag-line-avatar.hidden{display:none;}
+  .cag-line-status{flex:1;font-size:.72rem;color:var(--cag-dim);font-family:'Inter',sans-serif;}
+  .cag-line-btn{
+    background:transparent;border:1px solid #06C755;color:#06C755;border-radius:8px;
+    padding:6px 11px;font-family:'Inter',sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;white-space:nowrap;
+  }
+  .cag-line-btn:hover{background:#06C755;color:#08130a;}
   .cag-fine{width:100%;text-align:center;font-size:.55rem;color:#4a4c47;letter-spacing:.05em;line-height:1.7;}
 
   .cag-member-code{width:100%;text-align:center;background:#151619;border:1px dashed color-mix(in srgb, var(--cag-accent-2) 40%, transparent);
@@ -37496,6 +37861,12 @@ var GM = {
     errLock:{en:'Too many attempts — try again in ',th:'พยายามผิดหลายครั้งเกินไป ลองใหม่ในอีก '},
     tabMember:{en:'MEMBER',th:'MEMBER'},
     tabFull:{en:'ADMIN',th:'ADMIN'},
+    tabLine:{en:'LINE',th:'LINE'},
+    lineRowConnect:{en:'Connect LINE',th:'เชื่อมต่อ LINE'},
+    lineRowConnected:{en:'LINE connected',th:'เชื่อมต่อ LINE แล้ว'},
+    lineRowLogout:{en:'Log out of LINE',th:'ออกจากระบบ LINE'},
+    lineRowNote:{en:'Your own personal watchlist via LINE — separate from this site login.',
+                 th:'วอทช์ลิสต์ส่วนตัวของคุณผ่าน LINE — แยกต่างหากจากการล็อกอินเว็บนี้'},
     memberT:{en:'MEMBER LOGIN',th:'MEMBER LOGIN'},
     memberS:{en:'Short code · unlocks the real analysis tools',th:'รหัสสั้น · ปลดล็อกเครื่องมือวิเคราะห์จริง'},
     memberCodeHint:{en:'Tap the code to copy it, then paste it below',th:'แตะรหัสเพื่อคัดลอก แล้ววางไว้ในช่องด้านล่าง'},
@@ -37634,10 +38005,16 @@ var GM = {
           '<div class="cag-tiers" id="cagTabs">' +
             '<button class="cag-tier m" type="button" data-tab="member"><b data-x="tabMember"></b></button>' +
             '<button class="cag-tier f" type="button" data-tab="full"><b data-x="tabFull"></b></button>' +
+            '<button class="cag-tier line" type="button" id="cagLineTab"><b data-x="tabLine"></b></button>' +
           '</div>' +
 
           '<div class="cag-pane" id="cagPaneOut">' +
             '<div class="cag-head"><div><b data-x="loggedT"></b><span data-x="loggedS"></span></div></div>' +
+            '<div class="cag-line-row" id="cagLineRow">' +
+              '<img class="cag-line-avatar hidden" id="cagLineAvatar" alt="">' +
+              '<span class="cag-line-status" data-x="lineStatus"></span>' +
+              '<button type="button" class="cag-line-btn" id="cagLineRowBtn" data-x="lineBtn"></button>' +
+            '</div>' +
             '<div class="cag-admin-links hidden" id="cagAdminLinks">' +
               '<button class="cag-admin-link" type="button" id="cagBtnAddAnalysis">' +
                 '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h5l5 5v12a1 1 0 01-1 1H8a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M13 3v5h5"/><path d="M12 12.5v5M9.4 15h5.2"/></svg>' +
@@ -37818,6 +38195,28 @@ var GM = {
     gate.querySelector('#cagToMember').addEventListener('click', function(){ activeTab = 'member'; clearErr(errAdv); paint(); });
     upgradeBtn.addEventListener('click', function(){ activeTab = 'full'; logout(); paint(); });
 
+    // LINE identity is a separate, personal login layered on top of this
+    // gate -- it never grants member/full site-edit tiers. Both the tab
+    // (shown pre-login, alongside Member/Full) and the row inside the
+    // logged-in pane (shown to an already-logged-in member/admin so they
+    // can *also* link their own LINE watchlist) reuse the exact same
+    // shared session/modal that the Watchlist page owns via
+    // window.__SPZ_LINE, so there is only ever one LINE popup/session
+    // no matter which entry point opened it.
+    gate.querySelector('#cagLineTab').addEventListener('click', function(){
+      if(window.__SPZ_LINE) window.__SPZ_LINE.open();
+    });
+    gate.querySelector('#cagLineRowBtn').addEventListener('click', function(){
+      if(!window.__SPZ_LINE) return;
+      var st = window.__SPZ_LINE.state();
+      if(st.status === 'linked') window.__SPZ_LINE.logout();
+      else window.__SPZ_LINE.open();
+    });
+    // Repaint whenever LINE state changes from ANY entry point (this gate's
+    // own tab/button, or the Watchlist page's connect card/modal) so the
+    // two stay in sync without polling each other.
+    document.addEventListener('spz:line', function(){ paint(); });
+
     paint();
   }
 
@@ -37837,6 +38236,26 @@ var GM = {
     }
     if(upgradeBtn) upgradeBtn.classList.toggle('hidden', currentTier !== 'member');
     if(memberCodeEl && !memberCodeEl.classList.contains('copied')) memberCodeEl.textContent = MEMBER_CODE;
+
+    // LINE identity status -- independent of currentTier. This reads the
+    // one shared session the Watchlist module owns; if that module hasn't
+    // booted yet (window.__SPZ_LINE not yet defined), treat it as idle.
+    var lineSt = window.__SPZ_LINE ? window.__SPZ_LINE.state() : { status:'idle', displayName:null, pictureUrl:null };
+    var lineLinked = lineSt.status === 'linked';
+    // Per the LINE tab's own styling comment above (.cag-tier.line), it is
+    // intentionally not a real tier tab and never takes the .on state that
+    // Member/Full use -- linked status is communicated by #cagLineRow below
+    // instead, which is visible on this pane regardless of which tab is active.
+    var lineStatusTxt = lineLinked
+      ? Tt(TXT.lineRowConnected) + (lineSt.displayName ? ' · ' + lineSt.displayName : '')
+      : Tt(TXT.lineRowNote);
+    var lineBtnTxt = lineLinked ? Tt(TXT.lineRowLogout) : Tt(TXT.lineRowConnect);
+    var lineAvatarEl = gate.querySelector('#cagLineAvatar');
+    if(lineAvatarEl){
+      if(lineLinked && lineSt.pictureUrl){ lineAvatarEl.src = lineSt.pictureUrl; lineAvatarEl.classList.remove('hidden'); }
+      else { lineAvatarEl.removeAttribute('src'); lineAvatarEl.classList.add('hidden'); }
+    }
+
     gate.querySelectorAll('[data-x]').forEach(function(el){
       var k = el.getAttribute('data-x');
       var map = {
@@ -37849,7 +38268,8 @@ var GM = {
         logoutBtn: TXT.logoutBtn, upgradeBtn: TXT.upgradeBtn,
         adminAddAnalysis: TXT.adminAddAnalysis, adminPrintReport: TXT.adminPrintReport,
         adminCompareDownload: TXT.adminCompareDownload,
-        tabMember: TXT.tabMember, tabFull: TXT.tabFull,
+        tabMember: TXT.tabMember, tabFull: TXT.tabFull, tabLine: TXT.tabLine,
+        lineStatus: lineStatusTxt, lineBtn: lineBtnTxt,
         memberT: TXT.memberT, memberS: TXT.memberS, memberCodeHint: TXT.memberCodeHint,
         enterMember: TXT.enter, toFullLink: TXT.toFullLink, toMemberLink: TXT.toMemberLink,
         fullT: TXT.fullT, fullS: TXT.fullS,
