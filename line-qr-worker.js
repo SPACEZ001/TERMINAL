@@ -441,6 +441,11 @@ async function handleData(request, env) {
     nameOverride: profile ? profile.nameOverride || "" : "",
     note: profile ? profile.note || "" : "",
     accessUntil: profile ? profile.accessUntil || null : null,
+    // Decorative tier badge (see RIGHTS_META on the frontend's Connected Users
+    // page) -- exposed on the visitor's own self-service session data too so
+    // their personal nav-bar card can color itself to match, same as the
+    // admin-only Connected Users list already shows for this user.
+    rights: profile ? profile.rights || null : null,
   }, env);
 }
 
