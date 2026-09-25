@@ -167,6 +167,7 @@ async function handleCallback(request, env) {
         status: "linked",
         userId: profile.userId,
         displayName: profile.displayName || "",
+        pictureUrl: profile.pictureUrl || "",
         linkedAt: Date.now(),
       }),
       { expirationTtl: SESSION_TTL_SECONDS }
@@ -191,7 +192,7 @@ async function handleStatus(request, env) {
   const raw = code && (await env.SESSIONS.get("sess:" + code));
   if (!raw) return json({ status: "not_found" }, env);
   const sess = JSON.parse(raw);
-  return json({ status: sess.status, displayName: sess.displayName || null }, env);
+  return json({ status: sess.status, displayName: sess.displayName || null, pictureUrl: sess.pictureUrl || null }, env);
 }
 
 async function handleData(request, env) {
@@ -210,7 +211,7 @@ async function handleData(request, env) {
     const wl = wlResp.ok ? await wlResp.json() : {};
     const bucket = (wl.users && wl.users[env.OWNER_WATCHLIST_KEY]) || {};
     const tickers = Object.keys(bucket.tickers || {});
-    return json({ displayName: sess.displayName || null, tickers }, env);
+    return json({ displayName: sess.displayName || null, pictureUrl: sess.pictureUrl || null, tickers }, env);
   } catch (err) {
     return json({ error: "upstream_failed" }, env, 502);
   }
