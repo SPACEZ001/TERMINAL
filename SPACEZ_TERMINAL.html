@@ -32834,6 +32834,30 @@ var GM = {
   #watchlist .wl-shock-stars i{position:absolute;border-radius:50%;background:#fff;animation:wlStarTwinkle 3.4s ease-in-out infinite;}
   #watchlist .wl-shock > *{position:relative;z-index:1;}
 
+  /* collapsed-by-default header -- this card sits right next to Portfolio
+     analysis and looks similar (same .wl-pa shell), so a hypothetical
+     "what if the market crashed" scenario could be mistaken for the real,
+     current analysis above it. Two independent guards: (1) closed by
+     default, an explicit tap required to see any scenario numbers at all,
+     and (2) a permanent amber "hypothetical" badge that shows whether the
+     card is open or shut, so even a glance at the collapsed header can't
+     be read as live portfolio data. */
+  #watchlist .wl-shock-toggle{
+    width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:transparent;border:none;padding:0;margin:0 0 4px;cursor:pointer;text-align:left;
+  }
+  #watchlist .wl-shock-toggle-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  #watchlist .wl-shock-badge{
+    flex:0 0 auto;font-family:var(--mono);font-size:10px;font-weight:800;letter-spacing:.04em;
+    text-transform:uppercase;color:var(--amber);background:rgba(255,201,77,.12);
+    border:1px solid rgba(255,201,77,.35);border-radius:20px;padding:3px 9px;
+  }
+  #watchlist .wl-shock-toggle-hint{font-size:11px;color:var(--grey);flex:0 0 auto;}
+  #watchlist .wl-shock-toggle-chev{flex:0 0 auto;color:#8fd3ff;transition:transform .18s;}
+  #watchlist .wl-shock-toggle.open .wl-shock-toggle-chev{transform:rotate(180deg);}
+  #watchlist .wl-shock-collapse{display:none;margin-top:14px;}
+  #watchlist .wl-shock-collapse.open{display:block;}
+
   /* custom scenario picker -- a styled trigger + dropdown list standing in
      for the old native <select>, which stays in the DOM (visually hidden)
      purely to keep firing the same 'change' event the render wiring
@@ -33132,6 +33156,9 @@ var GM = {
     shockMixed:{en:'Mixed / depends',th:'ผสม / ไม่แน่นอน'},
     shockUnclassified:{en:'Sector not classified',th:'ยังจัดกลุ่มไม่ได้'},
     shockRotateH:{en:'Sectors that tend to hold up in this scenario',th:'กลุ่มที่มักจะไปได้ดีในสถานการณ์นี้'},
+    shockBadge:{en:'Hypothetical — not your current risk',th:'สถานการณ์สมมติ — ไม่ใช่ความเสี่ยงจริงตอนนี้'},
+    shockToggleOpen:{en:'Tap to try a scenario',th:'แตะเพื่อลองสถานการณ์สมมติ'},
+    shockToggleClose:{en:'Hide',th:'ซ่อน'},
 
     profileHoldings:{en:'holdings',th:'ตัวที่ถือ'},
     profileTopSector:{en:'Mostly',th:'ส่วนใหญ่'},
@@ -33827,18 +33854,29 @@ var GM = {
     }).join('');
     return '<div class="wl-pa wl-shock" data-wl-shock-root>' +
       starsHTML('wl-shock-stars', 8) +
-      '<div class="wl-pa-h">' + esc(tx(C.shockH)) + '</div>' +
-      '<p class="wl-pa-lede">' + esc(tx(C.shockLede)) + '</p>' +
-      '<div class="wl-shock-picker" data-wl="shockPicker">' +
-        '<button type="button" class="wl-shock-trigger" data-wl="shockTrigger" aria-haspopup="listbox" aria-expanded="false">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 11-14h-7l1-6z"/></svg>' +
-          '<span data-wl="shockTriggerLabel">' + esc(titleOf(list[0])) + '</span>' +
-          '<svg class="wl-shock-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' +
-        '</button>' +
-        '<div class="wl-shock-dropdown" data-wl="shockDropdown" role="listbox">' + dropdownHTML + '</div>' +
-        '<select class="wl-shock-select-native" data-wl="shockSelect" tabindex="-1" aria-hidden="true">' + optionsHTML + '</select>' +
+      '<button type="button" class="wl-shock-toggle" data-wl="shockToggle" aria-expanded="false">' +
+        '<span class="wl-shock-toggle-left">' +
+          '<span class="wl-pa-h" style="margin:0;">' + esc(tx(C.shockH)) + '</span>' +
+          '<span class="wl-shock-badge">' + esc(tx(C.shockBadge)) + '</span>' +
+        '</span>' +
+        '<span style="display:flex;align-items:center;gap:8px;">' +
+          '<span class="wl-shock-toggle-hint" data-wl="shockToggleHint">' + esc(tx(C.shockToggleOpen)) + '</span>' +
+          '<svg class="wl-shock-toggle-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' +
+        '</span>' +
+      '</button>' +
+      '<div class="wl-shock-collapse" data-wl="shockCollapse">' +
+        '<p class="wl-pa-lede">' + esc(tx(C.shockLede)) + '</p>' +
+        '<div class="wl-shock-picker" data-wl="shockPicker">' +
+          '<button type="button" class="wl-shock-trigger" data-wl="shockTrigger" aria-haspopup="listbox" aria-expanded="false">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 11-14h-7l1-6z"/></svg>' +
+            '<span data-wl="shockTriggerLabel">' + esc(titleOf(list[0])) + '</span>' +
+            '<svg class="wl-shock-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' +
+          '</button>' +
+          '<div class="wl-shock-dropdown" data-wl="shockDropdown" role="listbox">' + dropdownHTML + '</div>' +
+          '<select class="wl-shock-select-native" data-wl="shockSelect" tabindex="-1" aria-hidden="true">' + optionsHTML + '</select>' +
+        '</div>' +
+        '<div data-wl="shockResult"></div>' +
       '</div>' +
-      '<div data-wl="shockResult"></div>' +
     '</div>';
   }
 
@@ -34359,6 +34397,23 @@ var GM = {
           shockRenderResult(shockRoot, lineTickers, stocks, Number(this.value));
         });
         wireShockPicker(shockRoot);
+
+        /* closed by default (see the CSS comment above .wl-shock-toggle) --
+           an explicit tap is required before any hypothetical scenario
+           numbers become visible at all, so a quick glance down the page
+           can't mistake this for the real portfolio analysis above it. */
+        var shockToggle = shockRoot.querySelector('[data-wl="shockToggle"]');
+        var shockCollapse = shockRoot.querySelector('[data-wl="shockCollapse"]');
+        var shockToggleHint = shockRoot.querySelector('[data-wl="shockToggleHint"]');
+        if(shockToggle && shockCollapse){
+          shockToggle.addEventListener('click', function(){
+            var willOpen = !shockCollapse.classList.contains('open');
+            shockCollapse.classList.toggle('open', willOpen);
+            shockToggle.classList.toggle('open', willOpen);
+            shockToggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+            if(shockToggleHint) shockToggleHint.textContent = tx(willOpen ? C.shockToggleClose : C.shockToggleOpen);
+          });
+        }
       }
 
       var openShareBtn = body.querySelector('[data-wl="openShare"]');
