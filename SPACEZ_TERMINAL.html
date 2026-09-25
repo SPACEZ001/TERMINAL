@@ -32352,6 +32352,119 @@ var GM = {
   #watchlist .wl-wrap{max-width:1160px;margin:0 auto;padding:0 32px 90px;}
   @media(max-width:600px){ #watchlist .wl-wrap{padding:0 22px 70px;} }
 
+  /* ---- profile header: the LINE-linked person's own "board" at the top of
+     the page -- site logo, their name + photo, quick stats, and the entry
+     point into the shareable card. Only shown once they actually have
+     holdings (profileHeaderHTML returns '' otherwise). --------------------- */
+  #watchlist .wl-profile{
+    border:1px solid var(--border-dim);border-radius:var(--radius);
+    background:linear-gradient(160deg, rgba(204,255,0,.05), var(--glass));
+    padding:20px 22px;margin:22px 0;
+  }
+  #watchlist .wl-profile-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+  #watchlist .wl-profile-logo{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-weight:800;font-size:11px;letter-spacing:.12em;color:var(--grey-dim);text-transform:uppercase;}
+  #watchlist .wl-profile-mark{width:16px;height:20px;color:var(--neon);}
+  #watchlist .wl-profile-share-btn{
+    display:inline-flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--border-dim);
+    color:var(--grey);border-radius:8px;padding:8px 13px;font-family:var(--mono);font-size:11px;
+    font-weight:700;cursor:pointer;white-space:nowrap;
+  }
+  #watchlist .wl-profile-share-btn svg{width:14px;height:14px;}
+  #watchlist .wl-profile-share-btn:hover{border-color:var(--neon);color:var(--neon);}
+  #watchlist .wl-profile-main{display:flex;align-items:center;gap:16px;}
+  #watchlist .wl-profile-avatar{width:64px;height:64px;border-radius:50%;object-fit:cover;flex:0 0 auto;border:2px solid var(--neon);}
+  #watchlist .wl-profile-avatar-fallback{
+    display:flex;align-items:center;justify-content:center;background:rgba(204,255,0,.12);
+    color:var(--neon);font-size:24px;font-weight:800;font-family:var(--mono);
+  }
+  #watchlist .wl-profile-info{flex:1;min-width:0;}
+  #watchlist .wl-profile-name{font-size:1.3rem;font-weight:800;color:var(--white);letter-spacing:-.01em;margin-bottom:6px;}
+  #watchlist .wl-profile-stats{display:flex;flex-wrap:wrap;gap:14px;}
+  #watchlist .wl-profile-stat{font-size:12px;color:var(--grey);font-family:var(--mono);}
+  #watchlist .wl-profile-stat b{color:var(--white);font-size:13px;}
+  #watchlist .wl-profile-stat.wl-profile-risk{padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.06);}
+  #watchlist .wl-profile-stat.wl-profile-risk.high{color:var(--red);}
+  #watchlist .wl-profile-stat.wl-profile-risk.medium{color:var(--amber);}
+  #watchlist .wl-profile-stat.wl-profile-risk.low{color:var(--neon-2,var(--neon));}
+  @media(max-width:520px){
+    #watchlist .wl-profile-main{flex-wrap:wrap;}
+    #watchlist .wl-profile-avatar{width:52px;height:52px;}
+  }
+
+  /* ---- shareable portfolio card modal -- a dark, stylised rectangle meant
+     to be screenshotted or downloaded/printed, never a plain white/black
+     look. Sits in a fixed overlay appended to <body> (outside #watchlist),
+     so these rules are NOT scoped to #watchlist. ------------------------- */
+  .wlshare-modal{
+    position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9000;display:none;
+    align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px;
+  }
+  .wlshare-modal.open{display:flex;}
+  .wlshare-modal-inner{width:100%;max-width:460px;position:relative;}
+  .wlshare-close{
+    position:absolute;top:-6px;right:-6px;width:34px;height:34px;border-radius:50%;
+    background:#151619;border:1px solid var(--border-dim);color:var(--white);font-size:20px;
+    cursor:pointer;line-height:1;z-index:2;
+  }
+  .wlshare-scroll{width:100%;}
+  .wlshare-card{
+    width:100%;aspect-ratio:4/5;box-sizing:border-box;position:relative;overflow:hidden;
+    border-radius:22px;padding:28px 26px;display:flex;flex-direction:column;
+    background:radial-gradient(120% 100% at 20% 0%, #1b2408 0%, #0a0c07 55%, #060704 100%);
+    border:1px solid rgba(204,255,0,.25);color:#f4f6f1;font-family:var(--mono);
+  }
+  .wlshare-glow{position:absolute;top:-40%;right:-20%;width:70%;height:70%;
+    background:radial-gradient(circle, rgba(204,255,0,.18), transparent 70%);pointer-events:none;}
+  .wlshare-top{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1;}
+  .wlshare-logo{display:flex;align-items:center;gap:7px;font-weight:800;font-size:10.5px;letter-spacing:.12em;color:#ccff00;text-transform:uppercase;}
+  .wlshare-mark{width:13px;height:17px;color:#ccff00;}
+  .wlshare-date{font-size:10px;color:#8b9186;}
+  .wlshare-person{display:flex;align-items:center;gap:14px;margin-top:26px;position:relative;z-index:1;}
+  .wlshare-avatar{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #ccff00;flex:0 0 auto;}
+  .wlshare-avatar-fallback{display:flex;align-items:center;justify-content:center;background:rgba(204,255,0,.15);color:#ccff00;font-size:22px;font-weight:800;}
+  .wlshare-name{font-size:1.15rem;font-weight:800;color:#fff;}
+  .wlshare-tag{font-size:10.5px;color:#ccff00;letter-spacing:.08em;text-transform:uppercase;margin-top:2px;}
+  .wlshare-stats{display:flex;gap:22px;margin-top:22px;position:relative;z-index:1;}
+  .wlshare-stat{display:flex;flex-direction:column;gap:2px;}
+  .wlshare-stat b{font-size:1.3rem;font-weight:800;color:#fff;}
+  .wlshare-stat b.risk-high{color:#ff5a72;}
+  .wlshare-stat b.risk-medium{color:#ffc94d;}
+  .wlshare-stat b.risk-low{color:#00e5a0;}
+  .wlshare-stat span{font-size:9.5px;color:#8b9186;text-transform:uppercase;letter-spacing:.06em;}
+  .wlshare-block{margin-top:22px;position:relative;z-index:1;}
+  .wlshare-label{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#8b9186;margin-bottom:9px;}
+  .wlshare-stackbar{display:flex;width:100%;height:16px;border-radius:8px;overflow:hidden;background:rgba(255,255,255,.06);}
+  .wlshare-stackbar span{height:100%;box-shadow:2px 0 0 0 #0a0c07;}
+  .wlshare-stackbar span:last-child{box-shadow:none;}
+  .wlshare-legend{display:flex;flex-wrap:wrap;gap:8px 12px;margin-top:10px;}
+  .wlshare-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:#c7cbc0;}
+  .wlshare-legend-item i{width:7px;height:7px;border-radius:50%;flex:0 0 auto;display:inline-block;}
+  .wlshare-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .wlshare-chip{font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:20px;background:rgba(255,255,255,.07);color:#f4f6f1;}
+  .wlshare-chip.more{color:#8b9186;}
+  .wlshare-foot{margin-top:auto;padding-top:18px;font-size:8.5px;color:#5f6459;letter-spacing:.02em;line-height:1.5;position:relative;z-index:1;}
+  .wlshare-actions{display:flex;gap:10px;margin-top:16px;}
+  .wlshare-action-btn{
+    flex:1;background:transparent;border:1px solid rgba(255,255,255,.2);color:#fff;
+    border-radius:10px;padding:12px 14px;font-family:var(--mono);font-weight:700;font-size:12.5px;
+    cursor:pointer;white-space:nowrap;
+  }
+  .wlshare-action-btn.primary{background:#ccff00;color:#08130a;border-color:#ccff00;}
+  .wlshare-action-btn:hover{opacity:.88;}
+  .wlshare-status{text-align:center;font-size:11px;color:#8fe0a8;min-height:16px;margin-top:8px;}
+  .wlshare-status.err{color:#ff6b6b;}
+  @media print{
+    body.spz-printing-wlshare > *:not(.wlshare-modal){ display:none !important; }
+    body.spz-printing-wlshare .wlshare-modal{
+      position:static !important;background:#000 !important;padding:0 !important;display:block !important;overflow:visible !important;
+    }
+    body.spz-printing-wlshare .wlshare-close,
+    body.spz-printing-wlshare .wlshare-actions,
+    body.spz-printing-wlshare .wlshare-status{ display:none !important; }
+    body.spz-printing-wlshare .wlshare-modal-inner{ max-width:none !important; }
+    .wlshare-card, .wlshare-card *{ -webkit-print-color-adjust:exact !important;print-color-adjust:exact !important; }
+  }
+
   #watchlist .wl-add{
     display:flex;flex-wrap:wrap;gap:10px;align-items:center;
     border:1px solid var(--border-dim);border-radius:var(--radius);
@@ -32819,7 +32932,21 @@ var GM = {
     shockFalls:{en:'Likely falls',th:'มีแนวโน้มลง'},
     shockMixed:{en:'Mixed / depends',th:'ผสม / ไม่แน่นอน'},
     shockUnclassified:{en:'Sector not classified',th:'ยังจัดกลุ่มไม่ได้'},
-    shockRotateH:{en:'Sectors that tend to hold up in this scenario',th:'กลุ่มที่มักจะไปได้ดีในสถานการณ์นี้'}
+    shockRotateH:{en:'Sectors that tend to hold up in this scenario',th:'กลุ่มที่มักจะไปได้ดีในสถานการณ์นี้'},
+
+    profileHoldings:{en:'holdings',th:'ตัวที่ถือ'},
+    profileTopSector:{en:'Mostly',th:'ส่วนใหญ่'},
+    profileGuest:{en:'Your Watchlist',th:'วอทช์ลิสต์ของคุณ'},
+    profileShareBtn:{en:'Share / Save image',th:'แชร์ / บันทึกรูป'},
+
+    shareTag:{en:'My Portfolio',th:'พอร์ตของฉัน'},
+    shareHoldingsLabel:{en:'Holdings',th:'หุ้นที่ถือ'},
+    shareFooter:{en:'spacez001.github.io/TERMINAL · Educational use only, not financial advice.',
+                 th:'spacez001.github.io/TERMINAL · เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน'},
+    shareDownload:{en:'Download image',th:'บันทึกเป็นรูปภาพ'},
+    sharePrint:{en:'Print / Save as PDF',th:'พิมพ์ / บันทึกเป็น PDF'},
+    shareRendering:{en:'Preparing image…',th:'กำลังเตรียมรูป…'},
+    shareRenderErr:{en:'Could not generate the image — try Print / Save as PDF instead.',th:'สร้างรูปไม่สำเร็จ ลองใช้ปุ่มพิมพ์ / PDF แทน'}
   };
 
   var FLAG_COPY = {
@@ -33219,10 +33346,10 @@ var GM = {
   var SECTOR_HUES = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300'];
   var SECTOR_OTHER_HUE = '#5a5f54';
 
-  function portfolioAnalysisHTML(tickers, stocks){
-    if(!tickers.length) return '';
+  /* shared by the detailed panel, the profile header and the shareable
+     card -- one calculation so all three always agree with each other. */
+  function computePortfolioSummary(tickers, stocks){
     stocks = stocks || {};
-
     var bySector = {}, sectorOrder = [];
     var tiers = { high:[], medium:[], low:[] };
     var known = 0;
@@ -33259,6 +33386,56 @@ var GM = {
     sectorRows.forEach(function(row, i){
       row.color = (row.key !== '__other' && i < SECTOR_HUES.length) ? SECTOR_HUES[i] : SECTOR_OTHER_HUE;
     });
+
+    /* a single "how risky is this list as a whole" score -- a ratio against
+       a fixed 0-100 limit is exactly the Meter form (not a gauge/speedometer,
+       which reads position more precisely than people can judge by eye). */
+    var riskScore = known ? Math.round((tiers.high.length * 100 + tiers.medium.length * 50) / total) : 0;
+    var riskLevel = riskScore >= 60 ? 'high' : (riskScore >= 30 ? 'medium' : 'low');
+
+    return { total:total, known:known, tiers:tiers, sectorRows:sectorRows, riskScore:riskScore, riskLevel:riskLevel };
+  }
+
+  /* the top-of-page "this is your board" strip -- site logo, the LINE-linked
+     person's own name + photo, and a quick-glance summary, so the page reads
+     as a personal profile the moment it loads rather than a bare list. Also
+     hosts the entry point into the shareable portfolio card (below). */
+  function profileHeaderHTML(tickers, stocks, lineSt){
+    if(!tickers.length) return '';
+    var sum = computePortfolioSummary(tickers, stocks);
+    var top = sum.sectorRows[0];
+    var riskText = sum.riskLevel === 'high' ? C.paRiskHigh : sum.riskLevel === 'medium' ? C.paRiskMed : C.paRiskLow;
+    var avatarHTML = lineSt.pictureUrl
+      ? '<img class="wl-profile-avatar" src="' + esc(lineSt.pictureUrl) + '" alt="">'
+      : '<div class="wl-profile-avatar wl-profile-avatar-fallback">' + esc((lineSt.displayName || '?').charAt(0).toUpperCase()) + '</div>';
+
+    return '<div class="wl-profile">' +
+      '<div class="wl-profile-top">' +
+        '<div class="wl-profile-logo">' + (window.__spzMark ? window.__spzMark('wl-profile-mark', { stroke:true, w:3 }) : '') + '<span>SPACEZ TERMINAL</span></div>' +
+        '<button type="button" class="wl-profile-share-btn" data-wl="openShare">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>' +
+          '<span>' + esc(tx(C.profileShareBtn)) + '</span>' +
+        '</button>' +
+      '</div>' +
+      '<div class="wl-profile-main">' +
+        avatarHTML +
+        '<div class="wl-profile-info">' +
+          '<div class="wl-profile-name">' + esc(lineSt.displayName || tx(C.profileGuest)) + '</div>' +
+          '<div class="wl-profile-stats">' +
+            '<span class="wl-profile-stat"><b>' + sum.total + '</b> ' + esc(tx(C.profileHoldings)) + '</span>' +
+            (top ? '<span class="wl-profile-stat">' + esc(tx(C.profileTopSector)) + ' <b>' + esc(top.label) + '</b></span>' : '') +
+            (sum.known ? '<span class="wl-profile-stat wl-profile-risk ' + sum.riskLevel + '">' + esc(tx(riskText)) + '</span>' : '') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function portfolioAnalysisHTML(tickers, stocks){
+    if(!tickers.length) return '';
+    stocks = stocks || {};
+    var sum = computePortfolioSummary(tickers, stocks);
+    var total = sum.total, known = sum.known, tiers = sum.tiers, sectorRows = sum.sectorRows;
 
     var stackBarHTML = '<div class="wl-pa-stackbar">' + sectorRows.map(function(row){
       return '<span style="width:' + row.pct + '%;background:' + row.color + ';" title="' + esc(row.label) + ' · ' + row.pct + '%"></span>';
@@ -33298,15 +33475,7 @@ var GM = {
         '<span class="wl-pa-chips">' + chips + '</span></div>';
     }).join('');
 
-    /* a single "how risky is this list as a whole" meter -- a ratio against
-       a fixed 0-100 limit is exactly the Meter form (not a gauge/speedometer,
-       which reads position more precisely than people can judge by eye).
-       The fill's own color carries the severity (accent -> warning -> danger,
-       reusing the site's existing high/medium/low tokens so it matches the
-       chips below); the track is a flat neutral, not a colored "good" zone,
-       since color is never the only signal -- the level word beside it is. */
-    var riskScore = known ? Math.round((tiers.high.length * 100 + tiers.medium.length * 50) / total) : 0;
-    var riskLevel = riskScore >= 60 ? 'high' : (riskScore >= 30 ? 'medium' : 'low');
+    var riskLevel = sum.riskLevel, riskScore = sum.riskScore;
     var riskLevelText = riskLevel === 'high' ? C.paRiskHigh : riskLevel === 'medium' ? C.paRiskMed : C.paRiskLow;
     var meterHTML = known ? (
       '<div class="wl-pa-meter-row">' +
@@ -33467,6 +33636,128 @@ var GM = {
     }
   }
 
+  /* ---- shareable portfolio infographic card -- a dark, styled rectangle
+     (deliberately NOT a plain white-background/black-text screenshot) with
+     the site logo, the LINE-linked person's own name + photo, and the same
+     sector/risk graphics as this page, sized to be saved or shared. The
+     rasterizer (html2canvas) is lazy-loaded on first use so visitors who
+     never click "Share" never pay for it; "Print / Save as PDF" instead
+     reuses the browser's own print dialog rather than a second library. */
+  var shareModalEl = null, html2canvasLoading = null;
+
+  function ensureHtml2Canvas(cb){
+    if(window.html2canvas){ cb(); return; }
+    if(html2canvasLoading){ html2canvasLoading.push(cb); return; }
+    html2canvasLoading = [cb];
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    s.onload = function(){ var cbs = html2canvasLoading; html2canvasLoading = null; cbs.forEach(function(f){ f(); }); };
+    s.onerror = function(){ var cbs = html2canvasLoading; html2canvasLoading = null; cbs.forEach(function(f){ f('error'); }); };
+    document.head.appendChild(s);
+  }
+
+  function shareCardHTML(tickers, stocks, lineSt){
+    var sum = computePortfolioSummary(tickers, stocks);
+    var riskText = sum.riskLevel === 'high' ? C.paRiskHigh : sum.riskLevel === 'medium' ? C.paRiskMed : C.paRiskLow;
+    var avatarHTML = lineSt.pictureUrl
+      ? '<img class="wlshare-avatar" src="' + esc(lineSt.pictureUrl) + '" crossorigin="anonymous" alt="">'
+      : '<div class="wlshare-avatar wlshare-avatar-fallback">' + esc((lineSt.displayName || '?').charAt(0).toUpperCase()) + '</div>';
+
+    var barHTML = '<div class="wlshare-stackbar">' + sum.sectorRows.map(function(row){
+      return '<span style="width:' + row.pct + '%;background:' + row.color + ';"></span>';
+    }).join('') + '</div>';
+    var legendHTML = sum.sectorRows.slice(0, 6).map(function(row){
+      return '<span class="wlshare-legend-item"><i style="background:' + row.color + ';"></i>' + esc(row.label) + ' ' + row.pct + '%</span>';
+    }).join('');
+
+    var chipsHTML = tickers.slice(0, 14).map(function(t){ return '<span class="wlshare-chip">$' + esc(t) + '</span>'; }).join('') +
+      (tickers.length > 14 ? '<span class="wlshare-chip more">+' + (tickers.length - 14) + '</span>' : '');
+
+    var dateStr = new Date().toLocaleDateString(L() === 'th' ? 'th-TH' : 'en-US', { year:'numeric', month:'short', day:'numeric' });
+
+    return '<div class="wlshare-card" id="wlshareCard">' +
+      '<div class="wlshare-glow"></div>' +
+      '<div class="wlshare-top">' +
+        '<div class="wlshare-logo">' + (window.__spzMark ? window.__spzMark('wlshare-mark', { stroke:true, w:3 }) : '') + '<span>SPACEZ TERMINAL</span></div>' +
+        '<span class="wlshare-date">' + esc(dateStr) + '</span>' +
+      '</div>' +
+      '<div class="wlshare-person">' +
+        avatarHTML +
+        '<div>' +
+          '<div class="wlshare-name">' + esc(lineSt.displayName || tx(C.profileGuest)) + '</div>' +
+          '<div class="wlshare-tag">' + esc(tx(C.shareTag)) + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="wlshare-stats">' +
+        '<div class="wlshare-stat"><b>' + sum.total + '</b><span>' + esc(tx(C.profileHoldings)) + '</span></div>' +
+        (sum.known ? '<div class="wlshare-stat"><b class="risk-' + sum.riskLevel + '">' + esc(tx(riskText)) + '</b><span>' + esc(tx(C.paMeterLabel)) + '</span></div>' : '') +
+      '</div>' +
+      '<div class="wlshare-block">' +
+        '<div class="wlshare-label">' + esc(tx(C.paSectorLabel)) + '</div>' +
+        barHTML +
+        '<div class="wlshare-legend">' + legendHTML + '</div>' +
+      '</div>' +
+      '<div class="wlshare-block">' +
+        '<div class="wlshare-label">' + esc(tx(C.shareHoldingsLabel)) + '</div>' +
+        '<div class="wlshare-chips">' + chipsHTML + '</div>' +
+      '</div>' +
+      '<div class="wlshare-foot">' + esc(tx(C.shareFooter)) + '</div>' +
+    '</div>';
+  }
+
+  function openShareCard(tickers, stocks, lineSt){
+    if(!tickers.length) return;
+    if(!shareModalEl){
+      shareModalEl = document.createElement('div');
+      shareModalEl.className = 'wlshare-modal';
+      shareModalEl.innerHTML =
+        '<div class="wlshare-modal-inner">' +
+          '<button type="button" class="wlshare-close" data-wlshare="close" aria-label="close">&times;</button>' +
+          '<div class="wlshare-scroll" data-wlshare="scroll"></div>' +
+          '<div class="wlshare-actions">' +
+            '<button type="button" class="wlshare-action-btn primary" data-wlshare="download">' + esc(tx(C.shareDownload)) + '</button>' +
+            '<button type="button" class="wlshare-action-btn" data-wlshare="print">' + esc(tx(C.sharePrint)) + '</button>' +
+          '</div>' +
+          '<div class="wlshare-status" data-wlshare="status"></div>' +
+        '</div>';
+      document.body.appendChild(shareModalEl);
+      shareModalEl.querySelector('[data-wlshare="close"]').addEventListener('click', function(){
+        shareModalEl.classList.remove('open');
+      });
+      shareModalEl.addEventListener('click', function(e){ if(e.target === shareModalEl) shareModalEl.classList.remove('open'); });
+    }
+    var scrollEl = shareModalEl.querySelector('[data-wlshare="scroll"]');
+    scrollEl.innerHTML = shareCardHTML(tickers, stocks, lineSt);
+    shareModalEl.classList.add('open');
+    var statusEl = shareModalEl.querySelector('[data-wlshare="status"]');
+    statusEl.textContent = '';
+    statusEl.classList.remove('err');
+
+    var downloadBtn = shareModalEl.querySelector('[data-wlshare="download"]');
+    downloadBtn.onclick = function(){
+      statusEl.textContent = tx(C.shareRendering);
+      statusEl.classList.remove('err');
+      ensureHtml2Canvas(function(err){
+        if(err || !window.html2canvas){ statusEl.textContent = tx(C.shareRenderErr); statusEl.classList.add('err'); return; }
+        var cardEl = document.getElementById('wlshareCard');
+        window.html2canvas(cardEl, { backgroundColor:null, scale:2, useCORS:true }).then(function(canvas){
+          statusEl.textContent = '';
+          var link = document.createElement('a');
+          link.download = 'spacez-portfolio.png';
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        }).catch(function(){ statusEl.textContent = tx(C.shareRenderErr); statusEl.classList.add('err'); });
+      });
+    };
+
+    var printBtn = shareModalEl.querySelector('[data-wlshare="print"]');
+    printBtn.onclick = function(){
+      document.body.classList.add('spz-printing-wlshare');
+      window.print();
+      setTimeout(function(){ document.body.classList.remove('spz-printing-wlshare'); }, 500);
+    };
+  }
+
   /* ---- the two-channel "Connect" strip shown at the top of the page in
      every state: Telegram (full add/remove-by-chat control, existing
      per-visitor uid -> chat_id -> watchlist.json lookup) and LINE (QR scan
@@ -33584,7 +33875,7 @@ var GM = {
             return '<option value="' + esc(k) + '">';
           }).join('') : '') + '</datalist>' +
         '</div>';
-      body.innerHTML = strip +
+      body.innerHTML = profileHeaderHTML(lineTickers, stocks, lineSt) + strip +
         '<div class="wl-addnote" style="margin:14px 0;">' + esc(tx(C.lineOwnListNote)) + '</div>' +
         lineAddBox +
         portfolioAnalysisHTML(lineTickers, stocks) +
@@ -33607,6 +33898,11 @@ var GM = {
           shockRenderResult(shockRoot, lineTickers, stocks, Number(this.value));
         });
       }
+
+      var openShareBtn = body.querySelector('[data-wl="openShare"]');
+      if(openShareBtn) openShareBtn.addEventListener('click', function(){
+        openShareCard(lineTickers, stocks, lineSt);
+      });
 
       var lineErrMap = { invalid_ticker:C.lineAddErrInvalid, list_full:C.lineAddErrFull, network:C.lineAddErrNet, error:C.lineAddErrNet };
       var lineInput = body.querySelector('[data-wl="lineInput"]');
