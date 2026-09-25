@@ -176,6 +176,8 @@ async function putUserWatchlist(userId, tickers, env) {
 /* ---------------------- per-user profile (Connected Users) ---------------------- */
 
 const MAX_SOCIAL_LEN = 80;
+const MAX_NAME_OVERRIDE_LEN = 40;
+const MAX_NOTE_LEN = 280;
 
 function randomUid(len) {
   // random string of `len` digits, never starting with 0 -- auto-assigned
@@ -214,6 +216,22 @@ function sanitizeUid(v) {
 function sanitizeSocial(v) {
   if (typeof v !== "string") return "";
   return v.trim().slice(0, MAX_SOCIAL_LEN);
+}
+
+// A visitor's own override of their displayed name on the Home page's
+// personal LINE card (defaults to their real LINE display name if they
+// never set one) -- plain text, no markup, just length-capped like the
+// social handles above.
+function sanitizeNameOverride(v) {
+  if (typeof v !== "string") return "";
+  return v.trim().slice(0, MAX_NAME_OVERRIDE_LEN);
+}
+
+// The free-text "about me" note on that same card. Newlines are kept
+// (it's a short paragraph, not a single-line field like the socials).
+function sanitizeNote(v) {
+  if (typeof v !== "string") return "";
+  return v.replace(/\r\n/g, "\n").trim().slice(0, MAX_NOTE_LEN);
 }
 
 function sanitizeDate(v) {
@@ -265,6 +283,8 @@ async function upsertProfileOnLogin(userId, displayName, pictureUrl, env) {
     pictureUrl: pictureUrl || (existing && existing.pictureUrl) || "",
     facebook: (existing && existing.facebook) || "",
     instagram: (existing && existing.instagram) || "",
+    nameOverride: (existing && existing.nameOverride) || "",
+    note: (existing && existing.note) || "",
     accessUntil: (existing && existing.accessUntil) || null,
     // "rights" is a purely decorative badge for now (see handleAdminUsersUpdate) --
     // one of the RIGHTS_LEVELS ids, or null for the plain Free look. Admin-only,
@@ -418,6 +438,8 @@ async function handleData(request, env) {
     uid: profile ? profile.uid : null,
     facebook: profile ? profile.facebook || "" : "",
     instagram: profile ? profile.instagram || "" : "",
+    nameOverride: profile ? profile.nameOverride || "" : "",
+    note: profile ? profile.note || "" : "",
     accessUntil: profile ? profile.accessUntil || null : null,
   }, env);
 }
@@ -527,10 +549,19 @@ async function handleProfileUpdate(request, env) {
 
   if (typeof body.facebook === "string") profile.facebook = sanitizeSocial(body.facebook);
   if (typeof body.instagram === "string") profile.instagram = sanitizeSocial(body.instagram);
+  // Both optional and independent of the socials above -- the Home page's
+  // personal LINE card sends these, the Watchlist page's own edit panel
+  // never does, so neither call site has to know about the other's fields.
+  if (typeof body.nameOverride === "string") profile.nameOverride = sanitizeNameOverride(body.nameOverride);
+  if (typeof body.note === "string") profile.note = sanitizeNote(body.note);
   profile.updatedAt = Date.now();
   await putProfile(sess.userId, profile, env);
 
-  return json({ ok: true, uid: profile.uid, facebook: profile.facebook || "", instagram: profile.instagram || "" }, env);
+  return json({
+    ok: true, uid: profile.uid,
+    facebook: profile.facebook || "", instagram: profile.instagram || "",
+    nameOverride: profile.nameOverride || "", note: profile.note || "",
+  }, env);
 }
 
 /* ------------------------- admin: Connected Users page ------------------------- */
