@@ -17236,6 +17236,12 @@ var CL_UI = {
         'stroke-linecap="round" stroke-dasharray="78 100.5" stroke-dashoffset="25.133"/>' +
     '</svg>';
 
+  /* Routes that exist and are fully routable, but are deliberately left out
+     of both the Home hub grid (buildHub) and the top nav menu (buildNav) --
+     currently just Connected Users, which is reachable only via the admin
+     login gate's own panel button. */
+  var NAV_HIDDEN = { connectedusers:1 };
+
   function buildHub(){
     var sec = el('section');
     sec.id = 'hub';
@@ -17263,7 +17269,7 @@ var CL_UI = {
       g.innerHTML = '';
       for(var i = 0; i < ROUTES.length; i++){
         (function(r, n){
-          if(!document.getElementById(r.id)) return;
+          if(!document.getElementById(r.id) || NAV_HIDDEN[r.id]) return;
           var hue = HUB_HUES[(n - 1) % HUB_HUES.length];
           var num = n < 10 ? '0' + n : String(n);
           var c = el('button', 'hub-card' + (r.feat ? ' feat' : ''),
@@ -17454,6 +17460,10 @@ var CL_UI = {
        it reads as the "everything in one place" screen rather than just
        another item; see .np-item-special in the cockpit route's own CSS */
     var SPECIAL_ITEMS = { cockpit:1, printreport:1 };
+    /* Connected Users is deliberately absent from this menu (and from the
+       Home hub grid below) -- it's reachable only through the admin login
+       gate's own panel button, never a listed "page" like everything else,
+       since its whole point is that ordinary visitors never see it exists. */
     function item(id, n, title, desc){
       var cls = 'np-item' + (SPECIAL_ITEMS[id] ? ' np-item-special' : '');
       var a = el('a', cls,
@@ -17530,11 +17540,13 @@ var CL_UI = {
             tx(rows[i].t).split('—')[0].trim(), tx(rows[i].d)));
         }
       }
-      /* anything not listed above still shows up, never silently dropped */
+      /* anything not listed above still shows up, never silently dropped --
+         except NAV_HIDDEN routes (Connected Users), which stay reachable
+         only through the admin login gate's own panel, never this menu. */
       var rest = [];
       for(i = 0; i < ROUTES.length; i++){
         r = ROUTES[i];
-        if(!used[r.id] && document.getElementById(r.id)) rest.push(r);
+        if(!used[r.id] && !NAV_HIDDEN[r.id] && document.getElementById(r.id)) rest.push(r);
       }
       if(rest.length){
         pop.appendChild(el('div', 'np-sep', L() === 'th' ? 'อื่นๆ' : 'More'));
@@ -32812,6 +32824,63 @@ var GM = {
   #watchlist .wl-pa-chip.low{border-color:color-mix(in srgb, var(--neon-2,var(--neon)) 40%, transparent);}
   #watchlist .wl-pa-none{font-size:12px;color:var(--grey-dim);}
 
+  /* Same portfolio-analysis look, reused verbatim (see window.__SPZ_LINE.
+     portfolioAnalysisHTML) inside the admin-only Connected Users detail
+     modal (#cuDetailModal, defined with that page's own module further
+     down) -- a duplicate selector rather than editing the rules above, so
+     this page's own module stays self-contained and additive. */
+  #cuDetailModal .wl-pa{
+    border:1px solid var(--border-dim);border-radius:var(--radius);
+    background:var(--glass);padding:18px 20px;margin:18px 0 22px;
+  }
+  #cuDetailModal .wl-pa-h{font-family:var(--mono);font-weight:800;font-size:14px;color:var(--white);margin:0 0 4px;}
+  #cuDetailModal .wl-pa-lede{font-size:12px;color:var(--grey);line-height:1.6;margin:0 0 16px;max-width:680px;}
+  #cuDetailModal .wl-pa-block{margin-bottom:16px;}
+  #cuDetailModal .wl-pa-block:last-child{margin-bottom:0;}
+  #cuDetailModal .wl-pa-label{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--grey-dim);margin:0 0 10px;}
+  #cuDetailModal .wl-pa-stackbar{
+    display:flex;width:100%;height:20px;border-radius:10px;overflow:hidden;
+    background:rgba(255,255,255,.06);margin-bottom:14px;
+  }
+  #cuDetailModal .wl-pa-stackbar span{height:100%;box-shadow:2px 0 0 0 var(--bg, #0d0f0c);}
+  #cuDetailModal .wl-pa-stackbar span:last-child{box-shadow:none;}
+  #cuDetailModal .wl-pa-sectors{display:flex;flex-direction:column;gap:9px;}
+  #cuDetailModal .wl-pa-sector-row{display:flex;align-items:center;gap:10px;}
+  #cuDetailModal .wl-pa-sector-dot{flex:0 0 auto;width:8px;height:8px;border-radius:50%;}
+  #cuDetailModal .wl-pa-sector-name{flex:0 0 130px;font-size:12px;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #cuDetailModal .wl-pa-sector-track{flex:1;height:7px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden;}
+  #cuDetailModal .wl-pa-sector-bar{height:100%;border-radius:5px;}
+  #cuDetailModal .wl-pa-sector-pct{flex:0 0 68px;text-align:right;font-family:var(--mono);font-size:11.5px;color:var(--grey);}
+  #cuDetailModal .wl-pa-meter-row{display:flex;align-items:center;gap:12px;margin-bottom:2px;}
+  #cuDetailModal .wl-pa-meter-track{flex:1;height:12px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;}
+  #cuDetailModal .wl-pa-meter-fill{height:100%;border-radius:6px;transition:width .3s;}
+  #cuDetailModal .wl-pa-meter-fill.low{background:var(--neon-2,var(--neon));}
+  #cuDetailModal .wl-pa-meter-fill.medium{background:var(--amber);}
+  #cuDetailModal .wl-pa-meter-fill.high{background:var(--red);}
+  #cuDetailModal .wl-pa-meter-tag{flex:0 0 auto;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.04em;}
+  #cuDetailModal .wl-pa-meter-tag.low{color:var(--neon-2,var(--neon));}
+  #cuDetailModal .wl-pa-meter-tag.medium{color:var(--amber);}
+  #cuDetailModal .wl-pa-meter-tag.high{color:var(--red);}
+  #cuDetailModal .wl-pa-note{font-size:12px;line-height:1.6;border-left:2px solid var(--border-dim);padding-left:10px;color:var(--grey);}
+  #cuDetailModal .wl-pa-note.bad{border-color:var(--red);color:var(--white);}
+  #cuDetailModal .wl-pa-note.warn{border-color:var(--amber);color:var(--white);}
+  #cuDetailModal .wl-pa-note.good{border-color:var(--neon-2,var(--neon));color:var(--white);}
+  #cuDetailModal .wl-pa-risk-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:8px;}
+  #cuDetailModal .wl-pa-risk-row:last-child{margin-bottom:0;}
+  #cuDetailModal .wl-pa-risk-tag{flex:0 0 auto;font-family:var(--mono);font-size:11px;letter-spacing:.04em;width:108px;}
+  #cuDetailModal .wl-pa-risk-tag.high{color:var(--red);}
+  #cuDetailModal .wl-pa-risk-tag.medium{color:var(--amber);}
+  #cuDetailModal .wl-pa-risk-tag.low{color:var(--neon-2,var(--neon));}
+  #cuDetailModal .wl-pa-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  #cuDetailModal .wl-pa-chip{
+    font-family:var(--mono);font-size:11.5px;padding:4px 10px;border-radius:20px;
+    border:1px solid var(--border-dim);background:transparent;color:var(--white);cursor:default;
+  }
+  #cuDetailModal .wl-pa-chip.high{border-color:color-mix(in srgb, var(--red) 45%, transparent);}
+  #cuDetailModal .wl-pa-chip.medium{border-color:color-mix(in srgb, var(--amber) 45%, transparent);}
+  #cuDetailModal .wl-pa-chip.low{border-color:color-mix(in srgb, var(--neon-2,var(--neon)) 40%, transparent);}
+  #cuDetailModal .wl-pa-none{font-size:12px;color:var(--grey-dim);}
+
   /* big, one-card-per-sector graphs -- each ticker's today's move as a
      diverging bar (zero-centered, green right / red left), so a sector
      with several holdings reads as its own small chart instead of one
@@ -32974,6 +33043,21 @@ var GM = {
     border-radius:9px;padding:9px 16px;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;
   }
   .wllm-retry:hover{background:#06C755;color:#08130a;}
+  .wllm-proc{width:74px;height:74px;margin:8px auto 18px;position:relative;}
+  .wllm-proc-ring{
+    position:absolute;inset:0;border-radius:50%;
+    border:3px solid rgba(6,199,85,.16);border-top-color:#06C755;
+    animation:wlLineSpin 1.1s linear infinite;
+  }
+  .wllm-proc-check{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#06C755;
+  }
+  .wllm-proc-check svg{width:28px;height:28px;}
+  .wllm-proc-check path{
+    stroke-dasharray:24;stroke-dashoffset:24;
+    animation:wlLineCheckIn .5s ease .12s forwards;
+  }
+  @keyframes wlLineCheckIn{ to{ stroke-dashoffset:0; } }
 </style>
 <script>
 (function(){
@@ -33128,6 +33212,7 @@ var GM = {
     lineConnectedNote:{en:'Connected ✓',th:'เชื่อมต่อแล้ว ✓'},
     lineNotConn:{en:'Not connected',th:'ยังไม่ได้เชื่อมต่อ'},
     lineWaiting:{en:'Waiting for scan…',th:'รอการสแกนอยู่ค่ะ…'},
+    lineProcessing:{en:'Scanned ✓ verifying your account…',th:'สแกนสำเร็จ ✓ กำลังตรวจสอบบัญชีของคุณ…'},
     lineExpired:{en:'Code expired — tap Connect LINE again.',th:'โค้ดหมดอายุแล้ว กดเชื่อมต่อ LINE อีกครั้งนะคะ'},
     lineErr:{en:'Could not reach the LINE link service. Tap to try again.',
              th:'เชื่อมต่อระบบ LINE ไม่ได้ตอนนี้ กดเพื่อลองใหม่นะคะ'},
@@ -33345,6 +33430,13 @@ var GM = {
         '<div class="wllm-status ok">' + esc(tx(C.lineConnectedNote)) +
           (st.displayName ? ' · ' + esc(st.displayName) : '') + '</div>';
       setTimeout(function(){ if(state.lineModalOpen) closeLineModal(); }, 1200);
+    } else if(st.status === 'processing'){
+      lineModalBody.innerHTML =
+        '<div class="wllm-title">LINE</div>' +
+        '<div class="wllm-proc"><div class="wllm-proc-ring"></div>' +
+          '<div class="wllm-proc-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></div>' +
+        '</div>' +
+        '<div class="wllm-status">' + esc(tx(C.lineProcessing)) + '</div>';
     } else if(!lineWorkerReady()){
       lineModalBody.innerHTML = '<div class="wllm-title">LINE</div><div class="wllm-status err">' + esc(tx(C.lineNotReady)) + '</div>';
     } else if(st.status === 'error' || st.status === 'expired'){
@@ -33396,7 +33488,14 @@ var GM = {
         if(data.status === 'linked'){
           lineStopPolling();
           state.line.displayName = data.displayName || '';
-          lineFetchData();
+          // A brief "scanned, verifying" beat between the phone-side scan and
+          // the panel settling in, so the transition never feels like the
+          // modal just abruptly vanishes -- see paintLineModal()'s
+          // 'processing' branch for the graphic.
+          state.line.status = 'processing';
+          paint();
+          paintLineModal();
+          setTimeout(lineFetchData, 650);
         } else if(data.status === 'not_found'){
           lineStopPolling();
           state.line.status = 'expired';
@@ -34365,6 +34464,8 @@ var GM = {
     } else if(lineSt.status === 'pending'){
       lineBlock = '<div class="wl-conn-status">' + esc(tx(C.lineWaiting)) + '</div>' +
         '<button type="button" class="wl-conn-btn line-btn" data-wl="lineConnect">' + esc(tx(C.connectLineBtn)) + '</button>';
+    } else if(lineSt.status === 'processing'){
+      lineBlock = '<div class="wl-conn-status ok">' + esc(tx(C.lineProcessing)) + '</div>';
     } else if(lineSt.status === 'error' || lineSt.status === 'expired'){
       lineBlock = '<div class="wl-conn-status" style="color:#ff6b6b;">' +
         esc(tx(lineSt.status === 'expired' ? C.lineExpired : C.lineErr)) + '</div>' +
@@ -34740,7 +34841,15 @@ var GM = {
     },
     logout: function(){ lineLogout(); },
     like: function(postId, cb){ lineLikeToggle(postId, cb); },
-    likesGet: function(postId, cb){ lineLikesGet(postId, cb); }
+    likesGet: function(postId, cb){ lineLikesGet(postId, cb); },
+    /* Read-only exposure for the admin-only Connected Users page, which wants
+       the exact same "portfolio analysis" breakdown (sector mix + risk read)
+       used on this page's own board -- rather than re-deriving that logic a
+       second time, it calls straight into it with any user's ticker list.
+       Never mutates state.line -- these two are pure functions of whatever
+       tickers/stocks are handed in. */
+    portfolioAnalysisHTML: function(tickers, stocks){ return portfolioAnalysisHTML(tickers || [], stocks || stocksSnapshot() || {}); },
+    stocksSnapshot: function(){ return stocksSnapshot() || {}; }
   };
 })();
 </script>
@@ -38785,21 +38894,22 @@ var GM = {
   /* admin-only shortcuts shown inside the "you're signed in" pane -- quick jump to
      the Asset Analysis Log's add-entry form and the site-wide Print Report tool,
      without needing to find them in the main menu first */
-  .cag-admin-links{width:100%;display:flex;flex-direction:column;gap:7px;
+  .cag-admin-links{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px;
     /* a dedicated steel-blue accent for these admin shortcuts, separate from
        --cag-accent's neon lime -- three lime-bordered buttons in a row read
        as "unfinished"; a cooler, quieter tone reads more like a pro admin
        tool. Scoped to just this block so nothing else in the gate changes. */
     --cag-admin-accent:#6fb8e8;}
-  .cag-admin-link{width:100%;background:transparent;border:1px solid color-mix(in srgb, var(--cag-admin-accent) 32%, transparent);border-radius:11px;padding:10px;
-    color:var(--cag-admin-accent);font-family:'Inter',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;gap:7px;transition:background .15s,border-color .15s;
+  .cag-admin-link{width:100%;background:transparent;border:1px solid color-mix(in srgb, var(--cag-admin-accent) 32%, transparent);border-radius:11px;padding:12px 8px;
+    color:var(--cag-admin-accent);font-family:'Inter',sans-serif;font-size:.72rem;font-weight:700;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;line-height:1.3;
+    transition:background .15s,border-color .15s;
     position:relative;overflow:hidden;}
   .cag-admin-link:hover{border-color:var(--cag-admin-accent);background:color-mix(in srgb, var(--cag-admin-accent) 10%, transparent);}
   #cagAdminLinks.hidden{display:none;}
   /* infographic-style icon in place of the old emoji, plus a light sheen
      sweep on hover so the two admin shortcuts feel a bit more "finished". */
-  .cag-admin-ico{width:15px;height:15px;flex:0 0 auto;color:var(--cag-admin-accent);
+  .cag-admin-ico{width:19px;height:19px;flex:0 0 auto;color:var(--cag-admin-accent);
     filter:drop-shadow(0 0 3px color-mix(in srgb, var(--cag-admin-accent) 55%, transparent));}
   .cag-admin-link::after{
     content:'';position:absolute;top:0;bottom:0;left:-60%;width:36%;
@@ -39202,12 +39312,11 @@ var GM = {
     lineRowNote:{en:'Your own personal watchlist via LINE — separate from this site login.',
                  th:'วอทช์ลิสต์ส่วนตัวของคุณผ่าน LINE — แยกต่างหากจากการล็อกอินเว็บนี้'},
     lineWlBtn:{en:'Go to My Watchlist',th:'ไปหน้าวอทช์ลิสต์ของฉัน'},
-    memberT:{en:'MEMBER LOGIN',th:'MEMBER LOGIN'},
-    memberS:{en:'Short code · unlocks the real analysis tools',th:'รหัสสั้น · ปลดล็อกเครื่องมือวิเคราะห์จริง'},
-    memberCodeHint:{en:'Tap the code to copy it, then paste it below',th:'แตะรหัสเพื่อคัดลอก แล้ววางไว้ในช่องด้านล่าง'},
-    memberLineNote:{en:'Free for now. This code unlocks the analysis tools, but not My Watchlist — that needs the LINE tab above instead, which unlocks the same tools too.',
-                    th:'ตอนนี้ยังใช้ฟรีอยู่ รหัสนี้ปลดล็อกเครื่องมือวิเคราะห์ได้ แต่ใช้วอทช์ลิสต์ของฉันไม่ได้ — ต้องเชื่อมต่อผ่านแท็บ LINE ด้านบนแทน ซึ่งจะปลดล็อกเครื่องมือชุดเดียวกันนี้ให้ด้วย'},
-    memberCopied:{en:'Copied ✓',th:'คัดลอกแล้ว ✓'},
+    memberT:{en:'MEMBER ACCESS',th:'สิทธิ์สมาชิก'},
+    memberS:{en:'Unlocked through your LINE account',th:'ปลดล็อกผ่านบัญชี LINE ของคุณ'},
+    memberLineNote:{en:'Member access now goes through LINE sign-in only — connect your LINE account to unlock the analysis tools and your personal watchlist.',
+                    th:'สิทธิ์สมาชิกตอนนี้เข้าผ่านการเชื่อมต่อ LINE เท่านั้น — เชื่อมต่อบัญชี LINE ของคุณเพื่อปลดล็อกเครื่องมือวิเคราะห์และวอทช์ลิสต์ส่วนตัว'},
+    memberLineCta:{en:'Sign in with LINE',th:'เข้าสู่ระบบด้วย LINE'},
     memberLoggedT:{en:'MEMBER',th:'MEMBER'},
     memberLoggedS:{en:'You have member access.',th:'คุณเข้าสู่ระบบระดับ MEMBER แล้ว'},
     lineLoggedT:{en:'LINE',th:'LINE'},
@@ -39318,15 +39427,11 @@ var GM = {
 
   /* ---------------- gate UI ---------------- */
   var gate, paneAdv, errAdv, btnAdv, advFilled, advBar;
-  var paneOut, paneMember, tabsEl, errMember, btnMember, memberInput, memberCodeEl, upgradeBtn;
+  var paneOut, paneMember, tabsEl, memberLineBtn, upgradeBtn;
   var activeTab = 'member';
   var advInputs = [];
   var attempts = 0, lockUntil = 0;
   var adminTrigger = null;
-  /* Soft gate only (not real security like the admin vault below): the
-     code is shown right on the page for anyone to copy, its only job is
-     to add a small deliberate step before Member tools unlock. */
-  var MEMBER_CODE = 'SPZ-MEMBER';
 
   function buildGate(){
     if(document.getElementById('spzAuthGate')) return;
@@ -39343,9 +39448,9 @@ var GM = {
           '<div class="cag-status"><i></i><span data-x="status"></span></div>' +
 
           '<div class="cag-tiers" id="cagTabs">' +
+            '<button class="cag-tier line" type="button" id="cagLineTab"><b data-x="tabLine"></b></button>' +
             '<button class="cag-tier m" type="button" data-tab="member"><b data-x="tabMember"></b></button>' +
             '<button class="cag-tier f" type="button" data-tab="full"><b data-x="tabFull"></b></button>' +
-            '<button class="cag-tier line" type="button" id="cagLineTab"><b data-x="tabLine"></b></button>' +
           '</div>' +
 
           '<div class="cag-pane" id="cagPaneOut">' +
@@ -39385,13 +39490,9 @@ var GM = {
 
           '<div class="cag-pane" id="cagPaneMember">' +
             '<div class="cag-head"><div><b data-x="memberT"></b><span data-x="memberS"></span></div></div>' +
-            '<div class="cag-member-code" id="cagMemberCode"></div>' +
-            '<div class="cag-member-hint" data-x="memberCodeHint"></div>' +
-            '<div class="cag-pw-wrap"><input class="cag-pw" type="text" id="cagMemberInput" autocomplete="off" spellcheck="false"/></div>' +
-            '<div class="cag-err hidden" id="cagErrMember"></div>' +
-            '<button class="cag-btn" type="button" id="cagBtnMember" data-x="enterMember"></button>' +
-            '<button class="cag-ghost" type="button" id="cagToFull" data-x="toFullLink"></button>' +
             '<div class="cag-member-linenote" data-x="memberLineNote"></div>' +
+            '<button class="cag-btn" type="button" id="cagMemberLineBtn" data-x="memberLineCta"></button>' +
+            '<button class="cag-ghost" type="button" id="cagToFull" data-x="toFullLink"></button>' +
           '</div>' +
 
           '<div class="cag-pane" id="cagPaneAdv">' +
@@ -39432,10 +39533,7 @@ var GM = {
     paneOut = gate.querySelector('#cagPaneOut');
     paneMember = gate.querySelector('#cagPaneMember');
     tabsEl = gate.querySelector('#cagTabs');
-    errMember = gate.querySelector('#cagErrMember');
-    btnMember = gate.querySelector('#cagBtnMember');
-    memberInput = gate.querySelector('#cagMemberInput');
-    memberCodeEl = gate.querySelector('#cagMemberCode');
+    memberLineBtn = gate.querySelector('#cagMemberLineBtn');
     upgradeBtn = gate.querySelector('#cagUpgradeBtn');
 
     var advGrid = gate.querySelector('#cagAdvGrid');
@@ -39520,30 +39618,14 @@ var GM = {
     tabsEl.querySelectorAll('[data-tab]').forEach(function(btn){
       btn.addEventListener('click', function(){
         activeTab = btn.getAttribute('data-tab');
-        clearErr(errMember); clearErr(errAdv);
+        clearErr(errAdv);
         paint();
       });
     });
-    memberCodeEl.addEventListener('click', function(){
-      var reset = function(){
-        memberCodeEl.classList.add('copied');
-        memberCodeEl.textContent = Tt(TXT.memberCopied);
-        setTimeout(function(){ memberCodeEl.classList.remove('copied'); memberCodeEl.textContent = MEMBER_CODE; }, 1100);
-      };
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(MEMBER_CODE).then(reset).catch(reset);
-      } else {
-        try {
-          var ta = document.createElement('textarea');
-          ta.value = MEMBER_CODE; ta.style.position = 'fixed'; ta.style.opacity = '0';
-          document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-        } catch(e){}
-        reset();
-      }
+    memberLineBtn.addEventListener('click', function(){
+      if(window.__SPZ_LINE) window.__SPZ_LINE.open();
     });
-    memberInput.addEventListener('keydown', function(ev){ if(ev.key === 'Enter') tryMember(); });
-    btnMember.addEventListener('click', tryMember);
-    gate.querySelector('#cagToFull').addEventListener('click', function(){ activeTab = 'full'; clearErr(errMember); paint(); });
+    gate.querySelector('#cagToFull').addEventListener('click', function(){ activeTab = 'full'; paint(); });
     gate.querySelector('#cagToMember').addEventListener('click', function(){ activeTab = 'member'; clearErr(errAdv); paint(); });
     upgradeBtn.addEventListener('click', function(){ activeTab = 'full'; logout(); paint(); });
 
@@ -39609,7 +39691,6 @@ var GM = {
     // would be a confusing second button that does nothing.
     var siteLogoutBtn = gate.querySelector('#cagBtnLogout');
     if(siteLogoutBtn) siteLogoutBtn.classList.toggle('hidden', currentTier !== 'full' && currentTier !== 'member');
-    if(memberCodeEl && !memberCodeEl.classList.contains('copied')) memberCodeEl.textContent = MEMBER_CODE;
 
     // Per the LINE tab's own styling comment above (.cag-tier.line), it is
     // intentionally not a real tier tab and never takes the .on state that
@@ -39647,9 +39728,9 @@ var GM = {
         adminCompareDownload: TXT.adminCompareDownload, adminConnectedUsers: TXT.adminConnectedUsers,
         tabMember: TXT.tabMember, tabFull: TXT.tabFull, tabLine: TXT.tabLine,
         lineName: lineNameTxt, lineStatus: lineStatusTxt, lineBtn: lineBtnTxt,
-        memberT: TXT.memberT, memberS: TXT.memberS, memberCodeHint: TXT.memberCodeHint,
-        memberLineNote: TXT.memberLineNote,
-        enterMember: TXT.enter, toFullLink: TXT.toFullLink, toMemberLink: TXT.toMemberLink,
+        memberT: TXT.memberT, memberS: TXT.memberS,
+        memberLineNote: TXT.memberLineNote, memberLineCta: TXT.memberLineCta,
+        toFullLink: TXT.toFullLink, toMemberLink: TXT.toMemberLink,
         fullT: TXT.fullT, fullS: TXT.fullS,
         bulk: TXT.bulk, mask: TXT.mask, clear: TXT.clear, spread: TXT.spread, bulkHint: TXT.bulkHint,
         enterAdv: TXT.enter
@@ -39692,16 +39773,6 @@ var GM = {
       if(!data){ registerFail(); showErr(errAdv, Tt(TXT.errBad)); return; }
       finishUnlock('full');
     });
-  }
-
-  function tryMember(){
-    if(lockedNow()){ showErr(errMember, Tt(TXT.errLock) + Math.ceil((lockUntil - Date.now()) / 1000) + 's'); return; }
-    var val = (memberInput.value || '').trim().toUpperCase();
-    if(!val){ showErr(errMember, Tt(TXT.errEmpty)); return; }
-    if(val !== MEMBER_CODE){ registerFail(); showErr(errMember, Tt(TXT.errBad)); return; }
-    clearErr(errMember);
-    memberInput.value = '';
-    finishUnlock('member');
   }
 
   /* ---------------- tier gating on the live site ---------------- */
@@ -45974,6 +46045,89 @@ var qrcode = function() {
   #connectedusers .cu-save-status.err{color:#ff5a72;}
 
   #connectedusers .cu-loading, #connectedusers .cu-empty{text-align:center;padding:60px 0;color:var(--grey-dim);font-size:12.5px;}
+
+  /* ---- tier filter + rights badge/frame (decorative only for now -- see
+     RIGHTS_META below) -- the whole card is now the click target that opens
+     the detail modal, so the old always-visible inline edit fields are gone
+     from the grid; editing lives in #cuDetailModal instead. ---- */
+  #connectedusers .cu-card{cursor:pointer;transition:border-color .15s,transform .15s;}
+  #connectedusers .cu-card:hover{border-color:var(--neon);transform:translateY(-1px);}
+  #connectedusers .cu-card.flagship{position:relative;overflow:hidden;}
+  #connectedusers .cu-card.flagship::before{
+    content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+    background:linear-gradient(120deg, transparent 20%, rgba(255,255,255,.09) 45%, transparent 70%);
+    transform:translateX(-120%);animation:cuFlagshipSweep 5.5s ease-in-out infinite;
+  }
+  #connectedusers .cu-card.flagship > *{position:relative;z-index:1;}
+  @keyframes cuFlagshipSweep{ 0%,55%{transform:translateX(-120%);} 100%{transform:translateX(120%);} }
+  #connectedusers .cu-card-top-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:4px;}
+
+  /* .cu-rights-badge is also reused inside #cuDetailModal below, so it is
+     deliberately left unscoped rather than prefixed with #connectedusers. */
+  .cu-rights-badge{
+    display:inline-flex;align-items:center;font-size:9px;font-weight:800;letter-spacing:.4px;
+    padding:2px 8px;border-radius:10px;text-transform:uppercase;white-space:nowrap;
+  }
+  .cu-rights-badge.flagship{font-weight:900;}
+
+  /* ---- admin-only user detail modal: same shell language as the LINE QR
+     modal (#wlLineModal in the Watchlist module) so a popup card always
+     looks the same across this site, appended straight to <body> so it is
+     never clipped by the grid's own layout. The portfolio-analysis section
+     inside it reuses window.__SPZ_LINE.portfolioAnalysisHTML() -- see the
+     duplicated .wl-pa CSS scoped to #cuDetailModal, added earlier next to
+     the original #watchlist .wl-pa rules. ---- */
+  #cuDetailModal{
+    position:fixed;inset:0;z-index:9600;display:flex;align-items:center;justify-content:center;
+    background:rgba(4,6,10,.74);backdrop-filter:blur(4px);padding:20px;
+  }
+  #cuDetailModal[hidden]{display:none !important;}
+  #cuDetailModal *{box-sizing:border-box;}
+  #cuDetailModal .cudm-card{
+    width:100%;max-width:560px;max-height:86vh;overflow-y:auto;
+    background:var(--panel,#12151c);border:1px solid var(--border-dim);border-radius:18px;
+    padding:28px 26px;font-family:var(--mono);color:var(--white);position:relative;
+  }
+  #cuDetailModal .cudm-close{position:absolute;top:12px;right:14px;background:none;border:none;color:var(--grey);font-size:22px;cursor:pointer;line-height:1;}
+  #cuDetailModal .cudm-head{display:flex;align-items:center;gap:14px;margin-bottom:4px;}
+  #cuDetailModal .cudm-avatar{width:56px;height:56px;border-radius:50%;object-fit:cover;flex:0 0 auto;background:rgba(255,255,255,.06);}
+  #cuDetailModal .cudm-avatar-fallback{
+    width:56px;height:56px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.06);font-size:20px;font-weight:800;color:var(--grey);
+  }
+  #cuDetailModal .cudm-name{font-size:16px;font-weight:800;}
+  #cuDetailModal .cudm-uid{font-family:var(--mono);font-size:11px;color:var(--grey-dim);margin-top:4px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+  #cuDetailModal .cudm-section{border-top:1px solid var(--border-dim);padding-top:14px;margin-top:14px;}
+  #cuDetailModal .cudm-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--grey);margin-bottom:8px;}
+  #cuDetailModal .cudm-row:last-child{margin-bottom:0;}
+  #cuDetailModal .cudm-row b{color:var(--white);font-weight:700;}
+  #cuDetailModal .cudm-holdings-h{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--grey-dim);margin:0 0 10px;}
+  #cuDetailModal .cudm-edit-btn, #cuDetailModal .cudm-confirm-btn, #cuDetailModal .cudm-cancel-btn{
+    font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.3px;border-radius:8px;padding:7px 16px;cursor:pointer;
+  }
+  #cuDetailModal .cudm-edit-btn{border:1px solid var(--neon);background:transparent;color:var(--neon);width:100%;}
+  #cuDetailModal .cudm-edit-btn:hover{background:rgba(204,255,0,.08);}
+  #cuDetailModal .cudm-confirm-btn{border:1px solid var(--neon-2,var(--neon));background:var(--neon-2,var(--neon));color:#08130a;}
+  #cuDetailModal .cudm-cancel-btn{border:1px solid var(--border-dim);background:transparent;color:var(--grey);}
+  #cuDetailModal .cudm-field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+  #cuDetailModal .cudm-field label{font-family:var(--mono);font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--grey-dim);}
+  #cuDetailModal .cudm-field input, #cuDetailModal .cudm-field select{
+    font-family:var(--mono);font-size:12.5px;border:1px solid var(--border-dim);border-radius:8px;padding:8px 10px;
+    background:rgba(255,255,255,.03);color:var(--white);outline:none;width:100%;
+  }
+  #cuDetailModal .cudm-field input:focus, #cuDetailModal .cudm-field select:focus{border-color:var(--neon);}
+  #cuDetailModal .cudm-days-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  #cuDetailModal .cudm-days-row input{width:90px;flex:0 0 auto;}
+  #cuDetailModal .cudm-days-summary{font-size:11.5px;color:var(--grey);margin-top:6px;line-height:1.6;}
+  #cuDetailModal .cudm-days-summary b{color:var(--neon-2,var(--neon));}
+  #cuDetailModal .cudm-confirm-box{border:1px solid var(--amber);border-radius:10px;padding:12px 14px;background:rgba(255,201,77,.06);}
+  #cuDetailModal .cudm-confirm-title{font-size:11.5px;font-weight:700;color:var(--amber);margin-bottom:8px;}
+  #cuDetailModal .cudm-confirm-box ul{margin:0 0 12px;padding-left:18px;font-size:12px;color:var(--white);line-height:1.7;}
+  #cuDetailModal .cudm-btn-row{display:flex;gap:8px;margin-top:2px;flex-wrap:wrap;}
+  #cuDetailModal .cudm-btn-row .cudm-confirm-btn, #cuDetailModal .cudm-btn-row .cudm-cancel-btn{flex:1;}
+  #cuDetailModal .cudm-save-status{font-size:11px;margin-top:8px;}
+  #cuDetailModal .cudm-save-status.ok{color:var(--neon-2,var(--neon));}
+  #cuDetailModal .cudm-save-status.err{color:#ff5a72;}
 </style>
 <script>
 (function(){
@@ -46001,13 +46155,36 @@ var qrcode = function() {
     filterAll:{en:'All',th:'ทั้งหมด'},
     filterActive:{en:'Access active',th:'มีสิทธิ์ใช้งาน'},
     filterExpired:{en:'No active access',th:'ไม่มีสิทธิ์ใช้งานตอนนี้'},
+    filterRightsAll:{en:'All tiers',th:'ทุกระดับ'},
+    filterRightsNone:{en:'No tier (free)',th:'ยังไม่มีระดับ (ฟรี)'},
     count:{en:'{n} connected',th:'เชื่อมต่อแล้ว {n} คน'},
     noHoldings:{en:'No holdings yet',th:'ยังไม่มีหุ้นในลิสต์'},
+    holdingsHeader:{en:'Holdings & risk read',th:'หุ้นที่ถือ & มุมมองความเสี่ยง'},
     statusActive:{en:'Access until {d}',th:'มีสิทธิ์ถึง {d}'},
     statusNone:{en:'No access set',th:'ยังไม่ได้ให้สิทธิ์'},
     statusExpired:{en:'Expired {d}',th:'หมดอายุ {d}'},
     uidLabel:{en:'UID',th:'UID'},
-    accessLabel:{en:'Access until',th:'สิทธิ์ถึงวันที่'},
+    accessLabel:{en:'Access status',th:'สถานะสิทธิ์การใช้งาน'},
+    rightsLabel:{en:'Membership tier (badge only, for now)',th:'ระดับสมาชิก (เป็นป้ายชื่อเฉยๆ ตอนนี้)'},
+    rightsNone:{en:'None (free)',th:'ไม่มี (ฟรี)'},
+    accessDaysLabel:{en:'Grant access starting today',th:'ให้สิทธิ์เริ่มจากวันนี้'},
+    daysSuffix:{en:'days',th:'วัน'},
+    clearAccessBtn:{en:'Clear access',th:'ล้างสิทธิ์'},
+    daysSummaryKeep:{en:'No change — currently: {d}',th:'ไม่เปลี่ยนแปลง — ตอนนี้: {d}'},
+    daysSummaryClear:{en:'Access will be cleared entirely.',th:'จะล้างสิทธิ์การใช้งานทั้งหมด'},
+    daysSummarySet:{en:'{n} days from today → access until {d}',th:'{n} วันนับจากวันนี้ → มีสิทธิ์ถึง {d}'},
+    editBtn:{en:'Edit',th:'แก้ไข'},
+    reviewBtn:{en:'Review changes',th:'ตรวจสอบก่อนบันทึก'},
+    cancelBtn:{en:'Cancel',th:'ยกเลิก'},
+    backBtn:{en:'Back',th:'ย้อนกลับ'},
+    confirmTitle:{en:'Confirm these changes?',th:'ยืนยันการเปลี่ยนแปลงนี้ใช่ไหม?'},
+    confirmUidRow:{en:'UID → {v}',th:'UID → {v}'},
+    confirmRightsRow:{en:'Tier badge → {v}',th:'ป้ายระดับ → {v}'},
+    confirmAccessClearRow:{en:'Access will be cleared',th:'จะล้างสิทธิ์การใช้งาน'},
+    confirmAccessSetRow:{en:'Access → {n} days from today (until {d})',th:'สิทธิ์ → {n} วันนับจากวันนี้ (ถึง {d})'},
+    confirmNoChange:{en:'No fields were changed.',th:'ยังไม่มีการเปลี่ยนแปลงใดๆ'},
+    confirmSaveBtn:{en:'Confirm & Save',th:'ยืนยัน & บันทึก'},
+    saving:{en:'Saving…',th:'กำลังบันทึก…'},
     saveBtn:{en:'Save',th:'บันทึก'},
     saveOk:{en:'Saved',th:'บันทึกแล้ว'},
     saveErrTaken:{en:'That UID is already used',th:'UID นี้มีคนใช้แล้ว'},
@@ -46018,12 +46195,42 @@ var qrcode = function() {
     adminOnly:{en:'This page is only available to the site admin.',th:'หน้านี้ใช้ได้เฉพาะแอดมินของเว็บไซต์เท่านั้น'}
   };
 
+  /* Decorative-only membership badge, matching this site's own #membership
+     pricing page (see TIERS/theme colors there): --msv silver (member),
+     --mbz bronze (pass), red (ultra), --mgd gold (cryptolab), --mv purple
+     (stocklab), the Academy flagship white/gold, and one extra tier that
+     page doesn't have -- "admin", modeled on the Academy flagship look but
+     in a distinct cyan/white so it never reads as a real Academy badge.
+     Per her explicit instruction this grants no actual access yet -- it is
+     purely a label/frame on the card, assigned by hand below. */
+  var RIGHTS_ORDER = ['member','pass','ultra','cryptolab','stocklab','academy','admin'];
+  var RIGHTS_META = {
+    member:    { label:{en:'Member',th:'เมมเบอร์'},          color:'#aab6c2' },
+    pass:      { label:{en:'Pass',th:'พาส'},                  color:'#c17f45' },
+    ultra:     { label:{en:'Ultra',th:'อัลตรา'},              color:'#ff5a72' },
+    cryptolab: { label:{en:'Crypto Lab',th:'คริปโต แล็บ'},    color:'#f0b64e' },
+    stocklab:  { label:{en:'Stock Lab',th:'สต็อก แล็บ'},      color:'#c96be0' },
+    academy:   { label:{en:'Wave Academy',th:'เวฟ อคาเดมี'},  color:'#ffd98a', flagship:true },
+    admin:     { label:{en:'Admin',th:'แอดมิน'},              color:'#38c6ff', flagship:true }
+  };
+  function rightsMeta(r){ return (r && RIGHTS_META[r]) || null; }
+  function rightsBadgeHTML(r){
+    var m = rightsMeta(r);
+    if(!m) return '';
+    return '<span class="cu-rights-badge' + (m.flagship ? ' flagship' : '') + '" style="color:' + m.color + ';border:1px solid ' + m.color + '55;background:' + m.color + '1f;">' + esc(T(m.label)) + '</span>';
+  }
+
   var sec = null;
   var users = null;        // loaded list, or null if not loaded yet
   var loadError = null;    // null | 'bad' | 'net'
   var searchQuery = '';
   var filterMode = 'all';
+  var rightsFilterMode = 'all'; // 'all' | 'none' | one of RIGHTS_ORDER
   var loading = false;
+
+  // ---- the click-in detail modal (view profile, holdings/risk, edit+confirm) ----
+  var detailModal = null, detailModalBody = null;
+  var detailUserId = null, detailEditing = false, detailConfirming = false, detailDraft = null;
 
   function fmtDate(d){
     if(!d) return '';
@@ -46031,6 +46238,15 @@ var qrcode = function() {
       var dt = new Date(d + 'T00:00:00');
       return dt.toLocaleDateString(L() === 'th' ? 'th-TH' : 'en-US', { year:'numeric', month:'short', day:'numeric' });
     } catch(e){ return d; }
+  }
+
+  /* "starting today, for N days" -- always measured from the moment Save is
+     reviewed/confirmed, never from some earlier point, so the summary and
+     the actual saved date always agree. */
+  function computeDaysEndDate(days){
+    var d = new Date();
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0, 10);
   }
 
   function accessState(u){
@@ -46089,31 +46305,30 @@ var qrcode = function() {
         ? '<span class="cu-status expired">' + esc(T(UI.statusExpired).replace('{d}', fmtDate(u.accessUntil))) + '</span>'
         : '<span class="cu-status none">' + esc(T(UI.statusNone)) + '</span>';
     var holdingsHTML = u.tickers && u.tickers.length
-      ? u.tickers.map(function(t){ return '<span class="cu-chip">$' + esc(t) + '</span>'; }).join('')
+      ? u.tickers.slice(0, 8).map(function(t){ return '<span class="cu-chip">$' + esc(t) + '</span>'; }).join('') +
+        (u.tickers.length > 8 ? '<span class="cu-chip">+' + (u.tickers.length - 8) + '</span>' : '')
       : '<span class="cu-empty-holdings">' + esc(T(UI.noHoldings)) + '</span>';
     var socialHTML = '';
     if(u.facebook) socialHTML += '<span><b>FB</b>' + esc(u.facebook) + '</span>';
     if(u.instagram) socialHTML += '<span><b>IG</b>' + esc(u.instagram) + '</span>';
 
-    return '<div class="cu-card" data-cu-user="' + esc(u.userId) + '">' +
+    var meta = rightsMeta(u.rights);
+    var cardCls = 'cu-card' + (meta && meta.flagship ? ' flagship' : '');
+    var cardStyle = meta ? ' style="border-color:' + meta.color + '55;box-shadow:0 0 0 1px ' + meta.color + '22 inset;"' : '';
+
+    /* whole card is the click target that opens the detail/edit modal --
+       no inline inputs left in the grid to accidentally intercept the click. */
+    return '<div class="' + cardCls + '" data-cu-user="' + esc(u.userId) + '"' + cardStyle + '>' +
       '<div class="cu-card-top">' +
         avatar +
         '<div>' +
           '<div class="cu-name">' + esc(u.displayName || '—') + '</div>' +
           '<div class="cu-uid">UID: ' + esc(u.uid || '—') + '</div>' +
-          statusHTML +
+          '<div class="cu-card-top-row">' + statusHTML + rightsBadgeHTML(u.rights) + '</div>' +
         '</div>' +
       '</div>' +
       '<div class="cu-holdings">' + holdingsHTML + '</div>' +
       (socialHTML ? '<div class="cu-social">' + socialHTML + '</div>' : '') +
-      '<div class="cu-edit-row">' +
-        '<div class="cu-edit-field"><label>' + esc(T(UI.uidLabel)) + '</label><input type="text" data-cu="uidInput" value="' + esc(u.uid || '') + '" maxlength="20"></div>' +
-        '<div class="cu-edit-field"><label>' + esc(T(UI.accessLabel)) + '</label><input type="date" data-cu="accessInput" value="' + esc(u.accessUntil || '') + '"></div>' +
-        '<div class="cu-save-row">' +
-          '<button type="button" class="cu-save-btn" data-cu="saveBtn">' + esc(T(UI.saveBtn)) + '</button>' +
-          '<span class="cu-save-status" data-cu="saveStatus"></span>' +
-        '</div>' +
-      '</div>' +
     '</div>';
   }
 
@@ -46123,10 +46338,20 @@ var qrcode = function() {
     return users.filter(function(u){
       if(filterMode === 'active' && accessState(u) !== 'active') return false;
       if(filterMode === 'expired' && accessState(u) === 'active') return false;
+      if(rightsFilterMode === 'none' && u.rights) return false;
+      if(rightsFilterMode !== 'all' && rightsFilterMode !== 'none' && u.rights !== rightsFilterMode) return false;
       if(!q) return true;
       var hay = [u.displayName, u.uid, u.facebook, u.instagram].concat(u.tickers || []).join(' ').toLowerCase();
       return hay.indexOf(q) !== -1;
     });
+  }
+
+  function rightsFilterOptionsHTML(){
+    return '<option value="all"' + (rightsFilterMode === 'all' ? ' selected' : '') + '>' + esc(T(UI.filterRightsAll)) + '</option>' +
+      '<option value="none"' + (rightsFilterMode === 'none' ? ' selected' : '') + '>' + esc(T(UI.filterRightsNone)) + '</option>' +
+      RIGHTS_ORDER.map(function(k){
+        return '<option value="' + k + '"' + (rightsFilterMode === k ? ' selected' : '') + '>' + esc(T(RIGHTS_META[k].label)) + '</option>';
+      }).join('');
   }
 
   function listHTML(){
@@ -46142,6 +46367,7 @@ var qrcode = function() {
           '<option value="active"' + (filterMode === 'active' ? ' selected' : '') + '>' + esc(T(UI.filterActive)) + '</option>' +
           '<option value="expired"' + (filterMode === 'expired' ? ' selected' : '') + '>' + esc(T(UI.filterExpired)) + '</option>' +
         '</select>' +
+        '<select class="cu-filter" data-cu="rightsFilter">' + rightsFilterOptionsHTML() + '</select>' +
         '<span class="cu-count">' + esc(countText) + '</span>' +
       '</div>' + gridHTML;
   }
@@ -46157,32 +46383,7 @@ var qrcode = function() {
     var grid = sec.querySelector('[data-cu="grid"]');
     if(!grid) return;
     Array.prototype.forEach.call(grid.querySelectorAll('.cu-card'), function(card){
-      var saveBtn = card.querySelector('[data-cu="saveBtn"]');
-      if(!saveBtn) return;
-      saveBtn.addEventListener('click', function(){
-        var userId = card.getAttribute('data-cu-user');
-        var uid = card.querySelector('[data-cu="uidInput"]').value.trim();
-        var accessUntil = card.querySelector('[data-cu="accessInput"]').value || null;
-        var statusEl = card.querySelector('[data-cu="saveStatus"]');
-        statusEl.className = 'cu-save-status'; statusEl.textContent = '…';
-        fetch(WORKER_BASE + '/api/admin/users/update', {
-          method:'POST',
-          headers:{ 'Content-Type':'application/json', 'X-Admin-Key': getAdminKey() },
-          body: JSON.stringify({ userId: userId, uid: uid, accessUntil: accessUntil })
-        }).then(function(r){ return r.json().then(function(data){ return { ok:r.ok, data:data }; }); })
-          .then(function(res){
-            if(!res.ok){
-              statusEl.classList.add('err');
-              statusEl.textContent = res.data && res.data.error === 'uid_taken' ? T(UI.saveErrTaken) : T(UI.saveErrBad);
-              return;
-            }
-            statusEl.classList.add('ok');
-            statusEl.textContent = T(UI.saveOk);
-            var match = users.filter(function(x){ return x.userId === userId; })[0];
-            if(match){ match.uid = uid; match.accessUntil = accessUntil; }
-          })
-          .catch(function(){ statusEl.classList.add('err'); statusEl.textContent = T(UI.saveErrBad); });
-      });
+      card.addEventListener('click', function(){ openDetailModal(card.getAttribute('data-cu-user')); });
     });
   }
 
@@ -46216,6 +46417,10 @@ var qrcode = function() {
     if(filterSelect){
       filterSelect.addEventListener('change', function(ev){ filterMode = ev.target.value; renderListOnly(); });
     }
+    var rightsFilterSelect = sec.querySelector('[data-cu="rightsFilter"]');
+    if(rightsFilterSelect){
+      rightsFilterSelect.addEventListener('change', function(ev){ rightsFilterMode = ev.target.value; renderListOnly(); });
+    }
     wireGridCards();
   }
 
@@ -46225,6 +46430,246 @@ var qrcode = function() {
     if(!key) return;
     setAdminKey(key);
     fetchUsers();
+  }
+
+  /* ==== click-in user detail modal =====================================
+     Opened by clicking any card. Read-only by default (name/photo/UID,
+     tier badge, access status, holdings + the same portfolio/risk analysis
+     as the Watchlist page's own board) -- an explicit Edit button unlocks
+     the UID/tier/access fields, and Save always goes through a one-screen
+     confirmation summary before it actually calls the Worker, per her
+     request that nothing here saves by accident. ======================== */
+
+  function currentDetailUser(){
+    return (users || []).filter(function(x){ return x.userId === detailUserId; })[0] || null;
+  }
+
+  function buildDetailModal(){
+    if(detailModal) return;
+    detailModal = document.createElement('div');
+    detailModal.id = 'cuDetailModal';
+    detailModal.hidden = true;
+    detailModal.innerHTML =
+      '<div class="cudm-card">' +
+        '<button type="button" class="cudm-close" data-cudm="close">&times;</button>' +
+        '<div data-cudm="body"></div>' +
+      '</div>';
+    document.body.appendChild(detailModal);
+    detailModalBody = detailModal.querySelector('[data-cudm="body"]');
+    detailModal.querySelector('[data-cudm="close"]').addEventListener('click', closeDetailModal);
+    detailModal.addEventListener('click', function(ev){ if(ev.target === detailModal) closeDetailModal(); });
+    document.addEventListener('keydown', function(ev){ if(ev.key === 'Escape' && detailModal && !detailModal.hidden) closeDetailModal(); });
+  }
+
+  function openDetailModal(userId){
+    buildDetailModal();
+    detailUserId = userId;
+    detailEditing = false;
+    detailConfirming = false;
+    detailDraft = null;
+    detailModal.hidden = false;
+    paintDetailModal();
+  }
+
+  function closeDetailModal(){
+    if(detailModal) detailModal.hidden = true;
+    detailUserId = null; detailEditing = false; detailConfirming = false; detailDraft = null;
+  }
+
+  function detailReadOnlyHTML(){
+    return '<button type="button" class="cudm-edit-btn" data-cudm="editBtn">' + esc(T(UI.editBtn)) + '</button>';
+  }
+
+  function detailConfirmSummaryRows(u){
+    var rows = [];
+    if(detailDraft.uid !== (u.uid || '')) rows.push(fmtRow(UI.confirmUidRow, { v: detailDraft.uid }));
+    if((detailDraft.rights || null) !== (u.rights || null)){
+      var rl = detailDraft.rights ? T(RIGHTS_META[detailDraft.rights].label) : T(UI.rightsNone);
+      rows.push(fmtRow(UI.confirmRightsRow, { v: rl }));
+    }
+    if(detailDraft.accessMode === 'clear' && u.accessUntil) rows.push(T(UI.confirmAccessClearRow));
+    else if(detailDraft.accessMode === 'days' && detailDraft.days > 0) rows.push(fmtRow(UI.confirmAccessSetRow, { n: detailDraft.days, d: fmtDate(computeDaysEndDate(detailDraft.days)) }));
+    if(!rows.length) rows.push(T(UI.confirmNoChange));
+    return rows;
+  }
+  function fmtRow(o, map){
+    var s = T(o);
+    for(var k in map) s = s.split('{' + k + '}').join(map[k]);
+    return s;
+  }
+
+  function detailConfirmHTML(u){
+    var rows = detailConfirmSummaryRows(u);
+    return '<div class="cudm-confirm-box">' +
+      '<div class="cudm-confirm-title">' + esc(T(UI.confirmTitle)) + '</div>' +
+      '<ul>' + rows.map(function(r){ return '<li>' + esc(r) + '</li>'; }).join('') + '</ul>' +
+      '<div class="cudm-btn-row">' +
+        '<button type="button" class="cudm-confirm-btn" data-cudm="confirmSaveBtn">' + esc(T(UI.confirmSaveBtn)) + '</button>' +
+        '<button type="button" class="cudm-cancel-btn" data-cudm="backToEditBtn">' + esc(T(UI.backBtn)) + '</button>' +
+      '</div>' +
+      '<div class="cudm-save-status" data-cudm="saveStatus"></div>' +
+    '</div>';
+  }
+
+  function detailDaysSummaryText(u){
+    if(detailDraft.accessMode === 'clear') return T(UI.daysSummaryClear);
+    if(detailDraft.accessMode === 'days' && detailDraft.days > 0){
+      return fmtRow(UI.daysSummarySet, { n: detailDraft.days, d: fmtDate(computeDaysEndDate(detailDraft.days)) });
+    }
+    return fmtRow(UI.daysSummaryKeep, { d: u.accessUntil ? fmtDate(u.accessUntil) : T(UI.statusNone) });
+  }
+
+  function detailEditFormHTML(u){
+    if(detailConfirming) return detailConfirmHTML(u);
+    var rightsOptions = '<option value=""' + (!detailDraft.rights ? ' selected' : '') + '>' + esc(T(UI.rightsNone)) + '</option>' +
+      RIGHTS_ORDER.map(function(k){
+        return '<option value="' + k + '"' + (detailDraft.rights === k ? ' selected' : '') + '>' + esc(T(RIGHTS_META[k].label)) + '</option>';
+      }).join('');
+    return '' +
+      '<div class="cudm-field"><label>' + esc(T(UI.uidLabel)) + '</label><input type="text" data-cudm="uidInput" value="' + esc(detailDraft.uid || '') + '" maxlength="20"></div>' +
+      '<div class="cudm-field"><label>' + esc(T(UI.rightsLabel)) + '</label><select data-cudm="rightsInput">' + rightsOptions + '</select></div>' +
+      '<div class="cudm-field"><label>' + esc(T(UI.accessDaysLabel)) + '</label>' +
+        '<div class="cudm-days-row">' +
+          '<input type="number" min="1" max="3650" data-cudm="daysInput" placeholder="0">' +
+          '<span>' + esc(T(UI.daysSuffix)) + '</span>' +
+          '<button type="button" class="cudm-cancel-btn" data-cudm="clearAccessBtn">' + esc(T(UI.clearAccessBtn)) + '</button>' +
+        '</div>' +
+        '<div class="cudm-days-summary" data-cudm="daysSummary">' + esc(detailDaysSummaryText(u)) + '</div>' +
+      '</div>' +
+      '<div class="cudm-btn-row">' +
+        '<button type="button" class="cudm-confirm-btn" data-cudm="reviewBtn">' + esc(T(UI.reviewBtn)) + '</button>' +
+        '<button type="button" class="cudm-cancel-btn" data-cudm="cancelEditBtn">' + esc(T(UI.cancelBtn)) + '</button>' +
+      '</div>';
+  }
+
+  function paintDetailModal(){
+    if(!detailModal || detailModal.hidden || !detailModalBody) return;
+    var u = currentDetailUser();
+    if(!u){ closeDetailModal(); return; }
+
+    var avatar = u.pictureUrl
+      ? '<img class="cudm-avatar" src="' + esc(u.pictureUrl) + '" alt="">'
+      : '<div class="cudm-avatar-fallback">' + esc((u.displayName || '?').charAt(0).toUpperCase()) + '</div>';
+    var state = accessState(u);
+    var statusText = state === 'active' ? T(UI.statusActive).replace('{d}', fmtDate(u.accessUntil))
+      : state === 'expired' ? T(UI.statusExpired).replace('{d}', fmtDate(u.accessUntil))
+      : T(UI.statusNone);
+
+    var stocks = (window.__SPZ_LINE && window.__SPZ_LINE.stocksSnapshot && window.__SPZ_LINE.stocksSnapshot()) || {};
+    var paHTML = (window.__SPZ_LINE && window.__SPZ_LINE.portfolioAnalysisHTML) ? window.__SPZ_LINE.portfolioAnalysisHTML(u.tickers || [], stocks) : '';
+    var holdingsHTML = (u.tickers && u.tickers.length)
+      ? (paHTML || ('<div class="cu-holdings">' + u.tickers.map(function(t){ return '<span class="cu-chip">$' + esc(t) + '</span>'; }).join('') + '</div>'))
+      : '<div class="cu-empty-holdings">' + esc(T(UI.noHoldings)) + '</div>';
+
+    var socialHTML = '';
+    if(u.facebook) socialHTML += '<div class="cudm-row"><span>Facebook</span><b>' + esc(u.facebook) + '</b></div>';
+    if(u.instagram) socialHTML += '<div class="cudm-row"><span>Instagram</span><b>' + esc(u.instagram) + '</b></div>';
+
+    var editZoneHTML = detailEditing ? detailEditFormHTML(u) : detailReadOnlyHTML();
+
+    detailModalBody.innerHTML =
+      '<div class="cudm-head">' + avatar +
+        '<div><div class="cudm-name">' + esc(u.displayName || '—') + '</div>' +
+          '<div class="cudm-uid">UID: ' + esc(u.uid || '—') + rightsBadgeHTML(u.rights) + '</div></div>' +
+      '</div>' +
+      '<div class="cudm-section"><div class="cudm-row"><span>' + esc(T(UI.accessLabel)) + '</span><b>' + esc(statusText) + '</b></div></div>' +
+      (socialHTML ? '<div class="cudm-section">' + socialHTML + '</div>' : '') +
+      '<div class="cudm-section"><div class="cudm-holdings-h">' + esc(T(UI.holdingsHeader)) + '</div>' + holdingsHTML + '</div>' +
+      '<div class="cudm-section" data-cudm="editZone">' + editZoneHTML + '</div>';
+
+    wireDetailModal(u);
+  }
+
+  function wireDetailModal(u){
+    var body = detailModalBody;
+
+    var editBtn = body.querySelector('[data-cudm="editBtn"]');
+    if(editBtn) editBtn.addEventListener('click', function(){
+      detailEditing = true; detailConfirming = false;
+      detailDraft = { uid: u.uid || '', rights: u.rights || null, accessMode: 'keep', days: null };
+      paintDetailModal();
+    });
+
+    var cancelEditBtn = body.querySelector('[data-cudm="cancelEditBtn"]');
+    if(cancelEditBtn) cancelEditBtn.addEventListener('click', function(){
+      detailEditing = false; detailConfirming = false; detailDraft = null;
+      paintDetailModal();
+    });
+
+    var daysInput = body.querySelector('[data-cudm="daysInput"]');
+    var summaryEl = body.querySelector('[data-cudm="daysSummary"]');
+    function refreshSummary(){ if(summaryEl && detailDraft) summaryEl.textContent = detailDaysSummaryText(u); }
+    if(daysInput){
+      daysInput.addEventListener('input', function(){
+        var n = parseInt(daysInput.value, 10);
+        if(daysInput.value === '' || isNaN(n) || n <= 0){ detailDraft.accessMode = 'keep'; detailDraft.days = null; }
+        else { detailDraft.accessMode = 'days'; detailDraft.days = n; }
+        refreshSummary();
+      });
+    }
+    var clearBtn = body.querySelector('[data-cudm="clearAccessBtn"]');
+    if(clearBtn) clearBtn.addEventListener('click', function(){
+      detailDraft.accessMode = 'clear'; detailDraft.days = null;
+      if(daysInput) daysInput.value = '';
+      refreshSummary();
+    });
+
+    var uidInput = body.querySelector('[data-cudm="uidInput"]');
+    if(uidInput) uidInput.addEventListener('input', function(){ detailDraft.uid = uidInput.value; });
+    var rightsInput = body.querySelector('[data-cudm="rightsInput"]');
+    if(rightsInput) rightsInput.addEventListener('change', function(){ detailDraft.rights = rightsInput.value || null; });
+
+    var reviewBtn = body.querySelector('[data-cudm="reviewBtn"]');
+    if(reviewBtn) reviewBtn.addEventListener('click', function(){
+      if(uidInput) detailDraft.uid = uidInput.value.trim() || u.uid || '';
+      detailConfirming = true;
+      paintDetailModal();
+    });
+
+    var confirmBtn = body.querySelector('[data-cudm="confirmSaveBtn"]');
+    if(confirmBtn) confirmBtn.addEventListener('click', function(){ submitDetailSave(u); });
+    var backBtn = body.querySelector('[data-cudm="backToEditBtn"]');
+    if(backBtn) backBtn.addEventListener('click', function(){ detailConfirming = false; paintDetailModal(); });
+  }
+
+  function submitDetailSave(u){
+    var payload = { userId: u.userId, uid: detailDraft.uid || u.uid, rights: detailDraft.rights };
+    if(detailDraft.accessMode === 'clear') payload.accessUntil = null;
+    else if(detailDraft.accessMode === 'days' && detailDraft.days > 0) payload.accessUntil = computeDaysEndDate(detailDraft.days);
+    /* accessMode 'keep' -- leave "accessUntil" out of the body entirely so
+       the Worker (which only touches it when the key is present at all)
+       never changes what's already saved. */
+
+    var statusEl = detailModalBody.querySelector('[data-cudm="saveStatus"]');
+    var confirmBtn = detailModalBody.querySelector('[data-cudm="confirmSaveBtn"]');
+    if(statusEl){ statusEl.className = 'cudm-save-status'; statusEl.textContent = T(UI.saving); }
+    if(confirmBtn) confirmBtn.disabled = true;
+
+    fetch(WORKER_BASE + '/api/admin/users/update', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'X-Admin-Key': getAdminKey() },
+      body: JSON.stringify(payload)
+    }).then(function(r){ return r.json().then(function(data){ return { ok:r.ok, data:data }; }); })
+      .then(function(res){
+        if(confirmBtn) confirmBtn.disabled = false;
+        if(!res.ok){
+          if(statusEl){ statusEl.classList.add('err'); statusEl.textContent = res.data && res.data.error === 'uid_taken' ? T(UI.saveErrTaken) : T(UI.saveErrBad); }
+          return;
+        }
+        var match = users.filter(function(x){ return x.userId === u.userId; })[0];
+        if(match){
+          match.uid = payload.uid;
+          match.rights = payload.rights;
+          if('accessUntil' in payload) match.accessUntil = payload.accessUntil;
+        }
+        detailEditing = false; detailConfirming = false; detailDraft = null;
+        paintDetailModal();
+        renderListOnly();
+      })
+      .catch(function(){
+        if(confirmBtn) confirmBtn.disabled = false;
+        if(statusEl){ statusEl.classList.add('err'); statusEl.textContent = T(UI.saveErrBad); }
+      });
   }
 
   function paint(){
