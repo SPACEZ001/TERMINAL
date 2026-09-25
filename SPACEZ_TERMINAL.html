@@ -32784,6 +32784,44 @@ var GM = {
   #watchlist .wl-pa-chip.low{border-color:color-mix(in srgb, var(--neon-2,var(--neon)) 40%, transparent);}
   #watchlist .wl-pa-none{font-size:12px;color:var(--grey-dim);}
 
+  /* big, one-card-per-sector graphs -- each ticker's today's move as a
+     diverging bar (zero-centered, green right / red left), so a sector
+     with several holdings reads as its own small chart instead of one
+     line in the sector-allocation list above. Bigger type + more padding
+     than the rest of the page on purpose, per the "make it feel bigger,
+     more graphics" request this section exists to answer. */
+  #watchlist .wl-secg-wrap{margin-top:18px;}
+  #watchlist .wl-secg{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;}
+  #watchlist .wl-secg-card{
+    border:1px solid var(--border-dim);border-radius:14px;background:rgba(255,255,255,.02);
+    padding:16px 18px;
+  }
+  #watchlist .wl-secg-head{display:flex;align-items:center;gap:9px;margin-bottom:14px;}
+  #watchlist .wl-secg-head i{flex:0 0 auto;width:11px;height:11px;border-radius:50%;}
+  #watchlist .wl-secg-head b{font-family:var(--mono);font-size:15px;color:var(--white);flex:1;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #watchlist .wl-secg-head span{font-size:11px;color:var(--grey);white-space:nowrap;}
+  #watchlist .wl-secg-rows{display:flex;flex-direction:column;gap:10px;}
+  #watchlist .wl-secg-row{display:flex;align-items:center;gap:10px;}
+  #watchlist .wl-secg-tk{
+    flex:0 0 76px;background:transparent;border:none;color:var(--white);cursor:pointer;
+    font-family:var(--mono);font-weight:800;font-size:14px;text-align:left;padding:0;
+  }
+  #watchlist .wl-secg-tk:hover{color:var(--neon);}
+  #watchlist .wl-secg-track{flex:1;position:relative;height:10px;border-radius:5px;background:rgba(255,255,255,.06);overflow:hidden;}
+  #watchlist .wl-secg-mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,.18);}
+  #watchlist .wl-secg-fill{position:absolute;top:0;bottom:0;border-radius:5px;}
+  #watchlist .wl-secg-fill.up{background:var(--neon-2,var(--neon));}
+  #watchlist .wl-secg-fill.down{background:var(--red);}
+  #watchlist .wl-secg-val{flex:0 0 62px;text-align:right;font-family:var(--mono);font-weight:700;font-size:13px;}
+  #watchlist .wl-secg-val.up{color:var(--neon-2,var(--neon));}
+  #watchlist .wl-secg-val.down{color:var(--red);}
+  #watchlist .wl-secg-val.fl{color:var(--grey-dim);}
+  @media(max-width:520px){
+    #watchlist .wl-secg-tk{flex-basis:60px;font-size:13px;}
+    #watchlist .wl-secg-val{flex-basis:52px;font-size:12px;}
+  }
+
   /* Market Shock Simulator applied to the LINE-linked user's own holdings --
      reuses the .wl-pa card shell and the same stacked-bar component as the
      sector chart above, for one consistent visual language on this page. */
@@ -33080,6 +33118,11 @@ var GM = {
     paNone:{en:'Not enough signal data yet for these tickers.',th:'ยังไม่มีข้อมูลสัญญาณพอสำหรับหุ้นกลุ่มนี้'},
     paMeterLabel:{en:'Overall risk level',th:'ระดับความเสี่ยงโดยรวม'},
     paSectorOtherShort:{en:'Other',th:'อื่นๆ'},
+
+    secgH:{en:'Sector snapshot — today, ticker by ticker',th:'ภาพรวมรายเซกเตอร์ — วันนี้ รายตัว'},
+    secgLede:{en:'A closer look inside each sector you hold — how far each ticker moved today, side by side.',
+              th:'ดูลึกลงไปในแต่ละกลุ่มอุตสาหกรรมที่คุณถือ — วันนี้แต่ละตัวขยับไปเท่าไหร่ เทียบกันชัดๆ'},
+    secgNoData:{en:'No live change data yet',th:'ยังไม่มีข้อมูลการเปลี่ยนแปลงวันนี้'},
 
     shockH:{en:'Market Shock Simulator — your holdings',th:'จำลองแรงกระแทกตลาด — พอร์ตของคุณ'},
     shockLede:{en:'Pick a scenario and see which of your own tickers would likely rise, fall, or sit mixed — based on the same 18-scenario simulator as the Market Shock Simulator page, mapped onto each ticker\'s sector.',
@@ -33714,6 +33757,61 @@ var GM = {
     dividend:{en:'Dividend',th:'ปันผล'}, defensive:{en:'Defensive',th:'ตั้งรับ'}
   };
 
+  /* ---- big, one-card-per-sector graphs: a closer look inside each sector
+     the user holds, ticker by ticker, using real live chg_pct data (never
+     a fabricated "weight" -- this list has no share counts). Reuses
+     computePortfolioSummary's sectorRows for both the sort order AND the
+     exact colors already shown in the sector-allocation chart above it, so
+     the same sector never gets two different colors on one page. Answers
+     the "add bigger sector graphs, like Technology / Consumer / Healthcare"
+     request as an addition inside the existing centered layout, instead of
+     the riskier sitewide full-width relayout that was also floated. */
+  function sectorGraphsHTML(tickers, stocks){
+    if(!tickers.length) return '';
+    var sum = computePortfolioSummary(tickers, stocks);
+    if(!sum.total) return '';
+    var bySector = {};
+    tickers.forEach(function(t){
+      var s = stocks ? stocks[t] : null;
+      var key = (s && s.sector) || '__other';
+      var chg = s && isNum(s.chg_pct) ? s.chg_pct : null;
+      (bySector[key] = bySector[key] || []).push({ t:t, chg:chg });
+    });
+    var maxAbs = 0;
+    Object.keys(bySector).forEach(function(k){
+      bySector[k].forEach(function(it){ if(it.chg !== null) maxAbs = Math.max(maxAbs, Math.abs(it.chg)); });
+    });
+    if(!maxAbs) maxAbs = 2;
+
+    var cardsHTML = sum.sectorRows.map(function(row){
+      var items = bySector[row.key] || [];
+      var rowsHTML = items.map(function(it){
+        var cls = it.chg === null ? 'fl' : it.chg > 0 ? 'up' : it.chg < 0 ? 'down' : 'fl';
+        var half = it.chg === null ? 0 : Math.min(50, (Math.abs(it.chg) / maxAbs) * 50);
+        var barStyle = cls === 'up' ? ('left:50%;width:' + half + '%;')
+          : cls === 'down' ? ('left:' + (50 - half) + '%;width:' + half + '%;') : '';
+        return '<div class="wl-secg-row">' +
+          '<button type="button" class="wl-secg-tk" data-wl-open="' + esc(it.t) + '">$' + esc(it.t) + '</button>' +
+          '<div class="wl-secg-track"><span class="wl-secg-mid"></span>' +
+            (cls !== 'fl' ? '<span class="wl-secg-fill ' + cls + '" style="' + barStyle + '"></span>' : '') +
+          '</div>' +
+          '<span class="wl-secg-val ' + cls + '">' + pct(it.chg) + '</span>' +
+        '</div>';
+      }).join('');
+      return '<div class="wl-secg-card">' +
+        '<div class="wl-secg-head"><i style="background:' + row.color + ';"></i><b>' + esc(row.label) + '</b>' +
+          '<span>' + row.count + ' · ' + row.pct + '%</span></div>' +
+        '<div class="wl-secg-rows">' + rowsHTML + '</div>' +
+      '</div>';
+    }).join('');
+
+    return '<div class="wl-pa wl-secg-wrap">' +
+      '<div class="wl-pa-h">' + esc(tx(C.secgH)) + '</div>' +
+      '<p class="wl-pa-lede">' + esc(tx(C.secgLede)) + '</p>' +
+      '<div class="wl-secg">' + cardsHTML + '</div>' +
+    '</div>';
+  }
+
   function shockSimulatorHTML(tickers, stocks){
     if(!tickers.length || !window.__SPZ_SCENARIOS) return '';
     var list = window.__SPZ_SCENARIOS.list();
@@ -34241,6 +34339,7 @@ var GM = {
         '<div class="wl-addnote" style="margin:14px 0;">' + esc(tx(C.lineOwnListNote)) + '</div>' +
         lineAddBox +
         portfolioAnalysisHTML(lineTickers, stocks) +
+        sectorGraphsHTML(lineTickers, stocks) +
         shockSimulatorHTML(lineTickers, stocks) +
         lineGrid;
       wireConnStrip(body);
