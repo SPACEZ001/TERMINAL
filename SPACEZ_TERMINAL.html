@@ -3105,6 +3105,42 @@
     .dev-hole::after{width:68px;height:68px;}
   }
 
+  /* ---- Home page's personal LINE-identity card (a card of its own, next to
+     the developer bio card above -- never replacing it) -- reuses the exact
+     .dev-card shell/animation (accented green via --dc-accent below) so it
+     visually belongs to the same family, but its body is name+note+edit
+     instead of the developer's social links. */
+  .dev-card.line-personal{margin-top:14px;--dc-accent:#06C755;--dc-glow:rgba(6,199,85,.4);--dc-wash:rgba(6,199,85,.07);}
+  .dev-ava-fallback{width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.16);color:var(--dc-accent);}
+  .dev-ava-fallback svg{width:60%;height:60%;}
+  .lc-note{font-size:12px;line-height:1.6;color:var(--grey,#a9ae9f);margin-top:12px;white-space:pre-wrap;overflow-wrap:anywhere;}
+  .lc-note.empty{opacity:.55;font-style:italic;}
+  .lc-editbtn{
+    margin-top:12px;font-family:var(--mono);font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;
+    color:var(--dc-accent);background:none;border:1px solid color-mix(in srgb, var(--dc-accent) 45%, transparent);
+    border-radius:20px;padding:7px 16px;cursor:pointer;transition:background .18s;
+  }
+  .lc-editbtn:hover{background:color-mix(in srgb, var(--dc-accent) 12%, transparent);}
+  .lc-edit-panel{margin-top:14px;padding-top:14px;border-top:1px dashed rgba(255,255,255,.14);display:flex;flex-direction:column;gap:8px;}
+  .lc-edit-panel.hidden{display:none;}
+  .lc-field-label{font-family:var(--mono);font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--grey-dim);}
+  .lc-input,.lc-textarea{
+    font-family:inherit;font-size:12.5px;border:1px solid rgba(255,255,255,.14);border-radius:8px;
+    padding:8px 10px;background:rgba(255,255,255,.04);color:var(--white,#f4f6f1);outline:none;width:100%;resize:vertical;
+  }
+  .lc-input:focus,.lc-textarea:focus{border-color:var(--dc-accent);}
+  .lc-textarea{min-height:70px;line-height:1.5;}
+  .lc-row{display:flex;align-items:center;gap:10px;margin-top:2px;}
+  .lc-save{
+    font-family:var(--mono);font-size:11px;font-weight:700;border:1px solid var(--dc-accent);border-radius:8px;
+    padding:6px 14px;cursor:pointer;background:transparent;color:var(--dc-accent);
+  }
+  .lc-save:hover{background:color-mix(in srgb, var(--dc-accent) 12%, transparent);}
+  .lc-status{font-size:10.5px;color:var(--grey-dim);}
+  .lc-status.ok{color:#7CFFB2;}
+  .lc-status.err{color:#ff6b6b;}
+
 
   /* ============================================================================
      v14 — CAPITAL FLOW PAGE / ANIMATED SANKEY / GATE SUCCESS + LOADER
@@ -17240,7 +17276,7 @@ var CL_UI = {
      of both the Home hub grid (buildHub) and the top nav menu (buildNav) --
      currently just Connected Users, which is reachable only via the admin
      login gate's own panel button. */
-  var NAV_HIDDEN = { connectedusers:1 };
+  var NAV_HIDDEN = { connectedusers:1, printreport:1 };
 
   function buildHub(){
     var sec = el('section');
@@ -17290,8 +17326,20 @@ var CL_UI = {
         })(ROUTES[i], i + 1);
       }
       if(window.__spzBioCard) g.appendChild(window.__spzBioCard('in-hub'));
+      /* a second, separate card -- only for a LINE-linked visitor, showing
+         THEIR OWN photo/name/note instead of the developer's. Never replaces
+         the card above; window.__spzPersonalCard returns null when nobody
+         is linked, so nothing extra renders for an ordinary visitor. */
+      if(window.__spzPersonalCard){
+        var pc = window.__spzPersonalCard('in-hub');
+        if(pc) g.appendChild(pc);
+      }
     }
     repaints.push(paint);
+    // rebuild the hub the instant LINE links/unlinks (from ANY entry point --
+    // the corner gate, the Watchlist page, or this card's own edit button)
+    // so the personal card appears/disappears/updates without a reload.
+    document.addEventListener('spz:line', paint);
     paint();
     return sec;
   }
@@ -17455,15 +17503,89 @@ var CL_UI = {
     }
     window.__spzBioCard = bioCard;
 
+    /* A second, separate "who's looking at this" card -- shown only to a
+       LINE-linked visitor, on the Home page next to (never instead of) the
+       developer bio card above. Their own LINE photo + name (editable --
+       defaults to their real LINE name, but they can override it) and a
+       free-text "about me" note (no Facebook/Instagram links here, unlike
+       the developer card). Edit reuses the same self-service Worker
+       endpoint the Watchlist page's own connect strip already uses, just
+       different fields (window.__SPZ_LINE.updateIdentity, not updateProfile). */
+    var PERSON_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c0-4 4-6 8-6s8 2 8 6"></path></svg>';
+    function personalLineCard(cls){
+      if(!window.__SPZ_LINE) return null;
+      var lineSt = window.__SPZ_LINE.state();
+      if(lineSt.status !== 'linked') return null;
+      var th = L() === 'th';
+      var name = (lineSt.nameOverride || lineSt.displayName || '').trim() || (th ? 'สมาชิก LINE' : 'LINE Member');
+      var avatarHTML = lineSt.pictureUrl
+        ? '<img src="' + esc(lineSt.pictureUrl) + '" alt="" loading="lazy">'
+        : '<span class="dev-ava-fallback">' + PERSON_ICON + '</span>';
+      var wrap = el('div', 'dev-card line-personal ' + (cls || ''),
+        '<span class="dev-grid"></span>' +
+        '<span class="dev-stars"></span>' +
+        '<span class="dev-hole"></span>' +
+        '<div class="dev-top">' +
+          '<span class="dev-ava">' + avatarHTML + '<span class="dev-ring"></span><span class="dev-live"></span></span>' +
+          '<span class="dev-info">' +
+            '<span class="dev-lab">' + esc(th ? 'เข้าสู่ระบบด้วย LINE' : 'Signed in with LINE') + '</span>' +
+            '<span class="dev-name" data-lc="name">' + esc(name) + '</span>' +
+          '</span>' +
+        '</div>' +
+        '<div class="lc-note' + (lineSt.note ? '' : ' empty') + '" data-lc="noteDisplay">' +
+          esc(lineSt.note || (th ? 'ยังไม่ได้เขียนแนะนำตัว' : 'No bio written yet.')) +
+        '</div>' +
+        '<button type="button" class="lc-editbtn" data-lc="editBtn">' + esc(th ? 'แก้ไขข้อมูล' : 'Edit profile') + '</button>' +
+        '<div class="lc-edit-panel hidden" data-lc="editPanel">' +
+          '<span class="lc-field-label">' + esc(th ? 'ชื่อที่แสดง' : 'Display name') + '</span>' +
+          '<input type="text" class="lc-input" data-lc="nameInput" maxlength="40" value="' + esc(name) + '">' +
+          '<span class="lc-field-label">' + esc(th ? 'แนะนำตัว (ไม่บังคับ)' : 'About me (optional)') + '</span>' +
+          '<textarea class="lc-textarea" data-lc="noteInput" maxlength="280">' + esc(lineSt.note || '') + '</textarea>' +
+          '<div class="lc-row">' +
+            '<button type="button" class="lc-save" data-lc="saveBtn">' + esc(th ? 'บันทึก' : 'Save') + '</button>' +
+            '<span class="lc-status" data-lc="status"></span>' +
+          '</div>' +
+        '</div>');
+
+      var panel = wrap.querySelector('[data-lc="editPanel"]');
+      wrap.querySelector('[data-lc="editBtn"]').addEventListener('click', function(){
+        panel.classList.toggle('hidden');
+      });
+      wrap.querySelector('[data-lc="saveBtn"]').addEventListener('click', function(){
+        var nameInput = wrap.querySelector('[data-lc="nameInput"]');
+        var noteInput = wrap.querySelector('[data-lc="noteInput"]');
+        var statusEl = wrap.querySelector('[data-lc="status"]');
+        var nameVal = nameInput.value.trim();
+        var noteVal = noteInput.value.trim();
+        statusEl.className = 'lc-status'; statusEl.textContent = '…';
+        window.__SPZ_LINE.updateIdentity(nameVal, noteVal, function(err){
+          if(err){
+            statusEl.className = 'lc-status err';
+            statusEl.textContent = th ? 'บันทึกไม่สำเร็จ — ลองใหม่อีกครั้ง' : 'Could not save — try again.';
+            return;
+          }
+          statusEl.className = 'lc-status ok';
+          statusEl.textContent = th ? 'บันทึกแล้ว' : 'Saved.';
+          var shownName = nameVal || (th ? 'สมาชิก LINE' : 'LINE Member');
+          wrap.querySelector('[data-lc="name"]').textContent = shownName;
+          var noteDisp = wrap.querySelector('[data-lc="noteDisplay"]');
+          noteDisp.textContent = noteVal || (th ? 'ยังไม่ได้เขียนแนะนำตัว' : 'No bio written yet.');
+          noteDisp.classList.toggle('empty', !noteVal);
+        });
+      });
+      return wrap;
+    }
+    window.__spzPersonalCard = personalLineCard;
+
     /* one route (the admin Command Center) gets a visibly special treatment
        in this list -- a distinct glowing card instead of a plain row -- so
        it reads as the "everything in one place" screen rather than just
        another item; see .np-item-special in the cockpit route's own CSS */
-    var SPECIAL_ITEMS = { cockpit:1, printreport:1 };
-    /* Connected Users is deliberately absent from this menu (and from the
-       Home hub grid below) -- it's reachable only through the admin login
-       gate's own panel button, never a listed "page" like everything else,
-       since its whole point is that ordinary visitors never see it exists. */
+    var SPECIAL_ITEMS = { cockpit:1 };
+    /* Connected Users and Print Report are deliberately absent from this menu
+       (and from the Home hub grid below) -- both are reachable only through
+       the admin login gate's own panel button, never a listed "page" like
+       everything else, since ordinary visitors are never meant to see them. */
     function item(id, n, title, desc){
       var cls = 'np-item' + (SPECIAL_ITEMS[id] ? ' np-item-special' : '');
       var a = el('a', cls,
@@ -17520,7 +17642,9 @@ var CL_UI = {
         { k:'market', t:{en:'Read the market',th:'อ่านตลาด'},
           ids:['now', 'outlook', 'regime', 'anomaly', 'correl', 'rulelab', 'daily', 'flow', 'globe', 'infl', 'desk', 'scenarios'] },
         { k:'tools',  t:{en:'Workbench',th:'เครื่องมือ'},
-          ids:['stock', 'watchlist', 'bubble', 'chartlab', 'directory', 'pro', 'proof', 'printreport', 'journal', 'journalNew'] }
+          /* 'printreport' deliberately left out -- see NAV_HIDDEN above; it
+             stays reachable only via the admin login gate's own panel. */
+          ids:['stock', 'watchlist', 'bubble', 'chartlab', 'directory', 'pro', 'proof', 'journal', 'journalNew'] }
       ];
       var used = { membership:1 }, n = 0, g, i, r;
       for(g = 0; g < GROUPS.length; g++){
@@ -33523,6 +33647,8 @@ var GM = {
         state.line.uid = data.uid || state.line.uid || null;
         state.line.facebook = data.facebook || '';
         state.line.instagram = data.instagram || '';
+        state.line.nameOverride = data.nameOverride || '';
+        state.line.note = data.note || '';
         lineSaveSession();
         paint();
         paintLineModal();
@@ -33587,6 +33713,33 @@ var GM = {
       .catch(function(){ if(cb) cb('network'); });
   }
 
+  /* ---- same self-service endpoint, different fields: the Home page's own
+     personal LINE card (a separate card from this page's connect strip) lets
+     a linked visitor override their displayed name and write a free-text
+     "about me" note -- independent of the Facebook/Instagram handles above,
+     so editing one here never touches the other. */
+  function lineUpdateIdentity(nameOverride, note, cb){
+    if(!state.line.code) { if(cb) cb('not_linked'); return; }
+    fetch(lineApi('/api/session/profile'), {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ code: state.line.code, nameOverride: nameOverride, note: note })
+    })
+      .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+      .then(function(res){
+        if(!res.ok){ if(cb) cb(res.d && res.d.error || 'error'); return; }
+        state.line.nameOverride = res.d.nameOverride || '';
+        state.line.note = res.d.note || '';
+        // Deliberately NOT calling paint()/lineNotify() here (unlike a real
+        // link/unlink) -- the Home page card that called this already updates
+        // its own name/note/status text directly below, and a global
+        // 'spz:line' rebroadcast would rebuild that exact card out from under
+        // itself mid-edit, wiping the "Saved." confirmation and collapsing
+        // the still-open edit panel before the visitor sees it.
+        if(cb) cb(null);
+      })
+      .catch(function(){ if(cb) cb('network'); });
+  }
+
   /* ---- likes on journal posts, via the same shared LINE session. Exposed
      on window.__SPZ_LINE (below) so the Journal module never needs to know
      the session code or talk to the Worker itself -- one place holds the
@@ -33632,6 +33785,8 @@ var GM = {
               state.line.uid = dd.uid || state.line.uid || null;
               state.line.facebook = dd.facebook || '';
               state.line.instagram = dd.instagram || '';
+              state.line.nameOverride = dd.nameOverride || '';
+              state.line.note = dd.note || '';
               paint();
               lineNotify();
             })
@@ -34837,11 +34992,16 @@ var GM = {
     state: function(){
       return { status: state.line.status, displayName: state.line.displayName || null,
         pictureUrl: state.line.pictureUrl || null, tickers: (state.line.tickers || []).slice(),
-        uid: state.line.uid || null, facebook: state.line.facebook || '', instagram: state.line.instagram || '' };
+        uid: state.line.uid || null, facebook: state.line.facebook || '', instagram: state.line.instagram || '',
+        nameOverride: state.line.nameOverride || '', note: state.line.note || '' };
     },
     logout: function(){ lineLogout(); },
     like: function(postId, cb){ lineLikeToggle(postId, cb); },
     likesGet: function(postId, cb){ lineLikesGet(postId, cb); },
+    /* Home page's personal card: override the displayed name and/or set the
+       free-text "about me" note. Independent of updateProfile's facebook/
+       instagram fields (used only by this page's own connect strip). */
+    updateIdentity: function(nameOverride, note, cb){ lineUpdateIdentity(nameOverride, note, cb); },
     /* Read-only exposure for the admin-only Connected Users page, which wants
        the exact same "portfolio analysis" breakdown (sector mix + risk read)
        used on this page's own board -- rather than re-deriving that logic a
@@ -36102,7 +36262,21 @@ var GM = {
 
   window.__SPZ_BUBBLE = { paint: function(){ paint(); }, reload: function(){ loadBubble(paint); },
     data: function(){ return state.bubble || null; },
-    composite: computeBubbleComposite };
+    composite: computeBubbleComposite,
+    /* Read-only exposure for the Bubble print-report type: the same 5
+       primary signals (name/current value/risk%/plain-language meaning)
+       this page's own cards already compute, trimmed to just what a print
+       report needs -- never re-derived a second time elsewhere. */
+    indicators: function(){
+      try {
+        var snap = liveSnap();
+        var regime = snap.regime || {};
+        var bubble = state.bubble || {};
+        return primaryDefs(bubble, regime).map(function(d){
+          return { key:d.key, nm:d.nm, val:d.val, risk:d.risk, expl:d.expl };
+        });
+      } catch(e){ return []; }
+    } };
 })();
 </script>
 
@@ -39288,7 +39462,14 @@ var GM = {
      มาใส่ตรงนี้ (สร้างด้วย ADMIN_GENERATOR.html) */
   var VAULT_FULL = {"v":4,"s1":"mkdQcgClsnvkGyoBGGivQg==","s2":"9YocjP94X+KXzaDgEjSuGg==","s3":"hy15gzrBLmYFR2+cvfPPCA==","s4":"ky5slYhVrHQoXnN7itBYcg==","gates":[{"iv":"8ua/11yPR3cWSJKJEBQVhQ==","ct":"/RpQQax3SbFjk3XfRXL5DP9gJ6rQqkNt/72nKLY8b6Q="},{"iv":"JBpkOqWqQUGoNpvaBlMZhg==","ct":"nVsIciHOqQOZeoRiBpVa2MEpCDeP3npI3gG5YjD/z0M="},{"iv":"3pbyESaKph58+1raRCifUg==","ct":"N3RWhWpuNS9II+Knxy22n4sZfy75Zvpz1KFe3QMFSlk="},{"iv":"UBs3G4dOB8mAFjSRlyDRUQ==","ct":"5q+pIWVpnm52L5GAMp/4Q1L51D7ZlV4Gvypoei8dShA="},{"iv":"jqk5KZTuminXpYENqvBGPA==","ct":"s84YTT4n78TgNAZDV8fEb4sJNGEfYXZXICBRoQzik78="}],"ctrIv":"YtBFuzHAlM73O0uKkyqL2w==","iv":"ZqvmBtUJW2peCcUC","ct":"Yw9ZQfcOwU9A9jmBxghZgtyj2k5flNijg9Cnjungi45aNULy9mmGCiDf8V7jF5MhqyhdEK490/I="};
 
-  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','cockpit','controlgrid','printreport','journal','journalNew','journalView','connectedusers'];
+  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','cockpit','controlgrid','printreport','journalNew','connectedusers'];
+  /* 'journal' (the list) and 'journalView' (a single post) are deliberately
+     NOT in this list -- anyone can open them. The paywall for those two
+     lives inside the module itself instead: the list/titles always render,
+     but journalView blurs the actual post content (image + text) for a
+     visitor who isn't LINE-linked, with an overlay prompting LINE login --
+     a softer "look, but log in to read" gate rather than a route bounce.
+     journalNew (posting a new entry) stays a full route-level admin lock. */
 
   /* ---------------- i18n ---------------- */
   function Lg(){ return document.documentElement.lang === 'th' ? 'th' : 'en'; }
@@ -39793,7 +39974,7 @@ var GM = {
     var m = href && /^#\/([a-z0-9_-]+)$/i.exec(href);
     return m ? m[1] : null;
   }
-  var MEMBER_ROUTES = ['stock','watchlist','bubble','chartlab','directory','regime','journal','journalView'];
+  var MEMBER_ROUTES = ['stock','watchlist','bubble','chartlab','directory','regime'];
   /* A LINE-linked visitor gets the same MEMBER_ROUTES access as a Member-code
      login, without also having to paste that code in -- a stand-in for a
      real membership system, not a change to what "Member" means: this only
@@ -39873,6 +40054,29 @@ var GM = {
     if(!gate) return;
     gate.hidden = false;
     if(advInputs[0]) advInputs[0].focus();
+  }
+
+  /* Auto-open this login gate once per browser tab session, the first time
+     a visitor lands on the site -- but only after the earlier disclaimer
+     gate (#spzGate) has closed, since that gate's z-index (9000) sits BELOW
+     this one (9500) and an unconditional auto-open would render this gate
+     on top of a disclaimer the visitor hasn't even read/accepted yet. If
+     the visitor dismisses this with the X (or never interacts with it),
+     they carry on as a normal 'basic' visitor exactly as today -- this only
+     decides whether the gate offers itself once, not whether it's required. */
+  function maybeAutoOpenGate(){
+    try { if(sessionStorage.getItem('spz_auth_gate_auto_shown')) return; } catch(e){}
+    var tries = 0;
+    var iv = setInterval(function(){
+      tries++;
+      var dg = document.getElementById('spzGate');
+      var disclaimerOpen = !!(dg && !dg.hidden);
+      if(disclaimerOpen && tries < 300) return; // keep waiting (up to ~30s)
+      clearInterval(iv);
+      try { sessionStorage.setItem('spz_auth_gate_auto_shown', '1'); } catch(e){}
+      if(disclaimerOpen) return; // gave up waiting -- don't stack on top of it
+      if(currentTier === 'basic' && !lineIsLinkedNow() && gate && gate.hidden) openGate();
+    }, 100);
   }
 
   function applyTier(tier){
@@ -39967,6 +40171,7 @@ var GM = {
       }
     } catch(e){}
     applyTier(tier);
+    maybeAutoOpenGate();
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
@@ -44536,16 +44741,92 @@ var qrcode = function() {
     ideaEmergingLede:{en:'This site has no data on a company’s size or how new its listing is, so it can’t point directly at "the next unicorn". What it can show honestly: among the Growth names already on this site, these are the ones the market is currently pricing at the richest earnings multiple (P/E) — meaning investors are paying the most upfront for future growth that hasn’t shown up in profit yet. That is exactly the profile of a stock with the most room to run if the growth arrives — and the furthest to fall if it doesn’t.',
                       th:'เว็บนี้ไม่มีข้อมูลขนาดบริษัทหรือว่าหุ้นเพิ่งเข้าตลาดมานานแค่ไหน จึงไม่สามารถชี้ตัว "ยูนิคอร์นตัวต่อไป" ได้ตรงๆ สิ่งที่บอกได้อย่างตรงไปตรงมาคือ ในกลุ่มหุ้นเติบโตที่มีอยู่ในเว็บนี้ นี่คือหุ้นที่ตลาดตีมูลค่า (P/E) แพงที่สุดในตอนนี้ ซึ่งหมายความว่านักลงทุนยอมจ่ายล่วงหน้ามากที่สุดสำหรับการเติบโตในอนาคตที่ยังไม่เกิดเป็นกำไรจริง เป็นโปรไฟล์แบบเดียวกับหุ้นที่มีโอกาสวิ่งแรงถ้าการเติบโตมาถึงจริง — และก็ร่วงแรงที่สุดถ้ามันไม่มาถึง'},
     ideaEmergingNoData:{en:'Not enough live fundamental data to build this list right now.',
-                         th:'ข้อมูลพื้นฐานสดยังไม่พอสำหรับสร้างรายการนี้ในตอนนี้'}
+                         th:'ข้อมูลพื้นฐานสดยังไม่พอสำหรับสร้างรายการนี้ในตอนนี้'},
+
+    /* ---- Round F: Announcement report ---- */
+    typeAnnouncement:{en:'Announcement',th:'ประกาศ'},
+    annTitle:{en:'Official Announcement',th:'ประกาศจากทีมงาน'},
+    annSub:{en:'SPACEZ TERMINAL — Site Notice',th:'SPACEZ TERMINAL — แจ้งให้ทราบ'},
+    annTopicLbl:{en:'Topic',th:'หัวข้อประกาศ'},
+    annTopicPh:{en:'— Choose a topic —',th:'— เลือกหัวข้อ —'},
+    annTopicOtherPh:{en:'Type the topic…',th:'พิมพ์หัวข้อเอง…'},
+    annMsgLbl:{en:'Message',th:'ข้อความ'},
+    annMsgPh:{en:'Write the announcement text…',th:'พิมพ์เนื้อหาประกาศ…'},
+    annImgLbl:{en:'Attach image(s) / charts (optional)',th:'แนบรูปภาพ / กราฟ (ไม่บังคับ)'},
+    annImgHint:{en:'Up to 6 images. Shown full-width in the printed report, in the order added.',
+                th:'แนบได้สูงสุด 6 รูป จะแสดงเต็มความกว้างในรายงาน เรียงตามลำดับที่แนบ'},
+    annImgRemove:{en:'Remove',th:'ลบ'},
+    annEmpty:{en:'Choose a topic and write a message on the left to build the announcement.',
+              th:'เลือกหัวข้อและพิมพ์ข้อความทางด้านซ้ายเพื่อสร้างประกาศ'},
+
+    /* ---- Round F: Bubble report ---- */
+    typeBubble:{en:'Bubble Report',th:'รายงานฟองสบู่'},
+    bubbleRepTitle:{en:'Market Bubble / Valuation Risk Report',th:'รายงานความเสี่ยงฟองสบู่ตลาด'},
+    bubbleRepSub:{en:'Composite Read Across 5 Live Signals — Not a Timing Signal',th:'สรุปจาก 5 สัญญาณสดของตลาด — ไม่ใช่สัญญาณจับจังหวะซื้อขาย'},
+    bubbleRepScoreH:{en:'Bubble Score',th:'คะแนนฟองสบู่'},
+    bubbleRepScoreLede:{en:'The average risk reading across the 5 signals below, each scaled 0–100% against its own historical range. A higher score means more of these signals are stretched at once — not a prediction of when, or whether, prices fall.',
+                        th:'ค่าเฉลี่ยความเสี่ยงจาก 5 สัญญาณด้านล่าง แต่ละตัวปรับสเกล 0–100% เทียบกับช่วงในอดีตของตัวมันเอง คะแนนยิ่งสูงแปลว่าสัญญาณเหล่านี้ตึงพร้อมกันมากขึ้น ไม่ใช่การทำนายว่าจะร่วงเมื่อไหร่หรือจะร่วงหรือไม่'},
+    bubbleRepNoData:{en:'Not enough live data to compute a score right now.',th:'ข้อมูลสดยังไม่พอสำหรับคำนวณคะแนนตอนนี้'},
+    bubbleRepIndH:{en:'What It’s Measured From',th:'วัดจากอะไรบ้าง'},
+    bubbleRepIndLede:{en:'Five independent signals, each with its own history of showing up before past market stress — none of them, alone or together, is a guaranteed trigger.',
+                      th:'5 สัญญาณอิสระต่อกัน แต่ละตัวเคยปรากฏก่อนช่วงตลาดตึงเครียดในอดีต — ไม่มีตัวไหน ไม่ว่าจะดูเดี่ยวหรือรวมกัน ที่ยืนยันได้ว่าจะเกิดขึ้นแน่นอน'},
+    colIndicator:{en:'Signal',th:'สัญญาณ'},
+    colIndValue:{en:'Current reading',th:'ค่าปัจจุบัน'},
+    colIndRisk:{en:'Risk',th:'ความเสี่ยง'},
+    colIndMeans:{en:'What it means',th:'ความหมาย'},
+    bubbleRepTierH:{en:'Score Scale',th:'มาตรวัดคะแนน'},
+    bubbleRepBurstH:{en:'If a Bubble Like This Bursts',th:'ถ้าฟองสบู่แบบนี้แตก'},
+    bubbleRepBurstLede:{en:'This is the historical rotation pattern from past unwinds (2000, 2008, 2022), not a prediction of this specific outcome or its timing. Names below are common real-world examples of each group, not recommendations.',
+                        th:'นี่คือรูปแบบการหมุนเงินในอดีตจากการปรับฐานที่ผ่านมา (ปี 2000, 2008, 2022) ไม่ใช่การทำนายว่าจะเกิดผลแบบนี้แน่นอนหรือเมื่อไหร่ ชื่อหุ้นด้านล่างเป็นตัวอย่างที่พบได้จริงของแต่ละกลุ่ม ไม่ใช่คำแนะนำให้ซื้อ'},
+    bubbleRepSoldFirstH:{en:'Usually sold first',th:'มักถูกขายก่อน'},
+    bubbleRepSoldFirstD:{en:'Richly-valued growth, high-multiple tech, and stocks bought heavily on margin — the same names that led the rally tend to fall the hardest, since their price depended most on optimism continuing.',
+                         th:'หุ้นเติบโตที่ตีมูลค่าแพง หุ้นเทคมัลติเปิลสูง และหุ้นที่ซื้อด้วยมาร์จิ้นจำนวนมาก — มักเป็นหุ้นกลุ่มเดียวกับที่นำตลาดขึ้น และมักร่วงแรงที่สุดด้วย เพราะราคาพึ่งพาความหวังที่จะโตต่อเนื่องมากที่สุด'},
+    bubbleRepSoldFirstEx:{en:'Example: high-P/E "story" tech, speculative small caps',th:'ตัวอย่าง: หุ้นเทค "เรื่องเล่า" P/E สูง, หุ้นเล็กเก็งกำไร'},
+    bubbleRepDefH:{en:'Historically falls less',th:'ในอดีตลงน้อยกว่า'},
+    bubbleRepDefD:{en:'Defensive sectors — utilities, healthcare, consumer staples — sell products people need regardless of the economy, so their earnings (and prices) tend to hold up better in a downturn.',
+                   th:'กลุ่มป้องกันความเสี่ยง เช่น สาธารณูปโภค สุขภาพ สินค้าอุปโภคบริโภคจำเป็น ขายสินค้าที่คนต้องใช้ไม่ว่าเศรษฐกิจจะเป็นอย่างไร กำไร (และราคาหุ้น) จึงมักทรงตัวได้ดีกว่าช่วงตลาดขาลง'},
+    bubbleRepDefEx:{en:'Example sectors: Utilities (XLU), Healthcare (XLV), Consumer Staples (XLP)',th:'ตัวอย่างกลุ่ม: สาธารณูปโภค (XLU), สุขภาพ (XLV), สินค้าจำเป็น (XLP)'},
+    bubbleRepSafeH:{en:'Traditional safe havens',th:'สินทรัพย์ปลอดภัยดั้งเดิม'},
+    bubbleRepSafeD:{en:'Cash, high-quality government bonds and gold have historically attracted money leaving riskier assets during a sharp unwind — gold in particular has no earnings to disappoint, since it isn’t priced off any company’s results.',
+                    th:'เงินสด พันธบัตรรัฐบาลคุณภาพสูง และทองคำ มักเป็นที่พักเงินที่ไหลออกจากสินทรัพย์เสี่ยงในอดีตช่วงตลาดปรับฐานแรง โดยเฉพาะทองคำที่ไม่มีกำไรบริษัทให้ผิดหวัง เพราะไม่ได้ตั้งราคาจากผลประกอบการของบริษัทใดเลย'},
+    bubbleRepSafeEx:{en:'Example: gold (GLD), long-term US Treasuries (TLT)',th:'ตัวอย่าง: ทองคำ (GLD), พันธบัตรรัฐบาลสหรัฐฯ ระยะยาว (TLT)'},
+    bubbleRepTrendNote:{en:'Where the cycle sits right now, for context alongside the score above:',
+                        th:'วัฏจักรตลาดตอนนี้อยู่ช่วงไหน เพื่อประกอบการอ่านคะแนนด้านบน:'}
   };
 
   var sec = null;
   var mode = 'full';               /* 'full' | 'select' */
-  var reportType = 'market';       /* 'market' | 'gold' | 'idea' -- which report to generate */
+  var reportType = 'market';       /* 'market' | 'gold' | 'idea' | 'announcement' | 'bubble' -- which report to generate */
   var picked = {};                 /* ticker -> true, used only in 'select' mode */
   var pickQuery = '';              /* live filter text for the ticker search box */
   var styleId = 'formal';          /* fixed -- Round 8: user asked to drop the classic/technical style choices and keep formal only */
   var includeQrPage = true;        /* Round 8: optional final QR/contact page, on by default, user-toggleable */
+
+  /* ---- Round F: Announcement report -- a predefined topic list (chosen from
+     a dropdown, with a free-typed "other" escape hatch, same pattern as the
+     Journal editor's asset picker), a free-text message and up to 6 attached
+     images. Nothing here is persisted anywhere -- like every other report
+     type, it only exists for the current print/preview session. */
+  var ANNOUNCEMENT_TOPICS = [
+    { id:'maintenance', en:'Scheduled maintenance / downtime', th:'ปิดปรับปรุงระบบตามกำหนด' },
+    { id:'newfeature',  en:'New feature launch',               th:'เปิดตัวฟีเจอร์ใหม่' },
+    { id:'membership',  en:'Membership / pricing update',      th:'ปรับปรุงแพ็กเกจ / ราคาสมาชิก' },
+    { id:'riskwarn',    en:'Market risk warning',               th:'เตือนความเสี่ยงตลาด' },
+    { id:'holiday',     en:'Market holiday notice',              th:'แจ้งวันหยุดตลาด' },
+    { id:'datasource',  en:'Data source change',                th:'เปลี่ยน / ปรับปรุงแหล่งข้อมูล' },
+    { id:'bugfix',      en:'Bug fix notice',                     th:'แจ้งแก้ไขข้อบกพร่อง' },
+    { id:'event',       en:'Event / livestream announcement',    th:'ประกาศกิจกรรม / ไลฟ์สด' },
+    { id:'partnership', en:'Partnership / collaboration',        th:'ความร่วมมือ / พาร์ทเนอร์' },
+    { id:'policy',      en:'Policy / terms update',              th:'ปรับปรุงนโยบาย / ข้อกำหนด' },
+    { id:'security',    en:'Security notice',                    th:'แจ้งเตือนด้านความปลอดภัย' },
+    { id:'general',     en:'General announcement',               th:'ประกาศทั่วไป' },
+    { id:'other',       en:'Other (type your own)',              th:'อื่นๆ (พิมพ์เอง)' }
+  ];
+  var annTopic = '';               /* '' = none chosen yet, else one of ANNOUNCEMENT_TOPICS' ids */
+  var annTopicOther = '';          /* free-typed topic text, only used when annTopic === 'other' */
+  var annMessage = '';             /* free-text announcement body */
+  var annImages = [];              /* data URLs, in attach order, max ANN_MAX_IMAGES */
+  var ANN_MAX_IMAGES = 6;
 
   /* ---- Round 10: shared beginner glossary -- exposed on window so the
      separate Compare Stocks report module (its own scope, its own i18n
@@ -45741,6 +46022,124 @@ var qrcode = function() {
     '</div>';
   }
 
+  function annTopicLabel(){
+    if(annTopic === 'other') return annTopicOther.trim();
+    var found = null;
+    for(var i = 0; i < ANNOUNCEMENT_TOPICS.length; i++){ if(ANNOUNCEMENT_TOPICS[i].id === annTopic) found = ANNOUNCEMENT_TOPICS[i]; }
+    return found ? T({en:found.en, th:found.th}) : '';
+  }
+
+  function announcementReportHTML(){
+    var now = new Date();
+    var topicLabel = annTopicLabel();
+    var msg = annMessage.trim();
+    if(!topicLabel && !msg){
+      return '<div class="pr-sheet" data-style="' + esc(styleId) + '">' +
+        '<div class="pr-head">' +
+          '<img class="pr-logo" src="' + PR_LOGO + '" alt="">' +
+          '<div class="pr-brand">' + esc(T(UI.brand)) + '</div>' +
+          '<div class="pr-title">' + esc(T(UI.annTitle)) + '</div>' +
+          '<div class="pr-sub">' + esc(T(UI.annSub)) + '</div>' +
+        '</div>' +
+        '<div class="pr-empty">' + esc(T(UI.annEmpty)) + '</div>' +
+      '</div>';
+    }
+    var imagesHTML = annImages.length
+      ? annImages.map(function(src){
+          return '<div class="pr-chart-block" style="padding:6px;"><img src="' + esc(src) + '" style="display:block;width:100%;height:auto;border-radius:4px;" alt=""></div>';
+        }).join('')
+      : '';
+    return '<div class="pr-sheet" data-style="' + esc(styleId) + '">' +
+      '<div class="pr-head">' +
+        '<img class="pr-logo" src="' + PR_LOGO + '" alt="">' +
+        '<div class="pr-brand">' + esc(T(UI.brand)) + '</div>' +
+        '<div class="pr-title">' + esc(T(UI.annTitle)) + '</div>' +
+        '<div class="pr-sub">' + esc(T(UI.annSub)) + '</div>' +
+        '<div class="pr-meta">' +
+          '<span>' + esc(T(UI.generated)) + ': ' + esc(now.toLocaleString(L() === 'th' ? 'th-TH' : 'en-US')) + '</span>' +
+          '<span>' + esc(T(UI.serial)) + ': ' + esc(serial()) + '</span>' +
+        '</div>' +
+      '</div>' +
+      (topicLabel ? '<div class="pr-sec-h">' + esc(topicLabel) + '</div>' : '') +
+      (msg ? '<div class="pr-dd-narrative" style="white-space:pre-wrap;font-size:12px;">' + esc(msg) + '</div>' : '') +
+      imagesHTML +
+      '<div class="pr-foot">' + esc(T(UI.disclaimer)) + '</div>' +
+      qrContactPageHTML() +
+    '</div>';
+  }
+
+  function bubbleReportHTML(){
+    var now = new Date();
+    var comp = null;
+    try { comp = window.__SPZ_BUBBLE && window.__SPZ_BUBBLE.composite && window.__SPZ_BUBBLE.composite(); } catch(e){}
+    var indicators = [];
+    try { indicators = (window.__SPZ_BUBBLE && window.__SPZ_BUBBLE.indicators && window.__SPZ_BUBBLE.indicators()) || []; } catch(e){}
+
+    var scoreHTML;
+    if(!comp || comp.composite == null){
+      scoreHTML = '<div class="pr-empty">' + esc(T(UI.bubbleRepNoData)) + '</div>';
+    } else {
+      scoreHTML =
+        '<div class="pr-idea-bubble">' +
+          '<span class="pr-idea-bubble-score">' + comp.composite + '%</span>' +
+          '<span class="pr-idea-bubble-tier">' + esc(T(comp.tier)) + '</span>' +
+        '</div>';
+    }
+
+    var indRows = indicators.map(function(d){
+      var riskTxt = (d.risk == null) ? '—' : Math.round(d.risk) + '%';
+      return '<tr>' +
+        '<td>' + esc(T(d.nm)) + '</td>' +
+        '<td>' + esc(d.val == null ? '—' : d.val) + '</td>' +
+        '<td>' + esc(riskTxt) + '</td>' +
+        '<td class="pr-why">' + esc(T(d.expl)) + '</td>' +
+      '</tr>';
+    }).join('');
+    var indTableHTML = indicators.length
+      ? '<table class="pr-table"><thead><tr>' +
+          '<th>' + esc(T(UI.colIndicator)) + '</th><th>' + esc(T(UI.colIndValue)) + '</th>' +
+          '<th>' + esc(T(UI.colIndRisk)) + '</th><th>' + esc(T(UI.colIndMeans)) + '</th>' +
+        '</tr></thead><tbody>' + indRows + '</tbody></table>'
+      : '<div class="pr-empty">' + esc(T(UI.bubbleRepNoData)) + '</div>';
+
+    function rotationCol(headKey, bodyKey, exKey){
+      return '<div class="pr-idea-phase">' +
+        '<div class="pr-idea-phase-name">' + esc(T(UI[headKey])) + '</div>' +
+        '<div class="pr-dd-narrative">' + esc(T(UI[bodyKey])) + '<br><i>' + esc(T(UI[exKey])) + '</i></div>' +
+      '</div>';
+    }
+
+    return '<div class="pr-sheet" data-style="' + esc(styleId) + '">' +
+      '<div class="pr-head">' +
+        '<img class="pr-logo" src="' + PR_LOGO + '" alt="">' +
+        '<div class="pr-brand">' + esc(T(UI.brand)) + '</div>' +
+        '<div class="pr-title">' + esc(T(UI.bubbleRepTitle)) + '</div>' +
+        '<div class="pr-sub">' + esc(T(UI.bubbleRepSub)) + '</div>' +
+        '<div class="pr-meta">' +
+          '<span>' + esc(T(UI.generated)) + ': ' + esc(now.toLocaleString(L() === 'th' ? 'th-TH' : 'en-US')) + '</span>' +
+          '<span>' + esc(T(UI.serial)) + ': ' + esc(serial()) + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="pr-sec-h">' + esc(T(UI.bubbleRepScoreH)) + '</div>' +
+      '<div class="pr-flow-note">' + esc(T(UI.bubbleRepScoreLede)) + '</div>' +
+      scoreHTML +
+      '<div class="pr-sec-h">' + esc(T(UI.bubbleRepIndH)) + '</div>' +
+      '<div class="pr-flow-note">' + esc(T(UI.bubbleRepIndLede)) + '</div>' +
+      indTableHTML +
+      '<div class="pr-sec-h">' + esc(T(UI.bubbleRepTierH)) + '</div>' +
+      bubbleTierLegendHTML() +
+      '<div class="pr-sec-h">' + esc(T(UI.bubbleRepBurstH)) + '</div>' +
+      '<div class="pr-flow-note">' + esc(T(UI.bubbleRepBurstLede)) + '</div>' +
+      rotationCol('bubbleRepSoldFirstH', 'bubbleRepSoldFirstD', 'bubbleRepSoldFirstEx') +
+      rotationCol('bubbleRepDefH', 'bubbleRepDefD', 'bubbleRepDefEx') +
+      rotationCol('bubbleRepSafeH', 'bubbleRepSafeD', 'bubbleRepSafeEx') +
+      '<div class="pr-flow-note" style="margin-top:10px;">' + esc(T(UI.bubbleRepTrendNote)) + '</div>' +
+      marketCycleHTML() +
+      '<div class="pr-foot">' + esc(T(UI.disclaimer)) + '</div>' +
+      qrContactPageHTML() +
+    '</div>';
+  }
+
   function doPrint(){
     function reveal(){
       document.body.classList.add('spz-printing-report');
@@ -45777,7 +46176,11 @@ var qrcode = function() {
   function renderReport(){
     var host = sec && sec.querySelector('[data-pr="sheet"]');
     if(!host) return;
-    host.innerHTML = reportType === 'gold' ? goldReportHTML() : reportType === 'idea' ? ideaReportHTML() : reportHTML();
+    host.innerHTML = reportType === 'gold' ? goldReportHTML()
+      : reportType === 'idea' ? ideaReportHTML()
+      : reportType === 'announcement' ? announcementReportHTML()
+      : reportType === 'bubble' ? bubbleReportHTML()
+      : reportHTML();
   }
 
   function paint(){
@@ -45790,6 +46193,43 @@ var qrcode = function() {
     if(q('typeMarket')) q('typeMarket').textContent = T(UI.typeMarket);
     if(q('typeGold')) q('typeGold').textContent = T(UI.typeGold);
     if(q('typeIdea')) q('typeIdea').textContent = T(UI.typeIdea);
+    if(q('typeAnnouncement')) q('typeAnnouncement').textContent = T(UI.typeAnnouncement);
+    if(q('typeBubble')) q('typeBubble').textContent = T(UI.typeBubble);
+    if(q('annTopicLbl')) q('annTopicLbl').textContent = T(UI.annTopicLbl);
+    if(q('annMsgLbl')) q('annMsgLbl').textContent = T(UI.annMsgLbl);
+    if(q('annImgLbl')) q('annImgLbl').textContent = T(UI.annImgLbl);
+    if(q('annImgHint')) q('annImgHint').textContent = T(UI.annImgHint);
+    var annTopicSel = q('annTopicSel');
+    if(annTopicSel){
+      annTopicSel.innerHTML = '<option value="">' + esc(T(UI.annTopicPh)) + '</option>' +
+        ANNOUNCEMENT_TOPICS.map(function(t){
+          return '<option value="' + esc(t.id) + '"' + (annTopic === t.id ? ' selected' : '') + '>' + esc(T({en:t.en, th:t.th})) + '</option>';
+        }).join('');
+      annTopicSel.value = annTopic;
+    }
+    var annOtherInput = q('annTopicOtherInput');
+    if(annOtherInput){
+      annOtherInput.style.display = annTopic === 'other' ? '' : 'none';
+      annOtherInput.placeholder = T(UI.annTopicOtherPh);
+      if(document.activeElement !== annOtherInput) annOtherInput.value = annTopicOther;
+    }
+    var annMsgInput = q('annMsgInput');
+    if(annMsgInput){
+      annMsgInput.placeholder = T(UI.annMsgPh);
+      if(document.activeElement !== annMsgInput) annMsgInput.value = annMessage;
+    }
+    var annImgList = q('annImgList');
+    if(annImgList){
+      annImgList.innerHTML = annImages.map(function(src, i){
+        return '<div style="position:relative;width:76px;height:76px;">' +
+          '<img src="' + esc(src) + '" style="width:100%;height:100%;object-fit:cover;border-radius:6px;border:1px solid var(--border-dim);">' +
+          '<button type="button" class="pr-mini" data-pr-annimg-remove="' + i + '" title="' + esc(T(UI.annImgRemove)) + '" ' +
+            'style="position:absolute;top:-6px;right:-6px;padding:2px 6px;background:#1a1a1a;">×</button>' +
+        '</div>';
+      }).join('');
+    }
+    var annWrap = q('annWrap');
+    if(annWrap) annWrap.style.display = reportType === 'announcement' ? '' : 'none';
     if(q('modeLbl')) q('modeLbl').textContent = T(UI.modeLbl);
     if(q('modeFull')) q('modeFull').textContent = T(UI.modeFull);
     if(q('modeSelect')) q('modeSelect').textContent = T(UI.modeSelect);
@@ -45802,11 +46242,15 @@ var qrcode = function() {
     if(q('qrToggle')) q('qrToggle').checked = includeQrPage;
     if(q('hint')) q('hint').textContent = T(UI.hint);
     var typeMarketBtn = q('typeMarket'), typeGoldBtn = q('typeGold'), typeIdeaBtn = q('typeIdea');
+    var typeAnnBtn = q('typeAnnouncement'), typeBubbleBtn = q('typeBubble');
     if(typeMarketBtn) typeMarketBtn.classList.toggle('on', reportType === 'market');
     if(typeGoldBtn) typeGoldBtn.classList.toggle('on', reportType === 'gold');
     if(typeIdeaBtn) typeIdeaBtn.classList.toggle('on', reportType === 'idea');
+    if(typeAnnBtn) typeAnnBtn.classList.toggle('on', reportType === 'announcement');
+    if(typeBubbleBtn) typeBubbleBtn.classList.toggle('on', reportType === 'bubble');
     var modeWrap = q('modeWrap');
-    if(modeWrap) modeWrap.style.display = (reportType === 'gold' || reportType === 'idea') ? 'none' : '';
+    if(modeWrap) modeWrap.style.display =
+      (reportType === 'gold' || reportType === 'idea' || reportType === 'announcement' || reportType === 'bubble') ? 'none' : '';
     var modeFullBtn = q('modeFull'), modeSelectBtn = q('modeSelect'), pickHost = q('picklist');
     if(modeFullBtn) modeFullBtn.classList.toggle('on', mode === 'full');
     if(modeSelectBtn) modeSelectBtn.classList.toggle('on', mode === 'select');
@@ -45822,6 +46266,8 @@ var qrcode = function() {
       if(t.closest('[data-pr="typeMarket"]')){ reportType = 'market'; paint(); return; }
       if(t.closest('[data-pr="typeGold"]')){ reportType = 'gold'; paint(); return; }
       if(t.closest('[data-pr="typeIdea"]')){ reportType = 'idea'; paint(); return; }
+      if(t.closest('[data-pr="typeAnnouncement"]')){ reportType = 'announcement'; paint(); return; }
+      if(t.closest('[data-pr="typeBubble"]')){ reportType = 'bubble'; paint(); return; }
       if(t.closest('[data-pr="modeFull"]')){ mode = 'full'; paint(); return; }
       if(t.closest('[data-pr="modeSelect"]')){ mode = 'select'; paint(); return; }
       if(t.closest('[data-pr="selAll"]')){
@@ -45830,6 +46276,13 @@ var qrcode = function() {
       if(t.closest('[data-pr="clearAll"]')){ picked = {}; paint(); return; }
       var chip = t.closest('.pr-chip');
       if(chip){ var tk = chip.getAttribute('data-tk'); picked[tk] = !picked[tk]; paint(); return; }
+      var rmBtn = t.closest('[data-pr-annimg-remove]');
+      if(rmBtn){
+        var idx = parseInt(rmBtn.getAttribute('data-pr-annimg-remove'), 10);
+        annImages.splice(idx, 1);
+        paint();
+        return;
+      }
       if(t.closest('[data-pr="printBtn"]')){ doPrint(); return; }
     });
     sec.addEventListener('input', function(ev){
@@ -45839,12 +46292,41 @@ var qrcode = function() {
         var pickHost = sec.querySelector('[data-pr="picklist"]');
         if(pickHost) pickHost.innerHTML = pickListHTML();
       }
+      if(t && t.getAttribute && t.getAttribute('data-pr') === 'annTopicOtherInput'){
+        annTopicOther = t.value;
+        renderReport();
+      }
+      if(t && t.getAttribute && t.getAttribute('data-pr') === 'annMsgInput'){
+        annMessage = t.value;
+        renderReport();
+      }
     });
     sec.addEventListener('change', function(ev){
       var t = ev.target;
       if(t && t.getAttribute && t.getAttribute('data-pr') === 'qrToggle'){
         includeQrPage = !!t.checked;
         renderReport();
+      }
+      if(t && t.getAttribute && t.getAttribute('data-pr') === 'annTopicSel'){
+        annTopic = t.value;
+        paint();
+      }
+      if(t && t.getAttribute && t.getAttribute('data-pr') === 'annImgInput'){
+        var files = Array.prototype.slice.call(t.files || []);
+        var room = ANN_MAX_IMAGES - annImages.length;
+        files = files.filter(function(f){ return f.type && f.type.indexOf('image/') === 0; }).slice(0, Math.max(0, room));
+        var remaining = files.length;
+        if(!remaining){ t.value = ''; return; }
+        files.forEach(function(f){
+          var reader = new FileReader();
+          reader.onload = function(){
+            annImages.push(reader.result);
+            remaining--;
+            if(remaining <= 0) paint();
+          };
+          reader.readAsDataURL(f);
+        });
+        t.value = '';
       }
     });
   }
@@ -45870,6 +46352,25 @@ var qrcode = function() {
             '<button type="button" class="pr-modebtn" data-pr="typeMarket"></button>' +
             '<button type="button" class="pr-modebtn" data-pr="typeGold"></button>' +
             '<button type="button" class="pr-modebtn" data-pr="typeIdea"></button>' +
+            '<button type="button" class="pr-modebtn" data-pr="typeAnnouncement"></button>' +
+            '<button type="button" class="pr-modebtn" data-pr="typeBubble"></button>' +
+          '</div>' +
+          '<div data-pr="annWrap" style="display:none;">' +
+            '<div class="pr-row" style="display:block;">' +
+              '<span class="pr-label" data-pr="annTopicLbl" style="display:block;margin-bottom:6px;"></span>' +
+              '<select class="pr-search" data-pr="annTopicSel" style="margin-bottom:8px;"></select>' +
+              '<input type="text" class="pr-search" data-pr="annTopicOtherInput" style="display:none;">' +
+            '</div>' +
+            '<div class="pr-row" style="display:block;">' +
+              '<span class="pr-label" data-pr="annMsgLbl" style="display:block;margin-bottom:6px;"></span>' +
+              '<textarea class="pr-search" data-pr="annMsgInput" rows="6" style="resize:vertical;min-height:120px;"></textarea>' +
+            '</div>' +
+            '<div class="pr-row" style="display:block;">' +
+              '<span class="pr-label" data-pr="annImgLbl" style="display:block;margin-bottom:6px;"></span>' +
+              '<input type="file" accept="image/*" multiple data-pr="annImgInput">' +
+              '<div class="pr-hint" data-pr="annImgHint" style="margin-top:6px;"></div>' +
+              '<div data-pr="annImgList" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>' +
+            '</div>' +
           '</div>' +
           '<div data-pr="modeWrap">' +
             '<div class="pr-row">' +
@@ -48184,6 +48685,27 @@ var qrcode = function() {
     display:flex;align-items:center;justify-content:center;padding:30px;cursor:zoom-out;
   }
   .jrnl-lightbox img{max-width:100%;max-height:100%;border-radius:6px;}
+  /* ---- single-post LINE-login paywall (journalView) ----
+     the list/titles page (journal) is never gated; only the post CONTENT
+     inside journalView gets blurred unguessably for a non-linked visitor,
+     with an overlay CTA to log in with LINE. */
+  .jrnl-locked{position:relative;}
+  .jrnl-locked-blur{filter:blur(22px) saturate(.5);-webkit-filter:blur(22px) saturate(.5);
+    transform:scale(1.06);user-select:none;pointer-events:none;}
+  .jrnl-locked-overlay{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:12px;text-align:center;padding:24px;background:rgba(4,5,4,.42);z-index:2;
+  }
+  .jrnl-locked-ico{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:rgba(204,255,0,.12);border:1px solid var(--neon);color:var(--neon);}
+  .jrnl-locked-ico svg{width:17px;height:17px;}
+  .jrnl-locked-msg{font-size:13.5px;color:var(--white);max-width:340px;line-height:1.6;}
+  .jrnl-locked-btn{
+    font-family:var(--mono);font-size:11.5px;letter-spacing:1.2px;text-transform:uppercase;
+    color:#0b0b0b;background:var(--neon);border:1px solid var(--neon);border-radius:20px;
+    padding:11px 22px;cursor:pointer;transition:opacity .2s;
+  }
+  .jrnl-locked-btn:hover{opacity:.85;}
   @media(max-width:860px){
     .jrnl-shell{flex-direction:column;}
     .jrnl-side{position:static;flex:none;width:100%;flex-direction:row;flex-wrap:wrap;}
@@ -48738,6 +49260,8 @@ var qrcode = function() {
     shareCopied:{en:'Link copied.',th:'คัดลอกลิงก์แล้ว'},
     backToLog:{en:'← Back to Analysis Log',th:'← กลับไปหน้าบทวิเคราะห์'},
     notFound:{en:'This entry could not be found — it may have been removed.',th:'ไม่พบบทวิเคราะห์นี้ — อาจถูกลบไปแล้ว'},
+    lineLockMsg:{en:'Log in with LINE to view this analysis.',th:'ต้องล็อกอินด้วย LINE ก่อนถึงจะดูบทวิเคราะห์นี้ได้'},
+    lineLockBtn:{en:'Log in with LINE',th:'ล็อกอินด้วย LINE'},
     edit:{en:'Edit',th:'แก้ไข'},
     cancelEdit:{en:'Cancel edit',th:'ยกเลิกการแก้ไข'},
     editingFlag:{en:'Editing this entry',th:'กำลังแก้ไขรายการนี้'},
@@ -48833,6 +49357,18 @@ var qrcode = function() {
 
   function shareUrlFor(id){
     return location.origin + location.pathname + '?entry=' + encodeURIComponent(id) + '#/journalView';
+  }
+
+  /* Same LINE session the auth gate and Watchlist page already share via
+     window.__SPZ_LINE -- reused here, not re-implemented, so there is still
+     only ever one login state across the whole site. Both the feed
+     (buildJournal) and the single-post view (buildJournalView) use this to
+     decide whether to blur a card's image/text behind a "log in with LINE"
+     overlay; everything else about an entry (asset tag, date, tags, stats,
+     filters) stays visible either way. */
+  function lineLinked(){
+    try { return !!(window.__SPZ_LINE && window.__SPZ_LINE.state && window.__SPZ_LINE.state().status === 'linked'); }
+    catch(e){ return false; }
   }
 
   /* ======================= PUBLIC LOG ======================= */
@@ -49008,7 +49544,9 @@ var qrcode = function() {
            with no image to rest on, it sits inline next to the date instead so it
            never overlaps the card's own text */
         var pinBadgeHtml = e.pinned ? '<span class="jrnl-pin-badge' + (e.imageUrl ? '' : ' inline') + '">' + esc(T(UI.pinned)) + '</span>' : '';
-        var card = el('div', 'jrnl-card',
+        var locked = !lineLinked();
+        var card = el('div', 'jrnl-card' + (locked ? ' jrnl-locked' : ''),
+          '<div class="' + (locked ? 'jrnl-locked-blur' : '') + '">' +
           (e.imageUrl ? (pinBadgeHtml + '<img class="jrnl-card-img" src="' + esc(e.imageUrl) + '" loading="lazy" alt="">') : '') +
           '<div class="jrnl-card-body">' +
             '<div class="jrnl-card-top"><span class="jrnl-card-asset">' + esc(e.asset || '—') + '</span>' +
@@ -49019,8 +49557,23 @@ var qrcode = function() {
             cardLevelsHtml(e) +
             '<div class="jrnl-card-text"></div>' +
             '<div class="jrnl-card-actions">' + likeWrapHTML() + '<button type="button" class="jrnl-share-btn" data-share></button></div>' +
-          '</div>');
-        card.querySelector('.jrnl-card-text').textContent = e.text || '';
+          '</div>' +
+          '</div>' +
+          (locked ?
+            '<div class="jrnl-locked-overlay">' +
+              '<div class="jrnl-locked-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></div>' +
+              '<div class="jrnl-locked-msg"></div>' +
+              '<button type="button" class="jrnl-locked-btn" data-line-login></button>' +
+            '</div>' : ''));
+        card.querySelector('.jrnl-card-text').textContent = locked ? '' : (e.text || '');
+        if(locked){
+          card.querySelector('.jrnl-locked-msg').textContent = T(UI.lineLockMsg);
+          var lbtn = card.querySelector('.jrnl-locked-btn');
+          lbtn.textContent = T(UI.lineLockBtn);
+          lbtn.addEventListener('click', function(ev){ ev.stopPropagation(); if(window.__SPZ_LINE) window.__SPZ_LINE.open(); });
+          feed.appendChild(card);
+          return; /* no share/like/lightbox wiring while content is locked */
+        }
         card.querySelector('[data-share]').textContent = T(UI.share);
         card.querySelector('[data-share]').addEventListener('click', function(ev){
           ev.stopPropagation();
@@ -49069,6 +49622,10 @@ var qrcode = function() {
     wireSearchSort();
     load();
     sec.__render = function(){ paintChrome(); paintTags(); paintTagFilters(); paintFeed(); paintStats(); };
+    // unblur every card immediately on a successful LINE login (or re-blur
+    // on logout) without a reload -- same event the auth gate/Watchlist
+    // already dispatch on every state change.
+    document.addEventListener('spz:line', function(){ paintFeed(); });
     return sec;
   }
 
@@ -49739,7 +50296,9 @@ var qrcode = function() {
         ? '<span class="jrnl-outcome-badge ' + e.outcome + '">' + esc(e.outcome === 'correct' ? T(UI.outcomeCorrect) : T(UI.outcomeIncorrect)) + '</span>'
         : '';
       var pinBadgeHtml = e.pinned ? '<span class="jrnl-pin-badge' + (e.imageUrl ? '' : ' inline') + '">' + esc(T(UI.pinned)) + '</span>' : '';
-      var card = el('div', 'jrnl-card',
+      var locked = !lineLinked();
+      var card = el('div', 'jrnl-card' + (locked ? ' jrnl-locked' : ''),
+        '<div class="' + (locked ? 'jrnl-locked-blur' : '') + '">' +
         (e.imageUrl ? (pinBadgeHtml + '<img class="jrnl-card-img" src="' + esc(e.imageUrl) + '" loading="lazy" alt="">') : '') +
         '<div class="jrnl-card-body">' +
           '<div class="jrnl-card-top"><span class="jrnl-card-asset">' + esc(e.asset || '—') + '</span>' +
@@ -49750,8 +50309,22 @@ var qrcode = function() {
           cardLevelsHtml(e) +
           '<div class="jrnl-card-text"></div>' +
           '<div class="jrnl-card-actions">' + likeWrapHTML() + '<button type="button" class="jrnl-share-btn" data-share></button></div>' +
-        '</div>');
-      card.querySelector('.jrnl-card-text').textContent = e.text || '';
+        '</div>' +
+        '</div>' +
+        (locked ?
+          '<div class="jrnl-locked-overlay">' +
+            '<div class="jrnl-locked-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></div>' +
+            '<div class="jrnl-locked-msg"></div>' +
+            '<button type="button" class="jrnl-locked-btn" data-line-login></button>' +
+          '</div>' : ''));
+      card.querySelector('.jrnl-card-text').textContent = locked ? '' : (e.text || '');
+      if(locked){
+        card.querySelector('.jrnl-locked-msg').textContent = T(UI.lineLockMsg);
+        var lb = card.querySelector('.jrnl-locked-btn');
+        lb.textContent = T(UI.lineLockBtn);
+        lb.addEventListener('click', function(){ if(window.__SPZ_LINE) window.__SPZ_LINE.open(); });
+        return card; /* no like/share/lightbox wiring while content is locked */
+      }
       wireLike(card, e.id);
       var shareBtn = card.querySelector('[data-share]');
       shareBtn.textContent = T(UI.share);
@@ -49815,6 +50388,10 @@ var qrcode = function() {
     paint();
     load();
     sec.__render = function(){ paint(); };
+    // unblur immediately on a successful LINE login (or re-blur on logout)
+    // without needing a reload -- same event the auth gate/Watchlist already
+    // dispatch on every state change.
+    document.addEventListener('spz:line', function(){ paint(); });
     return sec;
   }
 
