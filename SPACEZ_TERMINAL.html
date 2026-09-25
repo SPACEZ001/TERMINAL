@@ -2934,7 +2934,14 @@
     box-shadow:inset 0 1px 0 var(--dc-wash), 0 12px 34px rgba(0,0,0,.45), 0 0 24px var(--dc-glow);
   }
   .dev-card.in-menu{grid-column:1/-1;margin-bottom:4px;}
-  .dev-card.in-hub{min-height:172px;display:flex;flex-direction:column;justify-content:center;}
+  /* the developer card and (when linked) the personal LINE card sit side by
+     side at the bottom of the Home hub -- wrapped in .hub-bio-row (a single
+     full-width grid cell containing its own flex row) so they always stretch
+     to the SAME height, regardless of which one has more content, instead of
+     each being its own separate hub-grid cell whose height only matches its
+     own content. */
+  .hub-bio-row{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:15px;}
+  .dev-card.in-hub{min-height:172px;flex:1 1 260px;display:flex;flex-direction:column;justify-content:center;}
   /* engraved-plaque corner brackets — the "executive" cue */
   .dev-card::before,.dev-card::after{
     content:'';position:absolute;z-index:2;pointer-events:none;
@@ -3041,7 +3048,7 @@
     animation:devHoleBreathe 5s ease-in-out infinite;
   }
   @keyframes devHoleBreathe{0%,100%{filter:brightness(1);}50%{filter:brightness(1.1);}}
-  .dev-card > *:not(.dev-grid):not(.dev-stars):not(.dev-hole):not(.dev-wm){position:relative;z-index:1;}
+  .dev-card > *:not(.dev-grid):not(.dev-stars):not(.dev-hole):not(.dev-wm):not(.dev-flagship-sweep){position:relative;z-index:1;}
 
   /* animated translucent site-mark watermark, drawn with the same SVG the
      boot logo uses — a moving dashed outline, not a static image */
@@ -3105,15 +3112,52 @@
     .dev-hole::after{width:68px;height:68px;}
   }
 
-  /* ---- Home page's personal LINE-identity card (a card of its own, next to
-     the developer bio card above -- never replacing it) -- reuses the exact
-     .dev-card shell/animation (accented green via --dc-accent below) so it
-     visually belongs to the same family, but its body is name+note+edit
-     instead of the developer's social links. */
-  .dev-card.line-personal{margin-top:14px;--dc-accent:#06C755;--dc-glow:rgba(6,199,85,.4);--dc-wash:rgba(6,199,85,.07);}
+  /* ---- personal LINE-identity card: on the Home hub it sits next to the
+     developer bio card (in a .hub-bio-row -- see above); in the nav-menu
+     drawer it REPLACES the developer card in that same hero slot for a
+     LINE-linked visitor (see buildNav()'s paint()). Reuses the exact
+     .dev-card shell/animation so it visually belongs to the same family.
+     Accent color is no longer a fixed green -- personalLineCard() sets
+     --dc-accent/--dc-glow/--dc-wash inline per the visitor's admin-assigned
+     rights tier (same colors as the Connected Users admin page); with no
+     assigned rights it's left at the .dev-card base's own plain/neutral
+     scheme, same as the developer card. */
+  /* no top margin here any more -- .hub-bio-row's own `gap` handles spacing
+     now that the two cards sit side by side instead of stacked. */
+  .dev-card.line-personal{margin-top:0;}
+  /* academy/admin ("flagship") tiers get the same diagonal light-sweep the
+     Connected Users list already gives those rows (.cu-card.flagship) -- a
+     real span here rather than ::before/::after, since .dev-card's own
+     corner-bracket pseudo-elements already occupy those. */
+  .dev-flagship-sweep{
+    position:absolute;inset:0;z-index:0;pointer-events:none;
+    background:linear-gradient(120deg, transparent 20%, rgba(255,255,255,.16) 45%, transparent 70%);
+    transform:translateX(-120%);animation:cuFlagshipSweep 5.5s ease-in-out infinite;
+  }
   .dev-ava-fallback{width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;
     background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.16);color:var(--dc-accent);}
   .dev-ava-fallback svg{width:60%;height:60%;}
+  /* nav-menu compact layout: name row + a small edit-affordance button on
+     the same line, instead of the hub card's full-width "Edit profile" text
+     button below the note -- see personalLineCard()'s isMenu branch. */
+  .lc-head-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .lc-head-row .dev-top{flex:1;min-width:0;}
+  /* .lc-editbtn.lc-dots-btn (not just .lc-dots-btn) so this beats the plain
+     .lc-editbtn text-button rule on specificity regardless of source order --
+     the button carries both classes. */
+  .lc-editbtn.lc-dots-btn{
+    flex-shrink:0;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    border:1px solid color-mix(in srgb, var(--dc-accent) 40%, transparent);background:transparent;
+    color:var(--grey,#a9ae9f);cursor:pointer;transition:background .15s,color .15s;margin-top:0;padding:0;
+  }
+  .lc-editbtn.lc-dots-btn svg{width:16px;height:16px;display:block;}
+  .lc-editbtn.lc-dots-btn:hover{background:color-mix(in srgb, var(--dc-accent) 14%, transparent);color:var(--dc-accent);}
+  /* rights badge + remaining-access-time -- occupies the slot where the
+     developer card's Instagram/Facebook links go; shown only when the admin
+     has assigned a tier and/or set an access period, nothing otherwise. */
+  .lc-rights-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .lc-access-text{font-family:var(--mono);font-size:10px;letter-spacing:.3px;color:var(--grey-dim);}
+  .lc-access-text.expired{color:#ff6b6b;}
   .lc-note{font-size:12px;line-height:1.6;color:var(--grey,#a9ae9f);margin-top:12px;white-space:pre-wrap;overflow-wrap:anywhere;}
   .lc-note.empty{opacity:.55;font-style:italic;}
   .lc-editbtn{
@@ -17325,15 +17369,19 @@ var CL_UI = {
           g.appendChild(c);
         })(ROUTES[i], i + 1);
       }
-      if(window.__spzBioCard) g.appendChild(window.__spzBioCard('in-hub'));
-      /* a second, separate card -- only for a LINE-linked visitor, showing
-         THEIR OWN photo/name/note instead of the developer's. Never replaces
-         the card above; window.__spzPersonalCard returns null when nobody
-         is linked, so nothing extra renders for an ordinary visitor. */
+      /* both cards go in a shared full-width flex row (.hub-bio-row) rather
+         than as two separate hub-grid cells, so they always stretch to the
+         SAME height regardless of which one has more content -- see that
+         class's CSS. window.__spzPersonalCard returns null when nobody is
+         linked, so an ordinary visitor still gets just the one dev card,
+         same as before. */
+      var bioRow = el('div', 'hub-bio-row');
+      if(window.__spzBioCard) bioRow.appendChild(window.__spzBioCard('in-hub'));
       if(window.__spzPersonalCard){
         var pc = window.__spzPersonalCard('in-hub');
-        if(pc) g.appendChild(pc);
+        if(pc) bioRow.appendChild(pc);
       }
+      g.appendChild(bioRow);
     }
     repaints.push(paint);
     // rebuild the hub the instant LINE links/unlinks (from ANY entry point --
@@ -17503,39 +17551,85 @@ var CL_UI = {
     }
     window.__spzBioCard = bioCard;
 
-    /* A second, separate "who's looking at this" card -- shown only to a
-       LINE-linked visitor, on the Home page next to (never instead of) the
-       developer bio card above. Their own LINE photo + name (editable --
-       defaults to their real LINE name, but they can override it) and a
-       free-text "about me" note (no Facebook/Instagram links here, unlike
-       the developer card). Edit reuses the same self-service Worker
-       endpoint the Watchlist page's own connect strip already uses, just
-       different fields (window.__SPZ_LINE.updateIdentity, not updateProfile). */
+    /* A second, separate "who's looking at this" card -- shown to a
+       LINE-linked visitor. On the Home hub it sits next to the developer bio
+       card (never instead of it); in the nav-menu drawer it takes over the
+       developer card's own hero slot instead (see buildNav()'s paint()).
+       Their own LINE photo + name (editable -- defaults to their real LINE
+       name, but they can override it) and a free-text "about me" note (no
+       Facebook/Instagram links here, unlike the developer card -- that slot
+       instead shows their admin-assigned rights tier + remaining access time,
+       when the admin has set either). Edit reuses the same self-service
+       Worker endpoint the Watchlist page's own connect strip already uses,
+       just different fields (window.__SPZ_LINE.updateIdentity, not
+       updateProfile). cls === 'in-menu' switches to the compact nav-drawer
+       layout: a small three-dot button next to the name instead of the
+       hub card's full-width "Edit profile" text button. */
     var PERSON_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c0-4 4-6 8-6s8 2 8 6"></path></svg>';
+    var DOTS_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg>';
+    /* "N days left" / "expired" text for whatever access period the admin
+       set (accessUntil, a YYYY-MM-DD string) -- same date math as the
+       Connected Users page's own accessState(), just phrased for the
+       visitor's own card instead of an admin row. null when nothing is set,
+       so the caller shows nothing at all rather than a blank/zero value. */
+    function accessRemainingText(accessUntil, th){
+      if(!accessUntil) return null;
+      var today = new Date().toISOString().slice(0, 10);
+      var msLeft = new Date(accessUntil + 'T00:00:00Z') - new Date(today + 'T00:00:00Z');
+      var days = Math.round(msLeft / 86400000);
+      if(days < 0) return { expired:true, text: th ? 'หมดอายุแล้ว' : 'Expired' };
+      if(days === 0) return { expired:false, text: th ? 'หมดอายุวันนี้' : 'Expires today' };
+      return { expired:false, text: th ? ('เหลืออีก ' + days + ' วัน') : (days + (days === 1 ? ' day left' : ' days left')) };
+    }
     function personalLineCard(cls){
       if(!window.__SPZ_LINE) return null;
       var lineSt = window.__SPZ_LINE.state();
       if(lineSt.status !== 'linked') return null;
       var th = L() === 'th';
+      var isMenu = cls === 'in-menu';
       var name = (lineSt.nameOverride || lineSt.displayName || '').trim() || (th ? 'สมาชิก LINE' : 'LINE Member');
       var avatarHTML = lineSt.pictureUrl
         ? '<img src="' + esc(lineSt.pictureUrl) + '" alt="" loading="lazy">'
         : '<span class="dev-ava-fallback">' + PERSON_ICON + '</span>';
-      var wrap = el('div', 'dev-card line-personal ' + (cls || ''),
+
+      /* tier color -- reuses the exact Connected Users palette (see
+         window.__SPZ_RIGHTS, exposed by that module) so a visitor's own
+         nav-bar card frames itself the same way the admin already sees them
+         framed on that page. No assigned rights -> no override -> the
+         .dev-card base's own plain/neutral scheme (same as the dev card). */
+      var rMeta = (window.__SPZ_RIGHTS && window.__SPZ_RIGHTS.meta) ? window.__SPZ_RIGHTS.meta(lineSt.rights) : null;
+      var flagship = !!(rMeta && rMeta.flagship);
+      var badgeHTML = (rMeta && window.__SPZ_RIGHTS.badgeHTML) ? window.__SPZ_RIGHTS.badgeHTML(lineSt.rights) : '';
+      var remain = accessRemainingText(lineSt.accessUntil, th);
+      var rightsRowHTML = (badgeHTML || remain)
+        ? '<div class="lc-rights-row">' + badgeHTML +
+          (remain ? '<span class="lc-access-text' + (remain.expired ? ' expired' : '') + '">' + esc(remain.text) + '</span>' : '') +
+          '</div>'
+        : '';
+
+      var editLabel = esc(th ? 'แก้ไขข้อมูล' : 'Edit profile');
+      var dotsBtnHTML = '<button type="button" class="lc-editbtn lc-dots-btn" data-lc="editBtn" aria-label="' + editLabel + '" title="' + editLabel + '">' + DOTS_ICON + '</button>';
+      var textBtnHTML = '<button type="button" class="lc-editbtn" data-lc="editBtn">' + editLabel + '</button>';
+
+      var wrap = el('div', 'dev-card line-personal' + (flagship ? ' flagship' : '') + ' ' + (cls || ''),
         '<span class="dev-grid"></span>' +
         '<span class="dev-stars"></span>' +
         '<span class="dev-hole"></span>' +
-        '<div class="dev-top">' +
-          '<span class="dev-ava">' + avatarHTML + '<span class="dev-ring"></span><span class="dev-live"></span></span>' +
-          '<span class="dev-info">' +
-            '<span class="dev-lab">' + esc(th ? 'เข้าสู่ระบบด้วย LINE' : 'Signed in with LINE') + '</span>' +
-            '<span class="dev-name" data-lc="name">' + esc(name) + '</span>' +
-          '</span>' +
-        '</div>' +
+        (flagship ? '<span class="dev-flagship-sweep"></span>' : '') +
+        (isMenu ? '<div class="lc-head-row">' : '') +
+          '<div class="dev-top">' +
+            '<span class="dev-ava">' + avatarHTML + '<span class="dev-ring"></span><span class="dev-live"></span></span>' +
+            '<span class="dev-info">' +
+              '<span class="dev-lab">' + esc(th ? 'เข้าสู่ระบบด้วย LINE' : 'Signed in with LINE') + '</span>' +
+              '<span class="dev-name" data-lc="name">' + esc(name) + '</span>' +
+            '</span>' +
+          '</div>' +
+          (isMenu ? dotsBtnHTML + '</div>' : '') +
+        rightsRowHTML +
         '<div class="lc-note' + (lineSt.note ? '' : ' empty') + '" data-lc="noteDisplay">' +
           esc(lineSt.note || (th ? 'ยังไม่ได้เขียนแนะนำตัว' : 'No bio written yet.')) +
         '</div>' +
-        '<button type="button" class="lc-editbtn" data-lc="editBtn">' + esc(th ? 'แก้ไขข้อมูล' : 'Edit profile') + '</button>' +
+        (isMenu ? '' : textBtnHTML) +
         '<div class="lc-edit-panel hidden" data-lc="editPanel">' +
           '<span class="lc-field-label">' + esc(th ? 'ชื่อที่แสดง' : 'Display name') + '</span>' +
           '<input type="text" class="lc-input" data-lc="nameInput" maxlength="40" value="' + esc(name) + '">' +
@@ -17546,6 +17640,12 @@ var CL_UI = {
             '<span class="lc-status" data-lc="status"></span>' +
           '</div>' +
         '</div>');
+
+      if(rMeta){
+        wrap.style.setProperty('--dc-accent', rMeta.color);
+        wrap.style.setProperty('--dc-glow', rMeta.color + '66');
+        wrap.style.setProperty('--dc-wash', rMeta.color + '14');
+      }
 
       var panel = wrap.querySelector('[data-lc="editPanel"]');
       wrap.querySelector('[data-lc="editBtn"]').addEventListener('click', function(){
@@ -17626,7 +17726,12 @@ var CL_UI = {
     function paint(){
       menu.querySelector('[data-n="lbl"]').textContent = L() === 'th' ? 'เมนู' : 'Menu';
       pop.innerHTML = '';
-      var hero = bioCard('in-menu');
+      /* a LINE-linked visitor gets their OWN personal card here instead of
+         the developer card -- same hero slot, same treatment (see
+         .dev-card.in-menu) -- since window.__spzPersonalCard('in-menu')
+         returns null when nobody is linked, this falls back to the
+         developer card exactly as before for an ordinary visitor. */
+      var hero = (window.__spzPersonalCard && window.__spzPersonalCard('in-menu')) || bioCard('in-menu');
       var heroLinks = hero.querySelectorAll('.dev-btn');
       for(var hl = 0; hl < heroLinks.length; hl++){
         heroLinks[hl].addEventListener('click', function(){ menu.classList.remove('open'); });
@@ -17696,6 +17801,11 @@ var CL_UI = {
     }
     window.__spzSyncNav = syncNav;
     repaints.push(paint);
+    // rebuild the drawer the instant LINE links/unlinks (from ANY entry
+    // point), so the hero slot swaps between the developer card and this
+    // visitor's own personal card right away, without needing a language
+    // toggle or route change to trigger the next repaint.
+    document.addEventListener('spz:line', paint);
     paint();
   }
 
@@ -33649,6 +33759,8 @@ var GM = {
         state.line.instagram = data.instagram || '';
         state.line.nameOverride = data.nameOverride || '';
         state.line.note = data.note || '';
+        state.line.rights = data.rights || null;
+        state.line.accessUntil = data.accessUntil || null;
         lineSaveSession();
         paint();
         paintLineModal();
@@ -33787,6 +33899,8 @@ var GM = {
               state.line.instagram = dd.instagram || '';
               state.line.nameOverride = dd.nameOverride || '';
               state.line.note = dd.note || '';
+              state.line.rights = dd.rights || null;
+              state.line.accessUntil = dd.accessUntil || null;
               paint();
               lineNotify();
             })
@@ -34993,7 +35107,8 @@ var GM = {
       return { status: state.line.status, displayName: state.line.displayName || null,
         pictureUrl: state.line.pictureUrl || null, tickers: (state.line.tickers || []).slice(),
         uid: state.line.uid || null, facebook: state.line.facebook || '', instagram: state.line.instagram || '',
-        nameOverride: state.line.nameOverride || '', note: state.line.note || '' };
+        nameOverride: state.line.nameOverride || '', note: state.line.note || '',
+        rights: state.line.rights || null, accessUntil: state.line.accessUntil || null };
     },
     logout: function(){ lineLogout(); },
     like: function(postId, cb){ lineLikeToggle(postId, cb); },
@@ -46720,6 +46835,17 @@ var qrcode = function() {
     if(!m) return '';
     return '<span class="cu-rights-badge' + (m.flagship ? ' flagship' : '') + '" style="color:' + m.color + ';border:1px solid ' + m.color + '55;background:' + m.color + '1f;">' + esc(T(m.label)) + '</span>';
   }
+  /* Read-only exposure for other modules -- right now, the Home page/nav-menu
+     personal LINE card wants the exact same tier color + badge + expiry-text
+     treatment this page already established, rather than re-deriving it.
+     accessState/fmtDate are declared further down in this module but are
+     function declarations, so they're hoisted and safe to reference here. */
+  window.__SPZ_RIGHTS = {
+    meta: rightsMeta,
+    badgeHTML: rightsBadgeHTML,
+    accessState: function(u){ return accessState(u); },
+    fmtDate: function(d){ return fmtDate(d); }
+  };
 
   var sec = null;
   var users = null;        // loaded list, or null if not loaded yet
