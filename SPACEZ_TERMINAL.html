@@ -38753,6 +38753,10 @@ var GM = {
   .cag-member-code:hover{background:color-mix(in srgb, var(--cag-accent-2) 8%, transparent);border-color:var(--cag-accent-2);}
   .cag-member-code.copied{border-color:var(--cag-accent);color:var(--cag-accent);}
   .cag-member-hint{font-size:.6rem;color:#7a7d72;text-align:center;letter-spacing:.04em;line-height:1.6;}
+  .cag-member-linenote{
+    font-size:.62rem;color:#7a7d72;text-align:center;line-height:1.7;
+    margin-top:4px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.08);
+  }
   #cagUpgradeBtn.hidden{display:none;}
 
   .cag-head{width:100%;display:flex;align-items:flex-end;justify-content:space-between;gap:8px;}
@@ -39092,6 +39096,8 @@ var GM = {
     memberT:{en:'MEMBER LOGIN',th:'MEMBER LOGIN'},
     memberS:{en:'Short code · unlocks the real analysis tools',th:'รหัสสั้น · ปลดล็อกเครื่องมือวิเคราะห์จริง'},
     memberCodeHint:{en:'Tap the code to copy it, then paste it below',th:'แตะรหัสเพื่อคัดลอก แล้ววางไว้ในช่องด้านล่าง'},
+    memberLineNote:{en:'Free for now. This code unlocks the analysis tools, but not My Watchlist — that needs the LINE tab above instead, which unlocks the same tools too.',
+                    th:'ตอนนี้ยังใช้ฟรีอยู่ รหัสนี้ปลดล็อกเครื่องมือวิเคราะห์ได้ แต่ใช้วอทช์ลิสต์ของฉันไม่ได้ — ต้องเชื่อมต่อผ่านแท็บ LINE ด้านบนแทน ซึ่งจะปลดล็อกเครื่องมือชุดเดียวกันนี้ให้ด้วย'},
     memberCopied:{en:'Copied ✓',th:'คัดลอกแล้ว ✓'},
     memberLoggedT:{en:'MEMBER',th:'MEMBER'},
     memberLoggedS:{en:'You have member access.',th:'คุณเข้าสู่ระบบระดับ MEMBER แล้ว'},
@@ -39124,8 +39130,8 @@ var GM = {
     ],
     failTitle:{en:'TAMPERING DETECTED',th:'ตรวจพบการปลอมแปลง'},
     failBody:{en:'Auth tag mismatch · aborting · no data released',th:'ลายเซ็นไม่ตรง · ยกเลิกการทำงาน · ไม่มีข้อมูลถูกปล่อยออกมา'},
-    toastMember:{en:'Member access — open it with the short member code.',
-                 th:'เฉพาะสมาชิก — เปิดได้ด้วยรหัสสมาชิกแบบสั้น'},
+    toastMember:{en:'Member access — open it with the short member code, or by connecting LINE.',
+                 th:'เฉพาะสมาชิก — เปิดได้ด้วยรหัสสมาชิกแบบสั้น หรือเชื่อมต่อผ่าน LINE'},
     toastAdmin:{en:'Admin access only.',th:'เฉพาะแอดมินเท่านั้น'},
     toastBtn:{en:'Unlock',th:'ปลดล็อก'}
   };
@@ -39269,6 +39275,7 @@ var GM = {
             '<div class="cag-err hidden" id="cagErrMember"></div>' +
             '<button class="cag-btn" type="button" id="cagBtnMember" data-x="enterMember"></button>' +
             '<button class="cag-ghost" type="button" id="cagToFull" data-x="toFullLink"></button>' +
+            '<div class="cag-member-linenote" data-x="memberLineNote"></div>' +
           '</div>' +
 
           '<div class="cag-pane" id="cagPaneAdv">' +
@@ -39511,6 +39518,7 @@ var GM = {
         tabMember: TXT.tabMember, tabFull: TXT.tabFull, tabLine: TXT.tabLine,
         lineName: lineNameTxt, lineStatus: lineStatusTxt, lineBtn: lineBtnTxt,
         memberT: TXT.memberT, memberS: TXT.memberS, memberCodeHint: TXT.memberCodeHint,
+        memberLineNote: TXT.memberLineNote,
         enterMember: TXT.enter, toFullLink: TXT.toFullLink, toMemberLink: TXT.toMemberLink,
         fullT: TXT.fullT, fullS: TXT.fullS,
         bulk: TXT.bulk, mask: TXT.mask, clear: TXT.clear, spread: TXT.spread, bulkHint: TXT.bulkHint,
@@ -39585,10 +39593,22 @@ var GM = {
     return m ? m[1] : null;
   }
   var MEMBER_ROUTES = ['stock','watchlist','bubble','chartlab','directory','regime','journal','journalView'];
+  /* A LINE-linked visitor gets the same MEMBER_ROUTES access as a Member-code
+     login, without also having to paste that code in -- a stand-in for a
+     real membership system, not a change to what "Member" means: this only
+     reads window.__SPZ_LINE (the Watchlist module's own status accessor,
+     already used elsewhere), never touches sessionStorage.spacez.auth or
+     currentTier itself, and Admin ('full' tier) is untouched either way --
+     only the real admin password ever clears that check. */
+  function lineIsLinkedNow(){
+    try { return !!(window.__SPZ_LINE && window.__SPZ_LINE.state && window.__SPZ_LINE.state().status === 'linked'); }
+    catch(e){ return false; }
+  }
   function isLockedRoute(id){
     if(LOCKED_ROUTES.indexOf(id) === -1) return false;
     if(currentTier === 'full') return false;
     if(currentTier === 'member') return MEMBER_ROUTES.indexOf(id) === -1;
+    if(MEMBER_ROUTES.indexOf(id) !== -1 && lineIsLinkedNow()) return false;
     return true;
   }
   var LOCK_SEL = '[data-route-to], [data-hvgo], [data-hub-go], a[href^="#/"]';
@@ -39691,6 +39711,14 @@ var GM = {
       location.hash = '#/now';
     }
   });
+
+  /* registered unconditionally (not inside buildGate(), which only runs
+     once the corner login popup has been opened at least once) so nav lock
+     badges refresh the instant LINE links or unlinks, even for a visitor
+     who never opened that popup -- covers both a fresh link/logout action
+     and the async "already linked from a previous visit" resolution on
+     page load (lineRestoreFromWorker fires this same event when it's done). */
+  document.addEventListener('spz:line', function(){ paintLockVeils(); });
 
   document.addEventListener('keydown', function(ev){
     if(ev.key === 'Escape' && gate && !gate.hidden) gate.hidden = true;
