@@ -32462,7 +32462,11 @@ var GM = {
   .wlshare-chips{display:flex;flex-wrap:wrap;gap:6px;}
   .wlshare-chip{font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:20px;background:rgba(143,211,255,.1);border:1px solid rgba(143,211,255,.18);color:#f4f6f1;}
   .wlshare-chip.more{color:#8087a0;background:rgba(255,255,255,.05);border-color:transparent;}
-  .wlshare-foot{margin-top:auto;padding-top:18px;font-size:8.5px;color:#565b6e;letter-spacing:.02em;line-height:1.5;position:relative;z-index:1;}
+  .wlshare-foot-row{margin-top:auto;padding-top:18px;display:flex;align-items:flex-end;justify-content:space-between;gap:14px;position:relative;z-index:1;}
+  .wlshare-foot{font-size:8.5px;color:#565b6e;letter-spacing:.02em;line-height:1.5;flex:1;min-width:0;}
+  .wlshare-qr{display:flex;flex-direction:column;align-items:center;gap:4px;flex:0 0 auto;}
+  .wlshare-qr img{width:46px;height:46px;border-radius:6px;background:#fff;padding:3px;display:block;}
+  .wlshare-qr span{font-size:7.5px;color:#8087a0;text-transform:uppercase;letter-spacing:.05em;text-align:center;max-width:70px;line-height:1.3;}
   .wlshare-actions{display:flex;gap:10px;margin-top:16px;}
   .wlshare-action-btn{
     flex:1;background:transparent;border:1px solid rgba(255,255,255,.2);color:#fff;
@@ -33169,6 +33173,7 @@ var GM = {
     shareHoldingsLabel:{en:'Holdings',th:'หุ้นที่ถือ'},
     shareFooter:{en:'spacez001.github.io/TERMINAL · Educational use only, not financial advice.',
                  th:'spacez001.github.io/TERMINAL · เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน'},
+    shareQrCap:{en:'Scan to try SPACEZ TERMINAL',th:'สแกนเพื่อลองใช้ SPACEZ TERMINAL'},
     shareDownload:{en:'Download image',th:'บันทึกเป็นรูปภาพ'},
     sharePrint:{en:'Print / Save as PDF',th:'พิมพ์ / บันทึกเป็น PDF'},
     shareRendering:{en:'Preparing image…',th:'กำลังเตรียมรูป…'},
@@ -34194,7 +34199,13 @@ var GM = {
         '<div class="wlshare-label">' + esc(tx(C.shareHoldingsLabel)) + '</div>' +
         '<div class="wlshare-chips">' + chipsHTML + '</div>' +
       '</div>' +
-      '<div class="wlshare-foot">' + esc(tx(C.shareFooter)) + '</div>' +
+      '<div class="wlshare-foot-row">' +
+        '<div class="wlshare-foot">' + esc(tx(C.shareFooter)) + '</div>' +
+        '<div class="wlshare-qr">' +
+          '<img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=0&data=' + encodeURIComponent('https://spacez001.github.io/TERMINAL/') + '" alt="QR" crossorigin="anonymous">' +
+          '<span>' + esc(tx(C.shareQrCap)) + '</span>' +
+        '</div>' +
+      '</div>' +
     '</div>';
   }
 
@@ -38758,6 +38769,7 @@ var GM = {
     margin-top:4px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.08);
   }
   #cagUpgradeBtn.hidden{display:none;}
+  #cagBtnLogout.hidden{display:none;}
 
   .cag-head{width:100%;display:flex;align-items:flex-end;justify-content:space-between;gap:8px;}
   .cag-head b{display:block;font-size:.8rem;font-weight:700;color:var(--cag-accent);letter-spacing:.1em;}
@@ -39101,6 +39113,8 @@ var GM = {
     memberCopied:{en:'Copied ✓',th:'คัดลอกแล้ว ✓'},
     memberLoggedT:{en:'MEMBER',th:'MEMBER'},
     memberLoggedS:{en:'You have member access.',th:'คุณเข้าสู่ระบบระดับ MEMBER แล้ว'},
+    lineLoggedT:{en:'LINE',th:'LINE'},
+    lineLoggedS:{en:'Signed in via LINE — you have the same access as a member.',th:'เข้าสู่ระบบผ่าน LINE — คุณมีสิทธิ์เข้าถึงเทียบเท่าเมมเบอร์'},
     upgradeBtn:{en:'Log in as Admin instead',th:'เข้าสู่ระบบแอดมินแทน'},
     toFullLink:{en:'Have the 50-field admin code instead?',th:'มีรหัสแอดมิน 50 ช่องใช่ไหม?'},
     toMemberLink:{en:'Have a short MEMBER code instead?',th:'มีรหัส MEMBER สั้น ๆ ใช่ไหม?'},
@@ -39461,7 +39475,19 @@ var GM = {
 
   function paint(){
     if(!gate) return;
-    var loggedIn = currentTier === 'full' || currentTier === 'member';
+
+    // LINE identity status -- independent of currentTier. This reads the
+    // one shared session the Watchlist module owns; if that module hasn't
+    // booted yet (window.__SPZ_LINE not yet defined), treat it as idle.
+    // Computed up front (moved ahead of the loggedIn/pane checks below) so
+    // a visitor who only linked LINE -- never entered the member code --
+    // also lands on the persistent "signed in" screen with their name and
+    // a logout button, instead of the tab picker reappearing once the QR
+    // popup's own brief "connected" beat closes itself.
+    var lineSt = window.__SPZ_LINE ? window.__SPZ_LINE.state() : { status:'idle', displayName:null, pictureUrl:null };
+    var lineLinked = lineSt.status === 'linked';
+
+    var loggedIn = currentTier === 'full' || currentTier === 'member' || lineLinked;
     if(paneOut) paneOut.classList.toggle('active', loggedIn);
     if(tabsEl) tabsEl.style.display = loggedIn ? 'none' : 'flex';
     var adminLinks = gate.querySelector('#cagAdminLinks');
@@ -39474,13 +39500,14 @@ var GM = {
       });
     }
     if(upgradeBtn) upgradeBtn.classList.toggle('hidden', currentTier !== 'member');
+    // The generic site "Log out" only makes sense once a member/admin code
+    // was actually entered -- for a visitor who is only here via LINE
+    // (currentTier stays 'basic'), showing it next to "Log out of LINE"
+    // would be a confusing second button that does nothing.
+    var siteLogoutBtn = gate.querySelector('#cagBtnLogout');
+    if(siteLogoutBtn) siteLogoutBtn.classList.toggle('hidden', currentTier !== 'full' && currentTier !== 'member');
     if(memberCodeEl && !memberCodeEl.classList.contains('copied')) memberCodeEl.textContent = MEMBER_CODE;
 
-    // LINE identity status -- independent of currentTier. This reads the
-    // one shared session the Watchlist module owns; if that module hasn't
-    // booted yet (window.__SPZ_LINE not yet defined), treat it as idle.
-    var lineSt = window.__SPZ_LINE ? window.__SPZ_LINE.state() : { status:'idle', displayName:null, pictureUrl:null };
-    var lineLinked = lineSt.status === 'linked';
     // Per the LINE tab's own styling comment above (.cag-tier.line), it is
     // intentionally not a real tier tab and never takes the .on state that
     // Member/Full use -- linked status is communicated by #cagLineRow below
@@ -39510,8 +39537,8 @@ var GM = {
         status: loggedIn
           ? (Lg() === 'th' ? 'เข้าสู่ระบบแล้ว' : 'Signed in')
           : (Lg() === 'th' ? 'ตรวจสอบสิทธิ์การเข้าถึง' : 'Verifying access'),
-        loggedT: currentTier === 'full' ? TXT.loggedT : TXT.memberLoggedT,
-        loggedS: currentTier === 'full' ? TXT.loggedS : TXT.memberLoggedS,
+        loggedT: currentTier === 'full' ? TXT.loggedT : currentTier === 'member' ? TXT.memberLoggedT : TXT.lineLoggedT,
+        loggedS: currentTier === 'full' ? TXT.loggedS : currentTier === 'member' ? TXT.memberLoggedS : TXT.lineLoggedS,
         logoutBtn: TXT.logoutBtn, upgradeBtn: TXT.upgradeBtn,
         adminAddAnalysis: TXT.adminAddAnalysis, adminPrintReport: TXT.adminPrintReport,
         adminCompareDownload: TXT.adminCompareDownload,
