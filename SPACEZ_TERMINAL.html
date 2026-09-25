@@ -10692,7 +10692,16 @@ render: heavy series on Canvas2D/WebGL off the React tree; React only owns chrom
       renderScenarioChips();
       renderScenario();
       location.hash = '/scenarios';
-    }
+    },
+    /* read-only data access for other modules (the Watchlist page's
+       per-holding Market Shock Simulator) -- returns a plain copy so
+       nothing outside this module can mutate the scenario data itself. */
+    list: function(){
+      return scenarios.map(function(s, i){
+        return { index:i, title_en:s.title_en, title_th:s.title_th, desc_en:s.desc_en, desc_th:s.desc_th, impacts:s.impacts };
+      });
+    },
+    archetypes: function(){ return archetypeOrder.slice(); }
   };
 
 
@@ -32370,6 +32379,37 @@ var GM = {
   #watchlist .wl-copybtn.copied{border-color:var(--neon-2,var(--neon));color:var(--neon-2,var(--neon));}
   #watchlist .wl-addnote{flex:1 1 100%;font-size:12px;color:var(--grey);line-height:1.6;}
 
+  /* the LINE-linked add-a-ticker box gets its own louder treatment -- a
+     glowing green border + heading + big plus icon -- so it reads as the
+     obvious "start here" action instead of blending into the page. */
+  #watchlist .wl-add-line{
+    display:block;border:1.5px solid rgba(6,199,85,.45);
+    background:linear-gradient(160deg, rgba(6,199,85,.1), rgba(6,199,85,.02));
+    box-shadow:0 0 0 1px rgba(6,199,85,.08), 0 8px 24px -12px rgba(6,199,85,.35);
+    border-radius:16px;padding:18px 20px;
+  }
+  #watchlist .wl-add-line-h{
+    display:flex;align-items:center;gap:8px;font-family:var(--mono);font-weight:800;
+    font-size:13px;letter-spacing:.3px;color:#06C755;margin-bottom:12px;
+  }
+  #watchlist .wl-add-line-h svg{width:18px;height:18px;flex:0 0 auto;
+    background:#06C755;color:#08130a;border-radius:50%;padding:3px;box-sizing:border-box;}
+  #watchlist .wl-add-line-row{display:flex;flex-wrap:wrap;gap:10px;}
+  #watchlist .wl-add-line-row input[type="text"]{
+    flex:1 1 220px;min-width:160px;background:rgba(255,255,255,.03);
+    border:1.5px solid rgba(6,199,85,.35);border-radius:10px;padding:13px 14px;
+    color:var(--white);font-family:var(--mono);font-size:15px;text-transform:uppercase;
+    transition:border-color .15s,box-shadow .15s;
+  }
+  #watchlist .wl-add-line-row input[type="text"]:focus{
+    outline:none;border-color:#06C755;box-shadow:0 0 0 3px rgba(6,199,85,.15);
+  }
+  #watchlist .wl-add-line-row .wl-addbtn{
+    background:#06C755;color:#08130a;font-size:14px;padding:12px 22px;border-radius:10px;
+  }
+  #watchlist .wl-add-line-row .wl-addbtn:hover{opacity:.9;}
+  #watchlist .wl-add-line .wl-line-status{display:block;margin-top:8px;}
+
   #watchlist .wl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
   #watchlist .wl-card{
     border:1px solid var(--border-dim);border-radius:var(--radius);
@@ -32474,12 +32514,40 @@ var GM = {
   #watchlist .wl-pa-block{margin-bottom:16px;}
   #watchlist .wl-pa-block:last-child{margin-bottom:0;}
   #watchlist .wl-pa-label{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--grey-dim);margin:0 0 10px;}
+  /* the single composite bar -- one glance at how the list splits across
+     sectors, part-to-whole. A 2px surface-color gap separates segments
+     instead of a border (never draw a stroke to separate marks); the whole
+     bar gets rounded ends, individual segments stay square so the gaps read
+     as the separator, not the corners. */
+  #watchlist .wl-pa-stackbar{
+    display:flex;width:100%;height:20px;border-radius:10px;overflow:hidden;
+    background:rgba(255,255,255,.06);margin-bottom:14px;
+  }
+  #watchlist .wl-pa-stackbar span{height:100%;box-shadow:2px 0 0 0 var(--bg, #0d0f0c);}
+  #watchlist .wl-pa-stackbar span:last-child{box-shadow:none;}
   #watchlist .wl-pa-sectors{display:flex;flex-direction:column;gap:9px;}
   #watchlist .wl-pa-sector-row{display:flex;align-items:center;gap:10px;}
+  #watchlist .wl-pa-sector-dot{flex:0 0 auto;width:8px;height:8px;border-radius:50%;}
   #watchlist .wl-pa-sector-name{flex:0 0 130px;font-size:12px;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   #watchlist .wl-pa-sector-track{flex:1;height:7px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden;}
-  #watchlist .wl-pa-sector-bar{height:100%;border-radius:5px;background:var(--neon);}
+  #watchlist .wl-pa-sector-bar{height:100%;border-radius:5px;}
   #watchlist .wl-pa-sector-pct{flex:0 0 68px;text-align:right;font-family:var(--mono);font-size:11.5px;color:var(--grey);}
+
+  /* overall-risk meter -- a ratio against a fixed 0-100 limit, so a Meter
+     (same-ramp track) rather than a multi-axis gauge: the fill's OWN color
+     carries severity (green -> amber -> red, the site's existing risk
+     tokens) while the unfilled track stays a flat neutral -- color is
+     reinforced by the level word beside it, never carrying meaning alone. */
+  #watchlist .wl-pa-meter-row{display:flex;align-items:center;gap:12px;margin-bottom:2px;}
+  #watchlist .wl-pa-meter-track{flex:1;height:12px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;}
+  #watchlist .wl-pa-meter-fill{height:100%;border-radius:6px;transition:width .3s;}
+  #watchlist .wl-pa-meter-fill.low{background:var(--neon-2,var(--neon));}
+  #watchlist .wl-pa-meter-fill.medium{background:var(--amber);}
+  #watchlist .wl-pa-meter-fill.high{background:var(--red);}
+  #watchlist .wl-pa-meter-tag{flex:0 0 auto;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.04em;}
+  #watchlist .wl-pa-meter-tag.low{color:var(--neon-2,var(--neon));}
+  #watchlist .wl-pa-meter-tag.medium{color:var(--amber);}
+  #watchlist .wl-pa-meter-tag.high{color:var(--red);}
   #watchlist .wl-pa-note{font-size:12px;line-height:1.6;border-left:2px solid var(--border-dim);padding-left:10px;color:var(--grey);}
   #watchlist .wl-pa-note.bad{border-color:var(--red);color:var(--white);}
   #watchlist .wl-pa-note.warn{border-color:var(--amber);color:var(--white);}
@@ -32500,6 +32568,22 @@ var GM = {
   #watchlist .wl-pa-chip.medium{border-color:color-mix(in srgb, var(--amber) 45%, transparent);}
   #watchlist .wl-pa-chip.low{border-color:color-mix(in srgb, var(--neon-2,var(--neon)) 40%, transparent);}
   #watchlist .wl-pa-none{font-size:12px;color:var(--grey-dim);}
+
+  /* Market Shock Simulator applied to the LINE-linked user's own holdings --
+     reuses the .wl-pa card shell and the same stacked-bar component as the
+     sector chart above, for one consistent visual language on this page. */
+  #watchlist .wl-shock{margin-top:18px;}
+  #watchlist .wl-shock-select{
+    width:100%;background:rgba(255,255,255,.03);border:1.5px solid var(--border-dim);
+    border-radius:10px;padding:11px 12px;color:var(--white);font-family:var(--mono);
+    font-size:13px;margin-bottom:14px;cursor:pointer;
+  }
+  #watchlist .wl-shock-select:focus{outline:none;border-color:var(--neon);}
+  #watchlist .wl-shock-desc{font-size:12px;color:var(--grey);line-height:1.6;margin:0 0 12px;}
+  #watchlist .wl-shock-bar{margin-bottom:14px;}
+  #watchlist .wl-shock-rotate{margin-top:14px;padding-top:12px;border-top:1px dashed var(--border-dim);}
+  #watchlist .wl-shock-rotate-row{font-size:12px;color:var(--grey);line-height:1.6;margin-top:6px;}
+  #watchlist .wl-shock-rotate-row b{color:var(--white);}
 
   /* ---- big centered popup for the LINE QR, instead of a small inline box:
      easier to scan, and gives the connect flow its own clear moment
@@ -32699,6 +32783,7 @@ var GM = {
     lineForget:{en:'Log out of LINE',th:'ออกจากระบบ LINE'},
     lineOwnListNote:{en:'This is your own personal list, linked to your LINE account — separate from a Telegram-linked list, even on the same browser. Add or remove tickers right here.',
                      th:'นี่คือรายการส่วนตัวของคุณเอง ผูกกับบัญชี LINE ของคุณ — แยกจากรายการที่เชื่อมผ่าน Telegram แม้จะเป็นเบราว์เซอร์เดียวกันก็ตาม เพิ่ม/ลบหุ้นได้จากตรงนี้เลย'},
+    lineAddH:{en:'Add a stock to your list',th:'เพิ่มหุ้นเข้าไลสต์ของคุณ'},
     lineAddPh:{en:'e.g. PTT, AAPL…',th:'เช่น PTT, AAPL…'},
     lineAddBtn:{en:'Add',th:'เพิ่ม'},
     lineAddErrInvalid:{en:'That doesn’t look like a valid ticker.',th:'รูปแบบชื่อหุ้นนี้ดูไม่ถูกต้องค่ะ'},
@@ -32723,7 +32808,18 @@ var GM = {
     paRiskHigh:{en:'Flagged (bearish signal)',th:'มีสัญญาณเสี่ยง (แนวโน้มลบ)'},
     paRiskMed:{en:'Worth watching',th:'ควรจับตา'},
     paRiskLow:{en:'Looks steady',th:'ดูนิ่ง'},
-    paNone:{en:'Not enough signal data yet for these tickers.',th:'ยังไม่มีข้อมูลสัญญาณพอสำหรับหุ้นกลุ่มนี้'}
+    paNone:{en:'Not enough signal data yet for these tickers.',th:'ยังไม่มีข้อมูลสัญญาณพอสำหรับหุ้นกลุ่มนี้'},
+    paMeterLabel:{en:'Overall risk level',th:'ระดับความเสี่ยงโดยรวม'},
+    paSectorOtherShort:{en:'Other',th:'อื่นๆ'},
+
+    shockH:{en:'Market Shock Simulator — your holdings',th:'จำลองแรงกระแทกตลาด — พอร์ตของคุณ'},
+    shockLede:{en:'Pick a scenario and see which of your own tickers would likely rise, fall, or sit mixed — based on the same 18-scenario simulator as the Market Shock Simulator page, mapped onto each ticker\'s sector.',
+               th:'เลือกสถานการณ์สมมุติ แล้วดูว่าหุ้นที่คุณถืออยู่ตัวไหนน่าจะขึ้น ลง หรือผสม — โดยใช้ชุดข้อมูลจำลอง 18 สถานการณ์เดียวกับหน้าจำลองแรงกระแทกตลาด จับคู่ตามกลุ่มอุตสาหกรรมของแต่ละตัว'},
+    shockRises:{en:'Likely rises',th:'มีแนวโน้มขึ้น'},
+    shockFalls:{en:'Likely falls',th:'มีแนวโน้มลง'},
+    shockMixed:{en:'Mixed / depends',th:'ผสม / ไม่แน่นอน'},
+    shockUnclassified:{en:'Sector not classified',th:'ยังจัดกลุ่มไม่ได้'},
+    shockRotateH:{en:'Sectors that tend to hold up in this scenario',th:'กลุ่มที่มักจะไปได้ดีในสถานการณ์นี้'}
   };
 
   var FLAG_COPY = {
@@ -33107,7 +33203,22 @@ var GM = {
      divergence, golden/death cross, below its 200-day average, and how it
      compares with its own sector this month). No new data source: this is
      the same stocks snapshot + flag logic, just rolled up across the whole
-     list instead of one ticker at a time. ------------------------------ */
+     list instead of one ticker at a time. ------------------------------
+
+     Sector colors: the site's theme only defines a handful of semantic
+     tokens (accent, red, amber) -- fine for high/medium/low risk, but there
+     is no existing multi-hue set for telling arbitrary sector NAMES apart.
+     This fixed 6-hue order is validated (adjacent-pair CVD delta-E clears
+     the safety target in dark mode; see the dataviz skill's palette) and is
+     never cycled past slot 6 -- a 7th+ sector folds into a neutral "other"
+     grey rather than generating a new hue. Assignment is by each sector's
+     rank in this ticker list's OWN sector breakdown (biggest sectors -- the
+     ones that matter for the concentration story -- get a distinct color;
+     smaller tail sectors share the neutral), not by alphabetical accident,
+     so the color for "the sector I'm most exposed to" stays intuitive. */
+  var SECTOR_HUES = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300'];
+  var SECTOR_OTHER_HUE = '#5a5f54';
+
   function portfolioAnalysisHTML(tickers, stocks){
     if(!tickers.length) return '';
     stocks = stocks || {};
@@ -33141,10 +33252,23 @@ var GM = {
         return { key:key, label:label, count:count, pct:pct };
       });
 
+    /* color by rank in THIS list (biggest exposure gets the most
+       distinguishable slot), never cycled past the 6-hue theme -- a 7th+
+       sector (or the uncategorized bucket) shares the neutral "other" grey
+       instead of inventing a new hue. */
+    sectorRows.forEach(function(row, i){
+      row.color = (row.key !== '__other' && i < SECTOR_HUES.length) ? SECTOR_HUES[i] : SECTOR_OTHER_HUE;
+    });
+
+    var stackBarHTML = '<div class="wl-pa-stackbar">' + sectorRows.map(function(row){
+      return '<span style="width:' + row.pct + '%;background:' + row.color + ';" title="' + esc(row.label) + ' · ' + row.pct + '%"></span>';
+    }).join('') + '</div>';
+
     var sectorsHTML = sectorRows.map(function(row){
       return '<div class="wl-pa-sector-row">' +
+        '<span class="wl-pa-sector-dot" style="background:' + row.color + ';"></span>' +
         '<span class="wl-pa-sector-name">' + esc(row.label) + '</span>' +
-        '<span class="wl-pa-sector-track"><span class="wl-pa-sector-bar" style="width:' + row.pct + '%"></span></span>' +
+        '<span class="wl-pa-sector-track"><span class="wl-pa-sector-bar" style="width:' + row.pct + '%;background:' + row.color + ';"></span></span>' +
         '<span class="wl-pa-sector-pct">' + row.pct + '% · ' + row.count + '</span>' +
       '</div>';
     }).join('');
@@ -33174,11 +33298,33 @@ var GM = {
         '<span class="wl-pa-chips">' + chips + '</span></div>';
     }).join('');
 
+    /* a single "how risky is this list as a whole" meter -- a ratio against
+       a fixed 0-100 limit is exactly the Meter form (not a gauge/speedometer,
+       which reads position more precisely than people can judge by eye).
+       The fill's own color carries the severity (accent -> warning -> danger,
+       reusing the site's existing high/medium/low tokens so it matches the
+       chips below); the track is a flat neutral, not a colored "good" zone,
+       since color is never the only signal -- the level word beside it is. */
+    var riskScore = known ? Math.round((tiers.high.length * 100 + tiers.medium.length * 50) / total) : 0;
+    var riskLevel = riskScore >= 60 ? 'high' : (riskScore >= 30 ? 'medium' : 'low');
+    var riskLevelText = riskLevel === 'high' ? C.paRiskHigh : riskLevel === 'medium' ? C.paRiskMed : C.paRiskLow;
+    var meterHTML = known ? (
+      '<div class="wl-pa-meter-row">' +
+        '<div class="wl-pa-meter-track"><div class="wl-pa-meter-fill ' + riskLevel + '" style="width:' + riskScore + '%;"></div></div>' +
+        '<span class="wl-pa-meter-tag ' + riskLevel + '">' + esc(tx(riskLevelText)) + '</span>' +
+      '</div>'
+    ) : '';
+
     return '<div class="wl-pa">' +
       '<div class="wl-pa-h">' + esc(tx(C.paH)) + '</div>' +
       '<p class="wl-pa-lede">' + esc(tx(C.paLede)) + '</p>' +
+      (known ? '<div class="wl-pa-block">' +
+        '<div class="wl-pa-label">' + esc(tx(C.paMeterLabel)) + '</div>' +
+        meterHTML +
+      '</div>' : '') +
       '<div class="wl-pa-block">' +
         '<div class="wl-pa-label">' + esc(tx(C.paSectorLabel)) + '</div>' +
+        stackBarHTML +
         '<div class="wl-pa-sectors">' + sectorsHTML + '</div>' +
         '<div class="wl-pa-note ' + concCls + '" style="margin-top:10px;">' + esc(concText) + '</div>' +
       '</div>' +
@@ -33187,6 +33333,138 @@ var GM = {
         riskRowsHTML +
       '</div>' : '<div class="wl-pa-block"><p class="wl-pa-none">' + esc(tx(C.paNone)) + '</p></div>') +
     '</div>';
+  }
+
+  /* ---- Market Shock Simulator, applied to the LINE-linked user's own
+     holdings. The site already has a full 18-scenario x 4-archetype
+     (value/growth/dividend/defensive) simulator (window.__SPZ_SCENARIOS,
+     the "scenarios" route) built for teaching -- this reuses that exact
+     data set rather than inventing a second one, and answers the one
+     question that generic tool can't: "given what I actually hold, do
+     I rise or fall in this scenario, and what should I look at instead?"
+     Real per-ticker sector names (from the live snapshot) are mapped to
+     the simulator's 4 archetypes by keyword; a sector this can't place
+     is shown as unclassified rather than guessed at. ------------------ */
+  var SHOCK_ARCH_KEYWORDS = {
+    value: ['bank','financ','insur','energy','oil','gas','petro','industr','material','steel','cement','construct','property','real estate','conglomerate',
+            'ธนาคาร','การเงิน','ประกัน','พลังงาน','น้ำมัน','ปิโตร','อุตสาหกรรม','วัสดุ','อสังหา','ก่อสร้าง'],
+    growth: ['tech','software','semiconductor','internet','ecommerce','electronic','media','entertainment',
+             'เทคโนโลยี','ไอที','อิเล็กทรอนิกส์','สื่อ','บันเทิง'],
+    dividend: ['telecom','utilit','infrastructure','transport','communicat','reit','logistics',
+               'โทรคมนาคม','สาธารณูปโภค','ขนส่ง','สื่อสาร','กองทุนอสังหา','โลจิสติกส์'],
+    defensive: ['health','hospital','pharma','staple','food','beverage','consumer','retail','agri',
+                'สาธารณสุข','โรงพยาบาล','ยา','อาหาร','เครื่องดื่ม','อุปโภคบริโภค','ค้าปลีก','เกษตร']
+  };
+  function shockArchetypeForSector(sector, archOrder){
+    if(!sector) return null;
+    var s = String(sector).toLowerCase();
+    for(var i=0;i<archOrder.length;i++){
+      var kws = SHOCK_ARCH_KEYWORDS[archOrder[i]] || [];
+      for(var j=0;j<kws.length;j++){ if(s.indexOf(kws[j].toLowerCase()) !== -1) return archOrder[i]; }
+    }
+    return null;
+  }
+  var SHOCK_ARCH_LABEL = {
+    value:{en:'Value',th:'คุณค่า'}, growth:{en:'Growth',th:'เติบโต'},
+    dividend:{en:'Dividend',th:'ปันผล'}, defensive:{en:'Defensive',th:'ตั้งรับ'}
+  };
+
+  function shockSimulatorHTML(tickers, stocks){
+    if(!tickers.length || !window.__SPZ_SCENARIOS) return '';
+    var list = window.__SPZ_SCENARIOS.list();
+    var archOrder = window.__SPZ_SCENARIOS.archetypes();
+    if(!list.length) return '';
+    var optionsHTML = list.map(function(s, i){
+      return '<option value="' + i + '">' + esc(L() === 'th' ? s.title_th : s.title_en) + '</option>';
+    }).join('');
+    return '<div class="wl-pa wl-shock" data-wl-shock-root>' +
+      '<div class="wl-pa-h">' + esc(tx(C.shockH)) + '</div>' +
+      '<p class="wl-pa-lede">' + esc(tx(C.shockLede)) + '</p>' +
+      '<select class="wl-shock-select" data-wl="shockSelect">' + optionsHTML + '</select>' +
+      '<div data-wl="shockResult"></div>' +
+    '</div>';
+  }
+
+  /* renders just the result block for one chosen scenario -- called once on
+     first paint and again whenever the dropdown changes, so the page never
+     needs a full repaint just to switch scenarios. */
+  function shockRenderResult(root, tickers, stocks, scenarioIndex){
+    var resultEl = root.querySelector('[data-wl="shockResult"]');
+    if(!resultEl || !window.__SPZ_SCENARIOS) return;
+    var list = window.__SPZ_SCENARIOS.list();
+    var archOrder = window.__SPZ_SCENARIOS.archetypes();
+    var scen = list[scenarioIndex] || list[0];
+    if(!scen){ resultEl.innerHTML = ''; return; }
+
+    var buckets = { rises:[], falls:[], mixed:[], unclassified:[] };
+    tickers.forEach(function(t){
+      var s = stocks ? stocks[t] : null;
+      var arch = s ? shockArchetypeForSector(s.sector, archOrder) : null;
+      if(!arch){ buckets.unclassified.push(t); return; }
+      var state = scen.impacts[arch] ? scen.impacts[arch].state : 'mixed';
+      (buckets[state] || buckets.mixed).push({ t:t, arch:arch });
+    });
+
+    var total = tickers.length;
+    var risesPct = Math.round((buckets.rises.length / total) * 100);
+    var fallsPct = Math.round((buckets.falls.length / total) * 100);
+    var mixedPct = 100 - risesPct - fallsPct;
+
+    var barHTML = '<div class="wl-pa-stackbar wl-shock-bar">' +
+      (buckets.rises.length ? '<span style="width:' + risesPct + '%;background:var(--neon-2,var(--neon));" title="' + esc(tx(C.shockRises)) + ' ' + risesPct + '%"></span>' : '') +
+      (buckets.mixed.length + buckets.unclassified.length ? '<span style="width:' + (mixedPct) + '%;background:var(--grey-dim);" title="' + esc(tx(C.shockMixed)) + ' ' + mixedPct + '%"></span>' : '') +
+      (buckets.falls.length ? '<span style="width:' + fallsPct + '%;background:var(--red);" title="' + esc(tx(C.shockFalls)) + ' ' + fallsPct + '%"></span>' : '') +
+    '</div>';
+
+    function tierBlock(key, labelTxt, cls){
+      var items = buckets[key];
+      if(!items.length) return '';
+      var chips = items.map(function(it){
+        return '<button type="button" class="wl-pa-chip ' + cls + '" data-wl-open="' + esc(it.t) + '">$' + esc(it.t) + '</button>';
+      }).join('');
+      return '<div class="wl-pa-risk-row"><span class="wl-pa-risk-tag ' + cls + '">' + esc(labelTxt) + '</span>' +
+        '<span class="wl-pa-chips">' + chips + '</span></div>';
+    }
+
+    var riskClsFor = { rises:'low', falls:'high', mixed:'medium' };
+    var tiersHTML =
+      tierBlock('rises', tx(C.shockRises), riskClsFor.rises) +
+      tierBlock('falls', tx(C.shockFalls), riskClsFor.falls) +
+      tierBlock('mixed', tx(C.shockMixed), riskClsFor.mixed);
+    var unclassifiedHTML = buckets.unclassified.length
+      ? '<div class="wl-pa-risk-row"><span class="wl-pa-risk-tag">' + esc(tx(C.shockUnclassified)) + '</span>' +
+          '<span class="wl-pa-chips">' + buckets.unclassified.map(function(t){
+            return '<button type="button" class="wl-pa-chip" data-wl-open="' + esc(t) + '">$' + esc(t) + '</button>';
+          }).join('') + '</span></div>'
+      : '';
+
+    /* rotation idea: which archetype(s) rise in this scenario, in the
+       simulator's own words -- no invented example tickers, since the
+       site's directory examples are US mega-caps that would mismatch a
+       Thai-heavy holding list. */
+    var risingArch = archOrder.filter(function(a){ return scen.impacts[a] && scen.impacts[a].state === 'rises'; });
+    var rotateHTML = risingArch.length ? '<div class="wl-shock-rotate">' +
+      '<div class="wl-pa-label">' + esc(tx(C.shockRotateH)) + '</div>' +
+      risingArch.map(function(a){
+        var label = SHOCK_ARCH_LABEL[a] ? (L() === 'th' ? SHOCK_ARCH_LABEL[a].th : SHOCK_ARCH_LABEL[a].en) : a;
+        var reason = L() === 'th' ? scen.impacts[a].reason_th : scen.impacts[a].reason_en;
+        return '<div class="wl-shock-rotate-row"><b>' + esc(label) + '</b> — ' + esc(reason) + '</div>';
+      }).join('') +
+    '</div>' : '';
+
+    resultEl.innerHTML =
+      '<p class="wl-shock-desc">' + esc(L() === 'th' ? scen.desc_th : scen.desc_en) + '</p>' +
+      barHTML +
+      tiersHTML + unclassifiedHTML +
+      rotateHTML;
+
+    var openBtns = resultEl.querySelectorAll('[data-wl-open]');
+    for(var i=0;i<openBtns.length;i++){
+      openBtns[i].addEventListener('click', function(){
+        var t = this.getAttribute('data-wl-open');
+        if(window.__SPZ_STOCK && window.__SPZ_STOCK.open) window.__SPZ_STOCK.open(t);
+      });
+    }
   }
 
   /* ---- the two-channel "Connect" strip shown at the top of the page in
@@ -33292,9 +33570,15 @@ var GM = {
          Telegram command needed (Telegram is still its own separate list,
          see lineOwnListNote below). */
       var lineAddBox =
-        '<div class="wl-add">' +
-          '<input type="text" list="wlTickers" data-wl="lineInput" placeholder="' + esc(tx(C.lineAddPh)) + '">' +
-          '<button type="button" class="wl-addbtn" data-wl="lineAddBtn">' + esc(tx(C.lineAddBtn)) + '</button>' +
+        '<div class="wl-add wl-add-line">' +
+          '<div class="wl-add-line-h">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>' +
+            '<span>' + esc(tx(C.lineAddH)) + '</span>' +
+          '</div>' +
+          '<div class="wl-add-line-row">' +
+            '<input type="text" list="wlTickers" data-wl="lineInput" placeholder="' + esc(tx(C.lineAddPh)) + '">' +
+            '<button type="button" class="wl-addbtn" data-wl="lineAddBtn">' + esc(tx(C.lineAddBtn)) + '</button>' +
+          '</div>' +
           '<span class="wl-line-status" data-wl="lineAddStatus"></span>' +
           '<datalist id="wlTickers">' + (stocks ? Object.keys(stocks).sort().map(function(k){
             return '<option value="' + esc(k) + '">';
@@ -33304,6 +33588,7 @@ var GM = {
         '<div class="wl-addnote" style="margin:14px 0;">' + esc(tx(C.lineOwnListNote)) + '</div>' +
         lineAddBox +
         portfolioAnalysisHTML(lineTickers, stocks) +
+        shockSimulatorHTML(lineTickers, stocks) +
         lineGrid;
       wireConnStrip(body);
       var openBtnsLine = body.querySelectorAll('[data-wl-open]');
@@ -33311,6 +33596,15 @@ var GM = {
         openBtnsLine[iL].addEventListener('click', function(){
           var t = this.getAttribute('data-wl-open');
           if(window.__SPZ_STOCK && window.__SPZ_STOCK.open) window.__SPZ_STOCK.open(t);
+        });
+      }
+
+      var shockRoot = body.querySelector('[data-wl-shock-root]');
+      if(shockRoot){
+        var shockSelect = shockRoot.querySelector('[data-wl="shockSelect"]');
+        shockRenderResult(shockRoot, lineTickers, stocks, shockSelect ? Number(shockSelect.value) : 0);
+        if(shockSelect) shockSelect.addEventListener('change', function(){
+          shockRenderResult(shockRoot, lineTickers, stocks, Number(this.value));
         });
       }
 
@@ -37624,6 +37918,15 @@ var GM = {
     padding:6px 11px;font-family:'Inter',sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;white-space:nowrap;flex:0 0 auto;
   }
   .cag-line-btn:hover{background:#06C755;color:#08130a;}
+  /* small shortcut into "My Watchlist" once LINE is linked -- only shown
+     then, sits beside the connect/logout button rather than replacing it. */
+  .cag-line-wl-btn{
+    display:flex;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 auto;
+    background:transparent;border:1px solid rgba(6,199,85,.4);color:#06C755;border-radius:8px;cursor:pointer;
+  }
+  .cag-line-wl-btn svg{width:16px;height:16px;}
+  .cag-line-wl-btn:hover{background:#06C755;color:#08130a;}
+  .cag-line-wl-btn.hidden{display:none;}
   .cag-fine{width:100%;text-align:center;font-size:.55rem;color:#4a4c47;letter-spacing:.05em;line-height:1.7;}
 
   .cag-member-code{width:100%;text-align:center;background:#151619;border:1px dashed color-mix(in srgb, var(--cag-accent-2) 40%, transparent);
@@ -37967,6 +38270,7 @@ var GM = {
     lineRowLogout:{en:'Log out of LINE',th:'ออกจากระบบ LINE'},
     lineRowNote:{en:'Your own personal watchlist via LINE — separate from this site login.',
                  th:'วอทช์ลิสต์ส่วนตัวของคุณผ่าน LINE — แยกต่างหากจากการล็อกอินเว็บนี้'},
+    lineWlBtn:{en:'Go to My Watchlist',th:'ไปหน้าวอทช์ลิสต์ของฉัน'},
     memberT:{en:'MEMBER LOGIN',th:'MEMBER LOGIN'},
     memberS:{en:'Short code · unlocks the real analysis tools',th:'รหัสสั้น · ปลดล็อกเครื่องมือวิเคราะห์จริง'},
     memberCodeHint:{en:'Tap the code to copy it, then paste it below',th:'แตะรหัสเพื่อคัดลอก แล้ววางไว้ในช่องด้านล่าง'},
@@ -38116,6 +38420,9 @@ var GM = {
                 '<span class="cag-line-name" id="cagLineName" data-x="lineName"></span>' +
                 '<span class="cag-line-status" data-x="lineStatus"></span>' +
               '</div>' +
+              '<button type="button" class="cag-line-wl-btn hidden" id="cagLineWlBtn" aria-label="" data-x-title="lineWlBtn">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5A2.5 2.5 0 015.5 3h13A2.5 2.5 0 0121 5.5v15L12 16l-9 4.5v-15z"/></svg>' +
+              '</button>' +
               '<button type="button" class="cag-line-btn" id="cagLineRowBtn" data-x="lineBtn"></button>' +
             '</div>' +
             '<div class="cag-admin-links hidden" id="cagAdminLinks">' +
@@ -38315,6 +38622,10 @@ var GM = {
       if(st.status === 'linked') window.__SPZ_LINE.logout();
       else window.__SPZ_LINE.open();
     });
+    gate.querySelector('#cagLineWlBtn').addEventListener('click', function(){
+      gate.hidden = true;
+      location.hash = '#/watchlist';
+    });
     // Repaint whenever LINE state changes from ANY entry point (this gate's
     // own tab/button, or the Watchlist page's connect card/modal) so the
     // two stay in sync without polling each other.
@@ -38358,6 +38669,13 @@ var GM = {
     if(lineAvatarEl){
       if(lineLinked && lineSt.pictureUrl){ lineAvatarEl.src = lineSt.pictureUrl; lineAvatarEl.classList.remove('hidden'); }
       else { lineAvatarEl.removeAttribute('src'); lineAvatarEl.classList.add('hidden'); }
+    }
+    var lineWlBtnEl = gate.querySelector('#cagLineWlBtn');
+    if(lineWlBtnEl){
+      lineWlBtnEl.classList.toggle('hidden', !lineLinked);
+      var wlTitle = Tt(TXT.lineWlBtn);
+      lineWlBtnEl.setAttribute('aria-label', wlTitle);
+      lineWlBtnEl.setAttribute('title', wlTitle);
     }
 
     gate.querySelectorAll('[data-x]').forEach(function(el){
@@ -46242,9 +46560,9 @@ var qrcode = function() {
   .jrnl-like-btn:disabled{opacity:.6;cursor:default;}
   .jrnl-like-icon{width:12px;height:12px;flex:0 0 auto;}
   .jrnl-like-btn.liked .jrnl-like-icon{fill:#06C755;}
-  .jrnl-like-avatars{display:flex;align-items:center;gap:3px;}
-  .jrnl-like-avatars img{width:18px;height:18px;border-radius:50%;object-fit:cover;border:1px solid var(--border-dim);}
-  .jrnl-like-more{font-family:var(--mono);font-size:9.5px;color:var(--grey-dim);}
+  .jrnl-like-avatars{display:flex;align-items:center;gap:4px;}
+  .jrnl-like-avatars img{width:26px;height:26px;border-radius:50%;object-fit:cover;border:1.5px solid var(--border-dim);}
+  .jrnl-like-more{font-family:var(--mono);font-size:11px;color:var(--grey-dim);}
 
   /* ---- single-entry share view ---- */
   .jrnl-view-back{
@@ -46269,6 +46587,24 @@ var qrcode = function() {
   .jed-row-btn.publish{color:#5ec8ff;border-color:rgba(94,200,255,.4);}
   .jed-row-btn.publish:hover{border-color:#5ec8ff;}
   .jed-outcome-group{display:flex;gap:4px;}
+  /* who-liked-this, admin side -- a small toggle badge that expands into an
+     avatar+name list below the row, fetched from the same public likes
+     endpoint the front-end journal cards use (no LINE login needed to read). */
+  .jed-row-likes-btn{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;
+    background:none;border:1px solid var(--border-dim);border-radius:6px;color:var(--grey-dim);
+    padding:6px 9px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;
+  }
+  .jed-row-likes-btn:hover{color:#06C755;border-color:#06C755;}
+  .jed-row-likes-btn svg{width:11px;height:11px;flex:0 0 auto;}
+  .jed-row-likes-panel{
+    flex-basis:100%;display:none;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border-dim);
+    flex-wrap:wrap;gap:8px;
+  }
+  .jed-row-likes-panel.open{display:flex;}
+  .jed-row-likes-panel.empty{color:var(--grey-dim);font-size:11px;font-family:var(--mono);}
+  .jed-row-liker{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--grey);background:rgba(255,255,255,.03);border-radius:20px;padding:3px 10px 3px 3px;}
+  .jed-row-liker img{width:20px;height:20px;border-radius:50%;object-fit:cover;border:1px solid var(--border-dim);}
   .jed-cancel-edit{
     font-family:var(--mono);font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;
     color:var(--grey-dim);background:none;border:1px solid var(--border-dim);border-radius:8px;
@@ -46604,6 +46940,10 @@ var qrcode = function() {
 
     listFilterAllAsset:{en:'All assets',th:'ทุกสินทรัพย์'},
     listFilterEmpty:{en:'No entries match this filter.',th:'ไม่พบบทวิเคราะห์ตามตัวกรองนี้'},
+
+    adminLikesNone:{en:'No likes yet',th:'ยังไม่มีคนกดไลก์'},
+    adminLikesLoading:{en:'Loading likers…',th:'กำลังโหลดรายชื่อ…'},
+    adminLikesUnknown:{en:'LINE user',th:'ผู้ใช้ LINE'},
 
     reportTimeframe:{en:'Timeframe',th:'ไทม์เฟรม'},
     reportInvalid:{en:'WC Invalid',th:'จุดยกเลิกนับคลื่น'},
@@ -47165,11 +47505,62 @@ var qrcode = function() {
               '</div>' +
               '<button type="button" class="jed-row-btn publish" data-act="publish">' + esc(T(UI.publish)) + '</button>' +
               '<button type="button" class="jed-row-btn" data-act="del">' + esc(T(UI.del)) + '</button>' +
-            '</div>');
+              '<button type="button" class="jed-row-likes-btn" data-act="likes">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z"/></svg>' +
+                '<span data-role="likesCount">0</span>' +
+              '</button>' +
+            '</div>' +
+            '<div class="jed-row-likes-panel" data-role="likesPanel"></div>');
           row.querySelector('.jed-row-text').textContent = v.text || '';
           row.querySelector('[data-act="edit"]').addEventListener('click', function(){
             if(opts.onEdit) opts.onEdit(entryObj);
           });
+          /* who-liked-this: fetch the public like count as soon as the row
+             renders (so the badge shows a real number, not just "0"), then
+             expand the avatar+name list on click, fetching once and caching. */
+          (function(){
+            var countEl = row.querySelector('[data-role="likesCount"]');
+            var panelEl = row.querySelector('[data-role="likesPanel"]');
+            var loaded = false, likeData = null;
+            withLineApi(function(api){
+              api.likesGet(d.id, function(err, data){
+                if(err || !data) return;
+                likeData = data;
+                loaded = true;
+                countEl.textContent = data.count || 0;
+              });
+            });
+            function renderPanel(){
+              if(!likeData || !likeData.likes || !likeData.likes.length){
+                panelEl.className = 'jed-row-likes-panel open empty';
+                panelEl.textContent = T(UI.adminLikesNone);
+                return;
+              }
+              panelEl.className = 'jed-row-likes-panel open';
+              panelEl.innerHTML = likeData.likes.map(function(l){
+                return '<span class="jed-row-liker">' +
+                  (l.pictureUrl ? '<img src="' + esc(l.pictureUrl) + '" alt="">' : '') +
+                  '<span>' + esc(l.displayName || T(UI.adminLikesUnknown)) + '</span>' +
+                '</span>';
+              }).join('');
+            }
+            row.querySelector('[data-act="likes"]').addEventListener('click', function(){
+              var isOpen = panelEl.classList.contains('open');
+              if(isOpen){ panelEl.classList.remove('open'); return; }
+              if(loaded){ panelEl.classList.add('open'); return; }
+              panelEl.className = 'jed-row-likes-panel open empty';
+              panelEl.textContent = T(UI.adminLikesLoading);
+              withLineApi(function(api){
+                api.likesGet(d.id, function(err, data){
+                  loaded = true;
+                  if(err || !data){ panelEl.textContent = T(UI.adminLikesNone); return; }
+                  likeData = data;
+                  countEl.textContent = data.count || 0;
+                  renderPanel();
+                });
+              });
+            });
+          })();
           row.querySelector('[data-act="pin"]').addEventListener('click', function(){
             fbDb.collection('journal_entries').doc(d.id).update({ pinned: !pinned }).then(function(){ loadOwnEntries(host, opts); });
           });
