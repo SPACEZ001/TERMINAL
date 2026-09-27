@@ -49218,10 +49218,26 @@ var qrcode = function() {
     display:flex;align-items:center;justify-content:center;padding:20px;
   }
   .jed-ba-modal{
-    width:100%;max-width:560px;max-height:90vh;overflow:auto;background:var(--bg-2,#111);
+    width:100%;max-width:680px;max-height:90vh;overflow:auto;background:var(--bg-2,#111);
     border:1px solid var(--border-dim);border-radius:10px;padding:22px 24px;
   }
   .jed-ba-modal-h{font-family:var(--mono);font-size:13px;letter-spacing:.8px;text-transform:uppercase;color:var(--white);margin-bottom:16px;}
+  /* ---- visual/direct post picker: horizontal filmstrip of clickable cards,
+     replaces the old <select> dropdown so admins pick a post by its thumbnail ---- */
+  .jed-ba-pickgroup{margin-bottom:16px;}
+  .jed-ba-pickgroup label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--grey-dim);margin-bottom:8px;}
+  .jed-ba-pickgrid{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding-bottom:6px;}
+  .jed-ba-pickempty{font-size:11.5px;color:var(--grey-dim);padding:10px 2px;}
+  .jed-ba-pickcard{
+    flex:0 0 96px;width:96px;cursor:pointer;border:2px solid rgba(255,255,255,.12);border-radius:8px;
+    padding:6px;background:rgba(255,255,255,.02);text-align:center;transition:border-color .15s,background .15s;
+  }
+  .jed-ba-pickcard:hover{border-color:rgba(255,255,255,.32);}
+  .jed-ba-pickcard.selected{border-color:var(--neon);background:rgba(178,255,89,.08);}
+  .jed-ba-pickcard-thumb{width:100%;height:64px;object-fit:cover;border-radius:5px;display:block;background:#000;}
+  .jed-ba-pickcard-noimg{background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.02));}
+  .jed-ba-pickcard-meta{font-size:10px;font-weight:700;color:var(--white,#f4f6f1);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .jed-ba-pickcard-date{font-size:8.8px;color:var(--grey-dim);margin-top:2px;}
   .jed-ba-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
   .jed-ba-field{flex:1 1 150px;display:flex;flex-direction:column;gap:5px;}
   .jed-ba-field label{font-family:var(--mono);font-size:9.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--grey-dim);}
@@ -49239,7 +49255,20 @@ var qrcode = function() {
   .jrp-ba-img{width:100%;max-height:260px;object-fit:contain;background:#111;border-radius:6px;display:block;}
   .jrp-ba-noimg{width:100%;height:140px;background:#eee;border-radius:6px;}
   .jrp-ba-meta{font-size:9.5px;color:#777;margin-top:8px;}
+  .jrp-ba-tags{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:8px;}
+  .jrp-ba-tags .jrp-chip{border:1px solid #ccc;border-radius:20px;padding:2px 9px;font-size:9.5px;color:#666;}
   .jrp-ba-price{font-size:18px;font-weight:800;color:#161616;margin-top:6px;}
+  .jrp-ba-priceunit{font-size:11px;font-weight:600;color:#888;margin-left:3px;}
+  .jrp-ba-note{
+    margin-top:10px;padding-top:8px;border-top:1px dashed #ddd;text-align:left;
+    font-size:10.5px;line-height:1.65;color:#333;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;
+  }
+  .jrp-ba-stats{display:flex;gap:12px;margin-top:14px;}
+  .jrp-ba-stat{flex:1;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center;}
+  .jrp-ba-stat-label{font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:#888;}
+  .jrp-ba-stat-val{font-size:17px;font-weight:800;color:#161616;margin-top:4px;}
+  .jrp-ba-stat-val.pos{color:#1a8f4c;}
+  .jrp-ba-stat-val.neg{color:#c0392b;}
   .jrp-ba-diff{
     margin-top:16px;padding:14px;border-radius:6px;text-align:center;font-size:13px;color:#444;
     border:1.5px solid #ccc;
@@ -49247,7 +49276,10 @@ var qrcode = function() {
   .jrp-ba-diff b{font-size:20px;margin-left:6px;}
   .jrp-ba-diff.pos{border-color:#1a8f4c;color:#1a8f4c;}
   .jrp-ba-diff.neg{border-color:#c0392b;color:#c0392b;}
-  @media(max-width:640px){ .jrp-ba-grid{grid-template-columns:1fr;} }
+  /* minimum one-A4-page size for the Before/After report specifically --
+     .jrp-sheet (shared with the regular single-post report) is untouched. */
+  .jrp-ba-sheet{min-height:1122px;box-sizing:border-box;}
+  @media(max-width:640px){ .jrp-ba-grid{grid-template-columns:1fr;} .jrp-ba-sheet{min-height:0;} }
   /* ---- live "points since post" chip, public feed + single-post view ---- */
   .jrnl-live-pts{
     display:inline-flex;align-items:center;gap:6px;margin:0 0 10px;font-family:var(--mono);
@@ -49382,6 +49414,7 @@ var qrcode = function() {
     }
     body.spz-printing-journal .jrp-actions{ display:none !important; }
     body.spz-printing-journal .jrp-sheet{ box-shadow:none !important;margin:0 auto !important; }
+    body.spz-printing-journal .jrp-ba-sheet{ min-height:271mm !important; }
   }
 </style>
 <script>
@@ -49673,13 +49706,13 @@ var qrcode = function() {
     exitPricePrompt:{en:'Exit price for this trade:',th:'ราคาปิดของรายการนี้:'},
     livePtsLabel:{en:'Since post',th:'นับตั้งแต่โพสต์'},
     beforeAfterBtn:{en:'Before/After',th:'Before/After'},
-    notifyBtn:{en:'Notify LINE friends',th:'แจ้งเตือนเพื่อน LINE'},
-    notifyConfirm:{en:'Send a LINE broadcast to everyone who added your Official Account, announcing this post?',th:'ส่งข้อความแจ้งเตือนไปหาทุกคนที่เพิ่มเพื่อน LINE OA ของคุณ เกี่ยวกับโพสต์นี้ใช่ไหม?'},
-    notifyOk:{en:'Broadcast sent.',th:'ส่งข้อความแจ้งเตือนแล้ว'},
-    notifyErrKey:{en:'Enter your admin users key on the Connected Users page first, then come back to send broadcasts.',th:'กรุณาใส่รหัสแอดมินในหน้าผู้ใช้ที่เชื่อมต่อก่อน แล้วค่อยกลับมาส่งแจ้งเตือน'},
+    notifyBtn:{en:'Publish via LINE',th:'เผยแพร่ผ่าน LINE'},
+    notifyConfirm:{en:'Publish this analysis as a LINE broadcast to everyone who added your Official Account?',th:'เผยแพร่บทวิเคราะห์นี้เป็นข้อความไปหาทุกคนที่เพิ่มเพื่อน LINE OA ของคุณใช่ไหม?'},
+    notifyOk:{en:'Published to LINE.',th:'เผยแพร่ผ่าน LINE เรียบร้อยแล้ว'},
+    notifyErrKey:{en:'Enter your admin users key on the Connected Users page first, then come back to publish.',th:'กรุณาใส่รหัสแอดมินในหน้าผู้ใช้ที่เชื่อมต่อก่อน แล้วค่อยกลับมาเผยแพร่'},
     notifyErrConfig:{en:'LINE Messaging API is not configured on the server yet.',th:'ยังไม่ได้ตั้งค่า LINE Messaging API บนเซิร์ฟเวอร์'},
-    notifyErr:{en:'Could not send the broadcast — try again.',th:'ส่งแจ้งเตือนไม่สำเร็จ — ลองใหม่อีกครั้ง'},
-    notifyMsgTemplate:{en:'New analysis posted: {asset}\n{url}',th:'มีบทวิเคราะห์ใหม่: {asset}\n{url}'},
+    notifyErr:{en:'Could not publish to LINE — try again.',th:'เผยแพร่ผ่าน LINE ไม่สำเร็จ — ลองใหม่อีกครั้ง'},
+    notifyMsgTemplate:{en:'New analysis published: {asset}\n{url}',th:'เผยแพร่บทวิเคราะห์ใหม่: {asset}\n{url}'},
     baTitle:{en:'Before / After Report',th:'รายงานเปรียบเทียบ Before / After'},
     baPickBefore:{en:'"Before" post (older)',th:'โพสต์ "Before" (เก่ากว่า)'},
     baPickAfter:{en:'"After" post (newer)',th:'โพสต์ "After" (ใหม่กว่า)'},
@@ -49692,6 +49725,9 @@ var qrcode = function() {
     baNeedBoth:{en:'Choose both posts and enter both prices first.',th:'เลือกโพสต์ทั้งสองและใส่ราคาทั้งสองก่อน'},
     baBefore:{en:'Before',th:'Before'},
     baAfter:{en:'After',th:'After'},
+    baPickEmpty:{en:'No posts yet.',th:'ยังไม่มีโพสต์'},
+    baDaysElapsed:{en:'Days elapsed',th:'จำนวนวันที่ผ่านไป'},
+    baPctChange:{en:'% change',th:'% การเปลี่ยนแปลง'},
 
     adminNotice:{en:'Analysis posts are added by the site admin and its members only.',th:'บทวิเคราะห์ทั้งหมดเพิ่มโดยแอดมินและสมาชิกของเว็บไซต์เท่านั้น'},
 
@@ -50921,6 +50957,7 @@ var qrcode = function() {
       cb(snap.docs.map(function(d){
         var v = d.data() || {};
         return { id: d.id, asset: v.asset || '', imageUrl: v.imageUrl || '',
+                 text: v.text || '', timeframe: v.timeframe || '', tags: v.tags || [],
                  createdAt: v.createdAt && v.createdAt.toDate ? v.createdAt.toDate() : new Date() };
       }));
     }).catch(function(){ cb([]); });
@@ -50933,9 +50970,13 @@ var qrcode = function() {
     ov.innerHTML =
       '<div class="jed-ba-modal">' +
         '<div class="jed-ba-modal-h">' + esc(T(UI.baTitle)) + '</div>' +
-        '<div class="jed-ba-row">' +
-          '<div class="jed-ba-field"><label>' + esc(T(UI.baPickBefore)) + '</label><select data-ba="beforeSel"></select></div>' +
-          '<div class="jed-ba-field"><label>' + esc(T(UI.baPickAfter)) + '</label><select data-ba="afterSel"></select></div>' +
+        '<div class="jed-ba-pickgroup">' +
+          '<label>' + esc(T(UI.baPickBefore)) + '</label>' +
+          '<div class="jed-ba-pickgrid" data-ba="beforeGrid"></div>' +
+        '</div>' +
+        '<div class="jed-ba-pickgroup">' +
+          '<label>' + esc(T(UI.baPickAfter)) + '</label>' +
+          '<div class="jed-ba-pickgrid" data-ba="afterGrid"></div>' +
         '</div>' +
         '<div class="jed-ba-row">' +
           '<div class="jed-ba-field"><label>' + esc(T(UI.baBeforePrice)) + '</label><input type="text" inputmode="decimal" data-ba="beforePrice"></div>' +
@@ -50952,36 +50993,72 @@ var qrcode = function() {
     ov.querySelector('[data-ba="close"]').addEventListener('click', function(){ ov.remove(); });
     ov.addEventListener('click', function(ev){ if(ev.target === ov) ov.remove(); });
 
-    var beforeSel = ov.querySelector('[data-ba="beforeSel"]');
-    var afterSel = ov.querySelector('[data-ba="afterSel"]');
+    var beforeGrid = ov.querySelector('[data-ba="beforeGrid"]');
+    var afterGrid = ov.querySelector('[data-ba="afterGrid"]');
     var listCache = [];
+    var pickedBeforeId = '', pickedAfterId = '';
+
+    function cardHtml(it){
+      return '<div class="jed-ba-pickcard" data-id="' + esc(it.id) + '">' +
+        (it.imageUrl ? '<img class="jed-ba-pickcard-thumb" src="' + esc(it.imageUrl) + '" alt="">' : '<div class="jed-ba-pickcard-thumb jed-ba-pickcard-noimg"></div>') +
+        '<div class="jed-ba-pickcard-meta">' + esc(it.asset || '—') + '</div>' +
+        '<div class="jed-ba-pickcard-date">' + esc(fmtDate(it.createdAt)) + '</div>' +
+      '</div>';
+    }
+    function markSelected(grid, id){
+      var cards = grid.querySelectorAll('.jed-ba-pickcard');
+      for(var i = 0; i < cards.length; i++){
+        if(cards[i].getAttribute('data-id') === id) cards[i].classList.add('selected');
+        else cards[i].classList.remove('selected');
+      }
+    }
+    function findCard(target, grid){
+      var n = target;
+      while(n && n !== grid){
+        if(n.classList && n.classList.contains('jed-ba-pickcard')) return n;
+        n = n.parentNode;
+      }
+      return null;
+    }
+    function wireGrid(grid, onPick){
+      grid.addEventListener('click', function(ev){
+        var card = findCard(ev.target, grid);
+        if(!card) return;
+        var id = card.getAttribute('data-id');
+        markSelected(grid, id);
+        onPick(id);
+      });
+    }
+    wireGrid(beforeGrid, function(id){ pickedBeforeId = id; });
+    wireGrid(afterGrid, function(id){ pickedAfterId = id; });
+
     baFetchList(function(list){
       listCache = list;
-      var optsHtml = '<option value="" disabled selected>' + esc(T(UI.baPickPh)) + '</option>' +
-        list.map(function(it){ return '<option value="' + esc(it.id) + '">' + esc((it.asset || '—') + ' — ' + fmtDate(it.createdAt)) + '</option>'; }).join('');
-      beforeSel.innerHTML = optsHtml;
-      afterSel.innerHTML = optsHtml;
+      var gridHtml = list.length ? list.map(cardHtml).join('') : '<div class="jed-ba-pickempty">' + esc(T(UI.baPickEmpty)) + '</div>';
+      beforeGrid.innerHTML = gridHtml;
+      afterGrid.innerHTML = gridHtml;
       if(anchorEntry && anchorEntry.id){
-        afterSel.value = anchorEntry.id;
+        pickedAfterId = anchorEntry.id;
+        markSelected(afterGrid, pickedAfterId);
         for(var i = 0; i < list.length; i++){
-          if(list[i].id === anchorEntry.id && i + 1 < list.length){ beforeSel.value = list[i + 1].id; break; }
+          if(list[i].id === anchorEntry.id && i + 1 < list.length){ pickedBeforeId = list[i + 1].id; break; }
         }
+        if(pickedBeforeId) markSelected(beforeGrid, pickedBeforeId);
       }
     });
 
     ov.querySelector('[data-ba="go"]').addEventListener('click', function(){
-      var beforeId = beforeSel.value, afterId = afterSel.value;
       var beforePrice = parseFloat(ov.querySelector('[data-ba="beforePrice"]').value);
       var afterPrice = parseFloat(ov.querySelector('[data-ba="afterPrice"]').value);
       var unit = ov.querySelector('[data-ba="unit"]').value || 'points';
       var msg = ov.querySelector('[data-ba="msg"]');
-      if(!beforeId || !afterId || !isFinite(beforePrice) || !isFinite(afterPrice)){
+      if(!pickedBeforeId || !pickedAfterId || !isFinite(beforePrice) || !isFinite(afterPrice)){
         msg.className = 'jed-ba-msg err'; msg.textContent = T(UI.baNeedBoth); return;
       }
       var beforeItem = null, afterItem = null;
       for(var i = 0; i < listCache.length; i++){
-        if(listCache[i].id === beforeId) beforeItem = listCache[i];
-        if(listCache[i].id === afterId) afterItem = listCache[i];
+        if(listCache[i].id === pickedBeforeId) beforeItem = listCache[i];
+        if(listCache[i].id === pickedAfterId) afterItem = listCache[i];
       }
       if(!beforeItem || !afterItem) return;
       ov.remove();
@@ -50996,13 +51073,30 @@ var qrcode = function() {
     var unitLabel = unit === 'pips' ? T(UI.unitPipsShort) : T(UI.unitPointsShort);
     var diffStr = (diff >= 0 ? '+' : '') + diff.toFixed(unit === 'pips' ? 4 : 2) + ' ' + unitLabel;
     var diffCls = diff >= 0 ? 'pos' : 'neg';
+    var daysElapsed = Math.round((afterItem.createdAt - beforeItem.createdAt) / 86400000);
+    if(!isFinite(daysElapsed) || daysElapsed < 0) daysElapsed = 0;
+    var pctChange = beforePrice ? (diff / Math.abs(beforePrice)) * 100 : 0;
+    var pctStr = (pctChange >= 0 ? '+' : '') + pctChange.toFixed(2) + '%';
+    function sideCol(item, price, label){
+      var tagsHtml = (item.tags && item.tags.length) ?
+        '<div class="jrp-ba-tags">' + item.tags.map(function(t){ return '<span class="jrp-chip">' + esc(t) + '</span>'; }).join('') + '</div>' : '';
+      var noteHtml = item.text ? '<div class="jrp-ba-note">' + esc(item.text) + '</div>' : '';
+      return '<div class="jrp-ba-col">' +
+        '<div class="jrp-ba-label">' + esc(label) + '</div>' +
+        (item.imageUrl ? '<img class="jrp-ba-img" src="' + esc(item.imageUrl) + '" alt="">' : '<div class="jrp-ba-noimg"></div>') +
+        '<div class="jrp-ba-meta">' + esc((item.asset || '—') + ' · ' + fmtDate(item.createdAt) + (item.timeframe ? ' · ' + item.timeframe : '')) + '</div>' +
+        tagsHtml +
+        '<div class="jrp-ba-price">' + esc(String(price)) + ' <span class="jrp-ba-priceunit">' + esc(unitLabel) + '</span></div>' +
+        noteHtml +
+      '</div>';
+    }
     var ov = el('div', 'jrp-overlay', '');
     ov.innerHTML =
       '<div class="jrp-actions">' +
         '<button type="button" class="jrp-btn primary" data-jrp="print"></button>' +
         '<button type="button" class="jrp-btn ghost" data-jrp="close"></button>' +
       '</div>' +
-      '<div class="jrp-sheet">' +
+      '<div class="jrp-sheet jrp-ba-sheet">' +
         '<div class="jrp-head">' +
           (window.__SPZ_PR_LOGO ? '<img class="jrp-logo" src="' + window.__SPZ_PR_LOGO + '" alt="">' : '') +
           '<div class="jrp-brand">SPACEZ TERMINAL</div>' +
@@ -51010,18 +51104,12 @@ var qrcode = function() {
           '<div class="jrp-meta"><span>' + esc(T(UI.reportGenerated)) + ': ' + esc(fmtDate(new Date())) + '</span></div>' +
         '</div>' +
         '<div class="jrp-ba-grid">' +
-          '<div class="jrp-ba-col">' +
-            '<div class="jrp-ba-label">' + esc(T(UI.baBefore)) + '</div>' +
-            (beforeItem.imageUrl ? '<img class="jrp-ba-img" src="' + esc(beforeItem.imageUrl) + '" alt="">' : '<div class="jrp-ba-noimg"></div>') +
-            '<div class="jrp-ba-meta">' + esc((beforeItem.asset || '—') + ' · ' + fmtDate(beforeItem.createdAt)) + '</div>' +
-            '<div class="jrp-ba-price">' + esc(String(beforePrice)) + '</div>' +
-          '</div>' +
-          '<div class="jrp-ba-col">' +
-            '<div class="jrp-ba-label">' + esc(T(UI.baAfter)) + '</div>' +
-            (afterItem.imageUrl ? '<img class="jrp-ba-img" src="' + esc(afterItem.imageUrl) + '" alt="">' : '<div class="jrp-ba-noimg"></div>') +
-            '<div class="jrp-ba-meta">' + esc((afterItem.asset || '—') + ' · ' + fmtDate(afterItem.createdAt)) + '</div>' +
-            '<div class="jrp-ba-price">' + esc(String(afterPrice)) + '</div>' +
-          '</div>' +
+          sideCol(beforeItem, beforePrice, T(UI.baBefore)) +
+          sideCol(afterItem, afterPrice, T(UI.baAfter)) +
+        '</div>' +
+        '<div class="jrp-ba-stats">' +
+          '<div class="jrp-ba-stat"><div class="jrp-ba-stat-label">' + esc(T(UI.baDaysElapsed)) + '</div><div class="jrp-ba-stat-val">' + daysElapsed + '</div></div>' +
+          '<div class="jrp-ba-stat"><div class="jrp-ba-stat-label">' + esc(T(UI.baPctChange)) + '</div><div class="jrp-ba-stat-val ' + diffCls + '">' + esc(pctStr) + '</div></div>' +
         '</div>' +
         '<div class="jrp-ba-diff ' + diffCls + '"><span>' + esc(T(UI.baDiff)) + ':</span> <b>' + esc(diffStr) + '</b></div>' +
         '<div class="jrp-foot"></div>' +
