@@ -431,6 +431,7 @@ async function handleData(request, env) {
   const wl = await getUserWatchlist(sess.userId, env);
   const tickers = Object.keys(wl);
   const profile = await getProfile(sess.userId, env);
+  const likedIds = await getUserLikedPostIds(sess.userId, env);
   return json({
     displayName: sess.displayName || null,
     pictureUrl: sess.pictureUrl || null,
@@ -446,6 +447,9 @@ async function handleData(request, env) {
     // their personal nav-bar card can color itself to match, same as the
     // admin-only Connected Users list already shows for this user.
     rights: profile ? profile.rights || null : null,
+    // How many Asset Analysis Log posts this visitor has liked -- shown as a
+    // small stat on their own personal LINE card.
+    likedCount: likedIds.length,
   }, env);
 }
 
@@ -491,6 +495,22 @@ async function getPostLikes(postId, env) {
   } catch (e) { return []; }
 }
 
+// Reverse index: which post ids a given user has liked, so a visitor's own
+// "N posts liked" count (shown on their personal LINE card) doesn't require
+// scanning every "like:<postId>" key in KV -- maintained alongside that key
+// in handleLikeToggle, never written anywhere else.
+async function getUserLikedPostIds(userId, env) {
+  const raw = await env.SESSIONS.get("userlikes:" + userId);
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) { return []; }
+}
+async function putUserLikedPostIds(userId, ids, env) {
+  await env.SESSIONS.put("userlikes:" + userId, JSON.stringify(ids));
+}
+
 async function handleLikesGet(request, env) {
   const url = new URL(request.url);
   const postId = (url.searchParams.get("postId") || "").trim();
@@ -534,6 +554,14 @@ async function handleLikeToggle(request, env) {
     youLiked = true;
   }
   await env.SESSIONS.put("like:" + postId, JSON.stringify(likes));
+
+  // keep this user's own liked-post-id index in sync with the toggle above
+  let likedIds = await getUserLikedPostIds(sess.userId, env);
+  const likedIdx = likedIds.indexOf(postId);
+  if (youLiked && likedIdx === -1) likedIds.push(postId);
+  if (!youLiked && likedIdx !== -1) likedIds.splice(likedIdx, 1);
+  await putUserLikedPostIds(sess.userId, likedIds, env);
+
   return json({
     likes: likes.map(function (l) { return { displayName: l.displayName, pictureUrl: l.pictureUrl }; }),
     count: likes.length,
@@ -635,6 +663,47 @@ async function handleAdminUsersUpdate(request, env) {
   return json({ ok: true, profile }, env);
 }
 
+/* ---------------------- LINE Official Account broadcast ----------------------
+   Separate from the LINE LOGIN channel (env.LINE_LOGIN_CHANNEL_ID/SECRET) used
+   everywhere else in this file -- this calls the LINE MESSAGING API on the
+   admin's LINE Official Account, using a distinct secret
+   (env.LINE_MESSAGING_CHANNEL_ACCESS_TOKEN, a long-lived channel access token
+   from the Messaging API tab of that OA's channel in the LINE Developers
+   Console). "Broadcast" sends to every friend of that OA -- exactly the
+   "people who added my LINE as a friend" audience the admin asked for, no
+   per-recipient targeting needed. Gated by the same X-Admin-Key header as the
+   other /api/admin/* endpoints. */
+async function handleAdminBroadcast(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!env.LINE_MESSAGING_CHANNEL_ACCESS_TOKEN) {
+    return json({ error: "messaging_not_configured" }, env, 400);
+  }
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const text = String(body.text || "").trim().slice(0, 1000);
+  if (!text) return json({ error: "bad_request" }, env, 400);
+
+  let resp;
+  try {
+    resp = await fetch("https://api.line.me/v2/bot/message/broadcast", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + env.LINE_MESSAGING_CHANNEL_ACCESS_TOKEN,
+      },
+      body: JSON.stringify({ messages: [{ type: "text", text }] }),
+    });
+  } catch (e) {
+    return json({ error: "network" }, env, 502);
+  }
+  if (!resp.ok) {
+    let detail = "";
+    try { detail = await resp.text(); } catch (e) {}
+    return json({ error: "line_api_error", status: resp.status, detail: detail.slice(0, 500) }, env, 502);
+  }
+  return json({ ok: true }, env);
+}
+
 async function handleLogout(request, env) {
   let code = "";
   try {
@@ -665,6 +734,7 @@ export default {
     if (url.pathname === "/api/session/profile" && request.method === "POST") return handleProfileUpdate(request, env);
     if (url.pathname === "/api/admin/users" && request.method === "GET") return handleAdminUsersList(request, env);
     if (url.pathname === "/api/admin/users/update" && request.method === "POST") return handleAdminUsersUpdate(request, env);
+    if (url.pathname === "/api/admin/broadcast" && request.method === "POST") return handleAdminBroadcast(request, env);
 
     return json({ error: "not_found" }, env, 404);
   },
