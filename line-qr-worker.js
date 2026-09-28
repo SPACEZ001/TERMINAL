@@ -923,6 +923,7 @@ async function handleEconCalendar(request, env) {
 // ---------------------------------------------------------------------
 const ANNOUNCEMENTS_KV_KEY = "announcements:list";
 const ANNOUNCEMENTS_MAX = 30; // keep the stored list bounded
+const ANNOUNCEMENT_TEXT_MAX = 2000; // raised from 500 per her request -- some notices run long
 
 async function getAnnouncementsList(env) {
   const raw = await env.SESSIONS.get(ANNOUNCEMENTS_KV_KEY, "json");
@@ -942,13 +943,20 @@ function sanitizeImageUrl(v) {
   const s = String(v || "").trim();
   return s && /^https:\/\//i.test(s) ? s : "";
 }
+// Round O: where this shows up on the main site -- 'bar' (default, the strip
+// under the header ticker) or 'modal' (an immediate center-screen popup, no
+// click needed). The portfolio-popup overlay is unaffected either way; it
+// always shows every active item regardless of this field.
+function sanitizeDisplayMode(v) {
+  return v === "modal" ? "modal" : "bar";
+}
 
 async function handleAnnouncementsPublic(request, env) {
   const list = await getAnnouncementsList(env);
   const now = Date.now();
   const items = list
     .filter((a) => announcementIsActive(a, now))
-    .map((a) => ({ id: a.id, text: a.text, imageUrl: a.imageUrl || "", createdAt: a.createdAt, expiresAt: a.expiresAt || null }));
+    .map((a) => ({ id: a.id, text: a.text, imageUrl: a.imageUrl || "", createdAt: a.createdAt, expiresAt: a.expiresAt || null, displayMode: sanitizeDisplayMode(a.displayMode) }));
   return json({ items }, env);
 }
 
@@ -962,7 +970,7 @@ async function handleAdminAnnouncementsCreate(request, env) {
   if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
   let body;
   try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
-  const text = String(body.text || "").trim().slice(0, 500);
+  const text = String(body.text || "").trim().slice(0, ANNOUNCEMENT_TEXT_MAX);
   if (!text) return json({ error: "bad_request" }, env, 400);
   const now = Date.now();
   const durationMin = sanitizeDurationMin(body.durationMin);
@@ -970,6 +978,7 @@ async function handleAdminAnnouncementsCreate(request, env) {
     id: "ann_" + now.toString(36) + Math.random().toString(36).slice(2, 8),
     text,
     imageUrl: sanitizeImageUrl(body.imageUrl),
+    displayMode: sanitizeDisplayMode(body.displayMode),
     createdAt: now,
     expiresAt: durationMin ? now + durationMin * 60000 : null,
   };
@@ -990,11 +999,12 @@ async function handleAdminAnnouncementsUpdate(request, env) {
   if (!item) return json({ error: "not_found" }, env, 404);
 
   if (typeof body.text === "string") {
-    const text = body.text.trim().slice(0, 500);
+    const text = body.text.trim().slice(0, ANNOUNCEMENT_TEXT_MAX);
     if (!text) return json({ error: "bad_request" }, env, 400);
     item.text = text;
   }
   if (typeof body.imageUrl === "string") item.imageUrl = sanitizeImageUrl(body.imageUrl);
+  if (typeof body.displayMode === "string") item.displayMode = sanitizeDisplayMode(body.displayMode);
   // Editing resets the expiry clock from the moment of the edit -- simplest
   // rule to reason about (a fresh "durationMin from now"), rather than
   // trying to preserve/extend the original timer.
