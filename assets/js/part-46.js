@@ -170,6 +170,14 @@
     adminCompareDownload:{en:'Compare Stocks PDF',th:'ดาวน์โหลด PDF เปรียบเทียบหุ้น'},
     adminConnectedUsers:{en:'Connected Users',th:'ผู้ใช้ที่เชื่อมต่อ LINE'},
     adminAnnouncements:{en:'Announcements',th:'ประกาศ'},
+    /* Round Q fix: the user's own mental model of "admin terminal" is this
+       gate's admin-shortcut grid -- not Cockpit/Command Center, which is
+       where these two ended up living (Institutional Pro Desk as a card in
+       part-47.js since Round Q phase 1; Institutional Briefing as a report
+       trigger in part-47.js since phase 4). Adding shortcuts here too so
+       both are reachable from where she actually expects them. */
+    adminPro:{en:'Institutional Pro Desk',th:'โปรเดสก์ระดับสถาบัน'},
+    adminBriefing:{en:'Institutional Briefing',th:'บรีฟฉบับสถาบัน'},
     bulk:{en:'📋 Paste all 50 at once',th:'📋 วางทีเดียว 50 ชุด'},
     mask:{en:'👁 Show / hide',th:'👁 แสดง/ซ่อน'},
     clear:{en:'🗑 Clear all',th:'🗑 ล้างทั้งหมด'},
@@ -324,6 +332,14 @@
                 '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 001 1h3l4 4V6L7 10H4a1 1 0 00-1 1z"/><path d="M16 8a4 4 0 010 8"/><path d="M19 5a8 8 0 010 14"/></svg>' +
                 '<span data-x="adminAnnouncements"></span>' +
               '</button>' +
+              '<button class="cag-admin-link" type="button" id="cagBtnPro">' +
+                '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>' +
+                '<span data-x="adminPro"></span>' +
+              '</button>' +
+              '<button class="cag-admin-link" type="button" id="cagBtnBriefing">' +
+                '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>' +
+                '<span data-x="adminBriefing"></span>' +
+              '</button>' +
             '</div>' +
             '<button class="cag-btn" type="button" id="cagBtnLogout" data-x="logoutBtn"></button>' +
             '<button class="cag-ghost hidden" type="button" id="cagUpgradeBtn" data-x="upgradeBtn"></button>' +
@@ -415,6 +431,17 @@
     gate.querySelector('#cagBtnCompareDownload').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/directory'; });
     gate.querySelector('#cagBtnConnectedUsers').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/connectedusers'; });
     gate.querySelector('#cagBtnAnnouncements').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/announcements'; });
+    gate.querySelector('#cagBtnPro').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/pro'; });
+    /* Institutional Briefing isn't a route -- it's a generated report
+       overlay (see window.__SPZ_BRIEFING in part-57.js) -- so this opens it
+       directly instead of navigating. Falls back to Cockpit, where the
+       trigger card also lives, on the very unlikely chance part-57.js
+       hasn't finished loading yet. */
+    gate.querySelector('#cagBtnBriefing').addEventListener('click', function(){
+      gate.hidden = true;
+      if(window.__SPZ_BRIEFING && typeof window.__SPZ_BRIEFING.open === 'function') window.__SPZ_BRIEFING.open();
+      else location.hash = '#/cockpit';
+    });
 
     gate.querySelector('#cagMaskBtn').addEventListener('click', function(){
       var show = advInputs[0] && advInputs[0].type === 'password';
@@ -575,6 +602,7 @@
         adminAddAnalysis: TXT.adminAddAnalysis, adminPrintReport: TXT.adminPrintReport,
         adminCompareDownload: TXT.adminCompareDownload, adminConnectedUsers: TXT.adminConnectedUsers,
         adminAnnouncements: TXT.adminAnnouncements,
+        adminPro: TXT.adminPro, adminBriefing: TXT.adminBriefing,
         tabMember: TXT.tabMember, tabFull: TXT.tabFull, tabLine: TXT.tabLine,
         lineName: lineNameTxt, lineStatus: lineStatusTxt, lineBtn: lineBtnTxt,
         memberT: TXT.memberT, memberS: TXT.memberS,
