@@ -715,6 +715,95 @@ async function handleAdminBroadcast(request, env) {
   return json({ ok: true }, env);
 }
 
+// ---- Journal feed display settings (Round K) ----
+// Was a client-side `settings/journal` Firestore doc, gated only by the
+// journal admin page's own Firebase-Auth sign-in. That sign-in proves
+// nothing to Firestore's own security rules, and (unlike journal_entries,
+// which has its own explicit rule) there was never a matching rule for the
+// `settings` collection, so every save silently hit Firestore's default
+// deny and came back as "could not save". Moved here instead, next to every
+// other piece of this site's own admin-controlled state (profiles, rights,
+// broadcast) that already goes through this Worker's KV store rather than
+// Firestore rules. Reads are public (every visitor's feed needs to know
+// whether to show likers/stats), writes need the same X-Admin-Key as the
+// rest of this admin surface.
+const JOURNAL_SETTINGS_KV_KEY = "journalsettings:main";
+const JOURNAL_SETTINGS_DEFAULT = {
+  showLikers: true,
+  statsVisible: { total: true, month: true, top: true, accuracy: true },
+};
+
+function normalizeJournalSettings(v) {
+  v = v && typeof v === "object" ? v : {};
+  const sv = v.statsVisible && typeof v.statsVisible === "object" ? v.statsVisible : {};
+  return {
+    showLikers: v.showLikers !== false,
+    statsVisible: {
+      total: sv.total !== false,
+      month: sv.month !== false,
+      top: sv.top !== false,
+      accuracy: sv.accuracy !== false,
+    },
+  };
+}
+
+async function handleJournalSettingsGet(request, env) {
+  let data = JOURNAL_SETTINGS_DEFAULT;
+  try {
+    const raw = await env.SESSIONS.get(JOURNAL_SETTINGS_KV_KEY);
+    if (raw) data = normalizeJournalSettings(JSON.parse(raw));
+  } catch (e) {}
+  return json(data, env);
+}
+
+async function handleJournalSettingsUpdate(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const data = normalizeJournalSettings(body);
+  await env.SESSIONS.put(JOURNAL_SETTINGS_KV_KEY, JSON.stringify(data));
+  return json({ ok: true, data }, env);
+}
+
+// Round K8: "how many people are on the site right now" gauge for the
+// admin panel. Every page load pings this with a random per-tab id (see
+// the site-wide presence-beacon script near the end of the HTML file);
+// each ping just re-writes that id's KV entry with a short TTL, so a
+// closed tab or a dead connection ages out on its own within ~90s without
+// needing any cleanup job. The count is simply "how many of those keys
+// are still live" -- deliberately not a list of who they are, since a
+// bare visitor count isn't sensitive the way the Connected Users list is,
+// so the ping itself needs no admin key; only the count read for the
+// admin panel does.
+const PRESENCE_KEY_PREFIX = "presence:";
+const PRESENCE_TTL_SECONDS = 90;
+
+async function handlePresencePing(request, env) {
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const id = (body && typeof body.id === "string" ? body.id : "").slice(0, 128);
+  if (!id) return json({ error: "bad_request" }, env, 400);
+  await env.SESSIONS.put(PRESENCE_KEY_PREFIX + id, "1", { expirationTtl: PRESENCE_TTL_SECONDS });
+  return json({ ok: true }, env);
+}
+
+async function handleAdminPresenceCount(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  let count = 0;
+  let cursor;
+  // A KV list() page tops out at 1000 keys; loop a few pages just in case
+  // this small personal site ever somehow has that much concurrent
+  // traffic, capped so a bug elsewhere can never turn this into a runaway
+  // loop against KV.
+  for (let i = 0; i < 20; i++) {
+    const page = await env.SESSIONS.list({ prefix: PRESENCE_KEY_PREFIX, cursor });
+    count += page.keys.length;
+    if (page.list_complete || !page.cursor) break;
+    cursor = page.cursor;
+  }
+  return json({ count }, env);
+}
+
 async function handleLogout(request, env) {
   let code = "";
   try {
@@ -746,6 +835,10 @@ export default {
     if (url.pathname === "/api/admin/users" && request.method === "GET") return handleAdminUsersList(request, env);
     if (url.pathname === "/api/admin/users/update" && request.method === "POST") return handleAdminUsersUpdate(request, env);
     if (url.pathname === "/api/admin/broadcast" && request.method === "POST") return handleAdminBroadcast(request, env);
+    if (url.pathname === "/api/presence/ping" && request.method === "POST") return handlePresencePing(request, env);
+    if (url.pathname === "/api/admin/presence-count" && request.method === "GET") return handleAdminPresenceCount(request, env);
+    if (url.pathname === "/api/journal-settings" && request.method === "GET") return handleJournalSettingsGet(request, env);
+    if (url.pathname === "/api/admin/journal-settings" && request.method === "POST") return handleJournalSettingsUpdate(request, env);
 
     return json({ error: "not_found" }, env, 404);
   },

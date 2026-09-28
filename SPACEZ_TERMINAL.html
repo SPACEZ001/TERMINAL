@@ -32679,19 +32679,51 @@ var GM = {
     width:100%;aspect-ratio:4/5;box-sizing:border-box;position:relative;overflow:hidden;
     border-radius:22px;padding:28px 26px;display:flex;flex-direction:column;
     background:radial-gradient(130% 110% at 18% -10%, #131a2e 0%, #060810 45%, #010103 100%);
-    border:1px solid rgba(143,211,255,.28);color:#f4f6f1;font-family:var(--mono);
+    border:1.5px solid rgba(143,211,255,.4);color:#f4f6f1;font-family:var(--mono);
+    box-shadow:0 0 0 1px rgba(143,211,255,.08),0 30px 70px -30px rgba(0,0,0,.85);
   }
+  /* Round K4: the card is exported by html2canvas as a still image (see
+     openShareCard's download handler) -- while ".wlshare-card" is on
+     screen it keeps its normal rounded corners, but the download flow adds
+     ".exporting" for one frame first (squares the OUTER corners) so the
+     curve's anti-aliased edge pixels never get baked into the file. Those
+     edge pixels are only correct once composited against a transparent
+     background; the moment someone re-shares the file through an app that
+     flattens to JPEG (no alpha channel), that blend turns into a visible
+     white fringe/line along the curve. Squaring the outer corner removes
+     the curve entirely, so there's nothing left to fringe; the download
+     also now bakes in the card's own dark background instead of leaving it
+     transparent, so no downstream flatten can produce a fringe at all,
+     square corners or not -- see the two changes together in the
+     "download" click handler below. */
+  .wlshare-card.exporting{border-radius:0;}
+  /* engraved corner brackets, echoing the site's dev-card treatment, in
+     this card's own icy-blue accent instead of the neon-green house color */
+  .wlshare-card::before,.wlshare-card::after{
+    content:'';position:absolute;z-index:2;pointer-events:none;width:20px;height:20px;
+  }
+  .wlshare-card::before{top:10px;left:10px;border-radius:6px 0 0 0;
+    border-top:2px solid rgba(143,211,255,.55);border-left:2px solid rgba(143,211,255,.55);}
+  .wlshare-card::after{bottom:10px;right:10px;border-radius:0 0 6px 0;
+    border-bottom:2px solid rgba(143,211,255,.55);border-right:2px solid rgba(143,211,255,.55);}
   .wlshare-stars{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
   .wlshare-stars i{position:absolute;border-radius:50%;background:#fff;animation:wlStarTwinkle 3.4s ease-in-out infinite;}
   .wlshare-glow{position:absolute;top:-40%;right:-20%;width:75%;height:75%;
     background:radial-gradient(circle, rgba(143,211,255,.22), transparent 70%);pointer-events:none;}
   .wlshare-glow-2{position:absolute;bottom:-30%;left:-15%;width:60%;height:60%;
     background:radial-gradient(circle, rgba(167,139,250,.14), transparent 70%);pointer-events:none;}
+  /* faint rising-market watermark behind everything -- see chartWatermarkHTML */
+  .wlshare-chartbg{position:absolute;left:-6%;right:-6%;bottom:-4%;height:46%;opacity:.16;pointer-events:none;}
   .wlshare-top{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1;}
-  .wlshare-logo{display:flex;align-items:center;gap:7px;font-weight:800;font-size:10.5px;letter-spacing:.12em;color:#8fd3ff;text-transform:uppercase;}
-  .wlshare-mark{width:13px;height:17px;color:#8fd3ff;}
+  .wlshare-eyebrow{display:flex;align-items:center;gap:6px;font-weight:800;font-size:10px;letter-spacing:.16em;color:#8fd3ff;text-transform:uppercase;}
+  .wlshare-live-dot{width:6px;height:6px;border-radius:50%;background:#00e5a0;box-shadow:0 0 6px rgba(0,229,160,.9);animation:wlShareLive 1.9s ease-in-out infinite;flex:0 0 auto;}
+  @keyframes wlShareLive{0%,100%{opacity:1;}50%{opacity:.35;}}
   .wlshare-date{font-size:10px;color:#8087a0;}
-  .wlshare-person{display:flex;align-items:center;gap:14px;margin-top:26px;position:relative;z-index:1;}
+  .wlshare-logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:12px;letter-spacing:.14em;color:#fff;text-transform:uppercase;position:relative;z-index:1;margin-top:10px;}
+  .wlshare-logo-rule{position:absolute;left:0;right:0;bottom:-8px;height:2px;
+    background:linear-gradient(90deg,#8fd3ff,rgba(143,211,255,0));border-radius:2px;}
+  .wlshare-mark{width:14px;height:18px;color:#8fd3ff;}
+  .wlshare-person{display:flex;align-items:center;gap:14px;margin-top:24px;position:relative;z-index:1;}
   .wlshare-avatar{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #8fd3ff;flex:0 0 auto;box-shadow:0 0 16px rgba(143,211,255,.4);}
   .wlshare-avatar-fallback{display:flex;align-items:center;justify-content:center;background:rgba(143,211,255,.15);color:#8fd3ff;font-size:22px;font-weight:800;}
   .wlshare-name{font-size:1.15rem;font-weight:800;color:#fff;}
@@ -33251,6 +33283,143 @@ var GM = {
   #watchlist .wl-shock-rotate-row{font-size:12px;color:var(--grey);line-height:1.6;margin-top:6px;}
   #watchlist .wl-shock-rotate-row b{color:var(--white);}
 
+  /* Round K11: the same simulator content, reused inside the floating
+     #spzShockPopup instead of the inline #watchlist card -- following the
+     same "duplicate the container prefix" pattern #cuDetailModal already
+     uses to reuse this exact .wl-pa-* family in its own detail modal,
+     rather than loosening these selectors sitewide. Only the pieces
+     shockPickerAndResultHTML/shockRenderResult actually render into the
+     popup are duplicated here (no toggle/collapse/badge -- the popup has
+     its own open/close chrome instead, styled separately below). */
+  #spzShockPopup .wl-pa-lede{font-size:12.5px;color:var(--grey);line-height:1.6;margin:0 0 14px;}
+  #spzShockPopup .wl-pa-label{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--grey-dim);margin:0 0 10px;}
+  #spzShockPopup .wl-pa-stackbar{display:flex;width:100%;height:16px;border-radius:8px;overflow:hidden;background:rgba(255,255,255,.06);}
+  #spzShockPopup .wl-pa-stackbar span{height:100%;box-shadow:2px 0 0 0 #0b0d14;}
+  #spzShockPopup .wl-pa-stackbar span:last-child{box-shadow:none;}
+  #spzShockPopup .wl-pa-risk-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:8px;}
+  #spzShockPopup .wl-pa-risk-row:last-child{margin-bottom:0;}
+  #spzShockPopup .wl-pa-risk-tag{flex:0 0 auto;font-family:var(--mono);font-size:11px;letter-spacing:.04em;width:108px;}
+  #spzShockPopup .wl-pa-risk-tag.high{color:var(--red);}
+  #spzShockPopup .wl-pa-risk-tag.medium{color:var(--amber);}
+  #spzShockPopup .wl-pa-risk-tag.low{color:var(--neon-2,var(--neon));}
+  #spzShockPopup .wl-pa-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  #spzShockPopup .wl-pa-chip{font-family:var(--mono);font-size:11.5px;padding:4px 10px;border-radius:20px;border:1px solid var(--border-dim);background:transparent;color:var(--white);cursor:pointer;}
+  #spzShockPopup .wl-pa-chip.high{border-color:color-mix(in srgb, var(--red) 45%, transparent);}
+  #spzShockPopup .wl-pa-chip.medium{border-color:color-mix(in srgb, var(--amber) 45%, transparent);}
+  #spzShockPopup .wl-pa-chip.low{border-color:color-mix(in srgb, var(--neon-2,var(--neon)) 40%, transparent);}
+
+  #spzShockPopup .wl-shock-select-native{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+  #spzShockPopup .wl-shock-picker{position:relative;z-index:5;margin-bottom:14px;}
+  #spzShockPopup .wl-shock-trigger{
+    width:100%;display:flex;align-items:center;gap:10px;text-align:left;
+    background:rgba(143,211,255,.06);border:1.5px solid rgba(143,211,255,.3);
+    border-radius:10px;padding:12px 14px;color:var(--white);font-family:var(--mono);
+    font-size:13px;cursor:pointer;transition:border-color .15s,background .15s;
+  }
+  #spzShockPopup .wl-shock-trigger:hover,#spzShockPopup .wl-shock-trigger.open{border-color:#8fd3ff;background:rgba(143,211,255,.1);}
+  #spzShockPopup .wl-shock-trigger svg{width:16px;height:16px;flex:0 0 auto;color:#8fd3ff;}
+  #spzShockPopup .wl-shock-trigger span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #spzShockPopup .wl-shock-chev{transition:transform .15s;}
+  #spzShockPopup .wl-shock-trigger.open .wl-shock-chev{transform:rotate(180deg);}
+  #spzShockPopup .wl-shock-dropdown{
+    display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:20;
+    max-height:220px;overflow:auto;background:#0b0d14;border:1px solid rgba(143,211,255,.25);
+    border-radius:12px;padding:6px;box-shadow:0 20px 44px -18px rgba(0,0,0,.6);
+  }
+  #spzShockPopup .wl-shock-dropdown.open{display:block;}
+  #spzShockPopup .wl-shock-opt{
+    width:100%;text-align:left;background:transparent;border:none;border-radius:8px;
+    padding:9px 11px;color:var(--grey);font-family:var(--mono);font-size:12.5px;
+    cursor:pointer;display:flex;align-items:center;gap:8px;
+  }
+  #spzShockPopup .wl-shock-opt:hover{background:rgba(143,211,255,.08);color:var(--white);}
+  #spzShockPopup .wl-shock-opt.active{background:rgba(143,211,255,.14);color:#8fd3ff;font-weight:700;}
+  #spzShockPopup .wl-shock-opt i{width:5px;height:5px;border-radius:50%;background:currentColor;flex:0 0 auto;opacity:.7;}
+  #spzShockPopup .wl-shock-desc{font-size:12px;color:var(--grey);line-height:1.6;margin:0 0 12px;}
+  #spzShockPopup .wl-shock-stats{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+  #spzShockPopup .wl-shock-stat{
+    flex:1 1 80px;display:flex;flex-direction:column;align-items:center;gap:4px;
+    background:rgba(255,255,255,.03);border:1px solid var(--border-dim);border-radius:10px;padding:10px 8px;
+  }
+  #spzShockPopup .wl-shock-stat svg{width:16px;height:16px;}
+  #spzShockPopup .wl-shock-stat b{font-family:var(--mono);font-size:15px;}
+  #spzShockPopup .wl-shock-stat span{font-size:9.5px;color:var(--grey);text-align:center;line-height:1.3;}
+  #spzShockPopup .wl-shock-stat.rises svg,#spzShockPopup .wl-shock-stat.rises b{color:var(--neon-2,var(--neon));}
+  #spzShockPopup .wl-shock-stat.falls svg,#spzShockPopup .wl-shock-stat.falls b{color:var(--red);}
+  #spzShockPopup .wl-shock-stat.mixed svg,#spzShockPopup .wl-shock-stat.mixed b{color:var(--grey);}
+  #spzShockPopup .wl-shock-bar{margin-bottom:14px;}
+  #spzShockPopup .wl-shock-rotate{margin-top:14px;padding-top:12px;border-top:1px dashed var(--border-dim);}
+  #spzShockPopup .wl-shock-rotate-row{font-size:12px;color:var(--grey);line-height:1.6;margin-top:6px;}
+  #spzShockPopup .wl-shock-rotate-row b{color:var(--white);}
+
+  /* ---- the floating trigger itself. Sits directly above the site's
+     existing bottom-right button row (back-to-top / admin login /
+     system-status, all pinned at bottom:18px) rather than in it, per her
+     explicit ask not to collide with the login button in that corner.
+     The pulse ring + slow icon wiggle are the "eye-catching" ask -- a
+     static icon in that corner would just blend into the other three. */
+  #spzShockFab{
+    position:fixed;right:18px;bottom:78px;z-index:61;
+    width:46px;height:46px;border-radius:50%;cursor:pointer;padding:0;
+    background:rgba(8,8,8,.9);border:1.5px solid rgba(255,201,77,.55);
+    color:var(--amber);display:none;align-items:center;justify-content:center;
+    backdrop-filter:blur(8px);transition:box-shadow .2s,transform .15s;
+    opacity:0;transform:translateY(8px) scale(.9);pointer-events:none;
+  }
+  #spzShockFab.show{display:flex;opacity:1;transform:translateY(0) scale(1);pointer-events:auto;transition:opacity .3s,transform .3s;}
+  #spzShockFab svg{width:20px;height:20px;position:relative;z-index:1;animation:spzShockWiggle 2.6s ease-in-out infinite;}
+  #spzShockFab:hover{box-shadow:0 0 20px rgba(255,201,77,.35);}
+  #spzShockFab:active{transform:scale(.92);}
+  #spzShockFab.on{color:#0a0a0a;background:var(--amber);border-color:var(--amber);}
+  #spzShockFab.on svg{animation:none;}
+  .spz-shock-fab-ring{
+    position:absolute;inset:-4px;border-radius:50%;border:1.5px solid rgba(255,201,77,.6);
+    animation:spzShockPulse 2.2s ease-out infinite;pointer-events:none;
+  }
+  #spzShockFab.on .spz-shock-fab-ring{display:none;}
+  @keyframes spzShockPulse{0%{transform:scale(1);opacity:.8;}100%{transform:scale(1.5);opacity:0;}}
+  @keyframes spzShockWiggle{0%,80%,100%{transform:rotate(0deg);}85%{transform:rotate(-12deg);}92%{transform:rotate(10deg);}97%{transform:rotate(0deg);}}
+  body.gm-live #spzShockFab{bottom:164px;}
+  html[data-theme="void"] #spzShockFab{background:#070707;}
+  html[data-theme="light"] #spzShockFab{background:var(--panel);}
+
+  #spzShockPopup{
+    position:fixed;right:18px;bottom:134px;z-index:61;width:min(370px,calc(100vw - 36px));
+    max-height:min(74vh,620px);overflow-y:auto;
+    background:radial-gradient(120% 100% at 100% 0%, rgba(255,201,77,.08), transparent 55%), #0b0d14;
+    border:1px solid rgba(255,201,77,.3);border-radius:18px;padding:18px 18px 20px;
+    box-shadow:0 24px 60px -18px rgba(0,0,0,.7);
+    display:none;opacity:0;transform:translateY(14px) scale(.97);transform-origin:bottom right;
+    transition:opacity .22s ease,transform .22s ease;
+  }
+  #spzShockPopup.show{display:block;}
+  #spzShockPopup.show.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;}
+  #spzShockPopup:not(.open){pointer-events:none;}
+  body.gm-live #spzShockPopup{bottom:220px;}
+  .spz-shock-pop-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .spz-shock-pop-icon{
+    flex:0 0 auto;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,201,77,.14);color:var(--amber);
+  }
+  .spz-shock-pop-icon svg{width:16px;height:16px;}
+  .spz-shock-pop-title{flex:1;font-family:var(--mono);font-weight:800;font-size:13.5px;line-height:1.35;color:#fff;}
+  .spz-shock-pop-close{
+    flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.06);
+    border:1px solid var(--border-dim);color:var(--grey);font-size:17px;line-height:1;cursor:pointer;
+  }
+  .spz-shock-pop-close:hover{color:#fff;border-color:rgba(255,255,255,.3);}
+  .spz-shock-pop-disc{
+    font-size:10.8px;line-height:1.55;color:var(--amber);background:rgba(255,201,77,.08);
+    border:1px solid rgba(255,201,77,.3);border-radius:10px;padding:9px 11px;margin-bottom:14px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    #spzShockFab svg,.spz-shock-fab-ring{animation:none;}
+  }
+  @media(max-width:520px){
+    #spzShockFab{right:14px;bottom:72px;}
+    #spzShockPopup{right:8px;left:8px;width:auto;bottom:126px;}
+  }
+
   /* ---- big centered popup for the LINE QR, instead of a small inline box:
      easier to scan, and gives the connect flow its own clear moment
      instead of competing with the rest of the page. ------------------- */
@@ -33525,11 +33694,22 @@ var GM = {
     shockToggleOpen:{en:'Tap to try a scenario',th:'แตะเพื่อลองสถานการณ์สมมติ'},
     shockToggleClose:{en:'Hide',th:'ซ่อน'},
 
+    /* Round K11: floating bottom-right popup version of the same simulator
+       (see spzShockFab/spzShockPopup below) -- a punchier, question-style
+       title than the plain page heading above, since the whole point of a
+       floating popup is to grab attention rather than sit and wait to be
+       scrolled to. */
+    shockFabLabel:{en:'What if the market shocks?',th:'ถ้าตลาดเกิดแรงกระแทกล่ะ?'},
+    shockPopupTitle:{en:'What would happen to YOUR portfolio?',th:'พอร์ตของคุณจะเป็นยังไง?'},
+    shockDisclaimer:{en:'Educational simulation only — not investment advice. These are historical tendencies, not guarantees: a sector that "usually" holds up can still fall in any single real event.',
+                     th:'เป็นการจำลองเพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน แนวโน้มนี้มาจากสถิติในอดีต ไม่ใช่การรับประกัน — กลุ่มที่ "มักจะ" ไปได้ดี ก็ยังลงได้ในเหตุการณ์จริงแต่ละครั้ง'},
+
     profileHoldings:{en:'holdings',th:'ตัวที่ถือ'},
     profileTopSector:{en:'Mostly',th:'ส่วนใหญ่'},
     profileGuest:{en:'Your Watchlist',th:'วอทช์ลิสต์ของคุณ'},
     profileShareBtn:{en:'Share / Save image',th:'แชร์ / บันทึกรูป'},
 
+    shareEyebrow:{en:'Portfolio Snapshot',th:'สรุปพอร์ตการลงทุน'},
     shareTag:{en:'My Portfolio',th:'พอร์ตของฉัน'},
     shareHoldingsLabel:{en:'Holdings',th:'หุ้นที่ถือ'},
     shareFooter:{en:'spacez001.github.io/TERMINAL · Educational use only, not financial advice.',
@@ -33859,6 +34039,11 @@ var GM = {
         // 'spz:line' rebroadcast would rebuild that exact card out from under
         // itself mid-edit, wiping the "Saved." confirmation and collapsing
         // the still-open edit panel before the visitor sees it.
+        // We DO still tell everyone else, though (e.g. the Watchlist page's
+        // profile header/connect strip/share card) via a narrower event, so
+        // the new name shows up there without needing a reload -- see the
+        // 'spz:identity' listener near this module's build().
+        try { document.dispatchEvent(new CustomEvent('spz:identity')); } catch(e){}
         if(cb) cb(null);
       })
       .catch(function(){ if(cb) cb('network'); });
@@ -34083,6 +34268,18 @@ var GM = {
     return { total:total, known:known, tiers:tiers, sectorRows:sectorRows, riskScore:riskScore, riskLevel:riskLevel };
   }
 
+  /* single source of truth for "what name do we show this LINE-linked
+     visitor as", shared by every card on this page (profile header, connect
+     strip, share card). The topbar/nav "Signed in with LINE" card lets the
+     visitor override their raw LINE name with one of their own choosing
+     (state.line.nameOverride) -- everywhere on the site that shows their
+     name must prefer that override the same way, or an edit made up there
+     would look like it "didn't save" down here. Falls back to the raw LINE
+     profile name, then a generic guest label. */
+  function lineEffectiveName(lineSt, guestLabel){
+    return (lineSt.nameOverride || lineSt.displayName || '').trim() || guestLabel || '';
+  }
+
   /* the top-of-page "this is your board" strip -- site logo, the LINE-linked
      person's own name + photo, and a quick-glance summary, so the page reads
      as a personal profile the moment it loads rather than a bare list. Also
@@ -34092,9 +34289,10 @@ var GM = {
     var sum = computePortfolioSummary(tickers, stocks);
     var top = sum.sectorRows[0];
     var riskText = sum.riskLevel === 'high' ? C.paRiskHigh : sum.riskLevel === 'medium' ? C.paRiskMed : C.paRiskLow;
+    var shownName = lineEffectiveName(lineSt, tx(C.profileGuest));
     var avatarHTML = lineSt.pictureUrl
       ? '<img class="wl-profile-avatar" src="' + esc(lineSt.pictureUrl) + '" alt="">'
-      : '<div class="wl-profile-avatar wl-profile-avatar-fallback">' + esc((lineSt.displayName || '?').charAt(0).toUpperCase()) + '</div>';
+      : '<div class="wl-profile-avatar wl-profile-avatar-fallback">' + esc((shownName || '?').charAt(0).toUpperCase()) + '</div>';
 
     return '<div class="wl-profile">' +
       starsHTML('wl-profile-stars', 10) +
@@ -34108,7 +34306,7 @@ var GM = {
       '<div class="wl-profile-main">' +
         avatarHTML +
         '<div class="wl-profile-info">' +
-          '<div class="wl-profile-name">' + esc(lineSt.displayName || tx(C.profileGuest)) + '</div>' +
+          '<div class="wl-profile-name">' + esc(shownName || tx(C.profileGuest)) + '</div>' +
           '<div class="wl-profile-stats">' +
             '<span class="wl-profile-stat"><b>' + sum.total + '</b> ' + esc(tx(C.profileHoldings)) + '</span>' +
             (top ? '<span class="wl-profile-stat">' + esc(tx(C.profileTopSector)) + ' <b>' + esc(top.label) + '</b></span>' : '') +
@@ -34281,11 +34479,13 @@ var GM = {
     '</div>';
   }
 
-  function shockSimulatorHTML(tickers, stocks){
-    if(!tickers.length || !window.__SPZ_SCENARIOS) return '';
-    var list = window.__SPZ_SCENARIOS.list();
-    var archOrder = window.__SPZ_SCENARIOS.archetypes();
-    if(!list.length) return '';
+  /* shared by both the inline Watchlist-page card (shockSimulatorHTML,
+     collapsed behind its own tap-to-open toggle) and the Round K11
+     floating bottom-right popup (shockPopupBodyHTML, always "open" the
+     moment the popup itself is open) -- same scenario picker + result
+     slot, same wireShockPicker/shockRenderResult behind it either way, so
+     a scenario picked in one place behaves identically in the other. */
+  function shockPickerAndResultHTML(list, archOrder){
     var optionsHTML = list.map(function(s, i){
       return '<option value="' + i + '">' + esc(L() === 'th' ? s.title_th : s.title_en) + '</option>';
     }).join('');
@@ -34294,6 +34494,24 @@ var GM = {
       return '<button type="button" class="wl-shock-opt' + (i === 0 ? ' active' : '') + '" data-wl-opt="' + i + '" role="option">' +
         '<i></i><span>' + esc(titleOf(s)) + '</span></button>';
     }).join('');
+    return '<p class="wl-pa-lede">' + esc(tx(C.shockLede)) + '</p>' +
+        '<div class="wl-shock-picker" data-wl="shockPicker">' +
+          '<button type="button" class="wl-shock-trigger" data-wl="shockTrigger" aria-haspopup="listbox" aria-expanded="false">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 11-14h-7l1-6z"/></svg>' +
+            '<span data-wl="shockTriggerLabel">' + esc(titleOf(list[0])) + '</span>' +
+            '<svg class="wl-shock-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' +
+          '</button>' +
+          '<div class="wl-shock-dropdown" data-wl="shockDropdown" role="listbox">' + dropdownHTML + '</div>' +
+          '<select class="wl-shock-select-native" data-wl="shockSelect" tabindex="-1" aria-hidden="true">' + optionsHTML + '</select>' +
+        '</div>' +
+        '<div data-wl="shockResult"></div>';
+  }
+
+  function shockSimulatorHTML(tickers, stocks){
+    if(!tickers.length || !window.__SPZ_SCENARIOS) return '';
+    var list = window.__SPZ_SCENARIOS.list();
+    var archOrder = window.__SPZ_SCENARIOS.archetypes();
+    if(!list.length) return '';
     return '<div class="wl-pa wl-shock" data-wl-shock-root>' +
       starsHTML('wl-shock-stars', 8) +
       '<button type="button" class="wl-shock-toggle" data-wl="shockToggle" aria-expanded="false">' +
@@ -34307,19 +34525,22 @@ var GM = {
         '</span>' +
       '</button>' +
       '<div class="wl-shock-collapse" data-wl="shockCollapse">' +
-        '<p class="wl-pa-lede">' + esc(tx(C.shockLede)) + '</p>' +
-        '<div class="wl-shock-picker" data-wl="shockPicker">' +
-          '<button type="button" class="wl-shock-trigger" data-wl="shockTrigger" aria-haspopup="listbox" aria-expanded="false">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 11-14h-7l1-6z"/></svg>' +
-            '<span data-wl="shockTriggerLabel">' + esc(titleOf(list[0])) + '</span>' +
-            '<svg class="wl-shock-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' +
-          '</button>' +
-          '<div class="wl-shock-dropdown" data-wl="shockDropdown" role="listbox">' + dropdownHTML + '</div>' +
-          '<select class="wl-shock-select-native" data-wl="shockSelect" tabindex="-1" aria-hidden="true">' + optionsHTML + '</select>' +
-        '</div>' +
-        '<div data-wl="shockResult"></div>' +
+        shockPickerAndResultHTML(list, archOrder) +
       '</div>' +
     '</div>';
+  }
+
+  /* Round K11: the same simulator, rendered for the floating bottom-right
+     popup instead of the inline Watchlist-page card -- no toggle/collapse
+     chrome, since the popup's own open/close already serves that role.
+     wireShockPicker/shockRenderResult don't care which wrapper they're
+     called on, so this reuses both unchanged. */
+  function shockPopupBodyHTML(tickers, stocks){
+    if(!tickers.length || !window.__SPZ_SCENARIOS) return '';
+    var list = window.__SPZ_SCENARIOS.list();
+    var archOrder = window.__SPZ_SCENARIOS.archetypes();
+    if(!list.length) return '';
+    return shockPickerAndResultHTML(list, archOrder);
   }
 
   /* wires the custom trigger + dropdown to the hidden native <select> --
@@ -34486,6 +34707,85 @@ var GM = {
   var shareModalEl = null, html2canvasLoading = null;
   var pickModalEl = null;
 
+  /* Round K11: floating bottom-right "what if the market shocks" popup --
+     the FAB sits above the site's existing bottom-right button row (back
+     to top / admin login / system status, all at bottom:18px) so it never
+     visually collides with them, and both the FAB and the popup are
+     appended straight to document.body (like shareModalEl/pickModalEl
+     above) so they survive this page's own paint() re-renders and stay
+     reachable from any route, not just while #watchlist is scrolled into
+     view. Built once, then just shown/hidden by paintShockFab() below. */
+  var shockFabEl = null, shockPopupEl = null;
+  function ensureShockPopup(){
+    if(shockFabEl) return;
+    shockFabEl = document.createElement('button');
+    shockFabEl.type = 'button';
+    shockFabEl.id = 'spzShockFab';
+    shockFabEl.setAttribute('aria-label', tx(C.shockFabLabel));
+    shockFabEl.title = tx(C.shockFabLabel);
+    shockFabEl.innerHTML =
+      '<span class="spz-shock-fab-ring"></span>' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 11-14h-7l1-6z"/></svg>';
+    document.body.appendChild(shockFabEl);
+
+    shockPopupEl = document.createElement('div');
+    shockPopupEl.id = 'spzShockPopup';
+    shockPopupEl.innerHTML =
+      '<div class="spz-shock-pop-head">' +
+        '<span class="spz-shock-pop-icon">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 11-14h-7l1-6z"/></svg>' +
+        '</span>' +
+        '<span class="spz-shock-pop-title" data-spzshock="title"></span>' +
+        '<button type="button" class="spz-shock-pop-close" data-spzshock="close" aria-label="close">&times;</button>' +
+      '</div>' +
+      '<div class="spz-shock-pop-disc" data-spzshock="disc"></div>' +
+      '<div class="spz-shock-pop-body" data-spzshock="body"></div>';
+    document.body.appendChild(shockPopupEl);
+
+    shockFabEl.addEventListener('click', function(){
+      shockPopupEl.classList.toggle('open');
+      shockFabEl.classList.toggle('on', shockPopupEl.classList.contains('open'));
+    });
+    shockPopupEl.querySelector('[data-spzshock="close"]').addEventListener('click', function(){
+      shockPopupEl.classList.remove('open');
+      shockFabEl.classList.remove('on');
+    });
+  }
+
+  /* shows/hides the FAB (only once a LINE-linked visitor actually has
+     holdings to simulate against -- same gating shockSimulatorHTML already
+     uses) and keeps the popup's own scenario picker in sync with whatever
+     the visitor currently holds, so adding/removing a ticker elsewhere on
+     the page updates it the next time paint() runs. */
+  function paintShockFab(tickers, stocks){
+    var hasData = !!(tickers && tickers.length && window.__SPZ_SCENARIOS);
+    if(!hasData){
+      if(shockFabEl) shockFabEl.classList.remove('show');
+      if(shockPopupEl) shockPopupEl.classList.remove('open', 'show');
+      return;
+    }
+    ensureShockPopup();
+    shockFabEl.classList.add('show');
+    shockPopupEl.classList.add('show');
+    shockPopupEl.querySelector('[data-spzshock="title"]').textContent = tx(C.shockPopupTitle);
+    shockPopupEl.querySelector('[data-spzshock="disc"]').textContent = tx(C.shockDisclaimer);
+    var bodyEl = shockPopupEl.querySelector('[data-spzshock="body"]');
+    bodyEl.innerHTML = shockPopupBodyHTML(tickers, stocks);
+    var select = bodyEl.querySelector('[data-wl="shockSelect"]');
+    shockRenderResult(bodyEl, tickers, stocks, select ? Number(select.value) : 0);
+    if(select) select.addEventListener('change', function(){
+      shockRenderResult(bodyEl, tickers, stocks, Number(this.value));
+    });
+    wireShockPicker(bodyEl);
+    var openBtns = bodyEl.querySelectorAll('[data-wl-open]');
+    for(var i=0;i<openBtns.length;i++){
+      openBtns[i].addEventListener('click', function(){
+        var t = this.getAttribute('data-wl-open');
+        if(window.__SPZ_STOCK && window.__SPZ_STOCK.open) window.__SPZ_STOCK.open(t);
+      });
+    }
+  }
+
   /* categorized, searchable ticker picker -- groups every known symbol by
      sector so people can browse instead of having to already know a ticker.
      Appended to document.body (like the share modal) so it survives the
@@ -34591,9 +34891,10 @@ var GM = {
   function shareCardHTML(tickers, stocks, lineSt){
     var sum = computePortfolioSummary(tickers, stocks);
     var riskText = sum.riskLevel === 'high' ? C.paRiskHigh : sum.riskLevel === 'medium' ? C.paRiskMed : C.paRiskLow;
+    var shareName = lineEffectiveName(lineSt, tx(C.profileGuest));
     var avatarHTML = lineSt.pictureUrl
       ? '<img class="wlshare-avatar" src="' + esc(lineSt.pictureUrl) + '" crossorigin="anonymous" alt="">'
-      : '<div class="wlshare-avatar wlshare-avatar-fallback">' + esc((lineSt.displayName || '?').charAt(0).toUpperCase()) + '</div>';
+      : '<div class="wlshare-avatar wlshare-avatar-fallback">' + esc((shareName || '?').charAt(0).toUpperCase()) + '</div>';
 
     var barHTML = '<div class="wlshare-stackbar">' + sum.sectorRows.map(function(row){
       return '<span style="width:' + row.pct + '%;background:' + row.color + ';"></span>';
@@ -34607,18 +34908,43 @@ var GM = {
 
     var dateStr = new Date().toLocaleDateString(L() === 'th' ? 'th-TH' : 'en-US', { year:'numeric', month:'short', day:'numeric' });
 
+    /* faint background "stock chart" watermark -- a rising price line over
+       a few candlesticks -- purely decorative, sits behind everything at
+       very low opacity so the card reads as a market/news graphic rather
+       than a plain data card. Static (not randomized per render) so a
+       download and the on-screen preview always match. */
+    var chartWatermarkHTML =
+      '<svg class="wlshare-chartbg" viewBox="0 0 320 160" preserveAspectRatio="none" aria-hidden="true">' +
+        '<defs><linearGradient id="wlshareChartFade" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0%" stop-color="#00e5a0" stop-opacity="0.5"/>' +
+          '<stop offset="100%" stop-color="#00e5a0" stop-opacity="0"/>' +
+        '</linearGradient></defs>' +
+        '<rect x="18" y="96" width="10" height="30" fill="#00e5a0"/>' +
+        '<rect x="36" y="70" width="10" height="56" fill="#ff5a72"/>' +
+        '<rect x="54" y="108" width="10" height="18" fill="#00e5a0"/>' +
+        '<rect x="72" y="52" width="10" height="74" fill="#00e5a0"/>' +
+        '<rect x="90" y="84" width="10" height="42" fill="#ff5a72"/>' +
+        '<rect x="108" y="36" width="10" height="90" fill="#00e5a0"/>' +
+        '<rect x="126" y="60" width="10" height="66" fill="#ff5a72"/>' +
+        '<rect x="144" y="20" width="10" height="106" fill="#00e5a0"/>' +
+        '<polygon points="18,96 46,70 64,108 100,52 118,84 154,36 172,20 172,160 18,160" fill="url(#wlshareChartFade)"/>' +
+        '<polyline points="18,96 46,70 64,108 100,52 118,84 154,36 172,20" fill="none" stroke="#00e5a0" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>' +
+      '</svg>';
+
     return '<div class="wlshare-card" id="wlshareCard">' +
       starsHTML('wlshare-stars', 15) +
       '<div class="wlshare-glow"></div>' +
       '<div class="wlshare-glow-2"></div>' +
+      chartWatermarkHTML +
       '<div class="wlshare-top">' +
-        '<div class="wlshare-logo">' + (window.__spzMark ? window.__spzMark('wlshare-mark', { stroke:true, w:3 }) : '') + '<span>SPACEZ TERMINAL</span></div>' +
+        '<div class="wlshare-eyebrow"><span class="wlshare-live-dot"></span>' + esc(tx(C.shareEyebrow)) + '</div>' +
         '<span class="wlshare-date">' + esc(dateStr) + '</span>' +
       '</div>' +
+      '<div class="wlshare-logo"><div class="wlshare-logo-rule"></div>' + (window.__spzMark ? window.__spzMark('wlshare-mark', { stroke:true, w:3 }) : '') + '<span>SPACEZ TERMINAL</span></div>' +
       '<div class="wlshare-person">' +
         avatarHTML +
         '<div>' +
-          '<div class="wlshare-name">' + esc(lineSt.displayName || tx(C.profileGuest)) + '</div>' +
+          '<div class="wlshare-name">' + esc(shareName || tx(C.profileGuest)) + '</div>' +
           '<div class="wlshare-tag">' + esc(tx(C.shareTag)) + '</div>' +
         '</div>' +
       '</div>' +
@@ -34681,13 +35007,28 @@ var GM = {
       ensureHtml2Canvas(function(err){
         if(err || !window.html2canvas){ statusEl.textContent = tx(C.shareRenderErr); statusEl.classList.add('err'); return; }
         var cardEl = document.getElementById('wlshareCard');
-        window.html2canvas(cardEl, { backgroundColor:null, scale:2, useCORS:true }).then(function(canvas){
+        // Round K4: rounded corners + a transparent capture used to leave a
+        // white fringe/line along the curve once the PNG got re-shared
+        // somewhere that flattens to JPEG (no alpha channel to blend
+        // against). Fix is two parts: square the outer corners just for
+        // the capture (".exporting", see its CSS), and bake in the card's
+        // own dark background instead of leaving it transparent -- so even
+        // if some future edit re-rounds a corner, there's no alpha left
+        // for a downstream flatten to fringe. The class comes off again
+        // right after the capture whether it succeeds or fails, so the
+        // on-screen card always goes back to its normal rounded look.
+        cardEl.classList.add('exporting');
+        window.html2canvas(cardEl, { backgroundColor:'#050810', scale:2, useCORS:true }).then(function(canvas){
+          cardEl.classList.remove('exporting');
           statusEl.textContent = '';
           var link = document.createElement('a');
           link.download = 'spacez-portfolio.png';
           link.href = canvas.toDataURL('image/png');
           link.click();
-        }).catch(function(){ statusEl.textContent = tx(C.shareRenderErr); statusEl.classList.add('err'); });
+        }).catch(function(){
+          cardEl.classList.remove('exporting');
+          statusEl.textContent = tx(C.shareRenderErr); statusEl.classList.add('err');
+        });
       });
     };
 
@@ -34736,8 +35077,9 @@ var GM = {
     var lineBlock;
     if(lineSt.status === 'linked'){
       var avatarThumb = lineSt.pictureUrl ? '<img src="' + esc(lineSt.pictureUrl) + '" alt="" class="wl-conn-avatar">' : '';
+      var connName = lineEffectiveName(lineSt, '');
       lineBlock = '<div class="wl-conn-status ok">' + avatarThumb + esc(tx(C.lineConnectedNote)) +
-        (lineSt.displayName ? ' · ' + esc(lineSt.displayName) : '') + '</div>' +
+        (connName ? ' · ' + esc(connName) : '') + '</div>' +
         '<div class="wl-conn-btnrow">' +
           '<button type="button" class="wl-conn-forget" data-wl="forgetLine">' + esc(tx(C.lineForget)) + '</button>' +
           '<button type="button" class="wl-conn-editbtn" data-wl="editProfile">' + esc(tx(C.lineEditProfileBtn)) + '</button>' +
@@ -34831,6 +35173,7 @@ var GM = {
           esc(tx(C.connectLede)) +
         '</div>';
       wireConnStrip(body);
+      paintShockFab(null, stocks);
       return;
     }
 
@@ -34905,6 +35248,8 @@ var GM = {
           });
         }
       }
+
+      paintShockFab(lineTickers, stocks);
 
       var openShareBtn = body.querySelector('[data-wl="openShare"]');
       if(openShareBtn) openShareBtn.addEventListener('click', function(){
@@ -34988,6 +35333,7 @@ var GM = {
 
     body.innerHTML = strip + addBox + portfolioAnalysis + grid + howto;
     wireConnStrip(body);
+    paintShockFab(null, stocks);
 
     var openBtns = body.querySelectorAll('[data-wl-open]');
     for(var i=0;i<openBtns.length;i++){
@@ -35076,6 +35422,16 @@ var GM = {
     loadWatchlist(paint);
     setInterval(function(){ loadWatchlist(paint); }, 60000);
     document.addEventListener('spz:snapshot', function(){ paint(); });
+    /* the topbar/nav "Signed in with LINE" card edits the display name via
+       window.__SPZ_LINE.updateIdentity() -- that call updates the SAME
+       state.line object this module already reads (single source of truth),
+       but deliberately skips the broad 'spz:line' rebroadcast (see the
+       comment on lineUpdateIdentity) so it doesn't blow away that other
+       card's own "Saved." confirmation mid-edit. It dispatches this
+       narrower 'spz:identity' event instead, purely so read-only surfaces
+       like this page's profile header/connect strip/share card repaint
+       with the new name. */
+    document.addEventListener('spz:identity', function(){ paint(); });
     new MutationObserver(function(){ try { sec.__render(); } catch(e){} })
       .observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
 
@@ -39964,6 +40320,12 @@ var GM = {
     // own tab/button, or the Watchlist page's connect card/modal) so the
     // two stay in sync without polling each other.
     document.addEventListener('spz:line', function(){ paint(); });
+    // A display-name-only edit (topbar "Signed in with LINE" card) uses the
+    // narrower 'spz:identity' event instead of 'spz:line' -- see
+    // lineUpdateIdentity's own comment -- so this row also needs to listen
+    // for it, or a name changed up there wouldn't show here until the next
+    // real link/unlink.
+    document.addEventListener('spz:identity', function(){ paint(); });
 
     paint();
   }
@@ -40006,7 +40368,7 @@ var GM = {
     // intentionally not a real tier tab and never takes the .on state that
     // Member/Full use -- linked status is communicated by #cagLineRow below
     // instead, which is visible on this pane regardless of which tab is active.
-    var lineNameTxt = lineLinked ? (lineSt.displayName || '') : '';
+    var lineNameTxt = lineLinked ? ((lineSt.nameOverride || lineSt.displayName || '').trim()) : '';
     var lineStatusTxt = lineLinked ? Tt(TXT.lineRowConnected) : Tt(TXT.lineRowNote);
     var lineBtnTxt = lineLinked ? Tt(TXT.lineRowLogout) : Tt(TXT.lineRowConnect);
     var lineAvatarEl = gate.querySelector('#cagLineAvatar');
@@ -46778,6 +47140,24 @@ var qrcode = function() {
   }
   #connectedusers .cu-key-err{margin-top:12px;font-size:11.5px;color:#ff5a72;}
 
+  /* Round K8: "people on the site right now" gauge, sitting right under the
+     page lede so it's the first thing the admin sees on this page -- a
+     quick traffic pulse-check, not another list to scroll through. Empty
+     (no markup) until an admin key is entered, matching the rest of this
+     page's admin-gating. */
+  #connectedusers .cu-presence{
+    display:inline-flex;align-items:center;gap:7px;margin-top:12px;
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.2px;color:var(--grey);
+    background:rgba(0,255,102,.06);border:1px solid rgba(0,255,102,.22);
+    border-radius:20px;padding:6px 13px;
+  }
+  #connectedusers .cu-presence:empty{display:none;margin-top:0;}
+  #connectedusers .cu-presence-dot{
+    width:7px;height:7px;border-radius:50%;background:#00ff66;flex:0 0 auto;
+    box-shadow:0 0 6px rgba(0,255,102,.8);animation:cuPresenceBlink 1.9s ease-in-out infinite;
+  }
+  @keyframes cuPresenceBlink{0%,100%{opacity:1;}50%{opacity:.35;}}
+
   #connectedusers .cu-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:22px;}
   #connectedusers .cu-search{
     flex:1 1 220px;font-family:var(--mono);font-size:12px;
@@ -46956,6 +47336,8 @@ var qrcode = function() {
   #cuDetailModal .cudm-days-row input{width:90px;flex:0 0 auto;}
   #cuDetailModal .cudm-days-summary{font-size:11.5px;color:var(--grey);margin-top:6px;line-height:1.6;}
   #cuDetailModal .cudm-days-summary b{color:var(--neon-2,var(--neon));}
+  #cuDetailModal .cudm-pkg-tag{font-size:11px;color:var(--grey);margin-top:6px;line-height:1.55;min-height:0;}
+  #cuDetailModal .cudm-pkg-tag:empty{margin-top:0;}
   #cuDetailModal .cudm-confirm-box{border:1px solid var(--amber);border-radius:10px;padding:12px 14px;background:rgba(255,201,77,.06);}
   #cuDetailModal .cudm-confirm-title{font-size:11.5px;font-weight:700;color:var(--amber);margin-bottom:8px;}
   #cuDetailModal .cudm-confirm-box ul{margin:0 0 12px;padding-left:18px;font-size:12px;color:var(--white);line-height:1.7;}
@@ -47006,6 +47388,10 @@ var qrcode = function() {
     accessLabel:{en:'Access status',th:'สถานะสิทธิ์การใช้งาน'},
     rightsLabel:{en:'Membership tier (badge only, for now)',th:'ระดับสมาชิก (เป็นป้ายชื่อเฉยๆ ตอนนี้)'},
     rightsNone:{en:'None (free)',th:'ไม่มี (ฟรี)'},
+    pkgLabel:{en:'Package (matches the site’s pricing page)',th:'แพ็กเกจ (ตรงกับหน้าราคาสมาชิกบนเว็บ)'},
+    pkgNone:{en:'— Pick a package (or set tier/days manually below) —',th:'— เลือกแพ็กเกจ (หรือกำหนดระดับ/จำนวนวันเองด้านล่าง) —'},
+    pkgAppliedHint:{en:'Applied {days} days for {name} — adjust the days below to add bonus days.',
+                    th:'ใส่ให้ {days} วันตามแพ็ก {name} แล้ว — แก้ไขจำนวนวันด้านล่างได้ถ้าจะเพิ่มวันพิเศษ'},
     accessDaysLabel:{en:'Grant access starting today',th:'ให้สิทธิ์เริ่มจากวันนี้'},
     daysSuffix:{en:'days',th:'วัน'},
     clearAccessBtn:{en:'Clear access',th:'ล้างสิทธิ์'},
@@ -47031,7 +47417,17 @@ var qrcode = function() {
     loading:{en:'Loading…',th:'กำลังโหลด…'},
     empty:{en:'Nobody has linked LINE yet.',th:'ยังไม่มีใครเชื่อมต่อ LINE'},
     noMatch:{en:'No one matches that search.',th:'ไม่พบผลลัพธ์ที่ตรงกับการค้นหา'},
-    adminOnly:{en:'This page is only available to the site admin.',th:'หน้านี้ใช้ได้เฉพาะแอดมินของเว็บไซต์เท่านั้น'}
+    adminOnly:{en:'This page is only available to the site admin.',th:'หน้านี้ใช้ได้เฉพาะแอดมินของเว็บไซต์เท่านั้น'},
+
+    /* Round K8: "how much traffic am I getting right now" gauge -- counts
+       every visitor whose presence beacon (any page, not just this one --
+       see the site-wide script near the end of the document) is still
+       live in the last ~90 seconds. Deliberately just a number, not a
+       list, so it stays a quick traffic gauge instead of turning into a
+       second, less complete Connected Users list. */
+    presenceLabel:{en:'{n} on the site right now',th:'ตอนนี้มีคนอยู่ในเว็บ {n} คน'},
+    presenceOne:{en:'1 on the site right now',th:'ตอนนี้มีคนอยู่ในเว็บ 1 คน'},
+    presenceErr:{en:'Could not load',th:'โหลดไม่สำเร็จ'}
   };
 
   /* Decorative-only membership badge, matching this site's own #membership
@@ -47085,6 +47481,14 @@ var qrcode = function() {
     try { localStorage.setItem(VIEW_MODE_STORAGE, v); } catch(e){}
   }
   var viewMode = getViewMode(); // 'grid' | 'list'
+
+  // ---- Round K8: "people on the site right now" gauge (see the site-wide
+  // presence beacon script near the end of the document, and the Worker's
+  // /api/admin/presence-count) -- loaded and refreshed independently of
+  // the user list itself, so a slow/failed user-list fetch never blocks it. ----
+  var presenceCount = null;   // null until first loaded, else a number
+  var presenceErr = false;
+  var presencePoll = null;
 
   // ---- the click-in detail modal (view profile, holdings/risk, edit+confirm) ----
   var detailModal = null, detailModalBody = null;
@@ -47140,6 +47544,29 @@ var qrcode = function() {
         paint();
       })
       .catch(function(){ loadError = 'net'; loading = false; paint(); });
+  }
+
+  function fetchPresenceCount(){
+    var key = getAdminKey();
+    if(!key) return;
+    fetch(WORKER_BASE + '/api/admin/presence-count', { headers:{ 'X-Admin-Key': key } })
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+      .then(function(data){
+        presenceCount = (data && typeof data.count === 'number') ? data.count : 0;
+        presenceErr = false;
+        paintPresence();
+      })
+      .catch(function(){ presenceErr = true; paintPresence(); });
+  }
+  function presenceHTML(){
+    if(!getAdminKey()) return '';
+    if(presenceCount === null && !presenceErr) return '<span class="cu-presence-dot"></span>' + esc(T({en:'…',th:'…'}));
+    if(presenceErr) return esc(T(UI.presenceErr));
+    return '<span class="cu-presence-dot"></span>' + esc(presenceCount === 1 ? T(UI.presenceOne) : T(UI.presenceLabel).replace('{n}', presenceCount));
+  }
+  function paintPresence(){
+    var el = sec && sec.querySelector('[data-cu="presence"]');
+    if(el) el.innerHTML = presenceHTML();
   }
 
   function keyGateHTML(){
@@ -47337,6 +47764,7 @@ var qrcode = function() {
     if(!key) return;
     setAdminKey(key);
     fetchUsers();
+    fetchPresenceCount();
   }
 
   /* ==== click-in user detail modal =====================================
@@ -47426,6 +47854,37 @@ var qrcode = function() {
     return fmtRow(UI.daysSummaryKeep, { d: u.accessUntil ? fmtDate(u.accessUntil) : T(UI.statusNone) });
   }
 
+  /* Packages reuse the exact same TIERS list the public #membership pricing
+     page renders from (window.__SPZ_MEMBERSHIP_TIERS), filtered down to the
+     ids that are actually grantable rights here. Picking one is a
+     convenience preset -- it fills the tier + days fields below, which stay
+     freely editable afterward (e.g. to add bonus days), it doesn't lock
+     anything. 'free' isn't a grantable right so it's excluded. */
+  function grantablePackages(){
+    var tiers = window.__SPZ_MEMBERSHIP_TIERS || [];
+    var out = [];
+    for(var i = 0; i < tiers.length; i++){
+      var t = tiers[i];
+      if(RIGHTS_ORDER.indexOf(t.id) === -1) continue;
+      out.push(t);
+    }
+    return out;
+  }
+  function packagePickerHTML(){
+    var pkgs = grantablePackages();
+    if(!pkgs.length) return '';
+    var options = '<option value="">' + esc(T(UI.pkgNone)) + '</option>' +
+      pkgs.map(function(p){
+        var priceLbl = p.price ? ('฿' + p.price.toLocaleString('en-US')) : '';
+        return '<option value="' + esc(p.id) + '">' + esc(T(p.name)) + (priceLbl ? ' — ' + priceLbl : '') +
+          (p.days ? ' (' + p.days + (L() === 'th' ? ' วัน' : ' days') + ')' : '') + '</option>';
+      }).join('');
+    return '<div class="cudm-field"><label>' + esc(T(UI.pkgLabel)) + '</label>' +
+      '<select data-cudm="pkgInput">' + options + '</select>' +
+      '<div class="cudm-pkg-tag" data-cudm="pkgTag"></div>' +
+    '</div>';
+  }
+
   function detailEditFormHTML(u){
     if(detailConfirming) return detailConfirmHTML(u);
     var rightsOptions = '<option value=""' + (!detailDraft.rights ? ' selected' : '') + '>' + esc(T(UI.rightsNone)) + '</option>' +
@@ -47434,6 +47893,7 @@ var qrcode = function() {
       }).join('');
     return '' +
       '<div class="cudm-field"><label>' + esc(T(UI.uidLabel)) + '</label><input type="text" data-cudm="uidInput" value="' + esc(detailDraft.uid || '') + '" maxlength="20"></div>' +
+      packagePickerHTML() +
       '<div class="cudm-field"><label>' + esc(T(UI.rightsLabel)) + '</label><select data-cudm="rightsInput">' + rightsOptions + '</select></div>' +
       '<div class="cudm-field"><label>' + esc(T(UI.accessDaysLabel)) + '</label>' +
         '<div class="cudm-days-row">' +
@@ -47526,6 +47986,31 @@ var qrcode = function() {
     var rightsInput = body.querySelector('[data-cudm="rightsInput"]');
     if(rightsInput) rightsInput.addEventListener('change', function(){ detailDraft.rights = rightsInput.value || null; });
 
+    /* Package picker: a preset, not a lock -- selecting one just fills in
+       the tier dropdown and the days input below (as if the admin had typed
+       them in by hand), so bonus days can still be added on top afterward.
+       Re-selecting the same rights/days manually after this is completely
+       independent; the package field itself is never sent to the server. */
+    var pkgInput = body.querySelector('[data-cudm="pkgInput"]');
+    var pkgTag = body.querySelector('[data-cudm="pkgTag"]');
+    if(pkgInput) pkgInput.addEventListener('change', function(){
+      var pkgs = grantablePackages();
+      var picked = null;
+      for(var i = 0; i < pkgs.length; i++){ if(pkgs[i].id === pkgInput.value) picked = pkgs[i]; }
+      if(!picked){ if(pkgTag) pkgTag.textContent = ''; return; }
+      detailDraft.rights = picked.id;
+      if(rightsInput) rightsInput.value = picked.id;
+      if(picked.days){
+        detailDraft.accessMode = 'days';
+        detailDraft.days = picked.days;
+        if(daysInput) daysInput.value = picked.days;
+      }
+      if(pkgTag){
+        pkgTag.textContent = T(picked.tag) + (picked.days ? ' ' + fmtRow(UI.pkgAppliedHint, { days: picked.days, name: T(picked.name) }) : '');
+      }
+      refreshSummary();
+    });
+
     var reviewBtn = body.querySelector('[data-cudm="reviewBtn"]');
     if(reviewBtn) reviewBtn.addEventListener('click', function(){
       if(uidInput) detailDraft.uid = uidInput.value.trim() || u.uid || '';
@@ -47585,6 +48070,7 @@ var qrcode = function() {
     if(eb) eb.textContent = T(UI.eb);
     if(h) h.textContent = T(UI.h);
     if(lede) lede.textContent = T(UI.lede);
+    paintPresence();
     var body = sec.querySelector('[data-cu="body"]');
     if(!body) return;
     body.innerHTML = bodyHTML();
@@ -47606,6 +48092,7 @@ var qrcode = function() {
           '<div class="eyebrow"><span class="cursor"></span><span data-cu="eb"></span></div>' +
           '<h2 data-cu="h"></h2>' +
           '<p class="lede" data-cu="lede"></p>' +
+          '<div class="cu-presence" data-cu="presence"></div>' +
           '<div class="rule"></div>' +
         '</div>' +
         '<div data-cu="body"></div>' +
@@ -47620,7 +48107,8 @@ var qrcode = function() {
     });
 
     paint();
-    if(getAdminKey()) fetchUsers();
+    if(getAdminKey()){ fetchUsers(); fetchPresenceCount(); }
+    if(!presencePoll) presencePoll = setInterval(function(){ if(getAdminKey()) fetchPresenceCount(); }, 20000);
     return true;
   }
 
@@ -48139,7 +48627,7 @@ var qrcode = function() {
       ],
       ctaRoute:'guided'
     },
-    { id:'member', theme:'silver', icon:ICON_MEMBER,
+    { id:'member', theme:'silver', icon:ICON_MEMBER, days:30,
       name:{en:'Member',th:'เมมเบอร์'}, price:300,
       tag:{en:'For traders who want single-stock tools and the early-warning radar.',
            th:'สำหรับคนที่อยากได้เครื่องมือดูหุ้นรายตัวและเรดาร์เตือนล่วงหน้า'},
@@ -48150,7 +48638,7 @@ var qrcode = function() {
         {en:'Turning-Point Radar — 11 early-warning gauges',th:'เรดาร์เปลี่ยนทิศ — 11 ตัวชี้วัดเตือนล่วงหน้า'}
       ]
     },
-    { id:'pass', theme:'bronze', icon:ICON_ULTRA,
+    { id:'pass', theme:'bronze', icon:ICON_ULTRA, days:30,
       name:{en:'Pass',th:'พาส'}, price:699,
       tag:{en:'The full workbench — every scanner, map and lab on the terminal.',
            th:'ครบทุกเครื่องมือขั้นสูง — สแกนเนอร์ แผนที่ และห้องทดลองทุกตัว'},
@@ -48161,7 +48649,7 @@ var qrcode = function() {
         {en:'Daily Brief, Scenario planner, advanced Inflation Desk',th:'สรุปรายวัน, ฉากทัศน์, โต๊ะเงินเฟ้อขั้นสูง'}
       ]
     },
-    { id:'ultra', theme:'red', icon:ICON_OBSIDIAN,
+    { id:'ultra', theme:'red', icon:ICON_OBSIDIAN, days:30,
       name:{en:'Ultra',th:'อัลตร้า'}, price:899,
       tag:{en:'Everything in Pass, plus my own daily read of the market.',
            th:'ทุกอย่างในพาส บวกมุมมองวิเคราะห์ส่วนตัวของผมทุกวัน'},
@@ -48172,7 +48660,7 @@ var qrcode = function() {
         {en:'Priority DM about your own positions',th:'ทักถามเรื่องพอร์ตของคุณโดยตรง ได้คิวก่อน'}
       ]
     },
-    { id:'cryptolab', theme:'gold', icon:ICON_CRYPTO, oneTime:true,
+    { id:'cryptolab', theme:'gold', icon:ICON_CRYPTO, oneTime:true, days:90,
       name:{en:'Crypto Lab',th:'Crypto Lab'}, price:10990,
       tag:{en:'A focused course on crypto — fundamentals plus how to actually use it safely, with full terminal access while you learn.',
            th:'คอร์สคริปโตแบบเจาะลึก ทั้งพื้นฐานและวิธีใช้งานจริงอย่างปลอดภัย พร้อมใช้เว็บได้เต็มรูปแบบตลอดคอร์ส'},
@@ -48183,7 +48671,7 @@ var qrcode = function() {
         {en:'One-time payment — not a monthly subscription',th:'จ่ายครั้งเดียว ไม่ใช่ค่าสมาชิกรายเดือน'}
       ]
     },
-    { id:'stocklab', theme:'purple', icon:ICON_STOCKS, oneTime:true,
+    { id:'stocklab', theme:'purple', icon:ICON_STOCKS, oneTime:true, days:90,
       name:{en:'Stock Lab',th:'Stock Lab'}, price:20000,
       tag:{en:'Learn to read financial statements and analyze stocks using the exact tools on this terminal, with full site access while you learn.',
            th:'เรียนอ่านงบการเงินและวิเคราะห์หุ้น โดยใช้เครื่องมือชุดเดียวกับที่มีอยู่ในเว็บนี้จริง พร้อมใช้เว็บได้เต็มรูปแบบตลอดคอร์ส'},
@@ -48194,7 +48682,7 @@ var qrcode = function() {
         {en:'One-time payment — not a monthly subscription',th:'จ่ายครั้งเดียว ไม่ใช่ค่าสมาชิกรายเดือน'}
       ]
     },
-    { id:'academy', theme:'black', top:true, icon:ICON_ACADEMY, oneTime:true,
+    { id:'academy', theme:'black', top:true, icon:ICON_ACADEMY, oneTime:true, days:120,
       name:{en:'Wave Academy',th:'เวฟ อคาเดมี'}, price:34999,
       tag:{en:'A 12-week live Elliott Wave course, zero to advanced — plus everything else on the terminal.',
            th:'คอร์สเรียน Elliott Wave สด 12 สัปดาห์ ตั้งแต่ศูนย์ถึงขั้นสูง พร้อมทุกอย่างในเว็บ'},
@@ -48206,6 +48694,14 @@ var qrcode = function() {
       ]
     }
   ];
+
+  /* Exposed read-only so the Connected Users admin page can offer "pick a
+     package" (name + price + days + short description) instead of the
+     admin having to remember what each tier means and how many days it
+     should grant -- single source of truth, same list the public pricing
+     page above renders from. The `days` field only exists for this reuse;
+     it isn't shown on the public cards. */
+  window.__SPZ_MEMBERSHIP_TIERS = TIERS;
 
   var ROWS = [
     { f:{en:'Learning library, guided tour, glossary',th:'คลังบทเรียน, ทัวร์แนะนำ, คำศัพท์'}, v:[1,1,1,1,1,1,1] },
@@ -49242,18 +49738,59 @@ var qrcode = function() {
   .jrnl-lvl-chip.invalid b{color:var(--red);}
   .jrnl-lvl-chip.sl,.jrnl-lvl-chip.tp{border-color:var(--neon-2,#2ecc71);color:var(--neon-2,#2ecc71);}
   .jrnl-lvl-chip.sl b,.jrnl-lvl-chip.tp b{color:var(--neon-2,#2ecc71);}
-  /* ---- SL / Entry / TP mini risk-range bar (public feed + single view) ---- */
-  .jrnl-riskbar{position:relative;height:38px;margin:2px 4px 14px;}
-  .jrnl-riskbar-track{
-    position:absolute;left:8px;right:8px;top:15px;height:4px;border-radius:2px;
-    background:linear-gradient(90deg,rgba(255,107,107,.6),rgba(255,255,255,.22) 50%,rgba(46,204,113,.6));
+  /* ---- SL / Entry / TP order-status infographic (public feed + single
+     view) -- Round K1: redesigned from a plain single-color bar into a
+     TradingView-style position card: a green "profit zone" running from
+     Entry toward TP and a red "loss zone" running from Entry toward SL,
+     an Entry crosshair with a soft radar-style pulse, and a gentle sheen
+     that sweeps through each zone so the card reads as a live order
+     status rather than a static ruler. ---------------------------------- */
+  .jrnl-orderbar{position:relative;height:72px;margin:6px 4px 18px;}
+  .jrnl-orderbar-track{
+    position:absolute;left:10px;right:10px;top:32px;height:8px;border-radius:5px;
+    background:rgba(255,255,255,.05);border:1px solid var(--border-dim);overflow:hidden;
   }
-  .jrnl-riskbar-mark{position:absolute;top:6px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;}
-  .jrnl-riskbar-dot{width:11px;height:11px;border-radius:50%;border:2px solid var(--bg,#0b0b0b);box-shadow:0 0 0 1px rgba(255,255,255,.28);}
-  .jrnl-riskbar-mark.sl .jrnl-riskbar-dot{background:#ff6b6b;}
-  .jrnl-riskbar-mark.entry .jrnl-riskbar-dot{background:#f4f6f1;}
-  .jrnl-riskbar-mark.tp .jrnl-riskbar-dot{background:#2ecc71;}
-  .jrnl-riskbar-lbl{font-family:var(--mono);font-size:8.6px;color:var(--grey-dim);white-space:nowrap;}
+  .jrnl-orderbar-zone{position:absolute;top:0;bottom:0;}
+  .jrnl-orderbar-zone::after{
+    content:'';position:absolute;inset:0;background-repeat:no-repeat;background-size:70px 100%;
+    background-image:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);
+    animation:orderbarSheen 3.6s ease-in-out infinite;
+  }
+  .jrnl-orderbar-zone.profit{background:linear-gradient(90deg,rgba(46,204,113,.16),rgba(46,204,113,.55));}
+  .jrnl-orderbar-zone.loss{background:linear-gradient(90deg,rgba(255,107,107,.55),rgba(255,107,107,.16));}
+  .jrnl-orderbar-zone.loss::after{animation-delay:1.8s;}
+  @keyframes orderbarSheen{
+    0%{background-position:-90px 0;opacity:0;}
+    18%{opacity:.9;}
+    55%{opacity:.9;}
+    78%,100%{background-position:150px 0;opacity:0;}
+  }
+  .jrnl-orderbar-entryline{
+    position:absolute;top:18px;bottom:18px;width:2px;transform:translateX(-50%);
+    background:#f4f6f1;box-shadow:0 0 7px rgba(244,246,241,.75);z-index:2;border-radius:2px;
+  }
+  .jrnl-orderbar-mark{position:absolute;top:0;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;z-index:3;}
+  .jrnl-orderbar-mark.entry{top:auto;bottom:0;flex-direction:column-reverse;}
+  .jrnl-orderbar-dot{position:relative;width:11px;height:11px;border-radius:50%;border:2px solid var(--bg,#0b0b0b);box-shadow:0 0 0 1px rgba(255,255,255,.28);}
+  .jrnl-orderbar-mark.sl .jrnl-orderbar-dot{background:#ff6b6b;}
+  .jrnl-orderbar-mark.entry .jrnl-orderbar-dot{background:#f4f6f1;}
+  .jrnl-orderbar-mark.tp .jrnl-orderbar-dot{background:#2ecc71;}
+  .jrnl-orderbar-mark.entry .jrnl-orderbar-dot::after{
+    content:'';position:absolute;inset:-4px;border-radius:50%;
+    border:1.5px solid rgba(244,246,241,.75);animation:orderbarPulse 2.4s ease-out infinite;
+  }
+  @keyframes orderbarPulse{0%{transform:scale(1);opacity:.85;}100%{transform:scale(2.2);opacity:0;}}
+  .jrnl-orderbar-lbl{font-family:var(--mono);font-size:8.6px;color:var(--grey-dim);white-space:nowrap;}
+  .jrnl-orderbar-mark.entry .jrnl-orderbar-lbl{color:#f4f6f1;font-weight:700;}
+  .jrnl-orderbar-rr{
+    position:absolute;top:-2px;left:50%;transform:translateX(-50%);
+    font-family:var(--mono);font-size:9px;letter-spacing:.4px;white-space:nowrap;
+    color:var(--amber,#e0a030);background:rgba(224,160,48,.1);
+    border:1px solid rgba(224,160,48,.35);border-radius:20px;padding:2px 9px;z-index:4;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .jrnl-orderbar-zone::after,.jrnl-orderbar-mark.entry .jrnl-orderbar-dot::after{animation:none;}
+  }
 
   /* ---- sidebar filter groups (public log) ---- */
   .jrnl-filter-group{display:flex;flex-direction:column;gap:4px;}
@@ -49337,6 +49874,14 @@ var qrcode = function() {
     padding:6px 11px;cursor:pointer;transition:color .2s,border-color .2s;
   }
   .jrnl-share-btn:hover{color:var(--neon);border-color:var(--neon);}
+  .jrnl-addline-btn{
+    display:inline-flex;align-items:center;gap:6px;margin-top:8px;width:fit-content;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.3px;font-weight:700;
+    color:#06170d;background:#06c755;border:1px solid #06c755;border-radius:8px;
+    padding:7px 12px;text-decoration:none;transition:filter .15s,transform .15s;
+  }
+  .jrnl-addline-btn:hover{filter:brightness(1.08);transform:translateY(-1px);}
+  .jrnl-addline-btn svg{flex-shrink:0;}
 
   /* ---- like button + liker avatars, LINE-authenticated (see the shared
      window.__SPZ_LINE API the Watchlist module exposes). Liking needs a
@@ -49650,20 +50195,26 @@ var qrcode = function() {
   }
 
   /* ======================= admin-controlled journal settings =======================
-     A single settings/journal Firestore doc (independent of the Cloudflare Worker's
-     admin-key system, since this whole admin page is Firebase-Auth-gated already):
-     whether liker names/avatars/counts show publicly, and which of the four header
-     stat tiles are shown. Missing doc or missing field both mean "on" (today's
-     behaviour), so nothing changes until the admin actually flips something. */
+     Round K fix: this used to be a client-written `settings/journal` Firestore
+     doc, but Firestore's security rules only ever had an explicit allow-write
+     rule for journal_entries -- there was never a matching rule for the
+     `settings` collection, so every save silently fell through to the
+     project's default deny and came back as "could not save", no matter how
+     many times it was retried. The admin page's own Firebase-Auth sign-in
+     proves nothing to Firestore's rules engine; it's a separate system.
+     Moved to the same Cloudflare Worker + KV store every other piece of this
+     site's admin-controlled state already goes through (profiles, rights,
+     broadcast) -- reads are public (every visitor's feed needs to know
+     whether to show likers/stats), writes need the shared X-Admin-Key. */
   var JOURNAL_SETTINGS_DEFAULT = { showLikers: true, statsVisible: { total: true, month: true, top: true, accuracy: true } };
   var journalSettingsCache = null;
   function loadJournalSettings(cb){
-    if(!fbInit()){ cb(JOURNAL_SETTINGS_DEFAULT); return; }
-    fbDb.collection('settings').doc('journal').get().then(function(doc){
-      var v = doc.exists ? (doc.data() || {}) : {};
-      var sv = v.statsVisible || {};
+    fetch('https://spacez-line-link.spacezblack.workers.dev/api/journal-settings').then(function(r){
+      return r.ok ? r.json() : Promise.reject();
+    }).then(function(v){
+      var sv = (v && v.statsVisible) || {};
       journalSettingsCache = {
-        showLikers: v.showLikers !== false,
+        showLikers: v && v.showLikers !== false,
         statsVisible: {
           total: sv.total !== false, month: sv.month !== false,
           top: sv.top !== false, accuracy: sv.accuracy !== false
@@ -49773,8 +50324,10 @@ var qrcode = function() {
     return chipsHtml + riskBarHtml(e);
   }
 
-  /* small visual risk-range bar (SL — Entry — TP) so the plan reads at a
-     glance instead of as three separate text chips -- only drawn when the
+  /* Round K1: order-status infographic (SL — Entry — TP) so the plan reads
+     like a live TradingView position card -- a green zone from Entry to TP
+     (upside), a red zone from SL to Entry (downside), and a pulsing Entry
+     crosshair -- instead of a plain single-color bar. Only drawn when the
      entry price and at least one of SL/TP are actual numbers; silently
      skipped otherwise (never guesses a position for a non-numeric level). */
   function riskBarHtml(e){
@@ -49791,18 +50344,60 @@ var qrcode = function() {
     var pad = (hi - lo) * 0.14;
     lo -= pad; hi += pad;
     function pct(v){ return Math.max(0, Math.min(100, ((v - lo) / (hi - lo)) * 100)); }
-    var marks = [];
-    if(hasSl) marks.push({ cls: 'sl', pct: pct(sl), val: e.sl });
-    marks.push({ cls: 'entry', pct: pct(entry), val: e.entryPrice });
-    if(hasTp) marks.push({ cls: 'tp', pct: pct(tp), val: e.tp });
-    marks.sort(function(a, b){ return a.pct - b.pct; });
-    var marksHtml = marks.map(function(m){
-      var label = m.cls === 'sl' ? T(UI.reportSL) : m.cls === 'tp' ? T(UI.reportTP) : T(UI.riskBarEntry);
-      return '<div class="jrnl-riskbar-mark ' + m.cls + '" style="left:' + m.pct.toFixed(1) + '%;" title="' + esc(label + ': ' + m.val) + '">' +
-        '<span class="jrnl-riskbar-dot"></span><span class="jrnl-riskbar-lbl">' + esc(m.val) + '</span>' +
+    var entryPct = pct(entry);
+    var slPct = hasSl ? pct(sl) : null;
+    var tpPct = hasTp ? pct(tp) : null;
+
+    var zonesHtml = '';
+    if(hasTp){
+      var zL1 = Math.min(entryPct, tpPct), zW1 = Math.abs(tpPct - entryPct);
+      zonesHtml += '<div class="jrnl-orderbar-zone profit" style="left:' + zL1.toFixed(1) + '%;width:' + zW1.toFixed(1) + '%;"></div>';
+    }
+    if(hasSl){
+      var zL2 = Math.min(entryPct, slPct), zW2 = Math.abs(entryPct - slPct);
+      zonesHtml += '<div class="jrnl-orderbar-zone loss" style="left:' + zL2.toFixed(1) + '%;width:' + zW2.toFixed(1) + '%;"></div>';
+    }
+
+    var marksHtml = '';
+    if(hasSl){
+      marksHtml += '<div class="jrnl-orderbar-mark sl" style="left:' + slPct.toFixed(1) + '%;" title="' + esc(T(UI.reportSL) + ': ' + e.sl) + '">' +
+        '<span class="jrnl-orderbar-dot"></span><span class="jrnl-orderbar-lbl">' + esc(e.sl) + '</span>' +
       '</div>';
-    }).join('');
-    return '<div class="jrnl-riskbar"><div class="jrnl-riskbar-track"></div>' + marksHtml + '</div>';
+    }
+    if(hasTp){
+      marksHtml += '<div class="jrnl-orderbar-mark tp" style="left:' + tpPct.toFixed(1) + '%;" title="' + esc(T(UI.reportTP) + ': ' + e.tp) + '">' +
+        '<span class="jrnl-orderbar-dot"></span><span class="jrnl-orderbar-lbl">' + esc(e.tp) + '</span>' +
+      '</div>';
+    }
+    marksHtml += '<div class="jrnl-orderbar-mark entry" style="left:' + entryPct.toFixed(1) + '%;" title="' + esc(T(UI.riskBarEntry) + ': ' + e.entryPrice) + '">' +
+      '<span class="jrnl-orderbar-dot"></span><span class="jrnl-orderbar-lbl">' + esc(e.entryPrice) + '</span>' +
+    '</div>';
+
+    var rrHtml = '';
+    if(hasSl && hasTp){
+      var risk = Math.abs(entry - sl), reward = Math.abs(tp - entry);
+      if(risk > 0){
+        rrHtml = '<div class="jrnl-orderbar-rr">' + esc(T(UI.riskBarRR)) + ' 1:' + (reward / risk).toFixed(1) + '</div>';
+      }
+    }
+
+    return '<div class="jrnl-orderbar">' +
+      '<div class="jrnl-orderbar-track">' + zonesHtml + '</div>' +
+      '<div class="jrnl-orderbar-entryline" style="left:' + entryPct.toFixed(1) + '%;"></div>' +
+      marksHtml + rrHtml +
+    '</div>';
+  }
+
+  /* Round K: reader-facing "add LINE for alerts" CTA, shown under every
+     public post's actions row. Renders nothing until LINE_OA_ADD_FRIEND_URL
+     (declared further down, near the broadcast helpers) is actually filled
+     in with the OA's real add-friend link. */
+  function addLineFriendBtnHTML(){
+    if(!LINE_OA_ADD_FRIEND_URL) return '';
+    return '<a class="jrnl-addline-btn" href="' + esc(LINE_OA_ADD_FRIEND_URL) + '" target="_blank" rel="noopener noreferrer">' +
+      '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 2C6.48 2 2 5.94 2 10.8c0 3.4 2.24 6.36 5.6 7.9-.18.7-.85 3.1-.88 3.3 0 0-.02.15.08.2.1.06.22 0 .22 0 .3-.04 3.4-2.24 4.02-2.7.3.04.6.06.96.06 5.52 0 10-3.94 10-8.76S17.52 2 12 2z"/></svg>' +
+      '<span>' + esc(T(UI.addLineFriend)) + '</span>' +
+    '</a>';
   }
 
   var UI = {
@@ -49926,6 +50521,9 @@ var qrcode = function() {
     settingsSave:{en:'Save settings',th:'บันทึกการตั้งค่า'},
     settingsSaveOk:{en:'Settings saved.',th:'บันทึกการตั้งค่าแล้ว'},
     settingsSaveErr:{en:'Could not save settings — try again.',th:'บันทึกการตั้งค่าไม่สำเร็จ — ลองใหม่อีกครั้ง'},
+    settingsSaveBadKey:{en:'Wrong admin key — try again.',th:'รหัสแอดมินไม่ถูกต้อง — ลองใหม่อีกครั้ง'},
+    settingsKeyPrompt:{en:'Enter the admin key (same one used on Connected Users):',
+                       th:'กรอกรหัสแอดมิน (รหัสเดียวกับที่ใช้ในหน้าผู้ใช้ที่เชื่อมต่อ LINE)'},
     tradeStatusOpen:{en:'Open',th:'กำลังเทรด'},
     tradeStatusTP:{en:'Took Profit',th:'ทำกำไรแล้ว'},
     tradeStatusSL:{en:'Hit SL',th:'โดน SL แล้ว'},
@@ -49934,6 +50532,7 @@ var qrcode = function() {
     beforeAfterBtn:{en:'Before/After',th:'Before/After'},
     notifyBtn:{en:'Publish via LINE',th:'เผยแพร่ผ่าน LINE'},
     notifyConfirm:{en:'Publish this analysis as a LINE broadcast to everyone who added your Official Account?',th:'เผยแพร่บทวิเคราะห์นี้เป็นข้อความไปหาทุกคนที่เพิ่มเพื่อน LINE OA ของคุณใช่ไหม?'},
+    addLineFriend:{en:'Add LINE for analysis alerts',th:'แอด LINE รับแจ้งเตือนบทวิเคราะห์'},
     notifyOk:{en:'Published to LINE.',th:'เผยแพร่ผ่าน LINE เรียบร้อยแล้ว'},
     notifyErrKey:{en:'Enter your admin users key on the Connected Users page first, then come back to publish.',th:'กรุณาใส่รหัสแอดมินในหน้าผู้ใช้ที่เชื่อมต่อก่อน แล้วค่อยกลับมาเผยแพร่'},
     notifyErrConfig:{en:'LINE Messaging API is not configured on the server yet.',th:'ยังไม่ได้ตั้งค่า LINE Messaging API บนเซิร์ฟเวอร์'},
@@ -49974,6 +50573,7 @@ var qrcode = function() {
     reportSL:{en:'SL',th:'SL'},
     reportTP:{en:'TP',th:'TP'},
     riskBarEntry:{en:'Entry',th:'จุดเข้า'},
+    riskBarRR:{en:'R:R',th:'ผลตอบแทน:ความเสี่ยง'},
     reportWaveView:{en:'Wave View',th:'มุมมองคลื่น'},
     reportRelatedH:{en:'Related Market Data',th:'ข้อมูลตลาดที่เกี่ยวข้อง'},
     reportDxyLabel:{en:'US Dollar Index (DXY)',th:'ดัชนีดอลลาร์สหรัฐ (DXY)'},
@@ -50124,6 +50724,17 @@ var qrcode = function() {
      page unlocks both. */
   var JOURNAL_WORKER_BASE = 'https://spacez-line-link.spacezblack.workers.dev';
   var JOURNAL_ADMIN_KEY_STORAGE = 'spz_admin_users_key';
+
+  /* Round K: "Add LINE for alerts" CTA shown under every public analysis
+     post, so a reader who just found one post can immediately add the same
+     Official Account the admin broadcasts new analyses to (handleAdminBroadcast
+     above), instead of having to go hunting for it elsewhere on the site.
+     PASTE YOUR OA's ADD-FRIEND LINK HERE (LINE Official Account Manager →
+     your OA → Settings → Messaging API / the OA's own profile → "Add friend"
+     link or QR, looks like https://lin.ee/xxxxxxx or
+     https://line.me/R/ti/p/@xxxxxxx). Left blank the button simply doesn't
+     render, so nothing breaks until this is filled in. */
+  var LINE_OA_ADD_FRIEND_URL = '';
   function getSharedAdminKey(){
     try { return sessionStorage.getItem(JOURNAL_ADMIN_KEY_STORAGE) || ''; } catch(e){ return ''; }
   }
@@ -50355,6 +50966,7 @@ var qrcode = function() {
             livePtsHtml(e) +
             '<div class="jrnl-card-text"></div>' +
             '<div class="jrnl-card-actions">' + likeWrapHTML() + '<button type="button" class="jrnl-share-btn" data-share></button></div>' +
+            addLineFriendBtnHTML() +
           '</div>' +
           '</div>' +
           (locked ?
@@ -50942,7 +51554,6 @@ var qrcode = function() {
           cbAccuracy.checked = s.statsVisible.accuracy !== false;
         });
         saveBtn2.addEventListener('click', function(){
-          if(!fbInit()) return;
           var data = {
             showLikers: !!cbLikers.checked,
             statsVisible: {
@@ -50950,8 +51561,27 @@ var qrcode = function() {
               top: !!cbTop.checked, accuracy: !!cbAccuracy.checked
             }
           };
+          var key = getSharedAdminKey();
+          if(!key){
+            key = (window.prompt(T(UI.settingsKeyPrompt)) || '').trim();
+            if(!key) return;
+            try { sessionStorage.setItem(JOURNAL_ADMIN_KEY_STORAGE, key); } catch(e){}
+          }
           saveBtn2.disabled = true;
-          fbDb.collection('settings').doc('journal').set(data, { merge: true }).then(function(){
+          fetch(JOURNAL_WORKER_BASE + '/api/admin/journal-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Key': key },
+            body: JSON.stringify(data)
+          }).then(function(r){
+            if(r.status === 401){
+              try { sessionStorage.removeItem(JOURNAL_ADMIN_KEY_STORAGE); } catch(e){}
+              msg2.className = 'jed-msg err'; msg2.textContent = T(UI.settingsSaveBadKey);
+              saveBtn2.disabled = false;
+              return null;
+            }
+            return r.ok ? r.json() : Promise.reject();
+          }).then(function(res){
+            if(!res) return; /* handled above (bad key) */
             journalSettingsCache = data;
             msg2.className = 'jed-msg ok'; msg2.textContent = T(UI.settingsSaveOk);
             saveBtn2.disabled = false;
@@ -51618,6 +52248,49 @@ var qrcode = function() {
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 50); });
   else setTimeout(boot, 50);
+})();
+</script>
+
+<!-- ===== Round K8: site-wide "visitors online right now" presence beacon.
+     Every page load (any route, any visitor -- not just admins) pings the
+     same Worker+KV backend the rest of the site already uses, under a
+     short-lived key that expires on its own if the tab is closed or goes
+     idle. The admin-only Connected Users page (below, separate script)
+     reads the count of currently-live keys; nothing here is admin-gated,
+     since just being present isn't sensitive the way the Connected Users
+     list is. ===== -->
+<script>
+(function(){
+  'use strict';
+  var WORKER_BASE = 'https://spacez-line-link.spacezblack.workers.dev';
+  var ID_KEY = 'spz_presence_id';
+  var PING_MS = 25000; // well under the Worker's ~90s KV expiry, so a
+                        // visitor who's still here never lapses between pings
+  function presenceId(){
+    var id = null;
+    try { id = sessionStorage.getItem(ID_KEY); } catch(e){}
+    if(!id){
+      id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+        : ('p' + Date.now().toString(36) + Math.random().toString(36).slice(2));
+      try { sessionStorage.setItem(ID_KEY, id); } catch(e){}
+    }
+    return id;
+  }
+  function ping(){
+    if(document.visibilityState === 'hidden') return; // a backgrounded tab
+      // shouldn't keep counting as "here" -- it'll simply lapse and drop
+      // off the count within the KV expiry window, then resume pinging
+      // (and get counted again) once the tab is visible again.
+    try {
+      fetch(WORKER_BASE + '/api/presence/ping', {
+        method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ id: presenceId() })
+      }).catch(function(){});
+    } catch(e){}
+  }
+  ping();
+  setInterval(ping, PING_MS);
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') ping(); });
 })();
 </script>
 </body>
