@@ -44901,6 +44901,9 @@ var qrcode = function() {
     annImgRemove:{en:'Remove',th:'ลบ'},
     annEmpty:{en:'Choose a topic and write a message on the left to build the announcement.',
               th:'เลือกหัวข้อและพิมพ์ข้อความทางด้านซ้ายเพื่อสร้างประกาศ'},
+    annTplFieldsLbl:{en:'Fill in the details below and let it write the announcement for you.',
+                     th:'กรอกรายละเอียดด้านล่าง แล้วให้ระบบช่วยร่างข้อความประกาศให้'},
+    annGenerateBtn:{en:'Generate announcement text',th:'สร้างข้อความประกาศอัตโนมัติ'},
 
     /* ---- Round F: Bubble report ---- */
     typeBubble:{en:'Bubble Report',th:'รายงานฟองสบู่'},
@@ -44962,6 +44965,10 @@ var qrcode = function() {
     { id:'partnership', en:'Partnership / collaboration',        th:'ความร่วมมือ / พาร์ทเนอร์' },
     { id:'policy',      en:'Policy / terms update',              th:'ปรับปรุงนโยบาย / ข้อกำหนด' },
     { id:'security',    en:'Security notice',                    th:'แจ้งเตือนด้านความปลอดภัย' },
+    { id:'newasset',    en:'New market / asset added',           th:'เพิ่มตลาด / สินทรัพย์ใหม่' },
+    { id:'promo',       en:'Promotion / discount',               th:'โปรโมชั่น / ส่วนลด' },
+    { id:'apology',     en:'Service disruption apology',         th:'ขออภัยเรื่องระบบขัดข้อง' },
+    { id:'milestone',   en:'Milestone / thank-you note',         th:'ครบรอบ / ขอบคุณผู้ติดตาม' },
     { id:'general',     en:'General announcement',               th:'ประกาศทั่วไป' },
     { id:'other',       en:'Other (type your own)',              th:'อื่นๆ (พิมพ์เอง)' }
   ];
@@ -44970,6 +44977,107 @@ var qrcode = function() {
   var annMessage = '';             /* free-text announcement body */
   var annImages = [];              /* data URLs, in attach order, max ANN_MAX_IMAGES */
   var ANN_MAX_IMAGES = 6;
+
+  /* ---- Round J: topic-specific drill-down fields that auto-generate the
+     announcement body. Only the highest-value topics get a template; every
+     other topic still works exactly as before (free-typed message only).
+     annFieldData is keyed by topic id so switching topics and back keeps
+     whatever was typed. Nothing here is persisted -- same lifetime as the
+     rest of the report builder's state. */
+  var ANNOUNCEMENT_TEMPLATES = {
+    membership: {
+      fields: [
+        { key:'packageName',   type:'text', label:{en:'Package / plan name',th:'ชื่อแพ็กเกจ'}, ph:{en:'e.g. Full Access',th:'เช่น Full Access'} },
+        { key:'oldPrice',      type:'text', label:{en:'Old price',th:'ราคาเดิม'}, ph:{en:'e.g. 999',th:'เช่น 999'} },
+        { key:'newPrice',      type:'text', label:{en:'New price',th:'ราคาใหม่'}, ph:{en:'e.g. 1,299',th:'เช่น 1,299'} },
+        { key:'effectiveDate', type:'text', label:{en:'Effective date',th:'มีผลตั้งแต่วันที่'}, ph:{en:'e.g. 1 Oct 2026',th:'เช่น 1 ต.ค. 2569'} },
+        { key:'reason',        type:'text', label:{en:'Reason (optional)',th:'เหตุผล (ไม่บังคับ)'}, ph:{en:'e.g. new features added',th:'เช่น เพิ่มฟีเจอร์ใหม่'} }
+      ]
+    },
+    maintenance: {
+      fields: [
+        { key:'startTime', type:'text', label:{en:'Start date & time',th:'เริ่มวันที่ / เวลา'}, ph:{en:'e.g. 28 Sep 2026, 02:00',th:'เช่น 28 ก.ย. 2569 02:00 น.'} },
+        { key:'endTime',   type:'text', label:{en:'Expected end',th:'คาดว่าจะเสร็จ'}, ph:{en:'e.g. 04:00 (same day)',th:'เช่น 04:00 น. วันเดียวกัน'} },
+        { key:'scope',     type:'text', label:{en:'What will be affected',th:'ส่วนที่ได้รับผลกระทบ'}, ph:{en:'e.g. login, live price feed',th:'เช่น การเข้าสู่ระบบ, ราคาสด'} }
+      ]
+    },
+    newfeature: {
+      fields: [
+        { key:'featureName', type:'text',     label:{en:'Feature name',th:'ชื่อฟีเจอร์'}, ph:{} },
+        { key:'summary',     type:'textarea', label:{en:'What it does',th:'ทำอะไรได้บ้าง'}, ph:{} },
+        { key:'where',       type:'text',     label:{en:'Where to find it',th:'ใช้งานได้ที่ไหน'}, ph:{} }
+      ]
+    },
+    event: {
+      fields: [
+        { key:'eventName', type:'text', label:{en:'Event name',th:'ชื่องาน'}, ph:{} },
+        { key:'dateTime',  type:'text', label:{en:'Date & time',th:'วันและเวลา'}, ph:{} },
+        { key:'where',     type:'text', label:{en:'Where (link / platform)',th:'ช่องทาง / ลิงก์'}, ph:{} }
+      ]
+    }
+  };
+  var annFieldData = {};            /* topicId -> { fieldKey: value } */
+
+  function annGenerateText(){
+    var tpl = ANNOUNCEMENT_TEMPLATES[annTopic];
+    if(!tpl) return annMessage;
+    var v = annFieldData[annTopic] || {};
+    var g = function(k){ return (v[k] || '').trim(); };
+    var lang = L();
+    var out = '';
+    if(annTopic === 'membership'){
+      var pkg = g('packageName');
+      var pkgName = pkg || (lang === 'th' ? 'แพ็กเกจสมาชิก' : 'the membership plan');
+      var oldP = g('oldPrice'), newP = g('newPrice'), eff = g('effectiveDate'), reason = g('reason');
+      if(lang === 'th'){
+        out = 'ทีมงานขอแจ้งปรับราคา "' + pkgName + '"' +
+          (oldP && newP ? ' จากเดิม ' + oldP + ' บาท เป็น ' + newP + ' บาท' : (newP ? ' เป็นราคาใหม่ ' + newP + ' บาท' : '')) +
+          (eff ? ' โดยมีผลตั้งแต่วันที่ ' + eff : '') + '\n\n' +
+          (reason ? 'เหตุผลของการปรับครั้งนี้: ' + reason + '\n\n' : '') +
+          'สมาชิกที่ชำระเงินไว้ก่อนวันที่มีผลจะไม่ได้รับผลกระทบจากการปรับราคานี้ ขอบคุณทุกท่านที่ติดตามและสนับสนุนกันมาโดยตลอด';
+      } else {
+        out = 'We would like to inform you of a price update for "' + pkgName + '"' +
+          (oldP && newP ? ', from ' + oldP + ' to ' + newP : (newP ? ' to ' + newP : '')) +
+          (eff ? ', effective ' + eff : '') + '.\n\n' +
+          (reason ? 'Reason for this update: ' + reason + '.\n\n' : '') +
+          'Members who have already paid before the effective date will not be affected by this change. Thank you for your continued support.';
+      }
+    } else if(annTopic === 'maintenance'){
+      var start = g('startTime'), end = g('endTime'), scope = g('scope');
+      if(lang === 'th'){
+        out = 'ระบบจะปิดปรับปรุงชั่วคราว' + (start ? ' เริ่มตั้งแต่ ' + start : '') + (end ? ' และคาดว่าจะแล้วเสร็จภายใน ' + end : '') + '\n\n' +
+          (scope ? 'ในช่วงเวลาดังกล่าว ท่านอาจไม่สามารถใช้งาน: ' + scope + '\n\n' : '') +
+          'ขออภัยในความไม่สะดวกที่อาจเกิดขึ้น และขอบคุณที่ให้ความเข้าใจ';
+      } else {
+        out = 'The system will undergo scheduled maintenance' + (start ? ' starting ' + start : '') + (end ? ', expected to finish by ' + end : '') + '.\n\n' +
+          (scope ? 'During this time, the following may be unavailable: ' + scope + '.\n\n' : '') +
+          'We apologize for any inconvenience and appreciate your understanding.';
+      }
+    } else if(annTopic === 'newfeature'){
+      var fname = g('featureName'), summary = g('summary'), where = g('where');
+      if(lang === 'th'){
+        out = (fname ? 'ขอแนะนำฟีเจอร์ใหม่: "' + fname + '"\n\n' : 'ขอแนะนำฟีเจอร์ใหม่\n\n') +
+          (summary ? summary + '\n\n' : '') +
+          (where ? 'สามารถเริ่มใช้งานได้ที่: ' + where : '');
+      } else {
+        out = (fname ? 'Introducing a new feature: "' + fname + '"\n\n' : 'Introducing a new feature\n\n') +
+          (summary ? summary + '\n\n' : '') +
+          (where ? 'You can start using it here: ' + where : '');
+      }
+    } else if(annTopic === 'event'){
+      var ename = g('eventName'), dt = g('dateTime'), ewhere = g('where');
+      if(lang === 'th'){
+        out = (ename ? 'ขอเชิญร่วมกิจกรรม "' + ename + '"' : 'ขอเชิญร่วมกิจกรรมพิเศษ') +
+          (dt ? ' ในวันที่ ' + dt : '') + '\n\n' +
+          (ewhere ? 'ช่องทางเข้าร่วม: ' + ewhere : '');
+      } else {
+        out = (ename ? 'You’re invited to "' + ename + '"' : 'You’re invited to a special event') +
+          (dt ? ' on ' + dt : '') + '.\n\n' +
+          (ewhere ? 'Join here: ' + ewhere : '');
+      }
+    }
+    return out.trim();
+  }
 
   /* ---- Round 10: shared beginner glossary -- exposed on window so the
      separate Compare Stocks report module (its own scope, its own i18n
@@ -46373,6 +46481,30 @@ var qrcode = function() {
     }
     var annWrap = q('annWrap');
     if(annWrap) annWrap.style.display = reportType === 'announcement' ? '' : 'none';
+    var annTplWrap = q('annTplWrap');
+    var annTpl = ANNOUNCEMENT_TEMPLATES[annTopic];
+    if(annTplWrap){
+      annTplWrap.style.display = annTpl ? '' : 'none';
+      if(annTpl){
+        if(q('annTplHint')) q('annTplHint').textContent = T(UI.annTplFieldsLbl);
+        var fieldsHost = q('annTplFields');
+        if(fieldsHost){
+          var fd = annFieldData[annTopic] || (annFieldData[annTopic] = {});
+          fieldsHost.innerHTML = annTpl.fields.map(function(f){
+            var lbl = esc(T(f.label));
+            var ph = f.ph ? esc(T(f.ph)) : '';
+            var v = esc(fd[f.key] || '');
+            if(f.type === 'textarea'){
+              return '<div><span class="pr-label" style="display:block;margin-bottom:4px;">' + lbl + '</span>' +
+                '<textarea class="pr-search" rows="3" style="resize:vertical;" data-ann-field="' + esc(f.key) + '" placeholder="' + ph + '">' + v + '</textarea></div>';
+            }
+            return '<div><span class="pr-label" style="display:block;margin-bottom:4px;">' + lbl + '</span>' +
+              '<input type="text" class="pr-search" data-ann-field="' + esc(f.key) + '" placeholder="' + ph + '" value="' + v + '"></div>';
+          }).join('');
+        }
+        if(q('annGenerate')) q('annGenerate').textContent = T(UI.annGenerateBtn);
+      }
+    }
     if(q('modeLbl')) q('modeLbl').textContent = T(UI.modeLbl);
     if(q('modeFull')) q('modeFull').textContent = T(UI.modeFull);
     if(q('modeSelect')) q('modeSelect').textContent = T(UI.modeSelect);
@@ -46427,6 +46559,11 @@ var qrcode = function() {
         return;
       }
       if(t.closest('[data-pr="printBtn"]')){ doPrint(); return; }
+      if(t.closest('[data-pr="annGenerate"]')){
+        annMessage = annGenerateText();
+        paint();
+        return;
+      }
     });
     sec.addEventListener('input', function(ev){
       var t = ev.target;
@@ -46442,6 +46579,11 @@ var qrcode = function() {
       if(t && t.getAttribute && t.getAttribute('data-pr') === 'annMsgInput'){
         annMessage = t.value;
         renderReport();
+      }
+      if(t && t.getAttribute && t.getAttribute('data-ann-field')){
+        var fKey = t.getAttribute('data-ann-field');
+        if(!annFieldData[annTopic]) annFieldData[annTopic] = {};
+        annFieldData[annTopic][fKey] = t.value;
       }
     });
     sec.addEventListener('change', function(ev){
@@ -46504,6 +46646,11 @@ var qrcode = function() {
               '<span class="pr-label" data-pr="annTopicLbl" style="display:block;margin-bottom:6px;"></span>' +
               '<select class="pr-search" data-pr="annTopicSel" style="margin-bottom:8px;"></select>' +
               '<input type="text" class="pr-search" data-pr="annTopicOtherInput" style="display:none;">' +
+            '</div>' +
+            '<div data-pr="annTplWrap" style="display:none;margin:4px 0 14px;padding:10px;border:1px dashed var(--border-dim);border-radius:8px;">' +
+              '<div class="pr-hint" data-pr="annTplHint" style="margin-bottom:8px;"></div>' +
+              '<div data-pr="annTplFields" style="display:flex;flex-direction:column;gap:8px;"></div>' +
+              '<button type="button" class="pr-modebtn" data-pr="annGenerate" style="margin-top:10px;"></button>' +
             '</div>' +
             '<div class="pr-row" style="display:block;">' +
               '<span class="pr-label" data-pr="annMsgLbl" style="display:block;margin-bottom:6px;"></span>' +
@@ -46697,6 +46844,10 @@ var qrcode = function() {
   }
   #connectedusers .cu-name{font-size:15px;font-weight:800;color:var(--white);}
   #connectedusers .cu-uid{font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);margin-top:2px;}
+  /* permanent record of when this person first linked via LINE -- sourced
+     from the profile's own linkedAt (never cleared on sign-out/logout, so
+     this line proves the roster persists even after someone leaves). */
+  #connectedusers .cu-linked-since{font-family:var(--mono);font-size:9.5px;color:var(--grey-dim);opacity:.75;margin-top:2px;}
   #connectedusers .cu-status{display:inline-block;margin-top:4px;font-size:9.5px;font-weight:700;letter-spacing:.4px;padding:2px 8px;border-radius:10px;}
   #connectedusers .cu-status.active{background:rgba(0,255,102,.1);color:var(--neon-2,var(--neon));}
   #connectedusers .cu-status.none{background:rgba(255,255,255,.06);color:var(--grey-dim);}
@@ -46850,6 +47001,7 @@ var qrcode = function() {
     statusActive:{en:'Access until {d}',th:'มีสิทธิ์ถึง {d}'},
     statusNone:{en:'No access set',th:'ยังไม่ได้ให้สิทธิ์'},
     statusExpired:{en:'Expired {d}',th:'หมดอายุ {d}'},
+    cuLinkedSince:{en:'Linked via LINE since {d}',th:'เชื่อมต่อผ่าน LINE ตั้งแต่ {d}'},
     uidLabel:{en:'UID',th:'UID'},
     accessLabel:{en:'Access status',th:'สถานะสิทธิ์การใช้งาน'},
     rightsLabel:{en:'Membership tier (badge only, for now)',th:'ระดับสมาชิก (เป็นป้ายชื่อเฉยๆ ตอนนี้)'},
@@ -47036,6 +47188,7 @@ var qrcode = function() {
         '<div>' +
           '<div class="cu-name">' + esc(u.displayName || '—') + '</div>' +
           '<div class="cu-uid">UID: ' + esc(u.uid || '—') + '</div>' +
+          (u.linkedAt ? '<div class="cu-linked-since">' + esc(T(UI.cuLinkedSince).replace('{d}', fmtDate(new Date(u.linkedAt)))) + '</div>' : '') +
           '<div class="cu-card-top-row">' + statusHTML + rightsBadgeHTML(u.rights) + '</div>' +
         '</div>' +
       '</div>' +
@@ -47066,6 +47219,7 @@ var qrcode = function() {
       avatar +
       '<div class="cu-row-mid">' +
         '<div class="cu-name">' + esc(u.displayName || '—') + '</div>' +
+        (u.linkedAt ? '<div class="cu-linked-since">' + esc(T(UI.cuLinkedSince).replace('{d}', fmtDate(new Date(u.linkedAt)))) + '</div>' : '') +
         '<div class="cu-card-top-row">' + statusHTML + rightsBadgeHTML(u.rights) + '</div>' +
       '</div>' +
       '<div class="cu-row-end">' +
@@ -48975,7 +49129,11 @@ var qrcode = function() {
 
   /* ---- admin add/edit page ---- */
   .jed-panel{max-width:640px;margin:0 auto;border:1px solid var(--border-dim);border-radius:var(--radius);
-    background:linear-gradient(170deg,rgba(255,255,255,.05),rgba(255,255,255,.014));padding:26px 26px 22px;}
+    background:linear-gradient(170deg,rgba(255,255,255,.05),rgba(255,255,255,.014));padding:26px 26px 22px;
+    transition:border-color .15s;}
+  /* matches .jed-row.editing on the specific list row being edited, so the
+     form and the post it belongs to are visibly linked while editing. */
+  .jed-panel.editing{border-color:#5ec8ff;}
   .jed-field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
   .jed-field label{font-family:var(--mono);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--grey-dim);}
   .jed-field input[type="text"],.jed-field input[type="email"],.jed-field input[type="password"],.jed-field textarea{
@@ -49049,9 +49207,14 @@ var qrcode = function() {
 
   .jed-list{max-width:640px;margin:26px auto 0;display:flex;flex-direction:column;gap:10px;}
   .jed-row{
-    display:flex;align-items:center;gap:12px;border:1px solid var(--border-dim);border-radius:8px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:12px;border:1px solid var(--border-dim);border-radius:8px;
     padding:10px 12px;background:rgba(255,255,255,.02);
+    transition:border-color .15s,background .15s;
   }
+  /* highlighted while this exact row is being edited in the form above --
+     matches .jed-editing-flag's blue so it's obvious which post the open
+     form on the left refers to; reverts to the default border on save/cancel. */
+  .jed-row.editing{border-color:#5ec8ff;background:rgba(94,200,255,.05);}
   .jed-row img{width:44px;height:44px;object-fit:cover;border-radius:6px;flex:none;}
   .jed-row-body{flex:1;min-width:0;}
   .jed-row-asset{font-family:var(--mono);font-size:10px;color:var(--neon);letter-spacing:.5px;}
@@ -49079,6 +49242,18 @@ var qrcode = function() {
   .jrnl-lvl-chip.invalid b{color:var(--red);}
   .jrnl-lvl-chip.sl,.jrnl-lvl-chip.tp{border-color:var(--neon-2,#2ecc71);color:var(--neon-2,#2ecc71);}
   .jrnl-lvl-chip.sl b,.jrnl-lvl-chip.tp b{color:var(--neon-2,#2ecc71);}
+  /* ---- SL / Entry / TP mini risk-range bar (public feed + single view) ---- */
+  .jrnl-riskbar{position:relative;height:38px;margin:2px 4px 14px;}
+  .jrnl-riskbar-track{
+    position:absolute;left:8px;right:8px;top:15px;height:4px;border-radius:2px;
+    background:linear-gradient(90deg,rgba(255,107,107,.6),rgba(255,255,255,.22) 50%,rgba(46,204,113,.6));
+  }
+  .jrnl-riskbar-mark{position:absolute;top:6px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .jrnl-riskbar-dot{width:11px;height:11px;border-radius:50%;border:2px solid var(--bg,#0b0b0b);box-shadow:0 0 0 1px rgba(255,255,255,.28);}
+  .jrnl-riskbar-mark.sl .jrnl-riskbar-dot{background:#ff6b6b;}
+  .jrnl-riskbar-mark.entry .jrnl-riskbar-dot{background:#f4f6f1;}
+  .jrnl-riskbar-mark.tp .jrnl-riskbar-dot{background:#2ecc71;}
+  .jrnl-riskbar-lbl{font-family:var(--mono);font-size:8.6px;color:var(--grey-dim);white-space:nowrap;}
 
   /* ---- sidebar filter groups (public log) ---- */
   .jrnl-filter-group{display:flex;flex-direction:column;gap:4px;}
@@ -49193,9 +49368,14 @@ var qrcode = function() {
   .jrnl-view-shell .jrnl-card{max-width:100%;}
   .jrnl-view-notfound{border:1px dashed var(--border-dim);border-radius:var(--radius);padding:50px 20px;text-align:center;color:var(--grey-dim);}
 
-  /* ---- admin list: edit / pin / outcome / publish-report actions ---- */
+  /* ---- admin list: edit / pin / outcome / publish-report actions ----
+     flex:none here used to size this block at its max-content (single-line)
+     width regardless of its own flex-wrap, which is why the last couple of
+     buttons (delete, the like heart) rendered past the card's right edge on
+     narrow screens -- flex-basis:100% forces it onto its own full-width line
+     so its wrap actually has room to fold buttons within the card border. */
   .jed-row{flex-wrap:wrap;}
-  .jed-row-actions{display:flex;gap:6px;flex-wrap:wrap;flex:none;}
+  .jed-row-actions{display:flex;gap:6px;flex-wrap:wrap;flex:1 1 100%;min-width:0;}
   .jed-row-btn{
     font-family:var(--mono);font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;
     background:none;border:1px solid var(--border-dim);border-radius:6px;color:var(--grey-dim);
@@ -49238,6 +49418,17 @@ var qrcode = function() {
   .jed-ba-pickcard-noimg{background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.02));}
   .jed-ba-pickcard-meta{font-size:10px;font-weight:700;color:var(--white,#f4f6f1);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .jed-ba-pickcard-date{font-size:8.8px;color:var(--grey-dim);margin-top:2px;}
+  /* ---- manual-entry vs. reference-post-price toggle for the two price fields ---- */
+  .jed-ba-pricemode{display:flex;gap:6px;margin-bottom:8px;}
+  .jed-ba-pricemode-btn{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;
+    background:none;border:1px solid var(--border-dim);border-radius:20px;color:var(--grey-dim);
+    padding:6px 14px;cursor:pointer;
+  }
+  .jed-ba-pricemode-btn:hover{color:var(--white);border-color:var(--neon);}
+  .jed-ba-pricemode-btn.active{color:#0b0b0b;background:var(--neon);border-color:var(--neon);}
+  .jed-ba-pricemode-hint{font-size:10.5px;color:var(--grey-dim);margin:0 0 10px;}
+  .jed-ba-pricemode-hint.warn{color:#ff6b6b;}
   .jed-ba-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
   .jed-ba-field{flex:1 1 150px;display:flex;flex-direction:column;gap:5px;}
   .jed-ba-field label{font-family:var(--mono);font-size:9.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--grey-dim);}
@@ -49245,6 +49436,7 @@ var qrcode = function() {
     font-family:inherit;font-size:12.5px;border:1px solid rgba(255,255,255,.14);border-radius:8px;
     padding:8px 10px;background:rgba(255,255,255,.04);color:var(--white,#f4f6f1);outline:none;width:100%;
   }
+  .jed-ba-field input[readonly]{opacity:.65;cursor:not-allowed;}
   .jed-ba-msg{min-height:16px;font-size:11.5px;margin-bottom:8px;}
   .jed-ba-msg.err{color:#ff6b6b;}
   .jed-ba-actions{display:flex;align-items:center;gap:8px;margin-top:4px;}
@@ -49257,7 +49449,8 @@ var qrcode = function() {
   .jrp-ba-meta{font-size:9.5px;color:#777;margin-top:8px;}
   .jrp-ba-tags{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:8px;}
   .jrp-ba-tags .jrp-chip{border:1px solid #ccc;border-radius:20px;padding:2px 9px;font-size:9.5px;color:#666;}
-  .jrp-ba-price{font-size:18px;font-weight:800;color:#161616;margin-top:6px;}
+  .jrp-ba-pricecap{font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:#999;margin-top:10px;}
+  .jrp-ba-price{font-size:18px;font-weight:800;color:#161616;margin-top:2px;}
   .jrp-ba-priceunit{font-size:11px;font-weight:600;color:#888;margin-left:3px;}
   .jrp-ba-note{
     margin-top:10px;padding-top:8px;border-top:1px dashed #ddd;text-align:left;
@@ -49576,7 +49769,40 @@ var qrcode = function() {
     if(e.sl) parts.push('<span class="jrnl-lvl-chip sl"><b>' + esc(T(UI.reportSL)) + ':</b> ' + esc(e.sl) + '</span>');
     if(e.tp) parts.push('<span class="jrnl-lvl-chip tp"><b>' + esc(T(UI.reportTP)) + ':</b> ' + esc(e.tp) + '</span>');
     if(e.waveView) parts.push('<span class="jrnl-lvl-chip wave"><b>' + esc(T(UI.reportWaveView)) + ':</b> ' + esc(e.waveView) + '</span>');
-    return parts.length ? '<div class="jrnl-card-levels">' + parts.join('') + '</div>' : '';
+    var chipsHtml = parts.length ? '<div class="jrnl-card-levels">' + parts.join('') + '</div>' : '';
+    return chipsHtml + riskBarHtml(e);
+  }
+
+  /* small visual risk-range bar (SL — Entry — TP) so the plan reads at a
+     glance instead of as three separate text chips -- only drawn when the
+     entry price and at least one of SL/TP are actual numbers; silently
+     skipped otherwise (never guesses a position for a non-numeric level). */
+  function riskBarHtml(e){
+    var entry = parseFloat(e.entryPrice);
+    var sl = parseFloat(e.sl);
+    var tp = parseFloat(e.tp);
+    var hasEntry = isFinite(entry), hasSl = isFinite(sl), hasTp = isFinite(tp);
+    if(!hasEntry || (!hasSl && !hasTp)) return '';
+    var vals = [entry];
+    if(hasSl) vals.push(sl);
+    if(hasTp) vals.push(tp);
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    if(hi === lo) return '';
+    var pad = (hi - lo) * 0.14;
+    lo -= pad; hi += pad;
+    function pct(v){ return Math.max(0, Math.min(100, ((v - lo) / (hi - lo)) * 100)); }
+    var marks = [];
+    if(hasSl) marks.push({ cls: 'sl', pct: pct(sl), val: e.sl });
+    marks.push({ cls: 'entry', pct: pct(entry), val: e.entryPrice });
+    if(hasTp) marks.push({ cls: 'tp', pct: pct(tp), val: e.tp });
+    marks.sort(function(a, b){ return a.pct - b.pct; });
+    var marksHtml = marks.map(function(m){
+      var label = m.cls === 'sl' ? T(UI.reportSL) : m.cls === 'tp' ? T(UI.reportTP) : T(UI.riskBarEntry);
+      return '<div class="jrnl-riskbar-mark ' + m.cls + '" style="left:' + m.pct.toFixed(1) + '%;" title="' + esc(label + ': ' + m.val) + '">' +
+        '<span class="jrnl-riskbar-dot"></span><span class="jrnl-riskbar-lbl">' + esc(m.val) + '</span>' +
+      '</div>';
+    }).join('');
+    return '<div class="jrnl-riskbar"><div class="jrnl-riskbar-track"></div>' + marksHtml + '</div>';
   }
 
   var UI = {
@@ -49728,6 +49954,11 @@ var qrcode = function() {
     baPickEmpty:{en:'No posts yet.',th:'ยังไม่มีโพสต์'},
     baDaysElapsed:{en:'Days elapsed',th:'จำนวนวันที่ผ่านไป'},
     baPctChange:{en:'% change',th:'% การเปลี่ยนแปลง'},
+    baModeManual:{en:'Enter manually',th:'กรอกเอง'},
+    baModeReference:{en:'Reference post price',th:'อ้างอิงราคาโพสต์'},
+    baModeReferenceHint:{en:'Auto-filled from each post’s saved Entry Price.',th:'ดึงมาจากช่อง "ราคาเข้า" ที่บันทึกไว้ตอนโพสต์ให้อัตโนมัติ'},
+    baModeReferenceMissing:{en:'has no saved entry price — switch to manual for that side.',th:'ไม่มีราคาเข้าที่บันทึกไว้ — สลับไปกรอกเองสำหรับฝั่งนี้'},
+    baPriceLabel:{en:'Price at the time',th:'ราคา ณ ตอนนั้น'},
 
     adminNotice:{en:'Analysis posts are added by the site admin and its members only.',th:'บทวิเคราะห์ทั้งหมดเพิ่มโดยแอดมินและสมาชิกของเว็บไซต์เท่านั้น'},
 
@@ -49742,10 +49973,13 @@ var qrcode = function() {
     reportInvalid:{en:'WC Invalid',th:'จุดยกเลิกนับคลื่น'},
     reportSL:{en:'SL',th:'SL'},
     reportTP:{en:'TP',th:'TP'},
+    riskBarEntry:{en:'Entry',th:'จุดเข้า'},
     reportWaveView:{en:'Wave View',th:'มุมมองคลื่น'},
     reportRelatedH:{en:'Related Market Data',th:'ข้อมูลตลาดที่เกี่ยวข้อง'},
     reportDxyLabel:{en:'US Dollar Index (DXY)',th:'ดัชนีดอลลาร์สหรัฐ (DXY)'},
-    reportLiveSrc:{en:'Live quote, Yahoo Finance',th:'ราคาสด จาก Yahoo Finance'}
+    reportLiveSrc:{en:'Live quote, Yahoo Finance',th:'ราคาสด จาก Yahoo Finance'},
+    livePtsTooltip:{en:'Entry {entry} · Live {now} (refreshes ~45s)',th:'ราคาเข้า {entry} · ราคาล่าสุด {now} (รีเฟรชทุก ~45 วิ)'},
+    livePtsTooltipInitial:{en:'Entry {entry} · fetching live price…',th:'ราคาเข้า {entry} · กำลังดึงราคาล่าสุด…'}
   };
 
   /* preset asset choices for the admin dropdown -- value is what gets stored
@@ -49798,13 +50032,19 @@ var qrcode = function() {
       return window.__SPZ_LIVE.historyOfRaw(sym, '5d', '1d').then(fromRows).catch(function(){ return null; });
     });
   }
-  function paintLivePtsNode(node, diff, unit){
+  function paintLivePtsNode(node, diff, unit, entryPrice, livePrice){
     var unitLabel = unit === 'pips' ? T(UI.unitPipsShort) : T(UI.unitPointsShort);
     var val = node.querySelector('.jrnl-live-pts-val');
     if(!val) return;
     val.textContent = (diff >= 0 ? '+' : '') + diff.toFixed(2) + ' ' + unitLabel;
     node.classList.toggle('pos', diff >= 0);
     node.classList.toggle('neg', diff < 0);
+    /* transparency for when the feed looks stale: hovering shows exactly
+       which two numbers produced this delta, since the live quote only
+       refreshes every ~45s and can lag a fast-moving market. */
+    if(isFinite(entryPrice) && isFinite(livePrice)){
+      node.title = T(UI.livePtsTooltip).replace('{entry}', entryPrice).replace('{now}', livePrice);
+    }
   }
   function refreshLivePtsNodes(){
     var nodes = document.querySelectorAll('[data-live-pts-asset]');
@@ -49821,7 +50061,7 @@ var qrcode = function() {
           var entryPrice = parseFloat(n.getAttribute('data-live-pts-entry'));
           var unit = n.getAttribute('data-live-pts-unit') || 'points';
           if(!isFinite(entryPrice)) return;
-          paintLivePtsNode(n, price - entryPrice, unit);
+          paintLivePtsNode(n, price - entryPrice, unit, entryPrice, price);
         });
       });
     });
@@ -49852,7 +50092,7 @@ var qrcode = function() {
     }
     var sym = ASSET_YAHOO_SYM[e.asset];
     if(!sym) return '';
-    return '<div class="jrnl-live-pts live" data-live-pts-asset data-live-pts-sym="' + esc(sym) + '" data-live-pts-entry="' + entryPrice + '" data-live-pts-unit="' + unit + '">' +
+    return '<div class="jrnl-live-pts live" data-live-pts-asset data-live-pts-sym="' + esc(sym) + '" data-live-pts-entry="' + entryPrice + '" data-live-pts-unit="' + unit + '" title="' + esc(T(UI.livePtsTooltipInitial).replace('{entry}', entryPrice)) + '">' +
       '<span class="jrnl-live-pts-label">' + esc(T(UI.livePtsLabel)) + '</span>' +
       '<span class="jrnl-live-pts-val">…</span>' +
     '</div>';
@@ -49893,10 +50133,14 @@ var qrcode = function() {
     if(!window.confirm(T(UI.notifyConfirm))) return;
     var text = T(UI.notifyMsgTemplate).replace('{asset}', entry.asset || '—').replace('{url}', shareUrlFor(entry.id));
     if(btn) btn.disabled = true;
+    /* imageUrl is passed through as-is (only when it's already https, e.g. a
+       Firebase Storage download URL) so LINE friends see the post's own
+       chart/screenshot alongside the text+link, not just a bare link. */
+    var imageUrl = (entry.imageUrl && /^https:\/\//i.test(entry.imageUrl)) ? entry.imageUrl : '';
     fetch(JOURNAL_WORKER_BASE + '/api/admin/broadcast', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Key': key },
-      body: JSON.stringify({ text: text })
+      body: JSON.stringify({ text: text, imageUrl: imageUrl })
     }).then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
       .then(function(res){
         if(btn) btn.disabled = false;
@@ -50477,6 +50721,12 @@ var qrcode = function() {
             '<div class="jed-row-likes-panel" data-role="likesPanel"></div>');
           row.querySelector('.jed-row-text').textContent = v.text || '';
           row.querySelector('[data-act="edit"]').addEventListener('click', function(){
+            /* highlight this exact row to match the form's own editing
+               border (see .jed-row.editing / .jed-panel.editing) so it's
+               obvious which post the open form refers to. */
+            var prev = host.querySelector('.jed-row.editing');
+            if(prev) prev.classList.remove('editing');
+            row.classList.add('editing');
             if(opts.onEdit) opts.onEdit(entryObj);
           });
           /* who-liked-this: fetch the public like count as soon as the row
@@ -50809,9 +51059,13 @@ var qrcode = function() {
       var cancelBtn = body.querySelector('[data-je="cancelEdit"]');
       var editingFlag = body.querySelector('[data-je="editingFlag"]');
       var msg = body.querySelector('[data-je="msg"]');
+      var panelEl = body.querySelector('.jed-panel');
 
       function resetForm(){
         editingId = null;
+        if(panelEl) panelEl.classList.remove('editing');
+        var prevRow = sec.querySelector('.jed-row.editing');
+        if(prevRow) prevRow.classList.remove('editing');
         assetSelect.value = ''; assetOther.value = ''; assetOther.style.display = 'none';
         tfSelect.value = ''; tfOther.value = ''; tfOther.style.display = 'none';
         body.querySelector('[data-je="tags"]').value = '';
@@ -50830,6 +51084,7 @@ var qrcode = function() {
 
       function startEdit(entry){
         editingId = entry.id;
+        if(panelEl) panelEl.classList.add('editing');
         var presetVals = ASSET_PRESETS.map(function(a){ return a.v; });
         if(entry.asset && presetVals.indexOf(entry.asset) !== -1){
           assetSelect.value = entry.asset;
@@ -50958,6 +51213,7 @@ var qrcode = function() {
         var v = d.data() || {};
         return { id: d.id, asset: v.asset || '', imageUrl: v.imageUrl || '',
                  text: v.text || '', timeframe: v.timeframe || '', tags: v.tags || [],
+                 entryPrice: v.entryPrice || '', priceUnit: v.priceUnit || 'points',
                  createdAt: v.createdAt && v.createdAt.toDate ? v.createdAt.toDate() : new Date() };
       }));
     }).catch(function(){ cb([]); });
@@ -50978,6 +51234,11 @@ var qrcode = function() {
           '<label>' + esc(T(UI.baPickAfter)) + '</label>' +
           '<div class="jed-ba-pickgrid" data-ba="afterGrid"></div>' +
         '</div>' +
+        '<div class="jed-ba-pricemode" data-ba="priceMode">' +
+          '<button type="button" class="jed-ba-pricemode-btn active" data-mode="manual">' + esc(T(UI.baModeManual)) + '</button>' +
+          '<button type="button" class="jed-ba-pricemode-btn" data-mode="reference">' + esc(T(UI.baModeReference)) + '</button>' +
+        '</div>' +
+        '<div class="jed-ba-pricemode-hint" data-ba="modeHint" style="display:none;"></div>' +
         '<div class="jed-ba-row">' +
           '<div class="jed-ba-field"><label>' + esc(T(UI.baBeforePrice)) + '</label><input type="text" inputmode="decimal" data-ba="beforePrice"></div>' +
           '<div class="jed-ba-field"><label>' + esc(T(UI.baAfterPrice)) + '</label><input type="text" inputmode="decimal" data-ba="afterPrice"></div>' +
@@ -50997,6 +51258,44 @@ var qrcode = function() {
     var afterGrid = ov.querySelector('[data-ba="afterGrid"]');
     var listCache = [];
     var pickedBeforeId = '', pickedAfterId = '';
+    var priceMode = 'manual';
+    var beforePriceInput = ov.querySelector('[data-ba="beforePrice"]');
+    var afterPriceInput = ov.querySelector('[data-ba="afterPrice"]');
+    var unitSelect = ov.querySelector('[data-ba="unit"]');
+    var modeHint = ov.querySelector('[data-ba="modeHint"]');
+
+    /* "reference" mode pulls each price straight from that post's own saved
+       Entry Price field instead of making the admin retype it -- falls back
+       to a warning (not a silent zero) when a picked post never had one. */
+    function applyReferencePrices(){
+      if(priceMode !== 'reference') return;
+      var beforeItem = null, afterItem = null;
+      for(var i = 0; i < listCache.length; i++){
+        if(listCache[i].id === pickedBeforeId) beforeItem = listCache[i];
+        if(listCache[i].id === pickedAfterId) afterItem = listCache[i];
+      }
+      var missing = [];
+      if(beforeItem){ if(beforeItem.entryPrice) beforePriceInput.value = beforeItem.entryPrice; else missing.push(T(UI.baBefore)); }
+      if(afterItem){
+        if(afterItem.entryPrice){ afterPriceInput.value = afterItem.entryPrice; unitSelect.value = afterItem.priceUnit === 'pips' ? 'pips' : 'points'; }
+        else missing.push(T(UI.baAfter));
+      }
+      modeHint.className = 'jed-ba-pricemode-hint' + (missing.length ? ' warn' : '');
+      modeHint.textContent = missing.length ? (missing.join(' / ') + ' ' + T(UI.baModeReferenceMissing)) : T(UI.baModeReferenceHint);
+    }
+    var modeBtns = ov.querySelectorAll('.jed-ba-pricemode-btn');
+    for(var mi = 0; mi < modeBtns.length; mi++){
+      modeBtns[mi].addEventListener('click', function(ev){
+        priceMode = ev.currentTarget.getAttribute('data-mode');
+        for(var j = 0; j < modeBtns.length; j++) modeBtns[j].classList.toggle('active', modeBtns[j] === ev.currentTarget);
+        var manual = priceMode === 'manual';
+        beforePriceInput.readOnly = !manual;
+        afterPriceInput.readOnly = !manual;
+        modeHint.style.display = manual ? 'none' : 'block';
+        if(manual){ modeHint.textContent = ''; modeHint.className = 'jed-ba-pricemode-hint'; }
+        else applyReferencePrices();
+      });
+    }
 
     function cardHtml(it){
       return '<div class="jed-ba-pickcard" data-id="' + esc(it.id) + '">' +
@@ -51029,8 +51328,8 @@ var qrcode = function() {
         onPick(id);
       });
     }
-    wireGrid(beforeGrid, function(id){ pickedBeforeId = id; });
-    wireGrid(afterGrid, function(id){ pickedAfterId = id; });
+    wireGrid(beforeGrid, function(id){ pickedBeforeId = id; applyReferencePrices(); });
+    wireGrid(afterGrid, function(id){ pickedAfterId = id; applyReferencePrices(); });
 
     baFetchList(function(list){
       listCache = list;
@@ -51086,6 +51385,7 @@ var qrcode = function() {
         (item.imageUrl ? '<img class="jrp-ba-img" src="' + esc(item.imageUrl) + '" alt="">' : '<div class="jrp-ba-noimg"></div>') +
         '<div class="jrp-ba-meta">' + esc((item.asset || '—') + ' · ' + fmtDate(item.createdAt) + (item.timeframe ? ' · ' + item.timeframe : '')) + '</div>' +
         tagsHtml +
+        '<div class="jrp-ba-pricecap">' + esc(T(UI.baPriceLabel)) + '</div>' +
         '<div class="jrp-ba-price">' + esc(String(price)) + ' <span class="jrp-ba-priceunit">' + esc(unitLabel) + '</span></div>' +
         noteHtml +
       '</div>';
