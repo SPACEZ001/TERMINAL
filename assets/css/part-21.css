@@ -1,0 +1,945 @@
+
+  #watchlist .wl-wrap{max-width:1160px;margin:0 auto;padding:0 32px 90px;}
+  @media(max-width:600px){ #watchlist .wl-wrap{padding:0 22px 70px;} }
+
+  /* ---- profile header: the LINE-linked person's own "board" at the top of
+     the page -- site logo, their name + photo, quick stats, and the entry
+     point into the shareable card. Only shown once they actually have
+     holdings (profileHeaderHTML returns '' otherwise). --------------------- */
+  #watchlist .wl-profile{
+    --sp-accent:#8fd3ff; --sp-accent-2:#e7ecf7;
+    border:1px solid rgba(143,211,255,.22);border-radius:var(--radius);
+    background:radial-gradient(140% 120% at 12% -20%, rgba(143,211,255,.10), transparent 55%), #0a0b10;
+    padding:20px 22px;margin:22px 0;position:relative;overflow:hidden;
+  }
+  #watchlist .wl-profile-stars{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+  #watchlist .wl-profile-stars i{position:absolute;border-radius:50%;background:#fff;animation:wlStarTwinkle 3.4s ease-in-out infinite;}
+  @keyframes wlStarTwinkle{0%,100%{opacity:.15;}50%{opacity:.9;}}
+  #watchlist .wl-profile-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;position:relative;z-index:1;}
+  #watchlist .wl-profile-logo{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-weight:800;font-size:11px;letter-spacing:.12em;color:var(--grey-dim);text-transform:uppercase;}
+  #watchlist .wl-profile-mark{width:16px;height:20px;color:var(--sp-accent);}
+  #watchlist .wl-profile-share-btn{
+    display:inline-flex;align-items:center;gap:7px;background:transparent;border:1px solid rgba(143,211,255,.3);
+    color:var(--sp-accent-2);border-radius:8px;padding:8px 13px;font-family:var(--mono);font-size:11px;
+    font-weight:700;cursor:pointer;white-space:nowrap;
+  }
+  #watchlist .wl-profile-share-btn svg{width:14px;height:14px;}
+  #watchlist .wl-profile-share-btn:hover{border-color:var(--sp-accent);color:var(--sp-accent);}
+  #watchlist .wl-profile-main{display:flex;align-items:center;gap:16px;position:relative;z-index:1;}
+  #watchlist .wl-profile-avatar{width:64px;height:64px;border-radius:50%;object-fit:cover;flex:0 0 auto;border:2px solid var(--sp-accent);box-shadow:0 0 14px rgba(143,211,255,.35);}
+  #watchlist .wl-profile-avatar-fallback{
+    display:flex;align-items:center;justify-content:center;background:rgba(143,211,255,.12);
+    color:var(--sp-accent);font-size:24px;font-weight:800;font-family:var(--mono);
+  }
+  #watchlist .wl-profile-info{flex:1;min-width:0;}
+  #watchlist .wl-profile-name{font-size:1.3rem;font-weight:800;color:var(--white);letter-spacing:-.01em;margin-bottom:6px;}
+  #watchlist .wl-profile-stats{display:flex;flex-wrap:wrap;gap:14px;}
+  #watchlist .wl-profile-stat{font-size:12px;color:var(--grey);font-family:var(--mono);}
+  #watchlist .wl-profile-stat b{color:var(--white);font-size:13px;}
+  #watchlist .wl-profile-stat.wl-profile-risk{padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.06);}
+  #watchlist .wl-profile-stat.wl-profile-risk.high{color:var(--red);}
+  #watchlist .wl-profile-stat.wl-profile-risk.medium{color:var(--amber);}
+  #watchlist .wl-profile-stat.wl-profile-risk.low{color:var(--neon-2,var(--neon));}
+  @media(max-width:520px){
+    #watchlist .wl-profile-main{flex-wrap:wrap;}
+    #watchlist .wl-profile-avatar{width:52px;height:52px;}
+  }
+
+  /* ---- shareable portfolio card modal -- a dark, stylised rectangle meant
+     to be screenshotted or downloaded/printed, never a plain white/black
+     look. Sits in a fixed overlay appended to <body> (outside #watchlist),
+     so these rules are NOT scoped to #watchlist. ------------------------- */
+  .wlshare-modal{
+    position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9000;display:none;
+    align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px;
+  }
+  .wlshare-modal.open{display:flex;}
+  .wlshare-modal-inner{width:100%;max-width:460px;position:relative;}
+  .wlshare-close{
+    position:absolute;top:-6px;right:-6px;width:34px;height:34px;border-radius:50%;
+    background:#151619;border:1px solid var(--border-dim);color:var(--white);font-size:20px;
+    cursor:pointer;line-height:1;z-index:2;
+  }
+  .wlshare-scroll{width:100%;}
+  /* "space" theme -- deliberately not the site's neon-green accent: a deep
+     night-sky black with an icy blue/silver glow and a scattered starfield,
+     meant to read as premium and "powerful" rather than tech-brand-green.
+     The stars animate while the card is open (wlStarTwinkle, defined with
+     the profile header above); a downloaded/printed copy is just whichever
+     single frame it was captured on, which is the point -- alive on screen,
+     a clean still once saved. */
+  .wlshare-card{
+    width:100%;aspect-ratio:4/5;box-sizing:border-box;position:relative;overflow:hidden;
+    border-radius:22px;padding:28px 26px;display:flex;flex-direction:column;
+    background:radial-gradient(130% 110% at 18% -10%, #131a2e 0%, #060810 45%, #010103 100%);
+    border:1.5px solid rgba(143,211,255,.4);color:#f4f6f1;font-family:var(--mono);
+    box-shadow:0 0 0 1px rgba(143,211,255,.08),0 30px 70px -30px rgba(0,0,0,.85);
+  }
+  /* Round K4: the card is exported by html2canvas as a still image (see
+     openShareCard's download handler) -- while ".wlshare-card" is on
+     screen it keeps its normal rounded corners, but the download flow adds
+     ".exporting" for one frame first (squares the OUTER corners) so the
+     curve's anti-aliased edge pixels never get baked into the file. Those
+     edge pixels are only correct once composited against a transparent
+     background; the moment someone re-shares the file through an app that
+     flattens to JPEG (no alpha channel), that blend turns into a visible
+     white fringe/line along the curve. Squaring the outer corner removes
+     the curve entirely, so there's nothing left to fringe; the download
+     also now bakes in the card's own dark background instead of leaving it
+     transparent, so no downstream flatten can produce a fringe at all,
+     square corners or not -- see the two changes together in the
+     "download" click handler below. */
+  .wlshare-card.exporting{border-radius:0;}
+  /* engraved corner brackets, echoing the site's dev-card treatment, in
+     this card's own icy-blue accent instead of the neon-green house color */
+  .wlshare-card::before,.wlshare-card::after{
+    content:'';position:absolute;z-index:2;pointer-events:none;width:20px;height:20px;
+  }
+  .wlshare-card::before{top:10px;left:10px;border-radius:6px 0 0 0;
+    border-top:2px solid rgba(143,211,255,.55);border-left:2px solid rgba(143,211,255,.55);}
+  .wlshare-card::after{bottom:10px;right:10px;border-radius:0 0 6px 0;
+    border-bottom:2px solid rgba(143,211,255,.55);border-right:2px solid rgba(143,211,255,.55);}
+  .wlshare-stars{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+  .wlshare-stars i{position:absolute;border-radius:50%;background:#fff;animation:wlStarTwinkle 3.4s ease-in-out infinite;}
+  .wlshare-glow{position:absolute;top:-40%;right:-20%;width:75%;height:75%;
+    background:radial-gradient(circle, rgba(143,211,255,.22), transparent 70%);pointer-events:none;}
+  .wlshare-glow-2{position:absolute;bottom:-30%;left:-15%;width:60%;height:60%;
+    background:radial-gradient(circle, rgba(167,139,250,.14), transparent 70%);pointer-events:none;}
+  .wlshare-top{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1;}
+  .wlshare-eyebrow{display:flex;align-items:center;gap:6px;font-weight:800;font-size:10px;letter-spacing:.16em;color:#8fd3ff;text-transform:uppercase;}
+  .wlshare-live-dot{width:6px;height:6px;border-radius:50%;background:#00e5a0;box-shadow:0 0 6px rgba(0,229,160,.9);animation:wlShareLive 1.9s ease-in-out infinite;flex:0 0 auto;}
+  @keyframes wlShareLive{0%,100%{opacity:1;}50%{opacity:.35;}}
+  .wlshare-date{font-size:10px;color:#8087a0;}
+  .wlshare-logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:12px;letter-spacing:.14em;color:#fff;text-transform:uppercase;position:relative;z-index:1;margin-top:10px;}
+  .wlshare-logo-rule{position:absolute;left:0;right:0;bottom:-8px;height:2px;
+    background:linear-gradient(90deg,#8fd3ff,rgba(143,211,255,0));border-radius:2px;}
+  .wlshare-mark{width:14px;height:18px;color:#8fd3ff;}
+  .wlshare-person{display:flex;align-items:center;gap:14px;margin-top:24px;position:relative;z-index:1;}
+  .wlshare-avatar{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #8fd3ff;flex:0 0 auto;box-shadow:0 0 16px rgba(143,211,255,.4);}
+  .wlshare-avatar-fallback{display:flex;align-items:center;justify-content:center;background:rgba(143,211,255,.15);color:#8fd3ff;font-size:22px;font-weight:800;}
+  .wlshare-name{font-size:1.15rem;font-weight:800;color:#fff;}
+  .wlshare-tag{font-size:10.5px;color:#8fd3ff;letter-spacing:.08em;text-transform:uppercase;margin-top:2px;}
+  .wlshare-stats{display:flex;gap:22px;margin-top:22px;position:relative;z-index:1;}
+  .wlshare-stat{display:flex;flex-direction:column;gap:2px;}
+  .wlshare-stat b{font-size:1.3rem;font-weight:800;color:#fff;}
+  .wlshare-stat b.risk-high{color:#ff5a72;}
+  .wlshare-stat b.risk-medium{color:#ffc94d;}
+  .wlshare-stat b.risk-low{color:#00e5a0;}
+  .wlshare-stat span{font-size:9.5px;color:#8087a0;text-transform:uppercase;letter-spacing:.06em;}
+  .wlshare-block{margin-top:22px;position:relative;z-index:1;}
+  .wlshare-label{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#8087a0;margin-bottom:9px;}
+  .wlshare-meter-track{width:100%;height:10px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;}
+  .wlshare-meter-fill{height:100%;border-radius:6px;}
+  .wlshare-meter-fill.high{background:#ff5a72;}
+  .wlshare-meter-fill.medium{background:#ffc94d;}
+  .wlshare-meter-fill.low{background:#00e5a0;}
+  .wlshare-stackbar{display:flex;width:100%;height:16px;border-radius:8px;overflow:hidden;background:rgba(255,255,255,.06);}
+  .wlshare-stackbar span{height:100%;box-shadow:2px 0 0 0 #060810;}
+  .wlshare-stackbar span:last-child{box-shadow:none;}
+  .wlshare-legend{display:flex;flex-wrap:wrap;gap:8px 12px;margin-top:10px;}
+  .wlshare-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:#c3c7d6;}
+  .wlshare-legend-item i{width:7px;height:7px;border-radius:50%;flex:0 0 auto;display:inline-block;}
+  .wlshare-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .wlshare-chip{font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:20px;background:rgba(143,211,255,.1);border:1px solid rgba(143,211,255,.18);color:#f4f6f1;}
+  .wlshare-chip.more{color:#8087a0;background:rgba(255,255,255,.05);border-color:transparent;}
+  .wlshare-foot-row{margin-top:auto;padding-top:18px;display:flex;align-items:flex-end;justify-content:space-between;gap:14px;position:relative;z-index:1;}
+  .wlshare-foot{font-size:8.5px;color:#565b6e;letter-spacing:.02em;line-height:1.5;flex:1;min-width:0;}
+  .wlshare-qr{display:flex;flex-direction:column;align-items:center;gap:4px;flex:0 0 auto;}
+  .wlshare-qr img{width:46px;height:46px;border-radius:6px;background:#fff;padding:3px;display:block;}
+  .wlshare-qr span{font-size:7.5px;color:#8087a0;text-transform:uppercase;letter-spacing:.05em;text-align:center;max-width:70px;line-height:1.3;}
+  .wlshare-actions{display:flex;gap:10px;margin-top:16px;}
+  .wlshare-action-btn{
+    flex:1;background:transparent;border:1px solid rgba(255,255,255,.2);color:#fff;
+    border-radius:10px;padding:12px 14px;font-family:var(--mono);font-weight:700;font-size:12.5px;
+    cursor:pointer;white-space:nowrap;
+  }
+  .wlshare-action-btn.primary{background:linear-gradient(135deg,#a9e4ff,#7ba8f0);color:#060810;border-color:transparent;}
+  .wlshare-action-btn:hover{opacity:.88;}
+  .wlshare-status{text-align:center;font-size:11px;color:#8fd3ff;min-height:16px;margin-top:8px;}
+  .wlshare-status.err{color:#ff6b6b;}
+  @media print{
+    body.spz-printing-wlshare > *:not(.wlshare-modal){ display:none !important; }
+    body.spz-printing-wlshare .wlshare-modal{
+      position:static !important;background:#000 !important;padding:0 !important;display:block !important;overflow:visible !important;
+    }
+    body.spz-printing-wlshare .wlshare-close,
+    body.spz-printing-wlshare .wlshare-actions,
+    body.spz-printing-wlshare .wlshare-status{ display:none !important; }
+    body.spz-printing-wlshare .wlshare-modal-inner{ max-width:none !important; }
+    .wlshare-card, .wlshare-card *{ -webkit-print-color-adjust:exact !important;print-color-adjust:exact !important; }
+  }
+
+  #watchlist .wl-add{
+    display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+    border:1px solid var(--border-dim);border-radius:var(--radius);
+    background:var(--glass);padding:16px 18px;margin:22px 0 28px;
+  }
+  #watchlist .wl-add input[type="text"]{
+    flex:1 1 220px;min-width:160px;background:transparent;border:1px solid var(--border-dim);
+    border-radius:10px;padding:10px 12px;color:var(--white);font-family:var(--mono);
+    font-size:14px;text-transform:uppercase;
+  }
+  #watchlist .wl-add input[type="text"]:focus{outline:none;border-color:var(--neon);}
+  #watchlist .wl-addbtn{
+    background:var(--neon);color:#08130a;border:none;border-radius:10px;
+    padding:10px 18px;font-family:var(--mono);font-weight:700;font-size:13px;
+    cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-flex;
+    align-items:center;justify-content:center;
+  }
+  #watchlist .wl-addbtn:hover{opacity:.88;}
+  #watchlist .wl-copybtn{
+    background:transparent;color:var(--white);border:1px solid var(--border-dim);
+    border-radius:10px;padding:10px 14px;font-family:var(--mono);font-weight:700;
+    font-size:12px;cursor:pointer;white-space:nowrap;
+  }
+  #watchlist .wl-copybtn:hover{border-color:var(--neon);color:var(--neon);}
+  #watchlist .wl-copybtn.copied{border-color:var(--neon-2,var(--neon));color:var(--neon-2,var(--neon));}
+  #watchlist .wl-addnote{flex:1 1 100%;font-size:12px;color:var(--grey);line-height:1.6;}
+
+  /* the LINE-linked add-a-ticker box gets its own louder treatment -- a
+     glowing green border + heading + big plus icon -- so it reads as the
+     obvious "start here" action instead of blending into the page. */
+  #watchlist .wl-add-line{
+    display:block;border:1.5px solid rgba(6,199,85,.45);
+    background:linear-gradient(160deg, rgba(6,199,85,.1), rgba(6,199,85,.02));
+    box-shadow:0 0 0 1px rgba(6,199,85,.08), 0 8px 24px -12px rgba(6,199,85,.35);
+    border-radius:16px;padding:18px 20px;
+  }
+  #watchlist .wl-add-line-h{
+    display:flex;align-items:center;gap:8px;font-family:var(--mono);font-weight:800;
+    font-size:13px;letter-spacing:.3px;color:#06C755;margin-bottom:12px;
+  }
+  #watchlist .wl-add-line-h svg{width:18px;height:18px;flex:0 0 auto;
+    background:#06C755;color:#08130a;border-radius:50%;padding:3px;box-sizing:border-box;}
+  #watchlist .wl-add-line-row{display:flex;flex-wrap:wrap;gap:10px;}
+  #watchlist .wl-add-line-row input[type="text"]{
+    flex:1 1 220px;min-width:160px;background:rgba(255,255,255,.03);
+    border:1.5px solid rgba(6,199,85,.35);border-radius:10px;padding:13px 14px;
+    color:var(--white);font-family:var(--mono);font-size:15px;text-transform:uppercase;
+    transition:border-color .15s,box-shadow .15s;
+  }
+  #watchlist .wl-add-line-row input[type="text"]:focus{
+    outline:none;border-color:#06C755;box-shadow:0 0 0 3px rgba(6,199,85,.15);
+  }
+  #watchlist .wl-add-line-row .wl-addbtn{
+    background:#06C755;color:#08130a;font-size:14px;padding:12px 22px;border-radius:10px;
+  }
+  #watchlist .wl-add-line-row .wl-addbtn:hover{opacity:.9;}
+  #watchlist .wl-add-line .wl-line-status{display:block;margin-top:8px;}
+  #watchlist .wl-add-line-or{
+    flex:1 1 100%;font-size:11px;color:var(--grey);text-align:center;
+    display:flex;align-items:center;gap:10px;margin:2px 0 -2px;
+  }
+  #watchlist .wl-add-line-or::before,#watchlist .wl-add-line-or::after{
+    content:'';flex:1;height:1px;background:rgba(255,255,255,.08);
+  }
+  #watchlist .wl-browse-btn{
+    flex:1 1 100%;display:flex;align-items:center;justify-content:center;gap:8px;
+    background:rgba(6,199,85,.08);border:1.5px dashed rgba(6,199,85,.4);
+    color:#06C755;border-radius:10px;padding:12px 14px;font-family:var(--mono);
+    font-weight:700;font-size:13px;cursor:pointer;transition:background .15s,border-color .15s;
+  }
+  #watchlist .wl-browse-btn:hover{background:rgba(6,199,85,.14);border-color:#06C755;}
+  #watchlist .wl-browse-btn svg{width:16px;height:16px;flex:0 0 auto;}
+
+  /* ---- ticker-picker popup: categorized, searchable grid so people don't
+     have to remember a symbol or scroll a native datalist. Appended to
+     document.body (like the share modal) so it survives paint() re-renders. */
+  .wl-pick-modal{
+    position:fixed;inset:0;z-index:9600;display:none;
+    background:rgba(4,6,10,.72);backdrop-filter:blur(3px);
+    padding:24px 16px;box-sizing:border-box;overflow:auto;
+  }
+  .wl-pick-modal.open{display:flex;align-items:flex-start;justify-content:center;}
+  .wl-pick-inner{
+    width:100%;max-width:560px;background:#0b0d14;border:1px solid rgba(255,255,255,.1);
+    border-radius:18px;padding:20px 20px 16px;box-shadow:0 24px 60px -20px rgba(0,0,0,.6);
+    margin:auto 0;
+  }
+  .wl-pick-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .wl-pick-title{font-family:var(--mono);font-weight:800;font-size:15px;color:var(--white);}
+  .wl-pick-close{
+    background:transparent;border:none;color:var(--grey);font-size:22px;line-height:1;
+    cursor:pointer;padding:2px 6px;border-radius:6px;
+  }
+  .wl-pick-close:hover{color:var(--white);background:rgba(255,255,255,.08);}
+  .wl-pick-search{
+    width:100%;box-sizing:border-box;background:rgba(255,255,255,.04);
+    border:1.5px solid rgba(255,255,255,.1);border-radius:10px;padding:11px 14px;
+    color:var(--white);font-family:var(--mono);font-size:14px;margin-bottom:14px;
+  }
+  .wl-pick-search:focus{outline:none;border-color:#06C755;}
+  .wl-pick-groups{max-height:52vh;overflow:auto;padding-right:4px;}
+  .wl-pick-group{margin-bottom:16px;}
+  .wl-pick-group-h{
+    font-family:var(--mono);font-weight:700;font-size:11px;letter-spacing:.4px;
+    text-transform:uppercase;color:var(--grey);margin-bottom:8px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .wl-pick-group-h b{color:var(--white);font-weight:700;}
+  .wl-pick-group-h span{color:var(--grey);font-weight:500;text-transform:none;letter-spacing:0;}
+  .wl-pick-grid{display:flex;flex-wrap:wrap;gap:8px;}
+  .wl-pick-item{
+    display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);
+    border-radius:10px;padding:8px 12px;cursor:pointer;min-width:78px;
+    transition:border-color .15s,background .15s;text-align:left;
+  }
+  .wl-pick-item b{font-family:var(--mono);font-size:13px;color:var(--white);font-weight:800;}
+  .wl-pick-item small{font-size:10px;color:var(--grey);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;}
+  .wl-pick-item:hover{border-color:#06C755;background:rgba(6,199,85,.08);}
+  .wl-pick-item.adding{opacity:.6;pointer-events:none;}
+  .wl-pick-item.held{
+    border-color:rgba(6,199,85,.5);background:rgba(6,199,85,.1);cursor:default;pointer-events:none;
+  }
+  .wl-pick-item.held b{color:#06C755;}
+  .wl-pick-empty{color:var(--grey);font-size:13px;text-align:center;padding:30px 10px;}
+  .wl-pick-foot{
+    display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:14px;padding-top:14px;
+    border-top:1px solid rgba(255,255,255,.08);
+  }
+  .wl-pick-status{flex:1;color:var(--red,#ff5a72);font-size:12px;line-height:1.4;}
+  .wl-pick-done{
+    background:var(--neon);color:#08130a;border:none;border-radius:10px;
+    padding:10px 20px;font-family:var(--mono);font-weight:800;font-size:13px;cursor:pointer;
+  }
+  .wl-pick-done:hover{opacity:.9;}
+  @media(max-width:520px){
+    .wl-pick-inner{padding:16px 14px 14px;border-radius:14px;}
+    .wl-pick-item{min-width:70px;}
+  }
+
+  #watchlist .wl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+  #watchlist .wl-card{
+    border:1px solid var(--border-dim);border-radius:var(--radius);
+    background:var(--glass);padding:16px 18px;display:flex;flex-direction:column;gap:8px;
+  }
+  #watchlist .wl-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+  #watchlist .wl-tk{font-family:var(--mono);font-weight:800;font-size:16px;letter-spacing:.02em;}
+  #watchlist .wl-nm{font-size:12px;color:var(--grey);}
+  #watchlist .wl-px{font-family:var(--mono);font-size:14px;}
+  #watchlist .wl-chg{font-family:var(--mono);font-size:13px;font-weight:700;}
+  #watchlist .wl-chg.up{color:var(--neon-2,var(--neon));}
+  #watchlist .wl-chg.dn{color:var(--red);}
+  #watchlist .wl-chg.fl{color:var(--grey);}
+
+  #watchlist .wl-flags{display:flex;flex-direction:column;gap:5px;margin-top:2px;}
+  #watchlist .wl-flag{font-size:11.5px;line-height:1.5;border-left:2px solid var(--border-dim);padding-left:8px;color:var(--grey);}
+  #watchlist .wl-flag.bad{border-color:var(--red);color:var(--white);}
+  #watchlist .wl-flag.warn{border-color:var(--amber);color:var(--white);}
+  #watchlist .wl-flag.good{border-color:var(--neon-2,var(--neon));color:var(--white);}
+  #watchlist .wl-flag.info{border-color:var(--grey-dim);}
+
+  #watchlist .wl-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+  #watchlist .wl-btn{
+    flex:1 1 80px;text-align:center;border:1px solid var(--border-dim);border-radius:8px;
+    padding:8px 6px;font-size:12px;font-family:var(--mono);cursor:pointer;
+    background:transparent;color:var(--white);text-decoration:none;
+  }
+  #watchlist .wl-btn:hover{border-color:var(--neon);color:var(--neon);}
+  #watchlist .wl-btn.rm:hover{border-color:var(--red);color:var(--red);}
+  #watchlist .wl-btn.cp.copied{border-color:var(--neon-2,var(--neon));color:var(--neon-2,var(--neon));}
+
+  #watchlist .wl-empty{
+    border:1px dashed var(--border-dim);border-radius:var(--radius);
+    padding:40px 24px;text-align:center;color:var(--grey);font-size:13.5px;line-height:1.7;
+  }
+
+  #watchlist .wl-howto{margin-top:32px;border-top:1px solid var(--border-dim);padding-top:20px;}
+  #watchlist .wl-howto-h{font-family:var(--mono);font-weight:800;font-size:14px;color:var(--white);margin:0 0 6px;}
+  #watchlist .wl-howto-lede{font-size:12.5px;color:var(--grey);line-height:1.7;margin:0 0 16px;max-width:640px;}
+  #watchlist .wl-howto-rows{display:flex;flex-direction:column;gap:8px;}
+  #watchlist .wl-howto-row{
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+    border:1px solid var(--border-dim);border-radius:10px;padding:9px 12px;background:var(--glass);
+  }
+  #watchlist .wl-howto-label{flex:1 1 170px;font-size:12.5px;color:var(--grey);}
+  #watchlist .wl-howto-code{
+    font-family:var(--mono);font-size:13px;color:var(--white);background:transparent;
+    border:1px solid var(--border-dim);border-radius:6px;padding:4px 8px;
+    flex:1 1 140px;min-width:0;overflow-x:auto;white-space:nowrap;
+  }
+  #watchlist .wl-opentg{
+    display:inline-block;margin-top:16px;font-family:var(--mono);font-size:12.5px;
+    color:var(--neon);text-decoration:none;border-bottom:1px solid transparent;
+  }
+  #watchlist .wl-opentg:hover{border-color:var(--neon);}
+
+  #watchlist .wl-conn-strip{display:flex;flex-wrap:wrap;gap:12px;margin:22px 0 8px;}
+  #watchlist .wl-conn-card{
+    flex:1 1 260px;border:1px solid var(--border-dim);border-radius:var(--radius);
+    background:var(--glass);padding:14px 16px;
+  }
+  #watchlist .wl-conn-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+  #watchlist .wl-conn-label{font-family:var(--mono);font-weight:800;font-size:13px;letter-spacing:.02em;}
+  #watchlist .wl-conn-label.line{color:#06C755;}
+  #watchlist .wl-conn-label.tg{color:#2AABEE;}
+  #watchlist .wl-conn-status{font-size:11.5px;color:var(--grey);margin-bottom:8px;}
+  #watchlist .wl-conn-status.ok{color:var(--neon-2,var(--neon));}
+  #watchlist .wl-conn-btn{
+    background:transparent;border:1px solid var(--border-dim);color:var(--white);
+    border-radius:8px;padding:8px 14px;font-family:var(--mono);font-size:12px;font-weight:700;
+    cursor:pointer;text-decoration:none;display:inline-block;
+  }
+  #watchlist .wl-conn-btn:hover{border-color:var(--neon);color:var(--neon);}
+  #watchlist .wl-conn-btn.line-btn{border-color:#06C755;color:#06C755;}
+  #watchlist .wl-conn-btn.line-btn:hover{background:#06C755;color:#08130a;}
+  #watchlist .wl-conn-forget{
+    font-size:11px;color:var(--grey);text-decoration:underline;cursor:pointer;
+    background:none;border:none;padding:0;font-family:var(--mono);
+  }
+  #watchlist .wl-conn-btnrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  #watchlist .wl-conn-editbtn{
+    font-size:11px;color:var(--grey);text-decoration:underline;cursor:pointer;
+    background:none;border:none;padding:0;font-family:var(--mono);
+  }
+  #watchlist .wl-conn-editbtn:hover, #watchlist .wl-conn-forget:hover{color:var(--neon);}
+  #watchlist .wl-conn-profile-panel{margin-top:12px;padding-top:12px;border-top:1px dashed var(--border-dim);display:flex;flex-direction:column;gap:8px;}
+  #watchlist .wl-conn-profile-panel.hidden{display:none;}
+  #watchlist .wl-conn-profile-uid{font-size:10.5px;color:var(--grey-dim);}
+  #watchlist .wl-conn-profile-uid b{color:var(--white);font-family:var(--mono);}
+  #watchlist .wl-conn-profile-input{
+    font-family:var(--mono);font-size:12px;border:1px solid var(--border-dim);border-radius:8px;
+    padding:8px 10px;background:rgba(255,255,255,.03);color:var(--white);outline:none;width:100%;
+  }
+  #watchlist .wl-conn-profile-input:focus{border-color:var(--neon);}
+  #watchlist .wl-conn-profile-row{display:flex;align-items:center;gap:10px;}
+  #watchlist .wl-conn-profile-save{
+    font-family:var(--mono);font-size:11px;font-weight:700;border:1px solid var(--neon);border-radius:8px;
+    padding:6px 14px;cursor:pointer;background:transparent;color:var(--neon);
+  }
+  #watchlist .wl-conn-profile-save:hover{background:rgba(204,255,0,.08);}
+  #watchlist .wl-conn-profile-status{font-size:10.5px;color:var(--grey-dim);}
+  #watchlist .wl-conn-profile-status.ok{color:var(--neon-2,var(--neon));}
+  #watchlist .wl-conn-profile-status.err{color:#ff6b6b;}
+  #watchlist .wl-line-status{font-size:11.5px;color:#8fe0a8;min-height:16px;}
+  #watchlist .wl-line-status.err{color:#ff6b6b;margin-bottom:8px;}
+  #watchlist .wl-line-spin{
+    display:inline-block;width:11px;height:11px;border:2px solid rgba(143,224,168,.3);
+    border-top-color:#8fe0a8;border-radius:50%;animation:wlLineSpin .8s linear infinite;
+    vertical-align:-2px;margin-right:6px;
+  }
+  @keyframes wlLineSpin{to{transform:rotate(360deg);}}
+
+  /* ---- portfolio analysis: sector composition + an aggregate risk read
+     across every held ticker, sitting above the per-stock cards (which
+     already carry their OWN individual flags via .wl-flag). This block is
+     the "zoomed out" view she asked for -- which group each holding
+     belongs to, and whether the list as a whole leans concentrated or
+     flagged, built entirely from data already loaded for the cards below
+     (flagsOf()/stocksSnapshot()), so it needs no new backend call. ----- */
+  #watchlist .wl-pa{
+    border:1px solid var(--border-dim);border-radius:var(--radius);
+    background:var(--glass);padding:18px 20px;margin:18px 0 22px;
+  }
+  #watchlist .wl-pa-h{font-family:var(--mono);font-weight:800;font-size:14px;color:var(--white);margin:0 0 4px;}
+  #watchlist .wl-pa-lede{font-size:12px;color:var(--grey);line-height:1.6;margin:0 0 16px;max-width:680px;}
+  #watchlist .wl-pa-block{margin-bottom:16px;}
+  #watchlist .wl-pa-block:last-child{margin-bottom:0;}
+  #watchlist .wl-pa-label{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--grey-dim);margin:0 0 10px;}
+  /* the single composite bar -- one glance at how the list splits across
+     sectors, part-to-whole. A 2px surface-color gap separates segments
+     instead of a border (never draw a stroke to separate marks); the whole
+     bar gets rounded ends, individual segments stay square so the gaps read
+     as the separator, not the corners. */
+  #watchlist .wl-pa-stackbar{
+    display:flex;width:100%;height:20px;border-radius:10px;overflow:hidden;
+    background:rgba(255,255,255,.06);margin-bottom:14px;
+  }
+  #watchlist .wl-pa-stackbar span{height:100%;box-shadow:2px 0 0 0 var(--bg, #0d0f0c);}
+  #watchlist .wl-pa-stackbar span:last-child{box-shadow:none;}
+  #watchlist .wl-pa-sectors{display:flex;flex-direction:column;gap:9px;}
+  #watchlist .wl-pa-sector-row{display:flex;align-items:center;gap:10px;}
+  #watchlist .wl-pa-sector-dot{flex:0 0 auto;width:8px;height:8px;border-radius:50%;}
+  #watchlist .wl-pa-sector-name{flex:0 0 130px;font-size:12px;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #watchlist .wl-pa-sector-track{flex:1;height:7px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden;}
+  #watchlist .wl-pa-sector-bar{height:100%;border-radius:5px;}
+  #watchlist .wl-pa-sector-pct{flex:0 0 68px;text-align:right;font-family:var(--mono);font-size:11.5px;color:var(--grey);}
+
+  /* overall-risk meter -- a ratio against a fixed 0-100 limit, so a Meter
+     (same-ramp track) rather than a multi-axis gauge: the fill's OWN color
+     carries severity (green -> amber -> red, the site's existing risk
+     tokens) while the unfilled track stays a flat neutral -- color is
+     reinforced by the level word beside it, never carrying meaning alone. */
+  #watchlist .wl-pa-meter-row{display:flex;align-items:center;gap:12px;margin-bottom:2px;}
+  #watchlist .wl-pa-meter-track{flex:1;height:12px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;}
+  #watchlist .wl-pa-meter-fill{height:100%;border-radius:6px;transition:width .3s;}
+  #watchlist .wl-pa-meter-fill.low{background:var(--neon-2,var(--neon));}
+  #watchlist .wl-pa-meter-fill.medium{background:var(--amber);}
+  #watchlist .wl-pa-meter-fill.high{background:var(--red);}
+  #watchlist .wl-pa-meter-tag{flex:0 0 auto;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.04em;}
+  #watchlist .wl-pa-meter-tag.low{color:var(--neon-2,var(--neon));}
+  #watchlist .wl-pa-meter-tag.medium{color:var(--amber);}
+  #watchlist .wl-pa-meter-tag.high{color:var(--red);}
+  #watchlist .wl-pa-note{font-size:12px;line-height:1.6;border-left:2px solid var(--border-dim);padding-left:10px;color:var(--grey);}
+  #watchlist .wl-pa-note.bad{border-color:var(--red);color:var(--white);}
+  #watchlist .wl-pa-note.warn{border-color:var(--amber);color:var(--white);}
+  #watchlist .wl-pa-note.good{border-color:var(--neon-2,var(--neon));color:var(--white);}
+  #watchlist .wl-pa-risk-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:8px;}
+  #watchlist .wl-pa-risk-row:last-child{margin-bottom:0;}
+  #watchlist .wl-pa-risk-tag{flex:0 0 auto;font-family:var(--mono);font-size:11px;letter-spacing:.04em;width:108px;}
+  #watchlist .wl-pa-risk-tag.high{color:var(--red);}
+  #watchlist .wl-pa-risk-tag.medium{color:var(--amber);}
+  #watchlist .wl-pa-risk-tag.low{color:var(--neon-2,var(--neon));}
+  #watchlist .wl-pa-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  #watchlist .wl-pa-chip{
+    font-family:var(--mono);font-size:11.5px;padding:4px 10px;border-radius:20px;
+    border:1px solid var(--border-dim);background:transparent;color:var(--white);cursor:pointer;
+  }
+  #watchlist .wl-pa-chip:hover{border-color:var(--neon);color:var(--neon);}
+  #watchlist .wl-pa-chip.high{border-color:color-mix(in srgb, var(--red) 45%, transparent);}
+  #watchlist .wl-pa-chip.medium{border-color:color-mix(in srgb, var(--amber) 45%, transparent);}
+  #watchlist .wl-pa-chip.low{border-color:color-mix(in srgb, var(--neon-2,var(--neon)) 40%, transparent);}
+  #watchlist .wl-pa-none{font-size:12px;color:var(--grey-dim);}
+
+  /* Same portfolio-analysis look, reused verbatim (see window.__SPZ_LINE.
+     portfolioAnalysisHTML) inside the admin-only Connected Users detail
+     modal (#cuDetailModal, defined with that page's own module further
+     down) -- a duplicate selector rather than editing the rules above, so
+     this page's own module stays self-contained and additive. */
+  #cuDetailModal .wl-pa{
+    border:1px solid var(--border-dim);border-radius:var(--radius);
+    background:var(--glass);padding:18px 20px;margin:18px 0 22px;
+  }
+  #cuDetailModal .wl-pa-h{font-family:var(--mono);font-weight:800;font-size:14px;color:var(--white);margin:0 0 4px;}
+  #cuDetailModal .wl-pa-lede{font-size:12px;color:var(--grey);line-height:1.6;margin:0 0 16px;max-width:680px;}
+  #cuDetailModal .wl-pa-block{margin-bottom:16px;}
+  #cuDetailModal .wl-pa-block:last-child{margin-bottom:0;}
+  #cuDetailModal .wl-pa-label{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--grey-dim);margin:0 0 10px;}
+  #cuDetailModal .wl-pa-stackbar{
+    display:flex;width:100%;height:20px;border-radius:10px;overflow:hidden;
+    background:rgba(255,255,255,.06);margin-bottom:14px;
+  }
+  #cuDetailModal .wl-pa-stackbar span{height:100%;box-shadow:2px 0 0 0 var(--bg, #0d0f0c);}
+  #cuDetailModal .wl-pa-stackbar span:last-child{box-shadow:none;}
+  #cuDetailModal .wl-pa-sectors{display:flex;flex-direction:column;gap:9px;}
+  #cuDetailModal .wl-pa-sector-row{display:flex;align-items:center;gap:10px;}
+  #cuDetailModal .wl-pa-sector-dot{flex:0 0 auto;width:8px;height:8px;border-radius:50%;}
+  #cuDetailModal .wl-pa-sector-name{flex:0 0 130px;font-size:12px;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #cuDetailModal .wl-pa-sector-track{flex:1;height:7px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden;}
+  #cuDetailModal .wl-pa-sector-bar{height:100%;border-radius:5px;}
+  #cuDetailModal .wl-pa-sector-pct{flex:0 0 68px;text-align:right;font-family:var(--mono);font-size:11.5px;color:var(--grey);}
+  #cuDetailModal .wl-pa-meter-row{display:flex;align-items:center;gap:12px;margin-bottom:2px;}
+  #cuDetailModal .wl-pa-meter-track{flex:1;height:12px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;}
+  #cuDetailModal .wl-pa-meter-fill{height:100%;border-radius:6px;transition:width .3s;}
+  #cuDetailModal .wl-pa-meter-fill.low{background:var(--neon-2,var(--neon));}
+  #cuDetailModal .wl-pa-meter-fill.medium{background:var(--amber);}
+  #cuDetailModal .wl-pa-meter-fill.high{background:var(--red);}
+  #cuDetailModal .wl-pa-meter-tag{flex:0 0 auto;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.04em;}
+  #cuDetailModal .wl-pa-meter-tag.low{color:var(--neon-2,var(--neon));}
+  #cuDetailModal .wl-pa-meter-tag.medium{color:var(--amber);}
+  #cuDetailModal .wl-pa-meter-tag.high{color:var(--red);}
+  #cuDetailModal .wl-pa-note{font-size:12px;line-height:1.6;border-left:2px solid var(--border-dim);padding-left:10px;color:var(--grey);}
+  #cuDetailModal .wl-pa-note.bad{border-color:var(--red);color:var(--white);}
+  #cuDetailModal .wl-pa-note.warn{border-color:var(--amber);color:var(--white);}
+  #cuDetailModal .wl-pa-note.good{border-color:var(--neon-2,var(--neon));color:var(--white);}
+  #cuDetailModal .wl-pa-risk-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:8px;}
+  #cuDetailModal .wl-pa-risk-row:last-child{margin-bottom:0;}
+  #cuDetailModal .wl-pa-risk-tag{flex:0 0 auto;font-family:var(--mono);font-size:11px;letter-spacing:.04em;width:108px;}
+  #cuDetailModal .wl-pa-risk-tag.high{color:var(--red);}
+  #cuDetailModal .wl-pa-risk-tag.medium{color:var(--amber);}
+  #cuDetailModal .wl-pa-risk-tag.low{color:var(--neon-2,var(--neon));}
+  #cuDetailModal .wl-pa-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  #cuDetailModal .wl-pa-chip{
+    font-family:var(--mono);font-size:11.5px;padding:4px 10px;border-radius:20px;
+    border:1px solid var(--border-dim);background:transparent;color:var(--white);cursor:default;
+  }
+  #cuDetailModal .wl-pa-chip.high{border-color:color-mix(in srgb, var(--red) 45%, transparent);}
+  #cuDetailModal .wl-pa-chip.medium{border-color:color-mix(in srgb, var(--amber) 45%, transparent);}
+  #cuDetailModal .wl-pa-chip.low{border-color:color-mix(in srgb, var(--neon-2,var(--neon)) 40%, transparent);}
+  #cuDetailModal .wl-pa-none{font-size:12px;color:var(--grey-dim);}
+
+  /* big, one-card-per-sector graphs -- each ticker's today's move as a
+     diverging bar (zero-centered, green right / red left), so a sector
+     with several holdings reads as its own small chart instead of one
+     line in the sector-allocation list above. Bigger type + more padding
+     than the rest of the page on purpose, per the "make it feel bigger,
+     more graphics" request this section exists to answer. */
+  #watchlist .wl-secg-wrap{margin-top:18px;}
+  #watchlist .wl-secg{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;}
+  #watchlist .wl-secg-card{
+    border:1px solid var(--border-dim);border-radius:14px;background:rgba(255,255,255,.02);
+    padding:16px 18px;
+  }
+  #watchlist .wl-secg-head{display:flex;align-items:center;gap:9px;margin-bottom:14px;}
+  #watchlist .wl-secg-head i{flex:0 0 auto;width:11px;height:11px;border-radius:50%;}
+  #watchlist .wl-secg-head b{font-family:var(--mono);font-size:15px;color:var(--white);flex:1;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #watchlist .wl-secg-head span{font-size:11px;color:var(--grey);white-space:nowrap;}
+  #watchlist .wl-secg-rows{display:flex;flex-direction:column;gap:10px;}
+  #watchlist .wl-secg-row{display:flex;align-items:center;gap:10px;}
+  #watchlist .wl-secg-tk{
+    flex:0 0 76px;background:transparent;border:none;color:var(--white);cursor:pointer;
+    font-family:var(--mono);font-weight:800;font-size:14px;text-align:left;padding:0;
+  }
+  #watchlist .wl-secg-tk:hover{color:var(--neon);}
+  #watchlist .wl-secg-track{flex:1;position:relative;height:10px;border-radius:5px;background:rgba(255,255,255,.06);overflow:hidden;}
+  #watchlist .wl-secg-mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,.18);}
+  #watchlist .wl-secg-fill{position:absolute;top:0;bottom:0;border-radius:5px;}
+  #watchlist .wl-secg-fill.up{background:var(--neon-2,var(--neon));}
+  #watchlist .wl-secg-fill.down{background:var(--red);}
+  #watchlist .wl-secg-val{flex:0 0 62px;text-align:right;font-family:var(--mono);font-weight:700;font-size:13px;}
+  #watchlist .wl-secg-val.up{color:var(--neon-2,var(--neon));}
+  #watchlist .wl-secg-val.down{color:var(--red);}
+  #watchlist .wl-secg-val.fl{color:var(--grey-dim);}
+  @media(max-width:520px){
+    #watchlist .wl-secg-tk{flex-basis:60px;font-size:13px;}
+    #watchlist .wl-secg-val{flex-basis:52px;font-size:12px;}
+  }
+
+  /* Market Shock Simulator applied to the LINE-linked user's own holdings --
+     reuses the .wl-pa card shell and the same stacked-bar component as the
+     sector chart above, for one consistent visual language on this page. */
+  #watchlist .wl-shock{
+    margin-top:18px;position:relative;overflow:hidden;
+    border-color:rgba(143,211,255,.18);
+    background:radial-gradient(120% 140% at 100% -10%, rgba(143,211,255,.08), transparent 55%), var(--glass);
+  }
+  #watchlist .wl-shock-stars{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+  #watchlist .wl-shock-stars i{position:absolute;border-radius:50%;background:#fff;animation:wlStarTwinkle 3.4s ease-in-out infinite;}
+  #watchlist .wl-shock > *{position:relative;z-index:1;}
+
+  /* collapsed-by-default header -- this card sits right next to Portfolio
+     analysis and looks similar (same .wl-pa shell), so a hypothetical
+     "what if the market crashed" scenario could be mistaken for the real,
+     current analysis above it. Two independent guards: (1) closed by
+     default, an explicit tap required to see any scenario numbers at all,
+     and (2) a permanent amber "hypothetical" badge that shows whether the
+     card is open or shut, so even a glance at the collapsed header can't
+     be read as live portfolio data. */
+  #watchlist .wl-shock-toggle{
+    width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:transparent;border:none;padding:0;margin:0 0 4px;cursor:pointer;text-align:left;
+  }
+  #watchlist .wl-shock-toggle-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  #watchlist .wl-shock-badge{
+    flex:0 0 auto;font-family:var(--mono);font-size:10px;font-weight:800;letter-spacing:.04em;
+    text-transform:uppercase;color:var(--amber);background:rgba(255,201,77,.12);
+    border:1px solid rgba(255,201,77,.35);border-radius:20px;padding:3px 9px;
+  }
+  #watchlist .wl-shock-toggle-hint{font-size:11px;color:var(--grey);flex:0 0 auto;}
+  #watchlist .wl-shock-toggle-chev{flex:0 0 auto;color:#8fd3ff;transition:transform .18s;}
+  #watchlist .wl-shock-toggle.open .wl-shock-toggle-chev{transform:rotate(180deg);}
+  #watchlist .wl-shock-collapse{display:none;margin-top:14px;}
+  #watchlist .wl-shock-collapse.open{display:block;}
+
+  /* custom scenario picker -- a styled trigger + dropdown list standing in
+     for the old native <select>, which stays in the DOM (visually hidden)
+     purely to keep firing the same 'change' event the render wiring
+     already listens for, so no JS wiring elsewhere needed to change. */
+  #watchlist .wl-shock-select-native{
+    position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+    clip:rect(0,0,0,0);white-space:nowrap;border:0;
+  }
+  #watchlist .wl-shock-picker{position:relative;z-index:5;margin-bottom:14px;}
+  #watchlist .wl-shock-trigger{
+    width:100%;display:flex;align-items:center;gap:10px;text-align:left;
+    background:rgba(143,211,255,.06);border:1.5px solid rgba(143,211,255,.3);
+    border-radius:10px;padding:12px 14px;color:var(--white);font-family:var(--mono);
+    font-size:13px;cursor:pointer;transition:border-color .15s,background .15s;
+  }
+  #watchlist .wl-shock-trigger:hover,#watchlist .wl-shock-trigger.open{border-color:#8fd3ff;background:rgba(143,211,255,.1);}
+  #watchlist .wl-shock-trigger svg{width:16px;height:16px;flex:0 0 auto;color:#8fd3ff;}
+  #watchlist .wl-shock-trigger span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #watchlist .wl-shock-chev{transition:transform .15s;}
+  #watchlist .wl-shock-trigger.open .wl-shock-chev{transform:rotate(180deg);}
+  #watchlist .wl-shock-dropdown{
+    display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:20;
+    max-height:280px;overflow:auto;background:#0b0d14;border:1px solid rgba(143,211,255,.25);
+    border-radius:12px;padding:6px;box-shadow:0 20px 44px -18px rgba(0,0,0,.6);
+  }
+  #watchlist .wl-shock-dropdown.open{display:block;}
+  #watchlist .wl-shock-opt{
+    width:100%;text-align:left;background:transparent;border:none;border-radius:8px;
+    padding:9px 11px;color:var(--grey);font-family:var(--mono);font-size:12.5px;
+    cursor:pointer;display:flex;align-items:center;gap:8px;
+  }
+  #watchlist .wl-shock-opt:hover{background:rgba(143,211,255,.08);color:var(--white);}
+  #watchlist .wl-shock-opt.active{background:rgba(143,211,255,.14);color:#8fd3ff;font-weight:700;}
+  #watchlist .wl-shock-opt i{width:5px;height:5px;border-radius:50%;background:currentColor;flex:0 0 auto;opacity:.7;}
+  #watchlist .wl-shock-desc{font-size:12px;color:var(--grey);line-height:1.6;margin:0 0 12px;}
+  #watchlist .wl-shock-stats{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+  #watchlist .wl-shock-stat{
+    flex:1 1 90px;display:flex;flex-direction:column;align-items:center;gap:4px;
+    background:rgba(255,255,255,.03);border:1px solid var(--border-dim);border-radius:10px;padding:10px 8px;
+  }
+  #watchlist .wl-shock-stat svg{width:16px;height:16px;}
+  #watchlist .wl-shock-stat b{font-family:var(--mono);font-size:16px;}
+  #watchlist .wl-shock-stat span{font-size:10px;color:var(--grey);text-align:center;line-height:1.3;}
+  #watchlist .wl-shock-stat.rises svg,#watchlist .wl-shock-stat.rises b{color:var(--neon-2,var(--neon));}
+  #watchlist .wl-shock-stat.falls svg,#watchlist .wl-shock-stat.falls b{color:var(--red);}
+  #watchlist .wl-shock-stat.mixed svg,#watchlist .wl-shock-stat.mixed b{color:var(--grey);}
+  #watchlist .wl-shock-bar{margin-bottom:14px;}
+  #watchlist .wl-shock-rotate{margin-top:14px;padding-top:12px;border-top:1px dashed var(--border-dim);}
+  #watchlist .wl-shock-rotate-row{font-size:12px;color:var(--grey);line-height:1.6;margin-top:6px;}
+  #watchlist .wl-shock-rotate-row b{color:var(--white);}
+
+  /* Round K11: the same simulator content, reused inside the floating
+     #spzShockPopup instead of the inline #watchlist card -- following the
+     same "duplicate the container prefix" pattern #cuDetailModal already
+     uses to reuse this exact .wl-pa-* family in its own detail modal,
+     rather than loosening these selectors sitewide. Only the pieces
+     shockPickerAndResultHTML/shockRenderResult actually render into the
+     popup are duplicated here (no toggle/collapse/badge -- the popup has
+     its own open/close chrome instead, styled separately below). */
+  #spzShockPopup .wl-pa-lede{font-size:12.5px;color:var(--grey);line-height:1.6;margin:0 0 14px;}
+  #spzShockPopup .wl-pa-label{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--grey-dim);margin:0 0 10px;}
+  #spzShockPopup .wl-pa-stackbar{display:flex;width:100%;height:16px;border-radius:8px;overflow:hidden;background:rgba(255,255,255,.06);}
+  #spzShockPopup .wl-pa-stackbar span{height:100%;box-shadow:2px 0 0 0 #0b0d14;}
+  #spzShockPopup .wl-pa-stackbar span:last-child{box-shadow:none;}
+  #spzShockPopup .wl-pa-risk-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:8px;}
+  #spzShockPopup .wl-pa-risk-row:last-child{margin-bottom:0;}
+  #spzShockPopup .wl-pa-risk-tag{flex:0 0 auto;font-family:var(--mono);font-size:11px;letter-spacing:.04em;width:108px;}
+  #spzShockPopup .wl-pa-risk-tag.high{color:var(--red);}
+  #spzShockPopup .wl-pa-risk-tag.medium{color:var(--amber);}
+  #spzShockPopup .wl-pa-risk-tag.low{color:var(--neon-2,var(--neon));}
+  #spzShockPopup .wl-pa-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  #spzShockPopup .wl-pa-chip{font-family:var(--mono);font-size:11.5px;padding:4px 10px;border-radius:20px;border:1px solid var(--border-dim);background:transparent;color:var(--white);cursor:pointer;}
+  #spzShockPopup .wl-pa-chip.high{border-color:color-mix(in srgb, var(--red) 45%, transparent);}
+  #spzShockPopup .wl-pa-chip.medium{border-color:color-mix(in srgb, var(--amber) 45%, transparent);}
+  #spzShockPopup .wl-pa-chip.low{border-color:color-mix(in srgb, var(--neon-2,var(--neon)) 40%, transparent);}
+
+  #spzShockPopup .wl-shock-select-native{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+  #spzShockPopup .wl-shock-picker{position:relative;z-index:5;margin-bottom:14px;}
+  #spzShockPopup .wl-shock-trigger{
+    width:100%;display:flex;align-items:center;gap:10px;text-align:left;
+    background:rgba(143,211,255,.06);border:1.5px solid rgba(143,211,255,.3);
+    border-radius:10px;padding:12px 14px;color:var(--white);font-family:var(--mono);
+    font-size:13px;cursor:pointer;transition:border-color .15s,background .15s;
+  }
+  #spzShockPopup .wl-shock-trigger:hover,#spzShockPopup .wl-shock-trigger.open{border-color:#8fd3ff;background:rgba(143,211,255,.1);}
+  #spzShockPopup .wl-shock-trigger svg{width:16px;height:16px;flex:0 0 auto;color:#8fd3ff;}
+  #spzShockPopup .wl-shock-trigger span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #spzShockPopup .wl-shock-chev{transition:transform .15s;}
+  #spzShockPopup .wl-shock-trigger.open .wl-shock-chev{transform:rotate(180deg);}
+  #spzShockPopup .wl-shock-dropdown{
+    display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:20;
+    max-height:220px;overflow:auto;background:#0b0d14;border:1px solid rgba(143,211,255,.25);
+    border-radius:12px;padding:6px;box-shadow:0 20px 44px -18px rgba(0,0,0,.6);
+  }
+  #spzShockPopup .wl-shock-dropdown.open{display:block;}
+  #spzShockPopup .wl-shock-opt{
+    width:100%;text-align:left;background:transparent;border:none;border-radius:8px;
+    padding:9px 11px;color:var(--grey);font-family:var(--mono);font-size:12.5px;
+    cursor:pointer;display:flex;align-items:center;gap:8px;
+  }
+  #spzShockPopup .wl-shock-opt:hover{background:rgba(143,211,255,.08);color:var(--white);}
+  #spzShockPopup .wl-shock-opt.active{background:rgba(143,211,255,.14);color:#8fd3ff;font-weight:700;}
+  #spzShockPopup .wl-shock-opt i{width:5px;height:5px;border-radius:50%;background:currentColor;flex:0 0 auto;opacity:.7;}
+  #spzShockPopup .wl-shock-desc{font-size:12px;color:var(--grey);line-height:1.6;margin:0 0 12px;}
+  #spzShockPopup .wl-shock-stats{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+  #spzShockPopup .wl-shock-stat{
+    flex:1 1 80px;display:flex;flex-direction:column;align-items:center;gap:4px;
+    background:rgba(255,255,255,.03);border:1px solid var(--border-dim);border-radius:10px;padding:10px 8px;
+  }
+  #spzShockPopup .wl-shock-stat svg{width:16px;height:16px;}
+  #spzShockPopup .wl-shock-stat b{font-family:var(--mono);font-size:15px;}
+  #spzShockPopup .wl-shock-stat span{font-size:9.5px;color:var(--grey);text-align:center;line-height:1.3;}
+  #spzShockPopup .wl-shock-stat.rises svg,#spzShockPopup .wl-shock-stat.rises b{color:var(--neon-2,var(--neon));}
+  #spzShockPopup .wl-shock-stat.falls svg,#spzShockPopup .wl-shock-stat.falls b{color:var(--red);}
+  #spzShockPopup .wl-shock-stat.mixed svg,#spzShockPopup .wl-shock-stat.mixed b{color:var(--grey);}
+  #spzShockPopup .wl-shock-bar{margin-bottom:14px;}
+  #spzShockPopup .wl-shock-rotate{margin-top:14px;padding-top:12px;border-top:1px dashed var(--border-dim);}
+  #spzShockPopup .wl-shock-rotate-row{font-size:12px;color:var(--grey);line-height:1.6;margin-top:6px;}
+  #spzShockPopup .wl-shock-rotate-row b{color:var(--white);}
+
+  /* ---- Round N: admin announcement overlay inside this popup. Per her
+     explicit ask, opening this popup checks for an active announcement
+     first: the existing tab content blurs/dims behind it, and this card
+     slides in on top with a shrinking countdown bar (~30s) alongside a
+     manual close -- whichever comes first dismisses it for the rest of the
+     visitor's session (see window.__SPZ_ANNOUNCE.dismiss). ---- */
+  #spzShockPopup .spz-shock-pop-inner{transition:filter .25s;}
+  #spzShockPopup.announcing .spz-shock-pop-inner{filter:blur(5px);pointer-events:none;user-select:none;}
+  #spzShockPopup .spz-shock-announce-ov{
+    position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;
+    padding:18px;background:rgba(6,6,10,.42);border-radius:inherit;
+    opacity:0;pointer-events:none;transition:opacity .25s;
+  }
+  #spzShockPopup.announcing .spz-shock-announce-ov{opacity:1;pointer-events:auto;}
+  #spzShockPopup .spz-shock-announce-card{
+    width:100%;max-width:300px;background:linear-gradient(165deg,rgba(28,10,22,.97),rgba(9,9,9,.97));
+    border:1px solid rgba(255,59,145,.4);border-radius:16px;padding:16px 16px 14px;
+    box-shadow:0 18px 46px rgba(0,0,0,.5);
+    transform:translateY(10px) scale(.96);opacity:0;transition:transform .3s cubic-bezier(.2,.9,.25,1),opacity .3s;
+  }
+  #spzShockPopup.announcing .spz-shock-announce-card{transform:none;opacity:1;}
+  #spzShockPopup .spz-shock-announce-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  #spzShockPopup .spz-shock-announce-ico{font-size:14px;flex:0 0 auto;}
+  #spzShockPopup .spz-shock-announce-lbl{flex:1 1 auto;font-family:var(--mono);font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:#ff87c0;}
+  #spzShockPopup .spz-shock-announce-close{flex:0 0 auto;background:none;border:none;color:var(--grey);font-size:18px;line-height:1;cursor:pointer;}
+  #spzShockPopup .spz-shock-announce-close:hover{color:var(--white);}
+  #spzShockPopup .spz-shock-announce-img{width:100%;border-radius:10px;margin-bottom:10px;display:block;}
+  #spzShockPopup .spz-shock-announce-txt{font-family:var(--sans);font-size:13px;line-height:1.6;color:var(--white);white-space:pre-wrap;margin-bottom:12px;}
+  #spzShockPopup .spz-shock-announce-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.1);overflow:hidden;}
+  #spzShockPopup .spz-shock-announce-bar i{display:block;height:100%;width:100%;background:#ff4fa3;transform-origin:left;transition:transform linear;}
+
+  /* ---- the floating trigger itself. Sits directly above the site's
+     existing bottom-right button row (back-to-top / admin login /
+     system-status, all pinned at bottom:18px) rather than in it, per her
+     explicit ask not to collide with the login button in that corner.
+     The pulse ring + slow icon wiggle are the "eye-catching" ask -- a
+     static icon in that corner would just blend into the other three. */
+  #spzShockFab{
+    position:fixed;right:18px;bottom:78px;z-index:61;
+    width:46px;height:46px;border-radius:50%;cursor:pointer;padding:0;
+    background:rgba(8,8,8,.9);border:1.5px solid rgba(255,201,77,.55);
+    color:var(--amber);display:none;align-items:center;justify-content:center;
+    backdrop-filter:blur(8px);transition:box-shadow .2s,transform .15s;
+    opacity:0;transform:translateY(8px) scale(.9);pointer-events:none;
+  }
+  #spzShockFab.show{display:flex;opacity:1;transform:translateY(0) scale(1);pointer-events:auto;transition:opacity .3s,transform .3s;}
+  #spzShockFab svg{width:20px;height:20px;position:relative;z-index:1;animation:spzShockWiggle 2.6s ease-in-out infinite;}
+  #spzShockFab:hover{box-shadow:0 0 20px rgba(255,201,77,.35);}
+  #spzShockFab:active{transform:scale(.92);}
+  #spzShockFab.on{color:#0a0a0a;background:var(--amber);border-color:var(--amber);}
+  #spzShockFab.on svg{animation:none;}
+  .spz-shock-fab-ring{
+    position:absolute;inset:-4px;border-radius:50%;border:1.5px solid rgba(255,201,77,.6);
+    animation:spzShockPulse 2.2s ease-out infinite;pointer-events:none;
+  }
+  #spzShockFab.on .spz-shock-fab-ring{display:none;}
+  @keyframes spzShockPulse{0%{transform:scale(1);opacity:.8;}100%{transform:scale(1.5);opacity:0;}}
+  @keyframes spzShockWiggle{0%,80%,100%{transform:rotate(0deg);}85%{transform:rotate(-12deg);}92%{transform:rotate(10deg);}97%{transform:rotate(0deg);}}
+  body.gm-live #spzShockFab{bottom:164px;}
+  html[data-theme="void"] #spzShockFab{background:#070707;}
+  html[data-theme="light"] #spzShockFab{background:var(--panel);}
+
+  #spzShockPopup{
+    position:fixed;right:18px;bottom:134px;z-index:61;width:min(370px,calc(100vw - 36px));
+    max-height:min(74vh,620px);overflow-y:auto;
+    background:radial-gradient(120% 100% at 100% 0%, rgba(255,201,77,.08), transparent 55%), #0b0d14;
+    border:1px solid rgba(255,201,77,.3);border-radius:18px;padding:18px 18px 20px;
+    box-shadow:0 24px 60px -18px rgba(0,0,0,.7);
+    display:none;opacity:0;transform:translateY(14px) scale(.97);transform-origin:bottom right;
+    transition:opacity .22s ease,transform .22s ease;
+  }
+  #spzShockPopup.show{display:block;}
+  #spzShockPopup.show.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;}
+  #spzShockPopup:not(.open){pointer-events:none;}
+  body.gm-live #spzShockPopup{bottom:220px;}
+  .spz-shock-pop-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .spz-shock-pop-icon{
+    flex:0 0 auto;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,201,77,.14);color:var(--amber);
+  }
+  .spz-shock-pop-icon svg{width:16px;height:16px;}
+  .spz-shock-pop-title{flex:1;font-family:var(--mono);font-weight:800;font-size:13.5px;line-height:1.35;color:#fff;}
+  .spz-shock-pop-close{
+    flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.06);
+    border:1px solid var(--border-dim);color:var(--grey);font-size:17px;line-height:1;cursor:pointer;
+  }
+  .spz-shock-pop-close:hover{color:#fff;border-color:rgba(255,255,255,.3);}
+  .spz-shock-pop-disc{
+    font-size:10.8px;line-height:1.55;color:var(--amber);background:rgba(255,201,77,.08);
+    border:1px solid rgba(255,201,77,.3);border-radius:10px;padding:9px 11px;margin-bottom:14px;
+  }
+
+  /* Round L: mode switcher -- two tabs sitting right under the head/before
+     the disclaimer, styled like the rest of this popup's amber accent. */
+  .spz-shock-modetabs{display:flex;gap:6px;margin-bottom:12px;}
+  .spz-shock-modetab{
+    flex:1 1 0;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.3px;
+    padding:8px 6px;border-radius:9px;border:1px solid var(--border-dim);background:rgba(255,255,255,.03);
+    color:var(--grey);cursor:pointer;text-align:center;transition:border-color .15s,background .15s,color .15s;
+  }
+  .spz-shock-modetab:hover{color:var(--white);}
+  .spz-shock-modetab.active{
+    color:var(--amber);border-color:rgba(255,201,77,.55);background:rgba(255,201,77,.1);
+  }
+
+  /* "My Portfolio" card: name row + condensed holding rows + a bottom
+     button to jump to the real, full Watchlist page. */
+  .spz-shock-pf-name{
+    display:flex;align-items:center;gap:9px;margin-bottom:12px;padding-bottom:12px;
+    border-bottom:1px dashed var(--border-dim);
+  }
+  .spz-shock-pf-avatar{
+    width:34px;height:34px;border-radius:50%;flex:0 0 auto;object-fit:cover;background:rgba(255,255,255,.06);
+  }
+  .spz-shock-pf-avatar-fallback{
+    width:34px;height:34px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.06);font-size:13px;font-weight:800;color:var(--grey);
+  }
+  .spz-shock-pf-nametxt{font-size:13.5px;font-weight:800;color:#fff;}
+  .spz-shock-pf-namesub{font-family:var(--mono);font-size:10px;color:var(--grey-dim);margin-top:1px;}
+  .spz-shock-pf-list{display:flex;flex-direction:column;gap:7px;margin-bottom:14px;}
+  .spz-shock-pf-row{
+    display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;
+    background:rgba(255,255,255,.03);border:1px solid var(--border-dim);cursor:pointer;
+  }
+  .spz-shock-pf-row:hover{border-color:rgba(255,201,77,.4);}
+  .spz-shock-pf-tk{font-family:var(--mono);font-weight:800;font-size:12px;color:#fff;flex:0 0 auto;}
+  .spz-shock-pf-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;color:var(--grey-dim);}
+  .spz-shock-pf-px{font-family:var(--mono);font-size:11.5px;color:var(--grey);flex:0 0 auto;}
+  .spz-shock-pf-chg{font-family:var(--mono);font-size:11px;font-weight:700;flex:0 0 auto;min-width:52px;text-align:right;}
+  .spz-shock-pf-chg.up{color:var(--neon-2,var(--neon));}
+  .spz-shock-pf-chg.dn{color:var(--red);}
+  .spz-shock-pf-chg.fl{color:var(--grey-dim);}
+  .spz-shock-pf-viewfull{
+    display:block;width:100%;text-align:center;font-family:var(--mono);font-size:12px;font-weight:700;
+    letter-spacing:.3px;padding:11px 12px;border-radius:11px;cursor:pointer;
+    background:rgba(255,201,77,.12);border:1px solid rgba(255,201,77,.45);color:var(--amber);
+  }
+  .spz-shock-pf-viewfull:hover{background:rgba(255,201,77,.2);}
+
+  @media (prefers-reduced-motion: reduce){
+    #spzShockFab svg,.spz-shock-fab-ring{animation:none;}
+  }
+  @media(max-width:520px){
+    #spzShockFab{right:14px;bottom:72px;}
+    #spzShockPopup{right:8px;left:8px;width:auto;bottom:126px;}
+  }
+
+  /* ---- big centered popup for the LINE QR, instead of a small inline box:
+     easier to scan, and gives the connect flow its own clear moment
+     instead of competing with the rest of the page. ------------------- */
+  #wlLineModal{
+    position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;
+    background:rgba(4,6,10,.74);backdrop-filter:blur(4px);padding:20px;
+  }
+  #wlLineModal[hidden]{display:none !important;}
+  #wlLineModal *{box-sizing:border-box;}
+  .wllm-card{
+    width:100%;max-width:400px;background:var(--panel,#12151c);border:1px solid var(--border-dim);
+    border-radius:18px;padding:28px 26px;font-family:var(--mono);color:var(--white);
+    text-align:center;position:relative;
+  }
+  .wllm-close{position:absolute;top:12px;right:14px;background:none;border:none;color:var(--grey);font-size:22px;cursor:pointer;line-height:1;}
+  .wllm-title{font-size:17px;font-weight:800;margin-bottom:6px;color:#06C755;}
+  .wllm-avatar{width:64px;height:64px;border-radius:50%;object-fit:cover;margin:0 auto 12px;display:block;border:2px solid #06C755;}
+  .wl-conn-avatar{width:20px;height:20px;border-radius:50%;object-fit:cover;vertical-align:-5px;margin-right:6px;border:1px solid #06C755;}
+  .wllm-sub{font-size:12.5px;color:var(--grey);margin-bottom:20px;line-height:1.6;}
+  .wllm-qr-wrap{
+    width:100%;max-width:280px;aspect-ratio:1/1;margin:0 auto 18px;border-radius:16px;overflow:hidden;
+    background:#fff;display:flex;align-items:center;justify-content:center;
+  }
+  .wllm-qr-wrap img{width:100%;height:100%;display:block;}
+  .wllm-status{font-size:13px;color:#8fe0a8;min-height:18px;}
+  .wllm-status.err{color:#ff6b6b;}
+  .wllm-status.ok{color:#8fe0a8;font-weight:700;}
+  .wllm-spin{
+    display:inline-block;width:13px;height:13px;border:2px solid rgba(143,224,168,.3);
+    border-top-color:#8fe0a8;border-radius:50%;animation:wlLineSpin .8s linear infinite;
+    vertical-align:-2px;margin-right:7px;
+  }
+  .wllm-retry{
+    margin-top:14px;background:transparent;border:1px solid #06C755;color:#06C755;
+    border-radius:9px;padding:9px 16px;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;
+  }
+  .wllm-retry:hover{background:#06C755;color:#08130a;}
+  .wllm-proc{width:74px;height:74px;margin:8px auto 18px;position:relative;}
+  .wllm-proc-ring{
+    position:absolute;inset:0;border-radius:50%;
+    border:3px solid rgba(6,199,85,.16);border-top-color:#06C755;
+    animation:wlLineSpin 1.1s linear infinite;
+  }
+  .wllm-proc-check{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#06C755;
+  }
+  .wllm-proc-check svg{width:28px;height:28px;}
+  .wllm-proc-check path{
+    stroke-dasharray:24;stroke-dashoffset:24;
+    animation:wlLineCheckIn .5s ease .12s forwards;
+  }
+  @keyframes wlLineCheckIn{ to{ stroke-dashoffset:0; } }
