@@ -682,6 +682,17 @@ async function handleAdminBroadcast(request, env) {
   try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const text = String(body.text || "").trim().slice(0, 1000);
   if (!text) return json({ error: "bad_request" }, env, 400);
+  // Optional: the post's own saved imageUrl, forwarded to LINE as-is (never
+  // fetched or re-hosted here) so friends see the chart/screenshot, not just
+  // a bare link. LINE requires https and fetches it directly from wherever
+  // it's already stored (e.g. Firebase Storage), so anything else is dropped
+  // rather than sent broken.
+  const imageUrl = String(body.imageUrl || "").trim();
+  const messages = [];
+  if (imageUrl && /^https:\/\//i.test(imageUrl)) {
+    messages.push({ type: "image", originalContentUrl: imageUrl, previewImageUrl: imageUrl });
+  }
+  messages.push({ type: "text", text });
 
   let resp;
   try {
@@ -691,7 +702,7 @@ async function handleAdminBroadcast(request, env) {
         "Content-Type": "application/json",
         Authorization: "Bearer " + env.LINE_MESSAGING_CHANNEL_ACCESS_TOKEN,
       },
-      body: JSON.stringify({ messages: [{ type: "text", text }] }),
+      body: JSON.stringify({ messages }),
     });
   } catch (e) {
     return json({ error: "network" }, env, 502);
