@@ -297,17 +297,57 @@
     background:linear-gradient(90deg, rgba(255,59,145,.16), rgba(130,60,255,.12));
     border-bottom:1px solid rgba(255,59,145,.3);
     font-family:var(--mono);font-size:11.5px;color:var(--white);
-    position:relative;z-index:1;
+    position:relative;z-index:1;cursor:pointer;
   }
   .spz-announce-bar[hidden]{display:none;}
   .spz-announce-ico{flex:0 0 auto;font-size:13px;line-height:1;}
   .spz-announce-txt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .spz-announce-count{flex:0 0 auto;font-family:var(--mono);font-size:10px;color:#ff87c0;background:rgba(255,255,255,.1);padding:2px 7px;border-radius:8px;}
+  .spz-announce-count[hidden]{display:none;}
   .spz-announce-close{flex:0 0 auto;background:none;border:none;color:var(--grey);font-size:16px;line-height:1;cursor:pointer;padding:0 2px;}
   .spz-announce-close:hover{color:var(--white);}
   html[data-theme="light"] .spz-announce-bar{background:linear-gradient(90deg, rgba(255,59,145,.09), rgba(130,60,255,.07));color:#12141c;}
+  html[data-theme="light"] .spz-announce-count{background:rgba(0,0,0,.06);}
   @media(max-width:700px){
     .spz-announce-bar{padding:6px 12px;font-size:10.5px;gap:8px;}
   }
+
+  /* ---------- Round O: click-to-expand full-text popup. Opened either by
+     clicking the header strip above, or automatically for any announcement
+     the admin posted with "center popup" display mode instead of "bar".
+     Independent of the K11 portfolio-popup overlay (window.__SPZ_ANNOUNCE
+     consumer further down the file) which always shows the latest active
+     item regardless of this display-mode choice -- her explicit ask was to
+     leave that one exactly as it already behaves. ---- */
+  .spz-ann-modal{position:fixed;inset:0;z-index:9650;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .spz-ann-modal[hidden]{display:none;}
+  .spz-ann-modal-backdrop{position:absolute;inset:0;background:rgba(6,6,10,.6);opacity:0;transition:opacity .22s;}
+  .spz-ann-modal.open .spz-ann-modal-backdrop{opacity:1;}
+  .spz-ann-modal-card{
+    position:relative;width:100%;max-width:420px;
+    background:linear-gradient(165deg,rgba(28,10,22,.98),rgba(9,9,9,.98));
+    border:1px solid rgba(255,59,145,.4);border-radius:18px;padding:20px 20px 18px;
+    box-shadow:0 24px 60px rgba(0,0,0,.55);color:var(--white);
+    transform:translateY(14px) scale(.96);opacity:0;
+    transition:transform .28s cubic-bezier(.2,.9,.25,1),opacity .28s;
+  }
+  .spz-ann-modal.open .spz-ann-modal-card{transform:none;opacity:1;}
+  .spz-ann-modal-head{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+  .spz-ann-modal-ico{font-size:16px;flex:0 0 auto;}
+  .spz-ann-modal-count{flex:1 1 auto;font-family:var(--mono);font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:#ff87c0;}
+  .spz-ann-modal-close{flex:0 0 auto;background:none;border:none;color:var(--grey);font-size:20px;line-height:1;cursor:pointer;padding:0 2px;}
+  .spz-ann-modal-close:hover{color:var(--white);}
+  .spz-ann-modal-img{width:100%;border-radius:12px;margin-bottom:12px;display:block;max-height:280px;object-fit:cover;}
+  .spz-ann-modal-txt{font-family:var(--sans);font-size:14px;line-height:1.65;white-space:pre-wrap;margin-bottom:14px;max-height:50vh;overflow-y:auto;}
+  .spz-ann-modal-nav{display:flex;align-items:center;justify-content:center;gap:14px;}
+  .spz-ann-modal-nav[hidden]{display:none;}
+  .spz-ann-modal-navbtn{background:rgba(255,255,255,.07);border:1px solid var(--border-dim);color:var(--white);width:30px;height:30px;border-radius:50%;font-size:16px;line-height:1;cursor:pointer;}
+  .spz-ann-modal-navbtn:hover{border-color:var(--neon);color:var(--neon);}
+  .spz-ann-modal-dots{display:flex;gap:5px;}
+  .spz-ann-modal-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);}
+  .spz-ann-modal-dot.active{background:#ff4fa3;}
+  html[data-theme="light"] .spz-ann-modal-card{background:linear-gradient(165deg,#fff,#fdf3f8);color:#12141c;border-color:rgba(255,59,145,.3);}
+  @media(max-width:480px){ .spz-ann-modal-card{padding:16px 16px 14px;} }
 
   /* ---------- shared section shell ---------- */
   section{padding:130px 32px;max-width:1280px;margin:0 auto;position:relative;z-index:2;}
@@ -4693,6 +4733,7 @@
   <div class="spz-announce-bar" id="spzAnnounceBar" hidden>
     <span class="spz-announce-ico">📣</span>
     <span class="spz-announce-txt" id="spzAnnounceTxt"></span>
+    <span class="spz-announce-count" id="spzAnnounceCount" hidden></span>
     <button type="button" class="spz-announce-close" id="spzAnnounceClose" aria-label="close">&times;</button>
   </div>
 </div>
@@ -4709,7 +4750,16 @@
   var WORKER_BASE = 'https://spacez-line-link.spacezblack.workers.dev';
   var POLL_MS = 5 * 60 * 1000; // announcements are not second-by-second data
   var DISMISS_KEY = 'spz_announce_dismissed'; // sessionStorage: ids this visitor already closed
+  var AUTOSHOWN_KEY = 'spz_announce_autoshown'; // sessionStorage: "center popup" ids already auto-opened once
   var items = [];
+
+  function L(){ return document.documentElement.getAttribute('lang') === 'th' ? 'th' : 'en'; }
+  function T(o){ return o ? (o[L()] || o.en) : ''; }
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  var TXT = {
+    lbl:{en:'Announcement',th:'ประกาศ'},
+    count:{en:'{i} / {n}',th:'ที่ {i} / {n}'}
+  };
 
   function getDismissed(){
     try { return (sessionStorage.getItem(DISMISS_KEY) || '').split(',').filter(Boolean); } catch(e){ return []; }
@@ -4721,7 +4771,25 @@
       if(d.indexOf(id) === -1){ d.push(id); sessionStorage.setItem(DISMISS_KEY, d.join(',')); }
     } catch(e){}
   }
+  function getAutoshown(){
+    try { return (sessionStorage.getItem(AUTOSHOWN_KEY) || '').split(',').filter(Boolean); } catch(e){ return []; }
+  }
+  function isAutoshownId(id){ return getAutoshown().indexOf(id) !== -1; }
+  function markAutoshown(id){
+    try {
+      var d = getAutoshown();
+      if(d.indexOf(id) === -1){ d.push(id); sessionStorage.setItem(AUTOSHOWN_KEY, d.join(',')); }
+    } catch(e){}
+  }
   function activeList(){ return items.filter(function(a){ return !isDismissedId(a.id); }); }
+  // Round O: per-announcement "show as" choice -- 'bar' (default, the strip
+  // under the ticker) or 'modal' (an immediate center-screen popup, no click
+  // needed). Mutually exclusive on the main site; the K11 portfolio-popup
+  // overlay is a separate surface and ignores this entirely, per her ask to
+  // leave it exactly as it already behaves.
+  function isModalMode(a){ return a.displayMode === 'modal'; }
+  function barModeActive(){ return activeList().filter(function(a){ return !isModalMode(a); }); }
+  function modalModeActive(){ return activeList().filter(isModalMode); }
 
   function fetchList(){
     fetch(WORKER_BASE + '/api/announcements').then(function(r){ return r.ok ? r.json() : null; })
@@ -4740,30 +4808,140 @@
     dismiss: function(id){ markDismissed(id); document.dispatchEvent(new CustomEvent('spz:announce')); }
   };
 
+  /* ---- Round O: shared full-text popup -- opened by clicking the header
+     strip (browsing every currently active "bar" announcement), or fired on
+     its own for any "center popup" announcement the instant it becomes
+     active/undismissed (once per id per session, tracked separately from
+     dismissal so re-opening the popup later via a click doesn't re-trigger
+     it). Supports more than one item at once with prev/next + an "i / n"
+     counter, so multiple simultaneous announcements are never silently
+     hidden behind just the first one. ---- */
+  var modalEl = null, modalCountEl = null, modalTxtEl = null, modalImgWrap = null, modalNavEl = null, modalDotsEl = null;
+  var modalList = [], modalIdx = 0;
+
+  function ensureModal(){
+    if(modalEl) return;
+    modalEl = document.createElement('div');
+    modalEl.className = 'spz-ann-modal';
+    modalEl.hidden = true;
+    modalEl.innerHTML =
+      '<div class="spz-ann-modal-backdrop" data-annm="backdrop"></div>' +
+      '<div class="spz-ann-modal-card">' +
+        '<div class="spz-ann-modal-head">' +
+          '<span class="spz-ann-modal-ico">📣</span>' +
+          '<span class="spz-ann-modal-count" data-annm="count"></span>' +
+          '<button type="button" class="spz-ann-modal-close" data-annm="close" aria-label="close">&times;</button>' +
+        '</div>' +
+        '<div data-annm="imgwrap"></div>' +
+        '<div class="spz-ann-modal-txt" data-annm="txt"></div>' +
+        '<div class="spz-ann-modal-nav" data-annm="nav" hidden>' +
+          '<button type="button" class="spz-ann-modal-navbtn" data-annm="prev" aria-label="previous">&lsaquo;</button>' +
+          '<span class="spz-ann-modal-dots" data-annm="dots"></span>' +
+          '<button type="button" class="spz-ann-modal-navbtn" data-annm="next" aria-label="next">&rsaquo;</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modalEl);
+    modalCountEl = modalEl.querySelector('[data-annm="count"]');
+    modalTxtEl = modalEl.querySelector('[data-annm="txt"]');
+    modalImgWrap = modalEl.querySelector('[data-annm="imgwrap"]');
+    modalNavEl = modalEl.querySelector('[data-annm="nav"]');
+    modalDotsEl = modalEl.querySelector('[data-annm="dots"]');
+    modalEl.querySelector('[data-annm="backdrop"]').addEventListener('click', closeModal);
+    modalEl.querySelector('[data-annm="close"]').addEventListener('click', function(){
+      var cur = modalList[modalIdx];
+      if(cur) window.__SPZ_ANNOUNCE.dismiss(cur.id);
+      modalList.splice(modalIdx, 1);
+      if(!modalList.length){ closeModal(); return; }
+      if(modalIdx >= modalList.length) modalIdx = modalList.length - 1;
+      renderModalCurrent();
+    });
+    modalEl.querySelector('[data-annm="prev"]').addEventListener('click', function(){ navModal(-1); });
+    modalEl.querySelector('[data-annm="next"]').addEventListener('click', function(){ navModal(1); });
+    document.addEventListener('keydown', function(ev){
+      if(modalEl.hidden) return;
+      if(ev.key === 'Escape') closeModal();
+      else if(ev.key === 'ArrowLeft') navModal(-1);
+      else if(ev.key === 'ArrowRight') navModal(1);
+    });
+  }
+  function navModal(delta){
+    if(modalList.length < 2) return;
+    modalIdx = (modalIdx + delta + modalList.length) % modalList.length;
+    renderModalCurrent();
+  }
+  function renderModalCurrent(){
+    var a = modalList[modalIdx];
+    if(!a){ closeModal(); return; }
+    modalTxtEl.textContent = a.text;
+    modalImgWrap.innerHTML = a.imageUrl ? '<img class="spz-ann-modal-img" src="' + esc(a.imageUrl) + '" alt="">' : '';
+    var n = modalList.length;
+    modalCountEl.textContent = T(TXT.lbl) + (n > 1 ? ' ' + T(TXT.count).replace('{i}', modalIdx + 1).replace('{n}', n) : '');
+    modalNavEl.hidden = n < 2;
+    if(n > 1){
+      modalDotsEl.innerHTML = modalList.map(function(_, i){ return '<span class="spz-ann-modal-dot' + (i === modalIdx ? ' active' : '') + '"></span>'; }).join('');
+    }
+  }
+  function openModalWith(list, startIdx){
+    if(!list || !list.length) return;
+    ensureModal();
+    modalList = list.slice();
+    modalIdx = startIdx || 0;
+    renderModalCurrent();
+    modalEl.hidden = false;
+    // eslint-disable-next-line no-unused-expressions
+    modalEl.offsetHeight; // force reflow so the .open transition actually animates in
+    modalEl.classList.add('open');
+  }
+  function closeModal(){
+    if(!modalEl) return;
+    modalEl.classList.remove('open');
+    setTimeout(function(){ if(modalEl) modalEl.hidden = true; }, 220);
+  }
+
+  function maybeAutoShowModal(){
+    var due = modalModeActive().filter(function(a){ return !isAutoshownId(a.id); });
+    if(!due.length) return;
+    due.forEach(function(a){ markAutoshown(a.id); });
+    openModalWith(due, 0);
+  }
+
   /* ---- header strip wiring ---- */
-  var barEl = null, txtEl = null, closeEl = null;
+  var barEl = null, txtEl = null, countEl = null, closeEl = null;
   function paintBar(){
     if(!barEl){
       barEl = document.getElementById('spzAnnounceBar');
       if(!barEl) return;
       txtEl = document.getElementById('spzAnnounceTxt');
+      countEl = document.getElementById('spzAnnounceCount');
       closeEl = document.getElementById('spzAnnounceClose');
-      closeEl.addEventListener('click', function(){
-        var a = window.__SPZ_ANNOUNCE.latest();
-        if(a) window.__SPZ_ANNOUNCE.dismiss(a.id);
+      closeEl.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        var list = barModeActive();
+        if(list.length) window.__SPZ_ANNOUNCE.dismiss(list[0].id);
+      });
+      barEl.addEventListener('click', function(){
+        openModalWith(barModeActive(), 0);
       });
     }
-    var a = window.__SPZ_ANNOUNCE.latest();
-    if(!a){ barEl.hidden = true; return; }
+    var list = barModeActive();
+    if(!list.length){ barEl.hidden = true; return; }
+    var a = list[0];
     txtEl.textContent = a.text;
     barEl.title = a.text;
+    if(list.length > 1){
+      countEl.textContent = list.length + ' 📣';
+      countEl.hidden = false;
+    } else {
+      countEl.hidden = true;
+    }
     barEl.hidden = false;
   }
-  document.addEventListener('spz:announce', paintBar);
+  document.addEventListener('spz:announce', function(){ paintBar(); maybeAutoShowModal(); });
   if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', paintBar);
+    document.addEventListener('DOMContentLoaded', function(){ paintBar(); maybeAutoShowModal(); });
   } else {
     paintBar();
+    maybeAutoShowModal();
   }
 
   fetchList();
@@ -48501,6 +48679,9 @@ var qrcode = function() {
   }
   #announcements .an-textarea:focus{border-color:var(--neon);}
   #announcements .an-charcount{font-size:10.5px;color:var(--grey-dim);text-align:right;}
+  #announcements .an-mode-pick{display:flex;gap:18px;flex-wrap:wrap;}
+  #announcements .an-mode-opt{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--grey);cursor:pointer;}
+  #announcements .an-mode-opt input{accent-color:var(--neon);width:15px;height:15px;}
   #announcements .an-row{display:flex;flex-wrap:wrap;gap:14px;}
   #announcements .an-row > .an-field{flex:1 1 200px;}
   #announcements select.an-select{
@@ -48547,6 +48728,10 @@ var qrcode = function() {
   #announcements .an-badge{padding:2px 8px;border-radius:10px;font-weight:700;letter-spacing:.3px;}
   #announcements .an-badge.active{background:rgba(0,255,102,.1);color:var(--neon-2,var(--neon));}
   #announcements .an-badge.expired{background:rgba(255,255,255,.06);color:var(--grey-dim);}
+  #announcements .an-badge.mode-bar{background:rgba(130,60,255,.14);color:#b39bff;}
+  #announcements .an-badge.mode-modal{background:rgba(255,59,145,.14);color:#ff87c0;}
+  #announcements .an-meta-posted{color:#7dd3fc;}
+  #announcements .an-meta-until{color:#ffb020;font-weight:700;}
   #announcements .an-card-actions{display:flex;gap:8px;}
   #announcements .an-card-btn{
     font-family:var(--mono);font-size:10.5px;font-weight:700;border-radius:8px;padding:6px 12px;cursor:pointer;
@@ -48587,6 +48772,11 @@ var qrcode = function() {
     textPh:{en:'What do you want visitors to see?',th:'อยากให้ผู้เข้าชมเห็นข้อความว่าอะไร?'},
     imageLabel:{en:'Image (optional)',th:'รูปภาพ (ไม่บังคับ)'},
     durationLabel:{en:'Show for',th:'แสดงเป็นเวลา'},
+    modeLabel:{en:'Show as',th:'แสดงแบบ'},
+    modeBar:{en:'Bar under the header',th:'แถบใต้เมนูด้านบน'},
+    modeModal:{en:'Popup in the center of the screen',th:'ป๊อบอัพกลางจอ'},
+    modeBadgeBar:{en:'Bar',th:'แถบบน'},
+    modeBadgeModal:{en:'Popup',th:'ป๊อบอัพ'},
     uploading:{en:'Uploading…',th:'กำลังอัปโหลด…'},
     sendLineLabel:{en:'Also send as a LINE broadcast to your Official Account friends',th:'ส่งเป็นข้อความ LINE Official Account ไปหาเพื่อนด้วย'},
     postBtn:{en:'Post announcement',th:'โพสต์ประกาศ'},
@@ -48625,6 +48815,7 @@ var qrcode = function() {
     { min:1440, key:'dur1440' }, { min:4320, key:'dur4320' }, { min:10080, key:'dur10080' },
     { min:0, key:'durForever' }
   ];
+  var TEXT_MAX = 2000; // raised from 500 per her request -- some notices run long
 
   var sec = null;
   var items = null;          // loaded list, or null if not loaded yet
@@ -48636,6 +48827,7 @@ var qrcode = function() {
   var draftText = '';
   var draftImageUrl = '';
   var draftDurationMin = 1440; // default: 24 hours
+  var draftDisplayMode = 'bar'; // 'bar' (header strip) | 'modal' (center popup)
   var draftSendLine = false;
   var uploading = false;
   var saving = false;
@@ -48694,6 +48886,7 @@ var qrcode = function() {
     draftText = '';
     draftImageUrl = '';
     draftDurationMin = 1440;
+    draftDisplayMode = 'bar';
     draftSendLine = false;
     saveStatus = null; saveStatusText = '';
   }
@@ -48706,6 +48899,7 @@ var qrcode = function() {
     var remainingMin = item.expiresAt ? Math.max(1, Math.round((item.expiresAt - Date.now()) / 60000)) : 0;
     var match = DURATIONS.find(function(d){ return d.min === 0 ? remainingMin === 0 : remainingMin <= d.min; });
     draftDurationMin = match ? match.min : 0;
+    draftDisplayMode = item.displayMode === 'modal' ? 'modal' : 'bar';
     draftSendLine = false;
     saveStatus = null; saveStatusText = '';
     var body = sec && sec.querySelector('[data-an="body"]');
@@ -48728,7 +48922,7 @@ var qrcode = function() {
     var text = draftText.trim();
     if(!text){ saveStatus = 'err'; saveStatusText = T(UI.needText); renderAll(); return; }
     saving = true; saveStatus = null; renderAll();
-    var payload = { text: text, imageUrl: draftImageUrl, durationMin: draftDurationMin || null };
+    var payload = { text: text, imageUrl: draftImageUrl, durationMin: draftDurationMin || null, displayMode: draftDisplayMode };
     var url = editingId ? '/api/admin/announcements/update' : '/api/admin/announcements/create';
     if(editingId) payload.id = editingId;
     var key = getAdminKey();
@@ -48800,13 +48994,24 @@ var qrcode = function() {
     return '<input type="file" accept="image/*" data-an="imgFile">';
   }
 
+  function modeOptionsHTML(){
+    return ['bar', 'modal'].map(function(m){
+      var lbl = m === 'modal' ? UI.modeModal : UI.modeBar;
+      return '<label class="an-mode-opt"><input type="radio" name="anMode" value="' + m + '"' + (draftDisplayMode === m ? ' checked' : '') + '> ' + esc(T(lbl)) + '</label>';
+    }).join('');
+  }
+
   function formHTML(){
     return '<div class="an-form" data-an="form">' +
       '<div class="an-form-title">' + esc(T(editingId ? UI.formTitleEdit : UI.formTitleNew)) + '</div>' +
       '<div class="an-field">' +
         '<label>' + esc(T(UI.textLabel)) + '</label>' +
-        '<textarea class="an-textarea" data-an="textInput" maxlength="500" placeholder="' + esc(T(UI.textPh)) + '">' + esc(draftText) + '</textarea>' +
-        '<div class="an-charcount">' + draftText.length + ' / 500</div>' +
+        '<textarea class="an-textarea" data-an="textInput" maxlength="' + TEXT_MAX + '" placeholder="' + esc(T(UI.textPh)) + '">' + esc(draftText) + '</textarea>' +
+        '<div class="an-charcount">' + draftText.length + ' / ' + TEXT_MAX + '</div>' +
+      '</div>' +
+      '<div class="an-field">' +
+        '<label>' + esc(T(UI.modeLabel)) + '</label>' +
+        '<div class="an-mode-pick" data-an="modePick">' + modeOptionsHTML() + '</div>' +
       '</div>' +
       '<div class="an-row">' +
         '<div class="an-field">' +
@@ -48832,14 +49037,16 @@ var qrcode = function() {
   function cardHTML(item){
     var now = Date.now();
     var isActive = !item.expiresAt || item.expiresAt > now;
+    var isModal = item.displayMode === 'modal';
     var statusHTML = '<span class="an-badge ' + (isActive ? 'active' : 'expired') + '">' + esc(T(isActive ? UI.statusActive : UI.statusExpired)) + '</span>';
-    var whenHTML = esc(T(UI.postedAt).replace('{d}', fmtDate(item.createdAt))) +
-      (item.expiresAt ? ' · ' + esc(T(UI.untilD).replace('{d}', fmtDate(item.expiresAt))) : '');
+    var modeHTML = '<span class="an-badge mode-' + (isModal ? 'modal' : 'bar') + '">' + esc(T(isModal ? UI.modeBadgeModal : UI.modeBadgeBar)) + '</span>';
+    var postedHTML = '<span class="an-meta-posted">' + esc(T(UI.postedAt).replace('{d}', fmtDate(item.createdAt))) + '</span>';
+    var expiryHTML = item.expiresAt ? '<span class="an-meta-until">' + esc(T(UI.untilD).replace('{d}', fmtDate(item.expiresAt))) + '</span>' : '';
     return '<div class="an-card' + (isActive ? '' : ' expired') + '" data-an-item="' + esc(item.id) + '">' +
       (item.imageUrl ? '<img class="an-card-thumb" src="' + esc(item.imageUrl) + '" alt="">' : '') +
       '<div class="an-card-body">' +
         '<div class="an-card-txt">' + esc(item.text) + '</div>' +
-        '<div class="an-card-meta">' + statusHTML + '<span>' + whenHTML + '</span></div>' +
+        '<div class="an-card-meta">' + statusHTML + modeHTML + postedHTML + expiryHTML + '</div>' +
         '<div class="an-card-actions">' +
           '<button type="button" class="an-card-btn" data-an-act="edit">' + esc(T(UI.editBtn)) + '</button>' +
           '<button type="button" class="an-card-btn" data-an-act="line">' + esc(T(UI.resendLineBtn)) + '</button>' +
@@ -48881,7 +49088,12 @@ var qrcode = function() {
     if(textInput) textInput.addEventListener('input', function(ev){
       draftText = ev.target.value;
       var count = sec.querySelector('.an-charcount');
-      if(count) count.textContent = draftText.length + ' / 500';
+      if(count) count.textContent = draftText.length + ' / ' + TEXT_MAX;
+    });
+
+    var modeRadios = sec.querySelectorAll('input[name="anMode"]');
+    Array.prototype.forEach.call(modeRadios, function(r){
+      r.addEventListener('change', function(ev){ if(ev.target.checked) draftDisplayMode = ev.target.value; });
     });
 
     var fileInput = sec.querySelector('[data-an="imgFile"]');
