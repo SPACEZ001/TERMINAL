@@ -126,6 +126,11 @@
       th:'GEX, ธุรกรรม Dark Pool, ฮีทแมพออเดอร์บุ๊ก, Monte Carlo, อัลกอริทึมการส่งคำสั่ง และเครื่องมือระดับโปรที่เหลือ — ย้ายมาไว้ตรงนี้จากเมนูบนสุด เพื่อไม่ให้รกหน้าเว็บสำหรับคนอื่น'},
     goPro:{en:'Open Institutional Pro Desk →',th:'เปิดโปรเดสก์ระดับสถาบัน →'},
 
+    briefL:{en:'INSTITUTIONAL BRIEFING',th:'บรีฟฉบับสถาบัน'},
+    briefTxt:{en:'Turns the site’s own 11-gauge regime model and sector flow data into one auto-generated, plain-language briefing — printable and sendable to LINE. Nothing manual, nothing new to write each time.',
+      th:'แปลงโมเดล 11 ตัวชี้วัดและข้อมูลการหมุนเงินของเว็บนี้ ให้เป็นบรีฟภาษาคนที่สร้างอัตโนมัติ — พิมพ์ได้และส่งเข้า LINE ได้ ไม่ต้องเขียนเองแม้แต่ครั้งเดียว'},
+    goBrief:{en:'Generate briefing →',th:'สร้างบรีฟ →'},
+
     priceChartL:{en:'REAL PRICE CHART',th:'กราฟราคาจริง'},
     priceChartNote:{en:'Real daily closes from the same snapshot the rest of the terminal uses — not the practice data in Chart Lab. While price holds above the slower moving average, the long-term trend is still up.',
       th:'ราคาปิดรายวันจริงจากชุดข้อมูลเดียวกับที่ทั้งเว็บใช้ ไม่ใช่ข้อมูลฝึกหัดในห้องทดลองกราฟ ตราบใดที่ราคายังอยู่เหนือเส้นค่าเฉลี่ยเส้นช้า เทรนด์ระยะยาวยังถือว่าขึ้นอยู่'},
@@ -1227,13 +1232,23 @@
       '<div class="cx-txt">' + esc(tx(T.proTxt)) + '</div>' + goBtn('pro', tx(T.goPro)) + '</div>';
   }
 
+  /* Round Q phase 4: generates the Institutional Briefing report (see
+     buildInstitutionalBriefingReport() in part-57.js) rather than
+     navigating anywhere -- so this uses its own data-cx-action hook
+     instead of goBtn()'s data-cx-go route-navigation pattern. */
+  function briefingHTML(){
+    return '<div class="cx-card"><div class="cx-lab">' + esc(tx(T.briefL)) + '</div>' +
+      '<div class="cx-txt">' + esc(tx(T.briefTxt)) + '</div>' +
+      '<button type="button" class="cx-go" data-cx-action="briefing">' + esc(tx(T.goBrief)) + '</button></div>';
+  }
+
   function bodyHTML(){
     return signalHTML() +
       '<div class="cx-grid">' +
         marketHTML() + macroHTML() + fxHTML() + flowHTML() + globeHTML() + inflHTML() +
         creditHTML() + bubbleHTML() + anomHTML() + correlHTML() + watchHTML() + watchTableHTML() +
         breadthHTML() + crossHTML() +
-        gaugesHTML() + rotationHTML() + flowForecastHTML() + correlHeatHTML() + stockHeatHTML() + chartsHTML() + priceChartHTML() + rankHTML() + proDeskHTML() +
+        gaugesHTML() + rotationHTML() + flowForecastHTML() + correlHeatHTML() + stockHeatHTML() + chartsHTML() + priceChartHTML() + rankHTML() + briefingHTML() + proDeskHTML() +
       '</div>' +
       '<div class="ss-foot">' + esc(tx(T.foot)) + '</div>';
   }
@@ -1241,6 +1256,11 @@
   function bind(body){
     body.querySelectorAll('[data-cx-go]').forEach(function(b){
       b.addEventListener('click', function(){ location.hash = '#/' + b.getAttribute('data-cx-go'); });
+    });
+    body.querySelectorAll('[data-cx-action="briefing"]').forEach(function(b){
+      b.addEventListener('click', function(){
+        if(window.__SPZ_BRIEFING && typeof window.__SPZ_BRIEFING.open === 'function') window.__SPZ_BRIEFING.open();
+      });
     });
     body.querySelectorAll('[data-cx-open-stock]').forEach(function(b){
       b.addEventListener('click', function(){
