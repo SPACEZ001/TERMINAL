@@ -29,6 +29,14 @@
  *                                random string and enter that same string
  *                                once in the Connected Users page.)
  *
+ *   FINNHUB_KEY                  (Secret — a free Finnhub API key, from
+ *                                https://finnhub.io/register, no card
+ *                                needed. Powers the site's Economic
+ *                                Calendar page for EVERY visitor, server-
+ *                                side, so nobody has to paste their own key
+ *                                just to see it. Get one key, paste it in
+ *                                here once; it is never sent to the browser.)
+ *
  *   OWNER_WATCHLIST_KEY is no longer used by this file (see below) but you
  *   don't need to remove it from the Worker's settings -- it's harmless to
  *   leave it there.
@@ -804,6 +812,59 @@ async function handleAdminPresenceCount(request, env) {
   return json({ count }, env);
 }
 
+// ---------------------------------------------------------------------
+// ECONOMIC CALENDAR (Round M) — proxies Finnhub's /calendar/economic so
+// EVERY visitor sees it with zero setup of their own, instead of each
+// person needing to paste their own free Finnhub key into the page (the
+// site's stock-quote panel still works that way, but she asked for this
+// one feature to "just work" for anyone who opens the page). This Worker
+// holds ONE Finnhub key as a Secret (FINNHUB_KEY, set the same way as
+// ADMIN_USERS_KEY) and calls Finnhub server-side; nothing here needs a
+// login or an admin key since the data itself is public macro news, not
+// anything private to a visitor.
+// ---------------------------------------------------------------------
+const ECONCAL_CACHE_TTL_SECONDS = 900; // 15 min -- calendar data doesn't
+  // change minute to minute, and this keeps well inside Finnhub's free-tier
+  // rate limit even with many concurrent site visitors, since they all now
+  // share these few cached KV reads instead of each calling Finnhub directly.
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+async function handleEconCalendar(request, env) {
+  const url = new URL(request.url);
+  const from = url.searchParams.get("from") || "";
+  const to = url.searchParams.get("to") || "";
+  if (!DATE_RE.test(from) || !DATE_RE.test(to)) {
+    return json({ error: "bad_request" }, env, 400);
+  }
+  if (!env.FINNHUB_KEY) {
+    // Not configured yet -- tell the page plainly rather than a bare 500,
+    // so its own UI can explain this is a one-time setup step for her.
+    return json({ error: "not_configured" }, env, 501);
+  }
+
+  const cacheKey = "econcal:" + from + ":" + to;
+  const cached = await env.SESSIONS.get(cacheKey, "json");
+  if (cached) return json(cached, env);
+
+  let upstream;
+  try {
+    const res = await fetch(
+      "https://finnhub.io/api/v1/calendar/economic?from=" + from + "&to=" + to +
+        "&token=" + encodeURIComponent(env.FINNHUB_KEY)
+    );
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    upstream = await res.json();
+  } catch (e) {
+    return json({ error: "upstream" }, env, 502);
+  }
+
+  const events = (upstream && upstream.economicCalendar) || [];
+  await env.SESSIONS.put(cacheKey, JSON.stringify({ economicCalendar: events }), {
+    expirationTtl: ECONCAL_CACHE_TTL_SECONDS,
+  });
+  return json({ economicCalendar: events }, env);
+}
+
 async function handleLogout(request, env) {
   let code = "";
   try {
@@ -839,6 +900,7 @@ export default {
     if (url.pathname === "/api/admin/presence-count" && request.method === "GET") return handleAdminPresenceCount(request, env);
     if (url.pathname === "/api/journal-settings" && request.method === "GET") return handleJournalSettingsGet(request, env);
     if (url.pathname === "/api/admin/journal-settings" && request.method === "POST") return handleJournalSettingsUpdate(request, env);
+    if (url.pathname === "/api/econ-calendar" && request.method === "GET") return handleEconCalendar(request, env);
 
     return json({ error: "not_found" }, env, 404);
   },
