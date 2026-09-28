@@ -455,7 +455,33 @@
     reportDxyLabel:{en:'US Dollar Index (DXY)',th:'ดัชนีดอลลาร์สหรัฐ (DXY)'},
     reportLiveSrc:{en:'Live quote, Yahoo Finance',th:'ราคาสด จาก Yahoo Finance'},
     livePtsTooltip:{en:'Entry {entry} · Live {now} (refreshes ~45s)',th:'ราคาเข้า {entry} · ราคาล่าสุด {now} (รีเฟรชทุก ~45 วิ)'},
-    livePtsTooltipInitial:{en:'Entry {entry} · fetching live price…',th:'ราคาเข้า {entry} · กำลังดึงราคาล่าสุด…'}
+    livePtsTooltipInitial:{en:'Entry {entry} · fetching live price…',th:'ราคาเข้า {entry} · กำลังดึงราคาล่าสุด…'},
+
+    /* ---- Round Q phase 4: Institutional Briefing -- an auto-generated
+       report (same .jrp-overlay/.jrp-sheet system as the other reports)
+       that reads the same 11-gauge regime model + sector flow data the
+       Turning Point Radar / Cockpit already compute, and turns it into a
+       single plain-language briefing instead of a dashboard. Nothing here
+       is new data -- see gatherBriefingData(). ---- */
+    briefTitle:{en:'Institutional Briefing',th:'บรีฟฉบับสถาบัน'},
+    briefSub:{en:'How institutional and fund desks read cross-asset signals — auto-generated from live data',
+              th:'มุมมองแบบที่สถาบัน/กองทุนใหญ่ใช้อ่านสัญญาณข้ามสินทรัพย์ — สร้างอัตโนมัติจากข้อมูลสด'},
+    briefCycleLbl:{en:'Cycle read',th:'ช่วงวัฏจักรตอนนี้'},
+    briefReadH:{en:'The read',th:'สรุปภาพรวม'},
+    briefSignalsH:{en:'Cross-asset signals · 11 gauges',th:'สัญญาณข้ามสินทรัพย์ · 11 ตัวชี้วัด'},
+    briefRotH:{en:'Where the money is rotating · 1 month',th:'เงินกำลังหมุนไปทางไหน · 1 เดือน'},
+    briefLeading:{en:'LEADING',th:'นำตลาด'},
+    briefLagging:{en:'LAGGING',th:'ตามหลัง'},
+    briefNoData:{en:'Live data has not finished loading yet — close this and try again in a few seconds.',
+                 th:'ข้อมูลสดยังโหลดไม่เสร็จ — ปิดหน้าต่างนี้แล้วลองใหม่อีกครั้งในไม่กี่วินาที'},
+    briefDisclaimer:{en:'Auto-generated from the same public price data and 11-gauge model used across this site — see Turning Point Radar for the full live dashboard and Proof Lab for how each gauge actually graded in a 30-year backtest (most graded C–F individually; read this as a cross-asset snapshot, not a forecast). Educational material, not investment advice.',
+                      th:'สร้างอัตโนมัติจากข้อมูลราคาสาธารณะและโมเดล 11 ตัวชี้วัดชุดเดียวกับที่เว็บนี้ใช้ทั้งหมด — ดูแดชบอร์ดเต็มที่หน้า "สัญญาณเปลี่ยนทิศ" และผลเกรดจริงจากการทดสอบย้อนหลัง 30 ปีที่ "ห้องทดสอบ" (ส่วนใหญ่ได้เกรด C–F เมื่อดูทีละตัว — ให้อ่านหน้านี้เป็นภาพรวมข้ามสินทรัพย์ ณ ขณะนี้ ไม่ใช่การพยากรณ์) เนื้อหาเพื่อการศึกษา ไม่ใช่คำแนะนำการลงทุน'},
+    briefVerdictCalm:{en:'{known} of the gauges institutional desks watch for early cracks are giving a clean read right now, with {soft} leaning cautious and none flashing red. Read together, the cross-asset picture looks orderly — the kind of backdrop where trends usually get more benefit of the doubt.',
+                       th:'{known} ตัวชี้วัดที่สถาบัน/กองทุนใหญ่ใช้เฝ้าดูรอยร้าวล่วงหน้า ให้ผลที่ราบรื่นตอนนี้ มี {soft} ตัวเอียงระวัง และไม่มีตัวไหนขึ้นแดงเลย ภาพรวมข้ามสินทรัพย์ดูเป็นระเบียบ — บรรยากาศแบบนี้เทรนด์มักได้รับความเชื่อมั่นมากกว่าปกติ'},
+    briefVerdictWatch:{en:'{alerts} signal(s) are flashing red and {soft} more are leaning the wrong way, out of {known} tracked. Nothing here is a timing call by itself, but it is the kind of mixed cross-asset picture where position size usually matters more than conviction.',
+                        th:'{alerts} สัญญาณกำลังขึ้นแดง และอีก {soft} ตัวเอียงไปทางไม่ดี จากทั้งหมด {known} ตัวที่ติดตาม สิ่งนี้ไม่ใช่สัญญาณจับจังหวะในตัวมันเอง แต่เป็นภาพข้ามสินทรัพย์แบบผสมที่ขนาดการลงทุนมักสำคัญกว่าความมั่นใจ'},
+    briefVerdictAlert:{en:'{alerts} of the {known} gauges institutions watch for stress are flashing red at once — a cluster this size is rare and worth taking seriously, even though no single one of these gauges can time a top. This is the kind of backdrop where knowing exactly what you own, and why, matters more than any one number here.',
+                        th:'{alerts} จาก {known} ตัวชี้วัดที่สถาบันใช้เฝ้าดูความเครียดของตลาด ขึ้นแดงพร้อมกัน — กลุ่มสัญญาณขนาดนี้เกิดไม่บ่อยและควรให้ความสำคัญ แม้ตัวชี้วัดตัวเดียวจะบอกจุดสูงสุดไม่ได้ก็ตาม ช่วงแบบนี้การรู้ให้ชัดว่าตัวเองถืออะไรอยู่และเพราะอะไร สำคัญกว่าตัวเลขตัวไหนตัวหนึ่งในนี้'}
   };
 
   /* preset asset choices for the admin dropdown -- value is what gets stored
@@ -1064,6 +1090,152 @@
     return '<svg class="jrp-chart-svg" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
       '<path d="' + path + '" fill="none" stroke="' + stroke + '" stroke-width="2"/></svg>';
   }
+
+  /* =================================================================
+     Round Q phase 4: Institutional Briefing
+     An auto-generated report -- same .jrp-overlay/.jrp-sheet shell and
+     Send-to-LINE wiring as the other reports above, but built entirely
+     from window.__SPZ_REGIME (the Turning Point Radar's own 11-gauge
+     model, part-30.js) and window.__SPZ_LIVE's sector flow snapshot.
+     No new data source, no manually-written copy each time -- every
+     sentence is either a live number or the site's own already-authored
+     gauge message (GAUGES[i].m[state]), reused rather than duplicated.
+     ================================================================= */
+  function fmtGaugeVal(g, val){
+    if(val == null || typeof val !== 'number' || !isFinite(val)) return '—';
+    var s = g.level ? val.toFixed(1) : ((val >= 0 ? '+' : '') + val.toFixed(1));
+    return s + (g.unit || '');
+  }
+
+  function gatherBriefingData(){
+    var REG = window.__SPZ_REGIME;
+    if(!REG || typeof REG.snap !== 'function' || typeof REG.score !== 'function') return null;
+    var snap = REG.snap();
+    if(!snap || !snap.regime || !Object.keys(snap.regime).length) return null;
+    var r = snap.regime;
+    var gauges = REG.gauges || [];
+    var sc = REG.score();
+    if(!sc || !sc.states) return null;
+
+    var rows = [];
+    gauges.forEach(function(g, i){
+      var state = sc.states[i];
+      if(state === 'na') return;
+      var val = g.v(r);
+      rows.push({
+        name: T(g.n), state: state, valStr: fmtGaugeVal(g, val),
+        msg: (g.m && g.m[state]) ? T(g.m[state]) : ''
+      });
+    });
+
+    var sectors = (snap.flows && Array.isArray(snap.flows.sector)) ? snap.flows.sector.slice() : [];
+    sectors = sectors.filter(function(s){ return s && typeof s.m1 === 'number' && isFinite(s.m1); });
+    sectors.sort(function(a, b){ return b.m1 - a.m1; });
+    var leaders = sectors.slice(0, 3);
+    var laggards = sectors.slice(-3).reverse();
+
+    var cycleLabel = '';
+    try { if(window.SPZ_CYCLE) cycleLabel = T(window.SPZ_CYCLE.label()); } catch(e){}
+
+    var verdictKey = 'briefVerdictCalm';
+    if(sc.alerts >= 3) verdictKey = 'briefVerdictAlert';
+    else if(sc.alerts >= 1 || sc.soft >= 4) verdictKey = 'briefVerdictWatch';
+    var verdict = T(UI[verdictKey])
+      .replace('{known}', sc.known).replace('{soft}', sc.soft).replace('{alerts}', sc.alerts);
+
+    return {
+      rows: rows, leaders: leaders, laggards: laggards, cycleLabel: cycleLabel,
+      verdict: verdict, generatedAt: snap.generated_at || null
+    };
+  }
+
+  function briefingSignalRowHtml(row){
+    return '<div class="jrp-sig-row">' +
+      '<span class="jrp-sig-dot ' + esc(row.state) + '"></span>' +
+      '<span class="jrp-sig-name">' + esc(row.name) + '</span>' +
+      '<span class="jrp-sig-val">' + esc(row.valStr) + '</span>' +
+      '<span class="jrp-sig-msg">' + esc(row.msg) + '</span>' +
+    '</div>';
+  }
+
+  function briefingRotRowHtml(item, positive){
+    var pct = (typeof item.m1 === 'number') ? ((item.m1 >= 0 ? '+' : '') + item.m1.toFixed(1) + '%') : '—';
+    var nm = (item.en || item.th) ? T({ en:item.en, th:item.th }) : (item.sym || '—');
+    return '<div class="jrp-rot-row ' + (positive ? 'up' : 'dn') + '">' +
+      '<span class="jrp-rot-name">' + esc(nm) + (item.sym ? ' <span class="jrp-rot-sym">' + esc(item.sym) + '</span>' : '') + '</span>' +
+      '<span class="jrp-rot-val">' + esc(pct) + '</span>' +
+    '</div>';
+  }
+
+  function buildInstitutionalBriefingReport(){
+    var existing = document.querySelector('.jrp-overlay');
+    if(existing) existing.remove();
+
+    var data = gatherBriefingData();
+
+    var ov = el('div', 'jrp-overlay');
+    ov.innerHTML =
+      '<div class="jrp-actions">' +
+        '<button type="button" class="jrp-btn primary" data-jrp="print"></button>' +
+        '<button type="button" class="jrp-btn ghost" data-jrp="close"></button>' +
+      '</div>' +
+      '<div class="jrp-sheet">' +
+        '<div class="jrp-head">' +
+          (window.__SPZ_PR_LOGO ? '<img class="jrp-logo" src="' + window.__SPZ_PR_LOGO + '" alt="">' : '') +
+          '<div class="jrp-brand">SPACEZ TERMINAL</div>' +
+          '<div class="jrp-title">' + esc(T(UI.briefTitle)) + '</div>' +
+          '<div class="jrp-sub">' + esc(T(UI.briefSub)) + '</div>' +
+          '<div class="jrp-meta">' +
+            (data && data.cycleLabel ? '<span>' + esc(T(UI.briefCycleLbl)) + ': ' + esc(data.cycleLabel) + '</span>' : '') +
+            '<span>' + esc(T(UI.reportGenerated)) + ': ' + esc(fmtDate(new Date())) + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div data-jrp="briefBody"></div>' +
+        '<div class="jrp-foot"></div>' +
+      '</div>';
+
+    var body = ov.querySelector('[data-jrp="briefBody"]');
+    if(!data){
+      body.innerHTML = '<div class="jrp-text">' + esc(T(UI.briefNoData)) + '</div>';
+    } else {
+      var leadersHtml = data.leaders.map(function(s){ return briefingRotRowHtml(s, true); }).join('');
+      var laggardsHtml = data.laggards.map(function(s){ return briefingRotRowHtml(s, false); }).join('');
+      body.innerHTML =
+        '<div class="jrp-sec-h">' + esc(T(UI.briefReadH)) + '</div>' +
+        '<div class="jrp-text">' + esc(data.verdict) + '</div>' +
+        '<div class="jrp-sec-h">' + esc(T(UI.briefSignalsH)) + '</div>' +
+        '<div class="jrp-sig-list">' + data.rows.map(briefingSignalRowHtml).join('') + '</div>' +
+        (data.leaders.length ? (
+          '<div class="jrp-sec-h">' + esc(T(UI.briefRotH)) + '</div>' +
+          '<div class="jrp-rot-grid">' +
+            '<div class="jrp-rot-col"><div class="jrp-rot-lab up">' + esc(T(UI.briefLeading)) + '</div>' + leadersHtml + '</div>' +
+            '<div class="jrp-rot-col"><div class="jrp-rot-lab dn">' + esc(T(UI.briefLagging)) + '</div>' + laggardsHtml + '</div>' +
+          '</div>'
+        ) : '');
+    }
+
+    ov.querySelector('.jrp-foot').textContent = T(UI.briefDisclaimer);
+    ov.querySelector('[data-jrp="print"]').textContent = T(UI.printBtn);
+    ov.querySelector('[data-jrp="close"]').textContent = T(UI.closeBtn);
+
+    function onAfterPrint(){ document.body.classList.remove('spz-printing-journal'); }
+    function closeReport(){
+      document.body.classList.remove('spz-printing-journal');
+      window.removeEventListener('afterprint', onAfterPrint);
+      ov.remove();
+    }
+    window.addEventListener('afterprint', onAfterPrint);
+    ov.querySelector('[data-jrp="print"]').addEventListener('click', function(){
+      document.body.classList.add('spz-printing-journal');
+      window.print();
+    });
+    ov.querySelector('[data-jrp="close"]').addEventListener('click', closeReport);
+    wireReportLineSend(ov);
+
+    document.body.appendChild(ov);
+  }
+
+  window.__SPZ_BRIEFING = { open: buildInstitutionalBriefingReport };
 
   function buildJournalReport(entry){
     var existing = document.querySelector('.jrp-overlay');
