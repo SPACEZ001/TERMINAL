@@ -283,6 +283,9 @@
     assetOtherPh:{en:'e.g. AAPL, PTT, custom name…',th:'เช่น AAPL, PTT, หรือชื่ออื่น…'},
     assetRecent:{en:'Recently used',th:'ที่เคยใช้'},
     fieldTags:{en:'Tags (optional)',th:'แฮชแท็ก (ไม่บังคับ)'},
+    fieldRefPost:{en:'Reference an earlier post (optional)',th:'อ้างอิงโพสต์เก่า (ไม่บังคับ)'},
+    refPostNone:{en:'— none —',th:'— ไม่มี —'},
+    refPostJump:{en:'\u21b3 See the referenced post',th:'\u21b3 ดูโพสต์ที่อ้างอิง'},
     fieldTagsPh:{en:'breakout bullish shortterm',th:'breakout bullish ระยะสั้น'},
     fieldImage:{en:'Screenshot / chart image',th:'รูปภาพ / กราฟที่แคป'},
     dropHint:{en:'Click or drag an image here',th:'คลิกหรือลากรูปมาวางตรงนี้'},
@@ -602,6 +605,10 @@
      rather than guessed, since there is no live feed for those on this site. */
   var DXY_RELATED_ASSETS = ['Gold', 'Silver'];
 
+  function refPostLinkHtml(e){
+    if(!e || !e.refPostId) return '';
+    return '<a class="jrnl-refpost-link" href="' + esc(shareUrlFor(e.refPostId)) + '">' + esc(T(UI.refPostJump)) + '</a>';
+  }
   function shareUrlFor(id){
     return location.origin + location.pathname + '?entry=' + encodeURIComponent(id) + '#/journalView';
   }
@@ -866,6 +873,7 @@
             cardLevelsHtml(e) +
             livePtsHtml(e) +
             '<div class="jrnl-card-text"></div>' +
+            refPostLinkHtml(e) +
             '<div class="jrnl-card-actions">' + likeWrapHTML() + '<button type="button" class="jrnl-share-btn" data-share></button></div>' +
             addLineFriendBtnHTML() +
           '</div>' +
@@ -917,6 +925,7 @@
             sl: v.sl || '', tp: v.tp || '', waveView: v.waveView || '',
             entryPrice: v.entryPrice || '', priceUnit: v.priceUnit || 'points',
             tradeStatus: v.tradeStatus || 'open', exitPrice: v.exitPrice || '',
+            refPostId: v.refPostId || '',
             createdAt: v.createdAt && v.createdAt.toDate ? v.createdAt.toDate() : new Date()
           };
         });
@@ -1172,10 +1181,13 @@
               sl: v.sl || '', tp: v.tp || '', waveView: v.waveView || '',
               entryPrice: v.entryPrice || '', priceUnit: v.priceUnit || 'points',
               tradeStatus: v.tradeStatus || 'open', exitPrice: v.exitPrice || '',
+              refPostId: v.refPostId || '',
               createdAt: v.createdAt && v.createdAt.toDate ? v.createdAt.toDate() : new Date()
             }
           };
         });
+
+        if(opts.onEntries) opts.onEntries(all);
 
         /* keep the asset filter dropdown in sync with whatever assets actually
            exist right now, without losing the admin's current selection */
@@ -1342,7 +1354,7 @@
           });
           host.appendChild(row);
         });
-      }).catch(function(){});
+      }).catch(function(e){ console.error('loadOwnEntries failed:', e && e.message); });
     }
 
     function entryPanel(){
@@ -1384,6 +1396,8 @@
           '</div>' +
           '<div class="jed-field"><label>' + esc(T(UI.fieldTags)) + '</label>' +
             '<input type="text" data-je="tags" placeholder="' + esc(T(UI.fieldTagsPh)) + '"></div>' +
+          '<div class="jed-field"><label>' + esc(T(UI.fieldRefPost)) + '</label>' +
+            '<select data-je="refPost"><option value="">' + esc(T(UI.refPostNone)) + '</option></select></div>' +
           '<div class="jed-tradelevels-h">' + esc(T(UI.tradeLevelsH)) + '</div>' +
           '<div class="jed-setup-grid">' +
             '<div class="jed-setup-col jed-setup-left">' +
@@ -1515,11 +1529,26 @@
         tfOther.style.display = tfSelect.value === TIMEFRAME_OTHER_VAL ? 'block' : 'none';
       });
 
+      var refPostSelect = body.querySelector('[data-je="refPost"]');
+      function populateRefPostOptions(all){
+        if(!refPostSelect) return;
+        var prevVal = refPostSelect.value;
+        var opts2 = '<option value="">' + esc(T(UI.refPostNone)) + '</option>' + all
+          .filter(function(r){ return r.entryObj.id !== editingId; })
+          .map(function(r){
+            var label = (r.entryObj.asset || '\u2014') + ' \u00b7 ' + fmtDate(r.entryObj.createdAt) +
+              (r.entryObj.text ? ' \u00b7 ' + r.entryObj.text.slice(0, 40) : '');
+            return '<option value="' + esc(r.entryObj.id) + '">' + esc(label) + '</option>';
+          }).join('');
+        refPostSelect.innerHTML = opts2;
+        if(prevVal) refPostSelect.value = prevVal;
+      }
+
       var listFilter = { asset: 'all', date: '' };
       var filterAssetSel = body.querySelector('[data-je="filterAsset"]');
       var filterDateInput = body.querySelector('[data-je="filterDate"]');
       var filterClearBtn = body.querySelector('[data-je="filterClear"]');
-      var listOpts = { onEdit: function(e){ startEdit(e); }, onPublish: function(e){ buildJournalReport(e); }, onBeforeAfter: function(e){ buildBeforeAfterModal(e); }, filter: listFilter, filterEls: { asset: filterAssetSel } };
+      var listOpts = { onEdit: function(e){ startEdit(e); }, onPublish: function(e){ buildJournalReport(e); }, onBeforeAfter: function(e){ buildBeforeAfterModal(e); }, onEntries: function(all){ populateRefPostOptions(all); }, filter: listFilter, filterEls: { asset: filterAssetSel } };
       filterAssetSel.addEventListener('change', function(){ listFilter.asset = filterAssetSel.value; loadOwnEntries(body.querySelector('[data-je="list"]'), listOpts); });
       filterDateInput.addEventListener('change', function(){ listFilter.date = filterDateInput.value; loadOwnEntries(body.querySelector('[data-je="list"]'), listOpts); });
       filterClearBtn.addEventListener('click', function(){ listFilter.date = ''; filterDateInput.value = ''; loadOwnEntries(body.querySelector('[data-je="list"]'), listOpts); });
@@ -1631,6 +1660,7 @@
         body.querySelector('[data-je="entryPrice"]').value = '';
         body.querySelector('[data-je="priceUnit"]').value = 'points';
         body.querySelector('[data-je="text"]').value = '';
+        if(refPostSelect) refPostSelect.value = '';
         clearPreview();
         saveBtn.textContent = T(UI.save);
         cancelBtn.style.display = 'none';
@@ -1668,6 +1698,7 @@
         body.querySelector('[data-je="entryPrice"]').value = entry.entryPrice || '';
         body.querySelector('[data-je="priceUnit"]').value = entry.priceUnit || 'points';
         body.querySelector('[data-je="text"]').value = entry.text || '';
+        if(refPostSelect) refPostSelect.value = entry.refPostId || '';
         if(entry.imageUrl) showExistingImage(entry.imageUrl); else clearPreview();
         saveBtn.textContent = T(UI.update);
         cancelBtn.style.display = 'inline-block';
@@ -1690,6 +1721,7 @@
         var priceUnit = body.querySelector('[data-je="priceUnit"]').value || 'points';
         var tagsRaw = body.querySelector('[data-je="tags"]').value.trim();
         var tags = tagsRaw ? tagsRaw.split(/[\s,]+/).map(function(t){ return t.replace(/^#/, '').toLowerCase(); }).filter(Boolean) : [];
+        var refPostId = refPostSelect ? (refPostSelect.value || '') : '';
         /* dedupe */
         tags = tags.filter(function(t, i){ return tags.indexOf(t) === i; });
         var willHaveImage = !!(pickedFile || editingImageUrl);
@@ -1698,6 +1730,7 @@
         if(pickedFile && !cloudinaryConfigured()){ msg.className = 'jed-msg err'; msg.textContent = T(UI.imgNotConfigured); return; }
         var wasEditing = !!editingId;
         var targetId = editingId;
+        if(wasEditing && refPostId === targetId) refPostId = ''; /* a post can't reference itself */
         saveBtn.disabled = true;
         msg.className = 'jed-msg'; msg.textContent = wasEditing ? T(UI.updating) : T(UI.saving);
 
@@ -1705,7 +1738,7 @@
           var data = {
             asset: asset, timeframe: timeframe, text: text, tags: tags, imageUrl: imageUrl || '',
             bias: currentBias, invalidPoint: invalidPoint, waveView: waveView, sl: sl, tp: tp,
-            entryPrice: entryPrice, priceUnit: priceUnit
+            entryPrice: entryPrice, priceUnit: priceUnit, refPostId: refPostId
           };
           if(wasEditing){
             return fbDb.collection('journal_entries').doc(targetId).update(data);
@@ -2060,6 +2093,7 @@
           cardLevelsHtml(e) +
           livePtsHtml(e) +
           '<div class="jrnl-card-text"></div>' +
+          refPostLinkHtml(e) +
           '<div class="jrnl-card-actions">' + likeWrapHTML() + '<button type="button" class="jrnl-share-btn" data-share></button></div>' +
         '</div>' +
         '</div>' +
@@ -2136,6 +2170,7 @@
           sl: v.sl || '', tp: v.tp || '', waveView: v.waveView || '',
           entryPrice: v.entryPrice || '', priceUnit: v.priceUnit || 'points',
           tradeStatus: v.tradeStatus || 'open', exitPrice: v.exitPrice || '',
+          refPostId: v.refPostId || '',
           createdAt: v.createdAt && v.createdAt.toDate ? v.createdAt.toDate() : new Date()
         };
         paint();

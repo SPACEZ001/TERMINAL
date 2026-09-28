@@ -955,7 +955,7 @@ var CL_UI = {
      of both the Home hub grid (buildHub) and the top nav menu (buildNav) --
      currently just Connected Users, which is reachable only via the admin
      login gate's own panel button. */
-  var NAV_HIDDEN = { connectedusers:1, printreport:1, announcements:1 };
+  var NAV_HIDDEN = { connectedusers:1, printreport:1, announcements:1, pro:1 }; /* Round Q: Institutional Pro Desk moved into Cockpit, see part-47.js */
 
   function buildHub(){
     var sec = el('section');
@@ -1149,7 +1149,31 @@ var CL_UI = {
 
     var trig = menu.querySelector('.nav-trig');
     var pop = menu.querySelector('[data-n="pop"]');
-    trig.addEventListener('click', function(e){ e.stopPropagation(); menu.classList.toggle('open'); });
+    trig.addEventListener('click', function(e){
+      e.stopPropagation();
+      var opening = !menu.classList.contains('open');
+      menu.classList.toggle('open');
+      /* Round Q: on phones .nav-cluster can wrap/center, so the popup's
+         normal position:absolute (anchored to this trigger button) can
+         land the trigger anywhere in the row and send the popup off the
+         edge of the screen. Below 560px, pin it to the viewport instead
+         of the trigger so it always fits, measuring the trigger's real
+         position fresh on every open (works whatever row it wrapped to). */
+      if(opening && window.innerWidth <= 560){
+        var r = trig.getBoundingClientRect();
+        pop.style.position = 'fixed';
+        pop.style.top = (r.bottom + 10) + 'px';
+        pop.style.left = '12px';
+        pop.style.right = '12px';
+        pop.style.width = 'auto';
+      } else if(!opening){
+        pop.style.position = '';
+        pop.style.top = '';
+        pop.style.left = '';
+        pop.style.right = '';
+        pop.style.width = '';
+      }
+    });
     document.addEventListener('click', function(e){ if(!menu.contains(e.target)) menu.classList.remove('open'); });
     document.addEventListener('keydown', function(e){ if(e.key === 'Escape') menu.classList.remove('open'); });
 
@@ -1388,9 +1412,10 @@ var CL_UI = {
         { k:'market', t:{en:'Read the market',th:'อ่านตลาด'},
           ids:['now', 'outlook', 'regime', 'anomaly', 'correl', 'rulelab', 'daily', 'flow', 'globe', 'infl', 'desk', 'scenarios'] },
         { k:'tools',  t:{en:'Workbench',th:'เครื่องมือ'},
-          /* 'printreport' deliberately left out -- see NAV_HIDDEN above; it
-             stays reachable only via the admin login gate's own panel. */
-          ids:['stock', 'watchlist', 'bubble', 'chartlab', 'directory', 'pro', 'proof', 'journal', 'journalNew'] }
+          /* 'printreport' and 'pro' deliberately left out -- see NAV_HIDDEN
+             above; 'pro' (Institutional Pro Desk) is reachable only via a
+             card inside Cockpit / Command Center now, see part-47.js. */
+          ids:['stock', 'watchlist', 'bubble', 'chartlab', 'directory', 'proof', 'journal', 'journalNew'] }
       ];
       var used = { membership:1 }, n = 0, g, i, r;
       for(g = 0; g < GROUPS.length; g++){

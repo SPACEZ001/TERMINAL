@@ -121,6 +121,11 @@
     rankNA:{en:'The ranking engine hasn’t loaded yet.',th:'เครื่องมือจัดอันดับยังไม่โหลด'},
     goDesk:{en:'Open What To Buy Now →',th:'เปิดหน้าตอนนี้ควรซื้ออะไร →'},
 
+    proL:{en:'INSTITUTIONAL PRO DESK',th:'โปรเดสก์ระดับสถาบัน'},
+    proTxt:{en:'GEX, dark pool prints, order-book heatmap, Monte Carlo, execution algos, and the rest of the pro-tier toolkit — moved here from the top menu so it stays out of the way for everyone else.',
+      th:'GEX, ธุรกรรม Dark Pool, ฮีทแมพออเดอร์บุ๊ก, Monte Carlo, อัลกอริทึมการส่งคำสั่ง และเครื่องมือระดับโปรที่เหลือ — ย้ายมาไว้ตรงนี้จากเมนูบนสุด เพื่อไม่ให้รกหน้าเว็บสำหรับคนอื่น'},
+    goPro:{en:'Open Institutional Pro Desk →',th:'เปิดโปรเดสก์ระดับสถาบัน →'},
+
     priceChartL:{en:'REAL PRICE CHART',th:'กราฟราคาจริง'},
     priceChartNote:{en:'Real daily closes from the same snapshot the rest of the terminal uses — not the practice data in Chart Lab. While price holds above the slower moving average, the long-term trend is still up.',
       th:'ราคาปิดรายวันจริงจากชุดข้อมูลเดียวกับที่ทั้งเว็บใช้ ไม่ใช่ข้อมูลฝึกหัดในห้องทดลองกราฟ ตราบใดที่ราคายังอยู่เหนือเส้นค่าเฉลี่ยเส้นช้า เทรนด์ระยะยาวยังถือว่าขึ้นอยู่'},
@@ -1217,13 +1222,18 @@
       rows + '<div class="cx-note">' + esc(tx(T.rankNote)) + '</div>' + goBtn('desk', tx(T.goDesk)) + '</div>';
   }
 
+  function proDeskHTML(){
+    return '<div class="cx-card"><div class="cx-lab">' + esc(tx(T.proL)) + '</div>' +
+      '<div class="cx-txt">' + esc(tx(T.proTxt)) + '</div>' + goBtn('pro', tx(T.goPro)) + '</div>';
+  }
+
   function bodyHTML(){
     return signalHTML() +
       '<div class="cx-grid">' +
         marketHTML() + macroHTML() + fxHTML() + flowHTML() + globeHTML() + inflHTML() +
         creditHTML() + bubbleHTML() + anomHTML() + correlHTML() + watchHTML() + watchTableHTML() +
         breadthHTML() + crossHTML() +
-        gaugesHTML() + rotationHTML() + flowForecastHTML() + correlHeatHTML() + stockHeatHTML() + chartsHTML() + priceChartHTML() + rankHTML() +
+        gaugesHTML() + rotationHTML() + flowForecastHTML() + correlHeatHTML() + stockHeatHTML() + chartsHTML() + priceChartHTML() + rankHTML() + proDeskHTML() +
       '</div>' +
       '<div class="ss-foot">' + esc(tx(T.foot)) + '</div>';
   }
