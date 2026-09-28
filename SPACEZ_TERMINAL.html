@@ -51095,27 +51095,25 @@ var qrcode = function() {
     margin-top:10px;padding-top:8px;border-top:1px dashed #ddd;text-align:left;
     font-size:10.5px;line-height:1.65;color:#333;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;
   }
-  .jrp-ba-stats{display:flex;gap:12px;margin-top:14px;}
-  .jrp-ba-stat{flex:1;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center;}
-  .jrp-ba-stat-label{font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:#888;}
-  .jrp-ba-stat-val{font-size:17px;font-weight:800;color:#161616;margin-top:4px;}
+  /* Round P3: the four headline numbers (days elapsed / % change / price
+     change / profit-loss) read as one formal stat-tile row instead of the
+     old full-width colored bars -- those stretched a short centered number
+     into a long green/red block touching both edges, which read as loud
+     and unpolished rather than like a professional report. Same bordered-
+     tile language as the rest of this print sheet; color lives only on the
+     value text, never as a fill, and the profit/loss tile gets a thin
+     top-accent (not a background tint) to read as the headline figure. */
+  .jrp-ba-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px;}
+  @media(max-width:560px){ .jrp-ba-stats{grid-template-columns:repeat(2,1fr);} }
+  .jrp-ba-stat{border:1px solid #ddd;border-radius:6px;padding:12px 8px;text-align:center;}
+  .jrp-ba-stat-label{font-size:8.5px;letter-spacing:.7px;text-transform:uppercase;color:#888;line-height:1.4;}
+  .jrp-ba-stat-val{font-size:16px;font-weight:800;color:#161616;margin-top:5px;letter-spacing:-.2px;}
   .jrp-ba-stat-val.pos{color:#1a8f4c;}
   .jrp-ba-stat-val.neg{color:#c0392b;}
-  .jrp-ba-diff{
-    margin-top:16px;padding:14px;border-radius:6px;text-align:center;font-size:13px;color:#444;
-    border:1.5px solid #ccc;
-  }
-  .jrp-ba-diff b{font-size:20px;margin-left:6px;}
-  .jrp-ba-diff.pos{border-color:#1a8f4c;color:#1a8f4c;}
-  .jrp-ba-diff.neg{border-color:#c0392b;color:#c0392b;}
-  /* the bias-adjusted profit line is the headline figure (the raw price
-     change above it is the factual number the profit is derived from), so
-     it gets a filled background and a slightly larger figure to read as
-     the answer to "did this call make money", not a duplicate stat. */
-  .jrp-ba-diff.profit{margin-top:8px;border-width:2px;}
-  .jrp-ba-diff.profit.pos{background:rgba(26,143,76,.08);}
-  .jrp-ba-diff.profit.neg{background:rgba(192,57,43,.08);}
-  .jrp-ba-diff.profit b{font-size:23px;}
+  .jrp-ba-stat.headline{border-top-width:3px;padding-top:10px;}
+  .jrp-ba-stat.headline.pos{border-top-color:#1a8f4c;}
+  .jrp-ba-stat.headline.neg{border-top-color:#c0392b;}
+  .jrp-ba-stat.headline .jrp-ba-stat-val{font-size:18px;}
   /* minimum one-A4-page size for the Before/After report specifically --
      .jrp-sheet (shared with the regular single-post report) is untouched. */
   .jrp-ba-sheet{min-height:1122px;box-sizing:border-box;}
@@ -51676,7 +51674,7 @@ var qrcode = function() {
     baGenerate:{en:'Generate report',th:'ออกรายงาน'},
     baDiff:{en:'Price change',th:'ราคาเปลี่ยนไป'},
     baBias:{en:'Bias',th:'มุมมอง'},
-    baProfit:{en:'Profit / loss from entry',th:'กำไร/ขาดทุน จากราคาเข้า'},
+    baProfit:{en:'Profit / loss',th:'กำไร/ขาดทุน'},
     baNeedBoth:{en:'Choose both posts and enter both prices first.',th:'เลือกโพสต์ทั้งสองและใส่ราคาทั้งสองก่อน'},
     baBefore:{en:'Before',th:'Before'},
     baAfter:{en:'After',th:'After'},
@@ -53251,15 +53249,17 @@ var qrcode = function() {
           '<div class="jrp-title">' + esc(T(UI.baTitle)) + '</div>' +
           '<div class="jrp-meta"><span>' + esc(T(UI.reportGenerated)) + ': ' + esc(fmtDate(new Date())) + '</span></div>' +
         '</div>' +
-        /* Round P2: the headline numbers (price change / profit-loss / days /
-           % change) now sit right under the title, above the before-after
-           image grid, so the answer to "what happened" doesn't require
-           scrolling past both screenshots first. */
-        '<div class="jrp-ba-diff ' + diffCls + '"><span>' + esc(T(UI.baDiff)) + ':</span> <b>' + esc(diffStr) + '</b></div>' +
-        '<div class="jrp-ba-diff profit ' + profitCls + '"><span>' + esc(T(UI.baProfit)) + ':</span> <b>' + esc(profitStr) + '</b></div>' +
+        /* Round P3: the headline numbers (days elapsed / % change / price
+           change / profit-loss) now sit right under the title, above the
+           before-after image grid, so the answer to "what happened" doesn't
+           require scrolling past both screenshots first -- as one unified
+           row of formal stat tiles (see the .jrp-ba-stat* CSS) rather than
+           the old full-width green/red bars. */
         '<div class="jrp-ba-stats">' +
           '<div class="jrp-ba-stat"><div class="jrp-ba-stat-label">' + esc(T(UI.baDaysElapsed)) + '</div><div class="jrp-ba-stat-val">' + daysElapsed + '</div></div>' +
           '<div class="jrp-ba-stat"><div class="jrp-ba-stat-label">' + esc(T(UI.baPctChange)) + '</div><div class="jrp-ba-stat-val ' + diffCls + '">' + esc(pctStr) + '</div></div>' +
+          '<div class="jrp-ba-stat"><div class="jrp-ba-stat-label">' + esc(T(UI.baDiff)) + '</div><div class="jrp-ba-stat-val ' + diffCls + '">' + esc(diffStr) + '</div></div>' +
+          '<div class="jrp-ba-stat headline ' + profitCls + '"><div class="jrp-ba-stat-label">' + esc(T(UI.baProfit)) + '</div><div class="jrp-ba-stat-val ' + profitCls + '">' + esc(profitStr) + '</div></div>' +
         '</div>' +
         '<div class="jrp-ba-grid">' +
           sideCol(beforeItem, beforePrice, T(UI.baBefore), true) +
