@@ -25075,7 +25075,12 @@ var GM = {
     cfg: CFG, state: state, decorate: decorate,
     snapshot: function(){ return lastSnap; },
     snapAgeH: snapAgeH, marketStatus: marketStatus,
-    historyOf: historyOf, historyOfRaw: historyOfRaw
+    historyOf: historyOf, historyOfRaw: historyOfRaw,
+    /* Round L: read-only access to the same free Finnhub key the visitor
+       already pasted into this page's own quote/fundamentals settings, so
+       the Economic Calendar module can call Finnhub's calendar endpoint
+       without asking for (or storing) a second copy of it. */
+    apiKey: apiKey
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 400); });
@@ -33412,6 +33417,55 @@ var GM = {
     font-size:10.8px;line-height:1.55;color:var(--amber);background:rgba(255,201,77,.08);
     border:1px solid rgba(255,201,77,.3);border-radius:10px;padding:9px 11px;margin-bottom:14px;
   }
+
+  /* Round L: mode switcher -- two tabs sitting right under the head/before
+     the disclaimer, styled like the rest of this popup's amber accent. */
+  .spz-shock-modetabs{display:flex;gap:6px;margin-bottom:12px;}
+  .spz-shock-modetab{
+    flex:1 1 0;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.3px;
+    padding:8px 6px;border-radius:9px;border:1px solid var(--border-dim);background:rgba(255,255,255,.03);
+    color:var(--grey);cursor:pointer;text-align:center;transition:border-color .15s,background .15s,color .15s;
+  }
+  .spz-shock-modetab:hover{color:var(--white);}
+  .spz-shock-modetab.active{
+    color:var(--amber);border-color:rgba(255,201,77,.55);background:rgba(255,201,77,.1);
+  }
+
+  /* "My Portfolio" card: name row + condensed holding rows + a bottom
+     button to jump to the real, full Watchlist page. */
+  .spz-shock-pf-name{
+    display:flex;align-items:center;gap:9px;margin-bottom:12px;padding-bottom:12px;
+    border-bottom:1px dashed var(--border-dim);
+  }
+  .spz-shock-pf-avatar{
+    width:34px;height:34px;border-radius:50%;flex:0 0 auto;object-fit:cover;background:rgba(255,255,255,.06);
+  }
+  .spz-shock-pf-avatar-fallback{
+    width:34px;height:34px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.06);font-size:13px;font-weight:800;color:var(--grey);
+  }
+  .spz-shock-pf-nametxt{font-size:13.5px;font-weight:800;color:#fff;}
+  .spz-shock-pf-namesub{font-family:var(--mono);font-size:10px;color:var(--grey-dim);margin-top:1px;}
+  .spz-shock-pf-list{display:flex;flex-direction:column;gap:7px;margin-bottom:14px;}
+  .spz-shock-pf-row{
+    display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;
+    background:rgba(255,255,255,.03);border:1px solid var(--border-dim);cursor:pointer;
+  }
+  .spz-shock-pf-row:hover{border-color:rgba(255,201,77,.4);}
+  .spz-shock-pf-tk{font-family:var(--mono);font-weight:800;font-size:12px;color:#fff;flex:0 0 auto;}
+  .spz-shock-pf-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;color:var(--grey-dim);}
+  .spz-shock-pf-px{font-family:var(--mono);font-size:11.5px;color:var(--grey);flex:0 0 auto;}
+  .spz-shock-pf-chg{font-family:var(--mono);font-size:11px;font-weight:700;flex:0 0 auto;min-width:52px;text-align:right;}
+  .spz-shock-pf-chg.up{color:var(--neon-2,var(--neon));}
+  .spz-shock-pf-chg.dn{color:var(--red);}
+  .spz-shock-pf-chg.fl{color:var(--grey-dim);}
+  .spz-shock-pf-viewfull{
+    display:block;width:100%;text-align:center;font-family:var(--mono);font-size:12px;font-weight:700;
+    letter-spacing:.3px;padding:11px 12px;border-radius:11px;cursor:pointer;
+    background:rgba(255,201,77,.12);border:1px solid rgba(255,201,77,.45);color:var(--amber);
+  }
+  .spz-shock-pf-viewfull:hover{background:rgba(255,201,77,.2);}
+
   @media (prefers-reduced-motion: reduce){
     #spzShockFab svg,.spz-shock-fab-ring{animation:none;}
   }
@@ -33703,6 +33757,16 @@ var GM = {
     shockPopupTitle:{en:'What would happen to YOUR portfolio?',th:'พอร์ตของคุณจะเป็นยังไง?'},
     shockDisclaimer:{en:'Educational simulation only — not investment advice. These are historical tendencies, not guarantees: a sector that "usually" holds up can still fall in any single real event.',
                      th:'เป็นการจำลองเพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน แนวโน้มนี้มาจากสถิติในอดีต ไม่ใช่การรับประกัน — กลุ่มที่ "มักจะ" ไปได้ดี ก็ยังลงได้ในเหตุการณ์จริงแต่ละครั้ง'},
+
+    /* Round L: two-way mode switch inside the same popup -- "My Portfolio"
+       (a condensed real-holdings card) vs "What-If Scenario" (the K11
+       simulator, unchanged). */
+    shockModePortfolio:{en:'My Portfolio',th:'พอร์ตของฉัน'},
+    shockModeScenario:{en:'What-If Scenario',th:'จำลองสถานการณ์'},
+    shockPfViewFull:{en:'Open Full Watchlist →',th:'ดูพอร์ตแบบเต็ม →'},
+    shockPfDisc:{en:'Live indicative prices — not guaranteed, not investment advice.',
+                 th:'ราคาสดเพื่ออ้างอิงเท่านั้น ไม่รับประกันความถูกต้อง และไม่ใช่คำแนะนำการลงทุน'},
+    pfHoldingsCountLbl:{en:'holdings',th:'รายการที่ถือ'},
 
     profileHoldings:{en:'holdings',th:'ตัวที่ถือ'},
     profileTopSector:{en:'Mostly',th:'ส่วนใหญ่'},
@@ -34716,6 +34780,15 @@ var GM = {
      reachable from any route, not just while #watchlist is scrolled into
      view. Built once, then just shown/hidden by paintShockFab() below. */
   var shockFabEl = null, shockPopupEl = null;
+
+  /* Round L: which of the two tabs is showing -- "portfolio" (a condensed
+     real-holdings card) or "scenario" (the original K11 simulator). One
+     shared module var since only one popup instance ever exists; the last
+     tickers/stocks/lineSt paintShockFab was called with are cached here so
+     a tab click can re-render without needing paint() to run again. */
+  var shockPopupMode = 'portfolio';
+  var shockLastArgs = null;
+
   function ensureShockPopup(){
     if(shockFabEl) return;
     shockFabEl = document.createElement('button');
@@ -34738,6 +34811,10 @@ var GM = {
         '<span class="spz-shock-pop-title" data-spzshock="title"></span>' +
         '<button type="button" class="spz-shock-pop-close" data-spzshock="close" aria-label="close">&times;</button>' +
       '</div>' +
+      '<div class="spz-shock-modetabs" data-spzshock="modetabs">' +
+        '<button type="button" class="spz-shock-modetab" data-spzshock-mode="portfolio">' + esc(tx(C.shockModePortfolio)) + '</button>' +
+        '<button type="button" class="spz-shock-modetab" data-spzshock-mode="scenario">' + esc(tx(C.shockModeScenario)) + '</button>' +
+      '</div>' +
       '<div class="spz-shock-pop-disc" data-spzshock="disc"></div>' +
       '<div class="spz-shock-pop-body" data-spzshock="body"></div>';
     document.body.appendChild(shockPopupEl);
@@ -34750,26 +34827,79 @@ var GM = {
       shockPopupEl.classList.remove('open');
       shockFabEl.classList.remove('on');
     });
+    shockPopupEl.querySelector('[data-spzshock="modetabs"]').addEventListener('click', function(e){
+      var btn = e.target.closest('[data-spzshock-mode]');
+      if(!btn) return;
+      var mode = btn.getAttribute('data-spzshock-mode');
+      if(mode === shockPopupMode) return;
+      shockPopupMode = mode;
+      renderShockPopupBody();
+    });
   }
 
-  /* shows/hides the FAB (only once a LINE-linked visitor actually has
-     holdings to simulate against -- same gating shockSimulatorHTML already
-     uses) and keeps the popup's own scenario picker in sync with whatever
-     the visitor currently holds, so adding/removing a ticker elsewhere on
-     the page updates it the next time paint() runs. */
-  function paintShockFab(tickers, stocks){
-    var hasData = !!(tickers && tickers.length && window.__SPZ_SCENARIOS);
-    if(!hasData){
-      if(shockFabEl) shockFabEl.classList.remove('show');
-      if(shockPopupEl) shockPopupEl.classList.remove('open', 'show');
+  /* condensed "My Portfolio" card: who's holding what, right now, from the
+     exact same lineSt/stocks data the full Watchlist page renders from --
+     ends in a button to jump to that full page for anything beyond a
+     glance (adding/removing tickers, the sector breakdown, the share card). */
+  function shockPortfolioCardHTML(tickers, stocks, lineSt){
+    lineSt = lineSt || {};
+    var shownName = lineEffectiveName(lineSt, tx(C.profileGuest));
+    var avatarHTML = lineSt.pictureUrl
+      ? '<img class="spz-shock-pf-avatar" src="' + esc(lineSt.pictureUrl) + '" alt="">'
+      : '<div class="spz-shock-pf-avatar-fallback">' + esc((shownName || '?').charAt(0).toUpperCase()) + '</div>';
+    var rowsHTML = tickers.map(function(t){
+      var s = stocks ? stocks[t] : null;
+      var chgCls = !s || !isNum(s.chg_pct) ? 'fl' : (s.chg_pct > 0 ? 'up' : s.chg_pct < 0 ? 'dn' : 'fl');
+      return '<div class="spz-shock-pf-row" data-spz-pf-open="' + esc(t) + '">' +
+        '<span class="spz-shock-pf-tk">$' + esc(t) + '</span>' +
+        '<span class="spz-shock-pf-nm">' + esc(s && s.name ? String(s.name).slice(0, 28) : tx(C.unknownNote)) + '</span>' +
+        (s ? '<span class="spz-shock-pf-px">' + esc(price(s.price)) + '</span>' : '') +
+        '<span class="spz-shock-pf-chg ' + chgCls + '">' + (s ? esc(pct(s.chg_pct)) : '—') + '</span>' +
+      '</div>';
+    }).join('');
+    return '<div class="spz-shock-pf-name">' + avatarHTML +
+        '<div><div class="spz-shock-pf-nametxt">' + esc(shownName) + '</div>' +
+        '<div class="spz-shock-pf-namesub">' + tickers.length + ' ' + esc(tx(C.pfHoldingsCountLbl)) + '</div></div>' +
+      '</div>' +
+      '<div class="spz-shock-pf-list">' + rowsHTML + '</div>' +
+      '<button type="button" class="spz-shock-pf-viewfull" data-spzshock="viewfull">' + esc(tx(C.shockPfViewFull)) + '</button>';
+  }
+
+  /* repaints just the tab strip + disclaimer + body for whichever mode is
+     active, from the last (tickers, stocks, lineSt) paintShockFab saw --
+     called both on first open and on every tab click, so switching tabs
+     never needs a fresh paint() pass from the page itself. */
+  function renderShockPopupBody(){
+    if(!shockLastArgs || !shockPopupEl) return;
+    var tickers = shockLastArgs.tickers, stocks = shockLastArgs.stocks, lineSt = shockLastArgs.lineSt;
+
+    var tabs = shockPopupEl.querySelectorAll('[data-spzshock-mode]');
+    for(var t=0;t<tabs.length;t++){
+      tabs[t].classList.toggle('active', tabs[t].getAttribute('data-spzshock-mode') === shockPopupMode);
+    }
+    var discEl = shockPopupEl.querySelector('[data-spzshock="disc"]');
+    if(discEl) discEl.textContent = tx(shockPopupMode === 'portfolio' ? C.shockPfDisc : C.shockDisclaimer);
+
+    var bodyEl = shockPopupEl.querySelector('[data-spzshock="body"]');
+
+    if(shockPopupMode === 'portfolio'){
+      bodyEl.innerHTML = shockPortfolioCardHTML(tickers, stocks, lineSt);
+      var viewFullBtn = bodyEl.querySelector('[data-spzshock="viewfull"]');
+      if(viewFullBtn) viewFullBtn.addEventListener('click', function(){
+        shockPopupEl.classList.remove('open');
+        if(shockFabEl) shockFabEl.classList.remove('on');
+        location.hash = '#/watchlist';
+      });
+      var pfRows = bodyEl.querySelectorAll('[data-spz-pf-open]');
+      for(var p=0;p<pfRows.length;p++){
+        pfRows[p].addEventListener('click', function(){
+          var tk = this.getAttribute('data-spz-pf-open');
+          if(window.__SPZ_STOCK && window.__SPZ_STOCK.open) window.__SPZ_STOCK.open(tk);
+        });
+      }
       return;
     }
-    ensureShockPopup();
-    shockFabEl.classList.add('show');
-    shockPopupEl.classList.add('show');
-    shockPopupEl.querySelector('[data-spzshock="title"]').textContent = tx(C.shockPopupTitle);
-    shockPopupEl.querySelector('[data-spzshock="disc"]').textContent = tx(C.shockDisclaimer);
-    var bodyEl = shockPopupEl.querySelector('[data-spzshock="body"]');
+
     bodyEl.innerHTML = shockPopupBodyHTML(tickers, stocks);
     var select = bodyEl.querySelector('[data-wl="shockSelect"]');
     shockRenderResult(bodyEl, tickers, stocks, select ? Number(select.value) : 0);
@@ -34780,10 +34910,30 @@ var GM = {
     var openBtns = bodyEl.querySelectorAll('[data-wl-open]');
     for(var i=0;i<openBtns.length;i++){
       openBtns[i].addEventListener('click', function(){
-        var t = this.getAttribute('data-wl-open');
-        if(window.__SPZ_STOCK && window.__SPZ_STOCK.open) window.__SPZ_STOCK.open(t);
+        var tk2 = this.getAttribute('data-wl-open');
+        if(window.__SPZ_STOCK && window.__SPZ_STOCK.open) window.__SPZ_STOCK.open(tk2);
       });
     }
+  }
+
+  /* shows/hides the FAB (only once a LINE-linked visitor actually has
+     holdings to simulate against -- same gating shockSimulatorHTML already
+     uses) and keeps the popup's own scenario picker in sync with whatever
+     the visitor currently holds, so adding/removing a ticker elsewhere on
+     the page updates it the next time paint() runs. */
+  function paintShockFab(tickers, stocks, lineSt){
+    var hasData = !!(tickers && tickers.length && window.__SPZ_SCENARIOS);
+    if(!hasData){
+      if(shockFabEl) shockFabEl.classList.remove('show');
+      if(shockPopupEl) shockPopupEl.classList.remove('open', 'show');
+      return;
+    }
+    ensureShockPopup();
+    shockFabEl.classList.add('show');
+    shockPopupEl.classList.add('show');
+    shockPopupEl.querySelector('[data-spzshock="title"]').textContent = tx(C.shockPopupTitle);
+    shockLastArgs = { tickers:tickers, stocks:stocks, lineSt: lineSt || (window.__SPZ_LINE ? window.__SPZ_LINE.state() : null) };
+    renderShockPopupBody();
   }
 
   /* categorized, searchable ticker picker -- groups every known symbol by
@@ -35173,7 +35323,7 @@ var GM = {
           esc(tx(C.connectLede)) +
         '</div>';
       wireConnStrip(body);
-      paintShockFab(null, stocks);
+      paintShockFab(null, stocks, lineSt);
       return;
     }
 
@@ -35249,7 +35399,7 @@ var GM = {
         }
       }
 
-      paintShockFab(lineTickers, stocks);
+      paintShockFab(lineTickers, stocks, lineSt);
 
       var openShareBtn = body.querySelector('[data-wl="openShare"]');
       if(openShareBtn) openShareBtn.addEventListener('click', function(){
@@ -35333,7 +35483,7 @@ var GM = {
 
     body.innerHTML = strip + addBox + portfolioAnalysis + grid + howto;
     wireConnStrip(body);
-    paintShockFab(null, stocks);
+    paintShockFab(null, stocks, lineSt);
 
     var openBtns = body.querySelectorAll('[data-wl-open]');
     for(var i=0;i<openBtns.length;i++){
@@ -52248,6 +52398,533 @@ var qrcode = function() {
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 50); });
   else setTimeout(boot, 50);
+})();
+</script>
+
+<!-- ============================================================
+     SPACEZ ECONOMIC CALENDAR  (menu: "ปฏิทินเศรษฐกิจ" / "Economic Calendar").
+     Additive only: a new route registered through window.__spzAddRoute,
+     the same mechanism every other screen in this file uses (see
+     'printreport'/'connectedusers' above). Open to every visitor -- not
+     locked, not member-gated -- same as 'scenarios'/'directory'.
+
+     Data: Finnhub's /calendar/economic endpoint, reusing the exact same
+     free API key a visitor may already have pasted into this page's own
+     Finnhub quote/fundamentals settings (exposed read-only as
+     window.__SPZ_LIVE.apiKey(), added alongside this feature). Without a
+     key, this page shows a friendly prompt that opens that same settings
+     popover (#spzKeyBtn) rather than building a second key box.
+
+     Two independent displays, per her spec: a navigable month grid
+     (decorative day boxes, dot-coded by that day's busiest impact level)
+     with a click-to-expand day-detail panel underneath, and a SEPARATE
+     "This Week" list that always shows the real current week regardless
+     of which month the grid happens to be browsing. Both reuse the same
+     category -> historical-tendency note table once a release has both
+     an estimate and an actual, framed with the same "educational, not
+     investment advice" caution already used for the Round K11 shock
+     simulator -- this reads what a number tends to do, it does not tell
+     anyone what to buy or sell. ============================ -->
+<style>
+  #ecocal .cx-wrap{max-width:900px;margin:0 auto;padding:0 24px 100px;}
+  @media(max-width:700px){#ecocal .cx-wrap{padding:0 14px 70px;}}
+
+  #ecocal .ec-disc{
+    font-size:11.5px;line-height:1.6;color:var(--grey);background:var(--glass,rgba(255,255,255,.035));
+    border:1px solid var(--border-dim);border-radius:12px;padding:12px 14px;margin-bottom:22px;
+  }
+
+  #ecocal .ec-keygate{
+    max-width:420px;margin:20px auto 0;text-align:center;
+    border:1px solid var(--border-dim);border-radius:var(--radius,14px);
+    background:var(--glass,rgba(255,255,255,.035));padding:30px 24px;
+  }
+  #ecocal .ec-keygate-icon{font-size:26px;margin-bottom:10px;}
+  #ecocal .ec-keygate-lede{font-size:12.5px;color:var(--grey);line-height:1.7;margin-bottom:16px;}
+  #ecocal .ec-keygate-btn{
+    font-family:var(--mono);font-size:12.5px;font-weight:700;letter-spacing:.3px;
+    border:1px solid var(--neon);border-radius:10px;padding:10px 20px;cursor:pointer;
+    background:rgba(204,255,0,.08);color:var(--neon);
+  }
+  #ecocal .ec-keygate-btn:hover{background:rgba(204,255,0,.16);}
+
+  #ecocal .ec-loading, #ecocal .ec-error{
+    text-align:center;font-family:var(--mono);font-size:12px;color:var(--grey-dim);padding:30px 0;
+  }
+  #ecocal .ec-error{color:#ff5a72;}
+
+  #ecocal .ec-monthbar{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  #ecocal .ec-monthbtn{
+    width:32px;height:32px;border-radius:50%;border:1px solid var(--border-dim);background:transparent;
+    color:var(--grey);cursor:pointer;font-size:15px;flex:0 0 auto;
+  }
+  #ecocal .ec-monthbtn:hover{color:var(--white);border-color:var(--neon);}
+  #ecocal .ec-monthlbl{font-family:var(--mono);font-weight:800;font-size:15px;color:var(--white);flex:1;text-align:center;}
+
+  #ecocal .ec-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;}
+  #ecocal .ec-weekdays span{font-family:var(--mono);font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--grey-dim);text-align:center;}
+
+  #ecocal .ec-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:8px;}
+  #ecocal .ec-daybox{
+    aspect-ratio:1;border-radius:10px;border:1px solid var(--border-dim);background:rgba(255,255,255,.02);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;
+    font-family:var(--mono);font-size:12px;color:var(--grey);position:relative;transition:border-color .15s,background .15s;
+  }
+  #ecocal .ec-daybox.pad{visibility:hidden;pointer-events:none;}
+  #ecocal .ec-daybox:hover{border-color:var(--neon);color:var(--white);}
+  #ecocal .ec-daybox.today{border-color:var(--neon);color:var(--white);box-shadow:0 0 0 1px var(--neon) inset;}
+  #ecocal .ec-daybox.sel{background:rgba(204,255,0,.1);border-color:var(--neon);}
+  #ecocal .ec-daybox .ec-dots{display:flex;gap:2px;}
+  #ecocal .ec-daybox .ec-dot{width:5px;height:5px;border-radius:50%;}
+  #ecocal .ec-daybox .ec-dot.high{background:var(--red);}
+  #ecocal .ec-daybox .ec-dot.medium{background:var(--amber);}
+  #ecocal .ec-daybox .ec-dot.low{background:var(--grey-dim);}
+
+  #ecocal .ec-daydetail{
+    border:1px solid var(--border-dim);border-radius:12px;background:var(--glass,rgba(255,255,255,.03));
+    padding:14px 16px;margin:4px 0 28px;
+  }
+  #ecocal .ec-daydetail-h{font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--white);margin-bottom:10px;}
+  #ecocal .ec-daydetail-empty{font-size:12px;color:var(--grey-dim);font-style:italic;}
+
+  #ecocal .ec-row{
+    border:1px solid var(--border-dim);border-radius:12px;background:rgba(255,255,255,.025);
+    padding:12px 14px;margin-bottom:10px;
+  }
+  #ecocal .ec-row-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
+  #ecocal .ec-row-time{font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);flex:0 0 auto;}
+  #ecocal .ec-row-country{
+    font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.3px;padding:2px 7px;border-radius:6px;
+    background:rgba(255,255,255,.06);color:var(--grey);flex:0 0 auto;
+  }
+  #ecocal .ec-row-event{font-size:12.5px;font-weight:700;color:var(--white);flex:1 1 auto;min-width:140px;}
+  #ecocal .ec-stars{display:inline-flex;gap:1px;flex:0 0 auto;}
+  #ecocal .ec-star{font-size:11px;color:rgba(255,255,255,.15);}
+  #ecocal .ec-star.on.high{color:var(--red);}
+  #ecocal .ec-star.on.medium{color:var(--amber);}
+  #ecocal .ec-star.on.low{color:var(--grey-dim);}
+  #ecocal .ec-row-vals{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:11.5px;margin-bottom:4px;}
+  #ecocal .ec-row-vals b{color:var(--grey-dim);font-weight:400;margin-right:4px;}
+  #ecocal .ec-row-actual.above{color:var(--neon-2,var(--neon));}
+  #ecocal .ec-row-actual.below{color:var(--red);}
+  #ecocal .ec-row-actual.inline{color:var(--grey);}
+  #ecocal .ec-row-note{font-size:11.5px;line-height:1.6;color:var(--grey);border-top:1px dashed var(--border-dim);padding-top:8px;margin-top:6px;}
+
+  #ecocal .ec-week-head{display:flex;align-items:center;gap:10px;margin:36px 0 14px;}
+  #ecocal .ec-week-h{font-size:15px;font-weight:800;color:var(--white);}
+  #ecocal .ec-week-empty{font-size:12px;color:var(--grey-dim);font-style:italic;padding:14px 0;}
+
+  @media(max-width:520px){
+    #ecocal .ec-row-event{min-width:100%;order:1;}
+    #ecocal .ec-daybox{font-size:10.5px;}
+  }
+</style>
+
+<script>
+(function(){
+  'use strict';
+  function L(){ return document.documentElement.lang === 'th' ? 'th' : 'en'; }
+  function tx(o){ return o ? (o[L()] || o.en || '') : ''; }
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function isNum(v){ return typeof v === 'number' && isFinite(v); }
+  function pad2(n){ n = Math.floor(n); return n < 10 ? '0' + n : '' + n; }
+  function ymd(d){ return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+
+  var C = {
+    eb:{en:'Macro Calendar',th:'ปฏิทินมหภาค'},
+    h:{en:'Economic Calendar',th:'ปฏิทินเศรษฐกิจ'},
+    lede:{en:'The releases that tend to move markets — by day, by week, with forecast vs. actual once each one lands.',
+          th:'ตัวเลขเศรษฐกิจที่มักขยับตลาด — แยกตามวันและตามสัปดาห์ พร้อมเทียบตัวเลขคาดการณ์กับค่าจริงทันทีที่ประกาศ'},
+    disc:{en:'Educational reference only, not investment advice. Times and figures come from a free third-party feed (Finnhub) and can be delayed, revised, or occasionally wrong — always confirm at the primary source. "Above/below forecast" market notes describe historical tendencies, not guarantees.',
+          th:'เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน เวลาและตัวเลขมาจากผู้ให้บริการข้อมูลภายนอกแบบฟรี (Finnhub) อาจหน่วง แก้ไขภายหลัง หรือคลาดเคลื่อนได้บ้าง ควรตรวจสอบกับแหล่งข้อมูลหลักเสมอ ส่วนบันทึก "ดีกว่า/แย่กว่าคาด" เป็นแนวโน้มในอดีต ไม่ใช่การรับประกัน'},
+    keygateLede:{en:'This calendar reads Finnhub’s economic-data feed — the same free key already used for live stock quotes on this site. Add yours (free, no card) to turn it on.',
+                 th:'ปฏิทินนี้ดึงข้อมูลจาก Finnhub — คีย์ฟรีตัวเดียวกับที่ใช้ดึงราคาหุ้นสดในเว็บนี้ กดเพิ่มคีย์ฟรี (ไม่ต้องใช้บัตร) เพื่อเปิดใช้งาน'},
+    keygateBtn:{en:'Add your free Finnhub key',th:'เพิ่มคีย์ Finnhub ฟรี'},
+    loading:{en:'Loading calendar…',th:'กำลังโหลดปฏิทิน…'},
+    error:{en:'Could not load the calendar right now — the free feed may be rate-limited. Try again in a moment.',
+           th:'โหลดปฏิทินไม่สำเร็จตอนนี้ — อาจเพราะผู้ให้บริการจำกัดจำนวนครั้ง ลองใหม่อีกครั้งในอีกสักครู่'},
+    dow:{en:['Su','Mo','Tu','We','Th','Fr','Sa'],th:['อา','จ','อ','พ','พฤ','ศ','ส']},
+    dayDetailPick:{en:'Tap a day above to see its releases.',th:'แตะวันที่ด้านบนเพื่อดูรายการประกาศของวันนั้น'},
+    dayDetailEmpty:{en:'No tracked releases that day.',th:'วันนี้ไม่มีการประกาศตัวเลขที่ติดตาม'},
+    weekH:{en:'This Week',th:'สัปดาห์นี้'},
+    weekEmpty:{en:'Nothing on the tracked calendar for the next 7 days.',th:'7 วันข้างหน้ายังไม่มีรายการในปฏิทินที่ติดตาม'},
+    estLbl:{en:'Forecast',th:'คาดการณ์'},
+    actLbl:{en:'Actual',th:'ค่าจริง'},
+    prevLbl:{en:'Previous',th:'ครั้งก่อน'},
+    pendingLbl:{en:'Not yet released',th:'ยังไม่ประกาศ'},
+    aboveTag:{en:'above forecast',th:'สูงกว่าคาด'},
+    belowTag:{en:'below forecast',th:'ต่ำกว่าคาด'},
+    inlineTag:{en:'in line with forecast',th:'ตรงกับคาดการณ์'}
+  };
+
+  var NOTES = {
+    inflation:{
+      above:{en:'Hotter inflation has historically pushed bond yields and the dollar up — often pressuring growth/tech stocks and gold short-term, while energy and value names have sometimes held up better.',
+              th:'เงินเฟ้อที่ร้อนกว่าคาดมักดันผลตอบแทนพันธบัตรและดอลลาร์ให้แข็งขึ้น ในอดีตมักกดดันหุ้นเติบโต/เทคโนโลยีและทองคำในระยะสั้น ส่วนหุ้นพลังงานและคุณค่ามักไปได้ดีกว่า'},
+      below:{en:'Cooler inflation has historically fed rate-cut hopes — often lifting growth/tech stocks and gold, while easing pressure on the dollar.',
+             th:'เงินเฟ้อที่เย็นกว่าคาดมักหนุนความหวังลดดอกเบี้ย ในอดีตมักหนุนหุ้นเติบโต/เทคโนโลยีและทองคำ พร้อมคลายแรงกดดันดอลลาร์'}
+    },
+    jobs:{
+      above:{en:'A stronger labor market has often reduced the urgency for rate cuts — historically pressuring gold and rate-sensitive growth stocks, while supporting the dollar and financials.',
+             th:'ตลาดแรงงานที่แข็งแกร่งกว่าคาดมักลดความจำเป็นในการลดดอกเบี้ย ในอดีตมักกดดันทองคำและหุ้นเติบโตที่อ่อนไหวต่อดอกเบี้ย ขณะที่หนุนดอลลาร์และกลุ่มการเงิน'},
+      below:{en:'A weaker labor market has often raised rate-cut expectations — historically lifting gold and growth stocks, while weighing on the dollar.',
+             th:'ตลาดแรงงานที่อ่อนกว่าคาดมักเพิ่มความคาดหวังลดดอกเบี้ย ในอดีตมักหนุนทองคำและหุ้นเติบโต ขณะที่กดดันดอลลาร์'}
+    },
+    rates:{
+      above:{en:'A more hawkish outcome than expected has historically hit growth stocks and gold hardest, while boosting the dollar and bank stocks.',
+             th:'ผลการประชุมที่ "เข้มงวดกว่าคาด" ในอดีตมักกระทบหุ้นเติบโตและทองคำหนักที่สุด ขณะที่หนุนดอลลาร์และหุ้นกลุ่มธนาคาร'},
+      below:{en:'A more dovish outcome than expected has often lifted growth stocks and gold, while weakening the dollar.',
+             th:'ผลการประชุมที่ "ผ่อนคลายกว่าคาด" ในอดีตมักหนุนหุ้นเติบโตและทองคำ ขณะที่ทำให้ดอลลาร์อ่อนค่า'}
+    },
+    growth:{
+      above:{en:'Stronger-than-expected growth has often supported cyclical and value stocks, sometimes weighing on gold if it cools rate-cut bets.',
+             th:'การเติบโตที่แข็งแกร่งกว่าคาดมักหนุนหุ้นวัฏจักรและหุ้นคุณค่า และบางครั้งกดดันทองคำหากลดโอกาสลดดอกเบี้ย'},
+      below:{en:'Weaker-than-expected growth has often pressured cyclical stocks while supporting safe havens like gold and government bonds.',
+             th:'การเติบโตที่อ่อนแอกว่าคาดมักกดดันหุ้นวัฏจักร ขณะที่หนุนสินทรัพย์ปลอดภัยอย่างทองคำและพันธบัตรรัฐบาล'}
+    },
+    business:{
+      above:{en:'A stronger business-activity reading has historically favored industrials and cyclical sectors, with a more mixed effect on gold.',
+             th:'ดัชนีกิจกรรมทางธุรกิจที่แข็งแกร่งกว่าคาดมักเอื้อต่อหุ้นกลุ่มอุตสาหกรรมและวัฏจักร ส่วนทองคำมักได้รับผลไม่แน่นอน'},
+      below:{en:'A weaker business-activity reading has often raised growth concerns — pressuring cyclical stocks while supporting bonds and sometimes gold.',
+             th:'ดัชนีกิจกรรมทางธุรกิจที่อ่อนแอกว่าคาดมักเพิ่มความกังวลด้านการเติบโต กดดันหุ้นวัฏจักร ขณะที่หนุนพันธบัตรและบางครั้งทองคำ'}
+    },
+    consumer:{
+      above:{en:'Stronger consumer data has often supported retail and consumer-discretionary stocks, though it can add to inflation concerns that weigh on gold.',
+             th:'ข้อมูลผู้บริโภคที่แข็งแกร่งกว่าคาดมักหนุนหุ้นกลุ่มค้าปลีกและสินค้าฟุ่มเฟือย แต่บางครั้งเพิ่มความกังวลเงินเฟ้อซึ่งกดดันทองคำ'},
+      below:{en:'Weaker consumer data has often pressured retail and consumer-discretionary stocks while supporting expectations for easier policy.',
+             th:'ข้อมูลผู้บริโภคที่อ่อนแอกว่าคาดมักกดดันหุ้นกลุ่มค้าปลีกและสินค้าฟุ่มเฟือย ขณะที่หนุนความคาดหวังนโยบายที่ผ่อนคลายขึ้น'}
+    },
+    general:{
+      above:{en:'A stronger-than-expected reading can shift short-term sentiment — check what this specific indicator usually moves.',
+             th:'ตัวเลขที่ออกมาดีกว่าคาดอาจส่งผลต่อความเชื่อมั่นระยะสั้น — ควรตรวจสอบว่าตัวชี้วัดนี้มักส่งผลต่อกลุ่มใด'},
+      below:{en:'A weaker-than-expected reading can shift short-term sentiment — check what this specific indicator usually moves.',
+             th:'ตัวเลขที่ออกมาแย่กว่าคาดอาจส่งผลต่อความเชื่อมั่นระยะสั้น — ควรตรวจสอบว่าตัวชี้วัดนี้มักส่งผลต่อกลุ่มใด'}
+    }
+  };
+
+  var CATS = [
+    { key:'inflation', re:/CPI|PCE|Inflation/i },
+    { key:'jobs',       re:/Non[\s-]?Farm|Payrolls|Unemployment|Jobless Claims|ADP Employment|Employment Change/i },
+    { key:'rates',      re:/Interest Rate|FOMC|Fed Funds|Rate Decision|BOJ|ECB\b/i },
+    { key:'growth',     re:/\bGDP\b/i },
+    { key:'business',   re:/PMI|ISM|Industrial Production|Manufacturing/i },
+    { key:'consumer',   re:/Retail Sales|Consumer Confidence|Consumer Sentiment|Michigan/i }
+  ];
+  var INVERSE_RE = /Unemployment Rate|Jobless Claims/i;
+  var COUNTRY_ALLOW = { US:1, EU:1, GB:1, JP:1, CN:1, DE:1, TH:1 };
+
+  function categoryFor(name){
+    for(var i=0;i<CATS.length;i++){ if(CATS[i].re.test(name || '')) return CATS[i].key; }
+    return 'general';
+  }
+  function rawDirection(actual, estimate){
+    if(!isNum(actual) || !isNum(estimate)) return null;
+    if(actual > estimate) return 'above';
+    if(actual < estimate) return 'below';
+    return 'inline';
+  }
+  function noteDirection(ev, rawDir){
+    if(!rawDir || rawDir === 'inline') return rawDir;
+    return INVERSE_RE.test(ev.event || '') ? (rawDir === 'above' ? 'below' : 'above') : rawDir;
+  }
+  function fmtVal(v, unit){
+    if(!isNum(v)) return null;
+    var s = (Math.abs(v) >= 1000) ? v.toLocaleString() : String(v);
+    return s + (unit || '');
+  }
+
+  function impactStarsHTML(impact){
+    var n = impact === 'high' ? 3 : impact === 'medium' ? 2 : impact === 'low' ? 1 : 0;
+    var cls = impact === 'high' ? 'high' : impact === 'medium' ? 'medium' : 'low';
+    var out = '';
+    for(var i=0;i<3;i++){ out += '<span class="ec-star' + (i < n ? ' on ' + cls : '') + '">★</span>'; }
+    return '<span class="ec-stars">' + out + '</span>';
+  }
+
+  /* ---- data: cached per date-range in memory + sessionStorage (20-min
+     TTL) so switching tabs/language, or reopening the same month, never
+     re-hits the free feed more than necessary. ---- */
+  var CACHE_TTL_MS = 20 * 60 * 1000;
+  var mem = {};
+  function fetchRange(fromStr, toStr, cacheKey){
+    var hit = mem[cacheKey];
+    if(hit && (Date.now() - hit.ts) < CACHE_TTL_MS) return Promise.resolve(hit.events);
+    try {
+      var raw = sessionStorage.getItem('spz_ecocal_' + cacheKey);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(parsed && (Date.now() - parsed.ts) < CACHE_TTL_MS){ mem[cacheKey] = parsed; return Promise.resolve(parsed.events); }
+      }
+    } catch(e){}
+    var key = (window.__SPZ_LIVE && window.__SPZ_LIVE.apiKey) ? window.__SPZ_LIVE.apiKey() : '';
+    if(!key) return Promise.reject(new Error('no key'));
+    var url = 'https://finnhub.io/api/v1/calendar/economic?from=' + fromStr + '&to=' + toStr + '&token=' + encodeURIComponent(key);
+    var ctrl = ('AbortController' in window) ? new AbortController() : null;
+    var t = setTimeout(function(){ if(ctrl) ctrl.abort(); }, 12000);
+    return fetch(url, ctrl ? { signal:ctrl.signal } : undefined).then(function(r){
+      clearTimeout(t);
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }, function(e){ clearTimeout(t); throw e; }).then(function(d){
+      var events = ((d && d.economicCalendar) || []).filter(function(ev){
+        return ev && ev.impact && COUNTRY_ALLOW[ev.country];
+      });
+      var entry = { ts:Date.now(), events:events };
+      mem[cacheKey] = entry;
+      try { sessionStorage.setItem('spz_ecocal_' + cacheKey, JSON.stringify(entry)); } catch(e){}
+      return events;
+    });
+  }
+
+  function eventDay(ev){ return String(ev.time || '').slice(0, 10); }
+
+  /* one event row, shared by the day-detail panel and This Week */
+  function eventRowHTML(ev){
+    var cat = categoryFor(ev.event);
+    var rawDir = rawDirection(ev.actual, ev.estimate);
+    var dir = noteDirection(ev, rawDir);
+    var estTxt = fmtVal(ev.estimate, ev.unit);
+    var actTxt = fmtVal(ev.actual, ev.unit);
+    var prevTxt = fmtVal(ev.prev, ev.unit);
+    var actualHTML = actTxt != null
+      ? '<span class="ec-row-actual ' + (rawDir || '') + '">' + esc(actTxt) +
+          (rawDir === 'above' ? ' (' + esc(tx(C.aboveTag)) + ')' : rawDir === 'below' ? ' (' + esc(tx(C.belowTag)) + ')' : rawDir === 'inline' ? ' (' + esc(tx(C.inlineTag)) + ')' : '') +
+        '</span>'
+      : '<span class="ec-row-actual">' + esc(tx(C.pendingLbl)) + '</span>';
+    var noteHTML = (dir && dir !== 'inline' && NOTES[cat] && NOTES[cat][dir])
+      ? '<div class="ec-row-note">' + esc(tx(NOTES[cat][dir])) + '</div>' : '';
+    return '<div class="ec-row">' +
+      '<div class="ec-row-top">' +
+        '<span class="ec-row-time">' + esc(String(ev.time||'').slice(0,16)) + '</span>' +
+        '<span class="ec-row-country">' + esc(ev.country||'') + '</span>' +
+        '<span class="ec-row-event">' + esc(ev.event||'') + '</span>' +
+        impactStarsHTML(ev.impact) +
+      '</div>' +
+      '<div class="ec-row-vals">' +
+        (estTxt != null ? '<span><b>' + esc(tx(C.estLbl)) + '</b>' + esc(estTxt) + '</span>' : '') +
+        '<span><b>' + esc(tx(C.actLbl)) + '</b>' + actualHTML + '</span>' +
+        (prevTxt != null ? '<span><b>' + esc(tx(C.prevLbl)) + '</b>' + esc(prevTxt) + '</span>' : '') +
+      '</div>' +
+      noteHTML +
+    '</div>';
+  }
+
+  var sec, curY, curM, selDay = null;
+  var today = new Date();
+
+  function monthLabel(y, m){
+    var names = { en:['January','February','March','April','May','June','July','August','September','October','November','December'],
+                  th:['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'] };
+    return names[L()][m] + ' ' + y;
+  }
+
+  function renderGridSkeleton(){
+    sec.querySelector('[data-ec="weekdays"]').innerHTML = tx(C.dow).map(function(d){ return '<span>' + esc(d) + '</span>'; }).join('');
+    sec.querySelector('[data-ec="monthlbl"]').textContent = monthLabel(curY, curM);
+  }
+
+  function paintDayDetail(byDay){
+    var box = sec.querySelector('[data-ec="daydetail"]');
+    if(!selDay){ box.innerHTML = '<div class="ec-daydetail-empty">' + esc(tx(C.dayDetailPick)) + '</div>'; return; }
+    var evs = (byDay[selDay] || []).slice().sort(function(a,b){ return String(a.time||'').localeCompare(String(b.time||'')); });
+    var d = new Date(selDay + 'T00:00:00');
+    var hdr = '<div class="ec-daydetail-h">' + esc(d.toLocaleDateString(L()==='th'?'th-TH':'en-US', {weekday:'long', month:'long', day:'numeric'})) + '</div>';
+    box.innerHTML = hdr + (evs.length ? evs.map(eventRowHTML).join('') : '<div class="ec-daydetail-empty">' + esc(tx(C.dayDetailEmpty)) + '</div>');
+  }
+
+  function paintGrid(events){
+    var byDay = {};
+    (events||[]).forEach(function(ev){
+      var d = eventDay(ev);
+      if(!byDay[d]) byDay[d] = [];
+      byDay[d].push(ev);
+    });
+    var firstDow = new Date(curY, curM, 1).getDay();
+    var lastDate = new Date(curY, curM + 1, 0).getDate();
+    var todayStr = ymd(today);
+    var html = '';
+    for(var p=0;p<firstDow;p++) html += '<div class="ec-daybox pad"></div>';
+    for(var day=1; day<=lastDate; day++){
+      var dStr = curY + '-' + pad2(curM+1) + '-' + pad2(day);
+      var evs = byDay[dStr] || [];
+      var hasHigh = evs.some(function(e){ return e.impact === 'high'; });
+      var hasMed = evs.some(function(e){ return e.impact === 'medium'; });
+      var hasLow = evs.some(function(e){ return e.impact === 'low'; });
+      var dotsHTML = evs.length ? ('<span class="ec-dots">' +
+        (hasHigh ? '<span class="ec-dot high"></span>' : '') +
+        (hasMed ? '<span class="ec-dot medium"></span>' : '') +
+        (hasLow ? '<span class="ec-dot low"></span>' : '') +
+      '</span>') : '';
+      html += '<div class="ec-daybox' + (dStr === todayStr ? ' today' : '') + (dStr === selDay ? ' sel' : '') +
+        '" data-ec-day="' + dStr + '"><span>' + day + '</span>' + dotsHTML + '</div>';
+    }
+    sec.querySelector('[data-ec="grid"]').innerHTML = html;
+    paintDayDetail(byDay);
+    var boxes = sec.querySelectorAll('[data-ec-day]');
+    for(var i=0;i<boxes.length;i++){
+      boxes[i].addEventListener('click', function(){
+        var d = this.getAttribute('data-ec-day');
+        selDay = (selDay === d) ? null : d;
+        paintGrid(events);
+      });
+    }
+  }
+
+  function paintWeek(){
+    var from = ymd(today);
+    var end = new Date(today.getTime() + 6*86400000);
+    var to = ymd(end);
+    fetchRange(from, to, 'week-' + from).then(function(events){
+      events = events.slice().sort(function(a,b){ return String(a.time||'').localeCompare(String(b.time||'')); });
+      var box = sec.querySelector('[data-ec="weeklist"]');
+      box.innerHTML = events.length ? events.map(eventRowHTML).join('') : '<div class="ec-week-empty">' + esc(tx(C.weekEmpty)) + '</div>';
+    }, function(){
+      /* the month fetch already surfaces the shared error/keygate state;
+         This Week just stays quietly empty rather than duplicating it. */
+      var box = sec.querySelector('[data-ec="weeklist"]');
+      if(box) box.innerHTML = '';
+    });
+  }
+
+  function loadMonth(){
+    sec.querySelector('[data-ec="loading"]').style.display = '';
+    sec.querySelector('[data-ec="error"]').style.display = 'none';
+    sec.querySelector('[data-ec="content"]').style.display = 'none';
+    var from = curY + '-' + pad2(curM+1) + '-01';
+    var lastDate = new Date(curY, curM+1, 0).getDate();
+    var to = curY + '-' + pad2(curM+1) + '-' + pad2(lastDate);
+    fetchRange(from, to, curY + '-' + pad2(curM+1)).then(function(events){
+      sec.querySelector('[data-ec="loading"]').style.display = 'none';
+      sec.querySelector('[data-ec="content"]').style.display = '';
+      renderGridSkeleton();
+      paintGrid(events);
+      paintWeek();
+    }, function(err){
+      sec.querySelector('[data-ec="loading"]').style.display = 'none';
+      if(err && err.message === 'no key'){
+        sec.querySelector('[data-ec="keygate"]').style.display = '';
+      } else {
+        sec.querySelector('[data-ec="error"]').style.display = '';
+      }
+    });
+  }
+
+  function paint(){
+    sec.querySelector('[data-ec="eb"]').textContent = tx(C.eb);
+    sec.querySelector('[data-ec="h"]').textContent = tx(C.h);
+    sec.querySelector('[data-ec="lede"]').textContent = tx(C.lede);
+    sec.querySelector('[data-ec="disc"]').textContent = tx(C.disc);
+    sec.querySelector('[data-ec="keygateLede"]').textContent = tx(C.keygateLede);
+    sec.querySelector('[data-ec="keygateBtn"]').textContent = tx(C.keygateBtn);
+    sec.querySelector('[data-ec="loading"]').textContent = tx(C.loading);
+    sec.querySelector('[data-ec="error"]').textContent = tx(C.error);
+    sec.querySelector('[data-ec="weekh"]').textContent = tx(C.weekH);
+
+    var key = (window.__SPZ_LIVE && window.__SPZ_LIVE.apiKey) ? window.__SPZ_LIVE.apiKey() : '';
+    if(!key){
+      sec.querySelector('[data-ec="keygate"]').style.display = '';
+      sec.querySelector('[data-ec="content"]').style.display = 'none';
+      sec.querySelector('[data-ec="loading"]').style.display = 'none';
+      sec.querySelector('[data-ec="error"]').style.display = 'none';
+      return;
+    }
+    sec.querySelector('[data-ec="keygate"]').style.display = 'none';
+    loadMonth();
+  }
+
+  function bind(){
+    sec.querySelector('[data-ec="keygateBtn"]').addEventListener('click', function(){
+      var btn = document.getElementById('spzKeyBtn');
+      if(btn) btn.click();
+    });
+    sec.querySelector('[data-ec="prevMonth"]').addEventListener('click', function(){
+      curM--; if(curM < 0){ curM = 11; curY--; }
+      selDay = null;
+      loadMonth();
+    });
+    sec.querySelector('[data-ec="nextMonth"]').addEventListener('click', function(){
+      curM++; if(curM > 11){ curM = 0; curY++; }
+      selDay = null;
+      loadMonth();
+    });
+  }
+
+  function build(){
+    if(document.getElementById('ecocal')) return true;
+    if(!document.querySelector('.top-fixed') || !window.__spzAddRoute) return false;
+
+    sec = document.createElement('section');
+    sec.id = 'ecocal';
+    sec.setAttribute('data-route', 'ecocal');
+    sec.innerHTML =
+      '<div class="cx-wrap">' +
+        '<div class="section-head reveal in-view">' +
+          '<div class="eyebrow"><span class="cursor"></span><span data-ec="eb"></span></div>' +
+          '<h2 data-ec="h"></h2>' +
+          '<p class="lede" data-ec="lede"></p>' +
+          '<div class="rule"></div>' +
+        '</div>' +
+        '<div class="ec-disc" data-ec="disc"></div>' +
+        '<div class="ec-keygate" data-ec="keygate" style="display:none;">' +
+          '<div class="ec-keygate-icon">\u{1F511}</div>' +
+          '<div class="ec-keygate-lede" data-ec="keygateLede"></div>' +
+          '<button type="button" class="ec-keygate-btn" data-ec="keygateBtn"></button>' +
+        '</div>' +
+        '<div class="ec-loading" data-ec="loading" style="display:none;"></div>' +
+        '<div class="ec-error" data-ec="error" style="display:none;"></div>' +
+        '<div data-ec="content" style="display:none;">' +
+          '<div class="ec-monthbar">' +
+            '<button type="button" class="ec-monthbtn" data-ec="prevMonth">‹</button>' +
+            '<span class="ec-monthlbl" data-ec="monthlbl"></span>' +
+            '<button type="button" class="ec-monthbtn" data-ec="nextMonth">›</button>' +
+          '</div>' +
+          '<div class="ec-weekdays" data-ec="weekdays"></div>' +
+          '<div class="ec-grid" data-ec="grid"></div>' +
+          '<div class="ec-daydetail" data-ec="daydetail"></div>' +
+          '<div class="ec-week-head"><span class="ec-week-h" data-ec="weekh"></span></div>' +
+          '<div data-ec="weeklist"></div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(sec);
+
+    var now = new Date();
+    curY = now.getFullYear(); curM = now.getMonth();
+
+    window.__spzAddRoute({
+      id:'ecocal', feat:true, after:'scenarios',
+      t:{en:'Economic Calendar',th:'ปฏิทินเศรษฐกิจ'},
+      d:{en:'Which economic releases land this week and this month, with forecast vs. actual and a plain-language read on which sectors/gold tend to move.',
+         th:'ตัวเลขเศรษฐกิจที่จะประกาศสัปดาห์นี้และเดือนนี้ พร้อมเทียบคาดการณ์กับค่าจริง และคำอธิบายง่ายๆ ว่ากลุ่มหุ้น/ทองคำมักขยับทางไหน'}
+    });
+
+    bind();
+    paint();
+    document.addEventListener('spz:snapshot', paint);
+    new MutationObserver(paint).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+
+    /* the key-save button lives in the site's global status bar, not on
+       this page, and saving it doesn't itself dispatch an event this page
+       could listen for -- 'spz:snapshot' only fires on the ~10-minute auto
+       sync cycle. So while the key-gate is showing, poll for a key every
+       couple seconds and repaint the moment one appears, instead of making
+       someone who just pasted a free key sit and wonder why nothing loaded. */
+    var keyPollTries = 0;
+    var keyPollIv = setInterval(function(){
+      var has = !!((window.__SPZ_LIVE && window.__SPZ_LIVE.apiKey) ? window.__SPZ_LIVE.apiKey() : '');
+      if(has){ clearInterval(keyPollIv); paint(); return; }
+      if(++keyPollTries > 300) clearInterval(keyPollIv); // ~10 minutes, then give up quietly
+    }, 2000);
+
+    return true;
+  }
+
+  function boot(){
+    var tries = 0;
+    var iv = setInterval(function(){ if(build() || ++tries > 60) clearInterval(iv); }, 400);
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 1200); });
+  else setTimeout(boot, 1200);
 })();
 </script>
 
