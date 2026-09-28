@@ -910,6 +910,116 @@ async function handleEconCalendar(request, env) {
   return json({ economicCalendar: events }, env);
 }
 
+// ---------------------------------------------------------------------
+// ANNOUNCEMENTS (Round N) — a small admin-managed notice board shown in two
+// places on the site: a bar in the page header and a slide-in card inside
+// the "what would your portfolio look like" popup. Everything lives as one
+// JSON list under a single KV key (low write frequency, small payload --
+// no need for the per-item key scheme the user index uses). The public GET
+// only ever returns items that have not expired; every /api/admin/* route
+// below reuses the same X-Admin-Key gate as Connected Users and the LINE
+// broadcast, so this needs no new secret -- her existing ADMIN_USERS_KEY
+// already covers it.
+// ---------------------------------------------------------------------
+const ANNOUNCEMENTS_KV_KEY = "announcements:list";
+const ANNOUNCEMENTS_MAX = 30; // keep the stored list bounded
+
+async function getAnnouncementsList(env) {
+  const raw = await env.SESSIONS.get(ANNOUNCEMENTS_KV_KEY, "json");
+  return Array.isArray(raw) ? raw : [];
+}
+async function putAnnouncementsList(list, env) {
+  await env.SESSIONS.put(ANNOUNCEMENTS_KV_KEY, JSON.stringify(list.slice(0, ANNOUNCEMENTS_MAX)));
+}
+function announcementIsActive(a, now) {
+  return !a.expiresAt || a.expiresAt > now;
+}
+function sanitizeDurationMin(v) {
+  const n = Number(v);
+  return isFinite(n) && n > 0 ? n : null; // null = no auto-expiry (admin deletes it manually)
+}
+function sanitizeImageUrl(v) {
+  const s = String(v || "").trim();
+  return s && /^https:\/\//i.test(s) ? s : "";
+}
+
+async function handleAnnouncementsPublic(request, env) {
+  const list = await getAnnouncementsList(env);
+  const now = Date.now();
+  const items = list
+    .filter((a) => announcementIsActive(a, now))
+    .map((a) => ({ id: a.id, text: a.text, imageUrl: a.imageUrl || "", createdAt: a.createdAt, expiresAt: a.expiresAt || null }));
+  return json({ items }, env);
+}
+
+async function handleAdminAnnouncementsList(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  const list = await getAnnouncementsList(env);
+  return json({ items: list }, env);
+}
+
+async function handleAdminAnnouncementsCreate(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const text = String(body.text || "").trim().slice(0, 500);
+  if (!text) return json({ error: "bad_request" }, env, 400);
+  const now = Date.now();
+  const durationMin = sanitizeDurationMin(body.durationMin);
+  const item = {
+    id: "ann_" + now.toString(36) + Math.random().toString(36).slice(2, 8),
+    text,
+    imageUrl: sanitizeImageUrl(body.imageUrl),
+    createdAt: now,
+    expiresAt: durationMin ? now + durationMin * 60000 : null,
+  };
+  const list = await getAnnouncementsList(env);
+  list.unshift(item);
+  await putAnnouncementsList(list, env);
+  return json({ ok: true, item }, env);
+}
+
+async function handleAdminAnnouncementsUpdate(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const id = String(body.id || "");
+  if (!id) return json({ error: "bad_request" }, env, 400);
+  const list = await getAnnouncementsList(env);
+  const item = list.find((a) => a.id === id);
+  if (!item) return json({ error: "not_found" }, env, 404);
+
+  if (typeof body.text === "string") {
+    const text = body.text.trim().slice(0, 500);
+    if (!text) return json({ error: "bad_request" }, env, 400);
+    item.text = text;
+  }
+  if (typeof body.imageUrl === "string") item.imageUrl = sanitizeImageUrl(body.imageUrl);
+  // Editing resets the expiry clock from the moment of the edit -- simplest
+  // rule to reason about (a fresh "durationMin from now"), rather than
+  // trying to preserve/extend the original timer.
+  if ("durationMin" in body) {
+    const durationMin = sanitizeDurationMin(body.durationMin);
+    item.expiresAt = durationMin ? Date.now() + durationMin * 60000 : null;
+  }
+  await putAnnouncementsList(list, env);
+  return json({ ok: true, item }, env);
+}
+
+async function handleAdminAnnouncementsDelete(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const id = String(body.id || "");
+  if (!id) return json({ error: "bad_request" }, env, 400);
+  let list = await getAnnouncementsList(env);
+  const before = list.length;
+  list = list.filter((a) => a.id !== id);
+  if (list.length === before) return json({ error: "not_found" }, env, 404);
+  await putAnnouncementsList(list, env);
+  return json({ ok: true }, env);
+}
+
 async function handleLogout(request, env) {
   let code = "";
   try {
@@ -946,6 +1056,11 @@ export default {
     if (url.pathname === "/api/journal-settings" && request.method === "GET") return handleJournalSettingsGet(request, env);
     if (url.pathname === "/api/admin/journal-settings" && request.method === "POST") return handleJournalSettingsUpdate(request, env);
     if (url.pathname === "/api/econ-calendar" && request.method === "GET") return handleEconCalendar(request, env);
+    if (url.pathname === "/api/announcements" && request.method === "GET") return handleAnnouncementsPublic(request, env);
+    if (url.pathname === "/api/admin/announcements" && request.method === "GET") return handleAdminAnnouncementsList(request, env);
+    if (url.pathname === "/api/admin/announcements/create" && request.method === "POST") return handleAdminAnnouncementsCreate(request, env);
+    if (url.pathname === "/api/admin/announcements/update" && request.method === "POST") return handleAdminAnnouncementsUpdate(request, env);
+    if (url.pathname === "/api/admin/announcements/delete" && request.method === "POST") return handleAdminAnnouncementsDelete(request, env);
 
     return json({ error: "not_found" }, env, 404);
   },
