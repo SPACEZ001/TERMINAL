@@ -29,13 +29,21 @@
  *                                random string and enter that same string
  *                                once in the Connected Users page.)
  *
- *   FINNHUB_KEY                  (Secret — a free Finnhub API key, from
- *                                https://finnhub.io/register, no card
- *                                needed. Powers the site's Economic
- *                                Calendar page for EVERY visitor, server-
- *                                side, so nobody has to paste their own key
- *                                just to see it. Get one key, paste it in
- *                                here once; it is never sent to the browser.)
+ *   FMP_KEY                       (Secret — a free Financial Modeling Prep
+ *                                API key, from https://site.financial
+ *                                modelingprep.com/register, no card needed.
+ *                                Powers the site's Economic Calendar page
+ *                                for EVERY visitor, server-side, so nobody
+ *                                has to paste their own key just to see it.
+ *                                Get one key, paste it in here once; it is
+ *                                never sent to the browser. NOTE: an
+ *                                earlier build of this Worker used a
+ *                                FINNHUB_KEY secret for this same feature --
+ *                                Finnhub's free plan turned out to block
+ *                                the economic-calendar endpoint entirely, so
+ *                                this was switched to FMP. A leftover
+ *                                FINNHUB_KEY secret is harmless to leave in
+ *                                place; this file no longer reads it.)
  *
  *   OWNER_WATCHLIST_KEY is no longer used by this file (see below) but you
  *   don't need to remove it from the Worker's settings -- it's harmless to
@@ -813,21 +821,57 @@ async function handleAdminPresenceCount(request, env) {
 }
 
 // ---------------------------------------------------------------------
-// ECONOMIC CALENDAR (Round M) — proxies Finnhub's /calendar/economic so
-// EVERY visitor sees it with zero setup of their own, instead of each
-// person needing to paste their own free Finnhub key into the page (the
-// site's stock-quote panel still works that way, but she asked for this
-// one feature to "just work" for anyone who opens the page). This Worker
-// holds ONE Finnhub key as a Secret (FINNHUB_KEY, set the same way as
-// ADMIN_USERS_KEY) and calls Finnhub server-side; nothing here needs a
-// login or an admin key since the data itself is public macro news, not
-// anything private to a visitor.
+// ECONOMIC CALENDAR (Round M) — proxies a free calendar feed so EVERY
+// visitor sees it with zero setup of their own, instead of each person
+// needing to paste their own key into the page (the site's stock-quote
+// panel still works that way, but she asked for this one feature to
+// "just work" for anyone who opens the page).
+//
+// Round M6: switched the upstream provider from Finnhub to Financial
+// Modeling Prep (FMP). Finnhub's free plan turned out to block
+// /calendar/economic outright ("You don't have access to this
+// resource") -- confirmed live, not just from docs -- so a free
+// Finnhub key alone was never going to make this endpoint work. FMP's
+// free plan (250 requests/day, ~150-country economic calendar coverage)
+// is not called out as a premium-only dataset in their docs, unlike
+// endpoints explicitly flagged "Premium". This Worker holds ONE FMP key
+// as a Secret (FMP_KEY, set the same way as ADMIN_USERS_KEY) and calls
+// FMP server-side; nothing here needs a login or an admin key since the
+// data itself is public macro news, not anything private to a visitor.
+//
+// FMP's raw response uses different field names than the site's client
+// code expects (date/previous instead of time/prev, capitalized impact
+// strings, etc.), so this function normalizes every event into the
+// exact same {event, country, impact, estimate, actual, prev, time,
+// unit} shape the page's existing calendar UI already renders --
+// meaning the client-side calendar code needs no changes at all.
 // ---------------------------------------------------------------------
 const ECONCAL_CACHE_TTL_SECONDS = 900; // 15 min -- calendar data doesn't
-  // change minute to minute, and this keeps well inside Finnhub's free-tier
-  // rate limit even with many concurrent site visitors, since they all now
-  // share these few cached KV reads instead of each calling Finnhub directly.
+  // change minute to minute, and this keeps well inside FMP's free-tier
+  // daily request limit even with many concurrent site visitors, since
+  // they all now share these few cached KV reads instead of each calling
+  // FMP directly.
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function normalizeEconEvent(raw) {
+  var impactRaw = String((raw && raw.impact) || "").toLowerCase();
+  var impact = (impactRaw === "high" || impactRaw === "medium" || impactRaw === "low") ? impactRaw : "";
+  function num(v) {
+    if (typeof v === "number" && isFinite(v)) return v;
+    if (typeof v === "string" && v.trim() !== "" && isFinite(Number(v))) return Number(v);
+    return null;
+  }
+  return {
+    event: (raw && raw.event) || "",
+    country: (raw && raw.country) || "",
+    impact: impact,
+    estimate: num(raw && raw.estimate),
+    actual: num(raw && raw.actual),
+    prev: num(raw && raw.previous),
+    time: (raw && raw.date) || "",
+    unit: "",
+  };
+}
 
 async function handleEconCalendar(request, env) {
   const url = new URL(request.url);
@@ -836,21 +880,21 @@ async function handleEconCalendar(request, env) {
   if (!DATE_RE.test(from) || !DATE_RE.test(to)) {
     return json({ error: "bad_request" }, env, 400);
   }
-  if (!env.FINNHUB_KEY) {
+  if (!env.FMP_KEY) {
     // Not configured yet -- tell the page plainly rather than a bare 500,
     // so its own UI can explain this is a one-time setup step for her.
     return json({ error: "not_configured" }, env, 501);
   }
 
-  const cacheKey = "econcal:" + from + ":" + to;
+  const cacheKey = "econcal:fmp:" + from + ":" + to;
   const cached = await env.SESSIONS.get(cacheKey, "json");
   if (cached) return json(cached, env);
 
   let upstream;
   try {
     const res = await fetch(
-      "https://finnhub.io/api/v1/calendar/economic?from=" + from + "&to=" + to +
-        "&token=" + encodeURIComponent(env.FINNHUB_KEY)
+      "https://financialmodelingprep.com/stable/economic-calendar?from=" + from + "&to=" + to +
+        "&apikey=" + encodeURIComponent(env.FMP_KEY)
     );
     if (!res.ok) throw new Error("HTTP " + res.status);
     upstream = await res.json();
@@ -858,7 +902,8 @@ async function handleEconCalendar(request, env) {
     return json({ error: "upstream" }, env, 502);
   }
 
-  const events = (upstream && upstream.economicCalendar) || [];
+  const rawEvents = Array.isArray(upstream) ? upstream : ((upstream && upstream.economicCalendar) || []);
+  const events = rawEvents.map(normalizeEconEvent);
   await env.SESSIONS.put(cacheKey, JSON.stringify({ economicCalendar: events }), {
     expirationTtl: ECONCAL_CACHE_TTL_SECONDS,
   });
