@@ -51071,6 +51071,8 @@ var qrcode = function() {
     padding:8px 10px;background:rgba(255,255,255,.04);color:var(--white,#f4f6f1);outline:none;width:100%;
   }
   .jed-ba-field input[readonly]{opacity:.65;cursor:not-allowed;}
+  .jed-ba-checkline{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--grey);margin:2px 0 12px;cursor:pointer;}
+  .jed-ba-checkline input{width:15px;height:15px;accent-color:var(--neon);cursor:pointer;flex:none;}
   .jed-ba-msg{min-height:16px;font-size:11.5px;margin-bottom:8px;}
   .jed-ba-msg.err{color:#ff6b6b;}
   .jed-ba-actions{display:flex;align-items:center;gap:8px;margin-top:4px;}
@@ -51248,7 +51250,15 @@ var qrcode = function() {
     body.spz-printing-journal{background:#fff !important;}
     body.spz-printing-journal > *:not(.jrp-overlay){ display:none !important; }
     body.spz-printing-journal .jrp-overlay{
+      /* Round P2 fix: the base .jrp-overlay rule sets overflow:auto (it's a
+         fixed, scrollable full-viewport backdrop on screen) -- left in place
+         for print, that clipped the sheet to one viewport-tall "page" and
+         silently dropped everything below it (the Before/After report's
+         diff/profit lines and the disclaimer footer never made it onto the
+         printed/PDF output). overflow:visible + height:auto let the sheet's
+         full content flow and paginate normally instead. */
       position:static !important;background:#fff !important;padding:0 !important;display:block !important;
+      overflow:visible !important;height:auto !important;max-height:none !important;
     }
     body.spz-printing-journal .jrp-actions{ display:none !important; }
     body.spz-printing-journal .jrp-sheet{ box-shadow:none !important;margin:0 auto !important; }
@@ -51678,6 +51688,7 @@ var qrcode = function() {
     baModeReferenceHint:{en:'Auto-filled from each post’s saved Entry Price.',th:'ดึงมาจากช่อง "ราคาเข้า" ที่บันทึกไว้ตอนโพสต์ให้อัตโนมัติ'},
     baModeReferenceMissing:{en:'has no saved entry price — switch to manual for that side.',th:'ไม่มีราคาเข้าที่บันทึกไว้ — สลับไปกรอกเองสำหรับฝั่งนี้'},
     baPriceLabel:{en:'Price at the time',th:'ราคา ณ ตอนนั้น'},
+    baIncludeNotes:{en:'Include each post’s analysis text in the report',th:'รวมข้อความบทวิเคราะห์ของแต่ละโพสต์ในรายงานด้วย'},
 
     adminNotice:{en:'Analysis posts are added by the site admin and its members only.',th:'บทวิเคราะห์ทั้งหมดเพิ่มโดยแอดมินและสมาชิกของเว็บไซต์เท่านั้น'},
 
@@ -51738,6 +51749,20 @@ var qrcode = function() {
      number fresh without one fetch per card per tick. */
   var LIVE_PTS_CACHE = {};
   var LIVE_PTS_TTL = 40000;
+  /* Round P2: "Points" and "Pips" are broker tick units, not just a decimal-
+     formatting choice -- on the gold/forex-style convention this site's admin
+     dropdown uses, 1 point = 0.01 price units and 1 pip = 0.10 (10 points per
+     pip), so a raw price difference has to be scaled up before display, not
+     just re-rounded at a different number of decimals. Every place that shows
+     a price delta under one of these two labels goes through this so a raw
+     move of, say, -38.34 shows as -3834 pts / -383.4 pips, not -38.34 either
+     way. */
+  var UNIT_SCALE = { points: 100, pips: 10 };
+  function scaleToUnit(raw, unit){ return raw * (UNIT_SCALE[unit === 'pips' ? 'pips' : 'points']); }
+  function fmtUnitVal(raw, unit){
+    var shown = scaleToUnit(raw, unit);
+    return (shown >= 0 ? '+' : '') + shown.toFixed(unit === 'pips' ? 1 : 0);
+  }
   function fetchLivePrice(sym){
     var c = LIVE_PTS_CACHE[sym];
     if(c && (Date.now() - c.ts) < LIVE_PTS_TTL) return Promise.resolve(c.price);
@@ -51756,7 +51781,7 @@ var qrcode = function() {
     var unitLabel = unit === 'pips' ? T(UI.unitPipsShort) : T(UI.unitPointsShort);
     var val = node.querySelector('.jrnl-live-pts-val');
     if(!val) return;
-    val.textContent = (diff >= 0 ? '+' : '') + diff.toFixed(2) + ' ' + unitLabel;
+    val.textContent = fmtUnitVal(diff, unit) + ' ' + unitLabel;
     node.classList.toggle('pos', diff >= 0);
     node.classList.toggle('neg', diff < 0);
     /* transparency for when the feed looks stale: hovering shows exactly
@@ -51817,7 +51842,7 @@ var qrcode = function() {
       var label = e.tradeStatus === 'tp' ? T(UI.tradeStatusTP) : T(UI.tradeStatusSL);
       return '<div class="jrnl-live-pts final ' + cls + ' ' + (diff >= 0 ? 'pos' : 'neg') + '">' +
         '<span class="jrnl-live-pts-label">' + esc(label) + '</span>' +
-        '<span class="jrnl-live-pts-val">' + esc((diff >= 0 ? '+' : '') + diff.toFixed(2) + ' ' + unitLabel) + '</span>' +
+        '<span class="jrnl-live-pts-val">' + esc(fmtUnitVal(diff, unit) + ' ' + unitLabel) + '</span>' +
       '</div>';
     }
     var sym = ASSET_YAHOO_SYM[e.asset];
@@ -53043,6 +53068,7 @@ var qrcode = function() {
           '<div class="jed-ba-field"><label>' + esc(T(UI.baAfterPrice)) + '</label><input type="text" inputmode="decimal" data-ba="afterPrice"></div>' +
           '<div class="jed-ba-field"><label>' + esc(T(UI.baUnit)) + '</label><select data-ba="unit"><option value="points">' + esc(T(UI.unitPoints)) + '</option><option value="pips">' + esc(T(UI.unitPips)) + '</option></select></div>' +
         '</div>' +
+        '<label class="jed-ba-checkline"><input type="checkbox" data-ba="includeNotes" checked> <span>' + esc(T(UI.baIncludeNotes)) + '</span></label>' +
         '<div class="jed-ba-msg" data-ba="msg"></div>' +
         '<div class="jed-ba-actions">' +
           '<button type="button" class="jed-btn" data-ba="go">' + esc(T(UI.baGenerate)) + '</button>' +
@@ -53159,17 +53185,23 @@ var qrcode = function() {
         if(listCache[i].id === pickedAfterId) afterItem = listCache[i];
       }
       if(!beforeItem || !afterItem) return;
+      var includeNotes = !!ov.querySelector('[data-ba="includeNotes"]').checked;
       ov.remove();
-      renderBeforeAfterReport(beforeItem, afterItem, beforePrice, afterPrice, unit);
+      renderBeforeAfterReport(beforeItem, afterItem, beforePrice, afterPrice, unit, includeNotes);
     });
   }
 
-  function renderBeforeAfterReport(beforeItem, afterItem, beforePrice, afterPrice, unit){
+  function renderBeforeAfterReport(beforeItem, afterItem, beforePrice, afterPrice, unit, includeNotes){
     var existing = document.querySelector('.jrp-overlay');
     if(existing) existing.remove();
     var diff = afterPrice - beforePrice; // the raw, factual price move -- never flipped
     var unitLabel = unit === 'pips' ? T(UI.unitPipsShort) : T(UI.unitPointsShort);
-    var diffStr = (diff >= 0 ? '+' : '') + diff.toFixed(unit === 'pips' ? 4 : 2) + ' ' + unitLabel;
+    /* Round P2: "points"/"pips" are broker tick units (1 point = 0.01 price
+       units, 1 pip = 0.10 -- 10 points per pip), not just a decimal-format
+       switch, so the raw price move has to be scaled up via fmtUnitVal()
+       before display -- e.g. a raw move of -38.34 reads as -3834 pts, not
+       -38.34 pts. */
+    var diffStr = fmtUnitVal(diff, unit) + ' ' + unitLabel;
     var diffCls = diff >= 0 ? 'pos' : 'neg';
     var daysElapsed = Math.round((afterItem.createdAt - beforeItem.createdAt) / 86400000);
     if(!isFinite(daysElapsed) || daysElapsed < 0) daysElapsed = 0;
@@ -53184,13 +53216,17 @@ var qrcode = function() {
        are visible instead of conflating the two. */
     var isDown = beforeItem.bias === 'down';
     var profit = isDown ? -diff : diff;
-    var profitStr = (profit >= 0 ? '+' : '') + profit.toFixed(unit === 'pips' ? 4 : 2) + ' ' + unitLabel;
+    var profitStr = fmtUnitVal(profit, unit) + ' ' + unitLabel;
     var profitCls = profit >= 0 ? 'pos' : 'neg';
     var biasStr = (isDown ? '▼ ' : '▲ ') + T(isDown ? UI.biasDown : UI.biasUp);
     function sideCol(item, price, label, showBias){
       var tagsHtml = (item.tags && item.tags.length) ?
         '<div class="jrp-ba-tags">' + item.tags.map(function(t){ return '<span class="jrp-chip">' + esc(t) + '</span>'; }).join('') + '</div>' : '';
-      var noteHtml = item.text ? '<div class="jrp-ba-note">' + esc(item.text) + '</div>' : '';
+      /* Round P2: the admin picks per-report whether each side's analysis
+         text/opinion is included at all -- omitted entirely (not just
+         hidden) when unchecked, so a report meant to stay just the chart +
+         numbers doesn't carry the write-up along with it. */
+      var noteHtml = (includeNotes && item.text) ? '<div class="jrp-ba-note">' + esc(item.text) + '</div>' : '';
       var biasHtml = showBias ? '<div class="jrp-ba-bias ' + (isDown ? 'down' : 'up') + '">' + esc(T(UI.baBias)) + ': ' + esc(biasStr) + '</div>' : '';
       return '<div class="jrp-ba-col">' +
         '<div class="jrp-ba-label">' + esc(label) + '</div>' +
@@ -53215,16 +53251,20 @@ var qrcode = function() {
           '<div class="jrp-title">' + esc(T(UI.baTitle)) + '</div>' +
           '<div class="jrp-meta"><span>' + esc(T(UI.reportGenerated)) + ': ' + esc(fmtDate(new Date())) + '</span></div>' +
         '</div>' +
-        '<div class="jrp-ba-grid">' +
-          sideCol(beforeItem, beforePrice, T(UI.baBefore), true) +
-          sideCol(afterItem, afterPrice, T(UI.baAfter), false) +
-        '</div>' +
+        /* Round P2: the headline numbers (price change / profit-loss / days /
+           % change) now sit right under the title, above the before-after
+           image grid, so the answer to "what happened" doesn't require
+           scrolling past both screenshots first. */
+        '<div class="jrp-ba-diff ' + diffCls + '"><span>' + esc(T(UI.baDiff)) + ':</span> <b>' + esc(diffStr) + '</b></div>' +
+        '<div class="jrp-ba-diff profit ' + profitCls + '"><span>' + esc(T(UI.baProfit)) + ':</span> <b>' + esc(profitStr) + '</b></div>' +
         '<div class="jrp-ba-stats">' +
           '<div class="jrp-ba-stat"><div class="jrp-ba-stat-label">' + esc(T(UI.baDaysElapsed)) + '</div><div class="jrp-ba-stat-val">' + daysElapsed + '</div></div>' +
           '<div class="jrp-ba-stat"><div class="jrp-ba-stat-label">' + esc(T(UI.baPctChange)) + '</div><div class="jrp-ba-stat-val ' + diffCls + '">' + esc(pctStr) + '</div></div>' +
         '</div>' +
-        '<div class="jrp-ba-diff ' + diffCls + '"><span>' + esc(T(UI.baDiff)) + ':</span> <b>' + esc(diffStr) + '</b></div>' +
-        '<div class="jrp-ba-diff profit ' + profitCls + '"><span>' + esc(T(UI.baProfit)) + ':</span> <b>' + esc(profitStr) + '</b></div>' +
+        '<div class="jrp-ba-grid">' +
+          sideCol(beforeItem, beforePrice, T(UI.baBefore), true) +
+          sideCol(afterItem, afterPrice, T(UI.baAfter), false) +
+        '</div>' +
         '<div class="jrp-foot"></div>' +
       '</div>';
     ov.querySelector('.jrp-foot').textContent = T(UI.reportDisclaimer);
