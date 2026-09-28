@@ -25075,12 +25075,7 @@ var GM = {
     cfg: CFG, state: state, decorate: decorate,
     snapshot: function(){ return lastSnap; },
     snapAgeH: snapAgeH, marketStatus: marketStatus,
-    historyOf: historyOf, historyOfRaw: historyOfRaw,
-    /* Round L: read-only access to the same free Finnhub key the visitor
-       already pasted into this page's own quote/fundamentals settings, so
-       the Economic Calendar module can call Finnhub's calendar endpoint
-       without asking for (or storing) a second copy of it. */
-    apiKey: apiKey
+    historyOf: historyOf, historyOfRaw: historyOfRaw
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 400); });
@@ -32717,8 +32712,6 @@ var GM = {
     background:radial-gradient(circle, rgba(143,211,255,.22), transparent 70%);pointer-events:none;}
   .wlshare-glow-2{position:absolute;bottom:-30%;left:-15%;width:60%;height:60%;
     background:radial-gradient(circle, rgba(167,139,250,.14), transparent 70%);pointer-events:none;}
-  /* faint rising-market watermark behind everything -- see chartWatermarkHTML */
-  .wlshare-chartbg{position:absolute;left:-6%;right:-6%;bottom:-4%;height:46%;opacity:.16;pointer-events:none;}
   .wlshare-top{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1;}
   .wlshare-eyebrow{display:flex;align-items:center;gap:6px;font-weight:800;font-size:10px;letter-spacing:.16em;color:#8fd3ff;text-transform:uppercase;}
   .wlshare-live-dot{width:6px;height:6px;border-radius:50%;background:#00e5a0;box-shadow:0 0 6px rgba(0,229,160,.9);animation:wlShareLive 1.9s ease-in-out infinite;flex:0 0 auto;}
@@ -35058,34 +35051,10 @@ var GM = {
 
     var dateStr = new Date().toLocaleDateString(L() === 'th' ? 'th-TH' : 'en-US', { year:'numeric', month:'short', day:'numeric' });
 
-    /* faint background "stock chart" watermark -- a rising price line over
-       a few candlesticks -- purely decorative, sits behind everything at
-       very low opacity so the card reads as a market/news graphic rather
-       than a plain data card. Static (not randomized per render) so a
-       download and the on-screen preview always match. */
-    var chartWatermarkHTML =
-      '<svg class="wlshare-chartbg" viewBox="0 0 320 160" preserveAspectRatio="none" aria-hidden="true">' +
-        '<defs><linearGradient id="wlshareChartFade" x1="0" y1="0" x2="0" y2="1">' +
-          '<stop offset="0%" stop-color="#00e5a0" stop-opacity="0.5"/>' +
-          '<stop offset="100%" stop-color="#00e5a0" stop-opacity="0"/>' +
-        '</linearGradient></defs>' +
-        '<rect x="18" y="96" width="10" height="30" fill="#00e5a0"/>' +
-        '<rect x="36" y="70" width="10" height="56" fill="#ff5a72"/>' +
-        '<rect x="54" y="108" width="10" height="18" fill="#00e5a0"/>' +
-        '<rect x="72" y="52" width="10" height="74" fill="#00e5a0"/>' +
-        '<rect x="90" y="84" width="10" height="42" fill="#ff5a72"/>' +
-        '<rect x="108" y="36" width="10" height="90" fill="#00e5a0"/>' +
-        '<rect x="126" y="60" width="10" height="66" fill="#ff5a72"/>' +
-        '<rect x="144" y="20" width="10" height="106" fill="#00e5a0"/>' +
-        '<polygon points="18,96 46,70 64,108 100,52 118,84 154,36 172,20 172,160 18,160" fill="url(#wlshareChartFade)"/>' +
-        '<polyline points="18,96 46,70 64,108 100,52 118,84 154,36 172,20" fill="none" stroke="#00e5a0" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>' +
-      '</svg>';
-
     return '<div class="wlshare-card" id="wlshareCard">' +
       starsHTML('wlshare-stars', 15) +
       '<div class="wlshare-glow"></div>' +
       '<div class="wlshare-glow-2"></div>' +
-      chartWatermarkHTML +
       '<div class="wlshare-top">' +
         '<div class="wlshare-eyebrow"><span class="wlshare-live-dot"></span>' + esc(tx(C.shareEyebrow)) + '</div>' +
         '<span class="wlshare-date">' + esc(dateStr) + '</span>' +
@@ -50688,6 +50657,14 @@ var qrcode = function() {
     notifyErrConfig:{en:'LINE Messaging API is not configured on the server yet.',th:'ยังไม่ได้ตั้งค่า LINE Messaging API บนเซิร์ฟเวอร์'},
     notifyErr:{en:'Could not publish to LINE — try again.',th:'เผยแพร่ผ่าน LINE ไม่สำเร็จ — ลองใหม่อีกครั้ง'},
     notifyMsgTemplate:{en:'New analysis published: {asset}\n{url}',th:'เผยแพร่บทวิเคราะห์ใหม่: {asset}\n{url}'},
+    /* Round M5: richer, text-only LINE broadcast teaser -- deliberately no
+       image attached (user's explicit call: she wants the LINE message to
+       stay a teaser so people log in and open the full post on the site,
+       not see everything inside the LINE app itself). */
+    notifyMsgHeadline:{en:'📢 New analysis just published!',th:'📢 เผยแพร่บทวิเคราะห์ใหม่แล้ว!'},
+    notifyMsgAsset:{en:'Asset',th:'สินทรัพย์'},
+    notifyMsgPublished:{en:'Published',th:'เผยแพร่เมื่อ'},
+    notifyMsgCta:{en:'Full breakdown (entry, SL/TP, wave view) is live on the site now — tap in and see the whole picture:',th:'รายละเอียดเต็ม (จุดเข้า, SL/TP, มุมมองคลื่น) พร้อมดูบนเว็บแล้ว แตะเข้าไปดูกันได้เลย:'},
     baTitle:{en:'Before / After Report',th:'รายงานเปรียบเทียบ Before / After'},
     baPickBefore:{en:'"Before" post (older)',th:'โพสต์ "Before" (เก่ากว่า)'},
     baPickAfter:{en:'"After" post (newer)',th:'โพสต์ "After" (ใหม่กว่า)'},
@@ -50888,20 +50865,33 @@ var qrcode = function() {
   function getSharedAdminKey(){
     try { return sessionStorage.getItem(JOURNAL_ADMIN_KEY_STORAGE) || ''; } catch(e){ return ''; }
   }
+  /* Round M5: builds the LINE broadcast text -- a short, enticing teaser
+     (headline + asset + timeframe + publish date/time + a come-to-the-site
+     call-to-action) rather than a bare "New analysis published: X" line, so
+     readers get just enough to want to tap through. Deliberately text-only:
+     no image is attached (see notifyMsgHeadline/-Cta comment above), by the
+     user's explicit choice, so the full chart/levels stay a reason to visit
+     the site rather than something you can see without leaving LINE. */
+  function buildBroadcastText(entry){
+    var lines = [T(UI.notifyMsgHeadline), ''];
+    lines.push(T(UI.notifyMsgAsset) + ': ' + (entry.asset || '—'));
+    if(entry.timeframe) lines.push(T(UI.reportTimeframe) + ': ' + entry.timeframe);
+    lines.push(T(UI.notifyMsgPublished) + ': ' + fmtDate(new Date()));
+    lines.push('');
+    lines.push(T(UI.notifyMsgCta));
+    lines.push(shareUrlFor(entry.id));
+    return lines.join('\n');
+  }
   function sendJournalBroadcast(entry, btn){
     var key = getSharedAdminKey();
     if(!key){ window.alert(T(UI.notifyErrKey)); return; }
     if(!window.confirm(T(UI.notifyConfirm))) return;
-    var text = T(UI.notifyMsgTemplate).replace('{asset}', entry.asset || '—').replace('{url}', shareUrlFor(entry.id));
+    var text = buildBroadcastText(entry);
     if(btn) btn.disabled = true;
-    /* imageUrl is passed through as-is (only when it's already https, e.g. a
-       Firebase Storage download URL) so LINE friends see the post's own
-       chart/screenshot alongside the text+link, not just a bare link. */
-    var imageUrl = (entry.imageUrl && /^https:\/\//i.test(entry.imageUrl)) ? entry.imageUrl : '';
     fetch(JOURNAL_WORKER_BASE + '/api/admin/broadcast', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Key': key },
-      body: JSON.stringify({ text: text, imageUrl: imageUrl })
+      body: JSON.stringify({ text: text, imageUrl: '' })
     }).then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
       .then(function(res){
         if(btn) btn.disabled = false;
@@ -52408,12 +52398,13 @@ var qrcode = function() {
      'printreport'/'connectedusers' above). Open to every visitor -- not
      locked, not member-gated -- same as 'scenarios'/'directory'.
 
-     Data: Finnhub's /calendar/economic endpoint, reusing the exact same
-     free API key a visitor may already have pasted into this page's own
-     Finnhub quote/fundamentals settings (exposed read-only as
-     window.__SPZ_LIVE.apiKey(), added alongside this feature). Without a
-     key, this page shows a friendly prompt that opens that same settings
-     popover (#spzKeyBtn) rather than building a second key box.
+     Data: Finnhub's /calendar/economic endpoint, but NOT called directly
+     from the browser (Round M) -- it goes through this site's own
+     Cloudflare Worker at /api/econ-calendar, which holds ONE Finnhub key
+     server-side (the FINNHUB_KEY secret) and caches it for every visitor.
+     Nobody needs to paste a personal key just to see this page. If that
+     secret hasn't been set yet, the Worker replies 501 and this page shows
+     a quiet "not wired up yet" note instead of erroring.
 
      Two independent displays, per her spec: a navigable month grid
      (decorative day boxes, dot-coded by that day's busiest impact level)
@@ -52440,13 +52431,7 @@ var qrcode = function() {
     background:var(--glass,rgba(255,255,255,.035));padding:30px 24px;
   }
   #ecocal .ec-keygate-icon{font-size:26px;margin-bottom:10px;}
-  #ecocal .ec-keygate-lede{font-size:12.5px;color:var(--grey);line-height:1.7;margin-bottom:16px;}
-  #ecocal .ec-keygate-btn{
-    font-family:var(--mono);font-size:12.5px;font-weight:700;letter-spacing:.3px;
-    border:1px solid var(--neon);border-radius:10px;padding:10px 20px;cursor:pointer;
-    background:rgba(204,255,0,.08);color:var(--neon);
-  }
-  #ecocal .ec-keygate-btn:hover{background:rgba(204,255,0,.16);}
+  #ecocal .ec-keygate-lede{font-size:12.5px;color:var(--grey);line-height:1.7;margin-bottom:0;}
 
   #ecocal .ec-loading, #ecocal .ec-error{
     text-align:center;font-family:var(--mono);font-size:12px;color:var(--grey-dim);padding:30px 0;
@@ -52537,9 +52522,8 @@ var qrcode = function() {
           th:'ตัวเลขเศรษฐกิจที่มักขยับตลาด — แยกตามวันและตามสัปดาห์ พร้อมเทียบตัวเลขคาดการณ์กับค่าจริงทันทีที่ประกาศ'},
     disc:{en:'Educational reference only, not investment advice. Times and figures come from a free third-party feed (Finnhub) and can be delayed, revised, or occasionally wrong — always confirm at the primary source. "Above/below forecast" market notes describe historical tendencies, not guarantees.',
           th:'เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน เวลาและตัวเลขมาจากผู้ให้บริการข้อมูลภายนอกแบบฟรี (Finnhub) อาจหน่วง แก้ไขภายหลัง หรือคลาดเคลื่อนได้บ้าง ควรตรวจสอบกับแหล่งข้อมูลหลักเสมอ ส่วนบันทึก "ดีกว่า/แย่กว่าคาด" เป็นแนวโน้มในอดีต ไม่ใช่การรับประกัน'},
-    keygateLede:{en:'This calendar reads Finnhub’s economic-data feed — the same free key already used for live stock quotes on this site. Add yours (free, no card) to turn it on.',
-                 th:'ปฏิทินนี้ดึงข้อมูลจาก Finnhub — คีย์ฟรีตัวเดียวกับที่ใช้ดึงราคาหุ้นสดในเว็บนี้ กดเพิ่มคีย์ฟรี (ไม่ต้องใช้บัตร) เพื่อเปิดใช้งาน'},
-    keygateBtn:{en:'Add your free Finnhub key',th:'เพิ่มคีย์ Finnhub ฟรี'},
+    keygateLede:{en:'This calendar isn’t wired up on the server yet — the site owner needs to add one free Finnhub key. Check back shortly.',
+                 th:'ปฏิทินนี้ยังไม่ได้ตั้งค่าฝั่งเซิร์ฟเวอร์ — ผู้ดูแลเว็บต้องเพิ่มคีย์ Finnhub ฟรีก่อน กลับมาดูใหม่อีกครั้งนะ'},
     loading:{en:'Loading calendar…',th:'กำลังโหลดปฏิทิน…'},
     error:{en:'Could not load the calendar right now — the free feed may be rate-limited. Try again in a moment.',
            th:'โหลดปฏิทินไม่สำเร็จตอนนี้ — อาจเพราะผู้ให้บริการจำกัดจำนวนครั้ง ลองใหม่อีกครั้งในอีกสักครู่'},
@@ -52641,9 +52625,14 @@ var qrcode = function() {
     return '<span class="ec-stars">' + out + '</span>';
   }
 
-  /* ---- data: cached per date-range in memory + sessionStorage (20-min
-     TTL) so switching tabs/language, or reopening the same month, never
-     re-hits the free feed more than necessary. ---- */
+  /* ---- data: proxied through the site's own Cloudflare Worker (Round M)
+     instead of calling Finnhub directly from the browser, so a visitor
+     needs zero setup of their own -- the Worker holds one Finnhub key
+     server-side (FINNHUB_KEY secret) and caches it for everyone. Also
+     cached here per date-range in memory + sessionStorage (20-min TTL) so
+     switching tabs/language, or reopening the same month, never re-hits
+     even the Worker more than necessary. ---- */
+  var WORKER_BASE = 'https://spacez-line-link.spacezblack.workers.dev';
   var CACHE_TTL_MS = 20 * 60 * 1000;
   var mem = {};
   function fetchRange(fromStr, toStr, cacheKey){
@@ -52656,13 +52645,12 @@ var qrcode = function() {
         if(parsed && (Date.now() - parsed.ts) < CACHE_TTL_MS){ mem[cacheKey] = parsed; return Promise.resolve(parsed.events); }
       }
     } catch(e){}
-    var key = (window.__SPZ_LIVE && window.__SPZ_LIVE.apiKey) ? window.__SPZ_LIVE.apiKey() : '';
-    if(!key) return Promise.reject(new Error('no key'));
-    var url = 'https://finnhub.io/api/v1/calendar/economic?from=' + fromStr + '&to=' + toStr + '&token=' + encodeURIComponent(key);
+    var url = WORKER_BASE + '/api/econ-calendar?from=' + fromStr + '&to=' + toStr;
     var ctrl = ('AbortController' in window) ? new AbortController() : null;
     var t = setTimeout(function(){ if(ctrl) ctrl.abort(); }, 12000);
     return fetch(url, ctrl ? { signal:ctrl.signal } : undefined).then(function(r){
       clearTimeout(t);
+      if(r.status === 501) throw new Error('not_configured');
       if(!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     }, function(e){ clearTimeout(t); throw e; }).then(function(d){
@@ -52801,7 +52789,7 @@ var qrcode = function() {
       paintWeek();
     }, function(err){
       sec.querySelector('[data-ec="loading"]').style.display = 'none';
-      if(err && err.message === 'no key'){
+      if(err && err.message === 'not_configured'){
         sec.querySelector('[data-ec="keygate"]').style.display = '';
       } else {
         sec.querySelector('[data-ec="error"]').style.display = '';
@@ -52815,28 +52803,14 @@ var qrcode = function() {
     sec.querySelector('[data-ec="lede"]').textContent = tx(C.lede);
     sec.querySelector('[data-ec="disc"]').textContent = tx(C.disc);
     sec.querySelector('[data-ec="keygateLede"]').textContent = tx(C.keygateLede);
-    sec.querySelector('[data-ec="keygateBtn"]').textContent = tx(C.keygateBtn);
     sec.querySelector('[data-ec="loading"]').textContent = tx(C.loading);
     sec.querySelector('[data-ec="error"]').textContent = tx(C.error);
     sec.querySelector('[data-ec="weekh"]').textContent = tx(C.weekH);
-
-    var key = (window.__SPZ_LIVE && window.__SPZ_LIVE.apiKey) ? window.__SPZ_LIVE.apiKey() : '';
-    if(!key){
-      sec.querySelector('[data-ec="keygate"]').style.display = '';
-      sec.querySelector('[data-ec="content"]').style.display = 'none';
-      sec.querySelector('[data-ec="loading"]').style.display = 'none';
-      sec.querySelector('[data-ec="error"]').style.display = 'none';
-      return;
-    }
     sec.querySelector('[data-ec="keygate"]').style.display = 'none';
     loadMonth();
   }
 
   function bind(){
-    sec.querySelector('[data-ec="keygateBtn"]').addEventListener('click', function(){
-      var btn = document.getElementById('spzKeyBtn');
-      if(btn) btn.click();
-    });
     sec.querySelector('[data-ec="prevMonth"]').addEventListener('click', function(){
       curM--; if(curM < 0){ curM = 11; curY--; }
       selDay = null;
@@ -52868,7 +52842,6 @@ var qrcode = function() {
         '<div class="ec-keygate" data-ec="keygate" style="display:none;">' +
           '<div class="ec-keygate-icon">\u{1F511}</div>' +
           '<div class="ec-keygate-lede" data-ec="keygateLede"></div>' +
-          '<button type="button" class="ec-keygate-btn" data-ec="keygateBtn"></button>' +
         '</div>' +
         '<div class="ec-loading" data-ec="loading" style="display:none;"></div>' +
         '<div class="ec-error" data-ec="error" style="display:none;"></div>' +
@@ -52899,22 +52872,12 @@ var qrcode = function() {
 
     bind();
     paint();
+    /* periodic refresh so a newly-released actual value (or the calendar
+       coming online after she adds the Worker's Finnhub secret) shows up
+       without a manual reload -- mostly a cache hit given the 20-min TTL
+       above, so this costs nothing on the quiet cycles. */
     document.addEventListener('spz:snapshot', paint);
     new MutationObserver(paint).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
-
-    /* the key-save button lives in the site's global status bar, not on
-       this page, and saving it doesn't itself dispatch an event this page
-       could listen for -- 'spz:snapshot' only fires on the ~10-minute auto
-       sync cycle. So while the key-gate is showing, poll for a key every
-       couple seconds and repaint the moment one appears, instead of making
-       someone who just pasted a free key sit and wonder why nothing loaded. */
-    var keyPollTries = 0;
-    var keyPollIv = setInterval(function(){
-      var has = !!((window.__SPZ_LIVE && window.__SPZ_LIVE.apiKey) ? window.__SPZ_LIVE.apiKey() : '');
-      if(has){ clearInterval(keyPollIv); paint(); return; }
-      if(++keyPollTries > 300) clearInterval(keyPollIv); // ~10 minutes, then give up quietly
-    }, 2000);
-
     return true;
   }
 
