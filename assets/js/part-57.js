@@ -393,6 +393,15 @@
     notifyErrKey:{en:'Enter your admin users key on the Connected Users page first, then come back to publish.',th:'กรุณาใส่รหัสแอดมินในหน้าผู้ใช้ที่เชื่อมต่อก่อน แล้วค่อยกลับมาเผยแพร่'},
     notifyErrConfig:{en:'LINE Messaging API is not configured on the server yet.',th:'ยังไม่ได้ตั้งค่า LINE Messaging API บนเซิร์ฟเวอร์'},
     notifyErr:{en:'Could not publish to LINE — try again.',th:'เผยแพร่ผ่าน LINE ไม่สำเร็จ — ลองใหม่อีกครั้ง'},
+
+    sendLineBtn:{en:'Send to LINE',th:'ส่งเข้า LINE'},
+    reportLineConfirm:{en:'Send this report as an image to everyone who added your LINE Official Account?',th:'ส่งรายงานนี้เป็นรูปภาพไปหาทุกคนที่เพิ่มเพื่อน LINE OA ของคุณใช่ไหม?'},
+    reportLineRendering:{en:'Rendering image…',th:'กำลังแปลงเป็นรูปภาพ…'},
+    reportLineUploading:{en:'Uploading…',th:'กำลังอัปโหลด…'},
+    reportLineSending:{en:'Sending to LINE…',th:'กำลังส่งเข้า LINE…'},
+    reportLineOk:{en:'Sent to LINE.',th:'ส่งเข้า LINE เรียบร้อยแล้ว'},
+    reportLineErr:{en:'Could not send to LINE — try again.',th:'ส่งเข้า LINE ไม่สำเร็จ — ลองใหม่อีกครั้ง'},
+    reportLineCaption:{en:'\ud83d\udcca New report from SPACEZ TERMINAL — see the image below.',th:'\ud83d\udcca รายงานใหม่จาก SPACEZ TERMINAL — ดูรูปภาพด้านล่าง'},
     notifyMsgTemplate:{en:'New analysis published: {asset}\n{url}',th:'เผยแพร่บทวิเคราะห์ใหม่: {asset}\n{url}'},
     /* Round M5: richer, text-only LINE broadcast teaser -- deliberately no
        image attached (user's explicit call: she wants the LINE message to
@@ -670,6 +679,85 @@
         if(btn) btn.disabled = false;
         window.alert(T(UI.notifyErr));
       });
+  }
+
+  /* Round Q: capture a .jrp-sheet report (the single-post report and the
+     Before/After comparison report both use this exact markup, see
+     buildJournalReport/renderBeforeAfterReport) as a PNG and send it through
+     the same LINE broadcast worker endpoint sendJournalBroadcast already
+     uses -- LINE's Messaging API has no generic "file" message type, so an
+     image is the practical way to get a report into everyone's chat rather
+     than only a text link. html2canvas is the same library part-39.js
+     already lazy-loads for the watchlist share-card PNG download; loaded
+     here too since each split module keeps its own small copy of this
+     loader rather than reaching into another module's private scope --
+     whichever module loads it first, window.html2canvas is then shared. */
+  var reportHtml2CanvasLoading = null;
+  function ensureReportHtml2Canvas(cb){
+    if(window.html2canvas){ cb(); return; }
+    if(reportHtml2CanvasLoading){ reportHtml2CanvasLoading.push(cb); return; }
+    reportHtml2CanvasLoading = [cb];
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    s.onload = function(){ var cbs = reportHtml2CanvasLoading; reportHtml2CanvasLoading = null; cbs.forEach(function(f){ f(); }); };
+    s.onerror = function(){ var cbs = reportHtml2CanvasLoading; reportHtml2CanvasLoading = null; cbs.forEach(function(f){ f('error'); }); };
+    document.head.appendChild(s);
+  }
+
+  function wireReportLineSend(ov){
+    var actions = ov.querySelector('.jrp-actions');
+    var sheet = ov.querySelector('.jrp-sheet');
+    if(!actions || !sheet) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'jrp-btn line';
+    btn.setAttribute('data-jrp', 'line');
+    btn.textContent = T(UI.sendLineBtn);
+    var closeBtnEl = actions.querySelector('[data-jrp="close"]');
+    actions.insertBefore(btn, closeBtnEl || null);
+    var statusEl = document.createElement('span');
+    statusEl.className = 'jrp-line-status';
+    actions.appendChild(statusEl);
+
+    btn.addEventListener('click', function(){
+      var key = getSharedAdminKey();
+      if(!key){ window.alert(T(UI.notifyErrKey)); return; }
+      if(!cloudinaryConfigured()){ window.alert(T(UI.imgNotConfigured)); return; }
+      if(!window.confirm(T(UI.reportLineConfirm))) return;
+      btn.disabled = true;
+      statusEl.textContent = T(UI.reportLineRendering);
+      ensureReportHtml2Canvas(function(err){
+        if(err || !window.html2canvas){ btn.disabled = false; statusEl.textContent = ''; window.alert(T(UI.reportLineErr)); return; }
+        window.html2canvas(sheet, { backgroundColor:'#ffffff', scale:2, useCORS:true }).then(function(canvas){
+          statusEl.textContent = T(UI.reportLineUploading);
+          return new Promise(function(resolve, reject){
+            /* LINE's Messaging API image message documents JPEG (max 10MB,
+               4096x4096) -- html2canvas defaults to PNG, which some LINE
+               clients render inconsistently, so convert explicitly here.
+               The .jrp-sheet capture has no transparency (backgroundColor
+               above is opaque white) so JPEG loses nothing meaningful. */
+            canvas.toBlob(function(blob){ blob ? resolve(blob) : reject(new Error('toBlob failed')); }, 'image/jpeg', 0.92);
+          });
+        }).then(function(blob){
+          return cloudinaryUpload(blob);
+        }).then(function(url){
+          statusEl.textContent = T(UI.reportLineSending);
+          return fetch(JOURNAL_WORKER_BASE + '/api/admin/broadcast', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Key': key },
+            body: JSON.stringify({ text: T(UI.reportLineCaption), imageUrl: url })
+          }).then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); });
+        }).then(function(res){
+          btn.disabled = false; statusEl.textContent = '';
+          if(res.ok && res.data && res.data.ok){ window.alert(T(UI.reportLineOk)); return; }
+          if(res.data && res.data.error === 'messaging_not_configured'){ window.alert(T(UI.notifyErrConfig)); return; }
+          window.alert(T(UI.reportLineErr));
+        }).catch(function(){
+          btn.disabled = false; statusEl.textContent = '';
+          window.alert(T(UI.reportLineErr));
+        });
+      });
+    });
   }
 
   /* Same LINE session the auth gate and Watchlist page already share via
@@ -1058,6 +1146,7 @@
       window.print();
     });
     ov.querySelector('[data-jrp="close"]').addEventListener('click', closeReport);
+    wireReportLineSend(ov);
 
     document.body.appendChild(ov);
 
@@ -2050,6 +2139,7 @@
       window.print();
     });
     ov.querySelector('[data-jrp="close"]').addEventListener('click', closeReport);
+    wireReportLineSend(ov);
     document.body.appendChild(ov);
   }
 
