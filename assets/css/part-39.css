@@ -1,0 +1,649 @@
+
+  .jrnl-shell{display:flex;gap:22px;max-width:1280px;margin:0 auto;align-items:flex-start;}
+  .jrnl-side{flex:0 0 230px;position:sticky;top:calc(var(--spz-topH,80px) + 18px);display:flex;flex-direction:column;gap:14px;}
+  .jrnl-add{
+    display:block;text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:1.2px;
+    text-transform:uppercase;color:#0b0b0b;background:var(--neon);border:1px solid var(--neon);
+    border-radius:8px;padding:11px 12px;cursor:pointer;text-decoration:none;transition:opacity .2s,transform .2s;
+  }
+  .jrnl-add:hover{opacity:.85;transform:translateY(-1px);}
+  .jrnl-tags{display:flex;flex-direction:column;gap:4px;}
+  .jrnl-tag{
+    display:flex;justify-content:space-between;gap:8px;width:100%;text-align:left;
+    padding:9px 12px;border-radius:8px;border:1px solid transparent;background:none;
+    color:var(--grey);font-family:var(--mono);font-size:11.5px;letter-spacing:.3px;cursor:pointer;
+    transition:background .2s,border-color .2s,color .2s;
+  }
+  .jrnl-tag:hover{background:rgba(255,255,255,.05);color:var(--white);}
+  .jrnl-tag.on{background:rgba(204,255,0,.1);border-color:var(--neon);color:var(--neon);}
+  .jrnl-feed{flex:1;min-width:0;display:flex;flex-direction:column;gap:20px;}
+  .jrnl-card{
+    border:1px solid var(--border-dim);border-radius:var(--radius);overflow:hidden;
+    background:linear-gradient(170deg,rgba(255,255,255,.04),rgba(255,255,255,.012));
+  }
+  .jrnl-card-img{display:block;width:100%;max-height:520px;object-fit:cover;background:#000;cursor:zoom-in;}
+  .jrnl-card-body{padding:16px 20px 18px;}
+  .jrnl-card-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+  /* prominent asset-name badge -- blue/cyan so it reads distinctly from the
+     card's green accent everywhere else, matching the chip look of the
+     Timeframe/Invalid/SL/TP badges below but sized up as the headline chip */
+  .jrnl-card-asset{
+    font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;
+    color:#5ec8ff;border:1.5px solid #5ec8ff;border-radius:20px;padding:5px 14px;
+    background:rgba(94,200,255,.1);box-shadow:0 0 0 1px rgba(94,200,255,.15) inset;
+  }
+  .jrnl-card-date{font-family:var(--mono);font-size:10.5px;color:var(--grey-dim);}
+  .jrnl-card-text{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;font-size:13.5px;line-height:1.75;color:var(--grey);}
+  .jrnl-admin-notice{
+    margin-top:18px;padding-top:14px;border-top:1px dashed var(--border-dim);
+    font-size:11px;color:var(--grey-dim);text-align:center;
+  }
+  .jrnl-empty{
+    border:1px dashed var(--border-dim);border-radius:var(--radius);padding:40px 20px;
+    text-align:center;color:var(--grey-dim);font-size:13px;
+  }
+  .jrnl-lightbox{
+    position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.92);
+    display:flex;align-items:center;justify-content:center;padding:30px;cursor:zoom-out;
+  }
+  .jrnl-lightbox img{max-width:100%;max-height:100%;border-radius:6px;}
+  /* ---- single-post LINE-login paywall (journalView) ----
+     the list/titles page (journal) is never gated; only the post CONTENT
+     inside journalView gets blurred unguessably for a non-linked visitor,
+     with an overlay CTA to log in with LINE. */
+  .jrnl-locked{position:relative;}
+  .jrnl-locked-blur{filter:blur(22px) saturate(.5);-webkit-filter:blur(22px) saturate(.5);
+    transform:scale(1.06);user-select:none;pointer-events:none;}
+  .jrnl-locked-overlay{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:12px;text-align:center;padding:24px;background:rgba(4,5,4,.42);z-index:2;
+  }
+  .jrnl-locked-ico{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:rgba(204,255,0,.12);border:1px solid var(--neon);color:var(--neon);}
+  .jrnl-locked-ico svg{width:17px;height:17px;}
+  .jrnl-locked-msg{font-size:13.5px;color:var(--white);max-width:340px;line-height:1.6;}
+  .jrnl-locked-btn{
+    font-family:var(--mono);font-size:11.5px;letter-spacing:1.2px;text-transform:uppercase;
+    color:#0b0b0b;background:var(--neon);border:1px solid var(--neon);border-radius:20px;
+    padding:11px 22px;cursor:pointer;transition:opacity .2s;
+  }
+  .jrnl-locked-btn:hover{opacity:.85;}
+  @media(max-width:860px){
+    .jrnl-shell{flex-direction:column;}
+    .jrnl-side{position:static;flex:none;width:100%;flex-direction:row;flex-wrap:wrap;}
+    .jrnl-add{flex:1 1 auto;}
+    .jrnl-tags{flex-direction:row;flex-wrap:wrap;width:100%;}
+  }
+
+  /* ---- admin add/edit page ---- */
+  .jed-panel{max-width:640px;margin:0 auto;border:1px solid var(--border-dim);border-radius:var(--radius);
+    background:linear-gradient(170deg,rgba(255,255,255,.05),rgba(255,255,255,.014));padding:26px 26px 22px;
+    transition:border-color .15s;}
+  /* matches .jed-row.editing on the specific list row being edited, so the
+     form and the post it belongs to are visibly linked while editing. */
+  .jed-panel.editing{border-color:#5ec8ff;}
+  .jed-field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+  .jed-field label{font-family:var(--mono);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--grey-dim);}
+  .jed-field input[type="text"],.jed-field input[type="email"],.jed-field input[type="password"],.jed-field textarea{
+    background:rgba(255,255,255,.04);border:1px solid var(--border-dim);border-radius:8px;
+    padding:11px 13px;color:var(--white);font-size:13.5px;font-family:inherit;resize:vertical;
+  }
+  .jed-field input:focus,.jed-field textarea:focus{outline:none;border-color:var(--neon);}
+  .jed-field textarea{min-height:140px;line-height:1.6;}
+  .jed-preview{max-width:100%;max-height:260px;border-radius:8px;margin-top:8px;display:none;}
+  .jed-btn{
+    font-family:var(--mono);font-size:11.5px;letter-spacing:1.2px;text-transform:uppercase;
+    color:#0b0b0b;background:var(--neon);border:1px solid var(--neon);border-radius:8px;
+    padding:12px 20px;cursor:pointer;transition:opacity .2s;
+  }
+  .jed-btn:hover{opacity:.85;}
+  .jed-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .jed-msg{font-size:12.5px;margin-top:12px;}
+  .jed-msg.err{color:#ff5a6e;}
+  .jed-msg.ok{color:#7CFFB2;}
+  .jed-signout{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;
+    color:var(--grey-dim);background:none;border:1px solid var(--border-dim);border-radius:8px;
+    padding:7px 12px;cursor:pointer;float:right;
+  }
+  /* ---- two-column admin layout: form left, "your entries" list right, so the
+     list stays in easy reach instead of scrolled away below the form ---- */
+  .jed-layout{display:flex;gap:24px;align-items:flex-start;max-width:1180px;margin:0 auto;flex-wrap:wrap;}
+  .jed-layout .jed-panel{flex:1 1 460px;max-width:560px;margin:0;}
+  .jed-listcol{
+    flex:1 1 420px;min-width:0;max-width:640px;border:1px solid var(--border-dim);border-radius:var(--radius);
+    background:linear-gradient(170deg,rgba(255,255,255,.035),rgba(255,255,255,.01));padding:20px 20px 16px;
+  }
+  .jed-list-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .jed-list-filter select,.jed-list-filter input[type="date"]{
+    background:rgba(255,255,255,.04);border:1px solid var(--border-dim);border-radius:8px;
+    padding:8px 10px;color:var(--white);font-size:12px;font-family:inherit;
+  }
+  .jed-list-filter select{flex:1 1 140px;}
+  .jed-list-filter input[type="date"]{flex:1 1 130px;}
+  .jed-list-filter-clear{
+    font-family:var(--mono);font-size:11px;background:none;border:1px solid var(--border-dim);
+    border-radius:8px;color:var(--grey-dim);padding:8px 12px;cursor:pointer;flex:none;
+  }
+  .jed-list-filter-clear:hover{color:var(--white);border-color:var(--neon);}
+  .jed-listcol .jed-list{max-width:none;margin:0;}
+  @media(max-width:900px){
+    .jed-layout{flex-direction:column;}
+    .jed-layout .jed-panel{max-width:640px;margin:0 auto;width:100%;}
+    .jed-listcol{max-width:640px;margin:0 auto;width:100%;}
+  }
+
+  /* ---- trade-setup section header (timeframe sits with asset, above; the
+     grid itself is .jed-setup-grid, just below) ---- */
+  .jed-tradelevels-h{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;
+    color:var(--grey-dim);margin-bottom:10px;
+  }
+
+  /* Round P: the trade-setup zone redesigned into two sub-columns per her
+     request -- left = qualitative call (bias, invalidation, wave view),
+     right = the numeric levels stacked TP / entry price / SL, since that's
+     the order she reads them in. A vertical divider on the right column
+     keeps the two zones visually separate without a heavier bordered box. */
+  .jed-setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 22px;margin-bottom:18px;}
+  .jed-setup-col .jed-field{margin-bottom:14px;}
+  .jed-setup-col .jed-field:last-child{margin-bottom:0;}
+  .jed-setup-right{border-left:1px dashed var(--border-dim);padding-left:20px;}
+  @media(max-width:520px){
+    .jed-setup-grid{grid-template-columns:1fr;}
+    .jed-setup-right{border-left:none;padding-left:0;padding-top:4px;border-top:1px dashed var(--border-dim);}
+  }
+  .jed-setup-col .jed-field.jed-lvl-invalid label{color:var(--red);}
+  .jed-setup-col .jed-field.jed-lvl-invalid input{border-left:3px solid var(--red);}
+  .jed-setup-col .jed-field.jed-lvl-sl label,
+  .jed-setup-col .jed-field.jed-lvl-tp label{color:var(--neon-2,#2ecc71);}
+  .jed-setup-col .jed-field.jed-lvl-sl input,
+  .jed-setup-col .jed-field.jed-lvl-tp input{border-left:3px solid var(--neon-2,#2ecc71);}
+  .jed-bias-toggle{display:flex;gap:8px;}
+  .jed-bias-btn{
+    flex:1 1 0;font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.3px;
+    border:1px solid var(--border-dim);border-radius:9px;padding:9px 6px;cursor:pointer;
+    background:rgba(255,255,255,.03);color:var(--grey);
+  }
+  .jed-bias-btn.up.active{border-color:var(--neon-2,#2ecc71);color:var(--neon-2,#2ecc71);background:rgba(46,204,113,.1);}
+  .jed-bias-btn.down.active{border-color:var(--red);color:var(--red);background:rgba(255,90,110,.1);}
+  .jed-priceunit-inline{
+    margin-top:6px;width:100%;font-family:var(--mono);font-size:11px;border:1px solid var(--border-dim);
+    border-radius:8px;padding:6px 8px;background:rgba(255,255,255,.03);color:var(--grey);
+  }
+
+  .jed-list{max-width:640px;margin:26px auto 0;display:flex;flex-direction:column;gap:10px;}
+  .jed-row{
+    display:flex;flex-wrap:wrap;align-items:center;gap:12px;border:1px solid var(--border-dim);border-radius:8px;
+    padding:10px 12px;background:rgba(255,255,255,.02);
+    transition:border-color .15s,background .15s;
+  }
+  /* highlighted while this exact row is being edited in the form above --
+     matches .jed-editing-flag's blue so it's obvious which post the open
+     form on the left refers to; reverts to the default border on save/cancel. */
+  .jed-row.editing{border-color:#5ec8ff;background:rgba(94,200,255,.05);}
+  .jed-row img{width:44px;height:44px;object-fit:cover;border-radius:6px;flex:none;}
+  .jed-row-body{flex:1;min-width:0;}
+  .jed-row-asset{font-family:var(--mono);font-size:10px;color:var(--neon);letter-spacing:.5px;}
+  .jed-row-text{font-size:12px;color:var(--grey);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .jed-row-del{
+    font-family:var(--mono);font-size:10px;letter-spacing:.8px;text-transform:uppercase;
+    color:#ff5a6e;background:none;border:1px solid rgba(255,90,110,.4);border-radius:6px;
+    padding:6px 10px;cursor:pointer;flex:none;
+  }
+  .jed-row-del:hover{background:rgba(255,90,110,.1);}
+  .jed-row-date{font-family:var(--mono);font-size:9.5px;color:var(--grey-dim);margin-top:2px;}
+
+  /* ---- card tag chips (public log) ---- */
+  .jrnl-card-tags{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px;}
+  .jrnl-tag-chip{font-family:var(--mono);font-size:9.5px;letter-spacing:.5px;color:var(--grey-dim);border:1px solid var(--border-dim);border-radius:20px;padding:2px 9px;}
+
+  /* ---- timeframe + Elliott-Wave trade-level chips (public log + shared view) ---- */
+  .jrnl-card-levels{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;}
+  .jrnl-lvl-chip{font-family:var(--mono);font-size:10px;letter-spacing:.3px;color:var(--grey);border:1px solid var(--border-dim);border-radius:20px;padding:3px 10px;background:rgba(255,255,255,.03);}
+  .jrnl-lvl-chip b{color:var(--white);font-weight:700;margin-right:2px;}
+  .jrnl-lvl-chip.tf{border-color:var(--neon);color:var(--neon);}
+  .jrnl-lvl-chip.tf b{color:var(--neon);}
+  .jrnl-lvl-chip.wave{border-color:var(--amber,#e0a030);}
+  .jrnl-lvl-chip.invalid{border-color:var(--red);color:var(--red);}
+  .jrnl-lvl-chip.invalid b{color:var(--red);}
+  .jrnl-lvl-chip.sl,.jrnl-lvl-chip.tp{border-color:var(--neon-2,#2ecc71);color:var(--neon-2,#2ecc71);}
+  .jrnl-lvl-chip.sl b,.jrnl-lvl-chip.tp b{color:var(--neon-2,#2ecc71);}
+  .jrnl-lvl-chip.bias{font-weight:700;}
+  .jrnl-lvl-chip.bias.up{border-color:var(--neon-2,#2ecc71);color:var(--neon-2,#2ecc71);}
+  .jrnl-lvl-chip.bias.down{border-color:var(--red);color:var(--red);}
+  /* ---- SL / Entry / TP order-status infographic (public feed + single
+     view) -- Round K1: redesigned from a plain single-color bar into a
+     TradingView-style position card: a green "profit zone" running from
+     Entry toward TP and a red "loss zone" running from Entry toward SL,
+     an Entry crosshair with a soft radar-style pulse, and a gentle sheen
+     that sweeps through each zone so the card reads as a live order
+     status rather than a static ruler. ---------------------------------- */
+  .jrnl-orderbar{position:relative;height:72px;margin:6px 4px 18px;}
+  .jrnl-orderbar-track{
+    position:absolute;left:10px;right:10px;top:32px;height:8px;border-radius:5px;
+    background:rgba(255,255,255,.05);border:1px solid var(--border-dim);overflow:hidden;
+  }
+  .jrnl-orderbar-zone{position:absolute;top:0;bottom:0;}
+  .jrnl-orderbar-zone::after{
+    content:'';position:absolute;inset:0;background-repeat:no-repeat;background-size:70px 100%;
+    background-image:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);
+    animation:orderbarSheen 3.6s ease-in-out infinite;
+  }
+  .jrnl-orderbar-zone.profit{background:linear-gradient(90deg,rgba(46,204,113,.16),rgba(46,204,113,.55));}
+  .jrnl-orderbar-zone.loss{background:linear-gradient(90deg,rgba(255,107,107,.55),rgba(255,107,107,.16));}
+  .jrnl-orderbar-zone.loss::after{animation-delay:1.8s;}
+  @keyframes orderbarSheen{
+    0%{background-position:-90px 0;opacity:0;}
+    18%{opacity:.9;}
+    55%{opacity:.9;}
+    78%,100%{background-position:150px 0;opacity:0;}
+  }
+  .jrnl-orderbar-entryline{
+    position:absolute;top:18px;bottom:18px;width:2px;transform:translateX(-50%);
+    background:#f4f6f1;box-shadow:0 0 7px rgba(244,246,241,.75);z-index:2;border-radius:2px;
+  }
+  .jrnl-orderbar-mark{position:absolute;top:0;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;z-index:3;}
+  .jrnl-orderbar-mark.entry{top:auto;bottom:0;flex-direction:column-reverse;}
+  .jrnl-orderbar-dot{position:relative;width:11px;height:11px;border-radius:50%;border:2px solid var(--bg,#0b0b0b);box-shadow:0 0 0 1px rgba(255,255,255,.28);}
+  .jrnl-orderbar-mark.sl .jrnl-orderbar-dot{background:#ff6b6b;}
+  .jrnl-orderbar-mark.entry .jrnl-orderbar-dot{background:#f4f6f1;}
+  .jrnl-orderbar-mark.tp .jrnl-orderbar-dot{background:#2ecc71;}
+  .jrnl-orderbar-mark.entry .jrnl-orderbar-dot::after{
+    content:'';position:absolute;inset:-4px;border-radius:50%;
+    border:1.5px solid rgba(244,246,241,.75);animation:orderbarPulse 2.4s ease-out infinite;
+  }
+  @keyframes orderbarPulse{0%{transform:scale(1);opacity:.85;}100%{transform:scale(2.2);opacity:0;}}
+  .jrnl-orderbar-lbl{font-family:var(--mono);font-size:8.6px;color:var(--grey-dim);white-space:nowrap;}
+  .jrnl-orderbar-mark.entry .jrnl-orderbar-lbl{color:#f4f6f1;font-weight:700;}
+  .jrnl-orderbar-rr{
+    position:absolute;top:-2px;left:50%;transform:translateX(-50%);
+    font-family:var(--mono);font-size:9px;letter-spacing:.4px;white-space:nowrap;
+    color:var(--amber,#e0a030);background:rgba(224,160,48,.1);
+    border:1px solid rgba(224,160,48,.35);border-radius:20px;padding:2px 9px;z-index:4;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .jrnl-orderbar-zone::after,.jrnl-orderbar-mark.entry .jrnl-orderbar-dot::after{animation:none;}
+  }
+
+  /* ---- sidebar filter groups (public log) ---- */
+  .jrnl-filter-group{display:flex;flex-direction:column;gap:4px;}
+  .jrnl-filter-label{font-family:var(--mono);font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--grey-dim);margin:2px 2px 0;}
+  .jrnl-date-row{display:flex;gap:6px;align-items:center;}
+  .jrnl-date-row input[type="date"]{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--border-dim);border-radius:8px;padding:8px 9px;color:var(--white);font-size:11.5px;font-family:inherit;color-scheme:dark;}
+  .jrnl-date-clear{flex:none;background:none;border:1px solid var(--border-dim);border-radius:8px;width:30px;height:30px;color:var(--grey-dim);cursor:pointer;font-size:14px;line-height:1;}
+  .jrnl-date-clear:hover{color:var(--white);border-color:var(--neon);}
+
+  /* ---- admin: asset select + other input ---- */
+  .jed-field select{
+    background:rgba(255,255,255,.04);border:1px solid var(--border-dim);border-radius:8px;
+    padding:11px 13px;color:var(--white);font-size:13.5px;font-family:inherit;
+  }
+  .jed-field select:focus{outline:none;border-color:var(--neon);}
+
+  /* ---- admin: nicer image dropzone ---- */
+  .jed-drop{
+    position:relative;border:1.5px dashed var(--border-dim);border-radius:10px;min-height:150px;
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+    transition:border-color .2s,background .2s;background:rgba(255,255,255,.015);
+  }
+  .jed-drop.over,.jed-drop:hover{border-color:var(--neon);background:rgba(204,255,0,.03);}
+  .jed-drop-input{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2;}
+  .jed-drop-empty{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--grey-dim);font-size:11.5px;text-align:center;padding:20px;pointer-events:none;}
+  .jed-drop-empty svg{width:26px;height:26px;opacity:.55;}
+  .jed-drop-filled{position:relative;width:100%;}
+  .jed-drop-filled img{display:block;width:100%;max-height:300px;object-fit:contain;background:#000;}
+  .jed-drop-remove{
+    position:absolute;top:8px;right:8px;z-index:3;width:26px;height:26px;border-radius:50%;
+    background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:14px;
+    line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .jed-drop-remove:hover{background:rgba(255,90,110,.5);border-color:#ff5a6e;}
+  .jed-file-name{font-size:11px;color:var(--grey-dim);margin-top:6px;word-break:break-all;}
+  .jed-forgot{background:none;border:none;color:var(--grey-dim);font-size:11px;text-decoration:underline;cursor:pointer;padding:0;margin-top:10px;display:inline-block;}
+  .jed-forgot:hover{color:var(--neon);}
+
+  /* ---- public log: toolbar (search + sort), stats strip ---- */
+  .jrnl-toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+  .jrnl-search{
+    flex:1 1 220px;background:rgba(255,255,255,.04);border:1px solid var(--border-dim);border-radius:8px;
+    padding:9px 13px;color:var(--white);font-size:12.5px;font-family:inherit;
+  }
+  .jrnl-search:focus{outline:none;border-color:var(--neon);}
+  .jrnl-sort-btn{
+    flex:none;font-family:var(--mono);font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;
+    color:var(--grey-dim);background:none;border:1px solid var(--border-dim);border-radius:8px;
+    padding:9px 13px;cursor:pointer;white-space:nowrap;transition:color .2s,border-color .2s;
+  }
+  .jrnl-sort-btn:hover{color:var(--white);border-color:var(--neon);}
+  .jrnl-stats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;}
+  .jrnl-stat{
+    flex:1 1 120px;border:1px solid var(--border-dim);border-radius:8px;padding:10px 14px;
+    background:rgba(255,255,255,.02);
+  }
+  .jrnl-stat-n{font-family:var(--mono);font-size:19px;font-weight:700;color:var(--neon);}
+  .jrnl-stat-l{font-family:var(--mono);font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:var(--grey-dim);margin-top:2px;}
+
+  /* ---- card extras: pin badge, outcome badge, share/view actions ---- */
+  .jrnl-card{position:relative;}
+  .jrnl-pin-badge{
+    position:absolute;top:12px;right:12px;z-index:2;background:rgba(0,0,0,.6);border:1px solid var(--neon);
+    color:var(--neon);border-radius:20px;padding:3px 10px;font-family:var(--mono);font-size:9.5px;
+    letter-spacing:.6px;text-transform:uppercase;white-space:nowrap;flex:none;
+  }
+  /* when the card has no image, the badge rides inline next to the date instead of
+     floating over a photo -- otherwise it lands on top of the card's own text */
+  .jrnl-pin-badge.inline{position:static;top:auto;right:auto;
+  }
+  .jrnl-outcome-badge{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;
+    border-radius:20px;padding:2px 10px;border:1px solid;
+  }
+  .jrnl-outcome-badge.correct{color:#7CFFB2;border-color:#7CFFB2;}
+  .jrnl-outcome-badge.incorrect{color:#ff5a6e;border-color:#ff5a6e;}
+  .jrnl-card-actions{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:10px;flex-wrap:wrap;}
+  .jrnl-share-btn{
+    font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;
+    color:var(--grey-dim);background:none;border:1px solid var(--border-dim);border-radius:8px;
+    padding:6px 11px;cursor:pointer;transition:color .2s,border-color .2s;
+  }
+  .jrnl-share-btn:hover{color:var(--neon);border-color:var(--neon);}
+  .jrnl-addline-btn{
+    display:inline-flex;align-items:center;gap:6px;margin-top:8px;width:fit-content;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.3px;font-weight:700;
+    color:#06170d;background:#06c755;border:1px solid #06c755;border-radius:8px;
+    padding:7px 12px;text-decoration:none;transition:filter .15s,transform .15s;
+  }
+  .jrnl-addline-btn:hover{filter:brightness(1.08);transform:translateY(-1px);}
+  .jrnl-addline-btn svg{flex-shrink:0;}
+
+  /* ---- like button + liker avatars, LINE-authenticated (see the shared
+     window.__SPZ_LINE API the Watchlist module exposes). Liking needs a
+     linked LINE account so nobody can like as someone else; seeing who
+     already liked needs no login at all. ------------------------------- */
+  .jrnl-like-wrap{display:flex;align-items:center;gap:8px;}
+  .jrnl-like-btn{
+    font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;
+    color:var(--grey-dim);background:none;border:1px solid var(--border-dim);border-radius:8px;
+    padding:6px 11px;cursor:pointer;transition:color .2s,border-color .2s;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .jrnl-like-btn:hover{color:#06C755;border-color:#06C755;}
+  .jrnl-like-btn.liked{color:#06C755;border-color:#06C755;background:rgba(6,199,85,.08);}
+  .jrnl-like-btn:disabled{opacity:.6;cursor:default;}
+  .jrnl-like-icon{width:12px;height:12px;flex:0 0 auto;}
+  .jrnl-like-btn.liked .jrnl-like-icon{fill:#06C755;}
+  .jrnl-like-avatars{display:flex;align-items:center;gap:4px;}
+  .jrnl-like-avatars img{width:26px;height:26px;border-radius:50%;object-fit:cover;border:1.5px solid var(--border-dim);}
+  .jrnl-like-more{font-family:var(--mono);font-size:11px;color:var(--grey-dim);}
+
+  /* ---- single-entry share view ---- */
+  .jrnl-view-back{
+    display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;
+    letter-spacing:.5px;text-transform:uppercase;color:var(--grey-dim);text-decoration:none;margin-bottom:16px;
+  }
+  .jrnl-view-back:hover{color:var(--neon);}
+  .jrnl-view-shell{max-width:760px;margin:0 auto;}
+  .jrnl-view-shell .jrnl-card{max-width:100%;}
+  .jrnl-view-notfound{border:1px dashed var(--border-dim);border-radius:var(--radius);padding:50px 20px;text-align:center;color:var(--grey-dim);}
+
+  /* ---- admin list: edit / pin / outcome / publish-report actions ----
+     flex:none here used to size this block at its max-content (single-line)
+     width regardless of its own flex-wrap, which is why the last couple of
+     buttons (delete, the like heart) rendered past the card's right edge on
+     narrow screens -- flex-basis:100% forces it onto its own full-width line
+     so its wrap actually has room to fold buttons within the card border. */
+  .jed-row{flex-wrap:wrap;}
+  .jed-row-actions{display:flex;gap:6px;flex-wrap:wrap;flex:1 1 100%;min-width:0;}
+  .jed-row-btn{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;
+    background:none;border:1px solid var(--border-dim);border-radius:6px;color:var(--grey-dim);
+    padding:6px 9px;cursor:pointer;white-space:nowrap;
+  }
+  .jed-row-btn:hover{color:var(--white);border-color:var(--neon);}
+  .jed-row-btn.on{color:var(--neon);border-color:var(--neon);}
+  .jed-row-btn.publish{color:#5ec8ff;border-color:rgba(94,200,255,.4);}
+  .jed-row-btn.publish:hover{border-color:#5ec8ff;}
+  .jed-row-btn.tp{color:#2ecc71;border-color:rgba(46,204,113,.4);}
+  .jed-row-btn.tp:hover,.jed-row-btn.tp.on{border-color:#2ecc71;color:#2ecc71;}
+  .jed-row-btn.sl{color:#ff6b6b;border-color:rgba(255,107,107,.4);}
+  .jed-row-btn.sl:hover,.jed-row-btn.sl.on{border-color:#ff6b6b;color:#ff6b6b;}
+  .jed-row-btn.notify{color:#06C755;border-color:rgba(6,199,85,.4);}
+  .jed-row-btn.notify:hover{border-color:#06C755;}
+  .jed-outcome-group{display:flex;gap:4px;}
+  /* ---- Before/After comparison picker modal (admin) ---- */
+  .jed-ba-overlay{
+    position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.72);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  .jed-ba-modal{
+    width:100%;max-width:680px;max-height:90vh;overflow:auto;background:var(--bg-2,#111);
+    border:1px solid var(--border-dim);border-radius:10px;padding:22px 24px;
+  }
+  .jed-ba-modal-h{font-family:var(--mono);font-size:13px;letter-spacing:.8px;text-transform:uppercase;color:var(--white);margin-bottom:16px;}
+  /* ---- visual/direct post picker: horizontal filmstrip of clickable cards,
+     replaces the old <select> dropdown so admins pick a post by its thumbnail ---- */
+  .jed-ba-pickgroup{margin-bottom:16px;}
+  .jed-ba-pickgroup label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--grey-dim);margin-bottom:8px;}
+  .jed-ba-pickgrid{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding-bottom:6px;}
+  .jed-ba-pickempty{font-size:11.5px;color:var(--grey-dim);padding:10px 2px;}
+  .jed-ba-pickcard{
+    flex:0 0 96px;width:96px;cursor:pointer;border:2px solid rgba(255,255,255,.12);border-radius:8px;
+    padding:6px;background:rgba(255,255,255,.02);text-align:center;transition:border-color .15s,background .15s;
+  }
+  .jed-ba-pickcard:hover{border-color:rgba(255,255,255,.32);}
+  .jed-ba-pickcard.selected{border-color:var(--neon);background:rgba(178,255,89,.08);}
+  .jed-ba-pickcard-thumb{width:100%;height:64px;object-fit:cover;border-radius:5px;display:block;background:#000;}
+  .jed-ba-pickcard-noimg{background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.02));}
+  .jed-ba-pickcard-meta{font-size:10px;font-weight:700;color:var(--white,#f4f6f1);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .jed-ba-pickcard-date{font-size:8.8px;color:var(--grey-dim);margin-top:2px;}
+  /* ---- manual-entry vs. reference-post-price toggle for the two price fields ---- */
+  .jed-ba-pricemode{display:flex;gap:6px;margin-bottom:8px;}
+  .jed-ba-pricemode-btn{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;
+    background:none;border:1px solid var(--border-dim);border-radius:20px;color:var(--grey-dim);
+    padding:6px 14px;cursor:pointer;
+  }
+  .jed-ba-pricemode-btn:hover{color:var(--white);border-color:var(--neon);}
+  .jed-ba-pricemode-btn.active{color:#0b0b0b;background:var(--neon);border-color:var(--neon);}
+  .jed-ba-pricemode-hint{font-size:10.5px;color:var(--grey-dim);margin:0 0 10px;}
+  .jed-ba-pricemode-hint.warn{color:#ff6b6b;}
+  .jed-ba-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+  .jed-ba-field{flex:1 1 150px;display:flex;flex-direction:column;gap:5px;}
+  .jed-ba-field label{font-family:var(--mono);font-size:9.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--grey-dim);}
+  .jed-ba-field select,.jed-ba-field input{
+    font-family:inherit;font-size:12.5px;border:1px solid rgba(255,255,255,.14);border-radius:8px;
+    padding:8px 10px;background:rgba(255,255,255,.04);color:var(--white,#f4f6f1);outline:none;width:100%;
+  }
+  .jed-ba-field input[readonly]{opacity:.65;cursor:not-allowed;}
+  .jed-ba-checkline{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--grey);margin:2px 0 12px;cursor:pointer;}
+  .jed-ba-checkline input{width:15px;height:15px;accent-color:var(--neon);cursor:pointer;flex:none;}
+  .jed-ba-msg{min-height:16px;font-size:11.5px;margin-bottom:8px;}
+  .jed-ba-msg.err{color:#ff6b6b;}
+  .jed-ba-actions{display:flex;align-items:center;gap:8px;margin-top:4px;}
+  /* ---- Before/After side-by-side image compare, inside the .jrp-sheet print look ---- */
+  .jrp-ba-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:6px;}
+  .jrp-ba-col{border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center;}
+  .jrp-ba-label{font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#161616;margin-bottom:8px;}
+  .jrp-ba-img{width:100%;max-height:260px;object-fit:contain;background:#111;border-radius:6px;display:block;}
+  .jrp-ba-noimg{width:100%;height:140px;background:#eee;border-radius:6px;}
+  .jrp-ba-meta{font-size:9.5px;color:#777;margin-top:8px;}
+  .jrp-ba-tags{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:8px;}
+  .jrp-ba-tags .jrp-chip{border:1px solid #ccc;border-radius:20px;padding:2px 9px;font-size:9.5px;color:#666;}
+  .jrp-ba-bias{margin-top:8px;font-size:10px;font-weight:700;letter-spacing:.3px;}
+  .jrp-ba-bias.up{color:#1a8f4c;}
+  .jrp-ba-bias.down{color:#c0392b;}
+  .jrp-ba-pricecap{font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:#999;margin-top:10px;}
+  .jrp-ba-price{font-size:18px;font-weight:800;color:#161616;margin-top:2px;}
+  .jrp-ba-priceunit{font-size:11px;font-weight:600;color:#888;margin-left:3px;}
+  .jrp-ba-note{
+    margin-top:10px;padding-top:8px;border-top:1px dashed #ddd;text-align:left;
+    font-size:10.5px;line-height:1.65;color:#333;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;
+  }
+  /* Round P3: the four headline numbers (days elapsed / % change / price
+     change / profit-loss) read as one formal stat-tile row instead of the
+     old full-width colored bars -- those stretched a short centered number
+     into a long green/red block touching both edges, which read as loud
+     and unpolished rather than like a professional report. Same bordered-
+     tile language as the rest of this print sheet; color lives only on the
+     value text, never as a fill, and the profit/loss tile gets a thin
+     top-accent (not a background tint) to read as the headline figure. */
+  .jrp-ba-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px;}
+  @media(max-width:560px){ .jrp-ba-stats{grid-template-columns:repeat(2,1fr);} }
+  .jrp-ba-stat{border:1px solid #ddd;border-radius:6px;padding:12px 8px;text-align:center;}
+  .jrp-ba-stat-label{font-size:8.5px;letter-spacing:.7px;text-transform:uppercase;color:#888;line-height:1.4;}
+  .jrp-ba-stat-val{font-size:16px;font-weight:800;color:#161616;margin-top:5px;letter-spacing:-.2px;}
+  .jrp-ba-stat-val.pos{color:#1a8f4c;}
+  .jrp-ba-stat-val.neg{color:#c0392b;}
+  .jrp-ba-stat.headline{border-top-width:3px;padding-top:10px;}
+  .jrp-ba-stat.headline.pos{border-top-color:#1a8f4c;}
+  .jrp-ba-stat.headline.neg{border-top-color:#c0392b;}
+  .jrp-ba-stat.headline .jrp-ba-stat-val{font-size:18px;}
+  /* minimum one-A4-page size for the Before/After report specifically --
+     .jrp-sheet (shared with the regular single-post report) is untouched. */
+  .jrp-ba-sheet{min-height:1122px;box-sizing:border-box;}
+  @media(max-width:640px){ .jrp-ba-grid{grid-template-columns:1fr;} .jrp-ba-sheet{min-height:0;} }
+  /* ---- live "points since post" chip, public feed + single-post view ---- */
+  .jrnl-live-pts{
+    display:inline-flex;align-items:center;gap:6px;margin:0 0 10px;font-family:var(--mono);
+    font-size:10.5px;letter-spacing:.3px;border-radius:20px;padding:4px 12px;
+    border:1px solid var(--border-dim);color:var(--grey-dim);background:rgba(255,255,255,.03);
+  }
+  .jrnl-live-pts .jrnl-live-pts-label{opacity:.75;}
+  .jrnl-live-pts.pos{border-color:rgba(46,204,113,.45);color:#2ecc71;}
+  .jrnl-live-pts.neg{border-color:rgba(255,107,107,.45);color:#ff6b6b;}
+  .jrnl-live-pts.final{font-weight:700;}
+  /* who-liked-this, admin side -- a small toggle badge that expands into an
+     avatar+name list below the row, fetched from the same public likes
+     endpoint the front-end journal cards use (no LINE login needed to read). */
+  .jed-row-likes-btn{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;
+    background:none;border:1px solid var(--border-dim);border-radius:6px;color:var(--grey-dim);
+    padding:6px 9px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;
+  }
+  .jed-row-likes-btn:hover{color:#06C755;border-color:#06C755;}
+  .jed-row-likes-btn svg{width:11px;height:11px;flex:0 0 auto;}
+  .jed-row-likes-panel{
+    flex-basis:100%;display:none;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border-dim);
+    flex-wrap:wrap;gap:8px;
+  }
+  .jed-row-likes-panel.open{display:flex;}
+  .jed-row-likes-panel.empty{color:var(--grey-dim);font-size:11px;font-family:var(--mono);}
+  .jed-row-liker{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--grey);background:rgba(255,255,255,.03);border-radius:20px;padding:3px 10px 3px 3px;}
+  .jed-row-liker img{width:20px;height:20px;border-radius:50%;object-fit:cover;border:1px solid var(--border-dim);}
+  .jed-cancel-edit{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;
+    color:var(--grey-dim);background:none;border:1px solid var(--border-dim);border-radius:8px;
+    padding:7px 12px;cursor:pointer;margin-left:8px;
+  }
+  /* ---- feed display settings table (admin add-post page) ---- */
+  .jed-settings-box{
+    border:1px solid var(--border-dim);border-radius:var(--radius);padding:16px 18px;margin-bottom:22px;
+    background:rgba(255,255,255,.02);
+  }
+  .jed-settings-h{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--white);margin-bottom:10px;}
+  .jed-settings-sub{font-family:var(--mono);font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--grey-dim);margin:14px 0 8px;}
+  .jed-settings-table{width:100%;border-collapse:collapse;}
+  .jed-settings-table td{padding:7px 4px;font-size:12.5px;color:var(--grey);border-bottom:1px dashed var(--border-dim);}
+  .jed-settings-table td:last-child{width:34px;text-align:right;}
+  .jed-settings-table input[type="checkbox"]{width:16px;height:16px;accent-color:var(--neon);cursor:pointer;}
+  .jed-settings-hint{font-size:10.5px;color:var(--grey-dim);margin-top:3px;line-height:1.5;}
+  .jed-editing-flag{
+    font-family:var(--mono);font-size:10px;letter-spacing:.8px;text-transform:uppercase;
+    color:#5ec8ff;border:1px solid rgba(94,200,255,.4);border-radius:20px;padding:3px 10px;
+    display:inline-block;margin-bottom:12px;
+  }
+
+  /* ---- journal report (publish/print) -- independent of the Print Report
+     module so nothing here can affect that feature; mirrors its look. ---- */
+  .jrp-overlay{
+    position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.85);overflow:auto;
+    display:flex;flex-direction:column;align-items:center;padding:30px 16px;
+  }
+  .jrp-actions{position:sticky;top:0;display:flex;justify-content:center;gap:10px;margin-bottom:16px;z-index:2;width:100%;max-width:800px;}
+  .jrp-btn{
+    font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;
+    border-radius:8px;padding:10px 18px;cursor:pointer;border:1px solid var(--neon);
+    position:relative;overflow:hidden;
+  }
+  .jrp-btn.primary{background:var(--neon);color:#0b0b0b;}
+  .jrp-btn.ghost{background:none;color:var(--grey-dim);border-color:var(--border-dim);}
+  /* same continuous light-sweep as the site's Tools pill (.tools-btn::after),
+     so these two buttons read a little more alive and easier to spot */
+  .jrp-btn::after{
+    content:'';position:absolute;top:-40%;left:-60%;width:38%;height:180%;z-index:2;pointer-events:none;
+    background:linear-gradient(100deg, transparent, rgba(255,255,255,.55) 45%, rgba(159,214,255,.4) 58%, transparent);
+    transform:skewX(-16deg);
+    animation:jrpSweep 4.4s ease-in-out infinite;
+  }
+  @keyframes jrpSweep{0%{left:-60%;}35%{left:130%;}100%{left:130%;}}
+  @media (prefers-reduced-motion: reduce){ .jrp-btn::after{animation:none;display:none;} }
+  .jrp-sheet{
+    width:100%;max-width:800px;height:fit-content;background:#fff;color:#161616;border-radius:6px;
+    box-shadow:0 18px 60px rgba(0,0,0,.45);padding:34px 38px 30px;
+    font-family:'Sarabun','Noto Sans Thai','Inter',-apple-system,sans-serif;
+  }
+  html[lang="th"] .jrp-brand,html[lang="th"] .jrp-title,html[lang="th"] .jrp-sub,
+  html[lang="th"] .jrp-sec-h,html[lang="th"] .jrp-qr-brand,html[lang="th"] .jrp-qr-heading{letter-spacing:normal;}
+  .jrp-head{display:flex;flex-direction:column;align-items:center;text-align:center;
+    border-bottom:2px solid #161616;padding-bottom:16px;margin-bottom:18px;}
+  .jrp-logo{width:46px;height:auto;margin-bottom:10px;}
+  .jrp-brand{font-size:15px;font-weight:800;letter-spacing:2px;}
+  .jrp-title{font-size:20px;font-weight:800;letter-spacing:.5px;margin-top:8px;}
+  .jrp-sub{font-size:10.5px;color:#666;letter-spacing:1px;text-transform:uppercase;margin-top:5px;}
+  .jrp-meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px 18px;font-size:10px;color:#777;margin-top:12px;width:100%;}
+  .jrp-img{width:100%;max-height:420px;object-fit:contain;background:#111;border-radius:6px;display:block;}
+  .jrp-caption{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:10px 0 16px;font-size:10px;color:#666;}
+  .jrp-caption b{color:#161616;}
+  .jrp-caption .jrp-chip{border:1px solid #ccc;border-radius:20px;padding:2px 9px;}
+  .jrp-sec-h{font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;border-bottom:1.5px solid #999;padding-bottom:6px;margin:20px 0 12px;color:#161616;}
+  .jrp-levels{display:flex;flex-wrap:wrap;gap:8px 14px;margin:0 0 4px;font-size:10.5px;color:#666;}
+  .jrp-levels b{color:#161616;}
+  .jrp-levels .jrp-chip{border:1px solid #ccc;border-radius:20px;padding:2px 9px;}
+  .jrp-levels .invalid,.jrp-levels .invalid b{color:#c0392b;}
+  .jrp-levels .sl,.jrp-levels .sl b,.jrp-levels .tp,.jrp-levels .tp b{color:#1a8f4c;}
+  .jrp-related{
+    margin-top:14px;border:1px solid #ddd;border-radius:6px;padding:10px 14px;
+    display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px 16px;font-size:11px;color:#444;
+  }
+  .jrp-related b{color:#161616;}
+  .jrp-related-src{font-size:9px;color:#999;}
+  .jrp-text{font-size:12.5px;line-height:1.8;color:#222;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;}
+  .jrp-chart-block{margin-top:14px;border:1px solid #a8a8a8;border-radius:6px;padding:12px 14px 10px;}
+  .jrp-chart-svg{display:block;width:100%;}
+  .jrp-chart-axis{display:flex;justify-content:space-between;font-size:8.6px;color:#888;margin-top:4px;}
+  .jrp-foot{margin-top:24px;padding-top:12px;border-top:1px solid #999;font-size:8.6px;color:#888;line-height:1.7;}
+  .jrp-qr-page{
+    margin-top:26px;padding:36px 30px 30px;border:1px solid #161616;border-radius:8px;
+    display:flex;flex-direction:column;align-items:center;text-align:center;
+  }
+  .jrp-qr-logo{width:34px;height:auto;margin-bottom:8px;opacity:.9;}
+  .jrp-qr-brand{font-size:11px;font-weight:800;letter-spacing:2px;color:#161616;}
+  .jrp-qr-rule{width:34px;height:2px;background:#161616;margin:12px 0 16px;}
+  .jrp-qr-heading{font-size:16px;font-weight:800;letter-spacing:.4px;color:#161616;}
+  .jrp-qr-sub{font-size:10.5px;color:#777;margin-top:6px;max-width:320px;line-height:1.6;}
+  .jrp-qr-code{margin:20px 0 10px;width:132px;height:132px;}
+  .jrp-qr-code svg{display:block;width:100%;height:100%;}
+  .jrp-qr-caption{font-size:9.5px;letter-spacing:.8px;text-transform:uppercase;color:#999;}
+  .jrp-qr-url{font-family:var(--mono,monospace);font-size:10.5px;color:#161616;margin-top:3px;word-break:break-all;}
+  @media(max-width:640px){ .jrp-sheet{padding:22px 16px 20px;} }
+  @media print{
+    @page{ size:A4; margin:14mm 14mm 12mm 14mm; }
+    .jrp-sheet, .jrp-sheet *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+    body.spz-printing-journal{background:#fff !important;}
+    body.spz-printing-journal > *:not(.jrp-overlay){ display:none !important; }
+    body.spz-printing-journal .jrp-overlay{
+      /* Round P2 fix: the base .jrp-overlay rule sets overflow:auto (it's a
+         fixed, scrollable full-viewport backdrop on screen) -- left in place
+         for print, that clipped the sheet to one viewport-tall "page" and
+         silently dropped everything below it (the Before/After report's
+         diff/profit lines and the disclaimer footer never made it onto the
+         printed/PDF output). overflow:visible + height:auto let the sheet's
+         full content flow and paginate normally instead. */
+      position:static !important;background:#fff !important;padding:0 !important;display:block !important;
+      overflow:visible !important;height:auto !important;max-height:none !important;
+    }
+    body.spz-printing-journal .jrp-actions{ display:none !important; }
+    body.spz-printing-journal .jrp-sheet{ box-shadow:none !important;margin:0 auto !important; }
+    body.spz-printing-journal .jrp-ba-sheet{ min-height:271mm !important; }
+  }
