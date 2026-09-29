@@ -1137,6 +1137,64 @@ async function tgSend(chatId, text, env) {
   }
 }
 
+/* Telegram's own photo URLs are "https://api.telegram.org/file/bot<TOKEN>/<path>" --
+   the bot token sits right in that URL, so it can never be handed to the
+   browser directly (that would leak a live secret into a public <img src>).
+   Instead we look up the visitor's largest profile photo file_id once at
+   login time and store just that id; /api/telegram/avatar (below) fetches
+   the actual bytes server-side, on demand, keeping the token server-only. */
+async function tgFetchAvatarFileId(chatId, env) {
+  if (!env.TELEGRAM_LOGIN_BOT_TOKEN) return "";
+  try {
+    const resp = await fetch(
+      "https://api.telegram.org/bot" + env.TELEGRAM_LOGIN_BOT_TOKEN +
+      "/getUserProfilePhotos?user_id=" + encodeURIComponent(chatId) + "&limit=1"
+    );
+    if (!resp.ok) return "";
+    const data = await resp.json();
+    const photos = data && data.result && data.result.photos;
+    if (!photos || !photos.length || !photos[0] || !photos[0].length) return "";
+    const sizes = photos[0];
+    return sizes[sizes.length - 1].file_id || ""; // last = largest size
+  } catch (e) {
+    return "";
+  }
+}
+
+/* GET /api/telegram/avatar?uid=tg:<chatId> -- streams the visitor's Telegram
+   profile photo through this Worker so the token in Telegram's own file URL
+   never reaches the browser. Re-resolves getFile on every request (file_path
+   values can expire; the stored file_id does not) and is cheap to cache
+   client-side, hence the long Cache-Control below. */
+async function handleTelegramAvatar(request, env) {
+  const url = new URL(request.url);
+  const uid = url.searchParams.get("uid") || "";
+  if (!uid.startsWith("tg:") || !env.TELEGRAM_LOGIN_BOT_TOKEN) {
+    return new Response("", { status: 404 });
+  }
+  try {
+    const fileId = await env.SESSIONS.get("tgphoto:" + uid);
+    if (!fileId) return new Response("", { status: 404 });
+    const fileResp = await fetch(
+      "https://api.telegram.org/bot" + env.TELEGRAM_LOGIN_BOT_TOKEN +
+      "/getFile?file_id=" + encodeURIComponent(fileId)
+    );
+    const fileData = await fileResp.json();
+    const filePath = fileData && fileData.result && fileData.result.file_path;
+    if (!filePath) return new Response("", { status: 404 });
+    const imgResp = await fetch(
+      "https://api.telegram.org/file/bot" + env.TELEGRAM_LOGIN_BOT_TOKEN + "/" + filePath
+    );
+    if (!imgResp.ok) return new Response("", { status: 404 });
+    const headers = new Headers();
+    headers.set("Content-Type", imgResp.headers.get("Content-Type") || "image/jpeg");
+    headers.set("Cache-Control", "public, max-age=3600");
+    return new Response(imgResp.body, { status: 200, headers });
+  } catch (e) {
+    return new Response("", { status: 502 });
+  }
+}
+
 async function handleTelegramWebhook(request, env) {
   // Telegram sends this on every webhook call when a secret_token was set on
   // setWebhook -- the only real proof this request came from Telegram and not
@@ -1180,6 +1238,17 @@ async function handleTelegramWebhook(request, env) {
     (from && from.username) || "Telegram";
   const userId = "tg:" + chat.id;
 
+  // fetch + store the profile-photo file_id (best-effort -- a visitor with
+  // no photo, or a getUserProfilePhotos hiccup, just means no avatar this
+  // round; never blocks the login itself) and build this Worker's own proxy
+  // URL for it (see handleTelegramAvatar above -- never Telegram's raw URL,
+  // which would embed the bot token).
+  const photoFileId = await tgFetchAvatarFileId(chat.id, env);
+  if (photoFileId) await env.SESSIONS.put("tgphoto:" + userId, photoFileId);
+  const pictureUrl = photoFileId
+    ? new URL(request.url).origin + "/api/telegram/avatar?uid=" + encodeURIComponent(userId)
+    : "";
+
   await env.SESSIONS.put(
     "sess:" + code,
     JSON.stringify({
@@ -1187,7 +1256,7 @@ async function handleTelegramWebhook(request, env) {
       provider: "telegram",
       userId,
       displayName,
-      pictureUrl: "",
+      pictureUrl,
       linkedAt: Date.now(),
     }),
     { expirationTtl: SESSION_TTL_SECONDS }
@@ -1195,7 +1264,7 @@ async function handleTelegramWebhook(request, env) {
 
   // same Connected-Users profile upsert LINE's /callback uses -- keeps this
   // person's name fresh and assigns a UID the first time, no separate code path
-  await upsertProfileOnLogin(userId, displayName, "", env);
+  await upsertProfileOnLogin(userId, displayName, pictureUrl, env);
 
   await tgSend(
     chat.id,
@@ -1228,6 +1297,7 @@ export default {
       if (url.pathname === "/api/session/new") return await handleNewSession(request, env);
       if (url.pathname === "/callback") return await handleCallback(request, env);
       if (url.pathname === "/telegram-webhook" && request.method === "POST") return await handleTelegramWebhook(request, env);
+      if (url.pathname === "/api/telegram/avatar") return await handleTelegramAvatar(request, env);
       if (url.pathname === "/api/session/status") return await handleStatus(request, env);
       if (url.pathname === "/api/session/data") return await handleData(request, env);
       if (url.pathname === "/api/session/logout" && request.method === "POST") return await handleLogout(request, env);

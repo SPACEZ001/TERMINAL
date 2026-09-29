@@ -37,7 +37,7 @@
   function tgSaveSession(){
     try {
       sessionStorage.setItem(TG_STORAGE_KEY, JSON.stringify({
-        code: state.code, displayName: state.displayName
+        code: state.code, displayName: state.displayName, pictureUrl: state.pictureUrl
       }));
     } catch(e){}
   }
@@ -61,7 +61,7 @@
     retryBtn:{en:'Show QR again',th:'แสดง QR อีกครั้ง'}
   };
 
-  var state = { status:'idle', code:null, loginUrl:null, displayName:null, uid:null, poll:null, modalOpen:false };
+  var state = { status:'idle', code:null, loginUrl:null, displayName:null, pictureUrl:null, uid:null, poll:null, modalOpen:false };
   var modal, modalBody;
 
   function tgStopPolling(){ if(state.poll){ clearInterval(state.poll); state.poll = null; } }
@@ -97,7 +97,9 @@
   function paintModal(){
     if(!modal || modal.hidden || !modalBody) return;
     if(state.status === 'linked'){
+      var linkedAvatar = state.pictureUrl ? '<img src="' + esc(state.pictureUrl) + '" alt="" class="tglm-avatar">' : '';
       modalBody.innerHTML =
+        linkedAvatar +
         '<div class="tglm-title">Telegram</div>' +
         '<div class="tglm-status ok">' + esc(tx(C.connectedNote)) +
           (state.displayName ? ' · ' + esc(state.displayName) : '') + '</div>';
@@ -201,6 +203,7 @@
         }
         state.status = 'linked';
         state.displayName = data.displayName || state.displayName;
+        state.pictureUrl = data.pictureUrl || state.pictureUrl;
         state.uid = data.uid || state.uid || null;
         tgSaveSession();
         notify();
@@ -212,6 +215,7 @@
   function restoreFromWorker(saved){
     state.code = saved.code;
     state.displayName = saved.displayName;
+    state.pictureUrl = saved.pictureUrl || null;
     fetch(tgApi('/api/session/status?code=' + encodeURIComponent(saved.code)))
       .then(function(r){ return r.json(); })
       .then(function(data){
@@ -221,13 +225,14 @@
             .then(function(dd){
               state.status = 'linked';
               state.displayName = dd.displayName || state.displayName;
+              state.pictureUrl = dd.pictureUrl || state.pictureUrl;
               state.uid = dd.uid || state.uid || null;
               notify();
             })
             .catch(function(){});
         } else {
           tgClearSession();
-          state = { status:'idle', code:null, loginUrl:null, displayName:null, uid:null, poll:null, modalOpen:false };
+          state = { status:'idle', code:null, loginUrl:null, displayName:null, pictureUrl:null, uid:null, poll:null, modalOpen:false };
           notify();
         }
       })
@@ -238,7 +243,7 @@
     var code = state.code;
     tgStopPolling();
     tgClearSession();
-    state = { status:'idle', code:null, loginUrl:null, displayName:null, uid:null, poll:null, modalOpen:false };
+    state = { status:'idle', code:null, loginUrl:null, displayName:null, pictureUrl:null, uid:null, poll:null, modalOpen:false };
     closeModal();
     notify();
     if(code && tgWorkerReady()){
@@ -257,8 +262,15 @@
   window.__SPZ_TG = {
     open: function(){ openModal(); },
     state: function(){
-      return { status: state.status, displayName: state.displayName || null, uid: state.uid || null };
+      return { status: state.status, displayName: state.displayName || null,
+        pictureUrl: state.pictureUrl || null, uid: state.uid || null };
     },
+    /* Round S: the Watchlist page (part-39.js) reads this to drive the SAME
+       generic per-session Worker endpoints (/api/session/watchlist/*, /api/
+       session/data, ...) LINE already uses, under a Telegram-linked visitor's
+       own session code -- see resolveActiveIdentity() there. Never used to
+       mutate this module's own state from outside. */
+    code: function(){ return state.status === 'linked' ? state.code : null; },
     logout: function(){ logout(); }
   };
 })();
