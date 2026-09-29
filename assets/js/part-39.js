@@ -301,6 +301,16 @@
 
   var sec, state = { wl:null, stocks:null, exampleTicker:'', links:null, uid:null, chatId:null,
     line:{ status:'idle', code:null, loginUrl:null, displayName:null, pictureUrl:null, tickers:[] },
+    /* Round S: mirrors window.__SPZ_TG (part-61.js) so a visitor who signed
+       in via the corner gate's Telegram QR login gets the exact same
+       personal-watchlist experience below as a LINE-linked visitor --
+       see resolveActiveIdentity()/syncTgState() further down. Deliberately
+       a SEPARATE slot from state.line/window.__SPZ_LINE, never merged into
+       it, so "LINE-linked" keeps meaning exactly that everywhere else on
+       the site (the corner gate's own LINE tab among them). */
+    tg:{ status:'idle', code:null, displayName:null, pictureUrl:null, tickers:[], uid:null,
+         facebook:'', instagram:'', nameOverride:'', note:'', rights:null, accessUntil:null,
+         likedCount:0, provider:'telegram' },
     linePoll:null, lineModalOpen:false };
   var lineModal, lineModalBody;
 
@@ -337,6 +347,60 @@
   function stocksSnapshot(){
     var s = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot();
     return (s && s.stocks) || null;
+  }
+
+  /* ---- Round S: whichever corner-gate identity is actually linked right
+     now drives this page's personal-watchlist view -- LINE if LINE is
+     linked (unchanged, always wins if somehow both are), otherwise the
+     Telegram QR login if THAT'S linked, otherwise state.line as-is (idle/
+     pending/error, same as before this round). Every renderer below already
+     takes a generic "lineSt"-shaped object as a parameter, so passing
+     whichever one resolves here is enough to make the whole page work
+     correctly for either provider with no other logic duplicated. -------- */
+  function resolveActiveIdentity(){
+    if(state.line.status === 'linked') return state.line;
+    if(state.tg.status === 'linked') return state.tg;
+    return state.line;
+  }
+
+  function syncTgState(){
+    if(!window.__SPZ_TG) return;
+    var tg = window.__SPZ_TG.state();
+    if(tg.status !== 'linked'){
+      if(state.tg.status === 'linked'){
+        state.tg = { status:'idle', code:null, displayName:null, pictureUrl:null, tickers:[], uid:null,
+          facebook:'', instagram:'', nameOverride:'', note:'', rights:null, accessUntil:null,
+          likedCount:0, provider:'telegram' };
+        paint();
+      }
+      return;
+    }
+    var tgCode = window.__SPZ_TG.code ? window.__SPZ_TG.code() : null;
+    if(!tgCode) return;
+    if(state.tg.code === tgCode && state.tg.status === 'linked') return; // already synced
+    state.tg.code = tgCode;
+    state.tg.status = 'linked';
+    state.tg.displayName = tg.displayName || state.tg.displayName;
+    state.tg.pictureUrl = tg.pictureUrl || state.tg.pictureUrl;
+    fetch(lineApi('/api/session/data?code=' + encodeURIComponent(tgCode)))
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(!data || data.error) return;
+        state.tg.tickers = data.tickers || [];
+        state.tg.displayName = data.displayName || state.tg.displayName;
+        state.tg.pictureUrl = data.pictureUrl || state.tg.pictureUrl;
+        state.tg.uid = data.uid || null;
+        state.tg.facebook = data.facebook || '';
+        state.tg.instagram = data.instagram || '';
+        state.tg.nameOverride = data.nameOverride || '';
+        state.tg.note = data.note || '';
+        state.tg.rights = data.rights || null;
+        state.tg.accessUntil = data.accessUntil || null;
+        state.tg.likedCount = typeof data.likedCount === 'number' ? data.likedCount : 0;
+        paint();
+      })
+      .catch(function(){});
+    paint();
   }
 
   function lineStopPolling(){ if(state.linePoll){ clearInterval(state.linePoll); state.linePoll = null; } }
@@ -530,52 +594,56 @@
      Both helpers optimistically leave the grid alone until the Worker
      confirms the change, then repaint from its response so state.line.tickers
      is always exactly what the server has -- never guessed locally. -------- */
-  function lineAddTicker(ticker, cb){
-    if(!state.line.code) { if(cb) cb('not_linked'); return; }
+  function lineAddTicker(ticker, cb, identity){
+    identity = identity || state.line;
+    if(!identity.code) { if(cb) cb('not_linked'); return; }
     fetch(lineApi('/api/session/watchlist/add'), {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ code: state.line.code, ticker: ticker })
+      body: JSON.stringify({ code: identity.code, ticker: ticker })
     })
       .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
       .then(function(res){
         if(!res.ok){ if(cb) cb(res.d && res.d.error || 'error'); return; }
-        state.line.tickers = res.d.tickers || [];
+        identity.tickers = res.d.tickers || [];
         paint();
-        if(cb) cb(null, state.line.tickers);
+        if(cb) cb(null, identity.tickers);
       })
       .catch(function(){ if(cb) cb('network'); });
   }
 
-  function lineRemoveTicker(ticker, cb){
-    if(!state.line.code) { if(cb) cb('not_linked'); return; }
+  function lineRemoveTicker(ticker, cb, identity){
+    identity = identity || state.line;
+    if(!identity.code) { if(cb) cb('not_linked'); return; }
     fetch(lineApi('/api/session/watchlist/remove'), {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ code: state.line.code, ticker: ticker })
+      body: JSON.stringify({ code: identity.code, ticker: ticker })
     })
       .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
       .then(function(res){
         if(!res.ok){ if(cb) cb(res.d && res.d.error || 'error'); return; }
-        state.line.tickers = res.d.tickers || [];
+        identity.tickers = res.d.tickers || [];
         paint();
-        if(cb) cb(null, state.line.tickers);
+        if(cb) cb(null, identity.tickers);
       })
       .catch(function(){ if(cb) cb('network'); });
   }
 
-  /* ---- self-service edit: a LINE-linked visitor can add their own social
+  /* ---- self-service edit: a linked visitor (LINE or, since Round S,
+     Telegram -- see the optional identity param) can add their own social
      handles (shown to the admin on the Connected Users page), never anything
      the admin controls (UID, access date) -- those stay admin-only server side. */
-  function lineUpdateProfile(facebook, instagram, cb){
-    if(!state.line.code) { if(cb) cb('not_linked'); return; }
+  function lineUpdateProfile(facebook, instagram, cb, identity){
+    identity = identity || state.line;
+    if(!identity.code) { if(cb) cb('not_linked'); return; }
     fetch(lineApi('/api/session/profile'), {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ code: state.line.code, facebook: facebook, instagram: instagram })
+      body: JSON.stringify({ code: identity.code, facebook: facebook, instagram: instagram })
     })
       .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
       .then(function(res){
         if(!res.ok){ if(cb) cb(res.d && res.d.error || 'error'); return; }
-        state.line.facebook = res.d.facebook || '';
-        state.line.instagram = res.d.instagram || '';
+        identity.facebook = res.d.facebook || '';
+        identity.instagram = res.d.instagram || '';
         if(cb) cb(null);
       })
       .catch(function(){ if(cb) cb('network'); });
@@ -1746,15 +1814,28 @@
   }
 
   function connStripHTML(uid, chatId, hadUid, lineSt){
-    var tgBlock;
-    if(chatId){
-      tgBlock = '<div class="wl-conn-status ok">' + esc(tx(C.connectedNote)) + '</div>' +
-        '<button type="button" class="wl-conn-forget" data-wl="forgetTg">' + esc(tx(C.forgetBtn)) + '</button>';
-    } else {
-      var uid2 = uid || getUid(true);
-      var dl = linkDeepLink(uid2);
-      tgBlock = '<div class="wl-conn-status">' + esc(tx(hadUid ? C.connectPendingH : C.lineNotConn)) + '</div>' +
-        '<a class="wl-conn-btn" href="' + dl + '" target="_blank" rel="noopener noreferrer">' + esc(tx(C.connectBtn)) + '</a>';
+    /* Round S: when the corner-gate identity actively driving this page IS
+       the newer Telegram QR login (not the old chat-command bot), showing
+       this old bot's own "connect Telegram" card here would say the exact
+       opposite of the "Connected" card right next to it -- the redundant,
+       confusing prompt this round exists to remove. Omit that card entirely
+       in that one case; every other combination (old-bot-only, LINE-linked,
+       nothing linked) renders exactly as before. */
+    var tgViaNewLogin = lineSt.status === 'linked' && lineSt.provider === 'telegram';
+
+    var tgCardHTML = '';
+    if(!tgViaNewLogin){
+      var tgBlock;
+      if(chatId){
+        tgBlock = '<div class="wl-conn-status ok">' + esc(tx(C.connectedNote)) + '</div>' +
+          '<button type="button" class="wl-conn-forget" data-wl="forgetTg">' + esc(tx(C.forgetBtn)) + '</button>';
+      } else {
+        var uid2 = uid || getUid(true);
+        var dl = linkDeepLink(uid2);
+        tgBlock = '<div class="wl-conn-status">' + esc(tx(hadUid ? C.connectPendingH : C.lineNotConn)) + '</div>' +
+          '<a class="wl-conn-btn" href="' + dl + '" target="_blank" rel="noopener noreferrer">' + esc(tx(C.connectBtn)) + '</a>';
+      }
+      tgCardHTML = '<div class="wl-conn-card"><div class="wl-conn-top"><span class="wl-conn-label tg">' + esc(tx(C.tgLabel)) + '</span></div>' + tgBlock + '</div>';
     }
 
     /* the card itself only ever shows a short status line -- the QR (when
@@ -1788,13 +1869,17 @@
         '<button type="button" class="wl-conn-btn line-btn" data-wl="lineConnect">' + esc(tx(C.connectLineBtn)) + '</button>';
     }
 
+    var lineCardLabel = tgViaNewLogin ? tx(C.tgLabel) : tx(C.lineLabel);
+    var lineCardCls = tgViaNewLogin ? 'tg' : 'line';
+
     return '<div class="wl-conn-strip">' +
-      '<div class="wl-conn-card"><div class="wl-conn-top"><span class="wl-conn-label tg">' + esc(tx(C.tgLabel)) + '</span></div>' + tgBlock + '</div>' +
-      '<div class="wl-conn-card"><div class="wl-conn-top"><span class="wl-conn-label line">' + esc(tx(C.lineLabel)) + '</span></div>' + lineBlock + '</div>' +
+      tgCardHTML +
+      '<div class="wl-conn-card"><div class="wl-conn-top"><span class="wl-conn-label ' + lineCardCls + '">' + esc(lineCardLabel) + '</span></div>' + lineBlock + '</div>' +
     '</div>';
   }
 
-  function wireConnStrip(body){
+  function wireConnStrip(body, identity){
+    identity = identity || state.line;
     var forgetTg = body.querySelector('[data-wl="forgetTg"]');
     if(forgetTg){
       forgetTg.addEventListener('click', function(){
@@ -1806,7 +1891,16 @@
       });
     }
     var forgetLine = body.querySelector('[data-wl="forgetLine"]');
-    if(forgetLine) forgetLine.addEventListener('click', lineLogout);
+    if(forgetLine){
+      forgetLine.addEventListener('click', function(){
+        // Round S: this card can now be showing a Telegram-linked identity --
+        // "forget" needs to sign out of whichever provider actually owns it,
+        // or it would clear an already-empty LINE session and leave the real
+        // (Telegram) one still linked.
+        if(identity.provider === 'telegram' && window.__SPZ_TG) window.__SPZ_TG.logout();
+        else lineLogout();
+      });
+    }
     var lineConnectBtn = body.querySelector('[data-wl="lineConnect"]');
     if(lineConnectBtn){
       lineConnectBtn.addEventListener('click', openLineModal);
@@ -1831,7 +1925,7 @@
           if(!statusEl) return;
           if(err){ statusEl.classList.add('err'); statusEl.textContent = tx(C.lineProfileSaveErr); return; }
           statusEl.classList.add('ok'); statusEl.textContent = tx(C.lineProfileSaved);
-        });
+        }, identity);
       });
     }
   }
@@ -1851,7 +1945,7 @@
     var uid = state.uid !== undefined ? state.uid : getUid(false);
     var chatId = state.chatId;
     var hadUid = !!uid;
-    var lineSt = state.line || { status:'idle' };
+    var lineSt = resolveActiveIdentity();
     var strip = connStripHTML(uid, chatId, hadUid, lineSt);
 
     if(!chatId && lineSt.status !== 'linked'){
@@ -1861,7 +1955,7 @@
           esc(tx(C.notConnB)) + '<br><br>' +
           esc(tx(C.connectLede)) +
         '</div>';
-      wireConnStrip(body);
+      wireConnStrip(body, lineSt);
       paintShockFab(null, stocks, lineSt);
       return;
     }
@@ -1902,7 +1996,7 @@
         sectorGraphsHTML(lineTickers, stocks) +
         shockSimulatorHTML(lineTickers, stocks) +
         lineGrid;
-      wireConnStrip(body);
+      wireConnStrip(body, lineSt);
       var openBtnsLine = body.querySelectorAll('[data-wl-open]');
       for(var iL=0;iL<openBtnsLine.length;iL++){
         openBtnsLine[iL].addEventListener('click', function(){
@@ -1963,14 +2057,14 @@
           } else {
             lineInput.value = '';
           }
-        });
+        }, lineSt);
       }
       if(lineAddBtn) lineAddBtn.addEventListener('click', doLineAdd);
       if(lineInput) lineInput.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); doLineAdd(); } });
 
       var openPickerBtn = body.querySelector('[data-wl="openPicker"]');
       if(openPickerBtn) openPickerBtn.addEventListener('click', function(){
-        openTickerPicker(stocks, lineTickers, lineAddTicker);
+        openTickerPicker(stocks, lineTickers, function(ticker, cb){ lineAddTicker(ticker, cb, lineSt); });
       });
 
       var lineRmBtns = body.querySelectorAll('[data-wl-line-rm]');
@@ -1979,7 +2073,7 @@
           btn.addEventListener('click', function(){
             if(btn.disabled) return;
             btn.disabled = true;
-            lineRemoveTicker(btn.getAttribute('data-wl-line-rm'), function(){ /* paint() already refreshed the grid */ });
+            lineRemoveTicker(btn.getAttribute('data-wl-line-rm'), function(){ /* paint() already refreshed the grid */ }, lineSt);
           });
         })(lineRmBtns[lr]);
       }
@@ -2021,7 +2115,7 @@
     '</div>';
 
     body.innerHTML = strip + addBox + portfolioAnalysis + grid + howto;
-    wireConnStrip(body);
+    wireConnStrip(body, lineSt);
     paintShockFab(null, stocks, lineSt);
 
     var openBtns = body.querySelectorAll('[data-wl-open]');
@@ -2128,6 +2222,12 @@
       var savedLine = lineLoadSession();
       if(savedLine && savedLine.code) lineRestoreFromWorker(savedLine);
     }
+
+    // Round S: pick up a Telegram QR login already restored by part-61.js
+    // (or one that completes later, corner-gate side, while this page is
+    // open) -- see syncTgState()/resolveActiveIdentity() above.
+    syncTgState();
+    document.addEventListener('spz:tg', syncTgState);
 
     return true;
   }
