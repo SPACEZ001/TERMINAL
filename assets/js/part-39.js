@@ -134,8 +134,8 @@
     lbList:{en:'See your whole list',th:'ดูรายการทั้งหมด'},
     lbHelp:{en:'Show every command',th:'ดูคำสั่งทั้งหมด'},
     opentg:{en:'Open the Telegram chat directly',th:'เปิดแชท Telegram โดยตรง'},
-    connectLede:{en:'Each connection is tied to your own account, so what you pin here is yours alone — nobody else sees it, and you don’t see anyone else’s. Connect Telegram for full add/remove control from the chat, or connect LINE to quickly view your list by scanning a QR code.',
-                 th:'การเชื่อมต่อแต่ละช่องทางผูกกับบัญชีของคุณเอง สิ่งที่คุณปักหมุดจะเป็นของคุณคนเดียว คนอื่นไม่เห็นของคุณ และคุณก็ไม่เห็นของคนอื่น เชื่อมต่อ Telegram เพื่อเพิ่ม/ลบหุ้นผ่านแชทได้เต็มรูปแบบ หรือเชื่อมต่อ LINE เพื่อดูรายการของคุณเร็วๆ ด้วยการสแกน QR'},
+    connectLede:{en:'Each connection is tied to your own account, so what you pin here is yours alone — nobody else sees it, and you don’t see anyone else’s. Connect Telegram for full add/remove control from the chat — it’s the most reliable option and always available — or connect LINE to quickly view your list by scanning a QR code (LINE can occasionally be briefly unavailable at busy times; Telegram never is).',
+                 th:'การเชื่อมต่อแต่ละช่องทางผูกกับบัญชีของคุณเอง สิ่งที่คุณปักหมุดจะเป็นของคุณคนเดียว คนอื่นไม่เห็นของคุณ และคุณก็ไม่เห็นของคนอื่น เชื่อมต่อ Telegram เพื่อเพิ่ม/ลบหุ้นผ่านแชทได้เต็มรูปแบบ — เป็นช่องทางที่เสถียรที่สุดและใช้ได้ตลอด — หรือเชื่อมต่อ LINE เพื่อดูรายการของคุณเร็วๆ ด้วยการสแกน QR (LINE อาจใช้งานไม่ได้ชั่วคราวในบางช่วงที่มีคนใช้งานเยอะ แต่ Telegram ไม่มีปัญหานี้)'},
     connectBtn:{en:'Connect Telegram',th:'เชื่อมต่อ Telegram'},
     connectPendingH:{en:'Waiting for confirmation…',th:'กำลังรอการยืนยัน…'},
     connectPendingB:{en:'Tap the button again if the chat didn’t open, then tap Start there. This page checks again automatically every minute.',
@@ -155,6 +155,8 @@
     lineExpired:{en:'Code expired — tap Connect LINE again.',th:'โค้ดหมดอายุแล้ว กดเชื่อมต่อ LINE อีกครั้งนะคะ'},
     lineErr:{en:'Could not reach the LINE link service. Tap to try again.',
              th:'เชื่อมต่อระบบ LINE ไม่ได้ตอนนี้ กดเพื่อลองใหม่นะคะ'},
+    lineQuotaErr:{en:'LINE has hit today’s connection limit — it resets automatically at midnight UTC (~07:00 Bangkok time). Connect via Telegram instead for now.',
+                  th:'ระบบเชื่อมต่อ LINE เต็มโควตาของวันนี้แล้วค่ะ จะรีเซ็ตอัตโนมัติราว 07:00 น. (เวลาไทย) พรุ่งนี้เช้า ระหว่างนี้เชื่อมต่อผ่าน Telegram แทนได้เลยนะคะ'},
     lineNotReady:{en:'LINE connect isn’t switched on yet.',th:'ฟีเจอร์เชื่อมต่อ LINE ยังไม่เปิดใช้งานค่ะ'},
     lineForget:{en:'Log out of LINE',th:'ออกจากระบบ LINE'},
     lineEditProfileBtn:{en:'Edit profile',th:'แก้ไขโปรไฟล์'},
@@ -400,11 +402,16 @@
         '<div class="wllm-status">' + esc(tx(C.lineProcessing)) + '</div>';
     } else if(!lineWorkerReady()){
       lineModalBody.innerHTML = '<div class="wllm-title">LINE</div><div class="wllm-status err">' + esc(tx(C.lineNotReady)) + '</div>';
-    } else if(st.status === 'error' || st.status === 'expired'){
+    } else if(st.status === 'error' || st.status === 'expired' || st.status === 'quota'){
+      var errMsg = st.status === 'expired' ? C.lineExpired : (st.status === 'quota' ? C.lineQuotaErr : C.lineErr);
       lineModalBody.innerHTML =
         '<div class="wllm-title">LINE</div>' +
-        '<div class="wllm-status err">' + esc(tx(st.status === 'expired' ? C.lineExpired : C.lineErr)) + '</div>' +
-        '<button type="button" class="wllm-retry" data-wllm="retry">' + esc(tx(C.connectLineBtn)) + '</button>';
+        '<div class="wllm-status err">' + esc(tx(errMsg)) + '</div>' +
+        // A quota hit won't clear until the daily reset -- a "try again"
+        // button there would just fail again, so it's left out on purpose;
+        // every other error state still offers one.
+        (st.status === 'quota' ? '' :
+          '<button type="button" class="wllm-retry" data-wllm="retry">' + esc(tx(C.connectLineBtn)) + '</button>');
       var retryBtn = lineModalBody.querySelector('[data-wllm="retry"]');
       if(retryBtn) retryBtn.addEventListener('click', lineStartPending);
     } else if(st.loginUrl){
@@ -431,6 +438,16 @@
     fetch(lineApi('/api/session/new'))
       .then(function(r){ return r.json(); })
       .then(function(data){
+        // The Worker still answers with a normal JSON body on failure (see
+        // line-qr-worker.js's top-level try/catch) -- data.error distinguishes
+        // "the daily KV quota is exhausted, try again tomorrow" from any other
+        // failure, so this doesn't lump a quota hit in with a generic error.
+        if(data && data.error){
+          state.line.status = (data.error === 'quota_exceeded') ? 'quota' : 'error';
+          paint();
+          paintLineModal();
+          return;
+        }
         state.line.code = data.code;
         state.line.loginUrl = data.loginUrl;
         paint();
@@ -446,7 +463,12 @@
     fetch(lineApi('/api/session/status?code=' + encodeURIComponent(state.line.code)))
       .then(function(r){ return r.json(); })
       .then(function(data){
-        if(data.status === 'linked'){
+        if(data && data.error === 'quota_exceeded'){
+          lineStopPolling();
+          state.line.status = 'quota';
+          paint();
+          paintLineModal();
+        } else if(data.status === 'linked'){
           lineStopPolling();
           state.line.displayName = data.displayName || '';
           // A brief "scanned, verifying" beat between the phone-side scan and
@@ -477,6 +499,12 @@
     fetch(lineApi('/api/session/data?code=' + encodeURIComponent(state.line.code)))
       .then(function(r){ return r.json(); })
       .then(function(data){
+        if(data && data.error === 'quota_exceeded'){
+          state.line.status = 'quota';
+          paint();
+          paintLineModal();
+          return;
+        }
         state.line.status = 'linked';
         state.line.tickers = data.tickers || [];
         state.line.displayName = data.displayName || state.line.displayName;
@@ -1748,10 +1776,13 @@
         '<button type="button" class="wl-conn-btn line-btn" data-wl="lineConnect">' + esc(tx(C.connectLineBtn)) + '</button>';
     } else if(lineSt.status === 'processing'){
       lineBlock = '<div class="wl-conn-status ok">' + esc(tx(C.lineProcessing)) + '</div>';
-    } else if(lineSt.status === 'error' || lineSt.status === 'expired'){
-      lineBlock = '<div class="wl-conn-status" style="color:#ff6b6b;">' +
-        esc(tx(lineSt.status === 'expired' ? C.lineExpired : C.lineErr)) + '</div>' +
-        '<button type="button" class="wl-conn-btn line-btn" data-wl="lineConnect">' + esc(tx(C.connectLineBtn)) + '</button>';
+    } else if(lineSt.status === 'error' || lineSt.status === 'expired' || lineSt.status === 'quota'){
+      var stripErrMsg = lineSt.status === 'expired' ? C.lineExpired : (lineSt.status === 'quota' ? C.lineQuotaErr : C.lineErr);
+      lineBlock = '<div class="wl-conn-status" style="color:#ff6b6b;">' + esc(tx(stripErrMsg)) + '</div>' +
+        // see paintLineModal()'s matching branch -- no retry button while
+        // the daily quota is the cause, since tapping it would just fail again
+        (lineSt.status === 'quota' ? '' :
+          '<button type="button" class="wl-conn-btn line-btn" data-wl="lineConnect">' + esc(tx(C.connectLineBtn)) + '</button>');
     } else {
       lineBlock = '<div class="wl-conn-status">' + esc(tx(C.lineNotConn)) + '</div>' +
         '<button type="button" class="wl-conn-btn line-btn" data-wl="lineConnect">' + esc(tx(C.connectLineBtn)) + '</button>';
