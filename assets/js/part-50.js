@@ -9,11 +9,29 @@
   function T(o){ return o ? (o[L()] || o.en) : ''; }
   function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+  /* Round T: the Worker's users:index has always held both LINE userIds and
+     "tg:<chatId>" Telegram ones (upsertProfileOnLogin never cared which),
+     this page just never said so -- everything below assumed LINE. A
+     userId's own shape is enough to tell them apart, no Worker change
+     needed. */
+  function providerOf(userId){ return (userId || '').indexOf('tg:') === 0 ? 'telegram' : 'line'; }
+  function providerLabel(userId){ return T(providerOf(userId) === 'telegram' ? UI.providerTelegram : UI.providerLine); }
+  function providerBadgeHTML(u){
+    var p = providerOf(u.userId);
+    return '<span class="cu-provider ' + p + '">' + esc(providerLabel(u.userId)) + '</span>';
+  }
+  function cuLinkedSinceHTML(u){
+    if(!u.linkedAt) return '';
+    return '<div class="cu-linked-since">' +
+      esc(T(UI.cuLinkedSince).replace('{p}', providerLabel(u.userId)).replace('{d}', fmtDateFromEpoch(u.linkedAt))) +
+    '</div>';
+  }
+
   var UI = {
     eb:{en:'Admin Only',th:'เฉพาะแอดมิน'},
-    h:{en:'Connected Users',th:'ผู้ใช้ที่เชื่อมต่อ LINE'},
-    lede:{en:'Everyone who has linked their LINE account — their photo, holdings, and account status. Members and LINE-linked visitors never see this page.',
-          th:'รายชื่อทุกคนที่เชื่อมต่อ LINE ไว้กับเว็บ — รูป หุ้นที่ถือ และสถานะบัญชี เมมเบอร์และผู้ที่ล็อกอินผ่าน LINE จะมองไม่เห็นหน้านี้'},
+    h:{en:'Connected Users',th:'ผู้ใช้ที่เชื่อมต่อ'},
+    lede:{en:'Everyone who has linked LINE or Telegram — their photo, holdings, and account status, each tagged with the login they used. Members and linked visitors never see this page.',
+          th:'รายชื่อทุกคนที่เชื่อมต่อ LINE หรือ Telegram ไว้กับเว็บ — รูป หุ้นที่ถือ และสถานะบัญชี พร้อมป้ายบอกว่าล็อกอินผ่านช่องทางไหน เมมเบอร์และผู้ที่ล็อกอินไว้แล้วจะมองไม่เห็นหน้านี้'},
     keyLede:{en:'This page needs its own admin key, separate from your site password, so nobody can pull this list by calling the backend directly.',
              th:'หน้านี้ต้องใช้รหัสแอดมินเฉพาะของมันเอง แยกจากรหัสผ่านเว็บไซต์ เพื่อไม่ให้ใครดึงรายชื่อนี้ได้โดยตรงจาก backend'},
     keyPh:{en:'Admin users key',th:'รหัสแอดมินสำหรับหน้านี้'},
@@ -34,7 +52,9 @@
     statusActive:{en:'Access until {d}',th:'มีสิทธิ์ถึง {d}'},
     statusNone:{en:'No access set',th:'ยังไม่ได้ให้สิทธิ์'},
     statusExpired:{en:'Expired {d}',th:'หมดอายุ {d}'},
-    cuLinkedSince:{en:'Linked via LINE since {d}',th:'เชื่อมต่อผ่าน LINE ตั้งแต่ {d}'},
+    cuLinkedSince:{en:'Linked via {p} since {d}',th:'เชื่อมต่อผ่าน {p} ตั้งแต่ {d}'},
+    providerLine:{en:'LINE',th:'LINE'},
+    providerTelegram:{en:'Telegram',th:'Telegram'},
     uidLabel:{en:'UID',th:'UID'},
     accessLabel:{en:'Access status',th:'สถานะสิทธิ์การใช้งาน'},
     rightsLabel:{en:'Membership tier (badge only, for now)',th:'ระดับสมาชิก (เป็นป้ายชื่อเฉยๆ ตอนนี้)'},
@@ -66,7 +86,7 @@
     saveErrTaken:{en:'That UID is already used',th:'UID นี้มีคนใช้แล้ว'},
     saveErrBad:{en:'Could not save — try again.',th:'บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง'},
     loading:{en:'Loading…',th:'กำลังโหลด…'},
-    empty:{en:'Nobody has linked LINE yet.',th:'ยังไม่มีใครเชื่อมต่อ LINE'},
+    empty:{en:'Nobody has linked LINE or Telegram yet.',th:'ยังไม่มีใครเชื่อมต่อ LINE หรือ Telegram'},
     noMatch:{en:'No one matches that search.',th:'ไม่พบผลลัพธ์ที่ตรงกับการค้นหา'},
     adminOnly:{en:'This page is only available to the site admin.',th:'หน้านี้ใช้ได้เฉพาะแอดมินของเว็บไซต์เท่านั้น'},
 
@@ -151,6 +171,17 @@
       var dt = new Date(d + 'T00:00:00');
       return dt.toLocaleDateString(L() === 'th' ? 'th-TH' : 'en-US', { year:'numeric', month:'short', day:'numeric' });
     } catch(e){ return d; }
+  }
+  /* Round T (bugfix, found while testing the provider-badge change below):
+     fmtDate() above is built for a "YYYY-MM-DD" access-date string --
+     linkedAt is an epoch-ms timestamp (Date.now() at login), and feeding
+     that through fmtDate(new Date(ms)) coerced the Date object to a string
+     and back, always producing "Invalid Date". A real bug, not new. */
+  function fmtDateFromEpoch(ms){
+    if(!ms) return '';
+    try {
+      return new Date(ms).toLocaleDateString(L() === 'th' ? 'th-TH' : 'en-US', { year:'numeric', month:'short', day:'numeric' });
+    } catch(e){ return ''; }
   }
 
   /* "starting today, for N days" -- always measured from the moment Save is
@@ -266,8 +297,8 @@
         '<div>' +
           '<div class="cu-name">' + esc(u.displayName || '—') + '</div>' +
           '<div class="cu-uid">UID: ' + esc(u.uid || '—') + '</div>' +
-          (u.linkedAt ? '<div class="cu-linked-since">' + esc(T(UI.cuLinkedSince).replace('{d}', fmtDate(new Date(u.linkedAt)))) + '</div>' : '') +
-          '<div class="cu-card-top-row">' + statusHTML + rightsBadgeHTML(u.rights) + '</div>' +
+          cuLinkedSinceHTML(u) +
+          '<div class="cu-card-top-row">' + providerBadgeHTML(u) + statusHTML + rightsBadgeHTML(u.rights) + '</div>' +
         '</div>' +
       '</div>' +
       '<div class="cu-holdings">' + holdingsHTML + '</div>' +
@@ -297,8 +328,8 @@
       avatar +
       '<div class="cu-row-mid">' +
         '<div class="cu-name">' + esc(u.displayName || '—') + '</div>' +
-        (u.linkedAt ? '<div class="cu-linked-since">' + esc(T(UI.cuLinkedSince).replace('{d}', fmtDate(new Date(u.linkedAt)))) + '</div>' : '') +
-        '<div class="cu-card-top-row">' + statusHTML + rightsBadgeHTML(u.rights) + '</div>' +
+        cuLinkedSinceHTML(u) +
+        '<div class="cu-card-top-row">' + providerBadgeHTML(u) + statusHTML + rightsBadgeHTML(u.rights) + '</div>' +
       '</div>' +
       '<div class="cu-row-end">' +
         '<span class="cu-uid">UID: ' + esc(u.uid || '—') + '</span>' +
@@ -588,7 +619,9 @@
     detailModalBody.innerHTML =
       '<div class="cudm-head">' + avatar +
         '<div><div class="cudm-name">' + esc(u.displayName || '—') + '</div>' +
-          '<div class="cudm-uid">UID: ' + esc(u.uid || '—') + rightsBadgeHTML(u.rights) + '</div></div>' +
+          '<div class="cudm-uid">UID: ' + esc(u.uid || '—') + providerBadgeHTML(u) + rightsBadgeHTML(u.rights) + '</div>' +
+          cuLinkedSinceHTML(u) +
+        '</div>' +
       '</div>' +
       '<div class="cudm-section"><div class="cudm-row"><span>' + esc(T(UI.accessLabel)) + '</span><b>' + esc(statusText) + '</b></div></div>' +
       (socialHTML ? '<div class="cudm-section">' + socialHTML + '</div>' : '') +
@@ -753,8 +786,8 @@
     window.__spzAddRoute({
       id:'connectedusers', feat:true, after:'printreport',
       t: UI.h,
-      d:{en:'Every visitor who has linked LINE — photo, holdings, UID and access status. Admin-only, invisible to members and LINE-linked visitors.',
-         th:'ทุกคนที่เชื่อมต่อ LINE ไว้ — รูป หุ้นที่ถือ UID และสถานะสิทธิ์การใช้งาน เฉพาะแอดมิน เมมเบอร์และผู้ล็อกอินผ่าน LINE มองไม่เห็น'}
+      d:{en:'Every visitor who has linked LINE or Telegram — photo, holdings, UID and access status. Admin-only, invisible to members and linked visitors.',
+         th:'ทุกคนที่เชื่อมต่อ LINE หรือ Telegram ไว้ — รูป หุ้นที่ถือ UID และสถานะสิทธิ์การใช้งาน เฉพาะแอดมิน เมมเบอร์และผู้ที่ล็อกอินไว้แล้วมองไม่เห็น'}
     });
 
     paint();
