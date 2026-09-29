@@ -157,6 +157,74 @@
     return fbApp;
   }
 
+  /* Round T: the three firebase-*-compat.js files (~250KB+, three separate
+     gstatic requests) used to be plain <script> tags in SPACEZ_TERMINAL.html
+     -- every visitor to every page paid for them, whether they ever opened
+     the journal or not. They're loaded here instead, on demand, in the same
+     app -> auth -> firestore order the compat SDKs require (each one
+     attaches itself to the global `firebase` the previous one created).
+     loadFirebaseSDK() is safe to call more than once -- it single-flights
+     through fbSdkPromise, so the three <script> tags are only ever injected
+     once no matter how many of the three journal routes ask for them. */
+  var FB_SDK_URLS = [
+    'https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js',
+    'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js',
+    'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js'
+  ];
+  var fbSdkPromise = null;
+  function loadOneScript(src){
+    return new Promise(function(resolve){
+      var s = document.createElement('script');
+      s.src = src;
+      // Resolve on error too, same as a synchronous <script> tag that 404s
+      // would've just left window.firebase undefined -- fbInit() already
+      // handles that (returns null, callers already treat that as "not
+      // ready/configured"), so a network hiccup here degrades the same way
+      // it always did, it just doesn't also freeze this promise forever.
+      s.onload = resolve; s.onerror = resolve;
+      document.head.appendChild(s);
+    });
+  }
+  function loadFirebaseSDK(){
+    if(window.firebase) return Promise.resolve();
+    if(fbSdkPromise) return fbSdkPromise;
+    fbSdkPromise = loadOneScript(FB_SDK_URLS[0])
+      .then(function(){ return loadOneScript(FB_SDK_URLS[1]); })
+      .then(function(){ return loadOneScript(FB_SDK_URLS[2]); });
+    return fbSdkPromise;
+  }
+  /* Which of the three journal routes (see the three window.__spzAddRoute /
+     data-route="journal*" sections below) is what decides whether this
+     visitor needs Firebase at all -- checked once at boot (covers landing
+     cold on a shared journalView link) and again on every hashchange
+     (covers navigating there from elsewhere in the same visit). Fires
+     'spz:fbready' exactly once, the moment the SDK is actually ready;
+     buildJournal()/buildJournalView()/buildJournalEdit() below each listen
+     for it once instead of calling fbInit()-dependent code eagerly at
+     construction time, which is what let this be lazy in the first place. */
+  function journalRouteActive(){ return (location.hash || '').indexOf('#/journal') === 0; }
+  var fbKickedOff = false;
+  function kickOffFirebaseIfNeeded(){
+    if(fbKickedOff || !journalRouteActive()) return;
+    fbKickedOff = true;
+    loadFirebaseSDK().then(function(){
+      try { document.dispatchEvent(new CustomEvent('spz:fbready')); } catch(e){}
+    });
+  }
+  window.addEventListener('hashchange', kickOffFirebaseIfNeeded);
+  /* onFirebaseReady(cb): run cb() once the SDK is available -- immediately
+     if some earlier trigger already loaded it (e.g. this is the second of
+     the three journal builders to ask), otherwise the next time
+     'spz:fbready' fires. Also nudges kickOffFirebaseIfNeeded() itself, so
+     simply calling this from a builder that happens to be constructed while
+     already on its own route (a cold landing on that exact route) is enough
+     to start the load -- no separate wiring needed per builder. */
+  function onFirebaseReady(cb){
+    if(window.firebase){ cb(); return; }
+    document.addEventListener('spz:fbready', cb, { once:true });
+    kickOffFirebaseIfNeeded();
+  }
+
   function L(){ return document.documentElement.getAttribute('lang') === 'th' ? 'th' : 'en'; }
   function T(o){ return o ? (o[L()] !== undefined ? o[L()] : o.en) : ''; }
   function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -1092,7 +1160,7 @@
     paintFeed();
     wireDateFilter();
     wireSearchSort();
-    load();
+    onFirebaseReady(load); // was a plain eager load() -- see loadFirebaseSDK() above
     sec.__render = function(){ paintChrome(); paintTags(); paintTagFilters(); paintFeed(); paintStats(); };
     // unblur every card immediately on a successful LINE login (or re-blur
     // on logout) without a reload -- same event the auth gate/Watchlist
@@ -2076,8 +2144,11 @@
       if(fbAuth.currentUser){ entryPanel(); } else { signInPanel(); }
     }
 
-    render();
-    if(fbInit()){ fbAuth.onAuthStateChanged(function(){ render(); }); }
+    render(); // paints the sign-in form immediately -- doesn't need Firebase loaded yet
+    onFirebaseReady(function(){
+      render(); // re-check: fbAuth.currentUser may already be set (a persisted admin session)
+      if(fbInit()) fbAuth.onAuthStateChanged(function(){ render(); });
+    });
     sec.__render = paintChrome;
     return sec;
   }
@@ -2475,7 +2546,7 @@
     }
 
     paint();
-    load();
+    onFirebaseReady(load); // was a plain eager load() -- see loadFirebaseSDK() above
     sec.__render = function(){ paint(); };
     // unblur immediately on a successful LINE login (or re-blur on logout)
     // without needing a reload -- same event the auth gate/Watchlist already
