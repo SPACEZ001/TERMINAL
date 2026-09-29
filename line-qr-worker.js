@@ -792,7 +792,9 @@ async function handleJournalSettingsUpdate(request, env) {
 // so the ping itself needs no admin key; only the count read for the
 // admin panel does.
 const PRESENCE_KEY_PREFIX = "presence:";
-const PRESENCE_TTL_SECONDS = 90;
+const PRESENCE_TTL_SECONDS = 180; // matches the front end's slower ping interval
+                                   // (assets/js/part-59.js) -- see the note there on
+                                   // why this write volume is kept low
 
 async function handlePresencePing(request, env) {
   let body;

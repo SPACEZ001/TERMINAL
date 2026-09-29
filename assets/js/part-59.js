@@ -3,8 +3,16 @@
   'use strict';
   var WORKER_BASE = 'https://spacez-line-link.spacezblack.workers.dev';
   var ID_KEY = 'spz_presence_id';
-  var PING_MS = 25000; // well under the Worker's ~90s KV expiry, so a
-                        // visitor who's still here never lapses between pings
+  var PING_MS = 60000; // well under the Worker's KV expiry (see PRESENCE_TTL_SECONDS
+                        // in line-qr-worker.js), so a visitor who's still here never
+                        // lapses between pings. Kept deliberately infrequent -- every
+                        // open tab on the whole public site writes to the Worker's KV
+                        // namespace on this interval, and that namespace's free-tier
+                        // daily write quota is shared with every other feature that
+                        // writes to KV (LINE session creation, likes, watchlist edits,
+                        // admin broadcasts...). A shorter interval here quietly eats
+                        // into that same budget and can starve those other features
+                        // later in the day.
   function presenceId(){
     var id = null;
     try { id = sessionStorage.getItem(ID_KEY); } catch(e){}
