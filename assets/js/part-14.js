@@ -753,7 +753,11 @@
       for(var i = 0; i < rows.length; i++){
         var r = rows[i];
         var okCat = state.cat === 'all' || r.dataset.cat === state.cat;
-        var okQ = !q || r.textContent.toLowerCase().indexOf(q) !== -1;
+        // once buildMasterDetail (below) has moved a row's real content into
+        // the fixed detail pane, r.textContent shrinks to just its summary --
+        // __searchText is a one-time snapshot taken before any of that
+        // moving starts, so search still matches on the full definition text
+        var okQ = !q || (r.__searchText || r.textContent.toLowerCase()).indexOf(q) !== -1;
         var okLvl = state.lvl === 'all' || r.dataset.level === state.lvl;
         var vis = okCat && okQ && okLvl;
         r.classList.toggle('ctl-hidden', !vis);
@@ -858,6 +862,110 @@
     paintStatic(); paintChips(); paintLevelChips(); apply();
   }
 
+  /* ---------- glossary master-detail (Round R) ----------
+     #glossary specifically: instead of a long accordion, a sticky left index
+     plus a fixed right-hand pane that shows one term at a time. Only ever
+     MOVES each term's existing .term-content-wrap node into the pane (never
+     clones it), because the live gauge visuals in part-12.js bind to the
+     exact DOM nodes present when that module runs at load -- a clone would
+     just sit there static. The original list stays in the DOM (display:none
+     via .gl-source) purely so buildRail's search/category filter above still
+     has full rows -- see __searchText -- to filter against; it is never shown. */
+  function buildMasterDetail(list){
+    var rows = [].slice.call(list.querySelectorAll('details.term-row'));
+    if(!rows.length) return;
+    var rail = list.previousElementSibling;
+    if(rail && rail.classList && rail.classList.contains('ctl-rail')){
+      // "expand all / collapse all" don't mean anything once only one term
+      // is ever shown at a time -- hide them rather than leave a dead button
+      var expBtn = rail.querySelector('[data-el="exp"]');
+      var colBtn = rail.querySelector('[data-el="col"]');
+      if(expBtn) expBtn.hidden = true;
+      if(colBtn) colBtn.hidden = true;
+    }
+
+    for(var s = 0; s < rows.length; s++){ rows[s].__searchText = rows[s].textContent.toLowerCase(); }
+
+    var shell = document.createElement('div');
+    shell.className = 'gl-shell';
+    list.parentNode.insertBefore(shell, list);
+
+    var nav = document.createElement('div');
+    nav.className = 'gl-nav';
+    shell.appendChild(nav);
+
+    var detail = document.createElement('div');
+    detail.className = 'gl-detail';
+    detail.innerHTML =
+      '<div class="gl-detail-head"><span class="gl-detail-idx"></span><span class="gl-detail-tag"></span><span class="gl-detail-name"></span></div>' +
+      '<div class="gl-detail-body"></div>';
+    shell.appendChild(detail);
+
+    list.classList.add('gl-source');
+    shell.appendChild(list);
+
+    var detailBody = detail.querySelector('.gl-detail-body');
+    var detailIdx = detail.querySelector('.gl-detail-idx');
+    var detailTag = detail.querySelector('.gl-detail-tag');
+    var detailName = detail.querySelector('.gl-detail-name');
+    var navButtons = [];
+    var activeI = -1;
+
+    function select(i){
+      var row = rows[i];
+      var wrap = row.querySelector('.term-content-wrap');
+      if(!wrap) return;
+      detailBody.innerHTML = '';
+      detailBody.appendChild(wrap);
+      var idx = row.querySelector('.term-idx');
+      var tag = row.querySelector('.term-tag');
+      var name = row.querySelector('.term-name');
+      detailIdx.textContent = idx ? idx.textContent : '';
+      detailTag.textContent = tag ? tag.textContent : '';
+      detailName.textContent = name ? name.textContent : '';
+      for(var j = 0; j < navButtons.length; j++){ navButtons[j].classList.toggle('active', j === i); }
+      row.open = true;
+      activeI = i;
+      detail.classList.remove('gl-anim');
+      void detail.offsetWidth; // restart the CSS animation on repeat selections
+      detail.classList.add('gl-anim');
+    }
+
+    for(var i = 0; i < rows.length; i++){
+      (function(i, row){
+        var idx = row.querySelector('.term-idx');
+        var tag = row.querySelector('.term-tag');
+        var name = row.querySelector('.term-name');
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'gl-nav-item';
+        btn.innerHTML =
+          '<span class="gl-nav-idx">' + (idx ? idx.textContent : '') + '</span>' +
+          '<span class="gl-nav-tag">' + (tag ? tag.textContent : '') + '</span>' +
+          '<span class="gl-nav-name">' + (name ? name.textContent : '') + '</span>';
+        btn.addEventListener('click', function(){ select(i); });
+        nav.appendChild(btn);
+        navButtons.push(btn);
+      })(i, rows[i]);
+    }
+
+    // Keeps the nav list and the active selection honest whenever the filter
+    // rail above hides/shows rows (typing a search, picking a category chip)
+    function syncVisibility(){
+      var stillVisible = activeI !== -1 && !rows[activeI].classList.contains('ctl-hidden');
+      for(var k = 0; k < rows.length; k++){ navButtons[k].hidden = rows[k].classList.contains('ctl-hidden'); }
+      if(!stillVisible){
+        for(var f = 0; f < rows.length; f++){
+          if(!rows[f].classList.contains('ctl-hidden')){ select(f); break; }
+        }
+      }
+    }
+    var mo = new MutationObserver(syncVisibility);
+    for(var m = 0; m < rows.length; m++){ mo.observe(rows[m], { attributes: true, attributeFilter: ['class'] }); }
+
+    select(0);
+  }
+
   /* ---------- theme switch ---------- */
   var THEMES = ['void', 'lime', 'light'];
   function initTheme(){
@@ -930,6 +1038,10 @@
     attach();
     var lists = document.querySelectorAll('#glossary .glossary-list, #signals .glossary-list');
     for(var i = 0; i < lists.length; i++){ buildRail(lists[i]); }
+    // #glossary gets the left-index + fixed-detail-pane layout; #signals
+    // (a much shorter list) keeps its original single-column accordion.
+    var glossList = document.querySelector('#glossary .glossary-list');
+    if(glossList) buildMasterDetail(glossList);
     initTheme();
     initTop();
     initLangMemory();
