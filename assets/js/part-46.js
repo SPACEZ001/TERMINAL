@@ -148,11 +148,23 @@
     lineRowNote:{en:'Your own personal watchlist via LINE — separate from this site login.',
                  th:'วอทช์ลิสต์ส่วนตัวของคุณผ่าน LINE — แยกต่างหากจากการล็อกอินเว็บนี้'},
     lineWlBtn:{en:'Go to My Watchlist',th:'ไปหน้าวอทช์ลิสต์ของฉัน'},
+    /* Round R: a second, independent QR login next to LINE -- same Member-tier
+       access, no watchlist of its own (see part-61.js's own header comment
+       for why). Mirrors every lineRow / tabLine string above one-for-one. */
+    tabTg:{en:'TELEGRAM',th:'TELEGRAM'},
+    tgRowConnect:{en:'Connect Telegram',th:'เชื่อมต่อ Telegram'},
+    tgRowConnected:{en:'Telegram connected',th:'เชื่อมต่อ Telegram แล้ว'},
+    tgRowLogout:{en:'Log out of Telegram',th:'ออกจากระบบ Telegram'},
+    tgRowNote:{en:'Sign in by scanning a QR code with Telegram — separate from this site login.',
+               th:'เข้าสู่ระบบด้วยการสแกน QR ผ่าน Telegram — แยกต่างหากจากการล็อกอินเว็บนี้'},
+    tgLoggedT:{en:'TELEGRAM',th:'TELEGRAM'},
+    tgLoggedS:{en:'Signed in via Telegram — you have the same access as a member.',th:'เข้าสู่ระบบผ่าน Telegram — คุณมีสิทธิ์เข้าถึงเทียบเท่าเมมเบอร์'},
     memberT:{en:'MEMBER ACCESS',th:'สิทธิ์สมาชิก'},
-    memberS:{en:'Unlocked through your LINE account',th:'ปลดล็อกผ่านบัญชี LINE ของคุณ'},
-    memberLineNote:{en:'Member access now goes through LINE sign-in only — connect your LINE account to unlock the analysis tools and your personal watchlist.',
-                    th:'สิทธิ์สมาชิกตอนนี้เข้าผ่านการเชื่อมต่อ LINE เท่านั้น — เชื่อมต่อบัญชี LINE ของคุณเพื่อปลดล็อกเครื่องมือวิเคราะห์และวอทช์ลิสต์ส่วนตัว'},
+    memberS:{en:'Unlocked through your LINE or Telegram account',th:'ปลดล็อกผ่านบัญชี LINE หรือ Telegram ของคุณ'},
+    memberLineNote:{en:'Member access goes through LINE or Telegram sign-in — connect either one to unlock the analysis tools (LINE also gets you a personal watchlist).',
+                    th:'สิทธิ์สมาชิกเข้าผ่านการเชื่อมต่อ LINE หรือ Telegram — เชื่อมต่อช่องทางใดช่องทางหนึ่งเพื่อปลดล็อกเครื่องมือวิเคราะห์ (ถ้าเชื่อมต่อ LINE จะได้วอทช์ลิสต์ส่วนตัวเพิ่มด้วย)'},
     memberLineCta:{en:'Sign in with LINE',th:'เข้าสู่ระบบด้วย LINE'},
+    memberTgCta:{en:'Sign in with Telegram',th:'เข้าสู่ระบบด้วย Telegram'},
     memberLoggedT:{en:'MEMBER',th:'MEMBER'},
     memberLoggedS:{en:'You have member access.',th:'คุณเข้าสู่ระบบระดับ MEMBER แล้ว'},
     lineLoggedT:{en:'LINE',th:'LINE'},
@@ -272,7 +284,7 @@
 
   /* ---------------- gate UI ---------------- */
   var gate, paneAdv, errAdv, btnAdv, advFilled, advBar;
-  var paneOut, paneMember, tabsEl, memberLineBtn, upgradeBtn;
+  var paneOut, paneMember, tabsEl, memberLineBtn, memberTgBtn, upgradeBtn;
   var activeTab = 'member';
   var advInputs = [];
   var attempts = 0, lockUntil = 0;
@@ -294,6 +306,7 @@
 
           '<div class="cag-tiers" id="cagTabs">' +
             '<button class="cag-tier line" type="button" id="cagLineTab"><b data-x="tabLine"></b></button>' +
+            '<button class="cag-tier tg" type="button" id="cagTgTab"><b data-x="tabTg"></b></button>' +
             '<button class="cag-tier m" type="button" data-tab="member"><b data-x="tabMember"></b></button>' +
             '<button class="cag-tier f" type="button" data-tab="full"><b data-x="tabFull"></b></button>' +
           '</div>' +
@@ -310,6 +323,13 @@
                 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5A2.5 2.5 0 015.5 3h13A2.5 2.5 0 0121 5.5v15L12 16l-9 4.5v-15z"/></svg>' +
               '</button>' +
               '<button type="button" class="cag-line-btn" id="cagLineRowBtn" data-x="lineBtn"></button>' +
+            '</div>' +
+            '<div class="cag-tg-row" id="cagTgRow">' +
+              '<div class="cag-tg-info">' +
+                '<span class="cag-tg-name" id="cagTgName" data-x="tgName"></span>' +
+                '<span class="cag-tg-status" data-x="tgStatus"></span>' +
+              '</div>' +
+              '<button type="button" class="cag-tg-btn" id="cagTgRowBtn" data-x="tgBtn"></button>' +
             '</div>' +
             '<div class="cag-admin-links hidden" id="cagAdminLinks">' +
               '<button class="cag-admin-link" type="button" id="cagBtnAddAnalysis">' +
@@ -349,6 +369,7 @@
             '<div class="cag-head"><div><b data-x="memberT"></b><span data-x="memberS"></span></div></div>' +
             '<div class="cag-member-linenote" data-x="memberLineNote"></div>' +
             '<button class="cag-btn" type="button" id="cagMemberLineBtn" data-x="memberLineCta"></button>' +
+            '<button class="cag-btn" type="button" id="cagMemberTgBtn" data-x="memberTgCta"></button>' +
             '<button class="cag-ghost" type="button" id="cagToFull" data-x="toFullLink"></button>' +
           '</div>' +
 
@@ -391,6 +412,7 @@
     paneMember = gate.querySelector('#cagPaneMember');
     tabsEl = gate.querySelector('#cagTabs');
     memberLineBtn = gate.querySelector('#cagMemberLineBtn');
+    memberTgBtn = gate.querySelector('#cagMemberTgBtn');
     upgradeBtn = gate.querySelector('#cagUpgradeBtn');
 
     var advGrid = gate.querySelector('#cagAdvGrid');
@@ -494,6 +516,9 @@
     memberLineBtn.addEventListener('click', function(){
       if(window.__SPZ_LINE) window.__SPZ_LINE.open();
     });
+    memberTgBtn.addEventListener('click', function(){
+      if(window.__SPZ_TG) window.__SPZ_TG.open();
+    });
     gate.querySelector('#cagToFull').addEventListener('click', function(){ activeTab = 'full'; paint(); });
     gate.querySelector('#cagToMember').addEventListener('click', function(){ activeTab = 'member'; clearErr(errAdv); paint(); });
     upgradeBtn.addEventListener('click', function(){ activeTab = 'full'; logout(); paint(); });
@@ -530,6 +555,19 @@
     // real link/unlink.
     document.addEventListener('spz:identity', function(){ paint(); });
 
+    // Telegram tab/row -- same wiring as the LINE block just above, one
+    // provider swapped for the other (see part-61.js's window.__SPZ_TG).
+    gate.querySelector('#cagTgTab').addEventListener('click', function(){
+      if(window.__SPZ_TG) window.__SPZ_TG.open();
+    });
+    gate.querySelector('#cagTgRowBtn').addEventListener('click', function(){
+      if(!window.__SPZ_TG) return;
+      var st = window.__SPZ_TG.state();
+      if(st.status === 'linked') window.__SPZ_TG.logout();
+      else window.__SPZ_TG.open();
+    });
+    document.addEventListener('spz:tg', function(){ paint(); });
+
     paint();
   }
 
@@ -546,8 +584,12 @@
     // popup's own brief "connected" beat closes itself.
     var lineSt = window.__SPZ_LINE ? window.__SPZ_LINE.state() : { status:'idle', displayName:null, pictureUrl:null };
     var lineLinked = lineSt.status === 'linked';
+    // Same idea, second provider (see part-61.js) -- computed the same way,
+    // up front, for the same reason lineSt is.
+    var tgSt = window.__SPZ_TG ? window.__SPZ_TG.state() : { status:'idle', displayName:null };
+    var tgLinked = tgSt.status === 'linked';
 
-    var loggedIn = currentTier === 'full' || currentTier === 'member' || lineLinked;
+    var loggedIn = currentTier === 'full' || currentTier === 'member' || lineLinked || tgLinked;
     if(paneOut) paneOut.classList.toggle('active', loggedIn);
     if(tabsEl) tabsEl.style.display = loggedIn ? 'none' : 'flex';
     var adminLinks = gate.querySelector('#cagAdminLinks');
@@ -589,6 +631,14 @@
       lineWlBtnEl.setAttribute('title', wlTitle);
     }
 
+    // Telegram row -- same treatment as the LINE row just above (no avatar,
+    // no watchlist button: see part-61.js's header comment for why).
+    var tgNameTxt = tgLinked ? (tgSt.displayName || '').trim() : '';
+    var tgStatusTxt = tgLinked ? Tt(TXT.tgRowConnected) : Tt(TXT.tgRowNote);
+    var tgBtnTxt = tgLinked ? Tt(TXT.tgRowLogout) : Tt(TXT.tgRowConnect);
+    var tgRowEl = gate.querySelector('#cagTgRow');
+    if(tgRowEl) tgRowEl.classList.toggle('linked', tgLinked);
+
     gate.querySelectorAll('[data-x]').forEach(function(el){
       var k = el.getAttribute('data-x');
       var map = {
@@ -596,17 +646,21 @@
         status: loggedIn
           ? (Lg() === 'th' ? 'เข้าสู่ระบบแล้ว' : 'Signed in')
           : (Lg() === 'th' ? 'ตรวจสอบสิทธิ์การเข้าถึง' : 'Verifying access'),
-        loggedT: currentTier === 'full' ? TXT.loggedT : currentTier === 'member' ? TXT.memberLoggedT : TXT.lineLoggedT,
-        loggedS: currentTier === 'full' ? TXT.loggedS : currentTier === 'member' ? TXT.memberLoggedS : TXT.lineLoggedS,
+        // Priority when more than one is true at once (rare -- e.g. someone
+        // linked both LINE and Telegram): real tier first, then LINE (it
+        // alone also carries a personal watchlist), then Telegram.
+        loggedT: currentTier === 'full' ? TXT.loggedT : currentTier === 'member' ? TXT.memberLoggedT : lineLinked ? TXT.lineLoggedT : TXT.tgLoggedT,
+        loggedS: currentTier === 'full' ? TXT.loggedS : currentTier === 'member' ? TXT.memberLoggedS : lineLinked ? TXT.lineLoggedS : TXT.tgLoggedS,
         logoutBtn: TXT.logoutBtn, upgradeBtn: TXT.upgradeBtn,
         adminAddAnalysis: TXT.adminAddAnalysis, adminPrintReport: TXT.adminPrintReport,
         adminCompareDownload: TXT.adminCompareDownload, adminConnectedUsers: TXT.adminConnectedUsers,
         adminAnnouncements: TXT.adminAnnouncements,
         adminPro: TXT.adminPro, adminBriefing: TXT.adminBriefing,
-        tabMember: TXT.tabMember, tabFull: TXT.tabFull, tabLine: TXT.tabLine,
+        tabMember: TXT.tabMember, tabFull: TXT.tabFull, tabLine: TXT.tabLine, tabTg: TXT.tabTg,
         lineName: lineNameTxt, lineStatus: lineStatusTxt, lineBtn: lineBtnTxt,
+        tgName: tgNameTxt, tgStatus: tgStatusTxt, tgBtn: tgBtnTxt,
         memberT: TXT.memberT, memberS: TXT.memberS,
-        memberLineNote: TXT.memberLineNote, memberLineCta: TXT.memberLineCta,
+        memberLineNote: TXT.memberLineNote, memberLineCta: TXT.memberLineCta, memberTgCta: TXT.memberTgCta,
         toFullLink: TXT.toFullLink, toMemberLink: TXT.toMemberLink,
         fullT: TXT.fullT, fullS: TXT.fullS,
         bulk: TXT.bulk, mask: TXT.mask, clear: TXT.clear, spread: TXT.spread, bulkHint: TXT.bulkHint,
@@ -682,11 +736,16 @@
     try { return !!(window.__SPZ_LINE && window.__SPZ_LINE.state && window.__SPZ_LINE.state().status === 'linked'); }
     catch(e){ return false; }
   }
+  // Same stand-in, second provider -- see part-61.js and the comment above.
+  function tgIsLinkedNow(){
+    try { return !!(window.__SPZ_TG && window.__SPZ_TG.state && window.__SPZ_TG.state().status === 'linked'); }
+    catch(e){ return false; }
+  }
   function isLockedRoute(id){
     if(LOCKED_ROUTES.indexOf(id) === -1) return false;
     if(currentTier === 'full') return false;
     if(currentTier === 'member') return MEMBER_ROUTES.indexOf(id) === -1;
-    if(MEMBER_ROUTES.indexOf(id) !== -1 && lineIsLinkedNow()) return false;
+    if(MEMBER_ROUTES.indexOf(id) !== -1 && (lineIsLinkedNow() || tgIsLinkedNow())) return false;
     return true;
   }
   var LOCK_SEL = '[data-route-to], [data-hvgo], [data-hub-go], a[href^="#/"]';
@@ -771,7 +830,7 @@
       clearInterval(iv);
       try { sessionStorage.setItem('spz_auth_gate_auto_shown', '1'); } catch(e){}
       if(disclaimerOpen) return; // gave up waiting -- don't stack on top of it
-      if(currentTier === 'basic' && !lineIsLinkedNow() && gate && gate.hidden) openGate();
+      if(currentTier === 'basic' && !lineIsLinkedNow() && !tgIsLinkedNow() && gate && gate.hidden) openGate();
     }, 100);
   }
 
@@ -820,6 +879,7 @@
      and the async "already linked from a previous visit" resolution on
      page load (lineRestoreFromWorker fires this same event when it's done). */
   document.addEventListener('spz:line', function(){ paintLockVeils(); });
+  document.addEventListener('spz:tg', function(){ paintLockVeils(); });
 
   document.addEventListener('keydown', function(ev){
     if(ev.key === 'Escape' && gate && !gate.hidden) gate.hidden = true;
