@@ -1089,7 +1089,7 @@ var CL_UI = {
   }
 
   /* ================= ROUTER ================= */
-  function route(id, silent){
+  function route(id, silent, viaHash){
     if(id !== 'home' && !document.getElementById(id)) id = 'home';
     current = id;
     var secs = document.querySelectorAll('section[data-route]');
@@ -1113,7 +1113,9 @@ var CL_UI = {
     if(!silent) window.scrollTo({ top:0, behavior:'auto' });
 
     if(fromPop){
-      /* the browser moved us; do not touch the stack */
+      /* the browser moved us through one of OUR OWN tracked entries (its
+         state object carried a numeric index -- see the popstate handler
+         below); do not touch the stack, it is already correct. */
     } else if(HI < 0){
       HIST = [id]; HI = 0;
       try { history.replaceState({ spz:id, i:0 }, '', '#/' + id); } catch(e){}
@@ -1121,7 +1123,19 @@ var CL_UI = {
       HIST = HIST.slice(0, HI + 1);
       HIST.push(id);
       HI = HIST.length - 1;
-      try { history.pushState({ spz:id, i:HI }, '', '#/' + id); } catch(e){}
+      try {
+        /* viaHash: this navigation's browser-history entry already exists --
+           either a hashchange fired by some other script's plain
+           `location.hash = ...` (many pages do this instead of going through
+           this router), or the popstate recovery branch below for exactly
+           that same case. Tag that EXISTING entry with our state object via
+           replaceState instead of pushState, which would otherwise create a
+           second, untracked entry and permanently desync HI from the
+           browser's real history depth -- the cause of "back" silently
+           skipping pages or doing nothing after visiting certain pages. */
+        if(viaHash){ history.replaceState({ spz:id, i:HI }, '', '#/' + id); }
+        else { history.pushState({ spz:id, i:HI }, '', '#/' + id); }
+      } catch(e){}
     }
     syncBtns();
     if(id === 'pro'){ setTimeout(function(){ window.dispatchEvent(new Event('resize')); }, 60); }
@@ -2137,19 +2151,32 @@ var CL_UI = {
     window.addEventListener('popstate', function(e){
       var st = e.state || {};
       var id = st.spz || (location.hash || '').replace('#/', '') || 'home';
-      if(typeof st.i === 'number') HI = st.i;
-      else {
-        var k = HIST.indexOf(id);
-        if(k !== -1) HI = k;
+      if(typeof st.i === 'number'){
+        /* a genuine traversal through one of OUR OWN pushState/replaceState
+           entries -- trust its index, don't touch the stack. */
+        HI = st.i;
+        fromPop = true;
+        try { route(id, true); } finally { fromPop = false; }
+      } else {
+        /* popstate fired but this entry carries no state object of ours --
+           it exists because some OTHER script set location.hash directly
+           (many pages do: part-10/30/39/40/44/46/47 and others jump around
+           with a bare `location.hash = '#/...'` instead of going through
+           this router). Browsers fire popstate for that too, even though
+           nothing "went back" -- treating it as a real traversal (the old
+           behavior) silently skipped this page from HIST/HI forever, which
+           is what made "back" eventually skip pages or do nothing after
+           visiting one of them. Fold it into the stack instead, exactly
+           like a normal forward navigation, tagging the entry the browser
+           already created rather than pushing a second one (viaHash). */
+        route(id, true, true);
       }
-      fromPop = true;
-      try { route(id, true); } finally { fromPop = false; }
       syncBtns();
     });
 
     window.addEventListener('hashchange', function(){
       var h = (location.hash || '').replace('#/', '');
-      if(h && h !== current) route(h);
+      if(h && h !== current) route(h, false, true);
     });
 
     /* Alt + arrow keys, the same shortcut the browser uses */
