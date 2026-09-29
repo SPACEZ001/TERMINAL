@@ -2261,6 +2261,11 @@
      the same login, not two separate ones. ---------------------------- */
   window.__SPZ_LINE = {
     open: function(){ openLineModal(); },
+    // Same read-only pattern as window.__SPZ_TG.code() (part-61.js) -- the
+    // session code, not the underlying LINE userId, which never leaves the
+    // Worker. Used by the site-wide presence beacon (part-59.js) so the
+    // admin-only Connected Users page can show who's online right now.
+    code: function(){ return state.line.status === 'linked' ? state.line.code : null; },
     state: function(){
       return { status: state.line.status, displayName: state.line.displayName || null,
         pictureUrl: state.line.pictureUrl || null, tickers: (state.line.tickers || []).slice(),
