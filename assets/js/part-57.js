@@ -212,6 +212,39 @@
     });
   }
   window.addEventListener('hashchange', kickOffFirebaseIfNeeded);
+  /* Bug found after shipping the above: the router in part-15.js drives
+     essentially every in-app navigation (hub cards, the nav menu, back/
+     forward) through history.pushState()/replaceState(), and neither of
+     those ever fires a native 'hashchange' event -- only a real
+     location.hash assignment, an <a href="#/x"> click, or the address bar
+     does. So a visitor who *clicked* into the journal (rather than landing
+     on a #/journal* link cold, or pasting one into the address bar) never
+     triggered kickOffFirebaseIfNeeded() at all: the SDK never loaded, and
+     the journal sat on "loading" forever with none of its posts. A
+     MutationObserver on each journal section's class attribute reacts to
+     the actual visible effect of route() -- the .route-on toggle -- no
+     matter which of the several navigation mechanisms produced it, so this
+     covers pushState/replaceState-driven clicks the hashchange listener
+     above structurally cannot see. Left the listener above in place too;
+     it's a harmless, redundant second trigger for the direct-hash cases,
+     and kickOffFirebaseIfNeeded() is idempotent either way. */
+  function watchJournalRouteOn(){
+    var ids = ['journal', 'journalNew', 'journalView'];
+    var pending = false;
+    ids.forEach(function(id){
+      var sec = document.getElementById(id);
+      if(!sec){ pending = true; return; }
+      if(sec.classList.contains('route-on')) kickOffFirebaseIfNeeded();
+      new MutationObserver(function(){
+        if(sec.classList.contains('route-on')) kickOffFirebaseIfNeeded();
+      }).observe(sec, { attributes:true, attributeFilter:['class'] });
+    });
+    /* the three sections above are built further down in this same file --
+       retry until buildJournal()/buildJournalEdit()/buildJournalView() have
+       all run once, so none of the three observers are silently skipped */
+    if(pending) setTimeout(watchJournalRouteOn, 50);
+  }
+  watchJournalRouteOn();
   /* onFirebaseReady(cb): run cb() once the SDK is available -- immediately
      if some earlier trigger already loaded it (e.g. this is the second of
      the three journal builders to ask), otherwise the next time
