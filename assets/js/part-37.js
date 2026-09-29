@@ -17,6 +17,8 @@
          localT:'Your device time', session:'This session', sessionD:'time since you opened this page',
          bubble:'Bubble Radar data', bubbleOk:'Updated', bubbleWarn:'Pending first run',
          bubbleNextToday:'next update today', bubbleNextTomorrow:'next update tomorrow',
+         loginSys:'Login system (LINE / Telegram)', loginOk:'Normal', loginWarn:'Delayed', loginPending:'Syncing…',
+         postSys:'Analysis log (Firebase)', postOk:'Normal', postWarn:'Delayed', postOff:'Not connected',
          sumNormal:'normal', grpFeeds:'Data feeds', grpMarkets:'Markets', grpSession:'Session & device' },
     th:{ eb:'สถานะระบบ', note:'แต่ละส่วนของหน้านี้ตอนนี้กำลังทำงานยังไงบ้าง — ไม่ใช่สัญญาณลงทุน',
          quotes:'ระบบราคาหุ้น', quotesOk:'สด', quotesLoad:'กำลังซิงก์…', quotesWarn:'ใช้ค่าอ้างอิง — ยังไม่ต่อราคาสด',
@@ -32,6 +34,8 @@
          localT:'เวลาที่เครื่องคุณ', session:'เซสชันนี้', sessionD:'เวลาที่คุณเปิดหน้านี้มา',
          bubble:'ข้อมูลเรดาร์ฟองสบู่', bubbleOk:'อัปเดตแล้ว', bubbleWarn:'รอรอบแรก',
          bubbleNextToday:'อัปเดตรอบถัดไปวันนี้', bubbleNextTomorrow:'อัปเดตรอบถัดไปพรุ่งนี้',
+         loginSys:'ระบบล็อกอิน (LINE / Telegram)', loginOk:'ปกติ', loginWarn:'ล่าช้า', loginPending:'กำลังซิงก์…',
+         postSys:'ระบบบทวิเคราะห์ (Firebase)', postOk:'ปกติ', postWarn:'ล่าช้า', postOff:'ยังไม่เชื่อมต่อ',
          sumNormal:'ปกติ', grpFeeds:'ฟีดข้อมูล', grpMarkets:'ตลาดหุ้น', grpSession:'เซสชันและอุปกรณ์' }
   };
   var WD_EN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -201,6 +205,31 @@
       '<i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>' +
       '<span class="sysx-wave-lbl">' + esc(waveLbl) + '</span>';
 
+    /* Round T: two more backend health rows, read from the flags those
+       modules already keep for their own purposes -- window.__SPZ_BACKEND_STATUS()
+       (part-59.js's presence beacon, which already round-trips to the Worker
+       on a timer) for the login system, window.__SPZ_FB_STATUS() (part-57.js)
+       for the Firebase-backed analysis log. Both modules load after this one
+       in the boot order but this popup only ever reads them lazily, inside
+       paint()/health(), never at parse time, so there's no race to worry
+       about -- worst case (this popup opened in the first ~1.5s of a page
+       load) is a "syncing"/"pending" row for a moment. */
+    var loginCls = 'warn', loginVal = S('loginWarn');
+    try {
+      var loginSt = window.__SPZ_BACKEND_STATUS ? window.__SPZ_BACKEND_STATUS() : 'pending';
+      if(loginSt === 'ok'){ loginCls = 'ok'; loginVal = S('loginOk'); }
+      else if(loginSt === 'pending'){ loginCls = 'info'; loginVal = S('loginPending'); }
+      else { loginCls = 'warn'; loginVal = S('loginWarn'); }
+    } catch(e){}
+
+    var postCls = 'warn', postVal = S('postWarn');
+    try {
+      var postSt = window.__SPZ_FB_STATUS ? window.__SPZ_FB_STATUS() : 'unconfigured';
+      if(postSt === 'ok'){ postCls = 'ok'; postVal = S('postOk'); }
+      else if(postSt === 'unconfigured'){ postCls = 'info'; postVal = S('postOff'); }
+      else { postCls = 'warn'; postVal = S('postWarn'); }
+    } catch(e){}
+
     var tickerCount = null;
     try {
       var snap = (LIVE && typeof LIVE.snapshot === 'function') ? LIVE.snapshot() : null;
@@ -260,6 +289,8 @@
       row(sCls, S('sync'), sVal, sDet, waveHTML) +
       row(fCls, S('funda'), fVal, fDet) +
       bubbleRowHTML() +
+      row(loginCls, S('loginSys'), loginVal, null) +
+      row(postCls, S('postSys'), postVal, null) +
       '</div></div>' +
       '<div class="sysx-group">' +
       groupHead(ICO_MKT, S('grpMarkets')) +

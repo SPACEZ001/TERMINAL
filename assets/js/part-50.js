@@ -26,12 +26,22 @@
       esc(T(UI.cuLinkedSince).replace('{p}', providerLabel(u.userId)).replace('{d}', fmtDateFromEpoch(u.linkedAt))) +
     '</div>';
   }
+  /* Round T: per-person "online now" flag, from the same presence beacon
+     that already powers the aggregate "{n} on the site right now" gauge
+     above (see presenceHTML()) -- this is the per-user half of it, read
+     straight off each user's own `online` field from /api/admin/users.
+     Admin-only page, so this is never shown anywhere a regular visitor
+     (including that same user, viewing their own account) can see it. */
+  function onlineBadgeHTML(u){
+    if(!u.online) return '';
+    return '<span class="cu-online" title="' + esc(T(UI.onlineNow)) + '"><span class="cu-online-dot"></span>' + esc(T(UI.onlineNow)) + '</span>';
+  }
 
   var UI = {
     eb:{en:'Admin Only',th:'เฉพาะแอดมิน'},
-    h:{en:'Connected Users',th:'ผู้ใช้ที่เชื่อมต่อ'},
-    lede:{en:'Everyone who has linked LINE or Telegram — their photo, holdings, and account status, each tagged with the login they used. Members and linked visitors never see this page.',
-          th:'รายชื่อทุกคนที่เชื่อมต่อ LINE หรือ Telegram ไว้กับเว็บ — รูป หุ้นที่ถือ และสถานะบัญชี พร้อมป้ายบอกว่าล็อกอินผ่านช่องทางไหน เมมเบอร์และผู้ที่ล็อกอินไว้แล้วจะมองไม่เห็นหน้านี้'},
+    h:{en:'Users in the System',th:'ผู้ใช้ในระบบ'},
+    lede:{en:'Everyone who has linked LINE or Telegram — their photo, holdings, and account status, each tagged with the login they used and whether they’re online right now. Members and linked visitors never see this page.',
+          th:'รายชื่อทุกคนที่เชื่อมต่อ LINE หรือ Telegram ไว้กับเว็บ — รูป หุ้นที่ถือ สถานะบัญชี พร้อมป้ายบอกว่าล็อกอินผ่านช่องทางไหน และกำลังออนไลน์อยู่ไหม เมมเบอร์และผู้ที่ล็อกอินไว้แล้วจะมองไม่เห็นหน้านี้'},
     keyLede:{en:'This page needs its own admin key, separate from your site password, so nobody can pull this list by calling the backend directly.',
              th:'หน้านี้ต้องใช้รหัสแอดมินเฉพาะของมันเอง แยกจากรหัสผ่านเว็บไซต์ เพื่อไม่ให้ใครดึงรายชื่อนี้ได้โดยตรงจาก backend'},
     keyPh:{en:'Admin users key',th:'รหัสแอดมินสำหรับหน้านี้'},
@@ -55,6 +65,7 @@
     cuLinkedSince:{en:'Linked via {p} since {d}',th:'เชื่อมต่อผ่าน {p} ตั้งแต่ {d}'},
     providerLine:{en:'LINE',th:'LINE'},
     providerTelegram:{en:'Telegram',th:'Telegram'},
+    onlineNow:{en:'Online now',th:'ออนไลน์อยู่'},
     uidLabel:{en:'UID',th:'UID'},
     accessLabel:{en:'Access status',th:'สถานะสิทธิ์การใช้งาน'},
     rightsLabel:{en:'Membership tier (badge only, for now)',th:'ระดับสมาชิก (เป็นป้ายชื่อเฉยๆ ตอนนี้)'},
@@ -298,7 +309,7 @@
           '<div class="cu-name">' + esc(u.displayName || '—') + '</div>' +
           '<div class="cu-uid">UID: ' + esc(u.uid || '—') + '</div>' +
           cuLinkedSinceHTML(u) +
-          '<div class="cu-card-top-row">' + providerBadgeHTML(u) + statusHTML + rightsBadgeHTML(u.rights) + '</div>' +
+          '<div class="cu-card-top-row">' + providerBadgeHTML(u) + onlineBadgeHTML(u) + statusHTML + rightsBadgeHTML(u.rights) + '</div>' +
         '</div>' +
       '</div>' +
       '<div class="cu-holdings">' + holdingsHTML + '</div>' +
@@ -329,7 +340,7 @@
       '<div class="cu-row-mid">' +
         '<div class="cu-name">' + esc(u.displayName || '—') + '</div>' +
         cuLinkedSinceHTML(u) +
-        '<div class="cu-card-top-row">' + providerBadgeHTML(u) + statusHTML + rightsBadgeHTML(u.rights) + '</div>' +
+        '<div class="cu-card-top-row">' + providerBadgeHTML(u) + onlineBadgeHTML(u) + statusHTML + rightsBadgeHTML(u.rights) + '</div>' +
       '</div>' +
       '<div class="cu-row-end">' +
         '<span class="cu-uid">UID: ' + esc(u.uid || '—') + '</span>' +
@@ -619,7 +630,7 @@
     detailModalBody.innerHTML =
       '<div class="cudm-head">' + avatar +
         '<div><div class="cudm-name">' + esc(u.displayName || '—') + '</div>' +
-          '<div class="cudm-uid">UID: ' + esc(u.uid || '—') + providerBadgeHTML(u) + rightsBadgeHTML(u.rights) + '</div>' +
+          '<div class="cudm-uid">UID: ' + esc(u.uid || '—') + providerBadgeHTML(u) + onlineBadgeHTML(u) + rightsBadgeHTML(u.rights) + '</div>' +
           cuLinkedSinceHTML(u) +
         '</div>' +
       '</div>' +

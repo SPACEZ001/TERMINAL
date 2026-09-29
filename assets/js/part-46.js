@@ -852,6 +852,12 @@
   // toast() copy/UI ("please log in as admin") for the Compare Stocks PDF
   // download button, which is gated outside this closure.
   window.__SPZ_REQUIRE_ADMIN = function(){ toast('__cmpAdminOnly__'); };
+  // Same convention: lets a locked-content CTA elsewhere (e.g. the Asset
+  // Analysis Log's "log in to view this" overlay in part-57.js) open THIS
+  // gate -- the one modal with every sign-in method (LINE / Telegram /
+  // Member / Admin) -- instead of jumping straight to one specific
+  // provider's own popup.
+  window.__SPZ_OPEN_GATE = function(){ openGate(); };
 
   document.addEventListener('click', function(ev){
     var t = ev.target, elm = t && t.closest && t.closest(LOCK_SEL);
@@ -905,9 +911,13 @@
     adminTrigger = document.createElement('button');
     adminTrigger.id = 'spzAdminTrigger';
     adminTrigger.type = 'button';
-    /* a small trend-chart glyph instead of a padlock — reads as just another
-       market/info icon, not as "this is a login button" */
-    adminTrigger.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 5"></polyline><polyline points="15 5 21 5 21 11"></polyline></svg>';
+    /* Round T: was a small trend-chart glyph, deliberately disguised as just
+       another market/info icon rather than "this is a login button" -- she
+       asked for the opposite now that it sits right next to the System
+       Status trigger: a plain account/login glyph (head-and-shoulders in a
+       frame) that reads clearly as sign-in, same stroke-only style as every
+       other icon on the site (no fill, no emoji). */
+    adminTrigger.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
     adminTrigger.title = Tt(TXT.adminTriggerTitle);
     adminTrigger.setAttribute('aria-label', Tt(TXT.adminTriggerTitle));
     adminTrigger.addEventListener('click', openGate);
