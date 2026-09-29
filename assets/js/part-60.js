@@ -4,11 +4,21 @@
    "What To Check Before You Invest" -- the 6th item in the Learn nav group.
    A self-contained teaching page: no per-item "jump to glossary" buttons
    (removed per user feedback -- those broke the back-navigation flow and she
-   wanted this page to fully teach on its own, with graphics, so it can be
-   handed to a total beginner start-to-finish). Each of the five checks gets
-   a full explanation (what it is / why it matters / how to read it / common
-   mistake) plus a small illustrative diagram. Only two exits at the bottom:
-   one link into the full glossary, one into Guided Mode.
+   wanted this page to fully teach on its own, so it can be handed to a total
+   beginner start-to-finish). Each of the five checks gets a full explanation
+   (what it is / why it matters / how to read it / common mistake) plus a
+   small line-icon and an interactive before/after scenario widget. Only two
+   exits at the bottom: one link into the full glossary, one into Guided Mode.
+
+   ROUND R FOLLOW-UP: replaced the emoji icons and the hand-drawn SVG bar/flow
+   diagrams with (a) small line-icon graphics and (b) the exact same
+   what-if-scenario widget style used by the glossary's own calc-mode terms
+   (e.g. DIV YLD / #5, PAYOUT / #13 -- see part-14.js buildPanel()) -- per
+   user feedback that the old diagrams looked "crude" next to those. This
+   file does NOT import anything from part-14.js; it reuses the global
+   .wif-scn/.wif-calc/.wif-note classes already defined in part-03.css (those
+   selectors are not nested under a parent, so any file can use them) and
+   implements its own small, self-contained scenario-switcher.
    ========================================================================= */
 (function(){
   'use strict';
@@ -17,72 +27,92 @@
   function T(o){ if(o == null) return ''; return typeof o === 'string' ? o : (o[L()] || o.en || ''); }
   function el(t, c, h){ var e = document.createElement(t); if(c) e.className = c; if(h != null) e.innerHTML = h; return e; }
   function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function merge(a, b){ var o = {}, k; for(k in a) o[k] = a[k]; for(k in b) o[k] = b[k]; return o; }
+  function fmt(v, dec, unit){
+    if(!isFinite(v)) return '—';
+    var s = v.toFixed(dec);
+    if(Math.abs(v) >= 1000) s = Number(s).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    return s + (unit || '');
+  }
 
-  /* ---------------- small illustrative diagrams (generic teaching graphics,
-     not bound to any live stock -- the glossary's own live gauges already
-     cover that job) ---------------- */
-  function txt(x, y, s, cls){ return '<text x="' + x + '" y="' + y + '" text-anchor="middle" class="' + cls + '">' + esc(s) + '</text>'; }
+  /* ---------------- line-icon graphics (replace the old emoji) ----------------
+     Small 20x20 stroke icons in the site's mono/neon aesthetic. Colored via
+     currentColor so a single CSS rule (.bsc-list .gm-ic{color:...}) controls
+     every icon; no inline color needed. */
+  var ICON = {
+    tag: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 2.5H4.5a1 1 0 0 0-1 1v6.1a1 1 0 0 0 .3.7l7.4 7.4a1 1 0 0 0 1.4 0l5.5-5.5a1 1 0 0 0 0-1.4l-7.4-7.4a1 1 0 0 0-.1-.9Z"/><circle cx="7" cy="7" r="1.15" fill="currentColor" stroke="none"/></svg>',
+    bank: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7.2 10 2l8 5.2"/><path d="M2.6 7.2h14.8"/><path d="M4.2 8.6v7M8 8.6v7M12 8.6v7M15.8 8.6v7"/><path d="M2 17.2h16"/></svg>',
+    cycle: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.3a7 7 0 0 1 12.1-4.8"/><path d="M17 9.7a7 7 0 0 1-12.1 4.8"/><path d="M15.3 2v3.9h-3.9M4.7 18v-3.9h3.9"/></svg>',
+    coins: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="10" cy="5.6" rx="6.2" ry="2.4"/><path d="M3.8 5.6v3.9c0 1.33 2.78 2.4 6.2 2.4s6.2-1.07 6.2-2.4V5.6"/><path d="M3.8 9.5v3.9c0 1.33 2.78 2.4 6.2 2.4s6.2-1.07 6.2-2.4V9.5"/></svg>',
+    shield: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.2 3.4 4.9v4.8c0 4.3 2.85 6.85 6.6 8.1 3.75-1.25 6.6-3.8 6.6-8.1V4.9L10 2.2Z"/><path d="M6.9 10.1 9 12.2l4.1-4.3"/></svg>'
+  };
 
-  function speSVG(){
-    var w = 94, gap = 3, x0 = 6, y = 30, h = 14;
-    var seg = [
-      { c:'var(--neon-2)', l:{en:'CHEAP', th:'ถูก'} },
-      { c:'var(--grey-dim)', l:{en:'FAIR', th:'พอดี'} },
-      { c:'var(--red)', l:{en:'EXPENSIVE', th:'แพง'} }
-    ];
-    var s = '<svg viewBox="0 0 300 64" class="bsc-g">';
-    for(var i = 0; i < 3; i++){
-      var sx = x0 + i * (w + gap);
-      s += '<rect x="' + sx + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="7" style="fill:' + seg[i].c + ';opacity:.55"/>';
-      s += txt(sx + w / 2, y - 8, T(seg[i].l), 'bsc-gl');
+  /* ---------------- before/after scenario widget ----------------
+     Same visual language as the glossary's calc-mode what-if panels
+     (DIV YLD / PAYOUT etc.): a formula line, scenario chips, a two-cell
+     before -> after grid with a colored delta, and a colored note that
+     updates when a different scenario is picked. */
+  function buildCalcCard(def){
+    var wrap = el('div', 'bsc-calc');
+    wrap.innerHTML =
+      '<div class="wif-f" data-el="f"></div>' +
+      '<div class="wif-scn" data-el="scn"></div>' +
+      '<div class="wif-calc">' +
+        '<div class="wif-cell"><div class="wif-cap" data-el="capA"></div><div class="wif-val" data-el="valA">—</div><div class="wif-in" data-el="inA"></div></div>' +
+        '<div class="wif-arrow">▶</div>' +
+        '<div class="wif-cell"><div class="wif-cap" data-el="capB"></div><div class="wif-val" data-el="valB">—</div><div class="wif-in" data-el="inB"></div><div class="wif-delta" data-el="dlt"></div></div>' +
+      '</div>' +
+      '<p class="wif-note" data-el="note"></p>';
+
+    var state = { i: 0 };
+    function q(k){ return wrap.querySelector('[data-el="' + k + '"]'); }
+
+    function render(){
+      var lang = L();
+      q('f').textContent = def.f;
+
+      var scn = q('scn');
+      scn.innerHTML = '';
+      for(var i = 0; i < def.sc.length; i++){
+        (function(idx){
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'wif-btn k-' + def.sc[idx].k + (idx === state.i ? ' active' : '');
+          b.textContent = T(def.sc[idx].t);
+          b.addEventListener('click', function(){ state.i = idx; render(); });
+          scn.appendChild(b);
+        })(i);
+      }
+
+      var s = def.sc[state.i];
+      var baseV = def.base;
+      var newV = merge(baseV, s.v || {});
+      var a = def.calc(baseV);
+      var b2 = def.calc(newV);
+
+      q('capA').textContent = lang === 'th' ? 'ตอนนี้' : 'NOW';
+      q('capB').textContent = lang === 'th' ? 'ถ้าเกิดแบบนี้' : 'IF THIS HAPPENS';
+      q('valA').textContent = fmt(a, def.dec, def.unit);
+      var vb = q('valB');
+      vb.textContent = fmt(b2, def.dec, def.unit);
+      vb.className = 'wif-val k-' + s.k;
+      q('inA').textContent = def.inputLine(baseV, lang);
+      q('inB').textContent = def.inputLine(newV, lang);
+
+      var d = q('dlt');
+      if(isFinite(a) && isFinite(b2) && a !== 0){
+        var pct = (b2 - a) / Math.abs(a) * 100;
+        d.textContent = (pct >= 0 ? '▲ +' : '▼ ') + pct.toFixed(0) + '%';
+        d.style.color = pct >= 0 ? 'var(--neon-2)' : 'var(--red)';
+      } else { d.textContent = ''; }
+
+      var nt = q('note');
+      nt.className = 'wif-note k-' + s.k;
+      nt.textContent = T(s.n);
     }
-    s += txt(150, 58, T({en:'depends on the company & sector — always compare, never judge alone', th:'ขึ้นอยู่กับบริษัทและกลุ่มธุรกิจ เทียบเสมอ อย่าตัดสินจากตัวเดียว'}), 'bsc-gc');
-    s += '</svg>';
-    return s;
-  }
 
-  /* leftLabelObj/rightLabelObj/captionObj are {en,th} pairs, resolved with
-     T() at call time -- NOT pre-resolved strings -- so this stays correct
-     when called fresh from paint() on every language toggle. */
-  function splitBarSVG(leftPct, leftLabelObj, rightLabelObj, captionObj){
-    var w = 286, x0 = 6, h = 18, y = 24;
-    var lw = Math.max(0, Math.round(w * leftPct / 100) - 1);
-    var rw = w - lw - 2;
-    var s = '<svg viewBox="0 0 300 62" class="bsc-g">';
-    s += '<rect x="' + x0 + '" y="' + y + '" width="' + lw + '" height="' + h + '" rx="9" style="fill:var(--neon-2);opacity:.55"/>';
-    s += '<rect x="' + (x0 + lw + 2) + '" y="' + y + '" width="' + rw + '" height="' + h + '" rx="9" style="fill:var(--red);opacity:.55"/>';
-    s += txt(x0 + lw / 2, y - 8, T(leftLabelObj), 'bsc-gl');
-    s += txt(x0 + lw + 2 + rw / 2, y - 8, T(rightLabelObj), 'bsc-gl');
-    s += txt(150, 58, T(captionObj), 'bsc-gc');
-    s += '</svg>';
-    return s;
-  }
-
-  function flowSVG(){
-    var s = '<svg viewBox="0 0 300 70" class="bsc-g">' +
-      '<defs><marker id="bscArrow" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" style="fill:var(--neon)"/></marker></defs>' +
-      '<rect x="4" y="24" width="82" height="26" rx="6" style="fill:none;stroke:var(--border);stroke-width:1.4"/>' +
-      txt(45, 41, T({en:'CAPITAL IN', th:'ทุนที่ใส่เข้าไป'}), 'bsc-gl') +
-      '<path d="M90 37 H132" style="stroke:var(--neon);stroke-width:1.6;marker-end:url(#bscArrow)"/>' +
-      '<circle cx="150" cy="37" r="19" style="fill:none;stroke:var(--neon);stroke-width:1.8"/>' +
-      txt(150, 41, 'ROE', 'bsc-gl on') +
-      '<path d="M172 37 H214" style="stroke:var(--neon);stroke-width:1.6;marker-end:url(#bscArrow)"/>' +
-      '<rect x="216" y="24" width="80" height="26" rx="6" style="fill:none;stroke:var(--border);stroke-width:1.4"/>' +
-      txt(256, 41, T({en:'PROFIT OUT', th:'กำไรที่ได้'}), 'bsc-gl') +
-      txt(150, 66, T({en:'the same capital, doing more (or less) work for you', th:'ทุนก้อนเท่ากัน แต่ทำงานให้คุณได้มากหรือน้อยกว่ากัน'}), 'bsc-gc') +
-      '</svg>';
-    return s;
-  }
-
-  function meltSVG(){
-    var s = '<svg viewBox="0 0 300 74" class="bsc-g">' +
-      '<rect x="36" y="10" width="50" height="52" rx="5" style="fill:var(--neon);opacity:.5"/>' +
-      txt(61, 72, T({en:'MARKET PRICE', th:'ราคาตลาด'}), 'bsc-gl') +
-      '<line x1="150" y1="40" x2="292" y2="40" style="stroke:var(--grey-dim);stroke-width:1.4;stroke-dasharray:4 3"/>' +
-      txt(221, 34, T({en:'BOOK VALUE (FLOOR)', th:'มูลค่าทางบัญชี (พื้น)'}), 'bsc-gc') +
-      '<rect x="198" y="40" width="46" height="22" rx="5" style="fill:none;stroke:var(--grey-dim);stroke-width:1.4;stroke-dasharray:3 2"/>' +
-      '</svg>';
-    return s;
+    render();
+    return wrap;
   }
 
   var BK = {
@@ -99,7 +129,7 @@
     labMis:{en:'★ COMMON MISTAKE', th:'★ ข้อผิดพลาดที่พบบ่อย'},
 
     items:[
-      { ic:'💰',
+      { icon:ICON.tag,
         t:{en:'Is the price already expensive for what it earns?', th:'ราคาแพงเกินกำไรที่มันทำได้หรือยัง (P/E)'},
         what:{en:'The P/E ratio takes the share price and divides it by the company’s profit per share over the past year. A P/E of 20 means you are paying 20 times this year’s profit to own one share.',
               th:'P/E คือราคาหุ้นหารด้วยกำไรต่อหุ้นในรอบปีที่ผ่านมา P/E เท่ากับ 20 แปลว่าคุณจ่ายแพงกว่ากำไรปีนี้ถึง 20 เท่า เพื่อเป็นเจ้าของหุ้นหนึ่งหุ้น'},
@@ -109,9 +139,25 @@
              th:'ไม่มีตัวเลข "ดี" ที่ใช้ได้กับทุกบริษัท หุ้นเทคที่โตเร็วอาจสมควรมี P/E สูงถึง 40 กว่า ในขณะที่หุ้นสาธารณูปโภคที่โตช้าแต่มั่นคงอาจสมควรมีแค่ 10-12 ให้เทียบ P/E ของบริษัทกับค่าเฉลี่ยย้อนหลัง 5 ปีของตัวเอง และกับคู่แข่งในกลุ่มอุตสาหกรรมเดียวกันเสมอ'},
         mistake:{en:'Buying purely because P/E "looks low." A low P/E can also mean the market correctly expects trouble ahead — falling profit, a dying product line, an accounting problem.',
                  th:'ซื้อเพราะเห็นว่า P/E "ดูต่ำ" อย่างเดียว P/E ต่ำก็อาจแปลว่าตลาดกำลังคาดการณ์ปัญหาที่ถูกต้องอยู่ก็ได้ — กำไรกำลังจะลด สินค้าหลักกำลังจะตาย หรือมีปัญหาเรื่องบัญชี'},
-        viz: speSVG },
+        calc:{
+          f:'P/E = Price / EPS',
+          base:{p:100, e:5}, unit:'x', dec:1,
+          calc:function(v){ return v.p / v.e; },
+          inputLine:function(v, lang){ return (lang==='th'?'ราคา ':'Price ') + v.p + '  ·  ' + (lang==='th'?'กำไรต่อหุ้น ':'EPS ') + v.e; },
+          sc:[
+            { k:'bad', t:{en:'Price rallies 100→200, profit unchanged', th:'ราคาขึ้น 100→200 กำไรเท่าเดิม'}, v:{p:200},
+              n:{en:'P/E jumps from 20x to 40x. You are now paying twice as much for the exact same year of earnings — the stock has to grow a lot faster just to "catch up" to its own price.',
+                 th:'P/E กระโดดจาก 20x เป็น 40x คุณจ่ายแพงขึ้นเท่าตัวสำหรับกำไรปีเดิมเป๊ะๆ หุ้นต้องโตเร็วขึ้นมากถึงจะ "ตามราคาตัวเองทัน"'} },
+            { k:'good', t:{en:'Price falls 100→70, profit unchanged', th:'ราคาลด 100→70 กำไรเท่าเดิม'}, v:{p:70},
+              n:{en:'P/E drops to 14x for the same earnings — you are paying less for the identical business. Worth checking why the price fell before assuming it is a bargain.',
+                 th:'P/E ลดเหลือ 14x สำหรับกำไรเท่าเดิม คุณจ่ายถูกลงสำหรับธุรกิจเดียวกันเป๊ะ แต่ควรเช็คว่าทำไมราคาถึงลง ก่อนจะรีบสรุปว่าถูก'} },
+            { k:'warn', t:{en:'Profit halves 5→2.5, price unchanged', th:'กำไรลดครึ่ง 5→2.5 ราคาเท่าเดิม'}, v:{e:2.5},
+              n:{en:'P/E also doubles to 40x here — but this time the price did not move at all, the company just earns less. Same number, a completely different (and more worrying) reason.',
+                 th:'P/E เพิ่มเป็น 40x เหมือนกัน แต่รอบนี้ราคาไม่ขยับเลย บริษัทแค่ทำกำไรได้น้อยลง ตัวเลขเหมือนกัน แต่สาเหตุคนละเรื่อง (และน่ากังวลกว่า)'} }
+          ]
+        } },
 
-      { ic:'🏦',
+      { icon:ICON.bank,
         t:{en:'How much debt is it carrying?', th:'มันมีหนี้มากแค่ไหน (D/E)'},
         what:{en:'Debt-to-Equity divides everything the company owes by everything shareholders actually own (equity). A D/E of 1.0 means debt equals equity; 2.0 means the company owes twice what it owns outright.',
               th:'D/E คือหนี้สินทั้งหมดหารด้วยทุนของผู้ถือหุ้น (สิ่งที่เป็นของบริษัทเองจริงๆ) D/E เท่ากับ 1.0 แปลว่าหนี้เท่ากับทุน ส่วน 2.0 แปลว่าบริษัทเป็นหนี้มากกว่าทุนตัวเองถึงสองเท่า'},
@@ -121,10 +167,25 @@
              th:'ให้เทียบภายในกลุ่มธุรกิจเดียวกันเสมอ ธนาคารและสาธารณูปโภคมักมี D/E สูงเป็นปกติตามลักษณะธุรกิจ แต่บริษัทอุตสาหกรรมหรือสินค้าอุปโภคขนาดเล็กที่มี D/E เกิน 2 คือเรื่องที่เสี่ยงกว่ามาก'},
         mistake:{en:'Treating all debt the same. The real question is what the debt paid for — new factories and growth (often fine) or just covering losses and paying old bills (a warning sign).',
                  th:'มองว่าหนี้ทุกแบบเหมือนกันหมด คำถามจริงคือหนี้นั้นเอาไปทำอะไร — สร้างโรงงานใหม่เพื่อโต (ส่วนใหญ่ไม่เป็นไร) หรือแค่เอาไปโปะขาดทุนกับหนี้เก่า (สัญญาณเตือน)'},
-        viz: function(){ return splitBarSVG(62, {en:'EQUITY (own money)', th:'ทุนตัวเอง'}, {en:'DEBT (borrowed)', th:'หนี้สิน'},
-             {en:'illustrative split — always check the real ratio for the company you’re looking at', th:'ตัวอย่างสัดส่วนเฉยๆ — เช็คตัวเลขจริงของบริษัทที่คุณดูอยู่เสมอ'}); } },
+        calc:{
+          f:'D/E = Total Debt / Total Equity',
+          base:{d:80, q:100}, unit:'x', dec:2,
+          calc:function(v){ return v.d / v.q; },
+          inputLine:function(v, lang){ return (lang==='th'?'หนี้สิน ':'Debt ') + v.d + '  ·  ' + (lang==='th'?'ทุน ':'Equity ') + v.q; },
+          sc:[
+            { k:'good', t:{en:'Company pays down debt 80→40, equity unchanged', th:'บริษัทจ่ายหนี้คืน 80→40 ทุนเท่าเดิม'}, v:{d:40},
+              n:{en:'D/E falls to 0.40x. Less of the business is funded by money that must be repaid regardless of how sales go — a real reduction in risk, not just an accounting change.',
+                 th:'D/E ลดเหลือ 0.40x ธุรกิจพึ่งพาเงินที่ต้องคืนไม่ว่าธุรกิจจะเป็นยังไงน้อยลงจริง ความเสี่ยงลดลงจริง ไม่ใช่แค่ตัวเลขบัญชีเปลี่ยน'} },
+            { k:'bad', t:{en:'Company borrows more 80→200, equity unchanged', th:'บริษัทกู้เพิ่ม 80→200 ทุนเท่าเดิม'}, v:{d:200},
+              n:{en:'D/E rises to 2.00x — the company now owes twice what shareholders actually own. Fine if it funded a factory that grows profit; alarming if it just covered losses.',
+                 th:'D/E ขึ้นเป็น 2.00x บริษัทเป็นหนี้มากกว่าทุนตัวเองถึงสองเท่า ถ้าเอาไปสร้างโรงงานที่โตกำไรก็โอเค แต่ถ้าเอาไปโปะขาดทุนคือน่ากังวลมาก'} },
+            { k:'warn', t:{en:'A loss shrinks equity 100→50, debt unchanged', th:'ขาดทุนทำให้ทุนหด 100→50 หนี้เท่าเดิม'}, v:{q:50},
+              n:{en:'D/E climbs to 1.60x without the company borrowing a single extra baht — a loss simply ate into shareholders’ equity. This is how a bad year quietly turns into a leverage problem.',
+                 th:'D/E ขึ้นเป็น 1.60x โดยบริษัทไม่ได้กู้เพิ่มสักบาทเดียว ขาดทุนแค่กัดกินทุนของผู้ถือหุ้นไปเฉยๆ นี่คือวิธีที่ปีแย่ๆ กลายเป็นปัญหาหนี้สินแบบเงียบๆ'} }
+          ]
+        } },
 
-      { ic:'📈',
+      { icon:ICON.cycle,
         t:{en:'How efficiently does it turn capital into profit?', th:'มันเปลี่ยนทุนเป็นกำไรได้มีประสิทธิภาพแค่ไหน (ROE / มาร์จิ้น)'},
         what:{en:'Return on Equity (ROE) shows how much profit a company produces for every unit of shareholders’ money already invested in it. Margin shows how much of every single sale survives as actual profit after all costs.',
               th:'ROE (ผลตอบแทนต่อทุน) บอกว่าบริษัททำกำไรได้เท่าไหร่ต่อเงินทุนของผู้ถือหุ้นที่ใส่ไปแล้ว ส่วนมาร์จิ้นบอกว่าในทุกยอดขาย เหลือเป็นกำไรจริงเท่าไหร่หลังหักต้นทุนทั้งหมด'},
@@ -134,9 +195,25 @@
              th:'ROE ที่สูงกว่าประมาณ 15% อย่างสบายๆ และทรงตัวหรือดีขึ้นทุกปี ถือเป็นสัญญาณที่ดี ส่วนมาร์จิ้นที่ลดลงเรื่อยๆ ทั้งที่ยอดขายโตขึ้น เป็นสัญญาณเตือน — มักแปลว่าคู่แข่งกำลังแย่งอำนาจตั้งราคาไป'},
         mistake:{en:'Getting excited about a revenue-growth headline without ever checking whether profit grew along with it.',
                  th:'ตื่นเต้นกับพาดหัวข่าวยอดขายโต โดยไม่เช็คเลยว่ากำไรโตตามไปด้วยหรือเปล่า'},
-        viz: flowSVG },
+        calc:{
+          f:'ROE = Net Profit / Equity',
+          base:{n:15, q:100}, unit:'%', dec:1,
+          calc:function(v){ return v.n / v.q * 100; },
+          inputLine:function(v, lang){ return (lang==='th'?'กำไรสุทธิ ':'Net profit ') + v.n + '  ·  ' + (lang==='th'?'ทุน ':'Equity ') + v.q; },
+          sc:[
+            { k:'good', t:{en:'Profit grows 15→25, equity unchanged', th:'กำไรโต 15→25 ทุนเท่าเดิม'}, v:{n:25},
+              n:{en:'ROE rises to 25% — the same capital base is now producing far more profit. This is the "genuinely well-run" signal, not just a bigger company.',
+                 th:'ROE ขึ้นเป็น 25% ทุนก้อนเดิมทำกำไรได้มากขึ้นเยอะ นี่คือสัญญาณ "บริหารดีจริง" ไม่ใช่แค่บริษัทใหญ่ขึ้น'} },
+            { k:'bad', t:{en:'Company raises new equity, profit unchanged', th:'บริษัทเพิ่มทุนใหม่ กำไรเท่าเดิม'}, v:{q:200},
+              n:{en:'ROE falls to 7.5% purely because the capital base got bigger, not because the business got worse. Rising sales headlines can hide this exact dilution.',
+                 th:'ROE ลดเหลือ 7.5% เพราะทุนก้อนใหญ่ขึ้นล้วนๆ ไม่ใช่เพราะธุรกิจแย่ลง พาดหัวยอดขายโตอาจซ่อนการเพิ่มทุนแบบนี้ไว้'} },
+            { k:'warn', t:{en:'Revenue grows but costs grow faster', th:'ยอดขายโต แต่ต้นทุนโตเร็วกว่า'}, v:{n:10},
+              n:{en:'ROE slips to 10% even while sales headlines look great — margin is being squeezed by competitors or rising costs. Growth without profit growth is the exact trap this page warns about.',
+                 th:'ROE ลดเหลือ 10% ทั้งที่พาดหัวยอดขายดูดี มาร์จิ้นกำลังถูกบีบจากคู่แข่งหรือต้นทุนที่สูงขึ้น การโตโดยกำไรไม่โตตามคือกับดักที่หน้านี้เตือนไว้พอดี'} }
+          ]
+        } },
 
-      { ic:'💵',
+      { icon:ICON.coins,
         t:{en:'If it pays a dividend — is that dividend actually safe?', th:'ถ้ามันจ่ายปันผล ปันผลนั้นปลอดภัยจริงไหม'},
         what:{en:'Dividend yield is the annual cash paid divided by the share price — the cash return you get just for holding the stock. Payout ratio is the share of profit actually paid out as that dividend. Payout frequency is simply how often it arrives — quarterly is common in many markets, others pay once a year.',
               th:'อัตราปันผล (dividend yield) คือเงินสดที่จ่ายต่อปี หารด้วยราคาหุ้น — ผลตอบแทนเงินสดที่ได้แค่จากการถือหุ้นไว้ อัตราการจ่ายปันผล (payout ratio) คือสัดส่วนกำไรที่จ่ายออกมาเป็นปันผลจริง ส่วนรอบการจ่ายปันผล (payout frequency) คือความถี่ในการจ่าย — หลายตลาดจ่ายรายไตรมาส บางที่จ่ายปีละครั้ง'},
@@ -146,10 +223,25 @@
              th:'อัตราการจ่ายปันผลที่ต่ำกว่าประมาณ 70-80% อย่างสบายๆ มักเหลือช่องให้จ่ายต่อได้แม้ปีนั้นจะแย่ ถ้าอัตราการจ่ายอยู่ที่ 100% ขึ้นไปติดต่อกันหลายปี เป็นสัญญาณเตือนร้ายแรง — บริษัทกำลังจ่ายออกมากกว่าที่หาได้'},
         mistake:{en:'Chasing the single highest yield on a screener list without ever checking whether the payout ratio can actually support it.',
                  th:'ไล่ซื้อหุ้นที่อัตราปันผลสูงที่สุดในลิสต์ โดยไม่เช็คเลยว่าอัตราการจ่ายปันผลจะรองรับไหวจริงหรือเปล่า'},
-        viz: function(){ return splitBarSVG(45, {en:'PAID OUT', th:'จ่ายออกไป'}, {en:'KEPT BY COMPANY', th:'เก็บไว้ในบริษัท'},
-             {en:'danger zone starts around 80-100% payout, held for several years', th:'โซนอันตรายเริ่มที่จ่ายราว 80-100% ติดต่อกันหลายปี'}); } },
+        calc:{
+          f:'Payout = Dividend Paid / Net Profit',
+          base:{d:50, n:100}, unit:'%', dec:0,
+          calc:function(v){ return v.d / v.n * 100; },
+          inputLine:function(v, lang){ return (lang==='th'?'ปันผลที่จ่าย ':'Dividend paid ') + v.d + '  ·  ' + (lang==='th'?'กำไรสุทธิ ':'Net profit ') + v.n; },
+          sc:[
+            { k:'good', t:{en:'Profit grows 100→160, dividend unchanged', th:'กำไรโต 100→160 ปันผลเท่าเดิม'}, v:{n:160},
+              n:{en:'Payout falls to 31% — the dividend now costs the company far less of its profit, leaving real room to raise it later. A falling payout on rising profit is a healthy sign.',
+                 th:'Payout ลดเหลือ 31% ปันผลกินสัดส่วนกำไรน้อยลงมาก เหลือพื้นที่จริงให้ขึ้นปันผลได้อีกในอนาคต payout ที่ลดจากกำไรที่โตคือสัญญาณที่ดี'} },
+            { k:'bad', t:{en:'Profit drops 100→55, dividend unchanged', th:'กำไรลด 100→55 ปันผลเท่าเดิม'}, v:{n:55},
+              n:{en:'Payout jumps to 91% — almost every baht of profit is now going out the door as dividend. One more bad quarter and the company must choose between cutting the dividend or borrowing to pay it.',
+                 th:'Payout พุ่งเป็น 91% กำไรเกือบทุกบาทถูกจ่ายออกเป็นปันผลหมด อีกไตรมาสแย่เดียว บริษัทต้องเลือกระหว่างตัดปันผลหรือกู้เงินมาจ่าย'} },
+            { k:'warn', t:{en:'Dividend raised 50→80, profit unchanged', th:'ขึ้นปันผล 50→80 กำไรเท่าเดิม'}, v:{d:80},
+              n:{en:'Payout rises to 80% — right at the caution line. Shareholders get a nicer check today, but the buffer for a rough year just got thin.',
+                 th:'Payout ขึ้นเป็น 80% พอดีเส้นระวัง ผู้ถือหุ้นได้เงินมากขึ้นวันนี้ แต่กันชนสำหรับปีที่แย่บางลงมาก'} }
+          ]
+        } },
 
-      { ic:'⚖️',
+      { icon:ICON.shield,
         t:{en:'What is it worth if everything went wrong tomorrow?', th:'ถ้าพรุ่งนี้ทุกอย่างพังหมด มันยังเหลือมูลค่าเท่าไหร่ (P/B)'},
         what:{en:'Price-to-Book compares the share price to the accounting value of everything the company owns, minus everything it owes — its "book value" per share.',
               th:'P/B เทียบราคาหุ้นกับมูลค่าทางบัญชีของทุกอย่างที่บริษัทเป็นเจ้าของ หักด้วยทุกอย่างที่เป็นหนี้ — เรียกว่า "มูลค่าทางบัญชี" ต่อหุ้น'},
@@ -159,7 +251,23 @@
              th:'มีความหมายมากกับธุรกิจที่ใช้สินทรัพย์เยอะ เช่น ธนาคาร อสังหาริมทรัพย์ อุตสาหกรรม เพราะสินทรัพย์ในบัญชีใกล้เคียงมูลค่าจริง แต่มีความหมายน้อยมากกับธุรกิจที่ใช้สินทรัพย์น้อย เช่น ซอฟต์แวร์หรือบริการ ที่มูลค่าจริงอยู่ที่คน แบรนด์ และไอเดีย ซึ่งงบดุลไม่เคยจับต้องได้'},
         mistake:{en:'Using P/B to judge a tech or services company, where a "low" number is often meaningless rather than a bargain.',
                  th:'เอา P/B ไปตัดสินหุ้นเทคหรือหุ้นบริการ ซึ่งตัวเลข "ต่ำ" มักไม่มีความหมายอะไรเลย ไม่ใช่ว่าราคาถูก'},
-        viz: meltSVG }
+        calc:{
+          f:'P/B = Price / Book Value per Share',
+          base:{p:120, b:100}, unit:'x', dec:2,
+          calc:function(v){ return v.p / v.b; },
+          inputLine:function(v, lang){ return (lang==='th'?'ราคา ':'Price ') + v.p + '  ·  ' + (lang==='th'?'มูลค่าทางบัญชี ':'Book value ') + v.b; },
+          sc:[
+            { k:'good', t:{en:'Price falls toward book value 120→100', th:'ราคาลดลงมาใกล้มูลค่าทางบัญชี 120→100'}, v:{p:100},
+              n:{en:'P/B drops to 1.00x — you are now paying almost exactly the accounting floor. Downside from here is smaller, assuming the books are accurate.',
+                 th:'P/B ลดเหลือ 1.00x ตอนนี้คุณจ่ายเกือบเท่ากับพื้นทางบัญชีพอดี ความเสี่ยงขาลงจากจุดนี้เล็กลง ถ้าบัญชีตรงตามจริง'} },
+            { k:'bad', t:{en:'Price rallies far above book 120→400', th:'ราคาพุ่งสูงกว่าบัญชีมาก 120→400'}, v:{p:400},
+              n:{en:'P/B climbs to 4.00x — most of what you are paying has nothing to do with the accounting floor anymore. Fine for an asset-light business built on ideas and brand, dangerous for an asset-heavy one that just got expensive.',
+                 th:'P/B ขึ้นเป็น 4.00x สิ่งที่คุณจ่ายส่วนใหญ่ไม่เกี่ยวกับพื้นทางบัญชีแล้ว โอเคถ้าเป็นธุรกิจที่ใช้สินทรัพย์น้อยอย่างไอเดียหรือแบรนด์ แต่อันตรายถ้าเป็นธุรกิจสินทรัพย์เยอะที่แค่แพงขึ้น'} },
+            { k:'warn', t:{en:'A write-down shrinks book value 100→60, price unchanged', th:'มีการตัดมูลค่าสินทรัพย์ บัญชีหด 100→60 ราคาเท่าเดิม'}, v:{b:60},
+              n:{en:'P/B rises to 2.00x without the share price moving at all — the "floor" itself just got written down. The number can move because the ground shifted, not because anyone bought or sold.',
+                 th:'P/B ขึ้นเป็น 2.00x โดยราคาหุ้นไม่ขยับเลย "พื้น" เองถูกปรับมูลค่าลง ตัวเลขเปลี่ยนเพราะพื้นเปลี่ยน ไม่ใช่เพราะมีคนซื้อขายอะไร'} }
+          ]
+        } }
     ],
 
     sizeH:{en:'Before any of the above — decide your position size', th:'ก่อนดูเรื่องข้างบนทั้งหมด — ตัดสินใจขนาดไม้ก่อน'},
@@ -212,16 +320,17 @@
       var c = el('div', 'gm-c',
         '<div class="gm-hd">' +
           '<span class="gm-num">' + String(i + 1).padStart(2, '0') + '</span>' +
-          '<span class="gm-ic">' + it.ic + '</span>' +
+          '<span class="gm-ic">' + it.icon + '</span>' +
           '<span class="gm-t">' + esc(T(it.t)) + '</span>' +
         '</div>' +
-        '<div class="bsc-viz">' + it.viz() + '</div>' +
+        '<div class="bsc-viz"></div>' +
         '<div class="gm-bd">' +
           '<div class="gm-f"><div class="gm-fh">' + esc(T(BK.labWhat)) + '</div><div class="gm-fd">' + esc(T(it.what)) + '</div></div>' +
           '<div class="gm-f"><div class="gm-fh">' + esc(T(BK.labWhy)) + '</div><div class="gm-fd">' + esc(T(it.why)) + '</div></div>' +
           '<div class="gm-f"><div class="gm-fh">' + esc(T(BK.labHow)) + '</div><div class="gm-fd">' + esc(T(it.how)) + '</div></div>' +
           '<div class="gm-f tip"><div class="gm-fh">' + esc(T(BK.labMis)) + '</div><div class="gm-fd">' + esc(T(it.mistake)) + '</div></div>' +
         '</div>');
+      c.querySelector('.bsc-viz').appendChild(buildCalcCard(it.calc));
       list.appendChild(c);
     }
 
