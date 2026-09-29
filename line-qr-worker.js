@@ -661,6 +661,10 @@ async function handleAdminUsersList(request, env) {
     const profile = await getProfile(userId, env);
     if (!profile) continue;
     const wl = await getUserWatchlist(userId, env);
+    // Same live/not-live check the presence beacon writes (see
+    // handlePresencePing above) -- a plain KV existence check, cheap next to
+    // the profile/watchlist reads already happening in this loop.
+    const presenceKey = await env.SESSIONS.get(PRESENCE_USER_KEY_PREFIX + userId);
     users.push({
       userId,
       uid: profile.uid || null,
@@ -672,6 +676,7 @@ async function handleAdminUsersList(request, env) {
       rights: profile.rights || null,
       linkedAt: profile.linkedAt || null,
       tickers: Object.keys(wl),
+      online: !!presenceKey,
     });
   }
   return json({ users }, env);
@@ -830,16 +835,38 @@ async function handleJournalSettingsUpdate(request, env) {
 // so the ping itself needs no admin key; only the count read for the
 // admin panel does.
 const PRESENCE_KEY_PREFIX = "presence:";
+const PRESENCE_USER_KEY_PREFIX = "presenceUser:";
 const PRESENCE_TTL_SECONDS = 180; // matches the front end's slower ping interval
                                    // (assets/js/part-59.js) -- see the note there on
                                    // why this write volume is kept low
 
+// Round T: same beacon, one more optional write. When the visitor sending
+// this ping is logged in (LINE or Telegram), the front end also sends their
+// own session code -- the same short-lived opaque token already used for
+// every other self-service call (watchlist add/remove, profile update...),
+// never the raw LINE/Telegram userId itself, which stays server-side. That
+// code is resolved to sess.userId here (same lookup getLinkedSession()
+// already does for those other endpoints) and refreshes a
+// presenceUser:<userId> key with the same short TTL. That's what lets the
+// Connected Users admin list show "online now" per person -- an anonymous
+// visitor still sends no code and gets no identity tracked (the plain
+// presence:<id> key above is untouched and still needs no admin key), and
+// the per-user key only ever exists for someone already in users:index, so
+// this adds no new PII, just a live/not-live flag next to data the admin
+// key already gates.
 async function handlePresencePing(request, env) {
   let body;
   try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const id = (body && typeof body.id === "string" ? body.id : "").slice(0, 128);
   if (!id) return json({ error: "bad_request" }, env, 400);
   await env.SESSIONS.put(PRESENCE_KEY_PREFIX + id, "1", { expirationTtl: PRESENCE_TTL_SECONDS });
+  const code = (body && typeof body.code === "string" ? body.code : "").slice(0, 128);
+  if (code) {
+    const sess = await getLinkedSession(code, env);
+    if (sess && sess.userId) {
+      await env.SESSIONS.put(PRESENCE_USER_KEY_PREFIX + sess.userId, "1", { expirationTtl: PRESENCE_TTL_SECONDS });
+    }
+  }
   return json({ ok: true }, env);
 }
 

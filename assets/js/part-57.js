@@ -133,6 +133,19 @@
 
   var fbApp = null, fbDb = null, fbAuth = null;
   function fbConfigured(){ return !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== 'REPLACE_ME'); }
+  /* Round T: a shared health flag the System Status popup (part-37.js) reads
+     through window.__SPZ_FB_STATUS(), so "is the analysis-log backend okay
+     right now" shows up next to the price-feed/sync rows already there.
+     Three states only: 'unconfigured' (no Firebase project wired up yet --
+     see fbConfigured() above), 'error' (configured, but the feed or a
+     single post most recently failed to load), 'ok' (everything else,
+     including "hasn't loaded anything yet" -- optimistic until proven
+     otherwise, same as the rest of that popup treats a fresh page load). */
+  var fbLastError = false;
+  window.__SPZ_FB_STATUS = function(){
+    if(!fbConfigured()) return 'unconfigured';
+    return fbLastError ? 'error' : 'ok';
+  };
   function fbInit(){
     if(fbApp) return fbApp;
     if(!fbConfigured() || !window.firebase) return null;
@@ -322,8 +335,8 @@
     shareCopied:{en:'Link copied.',th:'คัดลอกลิงก์แล้ว'},
     backToLog:{en:'← Back to Analysis Log',th:'← กลับไปหน้าบทวิเคราะห์'},
     notFound:{en:'This entry could not be found — it may have been removed.',th:'ไม่พบบทวิเคราะห์นี้ — อาจถูกลบไปแล้ว'},
-    lineLockMsg:{en:'Log in with LINE to view this analysis.',th:'ต้องล็อกอินด้วย LINE ก่อนถึงจะดูบทวิเคราะห์นี้ได้'},
-    lineLockBtn:{en:'Log in with LINE',th:'ล็อกอินด้วย LINE'},
+    lineLockMsg:{en:'Please log in to view this analysis.',th:'โปรดล็อกอินก่อนเพื่อดูบทวิเคราะห์นี้'},
+    lineLockBtn:{en:'Log in',th:'ล็อกอิน'},
     edit:{en:'Edit',th:'แก้ไข'},
     cancelEdit:{en:'Cancel edit',th:'ยกเลิกการแก้ไข'},
     editingFlag:{en:'Editing this entry',th:'กำลังแก้ไขรายการนี้'},
@@ -786,16 +799,35 @@
     });
   }
 
-  /* Same LINE session the auth gate and Watchlist page already share via
-     window.__SPZ_LINE -- reused here, not re-implemented, so there is still
-     only ever one login state across the whole site. Both the feed
-     (buildJournal) and the single-post view (buildJournalView) use this to
-     decide whether to blur a card's image/text behind a "log in with LINE"
-     overlay; everything else about an entry (asset tag, date, tags, stats,
-     filters) stays visible either way. */
+  /* Same LINE/Telegram sessions the auth gate and Watchlist page already
+     share via window.__SPZ_LINE / window.__SPZ_TG -- reused here, not
+     re-implemented, so there is still only ever one login state per
+     provider across the whole site. Both the feed (buildJournal) and the
+     single-post view (buildJournalView) use isUnlocked() to decide whether
+     to blur a card's image/text behind a "please log in" overlay;
+     everything else about an entry (asset tag, date, tags, stats, filters)
+     stays visible either way. Originally this only checked LINE, so a
+     visitor signed in via Telegram (or as admin) saw the lock anyway --
+     isUnlocked() now accepts any of the site's sign-in methods. */
   function lineLinked(){
     try { return !!(window.__SPZ_LINE && window.__SPZ_LINE.state && window.__SPZ_LINE.state().status === 'linked'); }
     catch(e){ return false; }
+  }
+  function tgLinked(){
+    try { return !!(window.__SPZ_TG && window.__SPZ_TG.state && window.__SPZ_TG.state().status === 'linked'); }
+    catch(e){ return false; }
+  }
+  function isUnlocked(){
+    try { if(window.__SPZ_TIER && window.__SPZ_TIER() === 'full') return true; } catch(e){}
+    return lineLinked() || tgLinked();
+  }
+  // The shared login gate (part-46.js) has every sign-in method in one
+  // modal; open that instead of jumping straight to the LINE-only popup,
+  // falling back to the LINE popup if the gate isn't available for some
+  // reason (e.g. this module loaded standalone).
+  function openLoginGate(){
+    if(window.__SPZ_OPEN_GATE){ window.__SPZ_OPEN_GATE(); return; }
+    if(window.__SPZ_LINE) window.__SPZ_LINE.open();
   }
 
   /* ======================= PUBLIC LOG ======================= */
@@ -974,7 +1006,7 @@
            with no image to rest on, it sits inline next to the date instead so it
            never overlaps the card's own text */
         var pinBadgeHtml = e.pinned ? '<span class="jrnl-pin-badge' + (e.imageUrl ? '' : ' inline') + '">' + esc(T(UI.pinned)) + '</span>' : '';
-        var locked = !lineLinked();
+        var locked = !isUnlocked();
         var card = el('div', 'jrnl-card' + (locked ? ' jrnl-locked' : ''),
           '<div class="' + (locked ? 'jrnl-locked-blur' : '') + '">' +
           (e.imageUrl ? (pinBadgeHtml + '<img class="jrnl-card-img" src="' + esc(e.imageUrl) + '" loading="lazy" alt="">') : '') +
@@ -1003,7 +1035,7 @@
           card.querySelector('.jrnl-locked-msg').textContent = T(UI.lineLockMsg);
           var lbtn = card.querySelector('.jrnl-locked-btn');
           lbtn.textContent = T(UI.lineLockBtn);
-          lbtn.addEventListener('click', function(ev){ ev.stopPropagation(); if(window.__SPZ_LINE) window.__SPZ_LINE.open(); });
+          lbtn.addEventListener('click', function(ev){ ev.stopPropagation(); openLoginGate(); });
           feed.appendChild(card);
           return; /* no share/like/lightbox wiring while content is locked */
         }
@@ -1043,8 +1075,9 @@
             createdAt: v.createdAt && v.createdAt.toDate ? v.createdAt.toDate() : new Date()
           };
         });
+        fbLastError = false;
         paintTags(); paintTagFilters(); paintFeed(); paintStats();
-      }).catch(function(){ entries = 'error'; paintFeed(); });
+      }).catch(function(){ entries = 'error'; fbLastError = true; paintFeed(); });
     }
 
     function wireSearchSort(){
@@ -1065,6 +1098,7 @@
     // on logout) without a reload -- same event the auth gate/Watchlist
     // already dispatch on every state change.
     document.addEventListener('spz:line', function(){ paintFeed(); });
+    document.addEventListener('spz:tg', function(){ paintFeed(); });
     // live-refresh the like visibility + stat tiles the moment the admin
     // saves a settings change, for anyone with this page open right now.
     document.addEventListener('spz:journalsettings', function(){ loadJournalSettings(function(){ paintFeed(); paintStats(); }); });
@@ -2342,7 +2376,7 @@
         ? '<span class="jrnl-outcome-badge ' + e.outcome + '">' + esc(e.outcome === 'correct' ? T(UI.outcomeCorrect) : T(UI.outcomeIncorrect)) + '</span>'
         : '';
       var pinBadgeHtml = e.pinned ? '<span class="jrnl-pin-badge' + (e.imageUrl ? '' : ' inline') + '">' + esc(T(UI.pinned)) + '</span>' : '';
-      var locked = !lineLinked();
+      var locked = !isUnlocked();
       var card = el('div', 'jrnl-card' + (locked ? ' jrnl-locked' : ''),
         '<div class="' + (locked ? 'jrnl-locked-blur' : '') + '">' +
         (e.imageUrl ? (pinBadgeHtml + '<img class="jrnl-card-img" src="' + esc(e.imageUrl) + '" loading="lazy" alt="">') : '') +
@@ -2370,7 +2404,7 @@
         card.querySelector('.jrnl-locked-msg').textContent = T(UI.lineLockMsg);
         var lb = card.querySelector('.jrnl-locked-btn');
         lb.textContent = T(UI.lineLockBtn);
-        lb.addEventListener('click', function(){ if(window.__SPZ_LINE) window.__SPZ_LINE.open(); });
+        lb.addEventListener('click', function(){ openLoginGate(); });
         return card; /* no like/share/lightbox wiring while content is locked */
       }
       wireLike(card, e.id);
@@ -2435,8 +2469,9 @@
           refPostId: v.refPostId || '',
           createdAt: v.createdAt && v.createdAt.toDate ? v.createdAt.toDate() : new Date()
         };
+        fbLastError = false;
         paint();
-      }).catch(function(){ loadedEntry = 'error'; paint(); });
+      }).catch(function(){ loadedEntry = 'error'; fbLastError = true; paint(); });
     }
 
     paint();
@@ -2446,6 +2481,7 @@
     // without needing a reload -- same event the auth gate/Watchlist already
     // dispatch on every state change.
     document.addEventListener('spz:line', function(){ paint(); });
+    document.addEventListener('spz:tg', function(){ paint(); });
     document.addEventListener('spz:journalsettings', function(){ loadJournalSettings(function(){ paint(); }); });
     return sec;
   }
