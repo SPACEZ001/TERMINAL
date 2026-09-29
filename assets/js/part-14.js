@@ -964,6 +964,20 @@
     for(var m = 0; m < rows.length; m++){ mo.observe(rows[m], { attributes: true, attributeFilter: ['class'] }); }
 
     select(0);
+
+    /* Round R: lets other pages (e.g. the Beginner Checklist) deep-link into
+       a specific glossary term now that it lives in this master-detail view
+       instead of a plain accordion -- clears any stale search-hidden state
+       first so the jump always lands even if a prior search filtered it out. */
+    window.__spzGlossJump = function(key){
+      for(var gi = 0; gi < rows.length; gi++){
+        if(rows[gi].dataset.key === key){
+          rows[gi].classList.remove('ctl-hidden');
+          select(gi);
+          break;
+        }
+      }
+    };
   }
 
   /* ---------- theme switch ---------- */
