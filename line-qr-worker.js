@@ -49,6 +49,20 @@
  *   don't need to remove it from the Worker's settings -- it's harmless to
  *   leave it there.
  *
+ *   TELEGRAM_LOGIN_BOT_TOKEN      (Secret — from a NEW, separate Telegram bot
+ *                                made via @BotFather just for this login, not
+ *                                the site's existing watchlist bot. See the
+ *                                "TELEGRAM LOGIN" section further down in
+ *                                this file for the full one-time setup,
+ *                                including the one setWebhook call it needs.)
+ *   TELEGRAM_LOGIN_BOT_USERNAME   (Variable — that bot's @username, no @,
+ *                                used to build the QR's t.me deep link. Not
+ *                                sensitive, same reasoning as
+ *                                LINE_LOGIN_CHANNEL_ID above.)
+ *   TELEGRAM_LOGIN_WEBHOOK_SECRET (Secret — any long random string you make
+ *                                up yourself; proves a /telegram-webhook call
+ *                                really came from Telegram.)
+ *
  * WHAT THIS DOES
  * --------------
  * 1. The site asks for a new session code (/api/session/new). This Worker
@@ -329,13 +343,37 @@ function isAdminKeyValid(request, env) {
   return !!env.ADMIN_USERS_KEY && key === env.ADMIN_USERS_KEY;
 }
 
-async function handleNewSession(env) {
+/* provider: "line" (default, unchanged behavior) or "telegram" (Round R --
+   a second, independent QR login, see the TELEGRAM LOGIN section below).
+   Both providers share this one session code + KV row shape ({status,
+   createdAt} -> later {status:"linked", userId, displayName, pictureUrl,
+   linkedAt}) and every endpoint below this one (/api/session/status,
+   /api/session/data, /api/session/logout, /api/session/profile, likes) --
+   they only ever read/write by the session's own code or its generic
+   userId, so NONE of them needed to change for Telegram to work; only
+   how a session gets FROM "pending" TO "linked" differs (LINE: this
+   Worker's own /callback below, via LINE's OAuth redirect. Telegram:
+   /telegram-webhook further down, via Telegram calling this Worker
+   directly the moment someone taps Start on the bot). */
+async function handleNewSession(request, env) {
+  const url = new URL(request.url);
+  const provider = url.searchParams.get("provider") === "telegram" ? "telegram" : "line";
   const code = randomCode();
   await env.SESSIONS.put(
     "sess:" + code,
-    JSON.stringify({ status: "pending", createdAt: Date.now() }),
+    JSON.stringify({ status: "pending", provider, createdAt: Date.now() }),
     { expirationTtl: PENDING_TTL_SECONDS }
   );
+
+  if (provider === "telegram") {
+    if (!env.TELEGRAM_LOGIN_BOT_USERNAME) {
+      return json({ error: "not_configured" }, env, 501);
+    }
+    const loginUrl =
+      "https://t.me/" + env.TELEGRAM_LOGIN_BOT_USERNAME + "?start=" + encodeURIComponent("login_" + code);
+    return json({ code, loginUrl, expiresIn: PENDING_TTL_SECONDS }, env);
+  }
+
   const authorizeUrl =
     "https://access.line.me/oauth2/v2.1/authorize" +
     "?response_type=code" +
@@ -1032,6 +1070,142 @@ async function handleAdminAnnouncementsDelete(request, env) {
   return json({ ok: true }, env);
 }
 
+// ---------------------------------------------------------------------
+// TELEGRAM LOGIN (Round R) — a second, independent QR login next to LINE,
+// added per her request for "another way to log in besides LINE". Deliberately
+// a SEPARATE bot from the site's existing watchlist bot (scripts/telegram_bot.py,
+// polled every few minutes via GitHub Actions for /add /remove /list commands) --
+// Telegram only lets a bot use EITHER getUpdates polling OR a webhook, never
+// both, so pointing a webhook at the existing bot would silently break that
+// already-working polling setup. This new bot exists purely so someone can
+// tap "Start" and be logged in within a second or two, the same way LINE's
+// QR scan feels instant.
+//
+// SETUP (one-time, see the top of this file for how LINE's own secrets are
+// set the same way):
+//   1. Create a new bot via @BotFather (/newbot) -- any name/username, it
+//      only ever sends one confirmation message, nothing else.
+//   2. Add to this Worker's Settings:
+//        TELEGRAM_LOGIN_BOT_TOKEN     (Secret -- BotFather's token)
+//        TELEGRAM_LOGIN_BOT_USERNAME  (Variable -- the bot's @username,
+//                                       without the @, e.g. spacez_login_bot)
+//        TELEGRAM_LOGIN_WEBHOOK_SECRET (Secret -- any long random string you
+//                                       make up; Telegram echoes it back on
+//                                       every webhook call so this Worker can
+//                                       tell a real Telegram request apart
+//                                       from anyone who finds this URL)
+//   3. Point Telegram at this Worker (run once, from any machine with curl --
+//      replace <TOKEN>, <SECRET>, and <worker-url> with your own):
+//        curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=<worker-url>/telegram-webhook&secret_token=<SECRET>"
+//      A reply with "ok":true means it's live. No further setup needed --
+//      Telegram now calls /telegram-webhook the instant anyone messages the
+//      bot, for as long as this Worker is deployed at that URL.
+//
+// FLOW
+// ----
+// 1. Site calls GET /api/session/new?provider=telegram (see handleNewSession
+//    above), gets back {code, loginUrl}, renders loginUrl as a QR exactly
+//    like the LINE flow already does.
+// 2. Visitor scans it -> opens Telegram -> t.me/<bot>?start=login_<code> ->
+//    taps Start -> Telegram sends that as a /start message, and (because a
+//    webhook is set) calls this Worker's /telegram-webhook immediately,
+//    carrying that chat's id and Telegram profile name.
+// 3. handleTelegramWebhook below marks sess:<code> "linked" with userId
+//    "tg:<chat id>" and upserts a Connected-Users profile for it -- from
+//    here on this session behaves exactly like a LINE session (same
+//    /api/session/status polling, same /api/session/data shape, same
+//    Connected Users admin list, same Member-tier access on the site).
+// 4. This Worker replies to the chat so the person sees a confirmation
+//    without needing to switch back to the browser first.
+//
+// No profile photo is fetched (Telegram requires a second/third API round
+// trip -- getUserProfilePhotos, then getFile -- to turn a photo into a URL);
+// left out for now since LINE's avatar already covers that need for anyone
+// who wants a picture. Easy to add later without touching anything else here.
+// ---------------------------------------------------------------------
+
+async function tgSend(chatId, text, env) {
+  if (!env.TELEGRAM_LOGIN_BOT_TOKEN) return;
+  try {
+    await fetch("https://api.telegram.org/bot" + env.TELEGRAM_LOGIN_BOT_TOKEN + "/sendMessage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text }),
+    });
+  } catch (e) {
+    // best-effort only -- the login itself does not depend on this reply
+  }
+}
+
+async function handleTelegramWebhook(request, env) {
+  // Telegram sends this on every webhook call when a secret_token was set on
+  // setWebhook -- the only real proof this request came from Telegram and not
+  // from anyone who found this URL. No secret configured yet, or a mismatch,
+  // both refuse rather than silently trusting an unverified caller.
+  const secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token") || "";
+  if (!env.TELEGRAM_LOGIN_WEBHOOK_SECRET || secret !== env.TELEGRAM_LOGIN_WEBHOOK_SECRET) {
+    return json({ error: "unauthorized" }, env, 401);
+  }
+
+  let update;
+  try {
+    update = await request.json();
+  } catch (e) {
+    return json({ ok: true }, env); // malformed body -- nothing to do, still 200 so Telegram doesn't retry
+  }
+
+  const msg = update && update.message;
+  const chat = msg && msg.chat;
+  const from = msg && msg.from;
+  const text = (msg && msg.text) || "";
+  if (!chat || !chat.id || !text.startsWith("/start")) {
+    return json({ ok: true }, env); // some other update type (edited message, callback query, ...) -- ignore
+  }
+
+  const payload = text.split(/\s+/)[1] || "";
+  if (!payload.startsWith("login_")) {
+    // someone opened the bot without the site's own deep link
+    await tgSend(chat.id, "สวัสดีค่ะ 👋 บอทนี้ใช้สำหรับเข้าสู่ระบบเว็บ SPACEZ TERMINAL เท่านั้น กลับไปที่หน้าเว็บแล้วกดสแกน QR ใหม่อีกครั้งได้เลยค่ะ", env);
+    return json({ ok: true }, env);
+  }
+
+  const code = payload.slice(6);
+  const raw = code && (await env.SESSIONS.get("sess:" + code));
+  if (!raw) {
+    await tgSend(chat.id, "QR หมดอายุแล้วค่ะ กลับไปที่หน้าเว็บแล้วขอ QR ใหม่อีกครั้งนะคะ", env);
+    return json({ ok: true }, env);
+  }
+
+  const displayName = [from && from.first_name, from && from.last_name].filter(Boolean).join(" ").trim() ||
+    (from && from.username) || "Telegram";
+  const userId = "tg:" + chat.id;
+
+  await env.SESSIONS.put(
+    "sess:" + code,
+    JSON.stringify({
+      status: "linked",
+      provider: "telegram",
+      userId,
+      displayName,
+      pictureUrl: "",
+      linkedAt: Date.now(),
+    }),
+    { expirationTtl: SESSION_TTL_SECONDS }
+  );
+
+  // same Connected-Users profile upsert LINE's /callback uses -- keeps this
+  // person's name fresh and assigns a UID the first time, no separate code path
+  await upsertProfileOnLogin(userId, displayName, "", env);
+
+  await tgSend(
+    chat.id,
+    "✅ เชื่อมต่อสำเร็จค่ะ สวัสดีค่ะคุณ " + displayName + "\nกลับไปที่หน้าเว็บที่เปิดไว้ได้เลย ข้อมูลจะขึ้นให้อัตโนมัติค่ะ",
+    env
+  );
+
+  return json({ ok: true }, env);
+}
+
 async function handleLogout(request, env) {
   let code = "";
   try {
@@ -1051,8 +1225,9 @@ export default {
     }
 
     try {
-      if (url.pathname === "/api/session/new") return await handleNewSession(env);
+      if (url.pathname === "/api/session/new") return await handleNewSession(request, env);
       if (url.pathname === "/callback") return await handleCallback(request, env);
+      if (url.pathname === "/telegram-webhook" && request.method === "POST") return await handleTelegramWebhook(request, env);
       if (url.pathname === "/api/session/status") return await handleStatus(request, env);
       if (url.pathname === "/api/session/data") return await handleData(request, env);
       if (url.pathname === "/api/session/logout" && request.method === "POST") return await handleLogout(request, env);
