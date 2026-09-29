@@ -1050,30 +1050,43 @@ export default {
       return new Response(null, { headers: corsHeaders(env) });
     }
 
-    if (url.pathname === "/api/session/new") return handleNewSession(env);
-    if (url.pathname === "/callback") return handleCallback(request, env);
-    if (url.pathname === "/api/session/status") return handleStatus(request, env);
-    if (url.pathname === "/api/session/data") return handleData(request, env);
-    if (url.pathname === "/api/session/logout" && request.method === "POST") return handleLogout(request, env);
-    if (url.pathname === "/api/session/watchlist/add" && request.method === "POST") return handleWatchlistAdd(request, env);
-    if (url.pathname === "/api/session/watchlist/remove" && request.method === "POST") return handleWatchlistRemove(request, env);
-    if (url.pathname === "/api/likes" && request.method === "GET") return handleLikesGet(request, env);
-    if (url.pathname === "/api/likes/toggle" && request.method === "POST") return handleLikeToggle(request, env);
-    if (url.pathname === "/api/session/profile" && request.method === "POST") return handleProfileUpdate(request, env);
-    if (url.pathname === "/api/admin/users" && request.method === "GET") return handleAdminUsersList(request, env);
-    if (url.pathname === "/api/admin/users/update" && request.method === "POST") return handleAdminUsersUpdate(request, env);
-    if (url.pathname === "/api/admin/broadcast" && request.method === "POST") return handleAdminBroadcast(request, env);
-    if (url.pathname === "/api/presence/ping" && request.method === "POST") return handlePresencePing(request, env);
-    if (url.pathname === "/api/admin/presence-count" && request.method === "GET") return handleAdminPresenceCount(request, env);
-    if (url.pathname === "/api/journal-settings" && request.method === "GET") return handleJournalSettingsGet(request, env);
-    if (url.pathname === "/api/admin/journal-settings" && request.method === "POST") return handleJournalSettingsUpdate(request, env);
-    if (url.pathname === "/api/econ-calendar" && request.method === "GET") return handleEconCalendar(request, env);
-    if (url.pathname === "/api/announcements" && request.method === "GET") return handleAnnouncementsPublic(request, env);
-    if (url.pathname === "/api/admin/announcements" && request.method === "GET") return handleAdminAnnouncementsList(request, env);
-    if (url.pathname === "/api/admin/announcements/create" && request.method === "POST") return handleAdminAnnouncementsCreate(request, env);
-    if (url.pathname === "/api/admin/announcements/update" && request.method === "POST") return handleAdminAnnouncementsUpdate(request, env);
-    if (url.pathname === "/api/admin/announcements/delete" && request.method === "POST") return handleAdminAnnouncementsDelete(request, env);
+    try {
+      if (url.pathname === "/api/session/new") return await handleNewSession(env);
+      if (url.pathname === "/callback") return await handleCallback(request, env);
+      if (url.pathname === "/api/session/status") return await handleStatus(request, env);
+      if (url.pathname === "/api/session/data") return await handleData(request, env);
+      if (url.pathname === "/api/session/logout" && request.method === "POST") return await handleLogout(request, env);
+      if (url.pathname === "/api/session/watchlist/add" && request.method === "POST") return await handleWatchlistAdd(request, env);
+      if (url.pathname === "/api/session/watchlist/remove" && request.method === "POST") return await handleWatchlistRemove(request, env);
+      if (url.pathname === "/api/likes" && request.method === "GET") return await handleLikesGet(request, env);
+      if (url.pathname === "/api/likes/toggle" && request.method === "POST") return await handleLikeToggle(request, env);
+      if (url.pathname === "/api/session/profile" && request.method === "POST") return await handleProfileUpdate(request, env);
+      if (url.pathname === "/api/admin/users" && request.method === "GET") return await handleAdminUsersList(request, env);
+      if (url.pathname === "/api/admin/users/update" && request.method === "POST") return await handleAdminUsersUpdate(request, env);
+      if (url.pathname === "/api/admin/broadcast" && request.method === "POST") return await handleAdminBroadcast(request, env);
+      if (url.pathname === "/api/presence/ping" && request.method === "POST") return await handlePresencePing(request, env);
+      if (url.pathname === "/api/admin/presence-count" && request.method === "GET") return await handleAdminPresenceCount(request, env);
+      if (url.pathname === "/api/journal-settings" && request.method === "GET") return await handleJournalSettingsGet(request, env);
+      if (url.pathname === "/api/admin/journal-settings" && request.method === "POST") return await handleJournalSettingsUpdate(request, env);
+      if (url.pathname === "/api/econ-calendar" && request.method === "GET") return await handleEconCalendar(request, env);
+      if (url.pathname === "/api/announcements" && request.method === "GET") return await handleAnnouncementsPublic(request, env);
+      if (url.pathname === "/api/admin/announcements" && request.method === "GET") return await handleAdminAnnouncementsList(request, env);
+      if (url.pathname === "/api/admin/announcements/create" && request.method === "POST") return await handleAdminAnnouncementsCreate(request, env);
+      if (url.pathname === "/api/admin/announcements/update" && request.method === "POST") return await handleAdminAnnouncementsUpdate(request, env);
+      if (url.pathname === "/api/admin/announcements/delete" && request.method === "POST") return await handleAdminAnnouncementsDelete(request, env);
 
-    return json({ error: "not_found" }, env, 404);
+      return json({ error: "not_found" }, env, 404);
+    } catch (err) {
+      // Cloudflare's KV binding throws when the account's daily quota (reads,
+      // writes, or list operations -- 1,000 writes/day on the Free plan,
+      // resetting 00:00 UTC) is exceeded. Uncaught, that crashes the whole
+      // Worker and the caller just sees Cloudflare's generic "error code:
+      // 1101" page. Caught here instead, so every route -- LINE session
+      // creation included -- fails softly with a JSON error the front end
+      // can show a real message for, rather than a dead end.
+      const msg = String((err && err.message) || err || "");
+      const quota = /quota|limit|429|too many/i.test(msg);
+      return json({ error: quota ? "quota_exceeded" : "internal_error" }, env, quota ? 503 : 500);
+    }
   },
 };
