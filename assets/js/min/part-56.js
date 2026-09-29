@@ -1,0 +1,1 @@
+(function(){"use strict";document.addEventListener("click",function(t){var s=t.target.closest(".nav-trig, .nv-b");!s||s.disabled||(s.classList.remove("spz-spark"),s.offsetWidth,s.classList.add("spz-spark"),setTimeout(function(){s.classList.remove("spz-spark")},650))},!0)})();
