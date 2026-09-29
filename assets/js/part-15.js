@@ -1408,7 +1408,7 @@ var CL_UI = {
       /* three groups, each in its own order, so a long menu stays readable */
       var GROUPS = [
         { k:'learn',  t:{en:'Learn',th:'เรียนรู้'},
-          ids:['guided', 'start', 'types', 'glossary', 'signals'] },
+          ids:['guided', 'start', 'types', 'glossary', 'signals', 'basics'] },
         { k:'market', t:{en:'Read the market',th:'อ่านตลาด'},
           ids:['now', 'outlook', 'regime', 'anomaly', 'correl', 'rulelab', 'daily', 'flow', 'globe', 'infl', 'desk', 'scenarios'] },
         { k:'tools',  t:{en:'Workbench',th:'เครื่องมือ'},
