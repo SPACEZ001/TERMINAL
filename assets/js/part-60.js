@@ -19,6 +19,22 @@
    .wif-scn/.wif-calc/.wif-note classes already defined in part-03.css (those
    selectors are not nested under a parent, so any file can use them) and
    implements its own small, self-contained scenario-switcher.
+
+   ROUND S: RENAMED "เริ่มต้นลงทุน" / "Start Investing" AND RESTRUCTURED INTO
+   TWO TABS. Beginner tab is brand-new content (what a stock actually is, how
+   to open a Thai brokerage account, well-known broker apps with new-tab
+   links). Intermediate tab is the original five-check content from Round R,
+   basically unchanged, now with a NEW second visual per check: a static
+   "cheap example vs expensive example" side-by-side comparison card
+   (buildCompareCard) sitting under the existing interactive before/after
+   widget (buildCalcCard) -- per user request to compare one metric at a time
+   across two illustrative companies, not just one company's own before/after.
+   Genuinely advanced, macro-cycle-tied material (how each of these five
+   checks tends to read differently in each phase of the economic cycle) was
+   deliberately NOT put on this page -- it now lives on the Market Outlook
+   page instead (assets/js/part-15.js, buildOutlook(), OUTLOOK.valCycle), and
+   this page links to it. Keeps this page beginner-appropriate while still
+   pointing anyone ready for more at the deeper material.
    ========================================================================= */
 (function(){
   'use strict';
@@ -44,7 +60,10 @@
     bank: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7.2 10 2l8 5.2"/><path d="M2.6 7.2h14.8"/><path d="M4.2 8.6v7M8 8.6v7M12 8.6v7M15.8 8.6v7"/><path d="M2 17.2h16"/></svg>',
     cycle: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.3a7 7 0 0 1 12.1-4.8"/><path d="M17 9.7a7 7 0 0 1-12.1 4.8"/><path d="M15.3 2v3.9h-3.9M4.7 18v-3.9h3.9"/></svg>',
     coins: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="10" cy="5.6" rx="6.2" ry="2.4"/><path d="M3.8 5.6v3.9c0 1.33 2.78 2.4 6.2 2.4s6.2-1.07 6.2-2.4V5.6"/><path d="M3.8 9.5v3.9c0 1.33 2.78 2.4 6.2 2.4s6.2-1.07 6.2-2.4V9.5"/></svg>',
-    shield: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.2 3.4 4.9v4.8c0 4.3 2.85 6.85 6.6 8.1 3.75-1.25 6.6-3.8 6.6-8.1V4.9L10 2.2Z"/><path d="M6.9 10.1 9 12.2l4.1-4.3"/></svg>'
+    shield: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.2 3.4 4.9v4.8c0 4.3 2.85 6.85 6.6 8.1 3.75-1.25 6.6-3.8 6.6-8.1V4.9L10 2.2Z"/><path d="M6.9 10.1 9 12.2l4.1-4.3"/></svg>',
+    stockup: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17V10.2M8.2 17V6.6M13.4 17V12M18 17V3.4"/><path d="M2.5 17h15"/></svg>',
+    idcard: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4.5" width="16" height="11" rx="1.6"/><circle cx="6.7" cy="9" r="1.5"/><path d="M4.5 13.1c.4-1.3 1.4-1.9 2.2-1.9s1.8.6 2.2 1.9"/><path d="M11.7 8h4M11.7 11h4"/></svg>',
+    appicon: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5.4" y="2" width="9.2" height="16" rx="1.8"/><path d="M8.6 15.3h2.8"/></svg>'
   };
 
   /* ---------------- before/after scenario widget ----------------
@@ -115,18 +134,116 @@
     return wrap;
   }
 
-  var BK = {
-    eb:{en:'06 · Before You Buy', th:'06 · ก่อนซื้อหุ้น'},
-    h2:{en:'What To Check Before You Invest', th:'ก่อนลงทุน ต้องเช็คอะไรบ้าง'},
-    lede:{en:'A complete beginner’s guide to five things every stock has to pass before you buy it — written so this one page can be read start to finish, no jumping around required.',
-          th:'คู่มือสำหรับมือใหม่ล้วนๆ ห้าเรื่องที่หุ้นทุกตัวต้องผ่านก่อนซื้อ เขียนให้อ่านจบในหน้าเดียวได้เลย ไม่ต้องกระโดดไปที่อื่น'},
+  /* ---------------- ROUND S: cheap-vs-expensive comparison widget ----------------
+     A static, always-visible side-by-side card: one illustrative example that
+     reads LOW on this metric, one that reads HIGH, each with a one-line
+     "why" note, plus a verdict line underneath. Deliberately uses generic
+     illustrative archetypes rather than named live tickers -- the actual
+     number for a real company changes constantly and would go stale on a
+     teaching page; the point being taught (the number alone never tells you
+     which is the better buy) does not depend on which specific company it is. */
+  function buildCompareCard(def){
+    var wrap = el('div', 'bsc-cmp');
+    wrap.innerHTML =
+      '<div class="cm-grid">' +
+        '<div class="cm-cell">' +
+          '<div class="cm-badge" data-el="aB"></div>' +
+          '<div class="cm-num" data-el="aN"></div>' +
+          '<div class="cm-ex" data-el="aE"></div>' +
+          '<div class="cm-note" data-el="aNo"></div>' +
+        '</div>' +
+        '<div class="cm-vs">VS</div>' +
+        '<div class="cm-cell">' +
+          '<div class="cm-badge" data-el="bB"></div>' +
+          '<div class="cm-num" data-el="bN"></div>' +
+          '<div class="cm-ex" data-el="bE"></div>' +
+          '<div class="cm-note" data-el="bNo"></div>' +
+        '</div>' +
+      '</div>' +
+      '<p class="wif-note" data-el="v"></p>';
 
+    function q(k){ return wrap.querySelector('[data-el="' + k + '"]'); }
+    q('aB').textContent = T(def.aBadge);
+    q('aN').textContent = def.aNum;
+    q('aE').textContent = T(def.aEx);
+    q('aNo').textContent = T(def.aNote);
+    q('bB').textContent = T(def.bBadge);
+    q('bN').textContent = def.bNum;
+    q('bE').textContent = T(def.bEx);
+    q('bNo').textContent = T(def.bNote);
+    q('v').textContent = T(def.verdict);
+    return wrap;
+  }
+
+  var BK = {
+    eb:{en:'06 · Start Investing', th:'06 · เริ่มต้นลงทุน'},
+    h2:{en:'Start Investing — From Zero To Your First Stock', th:'เริ่มต้นลงทุน — จากศูนย์ถึงหุ้นตัวแรก'},
+    lede:{en:'Two levels in one page. Start in the Beginner tab if you have never opened a brokerage account. Move to Intermediate for the five checks every stock has to pass before you buy it. Want the advanced, macro-timing view — where the economy sits in the cycle and how these five checks shift with it? That lives on the Market Outlook page.',
+          th:'สองระดับในหน้าเดียว เริ่มที่แท็บมือใหม่ถ้ายังไม่เคยเปิดพอร์ตหุ้นเลย แล้วไปแท็บระดับกลางเพื่อดูห้าเรื่องที่หุ้นทุกตัวต้องผ่านก่อนซื้อ อยากดูมุมมองขั้นสูงเรื่องจังหวะเศรษฐกิจ — ตอนนี้อยู่ช่วงไหนของวัฏจักร แล้วห้าเรื่องนี้เปลี่ยนไปยังไงตามจังหวะ — ไปดูได้ที่หน้า Market Outlook'},
+
+    tabs:{ beg:{en:'① Beginner', th:'① มือใหม่'}, mid:{en:'② Intermediate', th:'② ระดับกลาง'} },
+
+    /* ---------------- BEGINNER TAB (all new) ---------------- */
+    s1H:{en:'What Is A Stock, Really?', th:'หุ้นคืออะไรกันแน่'},
+    s1D:{en:'A share of stock is a small slice of real ownership in a company — not a lottery ticket, not just a number on a screen. Buy one share and you legally own a tiny fraction of everything that company owns and everything it earns, alongside every other shareholder.\n\nYou make money two ways: the price of that slice can rise if the company grows or the market re-prices it (a capital gain), and some companies pay part of their profit straight to you in cash (a dividend). The flip side is real too — you also share the losses. If the company does badly, your slice is worth less, and there is no guarantee you ever get your money back. That is the trade every stock buyer makes: real upside, real downside, no safety net underneath it.',
+        th:'หุ้นหนึ่งหุ้นคือความเป็นเจ้าของจริงๆ ในบริษัทเสี้ยวเล็กๆ ไม่ใช่ล็อตเตอรี่ ไม่ใช่แค่ตัวเลขบนหน้าจอ ซื้อหุ้นบริษัทหนึ่งหุ้น คุณเป็นเจ้าของทุกอย่างที่บริษัทมีและทุกอย่างที่บริษัททำกำไรได้ในสัดส่วนเล็กๆ ตามกฎหมายจริง ร่วมกับผู้ถือหุ้นคนอื่นๆ\n\nคุณทำเงินได้สองทาง ราคาของเสี้ยวที่ถือไว้อาจขึ้นถ้าบริษัทโตหรือตลาดตีมูลค่าใหม่ (กำไรจากส่วนต่างราคา) และบางบริษัทจ่ายกำไรบางส่วนตรงมาเป็นเงินสดให้คุณ (ปันผล) ด้านกลับก็จริงเหมือนกัน คุณแบกรับขาดทุนด้วย ถ้าบริษัททำได้แย่ เสี้ยวที่ถือไว้ก็มีมูลค่าน้อยลง และไม่มีการรับประกันว่าจะได้เงินคืนเลยด้วยซ้ำ นี่คือข้อแลกเปลี่ยนที่คนซื้อหุ้นทุกคนต้องรับ กำไรจริง ขาดทุนจริง ไม่มีตาข่ายรองรับ'},
+
+    s2H:{en:'How To Open A Brokerage Account In Thailand', th:'เปิดบัญชีซื้อขายหุ้นในไทยยังไง'},
+    steps:[
+      { icon:ICON.idcard,
+        t:{en:'Pick a broker', th:'เลือกโบรกเกอร์'},
+        d:{en:'Any securities firm licensed by the SEC / Stock Exchange of Thailand works. Bank-affiliated ones (Streaming by Bualuang Securities / Bangkok Bank, InnovestX by SCB) are usually the easiest first account since they link straight to a bank app you may already use.',
+           th:'บริษัทหลักทรัพย์ที่มีใบอนุญาตจาก ก.ล.ต. / ตลาดหลักทรัพย์แห่งประเทศไทย ใช้ได้ทุกเจ้า ตัวที่สังกัดธนาคาร (Streaming ของบล.บัวหลวง / ธนาคารกรุงเทพ, InnovestX ของ SCB) มักเปิดง่ายที่สุดสำหรับบัญชีแรก เพราะเชื่อมกับแอปธนาคารที่อาจใช้อยู่แล้ว'} },
+      { icon:ICON.idcard,
+        t:{en:'Prepare your documents', th:'เตรียมเอกสาร'},
+        d:{en:'A Thai national ID card (or passport for foreigners), a bank account in your own name for funding and withdrawals, and a phone number for OTP verification — that is usually everything a cash account needs.',
+           th:'บัตรประชาชนไทย (หรือพาสปอร์ตสำหรับชาวต่างชาติ) บัญชีธนาคารชื่อตัวเองสำหรับเติมเงินและถอนเงิน และเบอร์โทรสำหรับยืนยัน OTP ปกติบัญชีแบบเงินสดใช้แค่นี้ก็พอแล้ว'} },
+      { icon:ICON.appicon,
+        t:{en:'Apply — fully online', th:'สมัครออนไลน์ได้เลยทั้งหมด'},
+        d:{en:'Every major broker now offers e-KYC inside its own app: photo of your ID, a selfie / liveness check, and an e-signature. Most accounts are approved within one to three business days — no branch visit required.',
+           th:'โบรกเกอร์รายใหญ่ทุกเจ้ามี e-KYC ในแอปตัวเอง ถ่ายรูปบัตรประชาชน ยืนยันตัวตนด้วยใบหน้า แล้วเซ็นอิเล็กทรอนิกส์ ส่วนใหญ่อนุมัติภายใน 1-3 วันทำการ ไม่ต้องไปสาขาเลย'} },
+      { icon:ICON.shield,
+        t:{en:'Take the suitability test', th:'ทำแบบทดสอบความเหมาะสม'},
+        d:{en:'A short, mandatory questionnaire about your income, experience and risk tolerance. It decides which products you can trade at first (plain stocks vs. derivatives / margin) — answer it honestly rather than trying to "unlock" everything at once.',
+           th:'แบบสอบถามสั้นๆ ที่บังคับทำ ถามเรื่องรายได้ ประสบการณ์ และรับความเสี่ยงได้แค่ไหน ผลจะกำหนดว่าช่วงแรกเทรดอะไรได้บ้าง (หุ้นธรรมดา vs อนุพันธ์ / มาร์จิ้น) ตอบตามจริงดีกว่าพยายามตอบให้ "ปลดล็อก" ทุกอย่างในทีเดียว'} },
+      { icon:ICON.stockup,
+        t:{en:'Fund the account and place your first order', th:'เติมเงินแล้วส่งคำสั่งซื้อครั้งแรก'},
+        d:{en:'Transfer baht in via the broker\'s own app (usually instant through PromptPay or bank transfer), then buy in board lots of 100 shares through the trading app. Start small — the account works exactly the same at any size.',
+           th:'โอนเงินบาทเข้าผ่านแอปโบรกเกอร์เอง (ปกติเข้าทันทีผ่านพร้อมเพย์หรือโอนธนาคาร) แล้วซื้อเป็นหน่วยละ 100 หุ้น (บอร์ดล็อต) ผ่านแอปเทรด เริ่มจากจำนวนน้อยๆ ก่อนได้ บัญชีทำงานเหมือนกันไม่ว่าจะเงินเยอะหรือน้อย'} }
+    ],
+
+    s3H:{en:'Well-Known Broker Apps In Thailand', th:'แอปโบรกเกอร์ที่คนไทยรู้จัก'},
+    s3D:{en:'A general, non-exhaustive list to start your own comparison from — not a recommendation of any single one. Always compare account-opening fees, minimum funding, and trading commission directly with the broker before choosing.',
+         th:'ลิสต์ทั่วไปแบบไม่ครบทั้งหมด ไว้เป็นจุดเริ่มต้นเทียบเอง ไม่ใช่การแนะนำให้ใช้เจ้าใดเจ้าหนึ่งโดยเฉพาะ ให้เทียบค่าธรรมเนียมเปิดบัญชี เงินขั้นต่ำ และค่าคอมมิชชั่นกับโบรกเกอร์โดยตรงก่อนเลือกเสมอ'},
+    apps:[
+      { n:'Streaming', url:'https://www.bualuang.co.th/en/tools-lists/tools/streaming',
+        by:{en:'Bualuang Securities / Bangkok Bank', th:'บล.บัวหลวง / ธนาคารกรุงเทพ'},
+        d:{en:'One of the longest-running retail trading apps in Thailand, tightly linked to a Bangkok Bank account.',
+           th:'หนึ่งในแอปเทรดค้าปลีกที่เปิดให้บริการมานานที่สุดของไทย เชื่อมกับบัญชีธนาคารกรุงเทพได้แน่นหนา'} },
+      { n:'InnovestX', url:'https://www.innovestx.co.th',
+        by:{en:'SCB', th:'เอสซีบี'},
+        d:{en:'SCB\'s all-in-one investing "super app" — stocks, funds and derivatives in one place.',
+           th:'ซูเปอร์แอปการลงทุนของ SCB รวมหุ้น กองทุน และอนุพันธ์ไว้ในที่เดียว'} },
+      { n:'Settrade', url:'https://www.settrade.com/th',
+        by:{en:'The Stock Exchange of Thailand', th:'ตลาดหลักทรัพย์แห่งประเทศไทย'},
+        d:{en:'SET\'s own market-data and account-opening portal — a neutral starting point that links out to whichever broker you choose.',
+           th:'พอร์ทัลข้อมูลตลาดและเปิดบัญชีของตลาดหลักทรัพย์ฯ เอง เป็นจุดเริ่มต้นกลางๆ ที่ลิงก์ต่อไปยังโบรกเกอร์เจ้าไหนก็ได้ที่เลือก'} },
+      { n:'Dime!', url:'https://dime.co.th',
+        by:{en:'Dime! (Finansia group)', th:'ไดม์ (กลุ่มฟินันเซีย)'},
+        d:{en:'A mobile-first app built around small, recurring investments (DCA) and fractional shares — aimed squarely at first-time investors.',
+           th:'แอปที่เน้นมือถือ ออกแบบมาสำหรับการลงทุนแบบถัวเฉลี่ยเป็นงวดๆ (DCA) และซื้อหุ้นเป็นเศษส่วนได้ เจาะกลุ่มนักลงทุนมือใหม่โดยตรง'} }
+    ],
+    begNote:{en:'⚠ General information only, not investment advice, and not an endorsement of any broker or app. Fees, minimums and features change over time — always confirm current terms directly with the broker before opening an account.',
+             th:'⚠ ข้อมูลทั่วไปเท่านั้น ไม่ใช่คำแนะนำการลงทุน และไม่ใช่การรับรองโบรกเกอร์หรือแอปเจ้าใดเจ้าหนึ่ง ค่าธรรมเนียม เงินขั้นต่ำ และฟีเจอร์เปลี่ยนแปลงได้ตลอดเวลา ให้เช็คเงื่อนไขล่าสุดกับโบรกเกอร์โดยตรงก่อนเปิดบัญชีเสมอ'},
+
+    /* ---------------- INTERMEDIATE TAB (original Round R content) ---------------- */
     genH:{en:'Five things to understand about any stock', th:'ห้าเรื่องที่ต้องเข้าใจก่อนซื้อหุ้นตัวไหน'},
 
     labWhat:{en:'▸ WHAT IT IS', th:'▸ คืออะไร'},
     labWhy:{en:'◎ WHY IT MATTERS', th:'◎ ทำไมสำคัญ'},
     labHow:{en:'✓ HOW TO READ IT', th:'✓ อ่านค่ายังไง'},
     labMis:{en:'★ COMMON MISTAKE', th:'★ ข้อผิดพลาดที่พบบ่อย'},
+    labCmp:{en:'⟷ SEE IT COMPARED', th:'⟷ เทียบให้ดู'},
 
     items:[
       { icon:ICON.tag,
@@ -155,6 +272,16 @@
               n:{en:'P/E also doubles to 40x here — but this time the price did not move at all, the company just earns less. Same number, a completely different (and more worrying) reason.',
                  th:'P/E เพิ่มเป็น 40x เหมือนกัน แต่รอบนี้ราคาไม่ขยับเลย บริษัทแค่ทำกำไรได้น้อยลง ตัวเลขเหมือนกัน แต่สาเหตุคนละเรื่อง (และน่ากังวลกว่า)'} }
           ]
+        },
+        cmp:{
+          aBadge:{en:'LOW P/E — LOOKS CHEAP', th:'P/E ต่ำ — ดูราคาถูก'}, aNum:'~9x',
+          aEx:{en:'A mature power / utility company growing profit ~2-3% a year', th:'บริษัทไฟฟ้า/สาธารณูปโภคเก่าแก่ กำไรโตปีละ 2-3%'},
+          aNote:{en:'Cheap because it barely grows — not because the market made a mistake.', th:'ถูกเพราะแทบไม่โต ไม่ใช่เพราะตลาดพลาด'},
+          bBadge:{en:'HIGH P/E — LOOKS EXPENSIVE', th:'P/E สูง — ดูราคาแพง'}, bNum:'~70x',
+          bEx:{en:'A software company compounding profit 60%+ a year', th:'บริษัทซอฟต์แวร์ที่กำไรโตทบต้นปีละ 60% ขึ้นไป'},
+          bNote:{en:'Expensive because growth this fast can justify paying far more per baht of today\'s profit.', th:'แพงเพราะการโตเร็วขนาดนี้ทำให้จ่ายแพงกว่ากำไรวันนี้มากๆ ได้อย่างมีเหตุผล'},
+          verdict:{en:'The number alone never tells you which one is the better buy — divide P/E by the growth rate (PEG) and compare within the same industry.',
+                    th:'ตัวเลข P/E เดี่ยวๆ ไม่มีทางบอกได้ว่าตัวไหนคุ้มกว่า ต้องเอา P/E หารด้วยอัตราการเติบโต (PEG) แล้วเทียบภายในอุตสาหกรรมเดียวกันเท่านั้น'}
         } },
 
       { icon:ICON.bank,
@@ -183,6 +310,16 @@
               n:{en:'D/E climbs to 1.60x without the company borrowing a single extra baht — a loss simply ate into shareholders’ equity. This is how a bad year quietly turns into a leverage problem.',
                  th:'D/E ขึ้นเป็น 1.60x โดยบริษัทไม่ได้กู้เพิ่มสักบาทเดียว ขาดทุนแค่กัดกินทุนของผู้ถือหุ้นไปเฉยๆ นี่คือวิธีที่ปีแย่ๆ กลายเป็นปัญหาหนี้สินแบบเงียบๆ'} }
           ]
+        },
+        cmp:{
+          aBadge:{en:'LOW D/E', th:'D/E ต่ำ'}, aNum:'~0.2x',
+          aEx:{en:'An asset-light software company that barely needs to borrow', th:'บริษัทซอฟต์แวร์ที่แทบไม่ต้องใช้สินทรัพย์ ไม่ต้องกู้เยอะ'},
+          aNote:{en:'Low debt is normal here — the business model just does not need much.', th:'หนี้ต่ำเป็นเรื่องปกติของธุรกิจแบบนี้ ไม่ได้ต้องใช้เยอะอยู่แล้ว'},
+          bBadge:{en:'HIGH D/E', th:'D/E สูง'}, bNum:'~3.0x',
+          bEx:{en:'A bank or utility, where borrowing is part of how the business works', th:'ธนาคารหรือสาธารณูปโภค ที่การกู้ยืมเป็นส่วนหนึ่งของโมเดลธุรกิจ'},
+          bNote:{en:'High here is not automatically dangerous — it sits close to the sector norm.', th:'สูงแบบนี้ไม่ได้แปลว่าอันตรายเสมอไป เพราะใกล้เคียงค่าปกติของกลุ่มธุรกิจนี้'},
+          verdict:{en:'D/E only means something when compared within the same sector — comparing a bank to a software company on this number is comparing apples to oranges.',
+                    th:'D/E มีความหมายก็ต่อเมื่อเทียบภายในกลุ่มธุรกิจเดียวกัน เอาแบงก์ไปเทียบกับบริษัทซอฟต์แวร์ด้วยตัวเลขนี้คือเทียบกันคนละเรื่องเลย'}
         } },
 
       { icon:ICON.cycle,
@@ -211,6 +348,16 @@
               n:{en:'ROE slips to 10% even while sales headlines look great — margin is being squeezed by competitors or rising costs. Growth without profit growth is the exact trap this page warns about.',
                  th:'ROE ลดเหลือ 10% ทั้งที่พาดหัวยอดขายดูดี มาร์จิ้นกำลังถูกบีบจากคู่แข่งหรือต้นทุนที่สูงขึ้น การโตโดยกำไรไม่โตตามคือกับดักที่หน้านี้เตือนไว้พอดี'} }
           ]
+        },
+        cmp:{
+          aBadge:{en:'LOW ROE', th:'ROE ต่ำ'}, aNum:'~4%',
+          aEx:{en:'A capital-heavy business like an airline, or one that just raised a lot of new equity', th:'ธุรกิจที่ใช้เงินทุนหนักอย่างสายการบิน หรือบริษัทที่เพิ่งเพิ่มทุนก้อนใหญ่'},
+          aNote:{en:'Low ROE here often reflects the business itself, not poor management.', th:'ROE ต่ำแบบนี้มักสะท้อนลักษณะธุรกิจเอง ไม่ใช่บริหารแย่'},
+          bBadge:{en:'HIGH ROE', th:'ROE สูง'}, bNum:'~35%',
+          bEx:{en:'An asset-light brand or software company with strong pricing power', th:'บริษัทแบรนด์หรือซอฟต์แวร์ที่ใช้สินทรัพย์น้อยแต่มีอำนาจตั้งราคาสูง'},
+          bNote:{en:'A great sign — but check it is not simply built on heavy debt.', th:'เป็นสัญญาณที่ดี แต่ต้องเช็คว่าไม่ได้มาจากการใช้หนี้หนักๆ ปั่นตัวเลขขึ้นไป'},
+          verdict:{en:'A very high ROE paired with very high D/E is often leverage doing the work, not efficiency — always read the two side by side.',
+                    th:'ROE สูงมากคู่กับ D/E สูงมาก มักเป็นเพราะหนี้ ไม่ใช่ประสิทธิภาพจริง ต้องอ่านสองตัวนี้คู่กันเสมอ'}
         } },
 
       { icon:ICON.coins,
@@ -239,6 +386,16 @@
               n:{en:'Payout rises to 80% — right at the caution line. Shareholders get a nicer check today, but the buffer for a rough year just got thin.',
                  th:'Payout ขึ้นเป็น 80% พอดีเส้นระวัง ผู้ถือหุ้นได้เงินมากขึ้นวันนี้ แต่กันชนสำหรับปีที่แย่บางลงมาก'} }
           ]
+        },
+        cmp:{
+          aBadge:{en:'LOW PAYOUT', th:'Payout ต่ำ'}, aNum:'~15%',
+          aEx:{en:'A fast-growing company reinvesting almost all profit back into the business', th:'บริษัทโตเร็วที่เก็บกำไรเกือบทั้งหมดไปลงทุนต่อ'},
+          aNote:{en:'Not a weakness — reinvesting at a high return can beat any dividend.', th:'ไม่ใช่จุดอ่อน ถ้าเอาไปลงทุนต่อแล้วได้ผลตอบแทนสูง อาจคุ้มกว่าปันผลด้วยซ้ำ'},
+          bBadge:{en:'HIGH PAYOUT', th:'Payout สูง'}, bNum:'~95%',
+          bEx:{en:'A slow-growing, mature company returning almost all profit to shareholders', th:'บริษัทโตช้าที่คืนกำไรเกือบทั้งหมดให้ผู้ถือหุ้น'},
+          bNote:{en:'Fine while profit stays stable — but one bad quarter leaves almost no buffer.', th:'โอเคตราบใดที่กำไรมั่นคง แต่ถ้าไตรมาสไหนพลาด แทบไม่มีกันชนเหลือเลย'},
+          verdict:{en:'Neither number is "better" on its own — a low payout can mean a company still compounding, a high one can mean a company with nowhere left to grow.',
+                    th:'ตัวเลขไหนก็ไม่ได้ "ดีกว่า" โดยตัวมันเอง payout ต่ำอาจแปลว่าบริษัทยังโตต่อได้อีกเยอะ payout สูงอาจแปลว่าบริษัทไม่เหลือที่ให้โตแล้ว'}
         } },
 
       { icon:ICON.shield,
@@ -267,6 +424,16 @@
               n:{en:'P/B rises to 2.00x without the share price moving at all — the "floor" itself just got written down. The number can move because the ground shifted, not because anyone bought or sold.',
                  th:'P/B ขึ้นเป็น 2.00x โดยราคาหุ้นไม่ขยับเลย "พื้น" เองถูกปรับมูลค่าลง ตัวเลขเปลี่ยนเพราะพื้นเปลี่ยน ไม่ใช่เพราะมีคนซื้อขายอะไร'} }
           ]
+        },
+        cmp:{
+          aBadge:{en:'LOW P/B', th:'P/B ต่ำ'}, aNum:'~0.6x',
+          aEx:{en:'An old-line bank trading below its accounting book value', th:'ธนาคารเก่าแก่ที่ราคาต่ำกว่ามูลค่าทางบัญชี'},
+          aNote:{en:'Could be a genuine bargain — or a value trap hiding a real problem. Dig into why.', th:'อาจเป็นของถูกจริง หรืออาจเป็นกับดักที่ซ่อนปัญหาไว้ ต้องขุดหาสาเหตุก่อน'},
+          bBadge:{en:'HIGH P/B', th:'P/B สูง'}, bNum:'~15x',
+          bEx:{en:'A technology company whose real value is its brand and software, not its factories', th:'บริษัทเทคโนโลยีที่มูลค่าจริงอยู่ที่แบรนด์และซอฟต์แวร์ ไม่ใช่โรงงาน'},
+          bNote:{en:'Normal here — book value was never meant to capture what this business is really worth.', th:'ปกติสำหรับธุรกิจแบบนี้ มูลค่าทางบัญชีไม่เคยจับมูลค่าที่แท้จริงของธุรกิจแบบนี้ได้อยู่แล้ว'},
+          verdict:{en:'P/B is only a meaningful floor for asset-heavy businesses. Applying it to an asset-light company tells you almost nothing.',
+                    th:'P/B เป็น "พื้น" มูลค่าที่มีความหมายก็แค่กับธุรกิจสินทรัพย์หนักเท่านั้น เอาไปใช้กับธุรกิจสินทรัพย์เบาแทบไม่บอกอะไรเลย'}
         } }
     ],
 
@@ -274,6 +441,11 @@
     sizeD:{en:'A great company at the wrong size is still a bad decision. Cap any single name near 5% of the portfolio and use the Position Size tool before you place a single order.',
            th:'บริษัทดีแค่ไหน ถ้าลงขนาดไม้ผิด ก็ยังเป็นการตัดสินใจที่แย่อยู่ดี จำกัดหุ้นตัวเดียวไว้ราว 5% ของพอร์ต และใช้เครื่องมือคำนวณขนาดการลงทุนก่อนส่งคำสั่งซื้อทุกครั้ง'},
     sizeBtn:{en:'Open the Position Size tool →', th:'เปิดเครื่องคำนวณขนาดการลงทุน →'},
+
+    advH:{en:'Want the advanced, macro-timing view?', th:'อยากดูมุมมองขั้นสูงเรื่องจังหวะเศรษฐกิจไหม'},
+    advD:{en:'Market Outlook shows where the economy sits in the cycle right now — and, new, how each of the five checks on this page tends to shift depending on that phase.',
+          th:'หน้า Market Outlook แสดงว่าตอนนี้เศรษฐกิจอยู่ช่วงไหนของวัฏจักร และ (เพิ่มใหม่) ห้าเรื่องที่เช็คในหน้านี้แต่ละอย่างมักเปลี่ยนไปยังไงตามแต่ละช่วง'},
+    advBtn:{en:'Open Market Outlook →', th:'เปิด Market Outlook →'},
 
     glossH:{en:'Want to look up any other term?', th:'อยากดูคำศัพท์ตัวอื่นเพิ่มไหม'},
     glossD:{en:'Every metric on this page — and dozens more — has its own live entry in the glossary, each with a working example you can play with.',
@@ -286,6 +458,8 @@
     ctaBtn:{en:'Turn on Guided Mode →', th:'เปิดโหมดแนะนำ →'}
   };
 
+  var curTab = 'beg';
+
   function build(){
     var sec = el('section');
     sec.id = 'basics';
@@ -294,24 +468,95 @@
         '<div class="eyebrow"><span class="cursor"></span><span data-b="eb"></span></div>' +
         '<h2 data-b="h2"></h2><p class="lede" data-b="lede"></p><div class="rule"></div>' +
       '</div>' +
-      '<div class="v8-sub" data-b="genH"></div>' +
-      '<div class="bsc-list" data-b="list"></div>' +
+      '<div class="bsc-tabs" data-b="tabs"></div>' +
+      '<div class="bsc-pane" data-b="pane-beg">' +
+        '<div class="v8-sub" data-b="s1H"></div>' +
+        '<p class="lede bsc-para" data-b="s1D" style="margin-bottom:22px"></p>' +
+        '<div class="v8-sub" data-b="s2H"></div>' +
+        '<div class="bsc-steps" data-b="steps"></div>' +
+        '<div class="v8-sub" data-b="s3H"></div>' +
+        '<p class="lede" data-b="s3D" style="margin-bottom:16px"></p>' +
+        '<div class="bsc-apps" data-b="apps"></div>' +
+        '<div class="v8-note" data-b="begNote"></div>' +
+      '</div>' +
+      '<div class="bsc-pane" data-b="pane-mid">' +
+        '<div class="v8-sub" data-b="genH"></div>' +
+        '<div class="bsc-list" data-b="list"></div>' +
+      '</div>' +
       '<div class="v8-sub" data-b="sizeH"></div>' +
       '<div class="bsc-cta" data-b="size"></div>' +
+      '<div class="bsc-cta" data-b="adv"></div>' +
       '<div class="bsc-cta" data-b="gloss"></div>' +
       '<div class="bsc-cta" data-b="cta"></div>';
     return sec;
   }
 
   var sec;
+  function setTab(tab){
+    curTab = tab;
+    paint();
+  }
+
   function paint(){
     if(!sec) return;
     function q(k){ return sec.querySelector('[data-b="' + k + '"]'); }
     q('eb').textContent = T(BK.eb);
     q('h2').textContent = T(BK.h2);
     q('lede').textContent = T(BK.lede);
+
+    /* tab switcher */
+    var tb = q('tabs');
+    tb.innerHTML = '';
+    var tabKeys = ['beg', 'mid'];
+    for(var ti = 0; ti < tabKeys.length; ti++){
+      (function(key){
+        var btn = el('button', 'bsc-tab-btn' + (curTab === key ? ' on' : ''), esc(T(BK.tabs[key])));
+        btn.type = 'button';
+        btn.addEventListener('click', function(){ setTab(key); });
+        tb.appendChild(btn);
+      })(tabKeys[ti]);
+    }
+    q('pane-beg').classList.toggle('on', curTab === 'beg');
+    q('pane-mid').classList.toggle('on', curTab === 'mid');
+
+    /* ---- beginner pane ---- */
+    q('s1H').textContent = T(BK.s1H);
+    q('s1D').innerHTML = esc(T(BK.s1D)).replace(/\n\n/g, '</p><p class="lede bsc-para" style="margin-bottom:22px">');
+    q('s2H').textContent = T(BK.s2H);
+    var stepsEl = q('steps');
+    stepsEl.innerHTML = '';
+    for(var si = 0; si < BK.steps.length; si++){
+      var st = BK.steps[si];
+      stepsEl.appendChild(el('div', 'bsc-step',
+        '<span class="bsc-step-ic gm-ic">' + st.icon + '</span>' +
+        '<span class="bsc-step-body">' +
+          '<span class="bsc-step-n">' + String(si + 1).padStart(2, '0') + '</span>' +
+          '<span class="bsc-step-t">' + esc(T(st.t)) + '</span>' +
+          '<span class="bsc-step-d">' + esc(T(st.d)) + '</span>' +
+        '</span>'));
+    }
+    q('s3H').textContent = T(BK.s3H);
+    q('s3D').textContent = T(BK.s3D);
+    var appsEl = q('apps');
+    appsEl.innerHTML = '';
+    for(var ai = 0; ai < BK.apps.length; ai++){
+      var ap = BK.apps[ai];
+      var a = document.createElement('a');
+      a.className = 'bsc-app';
+      a.href = ap.url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.innerHTML =
+        '<span class="bsc-app-n">' + esc(ap.n) + '</span>' +
+        '<span class="bsc-app-by">' + esc(T(ap.by)) + '</span>' +
+        '<span class="bsc-app-d">' + esc(T(ap.d)) + '</span>' +
+        '<span class="bsc-app-go">' + esc(L() === 'th' ? 'เปิดเว็บไซต์ (แท็บใหม่) →' : 'Open site (new tab) →') + '</span>';
+      appsEl.appendChild(a);
+    }
+    q('begNote').textContent = T(BK.begNote);
+
+    /* ---- intermediate pane ---- */
     q('genH').textContent = T(BK.genH);
-    q('sizeH').textContent = T(BK.sizeH);
 
     var list = q('list');
     list.innerHTML = '';
@@ -329,15 +574,28 @@
           '<div class="gm-f"><div class="gm-fh">' + esc(T(BK.labWhy)) + '</div><div class="gm-fd">' + esc(T(it.why)) + '</div></div>' +
           '<div class="gm-f"><div class="gm-fh">' + esc(T(BK.labHow)) + '</div><div class="gm-fd">' + esc(T(it.how)) + '</div></div>' +
           '<div class="gm-f tip"><div class="gm-fh">' + esc(T(BK.labMis)) + '</div><div class="gm-fd">' + esc(T(it.mistake)) + '</div></div>' +
-        '</div>');
+        '</div>' +
+        '<div class="bsc-cmp-slot"></div>');
       c.querySelector('.bsc-viz').appendChild(buildCalcCard(it.calc));
+      if(it.cmp){
+        var cmpSlot = c.querySelector('.bsc-cmp-slot');
+        cmpSlot.appendChild(el('div', 'gm-fh', esc(T(BK.labCmp))));
+        cmpSlot.appendChild(buildCompareCard(it.cmp));
+      }
       list.appendChild(c);
     }
 
+    /* ---- shared CTAs ---- */
+    q('sizeH').textContent = T(BK.sizeH);
     q('size').innerHTML =
       '<div class="bsc-cta-h">' + esc(T(BK.sizeH)) + '</div>' +
       '<p class="bsc-cta-d">' + esc(T(BK.sizeD)) + '</p>' +
       '<div class="bsc-cta-b"><a href="#sizing" class="btn btn-primary">' + esc(T(BK.sizeBtn)) + '</a></div>';
+
+    q('adv').innerHTML =
+      '<div class="bsc-cta-h">' + esc(T(BK.advH)) + '</div>' +
+      '<p class="bsc-cta-d">' + esc(T(BK.advD)) + '</p>' +
+      '<div class="bsc-cta-b"><a href="#outlook" class="btn btn-outline">' + esc(T(BK.advBtn)) + '</a></div>';
 
     q('gloss').innerHTML =
       '<div class="bsc-cta-h">' + esc(T(BK.glossH)) + '</div>' +
@@ -361,9 +619,9 @@
     if(window.__spzAddRoute){
       window.__spzAddRoute({
         id:'basics', after:'signals', group:'learn',
-        t:{en:'Before You Invest — Checklist', th:'ก่อนลงทุน — เช็คลิสต์'},
-        d:{en:'Five things every beginner should understand before buying any stock, explained start to finish on one page.',
-           th:'ห้าเรื่องที่มือใหม่ควรเข้าใจก่อนซื้อหุ้นตัวไหนก็ตาม อธิบายครบจบในหน้าเดียว'}
+        t:{en:'Start Investing', th:'เริ่มต้นลงทุน'},
+        d:{en:'New to the market? Start here — how stocks work, how to open an account, then the five checks every stock has to pass.',
+           th:'มือใหม่ในตลาดหุ้น? เริ่มที่นี่ — หุ้นทำงานยังไง เปิดบัญชียังไง แล้วต่อด้วยห้าเรื่องที่หุ้นทุกตัวต้องผ่านก่อนซื้อ'}
       });
     }
     paint();

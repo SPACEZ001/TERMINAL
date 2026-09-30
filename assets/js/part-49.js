@@ -24,6 +24,11 @@
     selAll:{en:'Select all',th:'เลือกทั้งหมด'},
     clearAll:{en:'Clear',th:'ล้างที่เลือก'},
     printBtn:{en:'🖶 Print Report',th:'🖶 พิมพ์รายงาน'},
+    /* Round S: reuses the same html2canvas -> Cloudinary -> LINE broadcast
+       pipeline that Institutional Briefing uses (part-57.js), extracted
+       there as window.__SPZ_sendReportImageToLine so it works against this
+       page's own [data-pr="sheet"] preview instead of that page's overlay. */
+    lineBtn:{en:'📱 Send to LINE',th:'📱 ส่งเข้า LINE'},
     hint:{en:'Press print, then choose "Save as PDF" (or your printer) in the dialog that opens.',
           th:'กดพิมพ์ แล้วเลือก "บันทึกเป็น PDF" (หรือเครื่องพิมพ์ของคุณ) ในหน้าต่างที่เปิดขึ้นมา'},
     brand:{en:'SPACEZ TERMINAL',th:'SPACEZ TERMINAL'},
@@ -1859,6 +1864,7 @@
     if(q('selAll')) q('selAll').textContent = T(UI.selAll);
     if(q('clearAll')) q('clearAll').textContent = T(UI.clearAll);
     if(q('printBtn')) q('printBtn').textContent = T(UI.printBtn);
+    if(q('lineBtn')) q('lineBtn').textContent = T(UI.lineBtn);
     if(q('qrToggleLbl')) q('qrToggleLbl').textContent = T(UI.qrToggleLbl);
     if(q('qrToggle')) q('qrToggle').checked = includeQrPage;
     if(q('hint')) q('hint').textContent = T(UI.hint);
@@ -1905,6 +1911,13 @@
         return;
       }
       if(t.closest('[data-pr="printBtn"]')){ doPrint(); return; }
+      if(t.closest('[data-pr="lineBtn"]')){
+        var lineBtnEl = t.closest('[data-pr="lineBtn"]');
+        var sheetHost = sec.querySelector('[data-pr="sheet"]');
+        var lineStatusEl = sec.querySelector('[data-pr="lineStatus"]');
+        if(window.__SPZ_sendReportImageToLine) window.__SPZ_sendReportImageToLine(sheetHost, lineBtnEl, lineStatusEl);
+        return;
+      }
       if(t.closest('[data-pr="annGenerate"]')){
         annMessage = annGenerateText();
         paint();
@@ -2033,6 +2046,8 @@
           '</div>' +
           '<div class="pr-row" style="margin-top:6px;">' +
             '<button type="button" class="pr-printbtn" data-pr="printBtn"></button>' +
+            '<button type="button" class="pr-linebtn" data-pr="lineBtn"></button>' +
+            '<span class="pr-line-status" data-pr="lineStatus"></span>' +
           '</div>' +
           '<div class="pr-hint" data-pr="hint"></div>' +
         '</div>' +

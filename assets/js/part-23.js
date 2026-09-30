@@ -276,7 +276,7 @@ var GM = {
         '<text class="gm-lbl" x="' + p[0] + '" y="' + (p[1] + (i % 2 ? -26 : 34)) + '" text-anchor="middle">' +
         esc(String(i + 1).padStart(2, '0')) + '</text></g>';
     }
-    return '<svg class="gm-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">' + s + '</svg>';
+    return '<svg class="gmp-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">' + s + '</svg>';
   }
 
   /* ---------------- the page ---------------- */

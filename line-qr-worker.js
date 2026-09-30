@@ -991,10 +991,24 @@ async function handleEconCalendar(request, env) {
 const ANNOUNCEMENTS_KV_KEY = "announcements:list";
 const ANNOUNCEMENTS_MAX = 30; // keep the stored list bounded
 const ANNOUNCEMENT_TEXT_MAX = 2000; // raised from 500 per her request -- some notices run long
+// Round S: expired items used to only be HIDDEN from display (announcementIsActive)
+// -- the record itself sat in KV forever until she deleted it by hand. This purges
+// an item for real once it has been expired this long, no cron trigger needed:
+// every call to getAnnouncementsList() (every public GET, admin list, and every
+// create/update/delete, since they all read the list first) sweeps it lazily.
+const ANNOUNCEMENT_PURGE_AFTER_DAYS = 30;
+const ANNOUNCEMENT_PURGE_AFTER_MS = ANNOUNCEMENT_PURGE_AFTER_DAYS * 24 * 60 * 60 * 1000;
 
 async function getAnnouncementsList(env) {
   const raw = await env.SESSIONS.get(ANNOUNCEMENTS_KV_KEY, "json");
-  return Array.isArray(raw) ? raw : [];
+  const list = Array.isArray(raw) ? raw : [];
+  const now = Date.now();
+  const kept = list.filter((a) => !(a.expiresAt && now - a.expiresAt > ANNOUNCEMENT_PURGE_AFTER_MS));
+  if (kept.length !== list.length) {
+    // fire-and-forget the write-back; never let a KV hiccup here break a read
+    try { await env.SESSIONS.put(ANNOUNCEMENTS_KV_KEY, JSON.stringify(kept)); } catch (e) {}
+  }
+  return kept;
 }
 async function putAnnouncementsList(list, env) {
   await env.SESSIONS.put(ANNOUNCEMENTS_KV_KEY, JSON.stringify(list.slice(0, ANNOUNCEMENTS_MAX)));
