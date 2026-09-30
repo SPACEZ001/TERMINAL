@@ -15,9 +15,17 @@
  *                                https://<name>.<subdomain>.workers.dev/callback
  *                                URL. Must exactly match the Callback URL
  *                                registered on the LINE Login channel.)
- *   ALLOWED_ORIGIN               (Variable — the site's origin, e.g.
- *                                https://spacez001.github.io, so only that
- *                                site's pages can call this API)
+ *   ALLOWED_ORIGIN               (Variable — the frontend origin(s) allowed
+ *                                to call this API, e.g.
+ *                                https://spacez001.github.io -- or, since
+ *                                Round S6d, a COMMA-SEPARATED list when the
+ *                                site is mirrored on more than one host, e.g.
+ *                                https://spacez001.github.io,https://terminal.spacezblack.workers.dev
+ *                                The actual Access-Control-Allow-Origin sent
+ *                                back is whichever one of these matches the
+ *                                real incoming request's Origin header --
+ *                                see pickAllowedOrigin()/withCorsOrigin()
+ *                                near the bottom of this file.)
  *   ADMIN_USERS_KEY              (Secret — a password you make up, used ONLY
  *                                by the site's "Connected Users" admin page.
  *                                Deliberately separate from the site's own
@@ -1326,42 +1334,72 @@ async function handleLogout(request, env) {
   return json({ ok: true }, env);
 }
 
+/* Round S6d: pick the one Access-Control-Allow-Origin value to actually send
+   back, given the real incoming request and an ALLOWED_ORIGIN env value that
+   may now be a comma-separated list (see the header comment above). Falls
+   back to the first configured origin if the request's Origin isn't in the
+   list (or sent no Origin at all, e.g. a same-worker /callback navigation),
+   which matches the old single-origin behavior exactly when ALLOWED_ORIGIN
+   holds just one value. */
+function pickAllowedOrigin(request, env) {
+  const allowed = String(env.ALLOWED_ORIGIN || "")
+    .split(",")
+    .map(function (s) { return s.trim(); })
+    .filter(Boolean);
+  const requestOrigin = request.headers.get("Origin");
+  if (requestOrigin && allowed.indexOf(requestOrigin) !== -1) return requestOrigin;
+  return allowed[0] || null;
+}
+
+/* Rewrites just the Access-Control-Allow-Origin header on whatever Response
+   a route handler already produced (all of them build their headers via the
+   unchanged corsHeaders()/json()/html() above), so every existing handler
+   function needed zero changes -- this is the one and only place that now
+   knows about the real request. */
+function withCorsOrigin(response, origin) {
+  if (!origin) return response;
+  const headers = new Headers(response.headers);
+  headers.set("Access-Control-Allow-Origin", origin);
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const allowOrigin = pickAllowedOrigin(request, env);
 
     if (request.method === "OPTIONS") {
-      return new Response(null, { headers: corsHeaders(env) });
+      return withCorsOrigin(new Response(null, { headers: corsHeaders(env) }), allowOrigin);
     }
 
     try {
-      if (url.pathname === "/api/session/new") return await handleNewSession(request, env);
-      if (url.pathname === "/callback") return await handleCallback(request, env);
-      if (url.pathname === "/telegram-webhook" && request.method === "POST") return await handleTelegramWebhook(request, env);
-      if (url.pathname === "/api/telegram/avatar") return await handleTelegramAvatar(request, env);
-      if (url.pathname === "/api/session/status") return await handleStatus(request, env);
-      if (url.pathname === "/api/session/data") return await handleData(request, env);
-      if (url.pathname === "/api/session/logout" && request.method === "POST") return await handleLogout(request, env);
-      if (url.pathname === "/api/session/watchlist/add" && request.method === "POST") return await handleWatchlistAdd(request, env);
-      if (url.pathname === "/api/session/watchlist/remove" && request.method === "POST") return await handleWatchlistRemove(request, env);
-      if (url.pathname === "/api/likes" && request.method === "GET") return await handleLikesGet(request, env);
-      if (url.pathname === "/api/likes/toggle" && request.method === "POST") return await handleLikeToggle(request, env);
-      if (url.pathname === "/api/session/profile" && request.method === "POST") return await handleProfileUpdate(request, env);
-      if (url.pathname === "/api/admin/users" && request.method === "GET") return await handleAdminUsersList(request, env);
-      if (url.pathname === "/api/admin/users/update" && request.method === "POST") return await handleAdminUsersUpdate(request, env);
-      if (url.pathname === "/api/admin/broadcast" && request.method === "POST") return await handleAdminBroadcast(request, env);
-      if (url.pathname === "/api/presence/ping" && request.method === "POST") return await handlePresencePing(request, env);
-      if (url.pathname === "/api/admin/presence-count" && request.method === "GET") return await handleAdminPresenceCount(request, env);
-      if (url.pathname === "/api/journal-settings" && request.method === "GET") return await handleJournalSettingsGet(request, env);
-      if (url.pathname === "/api/admin/journal-settings" && request.method === "POST") return await handleJournalSettingsUpdate(request, env);
-      if (url.pathname === "/api/econ-calendar" && request.method === "GET") return await handleEconCalendar(request, env);
-      if (url.pathname === "/api/announcements" && request.method === "GET") return await handleAnnouncementsPublic(request, env);
-      if (url.pathname === "/api/admin/announcements" && request.method === "GET") return await handleAdminAnnouncementsList(request, env);
-      if (url.pathname === "/api/admin/announcements/create" && request.method === "POST") return await handleAdminAnnouncementsCreate(request, env);
-      if (url.pathname === "/api/admin/announcements/update" && request.method === "POST") return await handleAdminAnnouncementsUpdate(request, env);
-      if (url.pathname === "/api/admin/announcements/delete" && request.method === "POST") return await handleAdminAnnouncementsDelete(request, env);
+      if (url.pathname === "/api/session/new") return withCorsOrigin(await handleNewSession(request, env), allowOrigin);
+      if (url.pathname === "/callback") return withCorsOrigin(await handleCallback(request, env), allowOrigin);
+      if (url.pathname === "/telegram-webhook" && request.method === "POST") return withCorsOrigin(await handleTelegramWebhook(request, env), allowOrigin);
+      if (url.pathname === "/api/telegram/avatar") return withCorsOrigin(await handleTelegramAvatar(request, env), allowOrigin);
+      if (url.pathname === "/api/session/status") return withCorsOrigin(await handleStatus(request, env), allowOrigin);
+      if (url.pathname === "/api/session/data") return withCorsOrigin(await handleData(request, env), allowOrigin);
+      if (url.pathname === "/api/session/logout" && request.method === "POST") return withCorsOrigin(await handleLogout(request, env), allowOrigin);
+      if (url.pathname === "/api/session/watchlist/add" && request.method === "POST") return withCorsOrigin(await handleWatchlistAdd(request, env), allowOrigin);
+      if (url.pathname === "/api/session/watchlist/remove" && request.method === "POST") return withCorsOrigin(await handleWatchlistRemove(request, env), allowOrigin);
+      if (url.pathname === "/api/likes" && request.method === "GET") return withCorsOrigin(await handleLikesGet(request, env), allowOrigin);
+      if (url.pathname === "/api/likes/toggle" && request.method === "POST") return withCorsOrigin(await handleLikeToggle(request, env), allowOrigin);
+      if (url.pathname === "/api/session/profile" && request.method === "POST") return withCorsOrigin(await handleProfileUpdate(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/users" && request.method === "GET") return withCorsOrigin(await handleAdminUsersList(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/users/update" && request.method === "POST") return withCorsOrigin(await handleAdminUsersUpdate(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/broadcast" && request.method === "POST") return withCorsOrigin(await handleAdminBroadcast(request, env), allowOrigin);
+      if (url.pathname === "/api/presence/ping" && request.method === "POST") return withCorsOrigin(await handlePresencePing(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/presence-count" && request.method === "GET") return withCorsOrigin(await handleAdminPresenceCount(request, env), allowOrigin);
+      if (url.pathname === "/api/journal-settings" && request.method === "GET") return withCorsOrigin(await handleJournalSettingsGet(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/journal-settings" && request.method === "POST") return withCorsOrigin(await handleJournalSettingsUpdate(request, env), allowOrigin);
+      if (url.pathname === "/api/econ-calendar" && request.method === "GET") return withCorsOrigin(await handleEconCalendar(request, env), allowOrigin);
+      if (url.pathname === "/api/announcements" && request.method === "GET") return withCorsOrigin(await handleAnnouncementsPublic(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/announcements" && request.method === "GET") return withCorsOrigin(await handleAdminAnnouncementsList(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/announcements/create" && request.method === "POST") return withCorsOrigin(await handleAdminAnnouncementsCreate(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/announcements/update" && request.method === "POST") return withCorsOrigin(await handleAdminAnnouncementsUpdate(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/announcements/delete" && request.method === "POST") return withCorsOrigin(await handleAdminAnnouncementsDelete(request, env), allowOrigin);
 
-      return json({ error: "not_found" }, env, 404);
+      return withCorsOrigin(json({ error: "not_found" }, env, 404), allowOrigin);
     } catch (err) {
       // Cloudflare's KV binding throws when the account's daily quota (reads,
       // writes, or list operations -- 1,000 writes/day on the Free plan,
@@ -1372,7 +1410,7 @@ export default {
       // can show a real message for, rather than a dead end.
       const msg = String((err && err.message) || err || "");
       const quota = /quota|limit|429|too many/i.test(msg);
-      return json({ error: quota ? "quota_exceeded" : "internal_error" }, env, quota ? 503 : 500);
+      return withCorsOrigin(json({ error: quota ? "quota_exceeded" : "internal_error" }, env, quota ? 503 : 500), allowOrigin);
     }
   },
 };
