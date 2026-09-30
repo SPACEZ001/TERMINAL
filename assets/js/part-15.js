@@ -1526,12 +1526,30 @@ var CL_UI = {
              build on it. */
           ids:['guided', 'basics', 'start', 'types', 'glossary', 'signals'] },
         { k:'market', t:{en:'Read the market',th:'อ่านตลาด'},
-          ids:['now', 'outlook', 'regime', 'anomaly', 'correl', 'rulelab', 'daily', 'flow', 'globe', 'infl', 'desk', 'scenarios'] },
+          /* Round S9: full site-wide reorder, easiest/shortest -> hardest/
+             longest. Was now/outlook/regime/anomaly/correl/rulelab/daily/
+             flow/globe/infl/desk/scenarios -- the technical gauge/backtest
+             cluster (regime/anomaly/correl/rulelab/daily) used to run
+             right after the one-screen overview, ahead of the plainer
+             narrative pages. Now: the one-screen overview, then cycle ->
+             sector rotation -> country flows -> inflation/rates -> the
+             ranked shortlist -> stress-testing it (a narrative arc anyone
+             can follow), and only then the gauge-driven / quantitative
+             cluster (turning-point radar, anomaly scan, correlation
+             matrix, rule lab, daily auto-summary), which assumes the
+             earlier pages already make sense. */
+          ids:['now', 'outlook', 'flow', 'globe', 'infl', 'desk', 'scenarios', 'regime', 'anomaly', 'correl', 'rulelab', 'daily'] },
         { k:'tools',  t:{en:'Workbench',th:'เครื่องมือ'},
           /* 'printreport' and 'pro' deliberately left out -- see NAV_HIDDEN
              above; 'pro' (Institutional Pro Desk) is reachable only via a
-             card inside Cockpit / Command Center now, see part-47.js. */
-          ids:['stock', 'watchlist', 'bubble', 'chartlab', 'directory', 'proof', 'journal', 'journalNew'] }
+             card inside Cockpit / Command Center now, see part-47.js.
+             Round S9: reordered easiest/shortest -> hardest/longest --
+             browse examples and look at a raw chart first, then a single
+             deep-dive, then your own journal and watchlist (need an
+             account, more setup), and the quantitative/power-user tools
+             (Bubble Radar's blended score, Proof Lab's historical
+             backtest) last. */
+          ids:['directory', 'chartlab', 'stock', 'journal', 'journalNew', 'watchlist', 'bubble', 'proof'] }
       ];
       var used = { membership:1 }, n = 0, g, i, r;
       for(g = 0; g < GROUPS.length; g++){
