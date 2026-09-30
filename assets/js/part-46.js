@@ -117,7 +117,7 @@
      มาใส่ตรงนี้ (สร้างด้วย ADMIN_GENERATOR.html) */
   var VAULT_FULL = {"v":4,"s1":"mkdQcgClsnvkGyoBGGivQg==","s2":"9YocjP94X+KXzaDgEjSuGg==","s3":"hy15gzrBLmYFR2+cvfPPCA==","s4":"ky5slYhVrHQoXnN7itBYcg==","gates":[{"iv":"8ua/11yPR3cWSJKJEBQVhQ==","ct":"/RpQQax3SbFjk3XfRXL5DP9gJ6rQqkNt/72nKLY8b6Q="},{"iv":"JBpkOqWqQUGoNpvaBlMZhg==","ct":"nVsIciHOqQOZeoRiBpVa2MEpCDeP3npI3gG5YjD/z0M="},{"iv":"3pbyESaKph58+1raRCifUg==","ct":"N3RWhWpuNS9II+Knxy22n4sZfy75Zvpz1KFe3QMFSlk="},{"iv":"UBs3G4dOB8mAFjSRlyDRUQ==","ct":"5q+pIWVpnm52L5GAMp/4Q1L51D7ZlV4Gvypoei8dShA="},{"iv":"jqk5KZTuminXpYENqvBGPA==","ct":"s84YTT4n78TgNAZDV8fEb4sJNGEfYXZXICBRoQzik78="}],"ctrIv":"YtBFuzHAlM73O0uKkyqL2w==","iv":"ZqvmBtUJW2peCcUC","ct":"Yw9ZQfcOwU9A9jmBxghZgtyj2k5flNijg9Cnjungi45aNULy9mmGCiDf8V7jF5MhqyhdEK490/I="};
 
-  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','cockpit','controlgrid','printreport','journalNew','connectedusers','announcements'];
+  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','controlgrid','printreport','journalNew','connectedusers','announcements','quietValue'];
   /* 'journal' (the list) and 'journalView' (a single post) are deliberately
      NOT in this list -- anyone can open them. The paywall for those two
      lives inside the module itself instead: the list/titles always render,
@@ -190,6 +190,10 @@
        both are reachable from where she actually expects them. */
     adminPro:{en:'Institutional Pro Desk',th:'โปรเดสก์ระดับสถาบัน'},
     adminBriefing:{en:'Institutional Outlook Brief',th:'บรีฟภาพรวมเชิงสถาบัน'},
+    /* Round S4: task explicitly asked for the new scanner to be reachable
+       from Terminal Admin, same as the other admin-shortcut cards here --
+       not just gated at the route level like Anomaly Scan/ESS are. */
+    adminQuietValue:{en:'Quiet Value Scanner',th:'สแกนหุ้นถูกที่ยังเงียบ'},
     bulk:{en:'📋 Paste all 50 at once',th:'📋 วางทีเดียว 50 ชุด'},
     mask:{en:'👁 Show / hide',th:'👁 แสดง/ซ่อน'},
     clear:{en:'🗑 Clear all',th:'🗑 ล้างทั้งหมด'},
@@ -360,6 +364,10 @@
                 '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>' +
                 '<span data-x="adminBriefing"></span>' +
               '</button>' +
+              '<button class="cag-admin-link" type="button" id="cagBtnQuietValue">' +
+                '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M8.5 11h5"/></svg>' +
+                '<span data-x="adminQuietValue"></span>' +
+              '</button>' +
             '</div>' +
             '<button class="cag-btn" type="button" id="cagBtnLogout" data-x="logoutBtn"></button>' +
             '<button class="cag-ghost hidden" type="button" id="cagUpgradeBtn" data-x="upgradeBtn"></button>' +
@@ -462,8 +470,12 @@
     gate.querySelector('#cagBtnBriefing').addEventListener('click', function(){
       gate.hidden = true;
       if(window.__SPZ_BRIEFING && typeof window.__SPZ_BRIEFING.open === 'function') window.__SPZ_BRIEFING.open();
-      else location.hash = '#/cockpit';
+      /* Round S5: Institutional Briefing's own trigger card lives on the
+         Command Center tab, which is now part of Pro Desk (#/pro) rather
+         than its own #/cockpit route -- see part-47.js. */
+      else location.hash = '#/pro';
     });
+    gate.querySelector('#cagBtnQuietValue').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/quietValue'; });
 
     gate.querySelector('#cagMaskBtn').addEventListener('click', function(){
       var show = advInputs[0] && advInputs[0].type === 'password';
@@ -655,7 +667,7 @@
         adminAddAnalysis: TXT.adminAddAnalysis, adminPrintReport: TXT.adminPrintReport,
         adminCompareDownload: TXT.adminCompareDownload, adminConnectedUsers: TXT.adminConnectedUsers,
         adminAnnouncements: TXT.adminAnnouncements,
-        adminPro: TXT.adminPro, adminBriefing: TXT.adminBriefing,
+        adminPro: TXT.adminPro, adminBriefing: TXT.adminBriefing, adminQuietValue: TXT.adminQuietValue,
         tabMember: TXT.tabMember, tabFull: TXT.tabFull, tabLine: TXT.tabLine, tabTg: TXT.tabTg,
         lineName: lineNameTxt, lineStatus: lineStatusTxt, lineBtn: lineBtnTxt,
         tgName: tgNameTxt, tgStatus: tgStatusTxt, tgBtn: tgBtnTxt,
