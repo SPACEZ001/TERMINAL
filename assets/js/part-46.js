@@ -189,7 +189,7 @@
        trigger in part-47.js since phase 4). Adding shortcuts here too so
        both are reachable from where she actually expects them. */
     adminPro:{en:'Institutional Pro Desk',th:'โปรเดสก์ระดับสถาบัน'},
-    adminBriefing:{en:'Institutional Briefing',th:'บรีฟฉบับสถาบัน'},
+    adminBriefing:{en:'Institutional Outlook Brief',th:'บรีฟภาพรวมเชิงสถาบัน'},
     bulk:{en:'📋 Paste all 50 at once',th:'📋 วางทีเดียว 50 ชุด'},
     mask:{en:'👁 Show / hide',th:'👁 แสดง/ซ่อน'},
     clear:{en:'🗑 Clear all',th:'🗑 ล้างทั้งหมด'},

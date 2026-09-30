@@ -577,7 +577,7 @@
        Turning Point Radar / Cockpit already compute, and turns it into a
        single plain-language briefing instead of a dashboard. Nothing here
        is new data -- see gatherBriefingData(). ---- */
-    briefTitle:{en:'Institutional Briefing',th:'บรีฟฉบับสถาบัน'},
+    briefTitle:{en:'Institutional Outlook Brief',th:'บรีฟภาพรวมเชิงสถาบัน'},
     briefSub:{en:'How institutional and fund desks read cross-asset signals — auto-generated from live data',
               th:'มุมมองแบบที่สถาบัน/กองทุนใหญ่ใช้อ่านสัญญาณข้ามสินทรัพย์ — สร้างอัตโนมัติจากข้อมูลสด'},
     briefCycleLbl:{en:'Cycle read',th:'ช่วงวัฏจักรตอนนี้'},
@@ -586,6 +586,17 @@
     briefRotH:{en:'Where the money is rotating · 1 month',th:'เงินกำลังหมุนไปทางไหน · 1 เดือน'},
     briefLeading:{en:'LEADING',th:'นำตลาด'},
     briefLagging:{en:'LAGGING',th:'ตามหลัง'},
+    /* Round S: forward-looking section, added for the "Institutional Outlook
+       Brief" rename/expansion. This is NOT a new prediction model -- it reads
+       window.SPZ_CYCLE (the same market-cycle phase used by Market Outlook
+       and Print Report's Market Summary) and states the same historical
+       leads/lags playbook those pages already show, so the three report
+       surfaces stay consistent instead of each inventing its own framing. */
+    briefForwardH:{en:'Forward read · current cycle phase',th:'มองไปข้างหน้า · ช่วงวัฏจักรตอนนี้'},
+    briefForwardNote:{en:'A historical rotation pattern for this phase of the cycle, not a prediction of what happens next — see Market Outlook for the full phase-by-phase breakdown.',
+                       th:'รูปแบบการหมุนเงินตามสถิติในอดีตของช่วงวัฏจักรนี้ ไม่ใช่การพยากรณ์สิ่งที่จะเกิดขึ้นต่อไป — ดูรายละเอียดครบทุกช่วงได้ที่หน้า "แนวโน้มตลาด"'},
+    briefPhaseLead:{en:'Historically leads in this phase',th:'กลุ่มที่มักนำตลาดในช่วงนี้'},
+    briefPhaseLag:{en:'Historically lags in this phase',th:'กลุ่มที่มักตามหลังในช่วงนี้'},
     briefNoData:{en:'Live data has not finished loading yet — close this and try again in a few seconds.',
                  th:'ข้อมูลสดยังโหลดไม่เสร็จ — ปิดหน้าต่างนี้แล้วลองใหม่อีกครั้งในไม่กี่วินาที'},
     briefDisclaimer:{en:'Auto-generated from the same public price data and 11-gauge model used across this site — see Turning Point Radar for the full live dashboard and Proof Lab for how each gauge actually graded in a 30-year backtest (most graded C–F individually; read this as a cross-asset snapshot, not a forecast). Educational material, not investment advice.',
@@ -1255,6 +1266,29 @@
     return s + (g.unit || '');
   }
 
+  /* Round S: same phase/lead/lag data Print Report's Market Summary
+     (part-49.js CYCLE_PHASES) and Market Outlook (part-15.js OUTLOOK.phases)
+     already show -- kept as its own local copy per this codebase's existing
+     convention of not sharing state across these standalone file closures. */
+  var BRIEF_CYCLE_PHASES = [
+    { id:'early', n:{en:'Early Cycle — Recovery',th:'ต้นวัฏจักร — ฟื้นตัว'},
+      lead:{en:['Cyclicals','Consumer discretionary','Financials','Small caps'],th:['หุ้นวัฏจักร','สินค้าฟุ่มเฟือย','การเงิน','หุ้นเล็ก']},
+      lag:{en:['Utilities','Consumer staples'],th:['สาธารณูปโภค','สินค้าจำเป็น']} },
+    { id:'mid', n:{en:'Mid Cycle — Broad Expansion',th:'กลางวัฏจักร — ขยายตัวกว้าง'},
+      lead:{en:['Technology','Industrials','Capital goods','Communication'],th:['เทคโนโลยี','อุตสาหกรรม','สินค้าทุน','สื่อสาร']},
+      lag:{en:['Deep cyclicals','Highly leveraged names'],th:['หุ้นวัฏจักรจัด','หุ้นที่หนี้สูงมาก']} },
+    { id:'late', n:{en:'Late Cycle — Costs Bite',th:'ปลายวัฏจักร — ต้นทุนเริ่มกัด'},
+      lead:{en:['Energy','Materials','Healthcare','Staples'],th:['พลังงาน','วัสดุ','สุขภาพ','สินค้าจำเป็น']},
+      lag:{en:['Consumer discretionary','Long-duration growth'],th:['สินค้าฟุ่มเฟือย','หุ้นเติบโตระยะยาวไกล']} },
+    { id:'rec', n:{en:'Recession / Contraction Risk',th:'ความเสี่ยงถดถอย / หดตัว'},
+      lead:{en:['Utilities','Staples','Healthcare','Quality balance sheets'],th:['สาธารณูปโภค','สินค้าจำเป็น','สุขภาพ','งบดุลแข็งแรง']},
+      lag:{en:['Cyclicals','High debt','Unprofitable growth'],th:['หุ้นวัฏจักร','หนี้สูง','หุ้นโตที่ยังขาดทุน']} }
+  ];
+  function briefCyclePhaseFor(id){
+    for(var i = 0; i < BRIEF_CYCLE_PHASES.length; i++){ if(BRIEF_CYCLE_PHASES[i].id === id) return BRIEF_CYCLE_PHASES[i]; }
+    return BRIEF_CYCLE_PHASES[1];
+  }
+
   function gatherBriefingData(){
     var REG = window.__SPZ_REGIME;
     if(!REG || typeof REG.snap !== 'function' || typeof REG.score !== 'function') return null;
@@ -1284,6 +1318,8 @@
 
     var cycleLabel = '';
     try { if(window.SPZ_CYCLE) cycleLabel = T(window.SPZ_CYCLE.label()); } catch(e){}
+    var phase = null;
+    try { if(window.SPZ_CYCLE && window.SPZ_CYCLE.phase) phase = briefCyclePhaseFor(window.SPZ_CYCLE.phase); } catch(e){}
 
     var verdictKey = 'briefVerdictCalm';
     if(sc.alerts >= 3) verdictKey = 'briefVerdictAlert';
@@ -1292,7 +1328,7 @@
       .replace('{known}', sc.known).replace('{soft}', sc.soft).replace('{alerts}', sc.alerts);
 
     return {
-      rows: rows, leaders: leaders, laggards: laggards, cycleLabel: cycleLabel,
+      rows: rows, leaders: leaders, laggards: laggards, cycleLabel: cycleLabel, phase: phase,
       verdict: verdict, generatedAt: snap.generated_at || null
     };
   }
@@ -1358,6 +1394,17 @@
           '<div class="jrp-rot-grid">' +
             '<div class="jrp-rot-col"><div class="jrp-rot-lab up">' + esc(T(UI.briefLeading)) + '</div>' + leadersHtml + '</div>' +
             '<div class="jrp-rot-col"><div class="jrp-rot-lab dn">' + esc(T(UI.briefLagging)) + '</div>' + laggardsHtml + '</div>' +
+          '</div>'
+        ) : '') +
+        (data.phase ? (
+          '<div class="jrp-sec-h">' + esc(T(UI.briefForwardH)) + '</div>' +
+          '<div class="jrp-text">' + esc(T(UI.briefForwardNote)) + '</div>' +
+          '<div class="jrp-cycle-now">' + esc(T(data.phase.n)) + '</div>' +
+          '<div class="jrp-rot-grid">' +
+            '<div class="jrp-rot-col"><div class="jrp-rot-lab up">' + esc(T(UI.briefPhaseLead)) + '</div>' +
+              '<div class="jrp-text">' + esc(T(data.phase.lead).join(' · ')) + '</div></div>' +
+            '<div class="jrp-rot-col"><div class="jrp-rot-lab dn">' + esc(T(UI.briefPhaseLag)) + '</div>' +
+              '<div class="jrp-text">' + esc(T(data.phase.lag).join(' · ')) + '</div></div>' +
           '</div>'
         ) : '');
     }
