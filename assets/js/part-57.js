@@ -844,6 +844,57 @@
     document.head.appendChild(s);
   }
 
+  /* ROUND S: extracted from wireReportLineSend() below so the SAME
+     render -> upload -> broadcast pipeline can be triggered from a
+     different DOM shape -- Print Report (part-49.js) has its own
+     `[data-pr="sheet"]` preview container and its own button row, not the
+     Institutional-Briefing-style `.jrp-actions`/`.jrp-sheet` overlay this
+     file builds. Behavior for the three existing callers below is
+     unchanged; this is a pure extraction. */
+  function sendReportImageToLine(sheetEl, btn, statusEl){
+    if(!sheetEl || !btn || !statusEl) return;
+    var key = getSharedAdminKey();
+    if(!key){ window.alert(T(UI.notifyErrKey)); return; }
+    if(!cloudinaryConfigured()){ window.alert(T(UI.imgNotConfigured)); return; }
+    if(!window.confirm(T(UI.reportLineConfirm))) return;
+    btn.disabled = true;
+    statusEl.textContent = T(UI.reportLineRendering);
+    ensureReportHtml2Canvas(function(err){
+      if(err || !window.html2canvas){ btn.disabled = false; statusEl.textContent = ''; window.alert(T(UI.reportLineErr)); return; }
+      window.html2canvas(sheetEl, { backgroundColor:'#ffffff', scale:2, useCORS:true }).then(function(canvas){
+        statusEl.textContent = T(UI.reportLineUploading);
+        return new Promise(function(resolve, reject){
+          /* LINE's Messaging API image message documents JPEG (max 10MB,
+             4096x4096) -- html2canvas defaults to PNG, which some LINE
+             clients render inconsistently, so convert explicitly here.
+             The captured sheet has no transparency (backgroundColor above
+             is opaque white) so JPEG loses nothing meaningful. */
+          canvas.toBlob(function(blob){ blob ? resolve(blob) : reject(new Error('toBlob failed')); }, 'image/jpeg', 0.92);
+        });
+      }).then(function(blob){
+        return cloudinaryUpload(blob);
+      }).then(function(url){
+        statusEl.textContent = T(UI.reportLineSending);
+        return fetch(JOURNAL_WORKER_BASE + '/api/admin/broadcast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Key': key },
+          body: JSON.stringify({ text: T(UI.reportLineCaption), imageUrl: url })
+        }).then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); });
+      }).then(function(res){
+        btn.disabled = false; statusEl.textContent = '';
+        if(res.ok && res.data && res.data.ok){ window.alert(T(UI.reportLineOk)); return; }
+        if(res.data && res.data.error === 'messaging_not_configured'){ window.alert(T(UI.notifyErrConfig)); return; }
+        window.alert(T(UI.reportLineErr));
+      }).catch(function(){
+        btn.disabled = false; statusEl.textContent = '';
+        window.alert(T(UI.reportLineErr));
+      });
+    });
+  }
+  // exposed so part-49.js (Print Report) can trigger the same pipeline
+  // against its own DOM structure without duplicating any of this logic.
+  window.__SPZ_sendReportImageToLine = sendReportImageToLine;
+
   function wireReportLineSend(ov){
     var actions = ov.querySelector('.jrp-actions');
     var sheet = ov.querySelector('.jrp-sheet');
@@ -859,45 +910,7 @@
     statusEl.className = 'jrp-line-status';
     actions.appendChild(statusEl);
 
-    btn.addEventListener('click', function(){
-      var key = getSharedAdminKey();
-      if(!key){ window.alert(T(UI.notifyErrKey)); return; }
-      if(!cloudinaryConfigured()){ window.alert(T(UI.imgNotConfigured)); return; }
-      if(!window.confirm(T(UI.reportLineConfirm))) return;
-      btn.disabled = true;
-      statusEl.textContent = T(UI.reportLineRendering);
-      ensureReportHtml2Canvas(function(err){
-        if(err || !window.html2canvas){ btn.disabled = false; statusEl.textContent = ''; window.alert(T(UI.reportLineErr)); return; }
-        window.html2canvas(sheet, { backgroundColor:'#ffffff', scale:2, useCORS:true }).then(function(canvas){
-          statusEl.textContent = T(UI.reportLineUploading);
-          return new Promise(function(resolve, reject){
-            /* LINE's Messaging API image message documents JPEG (max 10MB,
-               4096x4096) -- html2canvas defaults to PNG, which some LINE
-               clients render inconsistently, so convert explicitly here.
-               The .jrp-sheet capture has no transparency (backgroundColor
-               above is opaque white) so JPEG loses nothing meaningful. */
-            canvas.toBlob(function(blob){ blob ? resolve(blob) : reject(new Error('toBlob failed')); }, 'image/jpeg', 0.92);
-          });
-        }).then(function(blob){
-          return cloudinaryUpload(blob);
-        }).then(function(url){
-          statusEl.textContent = T(UI.reportLineSending);
-          return fetch(JOURNAL_WORKER_BASE + '/api/admin/broadcast', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Admin-Key': key },
-            body: JSON.stringify({ text: T(UI.reportLineCaption), imageUrl: url })
-          }).then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); });
-        }).then(function(res){
-          btn.disabled = false; statusEl.textContent = '';
-          if(res.ok && res.data && res.data.ok){ window.alert(T(UI.reportLineOk)); return; }
-          if(res.data && res.data.error === 'messaging_not_configured'){ window.alert(T(UI.notifyErrConfig)); return; }
-          window.alert(T(UI.reportLineErr));
-        }).catch(function(){
-          btn.disabled = false; statusEl.textContent = '';
-          window.alert(T(UI.reportLineErr));
-        });
-      });
-    });
+    btn.addEventListener('click', function(){ sendReportImageToLine(sheet, btn, statusEl); });
   }
 
   /* Same LINE/Telegram sessions the auth gate and Watchlist page already

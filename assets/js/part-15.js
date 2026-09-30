@@ -211,7 +211,73 @@ var OUTLOOK = {
   src:{
     en:'Sources: US Bureau of Economic Analysis (GDP); US Bureau of Labor Statistics via published outlooks (CPI); Institute for Supply Management (PMI); US Bank and Welch & Forbes August 2026 economic outlooks; Richmond Fed business-cycle brief; Fidelity business-cycle framework; State Street Q3 2026 sector perspectives; VanEck mid-2026 sector review; StreetStats market cycle summary.',
     th:'แหล่งข้อมูล: สำนักวิเคราะห์เศรษฐกิจสหรัฐฯ (GDP); สำนักสถิติแรงงานสหรัฐฯ ผ่านรายงานภาพรวมที่เผยแพร่ (CPI); Institute for Supply Management (PMI); รายงานภาพรวมเศรษฐกิจเดือน ส.ค. 2026 ของ US Bank และ Welch & Forbes; บทวิเคราะห์วัฏจักรธุรกิจของเฟดริชมอนด์; กรอบวัฏจักรธุรกิจของ Fidelity; มุมมองรายกลุ่ม Q3 2026 ของ State Street; บทวิเคราะห์กลางปี 2026 ของ VanEck; สรุปวัฏจักรตลาดของ StreetStats'
-  }
+  },
+  /* ---------------- ROUND S: ADVANCED -- valuation checklist × cycle phase ----------------
+     Bridges the five beginner/intermediate checks taught on the "basics" page
+     (assets/js/part-60.js: P/E, D/E, ROE/Margin, Payout, P/B) to this page's
+     own cycle-phase framework. Deliberately reactive to whichever phase is
+     currently selected (the same `sel` state the wave/table/cycle buttons
+     already drive) rather than one static giant table, so it reads as one
+     coherent "what does this phase mean for these five numbers" answer.
+     This is the genuinely advanced material the user asked to have moved
+     here instead of living on the beginner-facing basics page. */
+  valCycle:[
+    { key:'pe', t:{en:'P/E — Valuation Multiple', th:'P/E — ตัวคูณมูลค่า'},
+      rows:{
+        early:{en:'Multiple expansion is normal here — prices re-rate up from depressed, low-multiple lows well before earnings catch up.',
+               th:'การขยายตัวของ P/E เป็นเรื่องปกติในช่วงนี้ ราคามักถูกตีมูลค่าใหม่ขึ้นจากจุดต่ำที่ P/E เคยกดต่ำไว้ ก่อนที่กำไรจะตามทัน'},
+        mid:{en:'The multiple should track earnings growth roughly one-for-one — watch for prices running ahead of profit as the first warning sign.',
+             th:'P/E ควรวิ่งตามการเติบโตของกำไรใกล้เคียงกัน ถ้าราคาวิ่งนำหน้ากำไรไปไกล นั่นคือสัญญาณเตือนแรก'},
+        late:{en:'A stretched multiple with slowing earnings growth is the classic late-cycle warning — margins get squeezed exactly when prices are least forgiving.',
+              th:'P/E ที่ตึงมือ พร้อมกำไรที่โตช้าลง คือสัญญาณเตือนคลาสสิกของปลายวัฏจักร เพราะมาร์จิ้นถูกบีบพอดีตอนที่ราคาให้อภัยน้อยที่สุด'},
+        rec:{en:'Trailing P/E can look artificially low right before earnings collapse — a classic value trap. Forward estimates matter far more here than the headline number.',
+             th:'P/E แบบย้อนหลังอาจดูต่ำผิดปกติ ก่อนกำไรจะทรุดจริง — เป็นกับดักมูลค่าคลาสสิก ประมาณการล่วงหน้าสำคัญกว่าตัวเลขพาดหัวมากในช่วงนี้'}
+      } },
+    { key:'de', t:{en:'D/E — Leverage', th:'D/E — หนี้สินต่อทุน'},
+      rows:{
+        early:{en:'Leveraged cyclicals get the biggest lift as rates are low and demand re-accelerates — debt is a tailwind here.',
+               th:'หุ้นวัฏจักรที่มีหนี้สูงมักได้แรงหนุนมากที่สุด เพราะดอกเบี้ยต่ำและดีมานด์กำลังเร่งกลับมา หนี้กลายเป็นแรงส่งในช่วงนี้'},
+        mid:{en:'Moderate leverage is unremarkable; the question shifts to what the debt is funding as rates start climbing.',
+             th:'หนี้ระดับปานกลางยังไม่มีนัยพิเศษ คำถามเริ่มเปลี่ยนไปที่ว่าหนี้นั้นเอาไปทำอะไร เพราะดอกเบี้ยเริ่มขยับขึ้น'},
+        late:{en:'High D/E turns genuinely dangerous here — rates sit at their highest just as earnings growth slows, squeezing interest coverage from both sides.',
+              th:'D/E สูงเริ่มอันตรายจริงในช่วงนี้ เพราะดอกเบี้ยอยู่จุดสูงสุดพอดีกับที่กำไรโตช้าลง บีบความสามารถจ่ายดอกเบี้ยจากสองด้านพร้อมกัน'},
+        rec:{en:'Balance-sheet strength decides who survives. Low-D/E names get bought as "quality"; high-D/E names face real solvency risk, not just a rough quarter.',
+             th:'ความแข็งแรงของงบดุลคือตัวตัดสินว่าใครรอด หุ้น D/E ต่ำถูกซื้อในฐานะ "คุณภาพดี" ส่วนหุ้น D/E สูงเผชิญความเสี่ยงล้มละลายจริง ไม่ใช่แค่ไตรมาสแย่'}
+      } },
+    { key:'roe', t:{en:'ROE / Margin — Efficiency', th:'ROE / มาร์จิ้น — ประสิทธิภาพ'},
+      rows:{
+        early:{en:'Margins are recovering off a cyclical trough — the rate of improvement matters more here than the absolute level.',
+               th:'มาร์จิ้นกำลังฟื้นตัวจากจุดต่ำของวัฏจักร อัตราการฟื้นตัวสำคัญกว่าระดับตัวเลขที่แท้จริงในช่วงนี้'},
+        mid:{en:'Margins typically peak here as pricing power is strong and costs have not yet caught up — the best read you will get all cycle.',
+             th:'มาร์จิ้นมักทำจุดสูงสุดในช่วงนี้ เพราะอำนาจตั้งราคาแข็งแรงและต้นทุนยังตามไม่ทัน เป็นตัวเลขที่ดีที่สุดที่จะเห็นได้ทั้งวัฏจักร'},
+        late:{en:'Margins compress as wages, input costs and rates all sit high together — a shrinking margin here is the cycle itself talking, not company-specific news.',
+              th:'มาร์จิ้นถูกบีบเพราะค่าแรง ต้นทุนวัตถุดิบ และดอกเบี้ยสูงพร้อมกัน มาร์จิ้นที่หดตัวในช่วงนี้คือสัญญาณจากตัววัฏจักรเอง ไม่ใช่แค่ข่าวเฉพาะบริษัท'},
+        rec:{en:'ROE falls broadly across the market. Only genuinely well-run, low-leverage businesses hold theirs up — this is the phase that separates the two.',
+             th:'ROE ทรุดตัวทั่วตลาดเป็นวงกว้าง มีแต่ธุรกิจที่บริหารดีจริงและหนี้ต่ำเท่านั้นที่ยังรักษาระดับได้ ช่วงนี้แหละที่แยกสองแบบออกจากกันชัดเจน'}
+      } },
+    { key:'payout', t:{en:'Payout Ratio — Dividend Safety', th:'Payout Ratio — ความปลอดภัยของปันผล'},
+      rows:{
+        early:{en:'Low payout is common as companies reinvest into the re-acceleration rather than pay it out — reinvestment usually wins here.',
+               th:'Payout ต่ำเป็นเรื่องปกติ เพราะบริษัทเก็บกำไรไปลงทุนต่อกับการฟื้นตัวแทนที่จะจ่ายออก การเก็บไปลงทุนต่อมักคุ้มกว่าในช่วงนี้'},
+        mid:{en:'Payout ratios are usually stable here — a rising payout with flat growth is worth a second look even this early.',
+             th:'Payout มักทรงตัวในช่วงนี้ ถ้า payout เริ่มขึ้นทั้งที่การเติบโตนิ่ง ควรเช็คเพิ่มเติมแม้จะยังไม่ใช่ปลายวัฏจักรก็ตาม'},
+        late:{en:'Payout often creeps up as growth options run out and companies return cash instead — a rising payout ratio can itself be a late-cycle signal.',
+              th:'Payout มักค่อยๆ ขึ้น เพราะบริษัทหมดทางเลือกในการโตแล้วหันมาคืนเงินสดแทน payout ที่ขึ้นเรื่อยๆ อาจเป็นสัญญาณปลายวัฏจักรได้ด้วยตัวมันเอง'},
+        rec:{en:'This is when payout ratios spike or dividends get cut outright. Coverage — not yield — is the number that matters now.',
+             th:'ช่วงนี้แหละที่ payout ratio พุ่งขึ้นหรือปันผลถูกตัดตรงๆ ความสามารถจ่ายได้จริง (coverage) สำคัญกว่าตัวเลขอัตราปันผลมากในตอนนี้'}
+      } },
+    { key:'pb', t:{en:'P/B — Book-Value Floor', th:'P/B — พื้นมูลค่าทางบัญชี'},
+      rows:{
+        early:{en:'For asset-heavy cyclicals, P/B often bottoms right here as book value stabilizes and the market starts paying up for the same assets again.',
+               th:'สำหรับหุ้นวัฏจักรที่ใช้สินทรัพย์หนัก P/B มักทำจุดต่ำสุดพอดีในช่วงนี้ เมื่อมูลค่าทางบัญชีเริ่มนิ่งและตลาดเริ่มยอมจ่ายแพงขึ้นสำหรับสินทรัพย์ชุดเดิม'},
+        mid:{en:'P/B fades into the background — asset-light growth stories dominate leadership, and book value tells you little about them.',
+             th:'P/B แทบไม่มีบทบาทในช่วงนี้ เพราะหุ้นเติบโตที่ใช้สินทรัพย์น้อยเป็นผู้นำตลาด และมูลค่าทางบัญชีบอกอะไรเกี่ยวกับหุ้นกลุ่มนี้ได้น้อยมาก'},
+        late:{en:'P/B becomes relevant again as money rotates toward tangible-asset defensives — a real floor investors actually start caring about once more.',
+              th:'P/B กลับมามีความหมายอีกครั้ง เมื่อเงินหมุนไปหาหุ้นตั้งรับที่มีสินทรัพย์จับต้องได้ เป็น "พื้น" มูลค่าจริงที่นักลงทุนเริ่มสนใจอีกครั้ง'},
+        rec:{en:'For quality, asset-heavy names, P/B near or below 1x becomes an actionable floor to watch — this is the one phase where the "everything went wrong tomorrow" test gets used for real.',
+             th:'สำหรับหุ้นสินทรัพย์หนักที่มีคุณภาพ P/B ใกล้หรือต่ำกว่า 1 เท่า กลายเป็น "พื้น" ที่ใช้ดูได้จริง เป็นช่วงเดียวที่คำถาม "ถ้าพรุ่งนี้ทุกอย่างพังหมด" ถูกนำมาใช้จริงๆ'}
+      } }
+  ]
 };
 
 /* ---------------- EXTRA GUIDE QUESTIONS (appended to the original five) ------- */
@@ -803,6 +869,9 @@ var CL_UI = {
       '<div class="wave-box reveal" data-o="wave"></div>' +
       '<div class="cyc-wrap" data-o="cyc"></div>' +
       '<div class="v8-panel reveal" data-o="det"></div>' +
+      '<div class="v8-sub" data-o="s6"></div>' +
+      '<p class="lede" data-o="s6d" style="margin-bottom:16px"></p>' +
+      '<div class="res-grid" data-o="valcyc"></div>' +
       '<div class="v8-sub" data-o="s5"></div><div data-o="tab"></div>' +
       '<div class="v8-sub" data-o="s2"></div><p class="lede" data-o="snapLede" style="margin-bottom:20px"></p>' +
       '<div class="ind-grid" data-o="ind"></div>' +
@@ -844,6 +913,22 @@ var CL_UI = {
           '<div class="res-card"><div class="rc-h">' + esc(UI.leads[L()]) + '</div>' + chips(p.lead[L()] || p.lead.en) + '</div>' +
           '<div class="res-card w"><div class="rc-h warn">' + esc(UI.lagsIn[L()]) + '</div>' + chips(p.lag[L()] || p.lag.en) + '</div>' +
         '</div>';
+
+      /* ROUND S: ADVANCED -- how the "Start Investing" checklist metrics read
+         in the currently-selected phase. Reactive to `sel`, same as the rest
+         of this panel, so switching phase (wave band / table row / cyc-btn)
+         updates this too. */
+      var vg = sec.querySelector('[data-o="valcyc"]');
+      if(vg){
+        vg.innerHTML = '';
+        for(var vi = 0; vi < OUTLOOK.valCycle.length; vi++){
+          var vm = OUTLOOK.valCycle[vi];
+          var vrow = vm.rows[p.id] || vm.rows.mid;
+          vg.appendChild(el('div', 'res-card',
+            '<div class="rc-h">' + esc(tx(vm.t)) + '</div>' +
+            '<p style="font-size:12.9px;color:var(--grey);line-height:1.7">' + esc(tx(vrow)) + '</p>'));
+        }
+      }
     }
 
     function paintCyc(){
@@ -874,6 +959,12 @@ var CL_UI = {
       sec.querySelector('[data-o="s3"]').textContent = UI.driversH[L()];
       sec.querySelector('[data-o="s4"]').textContent = UI.scenH[L()];
       sec.querySelector('[data-o="s5"]').textContent = L() === 'th' ? 'ควรถือหุ้นอะไรในแต่ละช่วง' : 'What to hold in each phase';
+      sec.querySelector('[data-o="s6"]').textContent = L() === 'th'
+        ? 'ขั้นสูง: อ่านเช็คลิสต์ก่อนลงทุนให้เข้ากับจังหวะนี้'
+        : 'Advanced: Reading The Investing Checklist In This Phase';
+      sec.querySelector('[data-o="s6d"]').innerHTML = L() === 'th'
+        ? 'ห้าเรื่องที่เช็คก่อนซื้อหุ้น (P/E, D/E, ROE/มาร์จิ้น, Payout, P/B) อ่านไม่เหมือนกันในแต่ละช่วงของวัฏจักร ด้านล่างนี้ปรับตามช่วงที่เลือกไว้ด้านบนโดยอัตโนมัติ — ยังไม่เคยดูเช็คลิสต์เต็มๆ? เปิดได้ที่ <a href="#basics" style="color:var(--neon)">เริ่มต้นลงทุน →</a>'
+        : 'The five checks before buying any stock (P/E, D/E, ROE/Margin, Payout, P/B) read differently depending on where we are in the cycle. This updates automatically with whichever phase is selected above — new to the full checklist? Open <a href="#basics" style="color:var(--neon)">Start Investing →</a>';
       sec.querySelector('[data-o="snapLede"]').textContent = tx(OUTLOOK.snapLede);
       sec.querySelector('[data-o="disc"]').innerHTML = '<b>⚠</b> ' + esc(tx(OUTLOOK.disc));
       sec.querySelector('[data-o="src"]').textContent = tx(OUTLOOK.src);

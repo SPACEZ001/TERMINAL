@@ -29,6 +29,8 @@ var WEB = {
     {id:'cbBOE', L:0, f:'🇬🇧', l:{en:'Bank of England',th:'ธนาคารกลางอังกฤษ'}, v:'£3.1T · 3.50%', w:5, c:'#7fd1ff'},
     {id:'cbSNB', L:0, f:'🇨🇭', l:{en:'Swiss National Bank',th:'ธนาคารกลางสวิส'}, v:'CHF 1.1T · 0.25%', w:4, c:'#ff8fb0'},
     {id:'cbRBI', L:0, f:'🇮🇳', l:{en:'Reserve Bank of India',th:'ธนาคารกลางอินเดีย'}, v:'₹260T · 5.25%', w:5, c:'#ffd166'},
+    {id:'cbBOK', L:0, f:'🇰🇷', l:{en:'Bank of Korea',th:'ธนาคารกลางเกาหลีใต้'}, v:'2.75%', w:4, c:'#ff6b35'},
+    {id:'cbMAS', L:0, f:'🇸🇬', l:{en:'Monetary Authority of Singapore',th:'ธนาคารกลางสิงคโปร์ (MAS)'}, v:'SGD NEER band', w:4, c:'#3ddc97'},
 
     /* ---- L1 holders ---- */
     {id:'us',   L:1, f:'🇺🇸', l:{en:'US investors',th:'นักลงทุนสหรัฐฯ'},  v:'−$8.1B/wk', w:10, c:'#ccff00'},
@@ -128,6 +130,11 @@ var WEB = {
     {id:'PTT',  L:5, l:'PTT',  v:{en:'TH energy',th:'พลังงานไทย'}, w:4},
     {id:'JNJ',  L:5, l:'JNJ',  v:{en:'US healthcare',th:'สุขภาพสหรัฐฯ'}, w:5},
     {id:'BDMS', L:5, l:'BDMS', v:{en:'TH hospitals',th:'โรงพยาบาลไทย'}, w:4},
+    /* BH (Bumrungrad Hospital) was already an edge target further down
+       (kHLT -> BH) with no matching node defined -- the renderer's
+       undefined-node guard was silently dropping that link. Adding the
+       node here completes it instead of leaving a dead-end. */
+    {id:'BH',   L:5, l:'BH',   v:{en:'TH private hospital',th:'โรงพยาบาลเอกชนไทย'}, w:3},
     {id:'KO',   L:5, l:'KO',   v:{en:'Staples',th:'สินค้าจำเป็น'}, w:4},
     {id:'CPALL',L:5, l:'CPALL',v:{en:'TH retail',th:'ค้าปลีกไทย'}, w:4},
     {id:'O',    L:5, l:'O',    v:{en:'US REIT',th:'REIT สหรัฐฯ'}, w:4},
@@ -200,6 +207,8 @@ var WEB = {
     ['cbFED','pens',6],['cbFED','pass',8],['cbFED','hedg',5],['cbFED','retl',5],
     ['cbECB','pass',4],['cbECB','pens',3],
     ['cbBOJ','hedg',4],['cbPBOC','emlo',4],
+    ['cbBOK','emlo',4],['cbBOK','hedg',2],['cbBOK','pass',2],
+    ['cbMAS','pens',3],['cbMAS','hedg',3],['cbMAS','pass',2],
     /* holders → markets */
     ['us','mUS',8],['us','mAS',6],['us','mEM',5],['us','mCM',3],['us','mJP',3],
     ['eu','mUS',5],['eu','mEM',4],['eu','mST',4],['eu','mAS',3],
@@ -335,6 +344,7 @@ var WEB = {
     ['PTT','uCAP',5],['PTT','uDIV',5],['PTT','uTAX',3],
     ['JNJ','uRND',5],['JNJ','uDIV',5],['JNJ','uWAG',3],
     ['BDMS','uCAP',4],['BDMS','uWAG',4],['BDMS','uDIV',3],
+    ['BH','uCAP',4],['BH','uDIV',4],['BH','uWAG',3],
     ['KO','uSUP',4],['KO','uDIV',5],['KO','uWAG',3],
     ['CPALL','uSUP',5],['CPALL','uWAG',4],['CPALL','uDBT',3],['CPALL','uDIV',2],
     ['O','uDIV',7],['O','uDBT',4],
@@ -874,8 +884,18 @@ var INFL_MAP_PINS = [{"u":"singapore","x":1103.7,"y":407.4},{"u":"taiwan","x":11
       if(x) x.addEventListener('click', function(){ picked = null; paintWeb(); paintDrill(); });
     }
 
-    /* ---------- continuous zoom + drag to pan ---------- */
-    var Z = { s:1, fit:true };
+    /* ---------- continuous zoom + drag to pan ----------
+       ROUND S FIX: default used to be fit:true ("Fit" -- scales the map to
+       stay within ~80% of the viewport HEIGHT, per fitScale() below). For a
+       wide map on a normal laptop window this routinely computes a scale
+       well under 100%, so the map visibly only fills part of the row on
+       first load -- exactly the "only fills the left half of the screen"
+       bug reported, and clicking the "Fit width" button (which simply sets
+       fit:false, s:1) was the only way to reach the width-filling view most
+       people actually expect by default. Starting in fit-width mode instead
+       makes that the default with no click required; "Fit" (height-
+       constrained) is still one click away for anyone who wants it. */
+    var Z = { s:1, fit:false };
     var MINZ = 0.35, MAXZ = 4;
 
     function stageEl(){ return map.querySelector('[data-w="stage"]'); }
