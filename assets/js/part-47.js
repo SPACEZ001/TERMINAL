@@ -126,9 +126,9 @@
       th:'GEX, ธุรกรรม Dark Pool, ฮีทแมพออเดอร์บุ๊ก, Monte Carlo, อัลกอริทึมการส่งคำสั่ง และเครื่องมือระดับโปรที่เหลือ — ย้ายมาไว้ตรงนี้จากเมนูบนสุด เพื่อไม่ให้รกหน้าเว็บสำหรับคนอื่น'},
     goPro:{en:'Open Institutional Pro Desk →',th:'เปิดโปรเดสก์ระดับสถาบัน →'},
 
-    briefL:{en:'INSTITUTIONAL BRIEFING',th:'บรีฟฉบับสถาบัน'},
-    briefTxt:{en:'Turns the site’s own 11-gauge regime model and sector flow data into one auto-generated, plain-language briefing — printable and sendable to LINE. Nothing manual, nothing new to write each time.',
-      th:'แปลงโมเดล 11 ตัวชี้วัดและข้อมูลการหมุนเงินของเว็บนี้ ให้เป็นบรีฟภาษาคนที่สร้างอัตโนมัติ — พิมพ์ได้และส่งเข้า LINE ได้ ไม่ต้องเขียนเองแม้แต่ครั้งเดียว'},
+    briefL:{en:'INSTITUTIONAL OUTLOOK BRIEF',th:'บรีฟภาพรวมเชิงสถาบัน'},
+    briefTxt:{en:'Turns the site’s own 11-gauge regime model, sector flow data, and market-cycle phase read into one auto-generated, plain-language briefing — now with a forward section on which sectors historically lead and lag from here — printable and sendable to LINE. Nothing manual, nothing new to write each time.',
+      th:'แปลงโมเดล 11 ตัวชี้วัด ข้อมูลการหมุนเงิน และช่วงวัฏจักรตลาดของเว็บนี้ ให้เป็นบรีฟภาษาคนที่สร้างอัตโนมัติ — เพิ่มส่วนมองไปข้างหน้าว่ากลุ่มไหนมักนำ/ตามหลังจากจุดนี้ — พิมพ์ได้และส่งเข้า LINE ได้ ไม่ต้องเขียนเองแม้แต่ครั้งเดียว'},
     goBrief:{en:'Generate briefing →',th:'สร้างบรีฟ →'},
 
     priceChartL:{en:'REAL PRICE CHART',th:'กราฟราคาจริง'},
