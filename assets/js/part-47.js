@@ -121,11 +121,6 @@
     rankNA:{en:'The ranking engine hasn’t loaded yet.',th:'เครื่องมือจัดอันดับยังไม่โหลด'},
     goDesk:{en:'Open What To Buy Now →',th:'เปิดหน้าตอนนี้ควรซื้ออะไร →'},
 
-    proL:{en:'INSTITUTIONAL PRO DESK',th:'โปรเดสก์ระดับสถาบัน'},
-    proTxt:{en:'GEX, dark pool prints, order-book heatmap, Monte Carlo, execution algos, and the rest of the pro-tier toolkit — moved here from the top menu so it stays out of the way for everyone else.',
-      th:'GEX, ธุรกรรม Dark Pool, ฮีทแมพออเดอร์บุ๊ก, Monte Carlo, อัลกอริทึมการส่งคำสั่ง และเครื่องมือระดับโปรที่เหลือ — ย้ายมาไว้ตรงนี้จากเมนูบนสุด เพื่อไม่ให้รกหน้าเว็บสำหรับคนอื่น'},
-    goPro:{en:'Open Institutional Pro Desk →',th:'เปิดโปรเดสก์ระดับสถาบัน →'},
-
     briefL:{en:'INSTITUTIONAL OUTLOOK BRIEF',th:'บรีฟภาพรวมเชิงสถาบัน'},
     briefTxt:{en:'Turns the site’s own 11-gauge regime model, sector flow data, and market-cycle phase read into one auto-generated, plain-language briefing — now with a forward section on which sectors historically lead and lag from here — printable and sendable to LINE. Nothing manual, nothing new to write each time.',
       th:'แปลงโมเดล 11 ตัวชี้วัด ข้อมูลการหมุนเงิน และช่วงวัฏจักรตลาดของเว็บนี้ ให้เป็นบรีฟภาษาคนที่สร้างอัตโนมัติ — เพิ่มส่วนมองไปข้างหน้าว่ากลุ่มไหนมักนำ/ตามหลังจากจุดนี้ — พิมพ์ได้และส่งเข้า LINE ได้ ไม่ต้องเขียนเองแม้แต่ครั้งเดียว'},
@@ -1227,11 +1222,6 @@
       rows + '<div class="cx-note">' + esc(tx(T.rankNote)) + '</div>' + goBtn('desk', tx(T.goDesk)) + '</div>';
   }
 
-  function proDeskHTML(){
-    return '<div class="cx-card"><div class="cx-lab">' + esc(tx(T.proL)) + '</div>' +
-      '<div class="cx-txt">' + esc(tx(T.proTxt)) + '</div>' + goBtn('pro', tx(T.goPro)) + '</div>';
-  }
-
   /* Round Q phase 4: generates the Institutional Briefing report (see
      buildInstitutionalBriefingReport() in part-57.js) rather than
      navigating anywhere -- so this uses its own data-cx-action hook
@@ -1248,7 +1238,7 @@
         marketHTML() + macroHTML() + fxHTML() + flowHTML() + globeHTML() + inflHTML() +
         creditHTML() + bubbleHTML() + anomHTML() + correlHTML() + watchHTML() + watchTableHTML() +
         breadthHTML() + crossHTML() +
-        gaugesHTML() + rotationHTML() + flowForecastHTML() + correlHeatHTML() + stockHeatHTML() + chartsHTML() + priceChartHTML() + rankHTML() + briefingHTML() + proDeskHTML() +
+        gaugesHTML() + rotationHTML() + flowForecastHTML() + correlHeatHTML() + stockHeatHTML() + chartsHTML() + priceChartHTML() + rankHTML() + briefingHTML() +
       '</div>' +
       '<div class="ss-foot">' + esc(tx(T.foot)) + '</div>';
   }
@@ -1352,32 +1342,31 @@
     mountPulse();
   }
 
+  /* Round S5: Command Center used to be its own top-level route -- its
+     own <section data-route="cockpit">, appended to document.body, and
+     registered through window.__spzAddRoute. It's now merged into the
+     Institutional Pro Desk page as that page's own "00 Command Center"
+     tab instead (see SPACEZ_TERMINAL.html's #pro / #proPanelCC and
+     part-13.js's tab rail), so there is no route to register any more --
+     this just mounts its markup into the static #proPanelCC container
+     that's already sitting inside #pro. The inner div keeps id="cockpit"
+     purely so every '#cockpit .cx-*' rule in part-31.css keeps working
+     unchanged. The old per-page section-head (eyebrow/title/lede) is
+     dropped too -- Pro Desk's own header already sets the page context,
+     and none of the other four tabs repeat one either. */
   function build(){
     if (document.getElementById('cockpit')) return true;
-    if (!document.querySelector('.top-fixed') || !window.__spzAddRoute) return false;
+    var mount = document.getElementById('proPanelCC');
+    if (!mount) return false;
 
-    sec = document.createElement('section');
+    sec = document.createElement('div');
     sec.id = 'cockpit';
-    sec.setAttribute('data-route', 'cockpit');
     sec.innerHTML =
       '<div class="cx-wrap">' +
-        '<div class="section-head reveal in-view">' +
-          '<div class="eyebrow"><span class="cursor"></span><span data-cx="eb"></span></div>' +
-          '<h2 data-cx="h"></h2>' +
-          '<p class="lede" data-cx="lede"></p>' +
-          '<div class="rule"></div>' +
-        '</div>' +
         headHTML() +
         '<div data-cx="body"></div>' +
       '</div>';
-    document.body.appendChild(sec);
-
-    window.__spzAddRoute({
-      id:'cockpit', feat:true, after:'daily',
-      t:{en:'Command Center',th:'ศูนย์บัญชาการ'},
-      d:{en:'Every gauge, scan and ranking on this site, gathered onto one wide screen — a fast overview, not a replacement for the pages it reads from. Admin-only.',
-         th:'ตัวชี้วัด การสแกน และการจัดอันดับทุกอย่างในเว็บนี้ รวบมาไว้ในหน้ากว้างหน้าเดียว — ไว้กวาดภาพรวมเร็วๆ ไม่ใช่ตัวแทนหน้าจริงที่มันอ้างอิงมา เฉพาะแอดมิน'}
-    });
+    mount.appendChild(sec);
 
     sec.__render = paint;
     paint();
@@ -1385,16 +1374,26 @@
   }
 
   function boot(){
+    // #proPanelCC is static markup, already in the DOM by the time this
+    // (deferred) script runs, so build() succeeds on the first try --
+    // the retry loop is just a safety net in case something ever changes.
     var tries = 0;
     var iv = setInterval(function(){
-      if (build() || ++tries > 60) clearInterval(iv);
-    }, 400);
+      if (build() || ++tries > 20) clearInterval(iv);
+    }, 300);
 
     document.addEventListener('spz:snapshot', function(){ paint(); });
     var seed = setInterval(function(){
       if (snapshot()) { paint(); clearInterval(seed); }
     }, 600);
     setTimeout(function(){ clearInterval(seed); }, 45000);
+
+    // Repaint the instant the admin switches into this tab, rather than
+    // waiting for the next spz:snapshot -- see the matching dispatch in
+    // part-13.js's #proRail click handler.
+    document.addEventListener('spz:protab', function(e){
+      if (e && e.detail && e.detail.mod === 'cc') paint();
+    });
 
     new MutationObserver(paint)
       .observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });

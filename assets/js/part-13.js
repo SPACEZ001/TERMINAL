@@ -39,6 +39,7 @@
     'bp.src5':['Rates, oil, FX and macro series. Drives the stress scenarios in the Monte Carlo engine.','อัตราดอกเบี้ย ราคาน้ำมัน อัตราแลกเปลี่ยน และข้อมูลมหภาค ใช้ขับสถานการณ์วิกฤติในเอนจิน Monte Carlo'],
     'bp.src6':['Headline and social streams scored by a language model, aggregated into the sentiment index.','สตรีมข่าวและโซเชียลที่ให้คะแนนด้วยโมเดลภาษา แล้วรวมเป็นดัชนีอารมณ์ตลาด'],
 
+    'tab.cc':['Command Center','ศูนย์บัญชาการ'],
     'tab.m1':['Order Flow','ออร์เดอร์โฟลว์'],
     'tab.m2':['Quant Risk','ความเสี่ยงเชิงปริมาณ'],
     'tab.m3':['Smart Money','เงินฉลาด'],
@@ -261,7 +262,7 @@
   }
 
   /* ---------------- tab rail ---------------- */
-  var activeMod = 'm1';
+  var activeMod = 'cc';
   root.querySelector('#proRail').addEventListener('click', function(e){
     var btn = e.target.closest('.pro-tab'); if(!btn) return;
     var mod = btn.getAttribute('data-mod');
@@ -270,6 +271,11 @@
     for(i = 0; i < panels.length; i++) panels[i].classList.toggle('on', panels[i].getAttribute('data-mod') === mod);
     activeMod = mod;
     requestAnimationFrame(function(){ repaint(mod); });
+    // Round S5: tab 00 (Command Center) isn't one of this file's own
+    // modules -- it's part-47.js's merged-in dashboard -- so it can't
+    // register with the local redraws{} registry above. A DOM event lets
+    // it repaint itself the instant it becomes visible instead.
+    if(mod === 'cc') document.dispatchEvent(new CustomEvent('spz:protab', { detail:{ mod:mod } }));
   });
 
   /* ==========================================================================
