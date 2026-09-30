@@ -235,8 +235,9 @@
     ];
   }
 
-  function supportDefs(regime){
+  function supportDefs(regime, bubble){
     var vix = regime && regime.vix, curve_ok = regime;
+    var pc = bubble && bubble.putcall;
     return [
       { nm:{en:'VIX (complacency read)',th:'VIX (วัดความประมาท)'},
         val: isNum(regime && regime.vix) ? fmt(regime.vix,1) : null,
@@ -244,6 +245,15 @@
               {en:'Unusually calm',th:'สงบผิดปกติ'} : {en:'Normal-to-elevated',th:'ปกติถึงสูง'}) : null,
         expl:{en:'How much volatility options traders expect. A very LOW number for a long stretch can mean complacency - not pricing in much risk - which has sometimes preceded a shock.',
               th:'ตลาดคาดว่าความผันผวนจะมากแค่ไหน ถ้าตัวเลข ต่ำ ต่อเนื่องนานๆ อาจสะท้อนความประมาท ไม่ระวังความเสี่ยง ซึ่งบางครั้งเกิดก่อนเหตุการณ์ช็อกตลาด'} },
+      { nm:{en:'Put/Call ratio (options positioning)',th:'อัตราส่วน Put/Call (สถานะออปชั่น)'},
+        val: pc && isNum(pc.value) ? fmt(pc.value, 2) : null,
+        note: pc && isNum(pc.value) ? (pc.value < 0.65 ?
+              {en:'Notably low - heavy call-buying',th:'ต่ำผิดปกติ - แห่ซื้อคอลเยอะ'} :
+              pc.value > 1.0 ? {en:'Elevated - hedging/fear',th:'สูง - ป้องกันความเสี่ยง/หวาดกลัว'} :
+              {en:'Normal range',th:'อยู่ในช่วงปกติ'}) : null,
+        date: pc && pc.date, stale: pc && pc.stale, hist: pc && pc.history,
+        expl:{en:'Total US options volume: puts traded divided by calls, across the whole Cboe market that day. Reads the opposite way from most signals here - a very LOW ratio (far more calls than puts) means options traders are piling into upside bets, a classic complacency/greed read; a high ratio means more hedging or fear. Only recently added, so its history above builds up day by day rather than showing decades back like the signals above.',
+              th:'ปริมาณซื้อขายออปชั่นทั้งตลาดของ Cboe วันนั้น เอาจำนวน put หารด้วย call อ่านกลับด้านจากสัญญาณส่วนใหญ่ในหน้านี้ - ถ้าค่า ต่ำ มาก (call เยอะกว่า put มาก) แปลว่านักลงทุนออปชั่นแห่เก็งกำไรขาขึ้น ซึ่งเป็นสัญญาณความโลภ/ประมาทแบบคลาสสิก ถ้าค่าสูงแปลว่ามีการป้องกันความเสี่ยงหรือความกลัวมากขึ้น เพิ่งเริ่มเก็บข้อมูลตัวนี้ไม่นาน ประวัติด้านบนจึงค่อยๆ สะสมทีละวัน ไม่ได้ย้อนหลังหลายสิบปีเหมือนสัญญาณด้านบน'} },
       { nm:{en:'Credit risk appetite',th:'ความกล้าเสี่ยงในตลาดหุ้นกู้'},
         val: isNum(regime && regime.credit_1m) ? pctStr(regime.credit_1m,1) : null,
         note: null,
@@ -495,7 +505,12 @@
       '<path d="' + arcD + '" fill="none" stroke="url(#bbNebula)" stroke-width="11" stroke-linecap="round" ' +
         'stroke-dasharray="0 ' + full.toFixed(2) + '" class="bb-gauge-arc" data-full="' + full.toFixed(2) + '"/>' +
       '<line x1="' + cx + '" y1="' + cy + '" x2="' + needleTip.x + '" y2="' + needleTip.y + '" stroke="var(--white)" ' +
-        'stroke-width="2.6" stroke-linecap="round" class="bb-gauge-needle" style="transform-origin:' + cx + 'px ' + cy + 'px;"/>' +
+        /* Round S: percentage-based, not a fixed px value tied to the old
+           168px render size - so the gauge can be sized bigger by CSS alone
+           (see .bb-gauge in part-22.css) without the needle's rotation
+           pivoting around the wrong point. cx/cy (85,85) is exactly the
+           center of the 170x170 viewBox either way. */
+        'stroke-width="2.6" stroke-linecap="round" class="bb-gauge-needle" style="transform-origin:50% 50%;"/>' +
       '<circle cx="' + cx + '" cy="' + cy + '" r="5" fill="var(--white)" class="bb-gauge-hub"/>' +
       '<circle r="3" fill="#fff" class="bb-gauge-scan"><animateMotion dur="4.5s" repeatCount="indefinite" path="' + arcD + '"/></circle>' +
     '</svg>';
@@ -569,12 +584,19 @@
   }
 
   function supportCardHTML(d){
-    return '<div class="bb-card">' +
+    var body = '<div class="bb-card">' +
       '<span class="tag">' + esc(tx({en:'context',th:'ข้อมูลประกอบ'})) + '</span>' +
-      '<div class="top"><span class="nm">' + esc(tx(d.nm)) + '</span></div>' +
-      (d.val == null ? '<div class="bb-nodata">' + esc(tx(C.nodata)) + '</div>'
-        : '<span class="val">' + esc(d.val) + (d.note ? ' <span class="sub">(' + esc(tx(d.note)) + ')</span>' : '') + '</span>') +
-      '<div class="expl">' + esc(tx(d.expl)) + '</div></div>';
+      '<div class="top"><span class="nm">' + esc(tx(d.nm)) + '</span></div>';
+    if (d.val == null) {
+      body += '<div class="bb-nodata">' + esc(tx(C.nodata)) + '</div>';
+    } else {
+      body += '<span class="val">' + esc(d.val) + (d.note ? ' <span class="sub">(' + esc(tx(d.note)) + ')</span>' : '') + '</span>';
+      if (d.date) body += '<span class="sub">' + esc(tx(C.asOf)) + ' ' + esc(d.date) + '</span>';
+      if (d.stale) body += '<span class="stale">' + esc(tx(C.stale)) + '</span>';
+      if (d.hist && d.hist.length > 1) body += sparkline(d.hist, 220, 34);
+    }
+    body += '<div class="expl">' + esc(tx(d.expl)) + '</div></div>';
+    return body;
   }
 
   function flowRowHTML(row, maxAbs, rank){
@@ -611,7 +633,10 @@
       if (s && s.sector && table[s.sector]) out.push([t, s]);
     }
     out.sort(function(a,b){ return (b[1].mcap||0) - (a[1].mcap||0); });
-    return out.slice(0, 8);
+    return out.slice(0, 16);   // Round S: was 8 - this site tracks far more
+                                // than 8 stocks per bucket now, so the old
+                                // cap was hiding real coverage, not avoiding
+                                // clutter (the chip grid wraps fine either way)
   }
 
   function paint(){
@@ -630,7 +655,7 @@
     var bubble = state.bubble || {};
 
     var primary = primaryDefs(bubble, regime);
-    var support = supportDefs(regime);
+    var support = supportDefs(regime, bubble);
 
     var risks = primary.map(function(d){ return d.risk; }).filter(isNum);
     var n = risks.length;
