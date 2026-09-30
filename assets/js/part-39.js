@@ -250,8 +250,8 @@
     shareEyebrow:{en:'Portfolio Snapshot',th:'สรุปพอร์ตการลงทุน'},
     shareTag:{en:'My Portfolio',th:'พอร์ตของฉัน'},
     shareHoldingsLabel:{en:'Holdings',th:'หุ้นที่ถือ'},
-    shareFooter:{en:'spacez001.github.io/TERMINAL · Educational use only, not financial advice.',
-                 th:'spacez001.github.io/TERMINAL · เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน'},
+    shareFooter:{en:'terminal.spacezblack.workers.dev · Educational use only, not financial advice.',
+                 th:'terminal.spacezblack.workers.dev · เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน'},
     shareQrCap:{en:'Scan to try SPACEZ TERMINAL',th:'สแกนเพื่อลองใช้ SPACEZ TERMINAL'},
     shareDownload:{en:'Download image',th:'บันทึกเป็นรูปภาพ'},
     sharePrint:{en:'Print / Save as PDF',th:'พิมพ์ / บันทึกเป็น PDF'},
@@ -1719,7 +1719,7 @@
       '<div class="wlshare-foot-row">' +
         '<div class="wlshare-foot">' + esc(tx(C.shareFooter)) + '</div>' +
         '<div class="wlshare-qr">' +
-          '<img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=0&data=' + encodeURIComponent('https://spacez001.github.io/TERMINAL/') + '" alt="QR" crossorigin="anonymous">' +
+          '<img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=0&data=' + encodeURIComponent('https://terminal.spacezblack.workers.dev/') + '" alt="QR" crossorigin="anonymous">' +
           '<span>' + esc(tx(C.shareQrCap)) + '</span>' +
         '</div>' +
       '</div>' +
