@@ -460,7 +460,7 @@
     ];
   }
 
-  var PR_SITE_URL = 'https://spacez001.github.io/TERMINAL/';
+  var PR_SITE_URL = 'https://terminal.spacezblack.workers.dev/';
   var PR_IG_URL = 'https://www.instagram.com/spczterminal';
   var PR_FB_URL = 'https://www.facebook.com/share/1GBykHfZ1V/?mibextid=wwXIfr';
   var PR_IG_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1.1" fill="currentColor" stroke="none"/></svg>';
