@@ -2057,7 +2057,7 @@
     document.body.appendChild(sec);
 
     window.__spzAddRoute({
-      id:'printreport', feat:true, after:'cockpit',
+      id:'printreport', feat:true, after:'pro', /* Round S5: cockpit route merged away, see part-47.js */
       t:{en:'Print Report',th:'พิมพ์รายงาน'},
       d:{en:'Generate a professional, printable A4 market summary from live data — as many times as you like. Admin-only.',
          th:'สร้างรายงานสรุปตลาดขนาด A4 พร้อมพิมพ์ จากข้อมูลสด ทำได้ไม่จำกัดครั้ง เฉพาะแอดมิน'}

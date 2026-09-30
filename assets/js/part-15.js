@@ -1447,11 +1447,14 @@ var CL_UI = {
     }
     window.__spzPersonalCard = personalLineCard;
 
-    /* one route (the admin Command Center) gets a visibly special treatment
-       in this list -- a distinct glowing card instead of a plain row -- so
-       it reads as the "everything in one place" screen rather than just
-       another item; see .np-item-special in the cockpit route's own CSS */
-    var SPECIAL_ITEMS = { cockpit:1 };
+    /* Round S5: Command Center (the one route that used to get a distinct
+       glowing card here instead of a plain row) was merged into the
+       Institutional Pro Desk page as a tab -- see part-47.js/part-13.js --
+       so it no longer has a route or a menu entry of its own to special-
+       case. Left empty (rather than removed outright) since .np-item-special
+       in part-31.css is generic, reusable styling a future admin-only
+       route can opt back into just by adding its id here. */
+    var SPECIAL_ITEMS = {};
     /* Connected Users and Print Report are deliberately absent from this menu
        (and from the Home hub grid below) -- both are reachable only through
        the admin login gate's own panel button, never a listed "page" like

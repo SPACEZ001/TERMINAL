@@ -78,11 +78,28 @@
     netDefault:{en:'Hover or click any circle above to see what it is most tied to, and most independent from.',
       th:'ชี้หรือคลิกวงกลมไหนก็ได้ด้านบน เพื่อดูว่ามันผูกกับอะไรมากที่สุด และเป็นอิสระจากอะไรมากที่สุด'},
     netInfoFmt:{en:'<b>{n}</b> — closest to: {a} ({av}), {b} ({bv}) · most opposite: {c} ({cv})',
-      th:'<b>{n}</b> — ใกล้เคียงที่สุดกับ: {a} ({av}), {b} ({bv}) · สวนทางที่สุดกับ: {c} ({cv})'}
+      th:'<b>{n}</b> — ใกล้เคียงที่สุดกับ: {a} ({av}), {b} ({bv}) · สวนทางที่สุดกับ: {c} ({cv})'},
+
+    /* ---- Round S6: allocation guidance -- the three fixed callout cards
+       above (most-tied pair, most-opposite pair, best-diversifier-vs-S&P
+       500) only ever compare against the benchmark. This lets the admin
+       pick ANY tracked asset -- something they already hold, or are
+       considering -- and re-sorts the exact same matrix around it, so the
+       guidance is about their actual holding instead of always S&P 500. ---- */
+    allocH:{en:'ALLOCATION GUIDANCE',th:'คำแนะนำการจัดพอร์ต'},
+    allocHint:{en:'Pick anything you already hold (or are thinking about adding) from the same tracked list below — this re-sorts the matrix around it, showing which of the others would spread your risk the most, and which ones are already doing basically the same job.',
+      th:'เลือกอะไรก็ได้ที่ถืออยู่แล้ว (หรือกำลังคิดจะเพิ่ม) จากลิสต์เดียวกับด้านล่าง — จะจัดเรียงตารางเดียวกันใหม่รอบตัวที่เลือก บอกว่าตัวไหนช่วยกระจายความเสี่ยงได้มากสุด และตัวไหนทำหน้าที่ซ้ำกับที่ถืออยู่แล้ว'},
+    allocPickLabel:{en:'I already hold:',th:'ตอนนี้ถืออยู่:'},
+    allocBestH:{en:'ADDS THE MOST DIVERSIFICATION',th:'เพิ่มแล้วกระจายความเสี่ยงได้มากสุด'},
+    allocAvoidH:{en:'ALREADY DOING THE SAME JOB',th:'ทำหน้าที่ซ้ำกันอยู่แล้ว'},
+    allocEmpty:{en:'Not enough overlapping history for any pairing yet.',th:'ประวัติที่ทับกันยังไม่พอสำหรับคู่ไหนเลย'},
+    allocNone:{en:'Nothing tracked here overlaps closely with this one.',th:'ไม่มีตัวไหนในลิสต์นี้ที่ซ้ำกับตัวนี้ชัดเจน'},
+    allocNote:{en:'Same correlation numbers as the grid below, just re-sorted around one holding at a time — nothing new computed. A good diversifier today can stop being one tomorrow, so it is worth rechecking occasionally, especially after switching the time window above.',
+      th:'ใช้ตัวเลขสหสัมพันธ์ชุดเดียวกับตารางด้านล่าง แค่จัดเรียงใหม่รอบสินทรัพย์ที่เลือกทีละตัว ไม่มีอะไรคำนวณใหม่ ตัวที่กระจายความเสี่ยงได้ดีวันนี้อาจไม่ใช่พรุ่งนี้ก็ได้ — ลองเช็คเป็นระยะ โดยเฉพาะหลังเปลี่ยนช่วงเวลาด้านบน'}
   };
 
   var WINDOWS = [52, 156, 260, 0];
-  var state = { win:156, data:null, tried:false, sel:null };
+  var state = { win:156, data:null, tried:false, sel:null, allocSym:null };
   var net = { raf:null, canvas:null, ctx:null, nodes:[], edges:[], hover:-1, pin:-1, dragging:-1, dragMoved:false, t:0 };
   var liveSnap = null;
   /* individual stocks folded into the map alongside the sector ETFs, at the
@@ -244,6 +261,59 @@
       '<div class="cm-cv">' + nameOf(diversify.i) + '<br><b class="' +
       (diversify.v < 0 ? 'dn' : 'up') + '">' + sgn(diversify.v * 100, 0) + '%</b></div></div>');
     return cards.length ? '<div class="cm-call">' + cards.join('') + '</div>' : '';
+  }
+
+  /* ---- Round S6: allocation guidance -- same matrix, re-sorted around
+     one chosen asset instead of always the S&P 500 benchmark ---- */
+  function allocRowsFor(mx, ix){
+    var M = mx.M, out = [];
+    for (var j = 0; j < mx.syms.length; j++) {
+      if (j === ix) continue;
+      var c = M[ix][j];
+      if (!c || c.v === null) continue;
+      out.push({ j:j, v:c.v });
+    }
+    return out;
+  }
+
+  function allocHTML(mx){
+    var syms = mx.syms;
+    if (syms.length < 3) return '';
+    if (!state.allocSym || !syms.some(function(s){ return s.sym === state.allocSym; })) {
+      state.allocSym = syms.some(function(s){ return s.sym === 'SPY'; }) ? 'SPY' : syms[0].sym;
+    }
+    var ix = -1;
+    syms.forEach(function(s, i){ if (s.sym === state.allocSym) ix = i; });
+    var opts = syms.map(function(s){
+      return '<option value="' + esc(s.sym) + '"' + (s.sym === state.allocSym ? ' selected' : '') + '>' +
+        esc(s.sym) + ' — ' + esc(tx(s)) + '</option>';
+    }).join('');
+
+    var rows = ix !== -1 ? allocRowsFor(mx, ix) : [];
+    var best = rows.slice().sort(function(a, b){ return a.v - b.v; }).slice(0, 2);
+    var worst = rows.slice().sort(function(a, b){ return b.v - a.v; }).slice(0, 2)
+      .filter(function(r){ return r.v >= 0.4; });
+
+    function itemHTML(r){
+      return '<div class="cm-alloc-item">' + esc(tx(syms[r.j])) + ' <b>(' + esc(syms[r.j].sym) + ')</b> — ' +
+        '<b class="' + (r.v < 0 ? 'dn' : 'up') + '">' + sgn(r.v * 100, 0) + '%</b></div>';
+    }
+    var bestHTML = best.length ? best.map(itemHTML).join('') :
+      '<div class="cm-alloc-item cm-alloc-empty">' + esc(tx(T.allocEmpty)) + '</div>';
+    var worstHTML = worst.length ? worst.map(itemHTML).join('') :
+      '<div class="cm-alloc-item cm-alloc-empty">' + esc(tx(T.allocNone)) + '</div>';
+
+    return '<div class="cm-alloc">' +
+      '<div class="cm-cl">' + esc(tx(T.allocH)) + '</div>' +
+      '<div class="cm-alloc-hint">' + esc(tx(T.allocHint)) + '</div>' +
+      '<div class="cm-alloc-pick"><label>' + esc(tx(T.allocPickLabel)) + ' ' +
+        '<select class="ctl-select" data-cm="allocsel">' + opts + '</select></label></div>' +
+      '<div class="cm-alloc-results">' +
+        '<div class="cm-alloc-col"><div class="cm-alloc-rl good">' + esc(tx(T.allocBestH)) + '</div>' + bestHTML + '</div>' +
+        '<div class="cm-alloc-col"><div class="cm-alloc-rl bad">' + esc(tx(T.allocAvoidH)) + '</div>' + worstHTML + '</div>' +
+      '</div>' +
+      '<div class="cm-alloc-note">' + esc(tx(T.allocNote)) + '</div>' +
+    '</div>';
   }
 
   function gridHTML(mx){
@@ -648,7 +718,7 @@
     if (!state.data || !mx) return '<div class="ss-empty">' + esc(tx(T.waiting)) + '</div>';
     return guideHTML() + exampleHTML() + statusHTML(mx) +
       '<div class="ss-pills" style="margin-bottom:16px;">' + pillsHTML() + '</div>' +
-      calloutsHTML(mx) + gridHTML(mx) + detailHTML(mx) + netHTML() +
+      calloutsHTML(mx) + allocHTML(mx) + gridHTML(mx) + detailHTML(mx) + netHTML() +
       '<div class="ss-foot">' + esc(tx(T.foot)) + '</div>';
   }
 
@@ -672,6 +742,9 @@
     }
     if (exRowSel) exRowSel.addEventListener('change', onExPick);
     if (exColSel) exColSel.addEventListener('change', onExPick);
+
+    var allocSel = body.querySelector('[data-cm="allocsel"]');
+    if (allocSel) allocSel.addEventListener('change', function(){ state.allocSym = allocSel.value; paint(); });
   }
 
   function paint(){

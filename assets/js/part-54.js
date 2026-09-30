@@ -265,7 +265,7 @@
     document.body.appendChild(sec);
 
     window.__spzAddRoute({
-      id:'controlgrid', after:'cockpit',
+      id:'controlgrid', after:'pro', /* Round S5: cockpit route merged away, see part-47.js */
       t:{en:'Who Controls the World’s Money?',th:'ใครคุมเงินโลก?'},
       d:{en:'BIS, CBDCs, digital ID and the control-grid theory — fact-checked, admin only.',
          th:'BIS, CBDC, ดิจิทัลไอดี และทฤษฎีวงล้อควบคุม — เช็คข้อเท็จจริงแล้ว เฉพาะแอดมิน'}
