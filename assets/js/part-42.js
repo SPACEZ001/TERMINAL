@@ -408,7 +408,7 @@
     return '<div class="cm-ex-wrap">' +
       '<div class="cm-cl">' + esc(tx(T.exH)) + '</div>' +
       '<div style="font-size:11.5px;color:var(--grey-dim);margin-bottom:10px;">' + esc(tx(T.exNote)) + '</div>' +
-      '<div class="cm-tablewrap" style="display:inline-flex;">' +
+      '<div class="cm-tablewrap">' +
         '<table class="cm-ex-grid" data-cm="exgrid">' + head + rows + '</table></div>' +
       '<div class="cm-ex-demo" data-cm="exdemo">' +
         '<div class="cm-ex-demo-lbl">' + esc(tx(T.exDemoLbl)) + '</div>' +

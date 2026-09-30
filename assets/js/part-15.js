@@ -1516,7 +1516,15 @@ var CL_UI = {
       /* three groups, each in its own order, so a long menu stays readable */
       var GROUPS = [
         { k:'learn',  t:{en:'Learn',th:'เรียนรู้'},
-          ids:['guided', 'start', 'types', 'glossary', 'signals', 'basics'] },
+          /* Round S6b: reordered into a beginner-first learning path -- was
+             guided/start/types/glossary/signals/basics (Start Investing
+             buried last, after the glossary and chart-signal pages it
+             actually needs to precede). "basics" explains what a share
+             even is and how to open a brokerage account -- the true
+             starting point -- so it now runs right after the orientation
+             tour, before the risk-quiz/archetypes/glossary/signals that
+             build on it. */
+          ids:['guided', 'basics', 'start', 'types', 'glossary', 'signals'] },
         { k:'market', t:{en:'Read the market',th:'อ่านตลาด'},
           ids:['now', 'outlook', 'regime', 'anomaly', 'correl', 'rulelab', 'daily', 'flow', 'globe', 'infl', 'desk', 'scenarios'] },
         { k:'tools',  t:{en:'Workbench',th:'เครื่องมือ'},
