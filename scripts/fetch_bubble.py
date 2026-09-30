@@ -18,6 +18,13 @@ flagged stale, exactly like fetch_market.py does for a stock:
                                    FRED discontinued the Wilshire 5000 series
                                    in June 2024 with no replacement, so this
                                    uses the closest free FRED-only stand-in.
+  · Cboe Total Put/Call Ratio  -> scraped from Cboe's own live daily
+                                   market-statistics page (its old public CSV
+                                   archives were discontinued years ago and
+                                   no longer update). Unlike the three above,
+                                   this source has no historical endpoint, so
+                                   its history is built up here one day at a
+                                   time from whenever this was first added.
 
 The regime signals that were already free (VIX, yield curve, breadth,
 credit spread, cyclical-vs-defensive, ...) live in data/market.json already
@@ -321,6 +328,56 @@ def fetch_buffett():
     }
 
 
+def fetch_putcall(prev_entry):
+    """Cboe Total Put/Call Ratio -- scraped from Cboe's own live daily
+    market-statistics page (markets.cboe.com), not an archive file.
+
+    Cboe used to publish this as a plain daily CSV
+    (volume_and_call_put_ratios/equitypc.csv and .../indexpcarchive.csv) --
+    both still exist on Cboe's CDN but were silently discontinued years ago
+    (equitypc.csv stops in Oct 2019, indexpcarchive.csv in Jun 2012), so
+    neither gives a current reading any more. The live daily-statistics page
+    is a Next.js app that server-renders that day's numbers straight into
+    the HTML as an embedded JSON blob (a `self.__next_f.push([...])` chunk)
+    rather than exposing a separate public API, so this regexes that blob
+    out directly -- same "scrape the page Cboe actually keeps current"
+    approach fetch_cape() already uses for shillerdata.com.
+
+    Because this source only ever gives *today's* reading (no historical
+    endpoint), unlike CAPE/margin-debt/Buffett which arrive with decades of
+    history already, this builds its own history one day at a time: each
+    run appends today's value once (never re-appending the same date twice
+    across reruns) onto whatever history data/bubble.json already has from
+    previous days, so the sparkline genuinely grows from whenever this was
+    first added rather than pretending to have a past it doesn't.
+    """
+    url = "https://markets.cboe.com/us/options/market_statistics/daily/"
+    html = _get(url).decode("utf-8", "ignore")
+
+    m = re.search(r'\\"name\\":\\"TOTAL PUT/CALL RATIO\\",\\"value\\":\\"([0-9.]+)\\"', html)
+    if not m:
+        raise ValueError("could not find TOTAL PUT/CALL RATIO in the page")
+    value = _num(m.group(1))
+    if value is None:
+        raise ValueError("TOTAL PUT/CALL RATIO value did not parse as a number")
+
+    d = re.search(r'\\"selectedDate\\":\\"([0-9]{4}-[0-9]{2}-[0-9]{2})\\"', html)
+    date = d.group(1) if d else datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    history = list((prev_entry or {}).get("history") or [])
+    if not history or history[-1].get("t") != date:
+        history.append({"t": date, "v": value})
+    history = _trim_history([(h["t"], h["v"]) for h in history])
+    history = [{"t": d2, "v": v2} for d2, v2 in history]
+
+    return {
+        "value": value,
+        "date": date,
+        "history": history,
+        "source": "Cboe U.S. Options Daily Market Statistics (markets.cboe.com)",
+    }
+
+
 def main():
     prev = {}
     if os.path.exists(OUT):
@@ -334,7 +391,8 @@ def main():
     ok = 0
     for key, fn in (("cape", fetch_cape),
                     ("margin_debt", fetch_margin_debt),
-                    ("buffett", fetch_buffett)):
+                    ("buffett", fetch_buffett),
+                    ("putcall", lambda: fetch_putcall(prev.get("putcall")))):
         print("[bubble] fetching %s ..." % key)
         try:
             out[key] = fn()
@@ -357,7 +415,7 @@ def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=1, sort_keys=True)
-    print("wrote %s — %d/3 indicators fetched fresh this run" % (OUT, ok))
+    print("wrote %s — %d/4 indicators fetched fresh this run" % (OUT, ok))
 
     if not out:
         print("nothing at all could be fetched or carried forward", file=sys.stderr)
