@@ -1449,8 +1449,38 @@
         currentDirCat = tab.dataset.cat;
         renderDirectoryTabs();
         renderDirectoryGrid();
+        renderDirectoryCatDesc();
       });
     });
+  }
+
+  /* ROUND T: the 4 category tabs above were just bare labels with no
+     explanation of what "value / growth / dividend / defensive" actually
+     means -- the #types section elsewhere on the page already has a full
+     description + example sectors for each archetype (same translation
+     keys, type.<cat>.desc / sector1-3), so this just re-surfaces that
+     existing text right where someone is filtering the directory, with
+     the same small line-icon used on the Start Investing page's account-
+     opening steps for visual consistency. */
+  const DIR_CAT_ICON = {
+    value: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 2.5H4.5a1 1 0 0 0-1 1v6.1a1 1 0 0 0 .3.7l7.4 7.4a1 1 0 0 0 1.4 0l5.5-5.5a1 1 0 0 0 0-1.4l-7.4-7.4a1 1 0 0 0-.1-.9Z"/><circle cx="7" cy="7" r="1.15" fill="currentColor" stroke="none"/></svg>',
+    growth: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17V10.2M8.2 17V6.6M13.4 17V12M18 17V3.4"/><path d="M2.5 17h15"/></svg>',
+    dividend: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="10" cy="5.6" rx="6.2" ry="2.4"/><path d="M3.8 5.6v3.9c0 1.33 2.78 2.4 6.2 2.4s6.2-1.07 6.2-2.4V5.6"/><path d="M3.8 9.5v3.9c0 1.33 2.78 2.4 6.2 2.4s6.2-1.07 6.2-2.4V9.5"/></svg>',
+    defensive: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.2 3.4 4.9v4.8c0 4.3 2.85 6.85 6.6 8.1 3.75-1.25 6.6-3.8 6.6-8.1V4.9L10 2.2Z"/><path d="M6.9 10.1 9 12.2l4.1-4.3"/></svg>'
+  };
+  function renderDirectoryCatDesc(){
+    const box = document.getElementById('directoryCatDesc');
+    if(!box) return;
+    const cat = currentDirCat;
+    const t = translations[currentLang];
+    const desc = t['type.' + cat + '.desc'] || '';
+    const sectors = [t['type.' + cat + '.sector1'], t['type.' + cat + '.sector2'], t['type.' + cat + '.sector3']].filter(Boolean);
+    box.innerHTML =
+      '<span class="dcd-ic">' + (DIR_CAT_ICON[cat] || '') + '</span>' +
+      '<span class="dcd-body">' +
+        '<span class="dcd-desc">' + desc + '</span>' +
+        (sectors.length ? '<span class="dcd-sectors">' + sectors.map(function(s){ return '<span class="pill">' + s + '</span>'; }).join('') + '</span>' : '') +
+      '</span>';
   }
 
   function renderDirectoryGrid(){
@@ -3177,6 +3207,7 @@
     });
     renderDirectoryTabs();
     renderDirectoryGrid();
+    renderDirectoryCatDesc();
     renderCompareSelectors();
     if(lastComparedTickers){ performCompare(lastComparedTickers); }
     renderScenarioChips();
