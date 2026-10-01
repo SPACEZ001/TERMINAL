@@ -27,16 +27,36 @@ CHART_DAYS = 252        # the year every published statistic is measured over
 HIST_DAYS = 504         # what actually ships, so a 200-day average can be
                         # drawn across the whole of that visible year
 
-US = ["JPM", "BAC", "WFC", "C", "GS", "XOM", "CVX", "MMM", "BRK-B", "GM", "F",
-      "CVS", "MET", "NVDA", "TSLA", "AMZN", "META", "PLTR", "AMD", "NFLX",
-      "SHOP", "MSFT", "GOOGL", "AVGO", "TSM", "CRM", "NOW", "ORCL", "T", "VZ",
-      "O", "DUK", "MO", "IBM", "SO", "ABBV", "KMI", "PM", "ENB", "JNJ", "PG",
-      "KO", "PEP", "WMT", "COST", "UNH", "PFE", "CL", "MCD", "MDLZ", "KMB",
-      "ABT", "SYY", "AAPL", "SPY", "QQQ"]
+US = ["JPM", "BAC", "WFC", "C", "GS", "XOM", "CVX", "MMM", "BRK-B", "GM",
+      "F", "CVS", "MET", "NVDA", "TSLA", "AMZN", "META", "PLTR", "AMD",
+      "NFLX", "SHOP", "MSFT", "GOOGL", "AVGO", "TSM", "CRM", "NOW", "ORCL",
+      "T", "VZ", "O", "DUK", "MO", "IBM", "SO", "ABBV", "KMI", "PM", "ENB",
+      "JNJ", "PG", "KO", "PEP", "WMT", "COST", "UNH", "PFE", "CL", "MCD",
+      "MDLZ", "KMB", "ABT", "SYY", "AAPL", "SPY", "QQQ", "MS", "USB", "PNC",
+      "TFC", "COF", "AXP", "V", "MA", "SPGI", "MCO", "ICE", "CME", "BX",
+      "KKR", "APO", "SCHW", "BK", "STT", "TRV", "AIG", "PRU", "ALL", "COP",
+      "SLB", "OXY", "PSX", "VLO", "MPC", "HAL", "BKR", "WMB", "EPD", "ET",
+      "CAT", "DE", "HON", "GE", "RTX", "LMT", "NOC", "GD", "BA", "UPS",
+      "FDX", "DOW", "DD", "LYB", "NUE", "FCX", "EMR", "ITW", "PH", "ETN",
+      "UNP", "CSX", "NSC", "RIVN", "INTC", "QCOM", "TXN", "MU", "ADI",
+      "LRCX", "AMAT", "KLAC", "ASML", "ARM", "ADBE", "INTU", "SNOW", "UBER",
+      "ABNB", "DASH", "PYPL", "SQ", "NET", "CRWD", "PANW", "DDOG", "TEAM",
+      "WDAY", "ZS", "ISRG", "VRTX", "REGN", "GILD", "MRNA", "BIIB", "LLY",
+      "NVO", "AMGN", "BSX", "SYK", "MDT", "SPG", "PLD", "AMT", "EQIX",
+      "VICI", "DLR", "PSA", "TMUS", "NEE", "AEP", "D", "EXC", "XEL", "ED",
+      "PEG", "WEC", "KHC", "GIS", "CLX", "HSY", "STZ", "MNST", "TGT", "HD",
+      "LOW", "TJX", "NKE", "SBUX", "YUM", "CI", "HUM", "ELV", "MRK", "BMY",
+      "ZTS", "WM", "RSG", "DIS", "CMCSA"]
 
 TH = ["KBANK", "BBL", "SCB", "KTB", "PTT", "SCC", "TOP", "DELTA", "GULF",
-      "AOT", "CPALL", "MINT", "ADVANC", "TISCO", "LH", "RATCH", "EGCO", "TTB",
-      "PTTEP", "BDMS", "BH", "CPF", "OSP", "TU", "CPAXT"]
+      "AOT", "CPALL", "MINT", "ADVANC", "TISCO", "LH", "RATCH", "EGCO",
+      "TTB", "PTTEP", "BDMS", "BH", "CPF", "OSP", "TU", "CPAXT", "AWC",
+      "BANPU", "BCP", "BEM", "BJC", "BTS", "CBG", "CCET", "COM7", "CPN",
+      "CRC", "GPSC", "HMPRO", "IVL", "KCE", "KKP", "KTC", "MTC", "OR",
+      "PTTGC", "SCGP", "TCAP", "TIDLOR", "TLI", "TRUE", "VGI", "WHA", "BAY",
+      "TASCO", "SIRI", "AP", "SPALI", "ORI", "CK", "STEC", "TOA", "EA",
+      "BGRIM", "IRPC", "THANI", "SAWAD", "MC", "JMART", "SABUY", "CENTEL",
+      "MAJOR", "SUPER"]
 
 FX_CODES = ["USD", "THB", "EUR", "JPY", "GBP", "CNY", "AUD", "CAD", "CHF",
             "SGD", "HKD", "KRW", "TWD", "INR", "MYR", "VND", "AED"]
