@@ -54,7 +54,25 @@ US = ["JPM", "BAC", "WFC", "C", "GS", "XOM", "CVX", "MMM", "BRK-B", "GM",
       "HOOD", "SOFI", "AFRM", "ON", "MRVL", "TDG", "LULU", "CMG", "DPZ",
       "BKNG", "EXPE", "MAR", "HLT", "RCL", "CCL", "ETSY", "DXCM", "ALGN",
       "PSKY", "BLK", "AMP", "NDAQ", "CBOE", "APD", "LIN", "CNC", "MOH", "EW",
-      "IDXX"]
+      "IDXX", "TER", "ENPH", "FSLR", "VRT", "SMCI", "HPE", "HPQ", "DELL",
+      "CSCO", "FTNT", "CDNS", "SNPS", "PTC", "AKAM", "VRSN", "GRMN", "LOGI",
+      "NTAP", "ZBH", "BAX", "BDX", "RMD", "PODD", "ILMN", "INCY", "TECH",
+      "CRL", "A", "WAT", "MTD", "IQV", "CAH", "MCK", "COR", "HSIC", "EL",
+      "CHD", "CAG", "HRL", "TAP", "BF-B", "KDP", "KVUE", "CHWY", "W", "RH",
+      "ULTA", "ROST", "BBY", "AZO", "ORLY", "KR", "DG", "DLTR", "FIVE",
+      "GAP", "TXT", "CARR", "TT", "JCI", "IR", "FTV", "IEX", "ROP", "GWW",
+      "FAST", "PWR", "J", "URI", "WAB", "AFL", "PGR", "CB", "HIG", "WRB",
+      "CINF", "L", "GL", "FITB", "RF", "CFG", "KEY", "HBAN", "ZION", "NTRS",
+      "WES", "TRGP", "OKE", "PCG", "FE", "ES", "AEE", "CMS", "CNP", "LNT",
+      "NI", "ATO", "PPL", "PPG", "SHW", "ALB", "CTVA", "MOS", "CF", "IFF",
+      "ECL", "VMC", "MLM", "CHTR", "LYV", "FOXA", "NWSA", "TTWO", "WELL",
+      "AVB", "EQR", "MAA", "SBAC", "IRM", "WPC", "REG", "BXP", "ARE", "CCI",
+      "LUV", "DAL", "UAL", "AAL", "ODFL", "JBHT", "CHRW", "EXPD", "APTV",
+      "BWA", "FIS", "FISV", "GPN", "WU", "EFX", "TRU", "FICO", "JKHY",
+      "MKTX", "TM", "SONY", "HMC", "RIO", "BHP", "SHEL", "BP", "TTE", "UL",
+      "DEO", "NVS", "AZN", "SNY", "GSK", "BTI", "RIOT", "MARA", "CLSK",
+      "CPNG", "DKNG", "LYFT", "WYNN", "LVS", "MGM", "CZR", "PENN", "HAS",
+      "MAT", "YETI", "CROX", "DECK", "VFC", "PVH", "RL", "TPR", "CPB", "SJM"]
 
 TH = ["KBANK", "BBL", "SCB", "KTB", "PTT", "SCC", "TOP", "DELTA", "GULF",
       "AOT", "CPALL", "MINT", "ADVANC", "TISCO", "LH", "RATCH", "EGCO",
@@ -66,7 +84,10 @@ TH = ["KBANK", "BBL", "SCB", "KTB", "PTT", "SCC", "TOP", "DELTA", "GULF",
       "BGRIM", "IRPC", "THANI", "SAWAD", "MC", "JMART", "CENTEL", "MAJOR",
       "SUPER", "GLOBAL", "GFPT", "STA", "STGT", "SAT", "PTG", "SUSCO",
       "BAFS", "TPIPP", "JAS", "SINGER", "TFG", "PLANB", "DOHOME", "SABINA",
-      "WORK", "PR9", "VIH", "CHG", "NER", "ICHI", "AAV"]
+      "WORK", "PR9", "VIH", "CHG", "NER", "ICHI", "AAV", "CIMBT", "BLA",
+      "SPRC", "NOBLE", "PSH", "QH", "LPN", "ANAN", "SENA", "SC", "SYNEX",
+      "ILINK", "AMATA", "BCH", "THG", "HANA", "PSL", "TVO", "TPIPL", "SAPPE",
+      "MALEE", "ASK"]
 
 FX_CODES = ["USD", "THB", "EUR", "JPY", "GBP", "CNY", "AUD", "CAD", "CHF",
             "SGD", "HKD", "KRW", "TWD", "INR", "MYR", "VND", "AED"]
