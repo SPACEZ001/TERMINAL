@@ -462,6 +462,30 @@
     '</div>';
   }
 
+  /* ROUND T: separate, bigger "today's high/low" panel -- see the comment
+     where this is called in paint() for why it moved out of the gauge box.
+     Shows the same intraday composite-score history as a proper chart plus
+     three plain-language stat cells (high / low / now) instead of a tiny
+     sparkline with no numbers attached. */
+  function hiLoPanelHTML(hist){
+    var vals = hist.map(function(p){ return p.v; });
+    var hi = Math.max.apply(null, vals), lo = Math.min.apply(null, vals);
+    var now = vals[vals.length - 1];
+    function stat(label, v){
+      return '<div class="bb-hilo-stat"><span class="bb-hilo-val" style="color:' + riskColorVar(v) + '">' +
+        Math.round(v) + '%</span><span class="bb-hilo-lab">' + esc(label) + '</span></div>';
+    }
+    return '<div class="bb-hilo">' +
+      '<div class="bb-hilo-cap">' + esc(tx({en:'today’s high / low',th:'สูงสุด/ต่ำสุดวันนี้'})) + '</div>' +
+      riskChart(hist, 280, 68) +
+      '<div class="bb-hilo-stats">' +
+        stat(tx({en:'High',th:'สูงสุด'}), hi) +
+        stat(tx({en:'Low',th:'ต่ำสุด'}), lo) +
+        stat(tx({en:'Now',th:'ตอนนี้'}), now) +
+      '</div>' +
+    '</div>';
+  }
+
   function gaugeSVG(){
     var cx = 85, cy = 85, r = 52, START = -135, SWEEP = 270;
     function gDeg(s){ return START + (s / 100) * SWEEP; }
@@ -483,6 +507,21 @@
     '</linearGradient></defs>' +
     '<path d="' + gArc(r, START, START + SWEEP) + '" fill="none" stroke="url(#bbNebula)" stroke-width="11" opacity=".38"/>';
 
+    /* ROUND T: a crisp HUD-style bezel drawn in the SVG itself, replacing
+       the soft blurred radial-gradient glow that used to sit behind the
+       whole .bb-gaugebox (removed from part-22.css -- it stretched down
+       over the today's-high/low block that used to live inside the same
+       box and looked like an overlap bug). Two thin concentric rings plus
+       four diagonal compass ticks read as a deliberate instrument bezel
+       instead of an ambient glow, and being drawn here means it is always
+       exactly centered on the dial, never bigger than the box around it. */
+    var bezel = '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r + 32) + '" fill="none" stroke="var(--border-dim)" stroke-width="1"/>' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r + 36) + '" fill="none" stroke="var(--border-dim)" stroke-width="1" opacity=".5"/>';
+    [45, 135, 225, 315].forEach(function(deg){
+      var p1 = gPt(r + 32, deg), p2 = gPt(r + 38, deg);
+      bezel += '<line x1="' + p1.x + '" y1="' + p1.y + '" x2="' + p2.x + '" y2="' + p2.y + '" stroke="var(--neon)" stroke-width="1.4" opacity=".55"/>';
+    });
+
     var ticks = '';
     for (var t = 0; t <= 100; t += 10){
       var major = (t === 0 || t === 50 || t === 100);
@@ -501,7 +540,7 @@
     var needleTip = gPt(r - 8, START);
 
     return '<svg class="bb-gauge" viewBox="0 0 170 170">' +
-      bg + ticks +
+      bg + bezel + ticks +
       '<path d="' + arcD + '" fill="none" stroke="url(#bbNebula)" stroke-width="11" stroke-linecap="round" ' +
         'stroke-dasharray="0 ' + full.toFixed(2) + '" class="bb-gauge-arc" data-full="' + full.toFixed(2) + '"/>' +
       '<line x1="' + cx + '" y1="' + cy + '" x2="' + needleTip.x + '" y2="' + needleTip.y + '" stroke="var(--white)" ' +
@@ -663,16 +702,22 @@
     var rl = composite == null ? {en:'—',th:'—',cls:''} : riskLabel(composite);
     var color = composite == null ? 'var(--grey)' : riskColorVar(composite);
     var bubbleHist = pushBubbleHistory(composite);
-    var histBlock = bubbleHist.length >= 2 ?
-      '<div class="bb-todayhist">' + riskChart(bubbleHist, 150, 40) +
-        '<div class="bb-todayhist-cap">' + esc(tx({en:'today’s high/low',th:'สูงสุด/ต่ำสุดวันนี้'})) + '</div>' +
-      '</div>' : '';
+    /* ROUND T: this used to be a tiny 150x40 sparkline squeezed INSIDE the
+       round gauge box, under the big % number -- and the gauge box's own
+       background glow (::before, see part-22.css) stretched down over it
+       since the glow sizes itself to the whole box, not just the circular
+       dial. Reported as looking unpolished ("overlapping, not professional")
+       and hard to actually read. Pulled out into its own full-size panel
+       (hiLoPanelHTML below), sitting beside the gauge instead of inside it. */
+    var histBlock = bubbleHist.length >= 2 ? hiLoPanelHTML(bubbleHist) : '';
 
     var top =
       '<div class="bb-top">' +
-        '<div class="bb-gaugebox">' + gaugeSVG() +
-          '<div class="bb-gaugenum"><span class="n" style="color:' + color + '">' + (composite==null?'—':composite) + '%</span>' +
-          '<span class="u">' + esc(tx({en:'bubble score',th:'คะแนนฟองสบู่'})) + '</span></div>' +
+        '<div class="bb-top-row">' +
+          '<div class="bb-gaugebox">' + gaugeSVG() +
+            '<div class="bb-gaugenum"><span class="n" style="color:' + color + '">' + (composite==null?'—':composite) + '%</span>' +
+            '<span class="u">' + esc(tx({en:'bubble score',th:'คะแนนฟองสบู่'})) + '</span></div>' +
+          '</div>' +
           histBlock +
         '</div>' +
         '<div class="bb-toptext">' +
@@ -921,6 +966,17 @@
         return primaryDefs(bubble, regime).map(function(d){
           return { key:d.key, nm:d.nm, val:d.val, risk:d.risk, expl:d.expl };
         });
+      } catch(e){ return []; }
+    },
+    /* ROUND T: read-only exposure of today's intraday score history for the
+       Bubble print-report's high/low graph -- same localStorage series the
+       on-page hi/lo panel reads (bubbleHistKey/pushBubbleHistory above),
+       just handed to the print module instead of re-derived there. */
+    history: function(){
+      try {
+        var raw = localStorage.getItem(bubbleHistKey());
+        var hist = raw ? JSON.parse(raw) : [];
+        return hist.filter(function(p){ return p && isNum(p.v); });
       } catch(e){ return []; }
     } };
 })();
