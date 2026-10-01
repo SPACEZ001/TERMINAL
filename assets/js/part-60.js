@@ -235,7 +235,7 @@
 
     s2H:{en:'How To Open A Brokerage Account In Thailand', th:'เปิดบัญชีซื้อขายหุ้นในไทยยังไง'},
     steps:[
-      { icon:ICON.idcard,
+      { icon:ICON.bank,
         t:{en:'Pick a broker', th:'เลือกโบรกเกอร์'},
         d:{en:'Any securities firm licensed by the SEC / Stock Exchange of Thailand works. Bank-affiliated ones (Streaming by Bualuang Securities / Bangkok Bank, InnovestX by SCB) are usually the easiest first account since they link straight to a bank app you may already use.',
            th:'บริษัทหลักทรัพย์ที่มีใบอนุญาตจาก ก.ล.ต. / ตลาดหลักทรัพย์แห่งประเทศไทย ใช้ได้ทุกเจ้า ตัวที่สังกัดธนาคาร (Streaming ของบล.บัวหลวง / ธนาคารกรุงเทพ, InnovestX ของ SCB) มักเปิดง่ายที่สุดสำหรับบัญชีแรก เพราะเชื่อมกับแอปธนาคารที่อาจใช้อยู่แล้ว'} },
