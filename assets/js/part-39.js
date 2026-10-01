@@ -218,6 +218,10 @@
     shockUnclassified:{en:'Sector not classified',th:'ยังจัดกลุ่มไม่ได้'},
     shockRotateH:{en:'Sectors that tend to hold up in this scenario',th:'กลุ่มที่มักจะไปได้ดีในสถานการณ์นี้'},
     shockBadge:{en:'Hypothetical — not your current risk',th:'สถานการณ์สมมติ — ไม่ใช่ความเสี่ยงจริงตอนนี้'},
+    /* ROUND T: the 3-block connected flow -- holdings -> event -> outcome */
+    shockFlowHoldH:{en:'Your holdings now',th:'พอร์ตที่คุณถืออยู่ตอนนี้'},
+    shockFlowEventH:{en:'Simulated event',th:'เหตุการณ์จำลอง'},
+    shockFlowResultH:{en:'What happens to your groups',th:'ผลที่เกิดกับกลุ่มหุ้นของคุณ'},
     shockToggleOpen:{en:'Tap to try a scenario',th:'แตะเพื่อลองสถานการณ์สมมติ'},
     shockToggleClose:{en:'Hide',th:'ซ่อน'},
 
@@ -1055,6 +1059,95 @@
     value:{en:'Value',th:'คุณค่า'}, growth:{en:'Growth',th:'เติบโต'},
     dividend:{en:'Dividend',th:'ปันผล'}, defensive:{en:'Defensive',th:'ตั้งรับ'}
   };
+  /* fixed per-archetype identity colors for the 3-block shock flow graphic
+     below -- chosen to stay clearly apart from the rises(green)/falls(red)
+     outcome colors used in that same graphic's third block, so a reader
+     never confuses "what kind of stock this is" with "what happens to it". */
+  var ARCH_FLOW_COLOR = { value:'#3987e5', growth:'#9b59ff', dividend:'#c98500', defensive:'#5b7a8c' };
+
+  /* ---- Round T: "your holdings" grouped by the simulator's own 4
+     archetypes (not raw sector) -- this is block 1 of the 3-block shock
+     flow graphic below, so its groups line up exactly with the archetypes
+     block 3 colors by outcome, the same way scen.impacts keys them. */
+  function shockHoldingsByArchHTML(tickers, stocks, archOrder){
+    var groups = {}; archOrder.forEach(function(a){ groups[a] = []; });
+    var unclassified = [];
+    tickers.forEach(function(t){
+      var s = stocks ? stocks[t] : null;
+      var arch = s ? shockArchetypeForSector(s.sector, archOrder) : null;
+      if(arch) groups[arch].push(t); else unclassified.push(t);
+    });
+    var rowsHTML = archOrder.filter(function(a){ return groups[a].length; }).map(function(a){
+      var label = SHOCK_ARCH_LABEL[a] ? tx(SHOCK_ARCH_LABEL[a]) : a;
+      var chips = groups[a].map(function(t){
+        return '<button type="button" class="wl-pa-chip" data-wl-open="' + esc(t) + '">$' + esc(t) + '</button>';
+      }).join('');
+      return '<div class="wl-shock-flow-grp">' +
+        '<div class="wl-shock-flow-grp-head"><i style="background:' + ARCH_FLOW_COLOR[a] + ';"></i>' +
+          '<b>' + esc(label) + '</b><span>' + groups[a].length + '</span></div>' +
+        '<div class="wl-pa-chips">' + chips + '</div>' +
+      '</div>';
+    }).join('');
+    var unclassifiedHTML = unclassified.length
+      ? '<div class="wl-shock-flow-grp">' +
+          '<div class="wl-shock-flow-grp-head"><i style="background:var(--grey-dim);"></i>' +
+            '<b>' + esc(tx(C.shockUnclassified)) + '</b><span>' + unclassified.length + '</span></div>' +
+          '<div class="wl-pa-chips">' + unclassified.map(function(t){
+            return '<button type="button" class="wl-pa-chip" data-wl-open="' + esc(t) + '">$' + esc(t) + '</button>';
+          }).join('') + '</div>' +
+        '</div>'
+      : '';
+    return rowsHTML + unclassifiedHTML;
+  }
+
+  /* the connecting arrow glyph between the 3 flow blocks -- a single shared
+     SVG so the visual language (holdings -> event -> outcome) reads as one
+     flow, not three unrelated cards sitting side by side. */
+  var SHOCK_FLOW_ARROW =
+    '<span class="wl-shock-flow-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></span>';
+
+  /* ---- Round T: the full 3-block connected infographic --
+     [ your holdings, grouped by type ] -> [ the simulated event ] ->
+     [ which groups rise / fall as a result ] -- replacing the old flat
+     bar + chip-list layout with something that reads left-to-right as
+     cause and effect, per the user's own description of wanting this to
+     look like "three connected blocks" instead of a list. */
+  function shockFlowHTML(tickers, stocks, scen, archOrder, buckets){
+    var block1 = '<div class="wl-shock-flow-block wl-shock-flow-b1">' +
+      '<div class="wl-shock-flow-label">' + esc(tx(C.shockFlowHoldH)) + '</div>' +
+      shockHoldingsByArchHTML(tickers, stocks, archOrder) +
+    '</div>';
+
+    var block2 = '<div class="wl-shock-flow-block wl-shock-flow-b2">' +
+      '<div class="wl-shock-flow-label">' + esc(tx(C.shockFlowEventH)) + '</div>' +
+      '<div class="wl-shock-flow-event">' +
+        '<span class="wl-shock-flow-event-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 11-14h-7l1-6z"/></svg></span>' +
+        '<div class="wl-shock-flow-event-t">' + esc(L() === 'th' ? scen.title_th : scen.title_en) + '</div>' +
+        '<div class="wl-shock-flow-event-d">' + esc(L() === 'th' ? scen.desc_th : scen.desc_en) + '</div>' +
+      '</div>' +
+    '</div>';
+
+    function outcomeGroup(key, labelTxt, cls){
+      var items = buckets[key];
+      if(!items.length) return '';
+      var chips = items.map(function(it){
+        return '<button type="button" class="wl-pa-chip ' + cls + '" data-wl-open="' + esc(it.t) + '">$' + esc(it.t) + '</button>';
+      }).join('');
+      return '<div class="wl-shock-flow-grp">' +
+        '<div class="wl-shock-flow-grp-head"><span class="wl-pa-risk-tag ' + cls + '">' + esc(labelTxt) + '</span>' +
+          '<span>' + items.length + '</span></div>' +
+        '<div class="wl-pa-chips">' + chips + '</div>' +
+      '</div>';
+    }
+    var block3 = '<div class="wl-shock-flow-block wl-shock-flow-b3">' +
+      '<div class="wl-shock-flow-label">' + esc(tx(C.shockFlowResultH)) + '</div>' +
+      outcomeGroup('rises', tx(C.shockRises), 'low') +
+      outcomeGroup('falls', tx(C.shockFalls), 'high') +
+      outcomeGroup('mixed', tx(C.shockMixed), 'medium') +
+    '</div>';
+
+    return '<div class="wl-shock-flow">' + block1 + SHOCK_FLOW_ARROW + block2 + SHOCK_FLOW_ARROW + block3 + '</div>';
+  }
 
   /* ---- big, one-card-per-sector graphs: a closer look inside each sector
      the user holds, ticker by ticker, using real live chg_pct data (never
@@ -1259,12 +1352,6 @@
     var fallsPct = Math.round((buckets.falls.length / total) * 100);
     var mixedPct = 100 - risesPct - fallsPct;
 
-    var barHTML = '<div class="wl-pa-stackbar wl-shock-bar">' +
-      (buckets.rises.length ? '<span style="width:' + risesPct + '%;background:var(--neon-2,var(--neon));" title="' + esc(tx(C.shockRises)) + ' ' + risesPct + '%"></span>' : '') +
-      (buckets.mixed.length + buckets.unclassified.length ? '<span style="width:' + (mixedPct) + '%;background:var(--grey-dim);" title="' + esc(tx(C.shockMixed)) + ' ' + mixedPct + '%"></span>' : '') +
-      (buckets.falls.length ? '<span style="width:' + fallsPct + '%;background:var(--red);" title="' + esc(tx(C.shockFalls)) + ' ' + fallsPct + '%"></span>' : '') +
-    '</div>';
-
     /* three headline stat tiles (rises/mixed/falls %) with directional
        glyphs -- the bland old version was just the bar with no upfront
        numbers, so the eye had nothing to land on before reading chips. */
@@ -1276,28 +1363,6 @@
       '<div class="wl-shock-stat mixed">' + arrowMixed + '<b>' + mixedPct + '%</b><span>' + esc(tx(C.shockMixed)) + '</span></div>' +
       '<div class="wl-shock-stat falls">' + arrowDown + '<b>' + fallsPct + '%</b><span>' + esc(tx(C.shockFalls)) + '</span></div>' +
     '</div>';
-
-    function tierBlock(key, labelTxt, cls){
-      var items = buckets[key];
-      if(!items.length) return '';
-      var chips = items.map(function(it){
-        return '<button type="button" class="wl-pa-chip ' + cls + '" data-wl-open="' + esc(it.t) + '">$' + esc(it.t) + '</button>';
-      }).join('');
-      return '<div class="wl-pa-risk-row"><span class="wl-pa-risk-tag ' + cls + '">' + esc(labelTxt) + '</span>' +
-        '<span class="wl-pa-chips">' + chips + '</span></div>';
-    }
-
-    var riskClsFor = { rises:'low', falls:'high', mixed:'medium' };
-    var tiersHTML =
-      tierBlock('rises', tx(C.shockRises), riskClsFor.rises) +
-      tierBlock('falls', tx(C.shockFalls), riskClsFor.falls) +
-      tierBlock('mixed', tx(C.shockMixed), riskClsFor.mixed);
-    var unclassifiedHTML = buckets.unclassified.length
-      ? '<div class="wl-pa-risk-row"><span class="wl-pa-risk-tag">' + esc(tx(C.shockUnclassified)) + '</span>' +
-          '<span class="wl-pa-chips">' + buckets.unclassified.map(function(t){
-            return '<button type="button" class="wl-pa-chip" data-wl-open="' + esc(t) + '">$' + esc(t) + '</button>';
-          }).join('') + '</span></div>'
-      : '';
 
     /* rotation idea: which archetype(s) rise in this scenario, in the
        simulator's own words -- no invented example tickers, since the
@@ -1313,11 +1378,17 @@
       }).join('') +
     '</div>' : '';
 
+    /* ROUND T: replaced the old flat stacked-bar + chip-list rows with a
+       3-block connected infographic (holdings -> event -> outcome), per
+       the user's own request to make this "easy to read" as connected
+       blocks instead of a list. The quick % tiles above and the rotation
+       note below are kept since they're a useful at-a-glance summary and
+       weren't the part complained about. */
+    var flowHTML = shockFlowHTML(tickers, stocks, scen, archOrder, buckets);
+
     resultEl.innerHTML =
-      '<p class="wl-shock-desc">' + esc(L() === 'th' ? scen.desc_th : scen.desc_en) + '</p>' +
       statsHTML +
-      barHTML +
-      tiersHTML + unclassifiedHTML +
+      flowHTML +
       rotateHTML;
 
     var openBtns = resultEl.querySelectorAll('[data-wl-open]');

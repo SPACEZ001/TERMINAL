@@ -271,6 +271,12 @@
     colIndValue:{en:'Current reading',th:'ค่าปัจจุบัน'},
     colIndRisk:{en:'Risk',th:'ความเสี่ยง'},
     colIndMeans:{en:'What it means',th:'ความหมาย'},
+    bubbleRepHiLoH:{en:'Today’s High / Low',th:'สูงสุด/ต่ำสุดวันนี้'},
+    bubbleRepHiLoLede:{en:'How the score has moved so far today, intraday.',th:'คะแนนเคลื่อนไหวอย่างไรบ้างในวันนี้'},
+    bubbleRepHiLoNoData:{en:'Not enough readings captured yet today to chart a high/low.',th:'ยังมีข้อมูลระหว่างวันไม่พอสำหรับกราฟสูงสุด/ต่ำสุด'},
+    bubbleRepHigh:{en:'High',th:'สูงสุด'},
+    bubbleRepLow:{en:'Low',th:'ต่ำสุด'},
+    bubbleRepNow:{en:'Now',th:'ตอนนี้'},
     bubbleRepTierH:{en:'Score Scale',th:'มาตรวัดคะแนน'},
     bubbleRepBurstH:{en:'If a Bubble Like This Bursts',th:'ถ้าฟองสบู่แบบนี้แตก'},
     bubbleRepBurstLede:{en:'This is the historical rotation pattern from past unwinds (2000, 2008, 2022), not a prediction of this specific outcome or its timing. Names below are common real-world examples of each group, not recommendations.',
@@ -1670,6 +1676,37 @@
     '</div>';
   }
 
+  /* ROUND T: the intraday high/low graph that sits on the live Bubble Radar
+     page next to the gauge, reproduced here right under the indicator
+     legend as the user asked -- reuses this module's own sparkChartSVG
+     rather than reaching into part-40.js's private riskChart (separate
+     scope, same reason bubbleTierLegendHTML above is duplicated). */
+  function bubbleHiLoReportHTML(){
+    var hist = [];
+    try { hist = (window.__SPZ_BUBBLE && window.__SPZ_BUBBLE.history && window.__SPZ_BUBBLE.history()) || []; } catch(e){}
+    if(hist.length < 2){
+      return '<div class="pr-sec-h">' + esc(T(UI.bubbleRepHiLoH)) + '</div>' +
+        '<div class="pr-empty">' + esc(T(UI.bubbleRepHiLoNoData)) + '</div>';
+    }
+    var vals = hist.map(function(p){ return p.v; });
+    var hi = Math.max.apply(null, vals), lo = Math.min.apply(null, vals), now = vals[vals.length - 1];
+    var dates = [hist[0].t, hist[hist.length - 1].t];
+    var svg = sparkChartSVG(vals, { w: 640, h: 108, color: '#161616', fill: 'rgba(22,22,22,.06)' });
+    var statRow = '<table class="pr-table pr-hilo-table"><thead><tr>' +
+        '<th>' + esc(T(UI.bubbleRepHigh)) + '</th><th>' + esc(T(UI.bubbleRepLow)) + '</th><th>' + esc(T(UI.bubbleRepNow)) + '</th>' +
+      '</tr></thead><tbody><tr>' +
+        '<td class="pr-score">' + Math.round(hi) + '%</td>' +
+        '<td class="pr-score">' + Math.round(lo) + '%</td>' +
+        '<td class="pr-score">' + Math.round(now) + '%</td>' +
+      '</tr></tbody></table>';
+    return '<div class="pr-sec-h">' + esc(T(UI.bubbleRepHiLoH)) + '</div>' +
+      '<div class="pr-flow-note">' + esc(T(UI.bubbleRepHiLoLede)) + '</div>' +
+      '<div class="pr-chart-block">' + svg +
+        '<div class="pr-chart-axis"><span>' + esc(dates[0]) + '</span><span>' + esc(dates[1]) + '</span></div>' +
+      '</div>' +
+      statRow;
+  }
+
   function bubbleReportHTML(){
     var now = new Date();
     var comp = null;
@@ -1728,6 +1765,7 @@
       '<div class="pr-sec-h">' + esc(T(UI.bubbleRepIndH)) + '</div>' +
       '<div class="pr-flow-note">' + esc(T(UI.bubbleRepIndLede)) + '</div>' +
       indTableHTML +
+      bubbleHiLoReportHTML() +
       '<div class="pr-sec-h">' + esc(T(UI.bubbleRepTierH)) + '</div>' +
       bubbleTierLegendHTML() +
       '<div class="pr-sec-h">' + esc(T(UI.bubbleRepBurstH)) + '</div>' +
