@@ -46,7 +46,15 @@ US = ["JPM", "BAC", "WFC", "C", "GS", "XOM", "CVX", "MMM", "BRK-B", "GM",
       "VICI", "DLR", "PSA", "TMUS", "NEE", "AEP", "D", "EXC", "XEL", "ED",
       "PEG", "WEC", "KHC", "GIS", "CLX", "HSY", "STZ", "MNST", "TGT", "HD",
       "LOW", "TJX", "NKE", "SBUX", "YUM", "CI", "HUM", "ELV", "MRK", "BMY",
-      "ZTS", "WM", "RSG", "DIS", "CMCSA"]
+      "ZTS", "WM", "RSG", "DIS", "CMCSA", "MCHP", "SWKS", "STX", "WDC",
+      "LHX", "HWM", "AME", "ROK", "DOV", "XYL", "CMI", "PCAR", "EBAY", "SYF",
+      "ALLY", "DVN", "FANG", "EOG", "APA", "NEM", "AA", "WBD", "BABA", "JD",
+      "PDD", "NIO", "BIDU", "SE", "MELI", "SPOT", "PINS", "SNAP", "RBLX",
+      "U", "TTD", "ROKU", "ZM", "DOCU", "OKTA", "MDB", "COIN", "MSTR",
+      "HOOD", "SOFI", "AFRM", "ON", "MRVL", "TDG", "LULU", "CMG", "DPZ",
+      "BKNG", "EXPE", "MAR", "HLT", "RCL", "CCL", "ETSY", "DXCM", "ALGN",
+      "PSKY", "BLK", "AMP", "NDAQ", "CBOE", "APD", "LIN", "CNC", "MOH", "EW",
+      "IDXX"]
 
 TH = ["KBANK", "BBL", "SCB", "KTB", "PTT", "SCC", "TOP", "DELTA", "GULF",
       "AOT", "CPALL", "MINT", "ADVANC", "TISCO", "LH", "RATCH", "EGCO",
@@ -55,8 +63,10 @@ TH = ["KBANK", "BBL", "SCB", "KTB", "PTT", "SCC", "TOP", "DELTA", "GULF",
       "CRC", "GPSC", "HMPRO", "IVL", "KCE", "KKP", "KTC", "MTC", "OR",
       "PTTGC", "SCGP", "TCAP", "TIDLOR", "TLI", "TRUE", "VGI", "WHA", "BAY",
       "TASCO", "SIRI", "AP", "SPALI", "ORI", "CK", "STECON", "TOA", "EA",
-      "BGRIM", "IRPC", "THANI", "SAWAD", "MC", "JMART", "CENTEL",
-      "MAJOR", "SUPER"]
+      "BGRIM", "IRPC", "THANI", "SAWAD", "MC", "JMART", "CENTEL", "MAJOR",
+      "SUPER", "GLOBAL", "GFPT", "STA", "STGT", "SAT", "PTG", "SUSCO",
+      "BAFS", "TPIPP", "JAS", "SINGER", "TFG", "PLANB", "DOHOME", "SABINA",
+      "WORK", "PR9", "VIH", "CHG", "NER", "ICHI", "AAV"]
 
 FX_CODES = ["USD", "THB", "EUR", "JPY", "GBP", "CNY", "AUD", "CAD", "CHF",
             "SGD", "HKD", "KRW", "TWD", "INR", "MYR", "VND", "AED"]
