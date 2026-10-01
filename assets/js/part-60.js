@@ -66,6 +66,51 @@
     appicon: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5.4" y="2" width="9.2" height="16" rx="1.8"/><path d="M8.6 15.3h2.8"/></svg>'
   };
 
+  /* ---------------- bigger illustrated graphics ----------------
+     Two larger (not 17px) line-art panels, same mono/neon stroke language as
+     ICON above (currentColor, 1.6-stroke, round caps/joins) but drawn big
+     enough to actually read as a picture: ID card + passport for the
+     account-opening section, and a share-certificate-to-coins graphic for
+     the dividend-safety item. Rendered via .bsc-hero (see part-41.css). */
+  var HERO_ID =
+    '<svg viewBox="0 0 240 150" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
+      '<g transform="rotate(-6 167 82)">' +
+        '<rect x="132" y="36" width="70" height="92" rx="5"/>' +
+        '<circle cx="167" cy="61" r="11"/>' +
+        '<path d="M161 61l4 5 9-11"/>' +
+        '<line x1="140" y1="100" x2="194" y2="100"/>' +
+        '<line x1="140" y1="109" x2="194" y2="109"/>' +
+        '<line x1="140" y1="118" x2="176" y2="118"/>' +
+      '</g>' +
+      '<g transform="rotate(5 93 91)">' +
+        '<rect x="24" y="48" width="138" height="86" rx="9"/>' +
+        '<rect x="38" y="62" width="34" height="40" rx="5"/>' +
+        '<circle cx="55" cy="76" r="8.5"/>' +
+        '<path d="M43 98c2.5-9 8-13.5 12-13.5s9.5 4.5 12 13.5"/>' +
+        '<line x1="82" y1="68" x2="150" y2="68"/>' +
+        '<line x1="82" y1="80" x2="140" y2="80"/>' +
+        '<line x1="82" y1="92" x2="146" y2="92"/>' +
+        '<rect x="82" y="104" width="21" height="14" rx="2.5"/>' +
+        '<line x1="111" y1="111" x2="150" y2="111"/>' +
+      '</g>' +
+    '</svg>';
+  var HERO_DIV =
+    '<svg viewBox="0 0 200 150" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
+      '<rect x="58" y="14" width="84" height="56" rx="6"/>' +
+      '<line x1="72" y1="32" x2="128" y2="32"/>' +
+      '<line x1="72" y1="43" x2="120" y2="43"/>' +
+      '<line x1="72" y1="54" x2="124" y2="54"/>' +
+      '<circle cx="128" cy="58" r="8"/>' +
+      '<path d="M123 58l4 4 7-8"/>' +
+      '<path d="M100 72 L100 94" stroke-dasharray="3 5"/>' +
+      '<path d="M92 88 L100 97 L108 88"/>' +
+      '<g transform="translate(63,89) scale(3.7)" stroke-width="0.43">' +
+        '<ellipse cx="10" cy="5.6" rx="6.2" ry="2.4"/>' +
+        '<path d="M3.8 5.6v3.9c0 1.33 2.78 2.4 6.2 2.4s6.2-1.07 6.2-2.4V5.6"/>' +
+        '<path d="M3.8 9.5v3.9c0 1.33 2.78 2.4 6.2 2.4s6.2-1.07 6.2-2.4V9.5"/>' +
+      '</g>' +
+    '</svg>';
+
   /* ---------------- before/after scenario widget ----------------
      Same visual language as the glossary's calc-mode what-if panels
      (DIV YLD / PAYOUT etc.): a formula line, scenario chips, a two-cell
@@ -361,6 +406,7 @@
         } },
 
       { icon:ICON.coins,
+        hero: HERO_DIV,
         t:{en:'If it pays a dividend — is that dividend actually safe?', th:'ถ้ามันจ่ายปันผล ปันผลนั้นปลอดภัยจริงไหม'},
         what:{en:'Dividend yield is the annual cash paid divided by the share price — the cash return you get just for holding the stock. Payout ratio is the share of profit actually paid out as that dividend. Payout frequency is simply how often it arrives — quarterly is common in many markets, others pay once a year.',
               th:'อัตราปันผล (dividend yield) คือเงินสดที่จ่ายต่อปี หารด้วยราคาหุ้น — ผลตอบแทนเงินสดที่ได้แค่จากการถือหุ้นไว้ อัตราการจ่ายปันผล (payout ratio) คือสัดส่วนกำไรที่จ่ายออกมาเป็นปันผลจริง ส่วนรอบการจ่ายปันผล (payout frequency) คือความถี่ในการจ่าย — หลายตลาดจ่ายรายไตรมาส บางที่จ่ายปีละครั้ง'},
@@ -473,6 +519,7 @@
         '<div class="v8-sub" data-b="s1H"></div>' +
         '<p class="lede bsc-para" data-b="s1D" style="margin-bottom:22px"></p>' +
         '<div class="v8-sub" data-b="s2H"></div>' +
+        '<div class="bsc-hero" data-b="heroId"></div>' +
         '<div class="bsc-steps" data-b="steps"></div>' +
         '<div class="v8-sub" data-b="s3H"></div>' +
         '<p class="lede" data-b="s3D" style="margin-bottom:16px"></p>' +
@@ -523,6 +570,7 @@
     q('s1H').textContent = T(BK.s1H);
     q('s1D').innerHTML = esc(T(BK.s1D)).replace(/\n\n/g, '</p><p class="lede bsc-para" style="margin-bottom:22px">');
     q('s2H').textContent = T(BK.s2H);
+    q('heroId').innerHTML = HERO_ID;
     var stepsEl = q('steps');
     stepsEl.innerHTML = '';
     for(var si = 0; si < BK.steps.length; si++){
@@ -576,6 +624,7 @@
           '<div class="gm-f tip"><div class="gm-fh">' + esc(T(BK.labMis)) + '</div><div class="gm-fd">' + esc(T(it.mistake)) + '</div></div>' +
         '</div>' +
         '<div class="bsc-cmp-slot"></div>');
+      if(it.hero) c.querySelector('.bsc-viz').appendChild(el('div', 'bsc-hero bsc-hero-sm', it.hero));
       c.querySelector('.bsc-viz').appendChild(buildCalcCard(it.calc));
       if(it.cmp){
         var cmpSlot = c.querySelector('.bsc-cmp-slot');
