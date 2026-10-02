@@ -349,11 +349,21 @@
           '<div class="cag-status"><i></i><span data-x="status"></span></div>' +
 
           '<div class="cag-tiers" id="cagTabs">' +
-            '<button class="cag-tier line" type="button" id="cagLineTab"><b data-x="tabLine"></b></button>' +
-            '<button class="cag-tier tg" type="button" id="cagTgTab"><b data-x="tabTg"></b></button>' +
-            '<button class="cag-tier m" type="button" data-tab="member"><b data-x="tabMember"></b></button>' +
-            '<button class="cag-tier e" type="button" data-tab="editor"><b data-x="tabEditor"></b></button>' +
-            '<button class="cag-tier f" type="button" data-tab="full"><b data-x="tabFull"></b></button>' +
+            '<button class="cag-tier line" type="button" id="cagLineTab">' +
+              '<svg class="cag-tier-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 20l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>' +
+              '<b data-x="tabLine"></b></button>' +
+            '<button class="cag-tier tg" type="button" id="cagTgTab">' +
+              '<svg class="cag-tier-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>' +
+              '<b data-x="tabTg"></b></button>' +
+            '<button class="cag-tier m" type="button" data-tab="member">' +
+              '<svg class="cag-tier-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/></svg>' +
+              '<b data-x="tabMember"></b></button>' +
+            '<button class="cag-tier e" type="button" data-tab="editor">' +
+              '<svg class="cag-tier-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>' +
+              '<b data-x="tabEditor"></b></button>' +
+            '<button class="cag-tier f" type="button" data-tab="full">' +
+              '<svg class="cag-tier-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6l7-3z"/><path d="M9.3 12.3l1.9 1.9 3.5-3.5"/></svg>' +
+              '<b data-x="tabFull"></b></button>' +
           '</div>' +
 
           '<div class="cag-pane" id="cagPaneOut">' +
@@ -453,10 +463,18 @@
           '<div class="cag-pane" id="cagPaneMember">' +
             '<div class="cag-head"><div><b data-x="memberT"></b><span data-x="memberS"></span></div></div>' +
             '<div class="cag-member-linenote" data-x="memberLineNote"></div>' +
-            '<button class="cag-btn" type="button" id="cagMemberLineBtn" data-x="memberLineCta"></button>' +
-            '<button class="cag-btn" type="button" id="cagMemberTgBtn" data-x="memberTgCta"></button>' +
-            '<button class="cag-ghost" type="button" id="cagMemberFbBtn" data-x="memberFbCta"></button>' +
-            '<button class="cag-ghost" type="button" id="cagMemberGoogleBtn" data-x="memberGoogleCta"></button>' +
+            '<button class="cag-btn" type="button" id="cagMemberLineBtn">' +
+              '<svg class="cag-btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 20l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>' +
+              '<span data-x="memberLineCta"></span></button>' +
+            '<button class="cag-btn" type="button" id="cagMemberTgBtn">' +
+              '<svg class="cag-btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>' +
+              '<span data-x="memberTgCta"></span></button>' +
+            '<button class="cag-ghost" type="button" id="cagMemberFbBtn">' +
+              '<svg class="cag-ghost-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#1877F2"/><path fill="#fff" d="M15.5 12.5h-2v7h-3v-7H9v-2.5h1.5V8.5c0-1.6.9-2.9 3-2.9h2v2.5h-1.3c-.5 0-.7.3-.7.8v1.1h2l-.3 2.5z"/></svg>' +
+              '<span data-x="memberFbCta"></span></button>' +
+            '<button class="cag-ghost" type="button" id="cagMemberGoogleBtn">' +
+              '<svg class="cag-ghost-ico" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>' +
+              '<span data-x="memberGoogleCta"></span></button>' +
             '<button class="cag-ghost" type="button" id="cagToFull" data-x="toFullLink"></button>' +
             '<div class="cag-member-bio" id="cagMemberBio"></div>' +
           '</div>' +
@@ -538,7 +556,10 @@
       var memberBioSlot = gate.querySelector('#cagMemberBio');
       if(memberBioSlot && !memberBioSlot.firstChild) memberBioSlot.appendChild(window.__spzBioCard('in-menu'));
       var adminBioSlot = gate.querySelector('#cagAdminBio');
-      if(adminBioSlot && !adminBioSlot.firstChild) adminBioSlot.appendChild(window.__spzBioCard('in-menu'));
+      /* Round W (#222): admin-blend tones the card down to match the
+         Terminal Admin panel instead of the flashy black-hole treatment it
+         gets everywhere else (Home hub, nav drawer, Member pane). */
+      if(adminBioSlot && !adminBioSlot.firstChild) adminBioSlot.appendChild(window.__spzBioCard('in-menu admin-blend'));
     })();
 
     var advGrid = gate.querySelector('#cagAdvGrid');

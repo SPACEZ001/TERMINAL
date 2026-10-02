@@ -911,13 +911,71 @@
     var detailName = detail.querySelector('.gl-detail-name');
     var navButtons = [];
     var activeI = -1;
+    /* the row whose .term-content-wrap currently lives inside detailBody
+       (see the note in select() below -- this is what the restore-before-
+       clear fix tracks). */
+    var curRow = null;
 
-    function select(i){
+    /* Round W (#227): each term now gets its own browser-history entry, so
+       the site's Back/Forward arrows (and the real browser ones) step
+       through terms one at a time instead of leaving the page in a single
+       jump -- which is what read as "back skips terms". Namespaced by this
+       section's route id since Glossary and Chart Signals both run through
+       this same builder. We never touch the main router's own HIST/HI
+       stack directly -- every state object we write MERGES in whatever the
+       router already stored there (its spz/i keys) so its own popstate
+       handling keeps working exactly as before; we only ever add our own
+       spzTerm/spzSection keys on top of that. */
+    /* NOTE: this runs from THIS file's own boot(), which (by script load
+       order) executes before part-15.js's boot() has assigned the
+       `data-route` attribute to any section -- looking that attribute up
+       here always missed and silently fell back to the same literal 'gl'
+       for BOTH glossary and signals, so each one's popstate listener
+       matched the other's history entries too (cross-talk: going back on
+       Glossary could reselect a term on the still-hidden Signals list,
+       and vice versa). The plain `id` attribute, by contrast, is already
+       in the static HTML before any script runs, so it's race-free. */
+    var routeSec = list.closest('section[id]');
+    var glNs = routeSec ? routeSec.id : 'gl';
+
+    function pushTermState(i, replace){
+      try {
+        var merged = {}, cur = history.state;
+        if(cur && typeof cur === 'object'){ for(var k in cur) merged[k] = cur[k]; }
+        merged.spzTerm = i;
+        merged.spzSection = glNs;
+        var url = location.pathname + location.search + (location.hash || '');
+        if(replace) history.replaceState(merged, '', url);
+        else history.pushState(merged, '', url);
+      } catch(e){}
+    }
+
+    function select(i, mode){
       var row = rows[i];
+      /* Round W (#227 follow-up): .term-content-wrap is MOVED into
+         detailBody on selection, not cloned -- so a row's own copy is only
+         there the very first time. Revisiting a row (a plain re-click, or
+         now Back/Forward landing on a term already seen this session) used
+         to find row.querySelector('.term-content-wrap') return null,
+         because the node was sitting in detailBody and then got destroyed
+         by `detailBody.innerHTML = ''` the next time a DIFFERENT term was
+         picked -- `select()` would silently no-op and the pane kept
+         whatever was already showing. Two-part fix: (a) if this row's own
+         wrap isn't there, check whether it's the one currently parked in
+         detailBody (re-selecting what's already open); (b) before clearing
+         detailBody for a genuinely different row, hand the outgoing row
+         its wrap back first instead of letting innerHTML='' destroy it, so
+         it survives for ITS next visit. */
       var wrap = row.querySelector('.term-content-wrap');
+      if(!wrap && curRow === row) wrap = detailBody.querySelector('.term-content-wrap');
       if(!wrap) return;
+      if(curRow && curRow !== row){
+        var leaving = detailBody.firstChild;
+        if(leaving) curRow.appendChild(leaving);
+      }
       detailBody.innerHTML = '';
       detailBody.appendChild(wrap);
+      curRow = row;
       var idx = row.querySelector('.term-idx');
       var tag = row.querySelector('.term-tag');
       var name = row.querySelector('.term-name');
@@ -930,6 +988,12 @@
       detail.classList.remove('gl-anim');
       void detail.offsetWidth; // restart the CSS animation on repeat selections
       detail.classList.add('gl-anim');
+      // 'pop' = we're here because of a history traversal -- the entry
+      // already exists, don't touch it. 'replace' = a corrective jump (the
+      // initial term, or the filter rail hiding the active one) that
+      // shouldn't grow the history stack. Anything else (a real nav-item
+      // click) pushes a fresh, forward-navigable entry.
+      if(mode !== 'pop') pushTermState(i, mode === 'replace');
     }
 
     for(var i = 0; i < rows.length; i++){
@@ -944,7 +1008,7 @@
           '<span class="gl-nav-idx">' + (idx ? idx.textContent : '') + '</span>' +
           '<span class="gl-nav-tag">' + (tag ? tag.textContent : '') + '</span>' +
           '<span class="gl-nav-name">' + (name ? name.textContent : '') + '</span>';
-        btn.addEventListener('click', function(){ select(i); });
+        btn.addEventListener('click', function(){ select(i, 'push'); });
         nav.appendChild(btn);
         navButtons.push(btn);
       })(i, rows[i]);
@@ -957,14 +1021,26 @@
       for(var k = 0; k < rows.length; k++){ navButtons[k].hidden = rows[k].classList.contains('ctl-hidden'); }
       if(!stillVisible){
         for(var f = 0; f < rows.length; f++){
-          if(!rows[f].classList.contains('ctl-hidden')){ select(f); break; }
+          if(!rows[f].classList.contains('ctl-hidden')){ select(f, 'replace'); break; }
         }
       }
     }
     var mo = new MutationObserver(syncVisibility);
     for(var m = 0; m < rows.length; m++){ mo.observe(rows[m], { attributes: true, attributeFilter: ['class'] }); }
 
-    select(0);
+    select(0, 'replace');
+
+    // The actual Back/Forward fix: listen for OUR OWN tagged entries and
+    // just re-select the term they name -- 'pop' so this never re-pushes.
+    // The main router's own popstate listener (part-15.js) also sees these
+    // same entries (we preserved its spz/i keys) and keeps its own stack in
+    // sync; the two listeners don't know about each other and don't need to.
+    window.addEventListener('popstate', function(e){
+      var st = e.state;
+      if(!st || st.spzSection !== glNs || typeof st.spzTerm !== 'number') return;
+      if(st.spzTerm === activeI || st.spzTerm < 0 || st.spzTerm >= rows.length) return;
+      select(st.spzTerm, 'pop');
+    });
 
     /* ROUND U: #signals now also runs through buildMasterDetail (see boot()
        below), so this module can have two of these instances alive at once

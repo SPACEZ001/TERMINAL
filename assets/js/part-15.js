@@ -17,35 +17,40 @@ var GUIDE = {
       {l:{en:'Grow as much as possible over 10+ years',th:'โตให้มากที่สุดในระยะ 10 ปีขึ้นไป'},w:{g:3,v:1}},
       {l:{en:'Pay me regular cash I can spend',th:'จ่ายเงินสดสม่ำเสมอให้ผมใช้ได้'},w:{d:3,f:1}},
       {l:{en:'Beat inflation without big swings',th:'ชนะเงินเฟ้อโดยไม่เหวี่ยงแรง'},w:{f:3,d:1}},
-      {l:{en:'Buy things cheap and wait for the market to notice',th:'ซื้อของถูกแล้วรอให้ตลาดมองเห็น'},w:{v:3,d:1}}
+      {l:{en:'Buy things cheap and wait for the market to notice',th:'ซื้อของถูกแล้วรอให้ตลาดมองเห็น'},w:{v:3,d:1}},
+      {l:{en:'A mix of growth and income — I don\'t want to pick just one',th:'ผสมทั้งการเติบโตและรายได้ — ไม่อยากเลือกแค่อย่างเดียว'},w:{v:1,g:1,d:1,f:1}}
      ]},
     {t:{en:'Your portfolio falls 30% in one month. What do you actually do?',th:'พอร์ตคุณลง 30% ในเดือนเดียว คุณจะทำอะไรจริงๆ?'},
      o:[
       {l:{en:'Buy more — it is on sale',th:'ซื้อเพิ่ม — ของลดราคาแล้ว'},w:{v:3,g:1},r:3},
       {l:{en:'Do nothing and stop opening the app',th:'ไม่ทำอะไร แล้วเลิกเปิดแอปดู'},w:{f:2,d:2},r:2},
       {l:{en:'Sell part of it to sleep at night',th:'ขายบางส่วนเพื่อให้นอนหลับ'},w:{f:3,d:1},r:1},
-      {l:{en:'Sell everything — I cannot handle that',th:'ขายทั้งหมด — ผมรับไม่ไหว'},w:{f:4},r:0}
+      {l:{en:'Sell everything — I cannot handle that',th:'ขายทั้งหมด — ผมรับไม่ไหว'},w:{f:4},r:0},
+      {l:{en:'Follow my plan — rebalance back to the mix I set before',th:'ทำตามแผนที่ตั้งไว้ — ปรับพอร์ตกลับไปที่สัดส่วนเดิม'},w:{d:2,v:1,f:1},r:2}
      ]},
     {t:{en:'How long can this money stay invested without you touching it?',th:'เงินก้อนนี้อยู่ในตลาดได้นานแค่ไหนโดยไม่ต้องถอน?'},
      o:[
       {l:{en:'Under 1 year',th:'ไม่ถึง 1 ปี'},w:{f:3},r:0,h:0},
       {l:{en:'1–3 years',th:'1–3 ปี'},w:{d:2,f:2},r:1,h:1},
       {l:{en:'3–10 years',th:'3–10 ปี'},w:{v:2,d:1,g:1},r:2,h:2},
-      {l:{en:'10 years or more',th:'10 ปีขึ้นไป'},w:{g:3,v:1},r:3,h:3}
+      {l:{en:'10 years or more',th:'10 ปีขึ้นไป'},w:{g:3,v:1},r:3,h:3},
+      {l:{en:'About 5 years — saving for a specific goal',th:'ประมาณ 5 ปี — เก็บเงินเพื่อเป้าหมายที่มีกำหนดไว้แล้ว'},w:{d:2,f:1,v:1},r:1,h:1}
      ]},
     {t:{en:'Realistically, how much time will you spend on this?',th:'พูดตามจริง คุณจะใช้เวลากับเรื่องนี้แค่ไหน?'},
      o:[
       {l:{en:'Almost none — set and forget',th:'แทบไม่มีเลย — ตั้งแล้วลืม'},w:{f:3,d:2},e:0},
       {l:{en:'A check once a month',th:'เช็คเดือนละครั้ง'},w:{d:2,f:1},e:1},
       {l:{en:'A few hours every week',th:'สัปดาห์ละไม่กี่ชั่วโมง'},w:{v:2,g:1},e:2},
-      {l:{en:'Daily — I want to learn the tape',th:'ทุกวัน — ผมอยากอ่านตลาดให้เป็น'},w:{g:2,v:1},e:3}
+      {l:{en:'Daily — I want to learn the tape',th:'ทุกวัน — ผมอยากอ่านตลาดให้เป็น'},w:{g:2,v:1},e:3},
+      {l:{en:'None — I\'d rather pay someone or use a robo-advisor',th:'ไม่มีเลย — ให้ผู้เชี่ยวชาญหรือโรโบแอดไวเซอร์ช่วยจัดการแทน'},w:{f:2,d:1},e:0}
      ]},
     {t:{en:'What have you actually bought before?',th:'ก่อนหน้านี้คุณเคยซื้ออะไรมาแล้วบ้าง?'},
      o:[
       {l:{en:'Nothing yet',th:'ยังไม่เคยเลย'},w:{f:2,d:1},e:0},
       {l:{en:'Funds or ETFs only',th:'เฉพาะกองทุนหรือ ETF'},w:{f:1,d:2},e:1},
       {l:{en:'A handful of individual stocks',th:'หุ้นรายตัวไม่กี่ตัว'},w:{v:2,g:1},e:2},
-      {l:{en:'I trade regularly already',th:'ผมเทรดเป็นประจำอยู่แล้ว'},w:{g:2,v:2},e:3}
+      {l:{en:'I trade regularly already',th:'ผมเทรดเป็นประจำอยู่แล้ว'},w:{g:2,v:2},e:3},
+      {l:{en:'Crypto or other alternative assets, but never stocks',th:'คริปโตหรือสินทรัพย์ทางเลือกอื่น แต่ไม่เคยซื้อหุ้นเลย'},w:{g:2},e:2}
      ]}
   ],
   arch:{
@@ -287,28 +292,32 @@ var GUIDE_EXTRA = [
     {l:{en:'Thai stocks — I understand these businesses',th:'หุ้นไทย — ผมเข้าใจธุรกิจพวกนี้'},w:{d:1,v:1},mkt:'th'},
     {l:{en:'US / global — bigger companies, deeper market',th:'สหรัฐฯ / ต่างประเทศ — บริษัทใหญ่กว่า ตลาดลึกกว่า'},w:{g:2},mkt:'us'},
     {l:{en:'Both — split across the two',th:'ทั้งสองตลาด — แบ่งกันไป'},w:{g:1,v:1},mkt:'both'},
-    {l:{en:'No idea yet — tell me',th:'ยังไม่รู้เลย — ช่วยแนะนำหน่อย'},w:{f:1},mkt:'both'}
+    {l:{en:'No idea yet — tell me',th:'ยังไม่รู้เลย — ช่วยแนะนำหน่อย'},w:{f:1},mkt:'both'},
+    {l:{en:'Emerging markets beyond Thailand and the US',th:'ตลาดเกิดใหม่อื่นๆ นอกจากไทยและสหรัฐฯ'},w:{g:1,v:1},mkt:'both'}
    ]},
   {t:{en:'What is the worst single year you could live with?',th:'ปีที่แย่ที่สุดที่คุณรับได้คือเท่าไหร่?'},
    o:[
     {l:{en:'−10% — anything more and I panic',th:'−10% — มากกว่านี้ผมแพนิค'},w:{f:4},r:0},
     {l:{en:'−20% — uncomfortable but survivable',th:'−20% — อึดอัดแต่ยังรอด'},w:{d:2,f:2},r:1},
     {l:{en:'−35% — that is the price of admission',th:'−35% — นั่นคือค่าผ่านประตู'},w:{v:2,g:2},r:2},
-    {l:{en:'−50% or more — I have seen it before',th:'−50% ขึ้นไป — ผมเคยเจอมาแล้ว'},w:{g:4},r:3}
+    {l:{en:'−50% or more — I have seen it before',th:'−50% ขึ้นไป — ผมเคยเจอมาแล้ว'},w:{g:4},r:3},
+    {l:{en:'−25% to −30% — manageable if I know why',th:'ลง 25–30% — รับได้ถ้ารู้เหตุผลว่าทำไม'},w:{v:2,d:1},r:2}
    ]},
   {t:{en:'What would actually make you sell a position?',th:'อะไรที่จะทำให้คุณขายหุ้นตัวหนึ่งจริงๆ?'},
    o:[
     {l:{en:'It hit the stop-loss I set before buying',th:'มันแตะจุดตัดขาดทุนที่ตั้งไว้ก่อนซื้อ'},w:{g:2,v:1},r:2,e:2},
     {l:{en:'The reason I bought it stopped being true',th:'เหตุผลที่ผมซื้อมันไม่จริงอีกต่อไปแล้ว'},w:{v:3},r:2,e:3},
     {l:{en:'I need the money for something else',th:'ผมต้องใช้เงินไปทำอย่างอื่น'},w:{f:2,d:1},r:1,e:0},
-    {l:{en:'Bad news makes me nervous enough',th:'ข่าวร้ายทำให้ผมกังวลมากพอ'},w:{f:3},r:0,e:0}
+    {l:{en:'Bad news makes me nervous enough',th:'ข่าวร้ายทำให้ผมกังวลมากพอ'},w:{f:3},r:0,e:0},
+    {l:{en:'A better opportunity came along',th:'มีโอกาสที่ดีกว่ามาแทน'},w:{g:3},r:2,e:3}
    ]},
   {t:{en:'A stock you own does nothing for two full years. Then what?',th:'หุ้นที่คุณถือไม่ขยับเลยสองปีเต็ม แล้วยังไงต่อ?'},
    o:[
     {l:{en:'Keep adding on schedule — that is the plan',th:'ซื้อเพิ่มตามตารางต่อไป — นั่นคือแผน'},w:{v:2,d:2},h:3},
     {l:{en:'Hold and collect whatever dividend there is',th:'ถือไว้และเก็บปันผลเท่าที่มี'},w:{d:3},h:3},
     {l:{en:'Re-check the numbers, then decide',th:'กลับไปเช็คตัวเลขใหม่ แล้วค่อยตัดสินใจ'},w:{v:2,g:1},h:2,e:2},
-    {l:{en:'Move the money somewhere it is working',th:'ย้ายเงินไปที่ที่มันทำงาน'},w:{g:3},h:1}
+    {l:{en:'Move the money somewhere it is working',th:'ย้ายเงินไปที่ที่มันทำงาน'},w:{g:3},h:1},
+    {l:{en:'Set a deadline — give it one more year, then decide',th:'ตั้งเดดไลน์ — ให้มันอีกหนึ่งปี แล้วค่อยตัดสินใจ'},w:{v:1,d:1,f:1},h:2,e:1}
    ]},
   /* Round V (#213): two tie-breaker questions. The eight above already split
      value/growth/dividend/defensive fairly well on their own, but scores
@@ -319,14 +328,16 @@ var GUIDE_EXTRA = [
     {l:{en:'Good — I want every baht of profit reinvested in the business',th:'ดีแล้ว — อยากให้กำไรทุกบาทถูกเอาไปลงทุนต่อในธุรกิจ'},w:{g:3}},
     {l:{en:'Fine, as long as the share price does the work instead',th:'โอเค ตราบใดที่ราคาหุ้นทำหน้าที่แทน'},w:{v:2,g:1}},
     {l:{en:'I would rather see some cash come back to me',th:'อยากให้มีเงินสดกลับมาหาผมบ้าง'},w:{d:2,f:1}},
-    {l:{en:'I actively avoid companies that do not pay one',th:'ผมหลีกเลี่ยงหุ้นที่ไม่จ่ายปันผลเลย'},w:{d:3,f:1}}
+    {l:{en:'I actively avoid companies that do not pay one',th:'ผมหลีกเลี่ยงหุ้นที่ไม่จ่ายปันผลเลย'},w:{d:3,f:1}},
+    {l:{en:'Doesn\'t matter either way, as long as the business keeps growing',th:'ไม่สนเลย ตราบใดที่ธุรกิจยังโตต่อ'},w:{g:2,v:1}}
    ]},
   {t:{en:'Forced to pick just one, which sentence is truest for you?',th:'ถ้าต้องเลือกแค่ประโยคเดียว ประโยคไหนตรงกับคุณที่สุด?'},
    o:[
     {l:{en:'I would rather be early and sometimes wrong than late and safe',th:'ผมยอมมาก่อนแล้วบางทีคิดผิด ดีกว่ามาช้าแต่ปลอดภัย'},w:{g:3}},
     {l:{en:'I would rather buy proven, unglamorous businesses cheaply',th:'ผมอยากซื้อธุรกิจที่พิสูจน์ตัวเองแล้วแต่ไม่หวือหวา ในราคาถูก'},w:{v:3}},
     {l:{en:'I want my portfolio to feel boring',th:'ผมอยากให้พอร์ตของผมรู้สึกน่าเบื่อ'},w:{f:3}},
-    {l:{en:'I want it to pay me like a second paycheck',th:'ผมอยากให้มันจ่ายผมเหมือนเงินเดือนที่สอง'},w:{d:3}}
+    {l:{en:'I want it to pay me like a second paycheck',th:'ผมอยากให้มันจ่ายผมเหมือนเงินเดือนที่สอง'},w:{d:3}},
+    {l:{en:'I want to learn how markets work more than I want to make money right now',th:'ผมอยากเรียนรู้วิธีที่ตลาดทำงาน มากกว่าอยากได้เงินตอนนี้'},w:{v:1,g:1,d:1,f:1},e:3}
    ]}
 ];
 
@@ -1070,7 +1081,7 @@ var CL_UI = {
      of both the Home hub grid (buildHub) and the top nav menu (buildNav) --
      currently just Connected Users, which is reachable only via the admin
      login gate's own panel button. */
-  var NAV_HIDDEN = { connectedusers:1, printreport:1, announcements:1, pro:1 }; /* Round Q: Institutional Pro Desk moved into Cockpit, see part-47.js */
+  var NAV_HIDDEN = { connectedusers:1, printreport:1, announcements:1, pro:1, quietValue:1, qrcode:1 }; /* Round Q: Institutional Pro Desk moved into Cockpit, see part-47.js; Round W (#223): Quiet Value Scanner + Website QR Code are admin-only, reached only via the Terminal Admin panel, never listed in public nav/hub */
 
   function buildHub(){
     var sec = el('section');
@@ -1520,6 +1531,34 @@ var CL_UI = {
       return a;
     }
 
+    /* Round W (#228): the Asset Analysis Log ("journal") is where the admin
+       personally posts chart analysis, and some visitors come to this site
+       specifically for it -- a plain numbered row buried mid-list undersold
+       that. Same "icon badge instead of a number, own accent" treatment as
+       memberItem() just above, but in amber rather than lime so the two
+       don't read as the same kind of shortcut, and placed at the very
+       bottom of the whole menu (see the paint() call site) so it closes the
+       list as its own destination rather than competing with the numbered
+       table of contents above it. */
+    var JOURNAL_BADGE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M9 7h7M9 11h5"/></svg>';
+    function journalItem(){
+      var jr = null;
+      for(var ji = 0; ji < ROUTES.length; ji++){ if(ROUTES[ji].id === 'journal') jr = ROUTES[ji]; }
+      if(!jr || !document.getElementById('journal')) return null;
+      var a = el('a', 'np-item np-item-journal',
+        '<span class="np-head"><span class="np-n np-n-icon">' + JOURNAL_BADGE_ICON + '</span>' +
+        '<span class="np-t">' + esc(tx(jr.t).split('—')[0].trim()) + '</span><span class="np-arrow">→</span></span>' +
+        '<span class="np-d">' + esc(tx(jr.d)) + '</span>');
+      a.href = '#/journal';
+      a.setAttribute('data-route-to', 'journal');
+      a.addEventListener('click', function(e){
+        e.preventDefault();
+        menu.classList.remove('open');
+        route('journal');
+      });
+      return a;
+    }
+
     function paint(){
       menu.querySelector('[data-n="lbl"]').textContent = L() === 'th' ? 'เมนู' : 'Menu';
       pop.innerHTML = '';
@@ -1548,7 +1587,7 @@ var CL_UI = {
              starting point -- so it now runs right after the orientation
              tour, before the risk-quiz/archetypes/glossary/signals that
              build on it. */
-          ids:['guided', 'basics', 'start', 'types', 'glossary', 'signals'] },
+          ids:['guided', 'basics', 'start', 'types', 'glossary', 'signals', 'elliott'] },
         { k:'market', t:{en:'Read the market',th:'อ่านตลาด'},
           /* Round S9: full site-wide reorder, easiest/shortest -> hardest/
              longest. Was now/outlook/regime/anomaly/correl/rulelab/daily/
@@ -1569,13 +1608,15 @@ var CL_UI = {
              card inside Cockpit / Command Center now, see part-47.js.
              Round S9: reordered easiest/shortest -> hardest/longest --
              browse examples and look at a raw chart first, then a single
-             deep-dive, then your own journal and watchlist (need an
-             account, more setup), and the quantitative/power-user tools
-             (Bubble Radar's blended score, Proof Lab's historical
-             backtest) last. */
-          ids:['directory', 'chartlab', 'stock', 'journal', 'journalNew', 'watchlist', 'bubble', 'proof'] }
+             deep-dive, then your own watchlist (needs an account, more
+             setup), and the quantitative/power-user tools (Bubble Radar's
+             blended score, Proof Lab's historical backtest) last. Journal
+             ("Asset Analysis Log") used to sit here as just another numbered
+             row -- Round W (#228) pulls it out into its own badged entry at
+             the very bottom of the whole menu instead, see journalItem(). */
+          ids:['directory', 'chartlab', 'stock', 'watchlist', 'bubble', 'proof'] }
       ];
-      var used = { membership:1 }, n = 0, g, i, r;
+      var used = { membership:1, journal:1 }, n = 0, g, i, r;
       for(g = 0; g < GROUPS.length; g++){
         var rows = [];
         for(i = 0; i < GROUPS[g].ids.length; i++){
@@ -1609,6 +1650,8 @@ var CL_UI = {
             tx(rest[i].t).split('—')[0].trim(), tx(rest[i].d)));
         }
       }
+      var ji2 = journalItem();
+      if(ji2) pop.appendChild(ji2);
       syncNav();
     }
     function syncNav(){
@@ -2244,10 +2287,23 @@ var CL_UI = {
       document.body.appendChild(lab);
     }
 
-    /* comparator folds into the directory route */
+    /* comparator folds into the directory route -- Round W (#229): it used
+       to land AFTER the grid and after three bigger explainer widgets
+       (Sector Heatmap, Essentials Guide, Early Signal Screener) that also
+       live on this page, which meant a lot of scrolling before reaching
+       anything you could actually click. Nest it right after the grid's
+       note instead, so those three widgets now follow the comparator
+       rather than bury it. It keeps the same data-route value either way
+       (set just below), and route()'s own toggle loop matches by that
+       attribute regardless of nesting, so visibility still works exactly
+       as before -- this only changes vertical position on the page. */
     var cmp = document.getElementById('comparator');
     var dir = document.getElementById('directory');
-    if(cmp && dir && dir.parentNode) dir.parentNode.insertBefore(cmp, dir.nextSibling);
+    if(cmp && dir){
+      var dirNote = dir.querySelector('.directory-note');
+      if(dirNote && dirNote.parentNode === dir) dir.insertBefore(cmp, dirNote.nextSibling);
+      else if(dir.parentNode) dir.parentNode.insertBefore(cmp, dir.nextSibling);
+    }
 
     /* tag routes */
     var hero = document.querySelector('section.hero');
