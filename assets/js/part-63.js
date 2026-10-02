@@ -54,9 +54,21 @@
   function siteUrl(){
     try { return location.origin + location.pathname; } catch(e){ return location.href; }
   }
+  /* Round Z (#251): she wanted the QR's own background to be something
+     other than plain white, matching the site's theme, while staying
+     scannable -- the qrserver API's color/bgcolor params let it generate
+     the code with real colors baked in (not a CSS filter over a white
+     image, which could wreck contrast). Dark purple on pale lavender
+     keeps the same strong near-black-on-near-white contrast a scanner
+     relies on, just tinted into the page's purple accent instead of true
+     black/white. These two hex values match --qrp-accent-adjacent
+     .qrp-frame's background (--qrp-qr-bg) in part-44.css so the on-screen
+     frame and the actual QR pixels read as one piece. */
+  var QR_FG = '2a1240';
+  var QR_BG = 'f3ecff';
   function qrImgUrl(url, size){
     return 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size +
-      '&margin=12&data=' + encodeURIComponent(url);
+      '&margin=12&color=' + QR_FG + '&bgcolor=' + QR_BG + '&data=' + encodeURIComponent(url);
   }
 
   function bodyHTML(){

@@ -172,7 +172,29 @@
                 th:'หน้านี้สรุปแนวคิดเชิงวิเคราะห์สาธารณะที่ราล์ฟ เนลสัน เอลเลียต เผยแพร่ครั้งแรกในยุค 1930 สำหรับผู้อ่านที่อยากศึกษาต่อ Elliott Wave International คือผู้ให้บริการการศึกษาเชิงพาณิชย์รายหนึ่งที่เป็นที่รู้จักและเผยแพร่เนื้อหาด้านนี้อย่างกว้างขวาง — กล่าวถึงที่นี่เพียงเพื่อการอ้างอิงให้ไปศึกษาต่อเท่านั้น' },
     furtherDisc: { en:'SPACEZ TERMINAL is not affiliated with, sponsored by, or endorsed by Elliott Wave International or any similar provider, and this page is not their material — it is this site\'s own summary of a public framework.',
                    th:'SPACEZ TERMINAL ไม่มีความเกี่ยวข้อง ไม่ได้รับการสนับสนุน และไม่ได้รับการรับรองจาก Elliott Wave International หรือผู้ให้บริการรายใดที่คล้ายกัน และหน้านี้ไม่ใช่เนื้อหาของบริษัทดังกล่าว — เป็นบทสรุปแนวคิดสาธารณะที่เว็บนี้เขียนขึ้นเอง' },
-    furtherLink: { en:'elliottwave.com (opens in a new tab)', th:'elliottwave.com (เปิดแท็บใหม่)' }
+    furtherLink: { en:'elliottwave.com (opens in a new tab)', th:'elliottwave.com (เปิดแท็บใหม่)' },
+
+    /* ---- Round Z (#249): a second Further Reading box linking to a real
+       analysis on this site ---- */
+    furtherExampleP: { en:'Want to see wave analysis applied to a real chart?', th:'อยากดูตัวอย่างการวิเคราะห์คลื่นกับกราฟจริงไหม' },
+    furtherExampleLink: { en:'See a real analysis example →', th:'ดูตัวอย่างการวิเคราะห์จริง →' },
+    furtherExampleNote: { en:'Opens the Asset Analysis Log on this site — signing in (LINE or Telegram) is required to view it.',
+                           th:'เปิดไปหน้าบทวิเคราะห์สินทรัพย์ของเว็บนี้ — ต้องเข้าสู่ระบบ (LINE หรือ Telegram) ก่อนถึงจะดูได้' },
+
+    /* ---- Round Z (#246): right/wrong example captions for the three hard
+       rules ---- */
+    r1okCap: { en:'Correct — wave 2 stays above the start of wave 1.', th:'ถูกต้อง — คลื่น 2 ยังอยู่สูงกว่าจุดเริ่มต้นของคลื่น 1' },
+    r1badCap: { en:'Wrong — wave 2 breaks below the start of wave 1.', th:'ผิด — คลื่น 2 ทะลุลงไปใต้จุดเริ่มต้นของคลื่น 1' },
+    r2okCap: { en:'Correct — wave 3 is the longest of waves 1, 3 and 5.', th:'ถูกต้อง — คลื่น 3 ยาวที่สุดเมื่อเทียบกับคลื่น 1 และ 5' },
+    r2badCap: { en:'Wrong — wave 1 and wave 5 are both longer than wave 3.', th:'ผิด — คลื่น 1 และคลื่น 5 ยาวกว่าคลื่น 3 ทั้งคู่' },
+    r3okCap: { en:'Correct — wave 4\'s low stays above wave 1\'s high (dashed line).', th:'ถูกต้อง — จุดต่ำของคลื่น 4 ยังอยู่สูงกว่าจุดสูงของคลื่น 1 (เส้นประ)' },
+    r3badCap: { en:'Wrong — wave 4 dips below wave 1\'s high, overlapping its territory.', th:'ผิด — คลื่น 4 ลงไปต่ำกว่าจุดสูงของคลื่น 1 เข้าไปในช่วงราคาของมัน' },
+
+    /* ---- Round Z (#248): sub-wave-count captions for the corrective shapes ---- */
+    c1cap: { en:'Each leg\'s sub-wave count is shown in parentheses — a 5-3-5 structure.', th:'ตัวเลขในวงเล็บคือจำนวนคลื่นย่อยของแต่ละขา — โครงสร้าง 5-3-5' },
+    c2cap: { en:'Each leg\'s sub-wave count is shown in parentheses — a 3-3-5 structure.', th:'ตัวเลขในวงเล็บคือจำนวนคลื่นย่อยของแต่ละขา — โครงสร้าง 3-3-5' },
+    c3cap: { en:'Each of the five legs is itself a 3-wave move — a 3-3-3-3-3 structure, shown in parentheses.', th:'ทั้งห้าขาแต่ละขาคือคลื่นย่อยแบบ 3 คลื่นในตัวเอง — โครงสร้าง 3-3-3-3-3 ตามที่แสดงในวงเล็บ' },
+    c4cap: { en:'Each leg (W, Y, and Z if present) is itself a complete zigzag, flat, or triangle — so its sub-wave count depends on which shape it takes.', th:'แต่ละขา (W, Y และ Z ถ้ามี) คือซิกแซก แฟลต หรือแทรงเกิลที่สมบูรณ์ในตัวเอง ดังนั้นจำนวนคลื่นย่อยของมันจึงขึ้นอยู่กับรูปแบบที่มันเป็น' }
   };
 
   var RULES = [ [UI.r1h, UI.r1p], [UI.r2h, UI.r2p], [UI.r3h, UI.r3p] ];
@@ -205,7 +227,13 @@
   function waveSvg(pts, viewBox, extra){
     var path = pts.map(function(p, i){ return (i === 0 ? 'M' : 'L') + p.x + ' ' + p.y; }).join(' ');
     var dots = pts.filter(function(p){ return p.lab !== ''; }).map(function(p){
-      return '<circle cx="' + p.x + '" cy="' + p.y + '" r="4.5" class="ewv-dot' + (/[0-9]/.test(p.lab) ? '' : ' ewv-dot-ab') + '"/>' +
+      /* Round Z (#248): anchored to the FIRST character only -- a plain
+         numbered point ('0','1'...'5') is still neon, but a lettered point
+         that now carries a sub-wave count in parentheses (e.g. 'A(5)',
+         'E(3)') must stay amber; testing for a digit ANYWHERE in the label
+         used to misclassify those as numeric because of the digit inside
+         the parens. */
+      return '<circle cx="' + p.x + '" cy="' + p.y + '" r="4.5" class="ewv-dot' + (/^[0-9]/.test(p.lab) ? '' : ' ewv-dot-ab') + '"/>' +
         '<text x="' + p.x + '" y="' + (p.y - 12) + '" class="ewv-lab">' + esc(p.lab) + '</text>';
     }).join('');
     return '<svg class="ewv-svg" viewBox="' + viewBox + '" preserveAspectRatio="xMidYMid meet">' + (extra || '') +
@@ -244,20 +272,36 @@
     return waveSvg(pts, '0 0 310 180', guides);
   }
 
-  /* Corrective > Zigzag (5-3-5): sharp A-B-C, B a weak partial bounce. */
+  /* Corrective > Zigzag (5-3-5): sharp A-B-C, B a weak partial bounce.
+     Round Z (#248): labels now carry each leg's sub-wave count. */
   function zigzagDiagramHTML(){
-    return waveSvg([{x:10,y:40,lab:'0'},{x:95,y:150,lab:'A'},{x:150,y:95,lab:'B'},{x:230,y:180,lab:'C'}], '0 0 260 200');
+    return waveSvg([{x:10,y:40,lab:'0'},{x:95,y:150,lab:'A(5)'},{x:150,y:95,lab:'B(3)'},{x:230,y:180,lab:'C(5)'}], '0 0 260 200');
   }
-  /* Corrective > Flat (3-3-5): sideways A-B-C, B retraces almost all of A. */
+  /* Corrective > Flat (3-3-5): sideways A-B-C, B retraces almost all of A.
+     Round Z (#248): labels now carry each leg's sub-wave count. */
   function flatDiagramHTML(){
-    return waveSvg([{x:10,y:50,lab:'0'},{x:95,y:145,lab:'A'},{x:170,y:60,lab:'B'},{x:255,y:170,lab:'C'}], '0 0 280 200');
+    return waveSvg([{x:10,y:50,lab:'0'},{x:95,y:145,lab:'A(3)'},{x:170,y:60,lab:'B(3)'},{x:255,y:170,lab:'C(5)'}], '0 0 280 200');
   }
-  /* Corrective > Triangle (3-3-3-3-3): 5 contracting legs A-B-C-D-E, with
-     the converging envelope drawn through B-D and A-E. */
+  /* Corrective > Triangle (3-3-3-3-3): 5 contracting legs A-B-C-D-E.
+     Round Z (#247): she explicitly flagged the old coordinates as wrong --
+     they drifted sideways/diagonally like a wedge instead of reading as a
+     triangle. Redesigned so every leg oscillates up/down around a stable
+     mid-level (~y=115) with the swing amplitude shrinking leg over leg
+     (A-B the widest swing, D-E the narrowest), and the two guide lines
+     (through B-D and through A-C, each extended rightward) visibly
+     converge toward each other on the right instead of running apart.
+     Round Z (#248): labels now also carry each leg's sub-wave count. */
   function triangleDiagramHTML(){
-    var pts = [{x:60,y:150,lab:'A'},{x:110,y:70,lab:'B'},{x:160,y:120,lab:'C'},{x:205,y:85,lab:'D'},{x:245,y:110,lab:'E'}];
-    var guides = '<path d="M35 160 L255 103" class="ewv-guide-line"/><path d="M95 62 L255 95" class="ewv-guide-line"/>';
-    return waveSvg(pts, '0 0 300 180', guides);
+    var pts = [
+      {x:15,  y:112, lab:''},
+      {x:70,  y:168, lab:'A(3)'},
+      {x:120, y:62,  lab:'B(3)'},
+      {x:165, y:140, lab:'C(3)'},
+      {x:205, y:78,  lab:'D(3)'},
+      {x:245, y:118, lab:'E(3)'}
+    ];
+    var guides = '<path d="M55 170 L270 115" class="ewv-guide-line"/><path d="M100 62 L270 92" class="ewv-guide-line"/>';
+    return waveSvg(pts, '0 0 300 185', guides);
   }
   /* Corrective > Combination (W-X-Y): two simple corrections joined by a
      connecting X wave -- only the three named joints (0, W, X, Y) are
@@ -292,6 +336,58 @@
       '</svg>'
     );
   }
+
+  /* Round Z (#246): small correct-vs-wrong mini diagrams for each of the
+     three hard rules under Overview. Each pair shares the same illustrative
+     scale as the rest of the page (not drawn to real price); a dashed
+     horizontal guide line marks the exact boundary level the rule is
+     about, so the "correct" diagram visibly respects it and the "wrong"
+     one visibly crosses it. */
+  function rule1OkSvg(){
+    var pts = [{x:10,y:140,lab:'0'},{x:70,y:60,lab:'1'},{x:120,y:100,lab:'2'},{x:175,y:30,lab:'3'}];
+    var guide = '<path d="M5 140 L190 140" class="ewv-guide-line"/>';
+    return waveSvg(pts, '0 0 195 160', guide);
+  }
+  function rule1BadSvg(){
+    var pts = [{x:10,y:140,lab:'0'},{x:70,y:60,lab:'1'},{x:120,y:158,lab:'2'}];
+    var guide = '<path d="M5 140 L190 140" class="ewv-guide-line"/>';
+    return waveSvg(pts, '0 0 195 170', guide);
+  }
+  function rule2OkSvg(){
+    var pts = [{x:10,y:150,lab:'0'},{x:55,y:112,lab:'1'},{x:80,y:132,lab:'2'},{x:150,y:42,lab:'3'},{x:175,y:70,lab:'4'},{x:225,y:15,lab:'5'}];
+    return waveSvg(pts, '0 0 230 170');
+  }
+  function rule2BadSvg(){
+    var pts = [{x:10,y:150,lab:'0'},{x:55,y:72,lab:'1'},{x:80,y:102,lab:'2'},{x:125,y:62,lab:'3'},{x:150,y:92,lab:'4'},{x:225,y:12,lab:'5'}];
+    return waveSvg(pts, '0 0 230 170');
+  }
+  function rule3OkSvg(){
+    var pts = [{x:10,y:150,lab:'0'},{x:60,y:70,lab:'1'},{x:85,y:110,lab:'2'},{x:150,y:20,lab:'3'},{x:175,y:55,lab:'4'},{x:230,y:5,lab:'5'}];
+    var guide = '<path d="M5 70 L240 70" class="ewv-guide-line"/>';
+    return waveSvg(pts, '0 0 240 170', guide);
+  }
+  function rule3BadSvg(){
+    var pts = [{x:10,y:150,lab:'0'},{x:60,y:70,lab:'1'},{x:85,y:110,lab:'2'},{x:150,y:20,lab:'3'},{x:175,y:95,lab:'4'},{x:230,y:40,lab:'5'}];
+    var guide = '<path d="M5 70 L240 70" class="ewv-guide-line"/>';
+    return waveSvg(pts, '0 0 240 170', guide);
+  }
+  function ruleExampleHTML(okSvg, badSvg, okCapUI, badCapUI){
+    return (
+      '<div class="ewv-shape-cmp ewv-rule-ex">' +
+        '<div class="ewv-shape-box ewv-shape-ok"><span class="ewv-shape-badge ewv-shape-badge-ok">✓</span>' +
+          '<div class="ewv-diagram ewv-diagram-sm">' + okSvg + '</div>' +
+          '<p class="ewv-cap">' + esc(T(okCapUI)) + '</p></div>' +
+        '<div class="ewv-shape-box ewv-shape-bad"><span class="ewv-shape-badge ewv-shape-badge-bad">✕</span>' +
+          '<div class="ewv-diagram ewv-diagram-sm">' + badSvg + '</div>' +
+          '<p class="ewv-cap">' + esc(T(badCapUI)) + '</p></div>' +
+      '</div>'
+    );
+  }
+  var RULE_EXAMPLES = [
+    function(){ return ruleExampleHTML(rule1OkSvg(), rule1BadSvg(), UI.r1okCap, UI.r1badCap); },
+    function(){ return ruleExampleHTML(rule2OkSvg(), rule2BadSvg(), UI.r2okCap, UI.r2badCap); },
+    function(){ return ruleExampleHTML(rule3OkSvg(), rule3BadSvg(), UI.r3okCap, UI.r3badCap); }
+  ];
 
   /* -------------------------------------------------------------------- */
 
@@ -344,7 +440,7 @@
       '<h3 class="ewv-h3 ewv-h3-sub">' + esc(T(UI.s2h)) + '</h3>' +
       '<div class="ewv-rules">' + RULES.map(function(r, i){
         return '<div class="ewv-rule"><span class="ewv-rule-n">' + (i + 1) + '</span>' +
-          '<div><b>' + esc(T(r[0])) + '</b><p>' + esc(T(r[1])) + '</p></div></div>';
+          '<div><b>' + esc(T(r[0])) + '</b><p>' + esc(T(r[1])) + '</p>' + RULE_EXAMPLES[i]() + '</div></div>';
       }).join('') + '</div>'
     );
   }
@@ -386,19 +482,29 @@
       '</div>'
     );
   }
-  function zigzagBody(){ return '<p class="ewv-p">' + esc(T(UI.c1p)) + '</p><div class="ewv-diagram">' + zigzagDiagramHTML() + '</div>'; }
-  function flatBody(){ return '<p class="ewv-p">' + esc(T(UI.c2p)) + '</p><div class="ewv-diagram">' + flatDiagramHTML() + '</div>'; }
+  function zigzagBody(){
+    return '<p class="ewv-p">' + esc(T(UI.c1p)) + '</p><div class="ewv-diagram">' + zigzagDiagramHTML() + '</div>' +
+      '<p class="ewv-cap">' + esc(T(UI.c1cap)) + '</p>';
+  }
+  function flatBody(){
+    return '<p class="ewv-p">' + esc(T(UI.c2p)) + '</p><div class="ewv-diagram">' + flatDiagramHTML() + '</div>' +
+      '<p class="ewv-cap">' + esc(T(UI.c2cap)) + '</p>';
+  }
   function triangleBody(){
     return (
       '<p class="ewv-p">' + esc(T(UI.c3p)) + '</p>' +
       '<div class="ewv-diagram">' + triangleDiagramHTML() + '</div>' +
+      '<p class="ewv-cap">' + esc(T(UI.c3cap)) + '</p>' +
       '<div class="ewv-rule ewv-rule-warn">' +
         '<span class="ewv-rule-n ewv-rule-n-x">✕</span>' +
         '<div><b>' + esc(T(UI.ruleTriH)) + '</b><p>' + esc(T(UI.ruleTriP)) + '</p></div>' +
       '</div>'
     );
   }
-  function combinationBody(){ return '<p class="ewv-p">' + esc(T(UI.c4p)) + '</p><div class="ewv-diagram">' + combinationDiagramHTML() + '</div>'; }
+  function combinationBody(){
+    return '<p class="ewv-p">' + esc(T(UI.c4p)) + '</p><div class="ewv-diagram">' + combinationDiagramHTML() + '</div>' +
+      '<p class="ewv-cap">' + esc(T(UI.c4cap)) + '</p>';
+  }
   function degreeBody(){
     return (
       '<h3 class="ewv-h3 ewv-h3-sub">' + esc(T(UI.s6h)) + '</h3><p class="ewv-p">' + esc(T(UI.s6p)) + '</p>' +
@@ -449,6 +555,15 @@
         '<p>' + esc(T(UI.furtherP)) + '</p>' +
         '<a href="https://www.elliottwave.com" target="_blank" rel="noopener noreferrer nofollow" class="ewv-cite-link">' + esc(T(UI.furtherLink)) + ' ↗</a>' +
         '<p class="ewv-cite-disc">' + esc(T(UI.furtherDisc)) + '</p>' +
+      '</div>' +
+      /* Round Z (#249): a second box pointing to a real analysis on this
+         site itself -- the Asset Analysis Log, which already requires
+         sign-in (LINE/Telegram) to view, so no new gating logic is needed
+         here. */
+      '<div class="ewv-cite ewv-further-ex">' +
+        '<p>' + esc(T(UI.furtherExampleP)) + '</p>' +
+        '<a href="#/journal" class="ewv-cite-link">' + esc(T(UI.furtherExampleLink)) + '</a>' +
+        '<p class="ewv-cite-disc">' + esc(T(UI.furtherExampleNote)) + '</p>' +
       '</div>'
     );
   }
