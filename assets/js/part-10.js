@@ -38,6 +38,8 @@
       'directory.lede':'Real companies mapped to each archetype, with the metrics from the glossary below attached. Snapshot data — prices, P/E, and yield move every trading day.',
       'directory.legend':'P/E — price ÷ earnings · DIV YLD — annual payout ÷ price · ROE — profit ÷ shareholder equity',
       'directory.note':'Data snapshot as of August 2026. Markets move daily — treat these as reference points for learning, not live quotes or investment advice.',
+      'directory.sectorAll':'All industries','directory.sectorLabel':'Narrow by industry',
+      'directory.sectorNone':'No stocks in this industry for this archetype yet — try "All industries".',
       'nav.compare':'Compare',
       'compare.eyebrow':'Fundamentals Comparator','compare.title':'Put Any Stocks Head-To-Head',
       'compare.lede':'Pick 2 to 10 stocks from the directory above and scan them side-by-side — or add your own below. Debt-to-equity, net margin, and price-to-book are simplified estimates for teaching purposes; the rest matches the live directory data.',
@@ -187,6 +189,7 @@
       'scenario.lede':'Run each stock archetype through eighteen real-world shocks — war, pandemics, rate moves, oil spikes, trade wars, currency slides and more — and see who holds, who benefits, and who gets hit.',
       'scenario.tag':'// Scenario',
       'scenario.legendRises':'Rises / Benefits','scenario.legendFalls':'Falls / Hit Hardest','scenario.legendMixed':'Mixed / Sector-Dependent',
+      'scenario.realExamples':'Real stocks in this category',
       'scenario.disclaimer':"Simplified for teaching purposes. Real markets react to dozens of overlapping forces at once — this isn't a prediction.",
       'glossary.eyebrow':'44 Core Terms','glossary.title':'Speak The Language Of The Tape',
       'glossary.lede':"The numbers you'll see on every scanner result, decoded without the jargon — each one with a live visual showing what it actually measures. Tap any row to open it.",
@@ -504,6 +507,8 @@
       'directory.lede':'บริษัทจริงที่จัดกลุ่มตามแต่ละประเภทหุ้น พร้อมตัวชี้วัดจากส่วนคำศัพท์ด้านล่าง ข้อมูลนี้เป็นภาพรวม ณ ช่วงเวลาหนึ่ง — ราคา, P/E และเงินปันผลเปลี่ยนแปลงทุกวันทำการ',
       'directory.legend':'P/E — ราคา ÷ กำไร · DIV YLD — เงินปันผลต่อปี ÷ ราคา · ROE — กำไร ÷ ส่วนของผู้ถือหุ้น',
       'directory.note':'ข้อมูล ณ เดือนกันยายน 2026 ตลาดเปลี่ยนแปลงทุกวัน — ใช้ตัวเลขนี้เป็นจุดอ้างอิงเพื่อการเรียนรู้เท่านั้น ไม่ใช่ราคาเรียลไทม์หรือคำแนะนำการลงทุน',
+      'directory.sectorAll':'ทุกกลุ่มอุตสาหกรรม','directory.sectorLabel':'กรองตามกลุ่มอุตสาหกรรม',
+      'directory.sectorNone':'ประเภทหุ้นนี้ยังไม่มีหุ้นในกลุ่มอุตสาหกรรมนี้ — ลองกด "ทุกกลุ่มอุตสาหกรรม"',
       'nav.compare':'เปรียบเทียบ',
       'compare.eyebrow':'เครื่องมือเทียบปัจจัยพื้นฐาน','compare.title':'เทียบหุ้นตัวไหนก็ได้แบบเคียงข้างกัน',
       'compare.lede':'เลือกหุ้น 2-10 ตัวจากทำเนียบด้านบน แล้วสแกนเทียบกันแบบเคียงข้าง — หรือเพิ่มหุ้นของคุณเองด้านล่างก็ได้ ตัวเลข D/E, Net Margin และ P/B เป็นค่าประมาณอย่างง่ายเพื่อการเรียนรู้ ส่วนตัวเลขอื่นๆ ตรงกับข้อมูลในทำเนียบหุ้นด้านบน',
@@ -651,6 +656,7 @@
       'scenario.lede':'ทดสอบหุ้นทั้งสี่ประเภทกับ 18 สถานการณ์เขย่าโลก ทั้งสงคราม โรคระบาด ดอกเบี้ยขึ้น-ลง น้ำมันพุ่ง สงครามการค้า ค่าเงินผันผวน และอื่นๆ มาดูกันว่าใครยืนหยัดได้ ใครได้ประโยชน์ และใครโดนหนัก',
       'scenario.tag':'// สถานการณ์',
       'scenario.legendRises':'ขึ้น / ได้ประโยชน์','scenario.legendFalls':'ร่วง / โดนหนักสุด','scenario.legendMixed':'คละ / ขึ้นกับกลุ่มธุรกิจ',
+      'scenario.realExamples':'หุ้นจริงในกลุ่มนี้',
       'scenario.disclaimer':'เนื้อหานี้ถูกทำให้ง่ายขึ้นเพื่อการเรียนรู้ ตลาดจริงตอบสนองต่อปัจจัยหลายสิบอย่างพร้อมกัน — นี่ไม่ใช่การคาดการณ์',
       'glossary.eyebrow':'44 ศัพท์แกน','glossary.title':'พูดภาษาของกระดานหุ้นให้เป็น',
       'glossary.lede':'ตัวเลขทุกตัวที่คุณจะเจอในผลการสแกนหุ้น อธิบายแบบไม่มีศัพท์เทคนิคซับซ้อน พร้อมภาพเคลื่อนไหวประกอบทุกหัวข้อ ว่าจริงๆ แล้วมันวัดอะไร — แตะที่แถวไหนก็ได้เพื่อเปิดดู',
@@ -1581,9 +1587,44 @@
     tabsEl.querySelectorAll('.dir-tab').forEach(function(tab){
       tab.addEventListener('click', function(){
         currentDirCat = tab.dataset.cat;
+        currentDirSector = null; /* each archetype has its own mix of industries -- start over on "All" */
         renderDirectoryTabs();
+        renderDirectorySectorFilter();
         renderDirectoryGrid();
         renderDirectoryCatDesc();
+      });
+    });
+  }
+
+  /* the sidebar/pill-row filter itself -- one pill per real industry present
+     in the currently active archetype tab, ordered by how many tickers it
+     has (most useful groups first), plus "All industries" to clear it. */
+  function renderDirectorySectorFilter(){
+    const box = document.getElementById('directorySectorFilter');
+    if(!box) return;
+    const list = stockDirectory[currentDirCat] || [];
+    const counts = {};
+    list.forEach(function(s){
+      const sec = liveSectorRaw(s.ticker);
+      if(sec) counts[sec] = (counts[sec] || 0) + 1;
+    });
+    const sectors = Object.keys(counts).sort(function(a, b){ return counts[b] - counts[a]; });
+    if(currentDirSector && counts[currentDirSector] === undefined) currentDirSector = null;
+    if(!sectors.length){ box.innerHTML = ''; return; }
+    const t = translations[currentLang];
+    let html = '<span class="dsf-label">' + t['directory.sectorLabel'] + '</span>' +
+      '<button type="button" class="dsf-pill' + (!currentDirSector ? ' active' : '') + '" data-sector="">' +
+        t['directory.sectorAll'] + '</button>';
+    sectors.forEach(function(sec){
+      html += '<button type="button" class="dsf-pill' + (currentDirSector === sec ? ' active' : '') + '" data-sector="' + sec + '">' +
+        sectorLabel(sec, currentLang) + ' <span class="dsf-n">' + counts[sec] + '</span></button>';
+    });
+    box.innerHTML = html;
+    box.querySelectorAll('.dsf-pill').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        currentDirSector = btn.dataset.sector || null;
+        renderDirectorySectorFilter();
+        renderDirectoryGrid();
       });
     });
   }
@@ -1619,7 +1660,12 @@
 
   function renderDirectoryGrid(){
     const grid = document.getElementById('directoryGrid');
-    const list = stockDirectory[currentDirCat];
+    let list = stockDirectory[currentDirCat];
+    if(currentDirSector) list = list.filter(function(s){ return liveSectorRaw(s.ticker) === currentDirSector; });
+    if(!list.length){
+      grid.innerHTML = '<div class="dir-empty">' + translations[currentLang]['directory.sectorNone'] + '</div>';
+      return;
+    }
     const peLabel = 'P/E';
     const divLabel = 'DIV YLD';
     const roeLabel = 'ROE';
@@ -1742,6 +1788,38 @@
     if(key === 'div' || key === 'roe') return n.toFixed(2) + '%';
     return n.toFixed(2); /* pe */
   }
+
+  /* ROUND V: #209 -- category/group filter sidebar for the Stock Directory.
+     The directory's 553 tickers already carry a real GICS-style sector
+     (data/market.json stocks[ticker].sector, collected by the same bot that
+     feeds every other live figure on this page) -- so this reuses that real
+     field via the same window.__SPZ_LIVE.snapshot() the metrics above read,
+     rather than inventing a second taxonomy by hand. A ticker the collector
+     hasn't tagged yet (or hasn't loaded) just has no sector pill to filter
+     by and still shows up under "All industries". */
+  var DIR_SECTOR_TH = {
+    'Financial Services':'การเงิน', 'Technology':'เทคโนโลยี', 'Consumer Cyclical':'สินค้าฟุ่มเฟือย',
+    'Industrials':'อุตสาหกรรม', 'Healthcare':'สุขภาพ', 'Consumer Defensive':'สินค้าจำเป็น',
+    'Real Estate':'อสังหาริมทรัพย์', 'Energy':'พลังงาน', 'Basic Materials':'วัสดุพื้นฐาน',
+    'Utilities':'สาธารณูปโภค', 'Communication Services':'สื่อสาร'
+  };
+  function liveSectorRaw(ticker){
+    var s = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot();
+    var row = s && s.stocks && s.stocks[ticker];
+    return (row && row.sector) ? row.sector : null;
+  }
+  function sectorLabel(sector, lang){
+    return (lang === 'th' && DIR_SECTOR_TH[sector]) ? DIR_SECTOR_TH[sector] : sector;
+  }
+  var currentDirSector = null; /* null = "all industries" */
+  /* the sector pills need real data/market.json sectors, which load async
+     (same convention every other live-data widget on this page follows) --
+     repaint the filter (and the grid, for any ticker whose current sector
+     pill just appeared or disappeared) once the snapshot lands or refreshes. */
+  document.addEventListener('spz:snapshot', function(){
+    renderDirectorySectorFilter();
+    renderDirectoryGrid();
+  });
 
   function metricNumeric(stock, key){
     var live = liveMetricRaw(stock.ticker, key);
@@ -2298,6 +2376,27 @@
   const archetypeTag = { value:'$VAL', growth:'$GRW', dividend:'$DIV', defensive:'$DEF' };
   const archetypeOrder = ['value','growth','dividend','defensive'];
 
+  /* ROUND V: #207 -- recommended/example stocks per archetype on each
+     Market Shock Simulator card. This is archetype-level, not scenario-
+     specific: the simulator already teaches "how does this ARCHETYPE react"
+     (impacts is keyed by the same 4 archetypes everywhere else on the site),
+     so the honest, zero-fabrication way to ground that in real tickers is
+     to pull straight from the Stock Directory's own real-company list for
+     that archetype (stockDirectory[key], the exact same 553-ticker data
+     #209 above also filters) -- never a scenario-specific pick, which
+     would read as a trading signal this site explicitly is not. */
+  const ICPICK_N = 4;
+  function icPicksHTML(key){
+    const list = (stockDirectory[key] || []).slice(0, ICPICK_N);
+    if(!list.length) return '';
+    const label = translations[currentLang]['scenario.realExamples'];
+    return '<div class="ic-picks"><span class="ic-picks-label">' + label + '</span>' +
+      list.map(function(s){
+        return '<button type="button" class="ic-pick" data-tk="' + s.ticker + '">$' + s.ticker + '</button>';
+      }).join('') +
+    '</div>';
+  }
+
   const scenarios = [
     {
       title_en:'Geopolitical Conflict', title_th:'ความขัดแย้งภูมิรัฐศาสตร์',
@@ -2533,8 +2632,15 @@
       return '<div class="impact-card state-' + imp.state + '">' +
         '<div class="ic-label">' + tag + ' · ' + label + '</div>' +
         '<div class="ic-state"><span class="ic-arrow">' + stateIcon(imp.state) + '</span> ' + stateLabel(imp.state, currentLang) + '</div>' +
-        '<p class="ic-reason">' + reason + '</p></div>';
+        '<p class="ic-reason">' + reason + '</p>' +
+        icPicksHTML(key) +
+      '</div>';
     }).join('');
+    grid.querySelectorAll('.ic-pick').forEach(function(chip){
+      chip.addEventListener('click', function(){
+        if(window.__SPZ_STOCK && typeof window.__SPZ_STOCK.open === 'function') window.__SPZ_STOCK.open(chip.dataset.tk);
+      });
+    });
 
     document.querySelectorAll('.scenario-chip').forEach(function(c, i){
       c.classList.toggle('active', i === currentScenario);
@@ -3340,6 +3446,7 @@
       o.classList.toggle('active', o.dataset.lang === lang);
     });
     renderDirectoryTabs();
+    renderDirectorySectorFilter();
     renderDirectoryGrid();
     renderDirectoryCatDesc();
     renderCompareSelectors();
