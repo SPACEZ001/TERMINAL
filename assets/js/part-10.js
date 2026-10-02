@@ -36,7 +36,7 @@
       'nav.directory':'Stocks',
       'directory.eyebrow':'Real Tickers','directory.title':'Example Stocks By Archetype',
       'directory.lede':'Real companies mapped to each archetype, with the metrics from the glossary below attached. Snapshot data — prices, P/E, and yield move every trading day.',
-      'directory.legend':'P/E — price ÷ earnings · DIV YLD — annual payout ÷ price · ROE — profit ÷ shareholder equity',
+      'directory.legend':'P/E — price ÷ earnings · DIV YLD — annual payout ÷ price · ROE — profit ÷ shareholder equity · ROIC — after-tax operating profit ÷ invested capital (n/a for banks/insurers)',
       'directory.note':'Data snapshot as of August 2026. Markets move daily — treat these as reference points for learning, not live quotes or investment advice.',
       'directory.sectorAll':'All industries','directory.sectorLabel':'Narrow by industry',
       'directory.sectorNone':'No stocks in this industry for this archetype yet — try "All industries".',
@@ -51,7 +51,8 @@
       'compare.bulkRandomBtn':'Random pick',
       'compare.bulkRandomOf':'of all {n} stocks',
       'compare.metric.pe':'P/E','compare.metric.div':'DIV YLD','compare.metric.roe':'ROE',
-      'compare.metric.de':'D/E','compare.metric.margin':'NET MARGIN','compare.metric.pb':'P/B','compare.metric.score':'SCORE',
+      'compare.metric.de':'D/E','compare.metric.margin':'NET MARGIN','compare.metric.pb':'P/B','compare.metric.roic':'ROIC','compare.metric.score':'SCORE',
+      'compare.metric.roicNA':'n/a',
       'compare.summaryTag':'// Summary',
       'compare.rankingTag':'// Ranking',
       'compare.addTitle':'+ Add Your Own Stock',
@@ -509,7 +510,7 @@
       'nav.directory':'หุ้นตัวอย่าง',
       'directory.eyebrow':'หุ้นจริงตัวอย่าง','directory.title':'ตัวอย่างหุ้นแยกตามประเภท',
       'directory.lede':'บริษัทจริงที่จัดกลุ่มตามแต่ละประเภทหุ้น พร้อมตัวชี้วัดจากส่วนคำศัพท์ด้านล่าง ข้อมูลนี้เป็นภาพรวม ณ ช่วงเวลาหนึ่ง — ราคา, P/E และเงินปันผลเปลี่ยนแปลงทุกวันทำการ',
-      'directory.legend':'P/E — ราคา ÷ กำไร · DIV YLD — เงินปันผลต่อปี ÷ ราคา · ROE — กำไร ÷ ส่วนของผู้ถือหุ้น',
+      'directory.legend':'P/E — ราคา ÷ กำไร · DIV YLD — เงินปันผลต่อปี ÷ ราคา · ROE — กำไร ÷ ส่วนของผู้ถือหุ้น · ROIC — กำไรจากการดำเนินงานหลังภาษี ÷ เงินลงทุน (ธนาคาร/ประกันไม่ใช้ค่านี้)',
       'directory.note':'ข้อมูล ณ เดือนกันยายน 2026 ตลาดเปลี่ยนแปลงทุกวัน — ใช้ตัวเลขนี้เป็นจุดอ้างอิงเพื่อการเรียนรู้เท่านั้น ไม่ใช่ราคาเรียลไทม์หรือคำแนะนำการลงทุน',
       'directory.sectorAll':'ทุกกลุ่มอุตสาหกรรม','directory.sectorLabel':'กรองตามกลุ่มอุตสาหกรรม',
       'directory.sectorNone':'ประเภทหุ้นนี้ยังไม่มีหุ้นในกลุ่มอุตสาหกรรมนี้ — ลองกด "ทุกกลุ่มอุตสาหกรรม"',
@@ -524,7 +525,8 @@
       'compare.bulkRandomBtn':'สุ่มเลือก',
       'compare.bulkRandomOf':'จากทั้งหมด {n} ตัว',
       'compare.metric.pe':'P/E','compare.metric.div':'DIV YLD','compare.metric.roe':'ROE',
-      'compare.metric.de':'D/E','compare.metric.margin':'NET MARGIN','compare.metric.pb':'P/B','compare.metric.score':'SCORE',
+      'compare.metric.de':'D/E','compare.metric.margin':'NET MARGIN','compare.metric.pb':'P/B','compare.metric.roic':'ROIC','compare.metric.score':'SCORE',
+      'compare.metric.roicNA':'ไม่ใช้',
       'compare.summaryTag':'// สรุปผล',
       'compare.rankingTag':'// จัดอันดับ',
       'compare.addTitle':'+ เพิ่มหุ้นของคุณเอง',
@@ -1683,7 +1685,7 @@
       const peVal = metricDisplay(s, 'pe', currentLang);
       const divVal = metricDisplay(s, 'div', currentLang);
       const roeVal = metricDisplay(s, 'roe', currentLang);
-      return '<div class="stock-card" data-tk="' + s.ticker + '">' +
+      return '<div class="stock-card" data-tk="' + s.ticker + '" draggable="true">' +
         '<div class="sc-ticker">$' + s.ticker + '</div>' +
         '<div class="sc-name">' + name + '</div>' +
         '<div class="sc-desc">' + desc + '</div>' +
@@ -1708,7 +1710,13 @@
     { key:'roe', labelKey:'compare.metric.roe', lowerBetter:false, inScore:true },
     { key:'de_ratio', labelKey:'compare.metric.de', lowerBetter:true, inScore:true },
     { key:'net_margin', labelKey:'compare.metric.margin', lowerBetter:false, inScore:true },
-    { key:'pb_ratio', labelKey:'compare.metric.pb', lowerBetter:true, inScore:false }
+    { key:'pb_ratio', labelKey:'compare.metric.pb', lowerBetter:true, inScore:false },
+    /* Round Y (#240): live-only (no hand-typed fallback, and meaningless
+       for banks/insurers -- see isFinancialStock() above), so it's kept
+       out of the 0-100 score the same way div/pb already are, rather
+       than letting missing/NA values quietly default every stock to a
+       neutral 50 and dilute the real metrics. */
+    { key:'roic', labelKey:'compare.metric.roic', lowerBetter:false, inScore:false }
   ];
 
   const metricShortNames = {
@@ -1780,7 +1788,21 @@
      live figure yet (freshly added, or the feed hasn't run since)
      falls back to its static number if the entry has one, then to a
      plain dash -- never to "undefined" in the card. */
-  var DIR_LIVE_KEY = { pe:'pe', div:'div', roe:'roe', de_ratio:'de', net_margin:'margin', pb_ratio:'pb' };
+  /* Round Y (#240): ROIC rides the same live snapshot as everything else
+     here (data/market.json stocks[ticker].roic -- the same field
+     part-26.js already reads to decorate the directory card itself) --
+     there's no hand-typed fallback for it since none of the static
+     entries above were ever given one. A bank or insurer's ROIC is
+     arithmetic without meaning (lending IS the balance sheet), so it
+     shows "n/a" there instead of a number -- same call part-26.js makes
+     for the card decoration. */
+  var DIR_LIVE_KEY = { pe:'pe', div:'div', roe:'roe', de_ratio:'de', net_margin:'margin', pb_ratio:'pb', roic:'roic' };
+  var FIN_SECTORS_CMP = ['Financial Services', 'Financial', 'Financials'];
+  function isFinancialStock(stock){
+    var sector = (stock && stock.ticker) ? liveSectorRaw(stock.ticker) : null;
+    if(!sector) sector = stock && stock.sector;
+    return !!(sector && FIN_SECTORS_CMP.indexOf(sector) !== -1);
+  }
   function liveMetricRaw(ticker, key){
     var lk = DIR_LIVE_KEY[key];
     if(!lk) return null;
@@ -1793,7 +1815,7 @@
   function liveMetricText(key, n){
     if(key === 'de_ratio' || key === 'pb_ratio') return n.toFixed(2) + 'x';
     if(key === 'net_margin') return n.toFixed(1) + '%';
-    if(key === 'div' || key === 'roe') return n.toFixed(2) + '%';
+    if(key === 'div' || key === 'roe' || key === 'roic') return n.toFixed(2) + '%';
     return n.toFixed(2); /* pe */
   }
 
@@ -1838,6 +1860,7 @@
     if(key === 'de_ratio') return stock.de_ratio !== undefined ? parseFloat(stock.de_ratio) : null;
     if(key === 'net_margin') return stock.net_margin !== undefined ? parseFloat(stock.net_margin) : null;
     if(key === 'pb_ratio') return stock.pb_ratio !== undefined ? parseFloat(stock.pb_ratio) : null;
+    if(key === 'roic') return isFinancialStock(stock) ? null : null; /* never scored -- no static fallback and excluded from inScore */
     return null;
   }
 
@@ -1850,6 +1873,7 @@
     if(key === 'de_ratio') return stock.de_ratio !== undefined ? (stock.de_ratio + 'x') : '—';
     if(key === 'net_margin') return stock.net_margin !== undefined ? (stock.net_margin + '%') : '—';
     if(key === 'pb_ratio') return stock.pb_ratio !== undefined ? (stock.pb_ratio + 'x') : ((lang === 'en' ? stock.pb_en : stock.pb_th) || '—');
+    if(key === 'roic') return isFinancialStock(stock) ? translations[lang]['compare.metric.roicNA'] : '—';
     return '';
   }
 
@@ -2445,6 +2469,69 @@
     renderCompareSelectors();
     if(lastComparedTickers){ performCompare(lastComparedTickers); }
   });
+
+  /* Round Y (#239): drag a stock card from the directory grid (left pane)
+     onto the comparator's picker (right pane) to add it to the comparison
+     automatically, as an alternative to hunting for its checkbox. Cards
+     are made draggable inside renderDirectoryGrid() below; the picker
+     itself (#compareSelectPanel, inside the static #compareDropZone
+     wrapper) is re-rendered on every renderCompareSelectors() call, so
+     the drop target is the wrapper, which never gets replaced. */
+  (function(){
+    const dropZone = document.getElementById('compareDropZone');
+    if(!dropZone) return;
+
+    // event delegation on a stable ancestor -- #directoryGrid's own
+    // innerHTML gets replaced on every renderDirectoryGrid() call, so a
+    // listener attached directly to a .stock-card would be lost on the
+    // next re-render (category switch, sector filter, language change).
+    const dirScroll = document.getElementById('dirListScroll') || document;
+    dirScroll.addEventListener('dragstart', function(e){
+      const card = e.target.closest('.stock-card[draggable="true"]');
+      if(!card) return;
+      e.dataTransfer.setData('text/plain', card.dataset.tk);
+      e.dataTransfer.effectAllowed = 'copy';
+      card.classList.add('dir-dragging');
+    });
+    dirScroll.addEventListener('dragend', function(e){
+      const card = e.target.closest('.stock-card');
+      if(card) card.classList.remove('dir-dragging');
+    });
+
+    let dragDepth = 0;
+    dropZone.addEventListener('dragover', function(e){
+      if(!e.dataTransfer.types.includes('text/plain')) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    });
+    dropZone.addEventListener('dragenter', function(e){
+      if(!e.dataTransfer.types.includes('text/plain')) return;
+      dragDepth++;
+      dropZone.classList.add('dir-drop-over');
+    });
+    dropZone.addEventListener('dragleave', function(){
+      dragDepth = Math.max(0, dragDepth - 1);
+      if(dragDepth === 0) dropZone.classList.remove('dir-drop-over');
+    });
+    dropZone.addEventListener('drop', function(e){
+      e.preventDefault();
+      dragDepth = 0;
+      dropZone.classList.remove('dir-drop-over');
+      const ticker = e.dataTransfer.getData('text/plain');
+      if(!ticker) return;
+      const cb = document.querySelector('.compare-check input[value="' + ticker + '"]');
+      if(cb && !cb.disabled){
+        cb.checked = true;
+        updateCheckboxState();
+        const wrapper = cb.closest('.compare-check');
+        if(wrapper){
+          wrapper.scrollIntoView({ block:'nearest', behavior:'smooth' });
+          wrapper.classList.add('compare-check-flash');
+          setTimeout(function(){ wrapper.classList.remove('compare-check-flash'); }, 900);
+        }
+      }
+    });
+  })();
 
   /* ============ scenario simulator ============ */
   const archetypeTag = { value:'$VAL', growth:'$GRW', dividend:'$DIV', defensive:'$DEF' };
