@@ -234,6 +234,15 @@
         th:'หุ้นหนึ่งหุ้นคือความเป็นเจ้าของจริงๆ ในบริษัทเสี้ยวเล็กๆ ไม่ใช่ล็อตเตอรี่ ไม่ใช่แค่ตัวเลขบนหน้าจอ ซื้อหุ้นบริษัทหนึ่งหุ้น คุณเป็นเจ้าของทุกอย่างที่บริษัทมีและทุกอย่างที่บริษัททำกำไรได้ในสัดส่วนเล็กๆ ตามกฎหมายจริง ร่วมกับผู้ถือหุ้นคนอื่นๆ\n\nคุณทำเงินได้สองทาง ราคาของเสี้ยวที่ถือไว้อาจขึ้นถ้าบริษัทโตหรือตลาดตีมูลค่าใหม่ (กำไรจากส่วนต่างราคา) และบางบริษัทจ่ายกำไรบางส่วนตรงมาเป็นเงินสดให้คุณ (ปันผล) ด้านกลับก็จริงเหมือนกัน คุณแบกรับขาดทุนด้วย ถ้าบริษัททำได้แย่ เสี้ยวที่ถือไว้ก็มีมูลค่าน้อยลง และไม่มีการรับประกันว่าจะได้เงินคืนเลยด้วยซ้ำ นี่คือข้อแลกเปลี่ยนที่คนซื้อหุ้นทุกคนต้องรับ กำไรจริง ขาดทุนจริง ไม่มีตาข่ายรองรับ'},
 
     s2H:{en:'How To Open A Brokerage Account In Thailand', th:'เปิดบัญชีซื้อขายหุ้นในไทยยังไง'},
+    /* Round W (#225): the ID+passport graphic (HERO_ID) used to float on its
+       own between the heading and the step list with nothing explaining what
+       it was for -- just a centered icon with no caption, easy to misread as
+       decoration. Gave it a small eyebrow label + one-line caption so it
+       reads as "here is what you will be asked for," tying it directly to
+       steps 2-3 below rather than sitting there unexplained. */
+    heroLabel:{en:'What the documents step actually needs', th:'ขั้นเตรียมเอกสารต้องใช้อะไรบ้าง'},
+    heroCap:{en:'A government ID (national ID card, or a passport if you are not a Thai citizen) plus a bank account in your own name — that combination is what almost every broker\'s e-KYC step asks for first. Everything after that happens inside the broker\'s own app.',
+             th:'บัตรประชาชน (หรือพาสปอร์ตถ้าไม่ใช่คนไทย) บวกกับบัญชีธนาคารชื่อตัวเอง — สองอย่างนี้คือสิ่งที่ขั้นตอน e-KYC ของโบรกเกอร์ส่วนใหญ่ขอก่อนเป็นอันดับแรก ที่เหลือทำต่อในแอปโบรกเกอร์เองได้หมด'},
     steps:[
       { icon:ICON.bank,
         t:{en:'Pick a broker', th:'เลือกโบรกเกอร์'},
@@ -280,6 +289,30 @@
     ],
     begNote:{en:'⚠ General information only, not investment advice, and not an endorsement of any broker or app. Fees, minimums and features change over time — always confirm current terms directly with the broker before opening an account.',
              th:'⚠ ข้อมูลทั่วไปเท่านั้น ไม่ใช่คำแนะนำการลงทุน และไม่ใช่การรับรองโบรกเกอร์หรือแอปเจ้าใดเจ้าหนึ่ง ค่าธรรมเนียม เงินขั้นต่ำ และฟีเจอร์เปลี่ยนแปลงได้ตลอดเวลา ให้เช็คเงื่อนไขล่าสุดกับโบรกเกอร์โดยตรงก่อนเปิดบัญชีเสมอ'},
+
+    /* Round W (#225): she also asked for more teaching content on this
+       section specifically, not just the account-opening mechanics -- a
+       short bridge into the handful of terms worth knowing BEFORE the first
+       order goes in, each pointing at its full glossary entry rather than
+       re-explaining it here (keeps this page from duplicating the glossary,
+       and keeps the framing purely educational, never "step X: buy now"). */
+    studyH:{en:'Before Your First Order — Four Words Worth Knowing', th:'ก่อนส่งคำสั่งซื้อครั้งแรก — สี่คำที่ควรรู้จักก่อน'},
+    studyD:{en:'None of these are required reading to open an account, but all four show up the moment you actually place your first order — worth five minutes now rather than a confusing moment later.',
+            th:'ไม่มีข้อไหนที่ต้องรู้ก่อนเปิดบัญชีได้ แต่ทั้งสี่คำนี้จะโผล่มาทันทีที่ส่งคำสั่งซื้อจริงครั้งแรก รู้ไว้ก่อนห้านาทีดีกว่างงตอนนั้น'},
+    studyItems:[
+      { t:{en:'Board lot', th:'บอร์ดล็อต (Board Lot)'},
+        d:{en:'Thai shares trade in units of 100 — buying "1 lot" of a ฿10 stock costs ฿1,000, not ฿10. Smaller amounts need an odd-lot order, usually at a slightly worse price.',
+           th:'หุ้นไทยซื้อขายเป็นหน่วยละ 100 หุ้น ซื้อ "1 ล็อต" ของหุ้นราคา 10 บาท ต้องใช้เงิน 1,000 บาท ไม่ใช่ 10 บาท ถ้าจะซื้อน้อยกว่านั้นต้องใช้คำสั่งหุ้นเศษ (Odd Lot) ซึ่งมักได้ราคาที่แย่กว่าเล็กน้อย'} },
+      { t:{en:'Cash account vs. margin account', th:'บัญชีเงินสด vs บัญชีมาร์จิ้น'},
+        d:{en:'A cash account only lets you buy with money you already deposited. A margin/credit-balance account lets you borrow from the broker to buy more — higher potential gain, but also real risk of a forced sale if the price drops. Start with cash.',
+           th:'บัญชีเงินสดซื้อได้แค่เท่าที่มีเงินฝากอยู่จริง ส่วนบัญชีมาร์จิ้น/เครดิตบาลานซ์ให้กู้เงินจากโบรกเกอร์มาซื้อเพิ่มได้ — กำไรอาจมากขึ้น แต่ก็มีความเสี่ยงจริงที่จะถูกบังคับขาย (Force Sell) ถ้าราคาร่วง ควรเริ่มจากบัญชีเงินสดก่อน'} },
+      { t:{en:'T+2 settlement', th:'การชำระราคา T+2'},
+        d:{en:'When you sell, the cash does not land in your account the same day — it settles two business days later. Plan around this if you are counting on that money for something else.',
+           th:'ตอนขายหุ้น เงินจะไม่เข้าบัญชีวันเดียวกัน แต่จะชำระราคาอีก 2 วันทำการถัดไป ถ้าจะเอาเงินนั้นไปใช้ต่อ ให้วางแผนเผื่อช่วงนี้ไว้ด้วย'} },
+      { t:{en:'The confirmation note', th:'ใบยืนยันคำสั่งซื้อขาย (Confirmation Note)'},
+        d:{en:'Every filled order generates one automatically in the broker\'s app — price, quantity, fees and tax, all itemized. Worth actually reading the first few times, not just closing the notification.',
+           th:'ทุกคำสั่งที่จับคู่สำเร็จ แอปโบรกเกอร์จะออกใบนี้ให้อัตโนมัติ — มีราคา จำนวน ค่าธรรมเนียม และภาษี แยกรายการให้ครบ ควรอ่านจริงๆ สักสองสามครั้งแรก ไม่ใช่แค่ปิดการแจ้งเตือนทิ้ง'} }
+    ],
 
     /* ---------------- INTERMEDIATE TAB (original Round R content) ---------------- */
     genH:{en:'Five things to understand about any stock', th:'ห้าเรื่องที่ต้องเข้าใจก่อนซื้อหุ้นตัวไหน'},
@@ -519,11 +552,18 @@
         '<div class="v8-sub" data-b="s1H"></div>' +
         '<p class="lede bsc-para" data-b="s1D" style="margin-bottom:22px"></p>' +
         '<div class="v8-sub" data-b="s2H"></div>' +
-        '<div class="bsc-hero" data-b="heroId"></div>' +
+        '<div class="bsc-hero-box">' +
+          '<div class="bsc-hero-eyebrow" data-b="heroLabel"></div>' +
+          '<div class="bsc-hero" data-b="heroId"></div>' +
+          '<p class="bsc-hero-cap" data-b="heroCap"></p>' +
+        '</div>' +
         '<div class="bsc-steps" data-b="steps"></div>' +
         '<div class="v8-sub" data-b="s3H"></div>' +
         '<p class="lede" data-b="s3D" style="margin-bottom:16px"></p>' +
         '<div class="bsc-apps" data-b="apps"></div>' +
+        '<div class="v8-sub" data-b="studyH" style="margin-top:26px"></div>' +
+        '<p class="lede" data-b="studyD" style="margin-bottom:16px"></p>' +
+        '<div class="bsc-study" data-b="study"></div>' +
         '<div class="v8-note" data-b="begNote"></div>' +
       '</div>' +
       '<div class="bsc-pane" data-b="pane-mid">' +
@@ -570,7 +610,9 @@
     q('s1H').textContent = T(BK.s1H);
     q('s1D').innerHTML = esc(T(BK.s1D)).replace(/\n\n/g, '</p><p class="lede bsc-para" style="margin-bottom:22px">');
     q('s2H').textContent = T(BK.s2H);
+    q('heroLabel').textContent = T(BK.heroLabel);
     q('heroId').innerHTML = HERO_ID;
+    q('heroCap').textContent = T(BK.heroCap);
     var stepsEl = q('steps');
     stepsEl.innerHTML = '';
     for(var si = 0; si < BK.steps.length; si++){
@@ -600,6 +642,19 @@
         '<span class="bsc-app-d">' + esc(T(ap.d)) + '</span>' +
         '<span class="bsc-app-go">' + esc(L() === 'th' ? 'เปิดเว็บไซต์ (แท็บใหม่) →' : 'Open site (new tab) →') + '</span>';
       appsEl.appendChild(a);
+    }
+    q('studyH').textContent = T(BK.studyH);
+    q('studyD').textContent = T(BK.studyD);
+    var studyEl = q('study');
+    studyEl.innerHTML = '';
+    for(var qi = 0; qi < BK.studyItems.length; qi++){
+      var sq = BK.studyItems[qi];
+      studyEl.appendChild(el('div', 'bsc-study-item',
+        '<span class="bsc-study-n">' + String(qi + 1).padStart(2, '0') + '</span>' +
+        '<span class="bsc-study-body">' +
+          '<b class="bsc-study-t">' + esc(T(sq.t)) + '</b>' +
+          '<span class="bsc-study-d">' + esc(T(sq.d)) + '</span>' +
+        '</span>'));
     }
     q('begNote').textContent = T(BK.begNote);
 
