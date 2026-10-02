@@ -717,6 +717,7 @@
           '<div class="bb-gaugebox">' + gaugeSVG() +
             '<div class="bb-gaugenum"><span class="n" style="color:' + color + '">' + (composite==null?'—':composite) + '%</span>' +
             '<span class="u">' + esc(tx({en:'bubble score',th:'คะแนนฟองสบู่'})) + '</span></div>' +
+            '<span class="bb-corner-bl"></span><span class="bb-corner-br"></span>' +
           '</div>' +
           histBlock +
         '</div>' +

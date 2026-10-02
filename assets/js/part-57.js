@@ -354,15 +354,27 @@
     '</div>';
   }
 
-  /* Round K: reader-facing "add LINE for alerts" CTA, shown under every
-     public post's actions row. Renders nothing until LINE_OA_ADD_FRIEND_URL
-     (declared further down, near the broadcast helpers) is actually filled
-     in with the OA's real add-friend link. */
+  /* Round K: reader-facing "add LINE for alerts" CTA. Renders nothing until
+     LINE_OA_ADD_FRIEND_URL (declared further down, near the broadcast
+     helpers) is actually filled in with the OA's real add-friend link.
+
+     ROUND U: this used to repeat under every single post's actions row,
+     which she found read as "too much" once a reader scrolled past more
+     than one or two entries. Now there's exactly one of these -- a single
+     polished icon/infographic card pinned at the bottom of the filter
+     sidebar (asset/tag/date), near where a reader's eye already lands after
+     reading down the list -- instead of the same button repeating dozens
+     of times down the feed. */
   function addLineFriendBtnHTML(){
     if(!LINE_OA_ADD_FRIEND_URL) return '';
-    return '<a class="jrnl-addline-btn" href="' + esc(LINE_OA_ADD_FRIEND_URL) + '" target="_blank" rel="noopener noreferrer">' +
-      '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 2C6.48 2 2 5.94 2 10.8c0 3.4 2.24 6.36 5.6 7.9-.18.7-.85 3.1-.88 3.3 0 0-.02.15.08.2.1.06.22 0 .22 0 .3-.04 3.4-2.24 4.02-2.7.3.04.6.06.96.06 5.52 0 10-3.94 10-8.76S17.52 2 12 2z"/></svg>' +
-      '<span>' + esc(T(UI.addLineFriend)) + '</span>' +
+    return '<a class="jrnl-addline-aside" href="' + esc(LINE_OA_ADD_FRIEND_URL) + '" target="_blank" rel="noopener noreferrer">' +
+      '<span class="jrnl-addline-aside-ic">' +
+        '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2C6.48 2 2 5.94 2 10.8c0 3.4 2.24 6.36 5.6 7.9-.18.7-.85 3.1-.88 3.3 0 0-.02.15.08.2.1.06.22 0 .22 0 .3-.04 3.4-2.24 4.02-2.7.3.04.6.06.96.06 5.52 0 10-3.94 10-8.76S17.52 2 12 2z"/></svg>' +
+      '</span>' +
+      '<span class="jrnl-addline-aside-txt">' +
+        '<b>' + esc(T(UI.addLineFriend)) + '</b>' +
+        '<small>' + esc(T(UI.addLineFriendSub)) + '</small>' +
+      '</span>' +
     '</a>';
   }
 
@@ -503,6 +515,7 @@
     notifyBtn:{en:'Publish via LINE',th:'เผยแพร่ผ่าน LINE'},
     notifyConfirm:{en:'Publish this analysis as a LINE broadcast to everyone who added your Official Account?',th:'เผยแพร่บทวิเคราะห์นี้เป็นข้อความไปหาทุกคนที่เพิ่มเพื่อน LINE OA ของคุณใช่ไหม?'},
     addLineFriend:{en:'Add LINE for analysis alerts',th:'แอด LINE รับแจ้งเตือนบทวิเคราะห์'},
+    addLineFriendSub:{en:'Get a ping the moment a new entry is posted.',th:'มีบทวิเคราะห์ใหม่ แจ้งเตือนทันที'},
     notifyOk:{en:'Published to LINE.',th:'เผยแพร่ผ่าน LINE เรียบร้อยแล้ว'},
     notifyErrKey:{en:'Enter your admin users key on the Connected Users page first, then come back to publish.',th:'กรุณาใส่รหัสแอดมินในหน้าผู้ใช้ที่เชื่อมต่อก่อน แล้วค่อยกลับมาเผยแพร่'},
     notifyErrConfig:{en:'LINE Messaging API is not configured on the server yet.',th:'ยังไม่ได้ตั้งค่า LINE Messaging API บนเซิร์ฟเวอร์'},
@@ -983,6 +996,7 @@
               '<button type="button" class="jrnl-date-clear" data-j="dateClear">&times;</button>' +
             '</div>' +
           '</div>' +
+          addLineFriendBtnHTML() +
         '</aside>' +
         '<div style="flex:1;min-width:0;">' +
           '<div class="jrnl-toolbar">' +
@@ -1146,7 +1160,6 @@
             '<div class="jrnl-card-text"></div>' +
             refPostLinkHtml(e) +
             '<div class="jrnl-card-actions">' + likeWrapHTML() + '<button type="button" class="jrnl-share-btn" data-share></button></div>' +
-            addLineFriendBtnHTML() +
           '</div>' +
           '</div>' +
           (locked ?

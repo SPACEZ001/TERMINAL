@@ -53,6 +53,12 @@
          th:'เปิด Telegram บนมือถือแล้วสแกนโค้ดนี้ กดปุ่ม Start แล้วจะเข้าสู่ระบบให้ภายในไม่กี่วินาที'},
     waiting:{en:'Waiting for you to tap Start…',th:'รอคุณกดปุ่ม Start อยู่ค่ะ…'},
     processing:{en:'Confirming…',th:'กำลังยืนยัน…'},
+    /* ROUND U: shown under the spinner while we're waiting on a scan/tap --
+       the Worker can be genuinely slow sometimes (cold start, free-tier KV),
+       and with nothing else on screen a silent wait reads as broken. This
+       just sets the right expectation so people don't bail or re-scan. */
+    slowNote:{en:'This can take a moment — the login service is sometimes a little slow. No need to scan again.',
+              th:'ขั้นตอนนี้อาจใช้เวลาสักครู่ค่ะ ระบบอาจทำงานช้าบ้างบางครั้ง ไม่ต้องสแกนซ้ำนะคะ'},
     connectedNote:{en:'Connected',th:'เชื่อมต่อสำเร็จ'},
     notReady:{en:'Telegram login isn’t set up yet.',th:'ยังไม่ได้ตั้งค่าระบบล็อกอิน Telegram ค่ะ'},
     err:{en:'Something went wrong. Try again?',th:'มีบางอย่างผิดพลาดค่ะ ลองใหม่อีกครั้งไหม?'},
@@ -128,11 +134,19 @@
         '<div class="tglm-sub">' + esc(tx(C.sub)) + '</div>' +
         '<div class="tglm-qr-wrap"><img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' +
           encodeURIComponent(state.loginUrl) + '" alt="QR"></div>' +
-        '<div class="tglm-status"><span class="tglm-spin"></span>' + esc(tx(C.waiting)) + '</div>';
+        '<div class="tglm-status"><span class="tglm-spin"></span>' + esc(tx(C.waiting)) + '</div>' +
+        '<div class="tglm-slownote">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>' +
+          '<span>' + esc(tx(C.slowNote)) + '</span>' +
+        '</div>';
     } else {
       modalBody.innerHTML =
         '<div class="tglm-title">' + esc(tx(C.title)) + '</div>' +
-        '<div class="tglm-status"><span class="tglm-spin"></span>' + esc(tx(C.waiting)) + '</div>';
+        '<div class="tglm-status"><span class="tglm-spin"></span>' + esc(tx(C.waiting)) + '</div>' +
+        '<div class="tglm-slownote">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>' +
+          '<span>' + esc(tx(C.slowNote)) + '</span>' +
+        '</div>';
     }
   }
 
