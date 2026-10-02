@@ -151,6 +151,11 @@
     lineConnectedNote:{en:'Connected ✓',th:'เชื่อมต่อแล้ว ✓'},
     lineNotConn:{en:'Not connected',th:'ยังไม่ได้เชื่อมต่อ'},
     lineWaiting:{en:'Waiting for scan…',th:'รอการสแกนอยู่ค่ะ…'},
+    /* ROUND U: see the matching note in part-61.js (Telegram QR) -- same
+       reassurance, shown under the spinner while the Worker is still being
+       waited on, so a slow backend doesn't read as a broken/stuck QR code. */
+    lineSlowNote:{en:'This can take a moment — the login service is sometimes a little slow. No need to scan again.',
+                  th:'ขั้นตอนนี้อาจใช้เวลาสักครู่ค่ะ ระบบอาจทำงานช้าบ้างบางครั้ง ไม่ต้องสแกนซ้ำนะคะ'},
     lineProcessing:{en:'Scanned ✓ verifying your account…',th:'สแกนสำเร็จ ✓ กำลังตรวจสอบบัญชีของคุณ…'},
     lineExpired:{en:'Code expired — tap Connect LINE again.',th:'โค้ดหมดอายุแล้ว กดเชื่อมต่อ LINE อีกครั้งนะคะ'},
     lineErr:{en:'Could not reach the LINE link service. Tap to try again.',
@@ -488,11 +493,19 @@
         '<div class="wllm-sub">' + esc(tx(C.lineSub)) + '</div>' +
         '<div class="wllm-qr-wrap"><img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' +
           encodeURIComponent(st.loginUrl) + '" alt="QR"></div>' +
-        '<div class="wllm-status"><span class="wllm-spin"></span>' + esc(tx(C.lineWaiting)) + '</div>';
+        '<div class="wllm-status"><span class="wllm-spin"></span>' + esc(tx(C.lineWaiting)) + '</div>' +
+        '<div class="wllm-slownote">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>' +
+          '<span>' + esc(tx(C.lineSlowNote)) + '</span>' +
+        '</div>';
     } else {
       lineModalBody.innerHTML =
         '<div class="wllm-title">' + esc(tx(C.title)) + '</div>' +
-        '<div class="wllm-status"><span class="wllm-spin"></span>' + esc(tx(C.lineWaiting)) + '</div>';
+        '<div class="wllm-status"><span class="wllm-spin"></span>' + esc(tx(C.lineWaiting)) + '</div>' +
+        '<div class="wllm-slownote">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>' +
+          '<span>' + esc(tx(C.lineSlowNote)) + '</span>' +
+        '</div>';
     }
   }
 
@@ -2187,7 +2200,18 @@
 
     body.innerHTML = strip + addBox + portfolioAnalysis + grid + howto;
     wireConnStrip(body, lineSt);
-    paintShockFab(null, stocks, lineSt);
+    /* ROUND U bugfix: this branch runs whenever the visitor has an old
+       Telegram-bot watchlist link (chatId truthy) -- that used to always
+       pass null here, which forcibly closed/hid the floating shock FAB
+       and popup on every single repaint (price ticks, the 60s watchlist
+       reload, etc.) EVEN for someone who is ALSO LINE-linked with real
+       holdings, since this fallthrough branch doesn't care about lineSt
+       at all. That's exactly what looked like "the popup closes itself
+       with no click" -- it was being told hasData:false on every repaint
+       that happened to land here instead of the LINE branch above. Now it
+       checks LINE status directly, same as that branch does, so an old
+       Telegram link never stomps on an active LINE-based shock FAB. */
+    paintShockFab(lineSt.status === 'linked' ? (lineSt.tickers || []) : null, stocks, lineSt);
 
     var openBtns = body.querySelectorAll('[data-wl-open]');
     for(var i=0;i<openBtns.length;i++){

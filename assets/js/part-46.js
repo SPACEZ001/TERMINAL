@@ -117,7 +117,7 @@
      มาใส่ตรงนี้ (สร้างด้วย ADMIN_GENERATOR.html) */
   var VAULT_FULL = {"v":4,"s1":"mkdQcgClsnvkGyoBGGivQg==","s2":"9YocjP94X+KXzaDgEjSuGg==","s3":"hy15gzrBLmYFR2+cvfPPCA==","s4":"ky5slYhVrHQoXnN7itBYcg==","gates":[{"iv":"8ua/11yPR3cWSJKJEBQVhQ==","ct":"/RpQQax3SbFjk3XfRXL5DP9gJ6rQqkNt/72nKLY8b6Q="},{"iv":"JBpkOqWqQUGoNpvaBlMZhg==","ct":"nVsIciHOqQOZeoRiBpVa2MEpCDeP3npI3gG5YjD/z0M="},{"iv":"3pbyESaKph58+1raRCifUg==","ct":"N3RWhWpuNS9II+Knxy22n4sZfy75Zvpz1KFe3QMFSlk="},{"iv":"UBs3G4dOB8mAFjSRlyDRUQ==","ct":"5q+pIWVpnm52L5GAMp/4Q1L51D7ZlV4Gvypoei8dShA="},{"iv":"jqk5KZTuminXpYENqvBGPA==","ct":"s84YTT4n78TgNAZDV8fEb4sJNGEfYXZXICBRoQzik78="}],"ctrIv":"YtBFuzHAlM73O0uKkyqL2w==","iv":"ZqvmBtUJW2peCcUC","ct":"Yw9ZQfcOwU9A9jmBxghZgtyj2k5flNijg9Cnjungi45aNULy9mmGCiDf8V7jF5MhqyhdEK490/I="};
 
-  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','controlgrid','printreport','journalNew','connectedusers','announcements','quietValue'];
+  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','controlgrid','printreport','journalNew','connectedusers','announcements','quietValue','qrcode'];
   /* 'journal' (the list) and 'journalView' (a single post) are deliberately
      NOT in this list -- anyone can open them. The paywall for those two
      lives inside the module itself instead: the list/titles always render,
@@ -165,6 +165,22 @@
                     th:'สิทธิ์สมาชิกเข้าผ่านการเชื่อมต่อ LINE หรือ Telegram — เชื่อมต่อช่องทางใดช่องทางหนึ่งเพื่อปลดล็อกเครื่องมือวิเคราะห์ พร้อมวอทช์ลิสต์ส่วนตัวของคุณเอง'},
     memberLineCta:{en:'Sign in with LINE',th:'เข้าสู่ระบบด้วย LINE'},
     memberTgCta:{en:'Sign in with Telegram',th:'เข้าสู่ระบบด้วย Telegram'},
+    /* Round U (#205): Facebook + Google, prepared now with placeholder
+       credentials -- see part-64.js's own header comment for what she
+       needs to drop in before these go live. Same copy shape as the LINE/
+       Telegram rows above, one-for-one. */
+    memberFbCta:{en:'Sign in with Facebook',th:'เข้าสู่ระบบด้วย Facebook'},
+    memberGoogleCta:{en:'Sign in with Google',th:'เข้าสู่ระบบด้วย Google'},
+    fbRowConnect:{en:'Connect Facebook',th:'เชื่อมต่อ Facebook'},
+    fbRowConnected:{en:'Facebook connected',th:'เชื่อมต่อ Facebook แล้ว'},
+    fbRowLogout:{en:'Log out of Facebook',th:'ออกจากระบบ Facebook'},
+    fbRowNote:{en:'Sign in with your Facebook account — separate from this site login.',
+               th:'เข้าสู่ระบบด้วยบัญชี Facebook — แยกต่างหากจากการล็อกอินเว็บนี้'},
+    googleRowConnect:{en:'Connect Google',th:'เชื่อมต่อ Google'},
+    googleRowConnected:{en:'Google connected',th:'เชื่อมต่อ Google แล้ว'},
+    googleRowLogout:{en:'Log out of Google',th:'ออกจากระบบ Google'},
+    googleRowNote:{en:'Sign in with your Google account — separate from this site login.',
+                   th:'เข้าสู่ระบบด้วยบัญชี Google — แยกต่างหากจากการล็อกอินเว็บนี้'},
     memberLoggedT:{en:'MEMBER',th:'MEMBER'},
     memberLoggedS:{en:'You have member access.',th:'คุณเข้าสู่ระบบระดับ MEMBER แล้ว'},
     lineLoggedT:{en:'LINE',th:'LINE'},
@@ -172,6 +188,18 @@
     upgradeBtn:{en:'Log in as Admin instead',th:'เข้าสู่ระบบแอดมินแทน'},
     toFullLink:{en:'Have the 50-field admin code instead?',th:'มีรหัสแอดมิน 50 ช่องใช่ไหม?'},
     toMemberLink:{en:'Have a short MEMBER code instead?',th:'มีรหัส MEMBER สั้น ๆ ใช่ไหม?'},
+    /* Round U (#220): new Editor/Contributor tier -- its own tab + pane,
+       simple single-code entry (not the 50-field vault; see
+       EDITOR_ACCESS_CODE near isLockedRoute for the placeholder itself). */
+    tabEditor:{en:'EDITOR',th:'EDITOR'},
+    editorT:{en:'EDITOR ACCESS',th:'สิทธิ์ผู้ร่วมตรวจทาน'},
+    editorS:{en:'Read-only — for a contributor or co-editor',th:'อ่านอย่างเดียว — สำหรับผู้ช่วยหรือคอนทริบิวเตอร์'},
+    editorNote:{en:'Enter the access code you were given. This unlocks the same analysis pages as Admin, for reading only — no posting, no Terminal Admin.',
+                th:'กรอกรหัสที่ได้รับมา จะปลดล็อกหน้าวิเคราะห์เหมือนแอดมิน แต่สำหรับอ่านอย่างเดียวเท่านั้น — โพสต์ไม่ได้ และเข้า Terminal Admin ไม่ได้'},
+    editorPh:{en:'Access code',th:'รหัสการเข้าใช้งาน'},
+    editorSubmit:{en:'Enter',th:'เข้าสู่ระบบ'},
+    editorLoggedT:{en:'EDITOR',th:'EDITOR'},
+    editorLoggedS:{en:'You have read-only Editor access.',th:'คุณมีสิทธิ์ EDITOR แบบอ่านอย่างเดียว'},
     fullT:{en:'ADMIN LOGIN',th:'ADMIN LOGIN'},
     fullS:{en:'50 fields · 800 characters',th:'รหัสผ่าน 50 ช่อง · 800 ตัวอักษร'},
     loggedT:{en:'ADMIN',th:'ADMIN'},
@@ -194,6 +222,17 @@
        from Terminal Admin, same as the other admin-shortcut cards here --
        not just gated at the route level like Anomaly Scan/ESS are. */
     adminQuietValue:{en:'Quiet Value Scanner',th:'สแกนหุ้นถูกที่ยังเงียบ'},
+    /* Round U (#217): new admin-only "QR Code เว็บ" shortcut, same grid. */
+    adminQrCode:{en:'Website QR Code',th:'QR Code เว็บ'},
+    /* Round U (#218): the admin-shortcut grid grew to 9 flat buttons over
+       several rounds with no structure -- grouping them under three small
+       section labels (reads top-to-bottom as "what you publish" -> "what
+       you read back" -> "specialist tools") makes the panel scan like an
+       actual admin console instead of a loose pile of buttons, without
+       changing a single route, click-handler, or button style underneath. */
+    adminGroupPublish:{en:'Publish',th:'เผยแพร่เนื้อหา'},
+    adminGroupReports:{en:'Reports',th:'รายงาน'},
+    adminGroupTools:{en:'Tools',th:'เครื่องมือ'},
     bulk:{en:'📋 Paste all 50 at once',th:'📋 วางทีเดียว 50 ชุด'},
     mask:{en:'👁 Show / hide',th:'👁 แสดง/ซ่อน'},
     clear:{en:'🗑 Clear all',th:'🗑 ล้างทั้งหมด'},
@@ -288,7 +327,8 @@
 
   /* ---------------- gate UI ---------------- */
   var gate, paneAdv, errAdv, btnAdv, advFilled, advBar;
-  var paneOut, paneMember, tabsEl, memberLineBtn, memberTgBtn, upgradeBtn;
+  var paneOut, paneMember, paneEditor, tabsEl, memberLineBtn, memberTgBtn, upgradeBtn;
+  var errEditor, editorInput, btnEditor;
   var activeTab = 'member';
   var advInputs = [];
   var attempts = 0, lockUntil = 0;
@@ -312,6 +352,7 @@
             '<button class="cag-tier line" type="button" id="cagLineTab"><b data-x="tabLine"></b></button>' +
             '<button class="cag-tier tg" type="button" id="cagTgTab"><b data-x="tabTg"></b></button>' +
             '<button class="cag-tier m" type="button" data-tab="member"><b data-x="tabMember"></b></button>' +
+            '<button class="cag-tier e" type="button" data-tab="editor"><b data-x="tabEditor"></b></button>' +
             '<button class="cag-tier f" type="button" data-tab="full"><b data-x="tabFull"></b></button>' +
           '</div>' +
 
@@ -335,39 +376,75 @@
               '</div>' +
               '<button type="button" class="cag-tg-btn" id="cagTgRowBtn" data-x="tgBtn"></button>' +
             '</div>' +
+            '<div class="cag-fb-row" id="cagFbRow">' +
+              '<img class="cag-fb-avatar hidden" id="cagFbAvatar" alt="">' +
+              '<div class="cag-fb-info">' +
+                '<span class="cag-fb-name" id="cagFbName" data-x="fbName"></span>' +
+                '<span class="cag-fb-status" data-x="fbStatus"></span>' +
+              '</div>' +
+              '<button type="button" class="cag-fb-btn" id="cagFbRowBtn" data-x="fbBtn"></button>' +
+            '</div>' +
+            '<div class="cag-google-row" id="cagGoogleRow">' +
+              '<img class="cag-google-avatar hidden" id="cagGoogleAvatar" alt="">' +
+              '<div class="cag-google-info">' +
+                '<span class="cag-google-name" id="cagGoogleName" data-x="googleName"></span>' +
+                '<span class="cag-google-status" data-x="googleStatus"></span>' +
+              '</div>' +
+              '<button type="button" class="cag-google-btn" id="cagGoogleRowBtn" data-x="googleBtn"></button>' +
+            '</div>' +
+            '<div class="cag-admin-bio hidden" id="cagAdminBio"></div>' +
             '<div class="cag-admin-links hidden" id="cagAdminLinks">' +
-              '<button class="cag-admin-link" type="button" id="cagBtnAddAnalysis">' +
-                '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h5l5 5v12a1 1 0 01-1 1H8a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M13 3v5h5"/><path d="M12 12.5v5M9.4 15h5.2"/></svg>' +
-                '<span data-x="adminAddAnalysis"></span>' +
-              '</button>' +
-              '<button class="cag-admin-link" type="button" id="cagBtnPrintReport">' +
-                '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9V3.5h11V9"/><path d="M5.5 17.5h-2a1 1 0 01-1-1v-6a1 1 0 011-1h17a1 1 0 011 1v6a1 1 0 01-1 1h-2"/><path d="M6.5 14h11v6.5h-11z"/></svg>' +
-                '<span data-x="adminPrintReport"></span>' +
-              '</button>' +
-              '<button class="cag-admin-link" type="button" id="cagBtnCompareDownload">' +
-                '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M20 19H2"/><path d="M17.5 5l2.5 2.5L22.5 5"/></svg>' +
-                '<span data-x="adminCompareDownload"></span>' +
-              '</button>' +
-              '<button class="cag-admin-link" type="button" id="cagBtnConnectedUsers">' +
-                '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>' +
-                '<span data-x="adminConnectedUsers"></span>' +
-              '</button>' +
-              '<button class="cag-admin-link" type="button" id="cagBtnAnnouncements">' +
-                '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 001 1h3l4 4V6L7 10H4a1 1 0 00-1 1z"/><path d="M16 8a4 4 0 010 8"/><path d="M19 5a8 8 0 010 14"/></svg>' +
-                '<span data-x="adminAnnouncements"></span>' +
-              '</button>' +
-              '<button class="cag-admin-link" type="button" id="cagBtnPro">' +
-                '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>' +
-                '<span data-x="adminPro"></span>' +
-              '</button>' +
-              '<button class="cag-admin-link" type="button" id="cagBtnBriefing">' +
-                '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>' +
-                '<span data-x="adminBriefing"></span>' +
-              '</button>' +
-              '<button class="cag-admin-link" type="button" id="cagBtnQuietValue">' +
-                '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M8.5 11h5"/></svg>' +
-                '<span data-x="adminQuietValue"></span>' +
-              '</button>' +
+              '<div class="cag-admin-group">' +
+                '<div class="cag-admin-group-h" data-x="adminGroupPublish"></div>' +
+                '<div class="cag-admin-grid">' +
+                  '<button class="cag-admin-link" type="button" id="cagBtnAddAnalysis">' +
+                    '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h5l5 5v12a1 1 0 01-1 1H8a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M13 3v5h5"/><path d="M12 12.5v5M9.4 15h5.2"/></svg>' +
+                    '<span data-x="adminAddAnalysis"></span>' +
+                  '</button>' +
+                  '<button class="cag-admin-link" type="button" id="cagBtnAnnouncements">' +
+                    '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 001 1h3l4 4V6L7 10H4a1 1 0 00-1 1z"/><path d="M16 8a4 4 0 010 8"/><path d="M19 5a8 8 0 010 14"/></svg>' +
+                    '<span data-x="adminAnnouncements"></span>' +
+                  '</button>' +
+                '</div>' +
+              '</div>' +
+              '<div class="cag-admin-group">' +
+                '<div class="cag-admin-group-h" data-x="adminGroupReports"></div>' +
+                '<div class="cag-admin-grid">' +
+                  '<button class="cag-admin-link" type="button" id="cagBtnPrintReport">' +
+                    '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9V3.5h11V9"/><path d="M5.5 17.5h-2a1 1 0 01-1-1v-6a1 1 0 011-1h17a1 1 0 011 1v6a1 1 0 01-1 1h-2"/><path d="M6.5 14h11v6.5h-11z"/></svg>' +
+                    '<span data-x="adminPrintReport"></span>' +
+                  '</button>' +
+                  '<button class="cag-admin-link" type="button" id="cagBtnCompareDownload">' +
+                    '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M20 19H2"/><path d="M17.5 5l2.5 2.5L22.5 5"/></svg>' +
+                    '<span data-x="adminCompareDownload"></span>' +
+                  '</button>' +
+                  '<button class="cag-admin-link" type="button" id="cagBtnBriefing">' +
+                    '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>' +
+                    '<span data-x="adminBriefing"></span>' +
+                  '</button>' +
+                  '<button class="cag-admin-link" type="button" id="cagBtnConnectedUsers">' +
+                    '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>' +
+                    '<span data-x="adminConnectedUsers"></span>' +
+                  '</button>' +
+                '</div>' +
+              '</div>' +
+              '<div class="cag-admin-group">' +
+                '<div class="cag-admin-group-h" data-x="adminGroupTools"></div>' +
+                '<div class="cag-admin-grid">' +
+                  '<button class="cag-admin-link" type="button" id="cagBtnPro">' +
+                    '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>' +
+                    '<span data-x="adminPro"></span>' +
+                  '</button>' +
+                  '<button class="cag-admin-link" type="button" id="cagBtnQuietValue">' +
+                    '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M8.5 11h5"/></svg>' +
+                    '<span data-x="adminQuietValue"></span>' +
+                  '</button>' +
+                  '<button class="cag-admin-link" type="button" id="cagBtnQrCode">' +
+                    '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M20 14v3h-3"/><path d="M14 20h3"/><path d="M20 20v-2"/></svg>' +
+                    '<span data-x="adminQrCode"></span>' +
+                  '</button>' +
+                '</div>' +
+              '</div>' +
             '</div>' +
             '<button class="cag-btn" type="button" id="cagBtnLogout" data-x="logoutBtn"></button>' +
             '<button class="cag-ghost hidden" type="button" id="cagUpgradeBtn" data-x="upgradeBtn"></button>' +
@@ -378,7 +455,20 @@
             '<div class="cag-member-linenote" data-x="memberLineNote"></div>' +
             '<button class="cag-btn" type="button" id="cagMemberLineBtn" data-x="memberLineCta"></button>' +
             '<button class="cag-btn" type="button" id="cagMemberTgBtn" data-x="memberTgCta"></button>' +
+            '<button class="cag-ghost" type="button" id="cagMemberFbBtn" data-x="memberFbCta"></button>' +
+            '<button class="cag-ghost" type="button" id="cagMemberGoogleBtn" data-x="memberGoogleCta"></button>' +
             '<button class="cag-ghost" type="button" id="cagToFull" data-x="toFullLink"></button>' +
+            '<div class="cag-member-bio" id="cagMemberBio"></div>' +
+          '</div>' +
+
+          '<div class="cag-pane" id="cagPaneEditor">' +
+            '<div class="cag-head"><div><b data-x="editorT"></b><span data-x="editorS"></span></div></div>' +
+            '<div class="cag-member-linenote" data-x="editorNote"></div>' +
+            '<div class="cag-pw-wrap">' +
+              '<input class="cag-pw" type="password" id="cagEditorInput" autocomplete="off" spellcheck="false">' +
+            '</div>' +
+            '<div class="cag-err hidden" id="cagErrEditor"></div>' +
+            '<button class="cag-btn" type="button" id="cagEditorSubmit" data-x="editorSubmit"></button>' +
           '</div>' +
 
           '<div class="cag-pane" id="cagPaneAdv">' +
@@ -418,10 +508,38 @@
     advBar = gate.querySelector('#cagAdvBar');
     paneOut = gate.querySelector('#cagPaneOut');
     paneMember = gate.querySelector('#cagPaneMember');
+    paneEditor = gate.querySelector('#cagPaneEditor');
+    errEditor = gate.querySelector('#cagErrEditor');
+    editorInput = gate.querySelector('#cagEditorInput');
+    btnEditor = gate.querySelector('#cagEditorSubmit');
     tabsEl = gate.querySelector('#cagTabs');
     memberLineBtn = gate.querySelector('#cagMemberLineBtn');
     memberTgBtn = gate.querySelector('#cagMemberTgBtn');
     upgradeBtn = gate.querySelector('#cagUpgradeBtn');
+
+    /* Round U (#219): drop the same developer/analyst bio card used on the
+       Home hub and the nav-menu popup into two more spots she asked for --
+       the logged-out "Member" tab (so an anonymous visitor who opens the
+       gate and hasn't picked LINE/Telegram/Member/Full yet still sees who's
+       behind the site) and the Terminal Admin view (paired with the admin
+       shortcut grid, toggled hidden/shown together -- see the matching
+       adminBio.classList.toggle a few lines down in paint()). Reuses
+       window.__spzBioCard exactly as-is, no new markup/styling of the card
+       itself -- just two more slots for the same DOM node pattern part-15.js
+       already uses for the nav-menu popup.
+       window.__spzBioCard is defined by part-15.js's Home-hub builder, which
+       (unlike this gate) doesn't necessarily run before DOMContentLoaded --
+       so a single check right here can race it and find nothing yet. Poll
+       instead, same 400ms/60-try pattern every other late-bound feature
+       module on this site already uses. */
+    (function wireBioCards(tries){
+      tries = tries || 0;
+      if(!window.__spzBioCard){ if(tries < 60) setTimeout(function(){ wireBioCards(tries + 1); }, 400); return; }
+      var memberBioSlot = gate.querySelector('#cagMemberBio');
+      if(memberBioSlot && !memberBioSlot.firstChild) memberBioSlot.appendChild(window.__spzBioCard('in-menu'));
+      var adminBioSlot = gate.querySelector('#cagAdminBio');
+      if(adminBioSlot && !adminBioSlot.firstChild) adminBioSlot.appendChild(window.__spzBioCard('in-menu'));
+    })();
 
     var advGrid = gate.querySelector('#cagAdvGrid');
     for(var i = 1; i <= 50; i++){
@@ -476,6 +594,7 @@
       else location.hash = '#/pro';
     });
     gate.querySelector('#cagBtnQuietValue').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/quietValue'; });
+    gate.querySelector('#cagBtnQrCode').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/qrcode'; });
 
     gate.querySelector('#cagMaskBtn').addEventListener('click', function(){
       var show = advInputs[0] && advInputs[0].type === 'password';
@@ -517,11 +636,14 @@
     });
 
     btnAdv.addEventListener('click', tryFull);
+    btnEditor.addEventListener('click', tryEditor);
+    editorInput.addEventListener('keydown', function(ev){ if(ev.key === 'Enter') tryEditor(); });
 
     tabsEl.querySelectorAll('[data-tab]').forEach(function(btn){
       btn.addEventListener('click', function(){
         activeTab = btn.getAttribute('data-tab');
         clearErr(errAdv);
+        clearErr(errEditor);
         paint();
       });
     });
@@ -580,6 +702,32 @@
     });
     document.addEventListener('spz:tg', function(){ paint(); });
 
+    // Facebook / Google -- same wiring shape as LINE/Telegram just above,
+    // against window.__SPZ_FB / window.__SPZ_GOOGLE (part-64.js). No tab
+    // button of their own (mirroring how LINE/Telegram's tabs are really
+    // just login-popup triggers, not content panes) -- just the row here in
+    // the signed-in view and the two CTA buttons on the Member tab below.
+    gate.querySelector('#cagFbRowBtn').addEventListener('click', function(){
+      if(!window.__SPZ_FB) return;
+      var st = window.__SPZ_FB.state();
+      if(st.status === 'linked') window.__SPZ_FB.logout();
+      else window.__SPZ_FB.open();
+    });
+    gate.querySelector('#cagGoogleRowBtn').addEventListener('click', function(){
+      if(!window.__SPZ_GOOGLE) return;
+      var st = window.__SPZ_GOOGLE.state();
+      if(st.status === 'linked') window.__SPZ_GOOGLE.logout();
+      else window.__SPZ_GOOGLE.open();
+    });
+    gate.querySelector('#cagMemberFbBtn').addEventListener('click', function(){
+      if(window.__SPZ_FB) window.__SPZ_FB.open();
+    });
+    gate.querySelector('#cagMemberGoogleBtn').addEventListener('click', function(){
+      if(window.__SPZ_GOOGLE) window.__SPZ_GOOGLE.open();
+    });
+    document.addEventListener('spz:fb', function(){ paint(); });
+    document.addEventListener('spz:google', function(){ paint(); });
+
     paint();
   }
 
@@ -600,13 +748,21 @@
     // up front, for the same reason lineSt is.
     var tgSt = window.__SPZ_TG ? window.__SPZ_TG.state() : { status:'idle', displayName:null };
     var tgLinked = tgSt.status === 'linked';
+    // Round U (#205): same idea, two more providers (see part-64.js).
+    var fbSt = window.__SPZ_FB ? window.__SPZ_FB.state() : { status:'idle', displayName:null, pictureUrl:null };
+    var fbLinked = fbSt.status === 'linked';
+    var googleSt = window.__SPZ_GOOGLE ? window.__SPZ_GOOGLE.state() : { status:'idle', displayName:null, pictureUrl:null };
+    var googleLinked = googleSt.status === 'linked';
 
-    var loggedIn = currentTier === 'full' || currentTier === 'member' || lineLinked || tgLinked;
+    var loggedIn = currentTier === 'full' || currentTier === 'member' || currentTier === 'editor' || lineLinked || tgLinked || fbLinked || googleLinked;
     if(paneOut) paneOut.classList.toggle('active', loggedIn);
     if(tabsEl) tabsEl.style.display = loggedIn ? 'none' : 'flex';
     var adminLinks = gate.querySelector('#cagAdminLinks');
     if(adminLinks) adminLinks.classList.toggle('hidden', currentTier !== 'full');
+    var adminBioEl = gate.querySelector('#cagAdminBio');
+    if(adminBioEl) adminBioEl.classList.toggle('hidden', currentTier !== 'full');
     if(paneMember) paneMember.classList.toggle('active', !loggedIn && activeTab === 'member');
+    if(paneEditor) paneEditor.classList.toggle('active', !loggedIn && activeTab === 'editor');
     if(paneAdv) paneAdv.classList.toggle('active', !loggedIn && activeTab === 'full');
     if(tabsEl){
       tabsEl.querySelectorAll('[data-tab]').forEach(function(btn){
@@ -651,6 +807,29 @@
     var tgRowEl = gate.querySelector('#cagTgRow');
     if(tgRowEl) tgRowEl.classList.toggle('linked', tgLinked);
 
+    // Facebook / Google rows -- same treatment as LINE's row (avatar + name
+    // + status + connect/logout button).
+    var fbNameTxt = fbLinked ? (fbSt.displayName || '').trim() : '';
+    var fbStatusTxt = fbLinked ? Tt(TXT.fbRowConnected) : Tt(TXT.fbRowNote);
+    var fbBtnTxt = fbLinked ? Tt(TXT.fbRowLogout) : Tt(TXT.fbRowConnect);
+    var fbAvatarEl = gate.querySelector('#cagFbAvatar');
+    var fbRowEl = gate.querySelector('#cagFbRow');
+    if(fbRowEl) fbRowEl.classList.toggle('linked', fbLinked);
+    if(fbAvatarEl){
+      if(fbLinked && fbSt.pictureUrl){ fbAvatarEl.src = fbSt.pictureUrl; fbAvatarEl.classList.remove('hidden'); }
+      else { fbAvatarEl.removeAttribute('src'); fbAvatarEl.classList.add('hidden'); }
+    }
+    var googleNameTxt = googleLinked ? (googleSt.displayName || '').trim() : '';
+    var googleStatusTxt = googleLinked ? Tt(TXT.googleRowConnected) : Tt(TXT.googleRowNote);
+    var googleBtnTxt = googleLinked ? Tt(TXT.googleRowLogout) : Tt(TXT.googleRowConnect);
+    var googleAvatarEl = gate.querySelector('#cagGoogleAvatar');
+    var googleRowEl = gate.querySelector('#cagGoogleRow');
+    if(googleRowEl) googleRowEl.classList.toggle('linked', googleLinked);
+    if(googleAvatarEl){
+      if(googleLinked && googleSt.pictureUrl){ googleAvatarEl.src = googleSt.pictureUrl; googleAvatarEl.classList.remove('hidden'); }
+      else { googleAvatarEl.removeAttribute('src'); googleAvatarEl.classList.add('hidden'); }
+    }
+
     gate.querySelectorAll('[data-x]').forEach(function(el){
       var k = el.getAttribute('data-x');
       var map = {
@@ -661,18 +840,24 @@
         // Priority when more than one is true at once (rare -- e.g. someone
         // linked both LINE and Telegram): real tier first, then LINE (it
         // alone also carries a personal watchlist), then Telegram.
-        loggedT: currentTier === 'full' ? TXT.loggedT : currentTier === 'member' ? TXT.memberLoggedT : lineLinked ? TXT.lineLoggedT : TXT.tgLoggedT,
-        loggedS: currentTier === 'full' ? TXT.loggedS : currentTier === 'member' ? TXT.memberLoggedS : lineLinked ? TXT.lineLoggedS : TXT.tgLoggedS,
+        loggedT: currentTier === 'full' ? TXT.loggedT : currentTier === 'editor' ? TXT.editorLoggedT : currentTier === 'member' ? TXT.memberLoggedT : lineLinked ? TXT.lineLoggedT : TXT.tgLoggedT,
+        loggedS: currentTier === 'full' ? TXT.loggedS : currentTier === 'editor' ? TXT.editorLoggedS : currentTier === 'member' ? TXT.memberLoggedS : lineLinked ? TXT.lineLoggedS : TXT.tgLoggedS,
         logoutBtn: TXT.logoutBtn, upgradeBtn: TXT.upgradeBtn,
         adminAddAnalysis: TXT.adminAddAnalysis, adminPrintReport: TXT.adminPrintReport,
         adminCompareDownload: TXT.adminCompareDownload, adminConnectedUsers: TXT.adminConnectedUsers,
         adminAnnouncements: TXT.adminAnnouncements,
         adminPro: TXT.adminPro, adminBriefing: TXT.adminBriefing, adminQuietValue: TXT.adminQuietValue,
-        tabMember: TXT.tabMember, tabFull: TXT.tabFull, tabLine: TXT.tabLine, tabTg: TXT.tabTg,
+        adminQrCode: TXT.adminQrCode,
+        adminGroupPublish: TXT.adminGroupPublish, adminGroupReports: TXT.adminGroupReports, adminGroupTools: TXT.adminGroupTools,
+        tabMember: TXT.tabMember, tabFull: TXT.tabFull, tabLine: TXT.tabLine, tabTg: TXT.tabTg, tabEditor: TXT.tabEditor,
+        editorT: TXT.editorT, editorS: TXT.editorS, editorNote: TXT.editorNote, editorSubmit: TXT.editorSubmit,
         lineName: lineNameTxt, lineStatus: lineStatusTxt, lineBtn: lineBtnTxt,
         tgName: tgNameTxt, tgStatus: tgStatusTxt, tgBtn: tgBtnTxt,
+        fbName: fbNameTxt, fbStatus: fbStatusTxt, fbBtn: fbBtnTxt,
+        googleName: googleNameTxt, googleStatus: googleStatusTxt, googleBtn: googleBtnTxt,
         memberT: TXT.memberT, memberS: TXT.memberS,
         memberLineNote: TXT.memberLineNote, memberLineCta: TXT.memberLineCta, memberTgCta: TXT.memberTgCta,
+        memberFbCta: TXT.memberFbCta, memberGoogleCta: TXT.memberGoogleCta,
         toFullLink: TXT.toFullLink, toMemberLink: TXT.toMemberLink,
         fullT: TXT.fullT, fullS: TXT.fullS,
         bulk: TXT.bulk, mask: TXT.mask, clear: TXT.clear, spread: TXT.spread, bulkHint: TXT.bulkHint,
@@ -682,6 +867,7 @@
       else if(map[k]) el.textContent = Tt(map[k]);
     });
     gate.querySelector('#cagBulkText').placeholder = Tt(TXT.bulkPh);
+    if(editorInput) editorInput.placeholder = Tt(TXT.editorPh);
   }
 
   function lockedNow(){ return Date.now() < lockUntil; }
@@ -718,6 +904,24 @@
     });
   }
 
+  /* Round U (#220): Editor/Contributor access code -- PLACEHOLDER ONLY.
+     Deliberately a single plain-text compare, not the 50-field cascade
+     vault Full Access uses (openVault/VAULT_FULL above) -- Editor is meant
+     to be one simple phrase she can hand a contributor, nothing more. Swap
+     this string for the real code whenever she's ready; nothing else needs
+     to change. Shares the same attempts/lockUntil lockout as Admin login,
+     so repeated wrong guesses here lock out both forms together. */
+  var EDITOR_ACCESS_CODE = '>51FP_hao/j+Wgg)-,dcX*FXFkj$z]ube{>z#3vmY7E,&8F34=jIGIuQj}$5&pFkdZvtnZj$v0MD6B66&Bn=^f5$m)YRv2AQSI]';
+  function tryEditor(){
+    if(lockedNow()){ showErr(errEditor, Tt(TXT.errLock) + Math.ceil((lockUntil - Date.now()) / 1000) + 's'); return; }
+    var pw = editorInput.value.trim();
+    if(!pw){ showErr(errEditor, Tt(TXT.errEmpty)); return; }
+    if(pw !== EDITOR_ACCESS_CODE){ registerFail(); showErr(errEditor, Tt(TXT.errBad)); return; }
+    clearErr(errEditor);
+    editorInput.value = '';
+    finishUnlock('editor');
+  }
+
   /* ---------------- tier gating on the live site ---------------- */
   /* No password is required to read the site at all — every visitor lands
      as 'basic' the instant the page loads (see init(), below: it is a
@@ -737,6 +941,21 @@
     return m ? m[1] : null;
   }
   var MEMBER_ROUTES = ['stock','watchlist','bubble','chartlab','directory','regime'];
+  /* Round U (#220): new "Editor" tier -- a separate, simpler login zone next
+     to LINE/Telegram/Member/Admin, for a contributor who should be able to
+     read everything Admin can (the full analysis/tools catalogue) but has
+     no business in Terminal Admin and can't post or edit anything. The
+     split is: every LOCKED_ROUTES id EXCEPT the true admin-utility pages
+     (adding/editing content, viewing visitor data, the new QR tool) goes in
+     EDITOR_ROUTES; isLockedRoute() below unlocks exactly that set for the
+     'editor' tier, nothing more. The admin-utility pages themselves stay
+     reachable by route (so a curious Editor doesn't hit a dead link) but
+     every one of them already gates its real content behind its own
+     `window.__SPZ_TIER() !== 'full'` check (see part-50/51/57/63) -- which
+     'editor' always fails, same as 'member' or 'basic' -- so Editor lands
+     on the same "Admins only." placeholder a logged-out visitor would. */
+  var ADMIN_ONLY_ROUTES = ['controlgrid','printreport','journalNew','connectedusers','announcements','quietValue','qrcode'];
+  var EDITOR_ROUTES = LOCKED_ROUTES.filter(function(id){ return ADMIN_ONLY_ROUTES.indexOf(id) === -1; });
   /* A LINE-linked visitor gets the same MEMBER_ROUTES access as a Member-code
      login, without also having to paste that code in -- a stand-in for a
      real membership system, not a change to what "Member" means: this only
@@ -753,11 +972,21 @@
     try { return !!(window.__SPZ_TG && window.__SPZ_TG.state && window.__SPZ_TG.state().status === 'linked'); }
     catch(e){ return false; }
   }
+  // Round U (#205): same stand-in, two more providers -- see part-64.js.
+  function fbIsLinkedNow(){
+    try { return !!(window.__SPZ_FB && window.__SPZ_FB.state && window.__SPZ_FB.state().status === 'linked'); }
+    catch(e){ return false; }
+  }
+  function googleIsLinkedNow(){
+    try { return !!(window.__SPZ_GOOGLE && window.__SPZ_GOOGLE.state && window.__SPZ_GOOGLE.state().status === 'linked'); }
+    catch(e){ return false; }
+  }
   function isLockedRoute(id){
     if(LOCKED_ROUTES.indexOf(id) === -1) return false;
     if(currentTier === 'full') return false;
+    if(currentTier === 'editor') return EDITOR_ROUTES.indexOf(id) === -1;
     if(currentTier === 'member') return MEMBER_ROUTES.indexOf(id) === -1;
-    if(MEMBER_ROUTES.indexOf(id) !== -1 && (lineIsLinkedNow() || tgIsLinkedNow())) return false;
+    if(MEMBER_ROUTES.indexOf(id) !== -1 && (lineIsLinkedNow() || tgIsLinkedNow() || fbIsLinkedNow() || googleIsLinkedNow())) return false;
     return true;
   }
   var LOCK_SEL = '[data-route-to], [data-hvgo], [data-hub-go], a[href^="#/"]';
@@ -898,6 +1127,8 @@
      page load (lineRestoreFromWorker fires this same event when it's done). */
   document.addEventListener('spz:line', function(){ paintLockVeils(); });
   document.addEventListener('spz:tg', function(){ paintLockVeils(); });
+  document.addEventListener('spz:fb', function(){ paintLockVeils(); });
+  document.addEventListener('spz:google', function(){ paintLockVeils(); });
 
   document.addEventListener('keydown', function(ev){
     if(ev.key === 'Escape' && gate && !gate.hidden) gate.hidden = true;
@@ -945,7 +1176,7 @@
       var raw = sessionStorage.getItem('spacez.auth');
       if(raw){
         var o = JSON.parse(raw);
-        if(o && (o.tier === 'full' || o.tier === 'member') && o.t && (Date.now() - o.t) < 12 * 60 * 60 * 1000) tier = o.tier;
+        if(o && (o.tier === 'full' || o.tier === 'member' || o.tier === 'editor') && o.t && (Date.now() - o.t) < 12 * 60 * 60 * 1000) tier = o.tier;
       }
     } catch(e){}
     applyTier(tier);

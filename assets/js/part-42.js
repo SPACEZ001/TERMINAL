@@ -79,6 +79,16 @@
       th:'ชี้หรือคลิกวงกลมไหนก็ได้ด้านบน เพื่อดูว่ามันผูกกับอะไรมากที่สุด และเป็นอิสระจากอะไรมากที่สุด'},
     netInfoFmt:{en:'<b>{n}</b> — closest to: {a} ({av}), {b} ({bv}) · most opposite: {c} ({cv})',
       th:'<b>{n}</b> — ใกล้เคียงที่สุดกับ: {a} ({av}), {b} ({bv}) · สวนทางที่สุดกับ: {c} ({cv})'},
+    /* ROUND U: the live map used to be one full-width block with a lot of
+       dead space either side of the small centered node cluster -- this
+       adds a side panel next to it (same data, just the strongest ties
+       pulled out into a readable ranked list) so the space does something,
+       and clicking a row pins that node on the map too. */
+    netSideH:{en:'STRONGEST TIES ON THIS MAP',th:'คู่ที่ผูกกันแน่นที่สุดบนแผนที่นี้'},
+    netSideHint:{en:'Click a pair to find it on the map.',th:'คลิกคู่ไหนก็ได้เพื่อหามันบนแผนที่'},
+    netSideTogether:{en:'together',th:'ไปด้วยกัน'},
+    netSideOpp:{en:'opposite',th:'สวนทางกัน'},
+    netSideEmpty:{en:'No pair is tied closely enough yet at this window.',th:'ยังไม่มีคู่ไหนผูกกันแน่นพอในช่วงเวลานี้'},
 
     /* ---- Round S6: allocation guidance -- the three fixed callout cards
        above (most-tied pair, most-opposite pair, best-diversifier-vs-S&P
@@ -511,13 +521,46 @@
       '<div class="cm-status-stats">' + esc(stats) + '</div></div>';
   }
 
-  function netHTML(){
+  /* ROUND U: ranked list of the same edges the canvas draws (|v| >= 0.35),
+     strongest first -- a readable twin of the moving map for the freed-up
+     right column, and reusing net.edges' own threshold so the two never
+     disagree about what counts as "tied closely enough to show". */
+  function netSideHTML(mx){
+    var syms = mx.syms, M = mx.M, pairs = [];
+    for (var i = 0; i < syms.length; i++) {
+      for (var j = i + 1; j < syms.length; j++) {
+        var c = M[i][j];
+        if (c && c.v !== null && Math.abs(c.v) >= 0.35) pairs.push({ i:i, j:j, v:c.v });
+      }
+    }
+    if (!pairs.length) return '<div class="cm-net-side-empty">' + esc(tx(T.netSideEmpty)) + '</div>';
+    pairs.sort(function(a, b){ return Math.abs(b.v) - Math.abs(a.v); });
+    var rows = pairs.slice(0, 8).map(function(p){
+      var up = p.v >= 0;
+      return '<button type="button" class="cm-net-side-row" data-cm-net-i="' + p.i + '" data-cm-net-j="' + p.j + '">' +
+        '<span class="cm-net-side-names">' + esc(tx(syms[p.i])) + ' <em>' + esc(syms[p.i].sym) + '</em>' +
+          ' × ' + esc(tx(syms[p.j])) + ' <em>' + esc(syms[p.j].sym) + '</em></span>' +
+        '<span class="cm-net-side-v ' + (up ? 'up' : 'dn') + '">' + sgn(p.v * 100, 0) + '%<small>' +
+          esc(up ? tx(T.netSideTogether) : tx(T.netSideOpp)) + '</small></span>' +
+      '</button>';
+    }).join('');
+    return '<div class="cm-net-side-h">' + esc(tx(T.netSideH)) + '</div>' +
+      '<div class="cm-net-side-hint">' + esc(tx(T.netSideHint)) + '</div>' +
+      '<div class="cm-net-side-list">' + rows + '</div>';
+  }
+
+  function netHTML(mx){
     return '<div class="cm-net-wrap">' +
       '<div class="cm-net-title-row"><div class="cm-cl">' + esc(tx(T.netH)) + '</div>' +
         '<span class="spz-tag spz-tag-rt">' + esc(tx(T.netLive)) + '</span></div>' +
       '<div class="cm-net-hint">' + esc(tx(T.netHint)) + '</div>' +
-      '<canvas class="cm-net-canvas" data-cm="netcanvas" width="1320" height="700"></canvas>' +
-      '<div class="cm-net-info" data-cm="netinfo">' + esc(tx(T.netDefault)) + '</div>' +
+      '<div class="cm-net-grid">' +
+        '<div class="cm-net-main">' +
+          '<canvas class="cm-net-canvas" data-cm="netcanvas" width="1320" height="700"></canvas>' +
+          '<div class="cm-net-info" data-cm="netinfo">' + esc(tx(T.netDefault)) + '</div>' +
+        '</div>' +
+        '<div class="cm-net-side">' + netSideHTML(mx) + '</div>' +
+      '</div>' +
     '</div>';
   }
 
@@ -629,6 +672,21 @@
     canvas.addEventListener('touchmove', onMove, { passive:false });
     canvas.addEventListener('touchend', onUp);
 
+    /* ROUND U: clicking a row in the side list pins that pair's first node
+       on the map and scrolls the canvas into view -- same effect as clicking
+       the circle itself, just reachable from the readable list instead of
+       having to find it moving around the canvas. */
+    var sideRows = sec ? sec.querySelectorAll('[data-cm-net-i]') : [];
+    sideRows.forEach(function(row){
+      row.addEventListener('click', function(){
+        var i = parseInt(row.getAttribute('data-cm-net-i'), 10);
+        if (isNaN(i) || !net.nodes[i]) return;
+        net.pin = i; net.hover = -1;
+        updateInfo();
+        canvas.scrollIntoView({ behavior:'smooth', block:'center' });
+      });
+    });
+
     function tick(){
       if (!canvas.isConnected) { stopNetwork(); return; }
       if (sec.offsetParent === null) { net.raf = requestAnimationFrame(tick); return; }
@@ -718,7 +776,7 @@
     if (!state.data || !mx) return '<div class="ss-empty">' + esc(tx(T.waiting)) + '</div>';
     return guideHTML() + exampleHTML() + statusHTML(mx) +
       '<div class="ss-pills" style="margin-bottom:16px;">' + pillsHTML() + '</div>' +
-      calloutsHTML(mx) + allocHTML(mx) + gridHTML(mx) + detailHTML(mx) + netHTML() +
+      calloutsHTML(mx) + allocHTML(mx) + gridHTML(mx) + detailHTML(mx) + netHTML(mx) +
       '<div class="ss-foot">' + esc(tx(T.foot)) + '</div>';
   }
 

@@ -8,8 +8,8 @@
 /* ---------------- BEGINNER GUIDE ---------------- */
 var GUIDE = {
   intro:{
-    en:'Five questions. No right answers — they only map your goal, your time and your stomach onto the four stock archetypes taught in this terminal. Educational only: this is not personalised investment advice.',
-    th:'ห้าคำถาม ไม่มีคำตอบถูกผิด มันแค่จับคู่เป้าหมาย เวลา และความทนต่อความผันผวนของคุณ เข้ากับหุ้นทั้งสี่ประเภทที่สอนอยู่ในเทอร์มินัลนี้ — เป็นสื่อการเรียนรู้เท่านั้น ไม่ใช่คำแนะนำการลงทุนเฉพาะบุคคล'
+    en:'A short quiz. No right answers — they only map your goal, your time and your stomach onto the four stock archetypes taught in this terminal. Educational only: this is not personalised investment advice.',
+    th:'แบบทดสอบสั้นๆ ไม่มีคำตอบถูกผิด มันแค่จับคู่เป้าหมาย เวลา และความทนต่อความผันผวนของคุณ เข้ากับหุ้นทั้งสี่ประเภทที่สอนอยู่ในเทอร์มินัลนี้ — เป็นสื่อการเรียนรู้เท่านั้น ไม่ใช่คำแนะนำการลงทุนเฉพาะบุคคล'
   },
   q:[
     {t:{en:'What do you actually want the money to do?',th:'คุณอยากให้เงินก้อนนี้ทำอะไรกันแน่?'},
@@ -309,6 +309,24 @@ var GUIDE_EXTRA = [
     {l:{en:'Hold and collect whatever dividend there is',th:'ถือไว้และเก็บปันผลเท่าที่มี'},w:{d:3},h:3},
     {l:{en:'Re-check the numbers, then decide',th:'กลับไปเช็คตัวเลขใหม่ แล้วค่อยตัดสินใจ'},w:{v:2,g:1},h:2,e:2},
     {l:{en:'Move the money somewhere it is working',th:'ย้ายเงินไปที่ที่มันทำงาน'},w:{g:3},h:1}
+   ]},
+  /* Round V (#213): two tie-breaker questions. The eight above already split
+     value/growth/dividend/defensive fairly well on their own, but scores
+     often land close together — these two ask the same choice more directly,
+     which sharpens the final percentages rather than widening coverage. */
+  {t:{en:'A company you own pays no dividend at all. How do you feel about that?',th:'หุ้นที่คุณถือไม่จ่ายปันผลเลยสักบาท คุณรู้สึกยังไง?'},
+   o:[
+    {l:{en:'Good — I want every baht of profit reinvested in the business',th:'ดีแล้ว — อยากให้กำไรทุกบาทถูกเอาไปลงทุนต่อในธุรกิจ'},w:{g:3}},
+    {l:{en:'Fine, as long as the share price does the work instead',th:'โอเค ตราบใดที่ราคาหุ้นทำหน้าที่แทน'},w:{v:2,g:1}},
+    {l:{en:'I would rather see some cash come back to me',th:'อยากให้มีเงินสดกลับมาหาผมบ้าง'},w:{d:2,f:1}},
+    {l:{en:'I actively avoid companies that do not pay one',th:'ผมหลีกเลี่ยงหุ้นที่ไม่จ่ายปันผลเลย'},w:{d:3,f:1}}
+   ]},
+  {t:{en:'Forced to pick just one, which sentence is truest for you?',th:'ถ้าต้องเลือกแค่ประโยคเดียว ประโยคไหนตรงกับคุณที่สุด?'},
+   o:[
+    {l:{en:'I would rather be early and sometimes wrong than late and safe',th:'ผมยอมมาก่อนแล้วบางทีคิดผิด ดีกว่ามาช้าแต่ปลอดภัย'},w:{g:3}},
+    {l:{en:'I would rather buy proven, unglamorous businesses cheaply',th:'ผมอยากซื้อธุรกิจที่พิสูจน์ตัวเองแล้วแต่ไม่หวือหวา ในราคาถูก'},w:{v:3}},
+    {l:{en:'I want my portfolio to feel boring',th:'ผมอยากให้พอร์ตของผมรู้สึกน่าเบื่อ'},w:{f:3}},
+    {l:{en:'I want it to pay me like a second paycheck',th:'ผมอยากให้มันจ่ายผมเหมือนเงินเดือนที่สอง'},w:{d:3}}
    ]}
 ];
 
@@ -835,7 +853,13 @@ var CL_UI = {
     }
 
     function head(){
-      sec.querySelector('[data-g="eb"]').textContent = L() === 'th' ? '05 คำถาม' : '05 Questions';
+      /* Round V (#213): this used to say "05 Questions" as fixed text, which
+         went stale the moment GUIDE_EXTRA was merged in above (the quiz has
+         carried more than five questions for a while, growing again just now)
+         -- read the live count instead so the label can never drift from the
+         quiz again. */
+      var qn = String(GUIDE.q.length).length < 2 ? '0' + GUIDE.q.length : String(GUIDE.q.length);
+      sec.querySelector('[data-g="eb"]').textContent = L() === 'th' ? qn + ' คำถาม' : qn + ' Questions';
       sec.querySelector('[data-g="h2"]').textContent = L() === 'th' ? 'มือใหม่ควรเริ่มที่หุ้นอะไร' : 'What Should A Beginner Actually Buy';
       sec.querySelector('[data-g="lede"]').textContent = tx(GUIDE.intro);
     }

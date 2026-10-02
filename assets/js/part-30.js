@@ -527,6 +527,14 @@
     extend:{en:'It kept going',th:'ตลาดไปต่อ'},
     rotate:{en:'It went sideways and rotated',th:'ออกข้างและหมุนกลุ่ม'},
     brk:{en:'It broke',th:'ตลาดสะดุด'},
+    /* ROUND U: plain-language explainer + simple glance-bar for this panel --
+       she said the fan diagram's own "50% / 30% / 20%" reads fine once you
+       already get it, but asked for it explained more plainly for people who
+       don't. This sits right above the fan chart, in beginner terms, with a
+       single-line worked example instead of methodology language. */
+    p2plain:{en:'In plain terms: out of every {n} times the market looked like it does today, this many kept rising (green), this many went flat/rotated between sectors (amber), and this many fell (red) over the following 3 months. Higher green = history leans toward "keep going"; higher red = history leans toward "watch out."',
+              th:'พูดง่ายๆ คือ: จากทั้งหมด {n} ครั้งที่ตลาดเคยหน้าตาคล้ายวันนี้ มีกี่ครั้งที่ไปต่อ (เขียว) กี่ครั้งที่ออกข้าง/สลับกลุ่มอุตสาหกรรม (เหลือง) และกี่ครั้งที่ร่วงลง (แดง) ใน 3 เดือนถัดมา ถ้าเขียวเยอะ = ประวัติศาสตร์เอียงไปทาง "ไปต่อ" ถ้าแดงเยอะ = ประวัติศาสตร์เอียงไปทาง "ระวังไว้ก่อน"'},
+    glanceH:{en:'AT A GLANCE',th:'สรุปภาพรวม'},
     extendS:{en:'gained more than 3%',th:'บวกเกิน 3%'},
     rotateS:{en:'ended within 3% either way',th:'จบในกรอบ ±3%'},
     brkS:{en:'lost more than 3%',th:'ลบเกิน 3%'},
@@ -757,6 +765,32 @@
     });
   }
 
+  /* ROUND U: a simple proportional stacked bar -- one glance, no reading the
+     flowing fan chart required -- that sits right above it as the "quick
+     version" of the same three numbers the fan chart shows properly. */
+  function glanceBarHTML(a){
+    var defs = [
+      { k:'extend', c:'var(--neon-2,#7CFFB2)', name:tx(A.extend) },
+      { k:'rotate', c:'var(--amber,#ffb020)',  name:tx(A.rotate) },
+      { k:'brk',    c:'var(--red,#ff3b4e)',    name:tx(A.brk) }
+    ];
+    var segs = defs.map(function(d){
+      var st = a.b[d.k];
+      var pct = Math.round(st.n / a.n * 100);
+      return { pct:pct, c:d.c, name:d.name };
+    });
+    return '<div class="an-glance">' +
+      '<div class="an-glance-h">' + esc(tx(A.glanceH)) + '</div>' +
+      '<div class="an-glance-bar">' + segs.map(function(s){
+        return s.pct > 0 ? '<span style="width:' + s.pct + '%;background:' + s.c + '" title="' +
+          esc(s.name) + ' ' + s.pct + '%"></span>' : '';
+      }).join('') + '</div>' +
+      '<div class="an-glance-keys">' + segs.map(function(s){
+        return '<span><i style="background:' + s.c + '"></i>' + esc(s.name) + ' <b>' + s.pct + '%</b></span>';
+      }).join('') + '</div>' +
+    '</div>';
+  }
+
   function histHTML(a){
     var LO = -25, HI = 30, STEP = 5, bins = [];
     for (var v = LO; v < HI; v += STEP) bins.push({ lo:v, hi:v + STEP, n:0 });
@@ -803,6 +837,8 @@
       '<div class="an-panel">' +
         '<div class="an-ph"><span>' + esc(tx(A.p2)) + '</span><span>' +
           esc(tx(A.p2r).replace('{n}', a.n)) + '</span></div>' +
+        '<p class="an-plain">' + esc(tx(A.p2plain).replace('{n}', a.n)) + '</p>' +
+        glanceBarHTML(a) +
         '<div class="an-fan" data-an="fanbox"><svg viewBox="0 0 1000 300" data-an="fan"></svg></div>' +
         '<div class="an-legend">' +
           '<span><i style="background:var(--neon-2,#7CFFB2)"></i>' + esc(tx(A.extend)) + '</span>' +
