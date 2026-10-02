@@ -454,15 +454,42 @@
     display:grid; grid-template-columns:minmax(0,1.45fr) minmax(300px,1fr);
     gap:30px; align-items:start; margin-bottom:40px;
   }
-  .dir-cmp-col-list{ min-width:0; }
-  .dir-cmp-col-compare{
-    min-width:0; position:sticky; top:18px;
+  /* Round Y (#238): each column is a fixed-height, independently
+     scrolling pane -- a pinned head (tabs/filters on the left, the
+     comparator's title on the right) and a scrolling body underneath.
+     Before this the right column was position:sticky, which just rode
+     along with the page scroll and only kept pace with however long the
+     left-hand stock list happened to be -- it never had a scroll of its
+     own. min-height:0 on the flex child is required here: without it a
+     flex item refuses to shrink below its content size and overflow-y
+     never actually engages. */
+  .dir-cmp-col-list, .dir-cmp-col-compare{
+    min-width:0; display:flex; flex-direction:column;
+    height:clamp(420px, calc(100vh - 260px), 760px);
+    border:1px solid var(--border-dim); border-radius:var(--radius);
+    background:rgba(255,255,255,.012); padding:18px;
   }
+  .dir-cmp-pane-head{ flex:0 0 auto; }
+  .dir-cmp-pane-scroll{
+    flex:1 1 auto; min-height:0; overflow-y:auto; padding-right:8px; margin-right:-8px;
+  }
+  .dir-cmp-pane-scroll::-webkit-scrollbar{ width:7px; }
+  .dir-cmp-pane-scroll::-webkit-scrollbar-thumb{ background:var(--border-dim); border-radius:6px; }
+  .dir-cmp-col-list .dir-cmp-pane-head{ margin-bottom:4px; }
+  .dir-cmp-col-list .directory-legend{ margin-bottom:4px; }
+  .dir-cmp-col-list .directory-grid{ margin-top:18px; }
+
+  /* the picker's own inner scroll box (.compare-select-scroll,
+     max-height:340px) would otherwise nest a second scrollbar inside
+     .dir-cmp-pane-scroll -- let it expand to full height instead, since
+     the whole right-hand pane is the scroll area now */
+  .dir-cmp-col-compare .compare-select-scroll{ max-height:none; overflow-y:visible; padding-right:0; }
+
   /* smaller section-head variant for the comparator's header once it's
      sharing a column instead of spanning the full page -- the default
      .section-head's clamp(2rem,4.4vw,3.1rem) h2 and 64px margin-bottom
      are sized for a full-width intro, not a sidebar-width one */
-  .section-head-sm{ max-width:none; margin-bottom:26px; }
+  .section-head-sm{ max-width:none; margin-bottom:0; }
   .section-head-sm h2{ font-size:1.5rem; line-height:1.25; }
   .section-head-sm .rule{ margin-top:18px; }
   .section-head-sm p.lede{ margin-top:12px; font-size:13px; max-width:none; }
@@ -478,9 +505,23 @@
   .dir-cmp-col-compare .compare-select-panel{ margin-bottom:18px; }
   .dir-cmp-col-compare .compare-add-grid{ grid-template-columns:repeat(2,1fr); }
 
+  /* Round Y (#239): drag a stock card from the left pane onto the right
+     pane to add it to the comparison -- a visible drop-target highlight
+     while a card is being dragged over it */
+  .compare-select-panel.dir-drop-over{
+    border-color:var(--neon); background:rgba(204,255,0,.05);
+    box-shadow:0 0 0 1px var(--neon) inset;
+  }
+  .stock-card[draggable="true"]{ cursor:grab; }
+  .stock-card.dir-dragging{ opacity:.4; }
+
   @media(max-width:980px){
     .dir-cmp-row{ grid-template-columns:1fr; gap:26px; }
-    .dir-cmp-col-compare{ position:static; }
+    .dir-cmp-col-list, .dir-cmp-col-compare{
+      height:auto; border:none; background:none; padding:0;
+    }
+    .dir-cmp-pane-scroll{ overflow-y:visible; padding-right:0; margin-right:0; }
+    .dir-cmp-col-compare .compare-select-scroll{ max-height:340px; overflow-y:auto; padding-right:8px; }
   }
   @media(max-width:420px){
     .dir-cmp-col-compare .compare-add-grid{ grid-template-columns:1fr; }
@@ -528,6 +569,12 @@
   .compare-check input{accent-color:var(--neon);width:14px;height:14px;flex-shrink:0;cursor:pointer;}
   .compare-check.checked{border-color:var(--neon);background:rgba(204,255,0,0.08);color:var(--neon);}
   .compare-check.disabled{opacity:.35;pointer-events:none;}
+  /* Round Y (#239): brief highlight on the checkbox a dragged card landed on */
+  .compare-check.compare-check-flash{animation:dirCmpFlash .9s ease;}
+  @keyframes dirCmpFlash{
+    0%{box-shadow:0 0 0 2px var(--neon);}
+    100%{box-shadow:0 0 0 0 rgba(204,255,0,0);}
+  }
 
   .compare-select-info{margin-top:18px;padding-top:18px;border-top:1px solid var(--border-dim);font-family:var(--mono);font-size:12px;color:var(--grey);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
   .compare-select-info b{color:var(--neon);}
