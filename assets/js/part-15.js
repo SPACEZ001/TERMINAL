@@ -1081,7 +1081,7 @@ var CL_UI = {
      of both the Home hub grid (buildHub) and the top nav menu (buildNav) --
      currently just Connected Users, which is reachable only via the admin
      login gate's own panel button. */
-  var NAV_HIDDEN = { connectedusers:1, printreport:1, announcements:1, pro:1, quietValue:1, qrcode:1 }; /* Round Q: Institutional Pro Desk moved into Cockpit, see part-47.js; Round W (#223): Quiet Value Scanner + Website QR Code are admin-only, reached only via the Terminal Admin panel, never listed in public nav/hub */
+  var NAV_HIDDEN = { connectedusers:1, printreport:1, announcements:1, pro:1, quietValue:1, qrcode:1, elliott:1 }; /* Round Q: Institutional Pro Desk moved into Cockpit, see part-47.js; Round W (#223): Quiet Value Scanner + Website QR Code are admin-only, reached only via the Terminal Admin panel, never listed in public nav/hub; Round X (#234): Elliott Wave Classroom moved to admin-only the same way */
 
   function buildHub(){
     var sec = el('section');
@@ -1587,7 +1587,7 @@ var CL_UI = {
              starting point -- so it now runs right after the orientation
              tour, before the risk-quiz/archetypes/glossary/signals that
              build on it. */
-          ids:['guided', 'basics', 'start', 'types', 'glossary', 'signals', 'elliott'] },
+          ids:['guided', 'basics', 'start', 'types', 'glossary', 'signals'] },
         { k:'market', t:{en:'Read the market',th:'อ่านตลาด'},
           /* Round S9: full site-wide reorder, easiest/shortest -> hardest/
              longest. Was now/outlook/regime/anomaly/correl/rulelab/daily/
