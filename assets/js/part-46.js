@@ -181,6 +181,9 @@
     googleRowLogout:{en:'Log out of Google',th:'ออกจากระบบ Google'},
     googleRowNote:{en:'Sign in with your Google account — separate from this site login.',
                    th:'เข้าสู่ระบบด้วยบัญชี Google — แยกต่างหากจากการล็อกอินเว็บนี้'},
+    /* Round Y (#242): the one toggle that now hides the LINE/Telegram/
+       Facebook/Google rows until clicked -- see cagConnectToggle above. */
+    connectMoreToggle:{en:'Connect more accounts',th:'เชื่อมต่อช่องทางเพิ่มเติม'},
     memberLoggedT:{en:'MEMBER',th:'MEMBER'},
     memberLoggedS:{en:'You have member access.',th:'คุณเข้าสู่ระบบระดับ MEMBER แล้ว'},
     lineLoggedT:{en:'LINE',th:'LINE'},
@@ -372,40 +375,6 @@
 
           '<div class="cag-pane" id="cagPaneOut">' +
             '<div class="cag-head"><div><b data-x="loggedT"></b><span data-x="loggedS"></span></div></div>' +
-            '<div class="cag-line-row" id="cagLineRow">' +
-              '<img class="cag-line-avatar hidden" id="cagLineAvatar" alt="">' +
-              '<div class="cag-line-info">' +
-                '<span class="cag-line-name" id="cagLineName" data-x="lineName"></span>' +
-                '<span class="cag-line-status" data-x="lineStatus"></span>' +
-              '</div>' +
-              '<button type="button" class="cag-line-wl-btn hidden" id="cagLineWlBtn" aria-label="" data-x-title="lineWlBtn">' +
-                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5A2.5 2.5 0 015.5 3h13A2.5 2.5 0 0121 5.5v15L12 16l-9 4.5v-15z"/></svg>' +
-              '</button>' +
-              '<button type="button" class="cag-line-btn" id="cagLineRowBtn" data-x="lineBtn"></button>' +
-            '</div>' +
-            '<div class="cag-tg-row" id="cagTgRow">' +
-              '<div class="cag-tg-info">' +
-                '<span class="cag-tg-name" id="cagTgName" data-x="tgName"></span>' +
-                '<span class="cag-tg-status" data-x="tgStatus"></span>' +
-              '</div>' +
-              '<button type="button" class="cag-tg-btn" id="cagTgRowBtn" data-x="tgBtn"></button>' +
-            '</div>' +
-            '<div class="cag-fb-row" id="cagFbRow">' +
-              '<img class="cag-fb-avatar hidden" id="cagFbAvatar" alt="">' +
-              '<div class="cag-fb-info">' +
-                '<span class="cag-fb-name" id="cagFbName" data-x="fbName"></span>' +
-                '<span class="cag-fb-status" data-x="fbStatus"></span>' +
-              '</div>' +
-              '<button type="button" class="cag-fb-btn" id="cagFbRowBtn" data-x="fbBtn"></button>' +
-            '</div>' +
-            '<div class="cag-google-row" id="cagGoogleRow">' +
-              '<img class="cag-google-avatar hidden" id="cagGoogleAvatar" alt="">' +
-              '<div class="cag-google-info">' +
-                '<span class="cag-google-name" id="cagGoogleName" data-x="googleName"></span>' +
-                '<span class="cag-google-status" data-x="googleStatus"></span>' +
-              '</div>' +
-              '<button type="button" class="cag-google-btn" id="cagGoogleRowBtn" data-x="googleBtn"></button>' +
-            '</div>' +
             '<div class="cag-admin-bio hidden" id="cagAdminBio"></div>' +
             '<div class="cag-admin-links hidden" id="cagAdminLinks">' +
               '<div class="cag-admin-group">' +
@@ -461,6 +430,52 @@
                     '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19 7 11 11 14 15 6 18 10 22 5"/><circle cx="7" cy="11" r="1.3" fill="currentColor" stroke="none"/><circle cx="11" cy="14" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="6" r="1.3" fill="currentColor" stroke="none"/></svg>' +
                     '<span data-x="adminElliott"></span>' +
                   '</button>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="cag-connect-section">' +
+              '<button class="cag-connect-toggle" type="button" id="cagConnectToggle" aria-expanded="false">' +
+                '<svg class="cag-connect-toggle-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.07 0l1.93-1.93a5 5 0 00-7.07-7.07L10.5 5.5"/><path d="M14 11a5 5 0 00-7.07 0L5 12.93a5 5 0 007.07 7.07L13.5 18.5"/></svg>' +
+                '<span class="cag-connect-label" data-x="connectMoreToggle"></span>' +
+                '<span class="cag-connect-count" id="cagConnectCount"></span>' +
+                '<svg class="cag-connect-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
+              '</button>' +
+              '<div class="cag-connect-rows" id="cagConnectRows">' +
+                '<div class="cag-connect-rows-inner">' +
+                  '<div class="cag-line-row" id="cagLineRow">' +
+                    '<img class="cag-line-avatar hidden" id="cagLineAvatar" alt="">' +
+                    '<div class="cag-line-info">' +
+                      '<span class="cag-line-name" id="cagLineName" data-x="lineName"></span>' +
+                      '<span class="cag-line-status" data-x="lineStatus"></span>' +
+                    '</div>' +
+                    '<button type="button" class="cag-line-wl-btn hidden" id="cagLineWlBtn" aria-label="" data-x-title="lineWlBtn">' +
+                      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5A2.5 2.5 0 015.5 3h13A2.5 2.5 0 0121 5.5v15L12 16l-9 4.5v-15z"/></svg>' +
+                    '</button>' +
+                    '<button type="button" class="cag-line-btn" id="cagLineRowBtn" data-x="lineBtn"></button>' +
+                  '</div>' +
+                  '<div class="cag-tg-row" id="cagTgRow">' +
+                    '<div class="cag-tg-info">' +
+                      '<span class="cag-tg-name" id="cagTgName" data-x="tgName"></span>' +
+                      '<span class="cag-tg-status" data-x="tgStatus"></span>' +
+                    '</div>' +
+                    '<button type="button" class="cag-tg-btn" id="cagTgRowBtn" data-x="tgBtn"></button>' +
+                  '</div>' +
+                  '<div class="cag-fb-row" id="cagFbRow">' +
+                    '<img class="cag-fb-avatar hidden" id="cagFbAvatar" alt="">' +
+                    '<div class="cag-fb-info">' +
+                      '<span class="cag-fb-name" id="cagFbName" data-x="fbName"></span>' +
+                      '<span class="cag-fb-status" data-x="fbStatus"></span>' +
+                    '</div>' +
+                    '<button type="button" class="cag-fb-btn" id="cagFbRowBtn" data-x="fbBtn"></button>' +
+                  '</div>' +
+                  '<div class="cag-google-row" id="cagGoogleRow">' +
+                    '<img class="cag-google-avatar hidden" id="cagGoogleAvatar" alt="">' +
+                    '<div class="cag-google-info">' +
+                      '<span class="cag-google-name" id="cagGoogleName" data-x="googleName"></span>' +
+                      '<span class="cag-google-status" data-x="googleStatus"></span>' +
+                    '</div>' +
+                    '<button type="button" class="cag-google-btn" id="cagGoogleRowBtn" data-x="googleBtn"></button>' +
+                  '</div>' +
                 '</div>' +
               '</div>' +
             '</div>' +
@@ -600,6 +615,21 @@
 
     gate.querySelector('#cagClose').addEventListener('click', function(){ gate.hidden = true; });
     gate.querySelector('#cagBtnLogout').addEventListener('click', logout);
+
+    // Round Y (#242): the LINE/Telegram/Facebook/Google rows now live inside
+    // a collapsed-by-default "Connect more accounts" toggle (see the markup
+    // above and part-45.css) instead of sitting open in a row every time
+    // the signed-in pane shows. Plain open/close state on the wrapper --
+    // paint() never touches it, so toggling a provider on/off doesn't
+    // collapse the section the admin is actively looking at.
+    var connectToggleBtn = gate.querySelector('#cagConnectToggle');
+    var connectRowsEl = gate.querySelector('#cagConnectRows');
+    if(connectToggleBtn && connectRowsEl){
+      connectToggleBtn.addEventListener('click', function(){
+        var open = connectRowsEl.classList.toggle('open');
+        connectToggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    }
     gate.querySelector('#cagBtnAddAnalysis').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/journalNew'; });
     gate.querySelector('#cagBtnPrintReport').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/printreport'; });
     // Compare Stocks PDF is admin-only (see cmpIsAdmin()/cmpPaintDownloadGate()
@@ -860,6 +890,16 @@
       else { googleAvatarEl.removeAttribute('src'); googleAvatarEl.classList.add('hidden'); }
     }
 
+    // Round Y (#242): small "N connected" badge on the collapsed toggle so
+    // the admin can tell at a glance whether anything is already linked
+    // without having to open the section first.
+    var connectCountEl = gate.querySelector('#cagConnectCount');
+    if(connectCountEl){
+      var connectedN = [lineLinked, tgLinked, fbLinked, googleLinked].filter(Boolean).length;
+      connectCountEl.textContent = connectedN;
+      connectCountEl.classList.toggle('show', connectedN > 0);
+    }
+
     gate.querySelectorAll('[data-x]').forEach(function(el){
       var k = el.getAttribute('data-x');
       var map = {
@@ -885,6 +925,7 @@
         tgName: tgNameTxt, tgStatus: tgStatusTxt, tgBtn: tgBtnTxt,
         fbName: fbNameTxt, fbStatus: fbStatusTxt, fbBtn: fbBtnTxt,
         googleName: googleNameTxt, googleStatus: googleStatusTxt, googleBtn: googleBtnTxt,
+        connectMoreToggle: TXT.connectMoreToggle,
         memberT: TXT.memberT, memberS: TXT.memberS,
         memberLineNote: TXT.memberLineNote, memberLineCta: TXT.memberLineCta, memberTgCta: TXT.memberTgCta,
         memberFbCta: TXT.memberFbCta, memberGoogleCta: TXT.memberGoogleCta,
