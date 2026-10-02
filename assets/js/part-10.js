@@ -46,6 +46,10 @@
       'compare.hint':'Select 2 to 10 stocks, then run the scan.',
       'compare.selectedLabel':'selected',
       'compare.scanBtn':'Scan &amp; Compare',
+      'compare.bulkSelAll':'Select all','compare.bulkClear':'Clear',
+      'compare.bulkGroup':'Select all',
+      'compare.bulkRandomBtn':'Random pick',
+      'compare.bulkRandomOf':'of all {n} stocks',
       'compare.metric.pe':'P/E','compare.metric.div':'DIV YLD','compare.metric.roe':'ROE',
       'compare.metric.de':'D/E','compare.metric.margin':'NET MARGIN','compare.metric.pb':'P/B','compare.metric.score':'SCORE',
       'compare.summaryTag':'// Summary',
@@ -515,6 +519,10 @@
       'compare.hint':'เลือกหุ้น 2-10 ตัว แล้วกดสแกน',
       'compare.selectedLabel':'ที่เลือก',
       'compare.scanBtn':'สแกนและเปรียบเทียบ',
+      'compare.bulkSelAll':'เลือกทั้งหมด','compare.bulkClear':'ล้างที่เลือก',
+      'compare.bulkGroup':'เลือกทั้งกลุ่ม',
+      'compare.bulkRandomBtn':'สุ่มเลือก',
+      'compare.bulkRandomOf':'จากทั้งหมด {n} ตัว',
       'compare.metric.pe':'P/E','compare.metric.div':'DIV YLD','compare.metric.roe':'ROE',
       'compare.metric.de':'D/E','compare.metric.margin':'NET MARGIN','compare.metric.pb':'P/B','compare.metric.score':'SCORE',
       'compare.summaryTag':'// สรุปผล',
@@ -1852,27 +1860,56 @@
     return arr.slice(0, -1).join(', ') + ' และ' + arr[arr.length - 1];
   }
 
+  /* Round W (#230): bulk-select convenience controls above the picker, so
+     a visitor doesn't have to click every stock one at a time -- a global
+     "select all" / "clear", one "select all in this group" button per
+     category (incl. the user's own custom-stock group), and a "random pick
+     of N" control. All three just programmatically check/uncheck the same
+     real <input type="checkbox"> elements renderCompareSelectors() always
+     built, then call updateCheckboxState() exactly like a manual click
+     would -- no parallel selection state to keep in sync. */
+  function compareBulkBarHTML(totalCount){
+    const t = translations[currentLang];
+    return '<div class="compare-bulkbar">' +
+      '<button type="button" class="compare-bulk-btn" data-bulk-all="1">' + esc(t['compare.bulkSelAll']) + '</button>' +
+      '<button type="button" class="compare-bulk-btn compare-bulk-ghost" data-bulk-clear="1">' + esc(t['compare.bulkClear']) + '</button>' +
+      '<span class="compare-bulk-random">' +
+        '<button type="button" class="compare-bulk-btn" data-bulk-random="1">' + esc(t['compare.bulkRandomBtn']) + '</button>' +
+        '<input type="number" class="compare-bulk-n" id="compareBulkN" min="2" max="' + totalCount + '" value="5">' +
+        '<span class="compare-bulk-of">' + esc(t['compare.bulkRandomOf'].replace('{n}', totalCount)) + '</span>' +
+      '</span>' +
+    '</div>';
+  }
+
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
   function renderCompareSelectors(){
     const previouslyChecked = Array.from(document.querySelectorAll('.compare-check input:checked')).map(function(cb){ return cb.value; });
     const container = document.getElementById('compareSelectPanel');
     const order = ['value','growth','dividend','defensive'];
     const tagMap = { value:'$VAL', growth:'$GRW', dividend:'$DIV', defensive:'$DEF' };
-    let html = '<div class="compare-select-scroll">';
+    const selAllLabel = translations[currentLang]['compare.bulkGroup'];
+    let totalCount = customStocks.length;
+    order.forEach(function(cat){ totalCount += stockDirectory[cat].length; });
+
+    let html = compareBulkBarHTML(totalCount) + '<div class="compare-select-scroll">';
 
     if(customStocks.length > 0){
-      html += '<div class="compare-group"><div class="compare-group-title">$YOU — ' + translations[currentLang]['compare.customGroupLabel'].toUpperCase() + '</div><div class="compare-check-grid">';
+      html += '<div class="compare-group"><div class="compare-group-title">$YOU — ' + translations[currentLang]['compare.customGroupLabel'].toUpperCase() +
+        '<button type="button" class="compare-group-selall" data-bulk-group="__custom">' + esc(selAllLabel) + '</button></div><div class="compare-check-grid">';
       customStocks.forEach(function(s){
-        html += '<div class="compare-check"><label><input type="checkbox" value="' + s.ticker + '"><span>$' + s.ticker + ' — ' + s.name_en + '</span></label><button type="button" class="compare-remove-btn" data-remove-ticker="' + s.ticker + '" aria-label="Remove">×</button></div>';
+        html += '<div class="compare-check" data-group="__custom"><label><input type="checkbox" value="' + s.ticker + '"><span>$' + s.ticker + ' — ' + s.name_en + '</span></label><button type="button" class="compare-remove-btn" data-remove-ticker="' + s.ticker + '" aria-label="Remove">×</button></div>';
       });
       html += '</div></div>';
     }
 
     order.forEach(function(cat){
       const label = translations[currentLang]['node.' + cat + '.label'];
-      html += '<div class="compare-group"><div class="compare-group-title">' + tagMap[cat] + ' — ' + label.toUpperCase() + '</div><div class="compare-check-grid">';
+      html += '<div class="compare-group"><div class="compare-group-title">' + tagMap[cat] + ' — ' + label.toUpperCase() +
+        '<button type="button" class="compare-group-selall" data-bulk-group="' + cat + '">' + esc(selAllLabel) + '</button></div><div class="compare-check-grid">';
       stockDirectory[cat].forEach(function(s){
         const name = currentLang === 'en' ? s.name_en : s.name_th;
-        html += '<label class="compare-check"><input type="checkbox" value="' + s.ticker + '"><span>$' + s.ticker + ' — ' + name + '</span></label>';
+        html += '<label class="compare-check" data-group="' + cat + '"><input type="checkbox" value="' + s.ticker + '"><span>$' + s.ticker + ' — ' + name + '</span></label>';
       });
       html += '</div></div>';
     });
@@ -1882,7 +1919,44 @@
       if(previouslyChecked.indexOf(cb.value) !== -1) cb.checked = true;
       cb.addEventListener('change', updateCheckboxState);
     });
+    wireCompareBulkControls(container);
     updateCheckboxState();
+  }
+
+  function wireCompareBulkControls(container){
+    const allBtn = container.querySelector('[data-bulk-all]');
+    if(allBtn) allBtn.addEventListener('click', function(){
+      container.querySelectorAll('.compare-check input').forEach(function(cb){ cb.checked = true; });
+      updateCheckboxState();
+    });
+    const clearBtn = container.querySelector('[data-bulk-clear]');
+    if(clearBtn) clearBtn.addEventListener('click', function(){
+      container.querySelectorAll('.compare-check input').forEach(function(cb){ cb.checked = false; });
+      updateCheckboxState();
+    });
+    container.querySelectorAll('[data-bulk-group]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        const g = btn.getAttribute('data-bulk-group');
+        container.querySelectorAll('.compare-check[data-group="' + g + '"] input').forEach(function(cb){ cb.checked = true; });
+        updateCheckboxState();
+      });
+    });
+    const randomBtn = container.querySelector('[data-bulk-random]');
+    if(randomBtn) randomBtn.addEventListener('click', function(){
+      const nInput = container.querySelector('#compareBulkN');
+      const all = Array.from(container.querySelectorAll('.compare-check input'));
+      let n = Math.max(2, Math.min(all.length, parseInt(nInput && nInput.value, 10) || 5));
+      // Fisher-Yates shuffle a copy, then take the first n -- a fresh random
+      // draw every click, not a sticky one.
+      const pool = all.slice();
+      for(let i = pool.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+      }
+      all.forEach(function(cb){ cb.checked = false; });
+      pool.slice(0, n).forEach(function(cb){ cb.checked = true; });
+      updateCheckboxState();
+    });
   }
 
   const MAX_COMPARE = Infinity;

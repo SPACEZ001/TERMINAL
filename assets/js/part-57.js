@@ -2672,7 +2672,7 @@
     document.body.appendChild(jr);
     if(window.__spzAddRoute){
       window.__spzAddRoute({
-        id:'journal', after:'directory',
+        id:'journal', after:'directory', feat:true, /* Round W (#228): stand out on the Home hub too, not just the nav menu */
         t:{en:'Asset Analysis Log',th:'บทวิเคราะห์สินทรัพย์'},
         d:{en:'Your own running log of calls on stocks, gold, crypto and more — screenshot, reasoning and the date, filed by asset.',
            th:'บันทึกบทวิเคราะห์ของคุณเอง ทั้งหุ้น ทองคำ คริปโต และอื่นๆ พร้อมภาพ เหตุผล และวันที่ แยกตามสินทรัพย์'}
