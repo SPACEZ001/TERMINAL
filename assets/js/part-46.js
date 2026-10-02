@@ -117,7 +117,7 @@
      มาใส่ตรงนี้ (สร้างด้วย ADMIN_GENERATOR.html) */
   var VAULT_FULL = {"v":4,"s1":"mkdQcgClsnvkGyoBGGivQg==","s2":"9YocjP94X+KXzaDgEjSuGg==","s3":"hy15gzrBLmYFR2+cvfPPCA==","s4":"ky5slYhVrHQoXnN7itBYcg==","gates":[{"iv":"8ua/11yPR3cWSJKJEBQVhQ==","ct":"/RpQQax3SbFjk3XfRXL5DP9gJ6rQqkNt/72nKLY8b6Q="},{"iv":"JBpkOqWqQUGoNpvaBlMZhg==","ct":"nVsIciHOqQOZeoRiBpVa2MEpCDeP3npI3gG5YjD/z0M="},{"iv":"3pbyESaKph58+1raRCifUg==","ct":"N3RWhWpuNS9II+Knxy22n4sZfy75Zvpz1KFe3QMFSlk="},{"iv":"UBs3G4dOB8mAFjSRlyDRUQ==","ct":"5q+pIWVpnm52L5GAMp/4Q1L51D7ZlV4Gvypoei8dShA="},{"iv":"jqk5KZTuminXpYENqvBGPA==","ct":"s84YTT4n78TgNAZDV8fEb4sJNGEfYXZXICBRoQzik78="}],"ctrIv":"YtBFuzHAlM73O0uKkyqL2w==","iv":"ZqvmBtUJW2peCcUC","ct":"Yw9ZQfcOwU9A9jmBxghZgtyj2k5flNijg9Cnjungi45aNULy9mmGCiDf8V7jF5MhqyhdEK490/I="};
 
-  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','controlgrid','printreport','journalNew','connectedusers','announcements','quietValue','qrcode'];
+  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','controlgrid','printreport','journalNew','connectedusers','announcements','quietValue','qrcode','elliott'];
   /* 'journal' (the list) and 'journalView' (a single post) are deliberately
      NOT in this list -- anyone can open them. The paywall for those two
      lives inside the module itself instead: the list/titles always render,
@@ -224,6 +224,10 @@
     adminQuietValue:{en:'Quiet Value Scanner',th:'สแกนหุ้นถูกที่ยังเงียบ'},
     /* Round U (#217): new admin-only "QR Code เว็บ" shortcut, same grid. */
     adminQrCode:{en:'Website QR Code',th:'QR Code เว็บ'},
+    /* Round X (#238): Elliott Wave Classroom moved from a public Learn-group
+       page to admin-only -- same shortcut-grid treatment as every other
+       admin-only page here. */
+    adminElliott:{en:'Elliott Wave Classroom',th:'ห้องเรียน Elliott Wave'},
     /* Round U (#218): the admin-shortcut grid grew to 9 flat buttons over
        several rounds with no structure -- grouping them under three small
        section labels (reads top-to-bottom as "what you publish" -> "what
@@ -453,6 +457,10 @@
                     '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M20 14v3h-3"/><path d="M14 20h3"/><path d="M20 20v-2"/></svg>' +
                     '<span data-x="adminQrCode"></span>' +
                   '</button>' +
+                  '<button class="cag-admin-link" type="button" id="cagBtnElliott">' +
+                    '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19 7 11 11 14 15 6 18 10 22 5"/><circle cx="7" cy="11" r="1.3" fill="currentColor" stroke="none"/><circle cx="11" cy="14" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="6" r="1.3" fill="currentColor" stroke="none"/></svg>' +
+                    '<span data-x="adminElliott"></span>' +
+                  '</button>' +
                 '</div>' +
               '</div>' +
             '</div>' +
@@ -616,6 +624,7 @@
     });
     gate.querySelector('#cagBtnQuietValue').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/quietValue'; });
     gate.querySelector('#cagBtnQrCode').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/qrcode'; });
+    gate.querySelector('#cagBtnElliott').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/elliott'; });
 
     gate.querySelector('#cagMaskBtn').addEventListener('click', function(){
       var show = advInputs[0] && advInputs[0].type === 'password';
@@ -868,7 +877,7 @@
         adminCompareDownload: TXT.adminCompareDownload, adminConnectedUsers: TXT.adminConnectedUsers,
         adminAnnouncements: TXT.adminAnnouncements,
         adminPro: TXT.adminPro, adminBriefing: TXT.adminBriefing, adminQuietValue: TXT.adminQuietValue,
-        adminQrCode: TXT.adminQrCode,
+        adminQrCode: TXT.adminQrCode, adminElliott: TXT.adminElliott,
         adminGroupPublish: TXT.adminGroupPublish, adminGroupReports: TXT.adminGroupReports, adminGroupTools: TXT.adminGroupTools,
         tabMember: TXT.tabMember, tabFull: TXT.tabFull, tabLine: TXT.tabLine, tabTg: TXT.tabTg, tabEditor: TXT.tabEditor,
         editorT: TXT.editorT, editorS: TXT.editorS, editorNote: TXT.editorNote, editorSubmit: TXT.editorSubmit,
@@ -975,7 +984,7 @@
      `window.__SPZ_TIER() !== 'full'` check (see part-50/51/57/63) -- which
      'editor' always fails, same as 'member' or 'basic' -- so Editor lands
      on the same "Admins only." placeholder a logged-out visitor would. */
-  var ADMIN_ONLY_ROUTES = ['controlgrid','printreport','journalNew','connectedusers','announcements','quietValue','qrcode'];
+  var ADMIN_ONLY_ROUTES = ['controlgrid','printreport','journalNew','connectedusers','announcements','quietValue','qrcode','elliott'];
   var EDITOR_ROUTES = LOCKED_ROUTES.filter(function(id){ return ADMIN_ONLY_ROUTES.indexOf(id) === -1; });
   /* A LINE-linked visitor gets the same MEMBER_ROUTES access as a Member-code
      login, without also having to paste that code in -- a stand-in for a
