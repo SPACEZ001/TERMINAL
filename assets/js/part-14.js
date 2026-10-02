@@ -871,6 +871,7 @@
      just sit there static. The original list stays in the DOM (display:none
      via .gl-source) purely so buildRail's search/category filter above still
      has full rows -- see __searchText -- to filter against; it is never shown. */
+  var mdInstances = [];
   function buildMasterDetail(list){
     var rows = [].slice.call(list.querySelectorAll('details.term-row'));
     if(!rows.length) return;
@@ -965,19 +966,30 @@
 
     select(0);
 
-    /* Round R: lets other pages (e.g. the Beginner Checklist) deep-link into
-       a specific glossary term now that it lives in this master-detail view
-       instead of a plain accordion -- clears any stale search-hidden state
-       first so the jump always lands even if a prior search filtered it out. */
-    window.__spzGlossJump = function(key){
-      for(var gi = 0; gi < rows.length; gi++){
-        if(rows[gi].dataset.key === key){
-          rows[gi].classList.remove('ctl-hidden');
-          select(gi);
-          break;
+    /* ROUND U: #signals now also runs through buildMasterDetail (see boot()
+       below), so this module can have two of these instances alive at once
+       (glossary's rows and signals' rows) -- window.__spzGlossJump used to
+       just get overwritten by whichever instance ran last, which would have
+       silently broken deep-links into the other one. Each instance now
+       registers itself instead, and the dispatcher (defined once, guarded)
+       tries every registered instance until one of them actually has that
+       key, so a jump into a glossary term and a jump into a signal term
+       both keep working no matter which page built its master-detail last. */
+    mdInstances.push({ rows: rows, select: select });
+    if(!window.__spzGlossJump){
+      window.__spzGlossJump = function(key){
+        for(var mi = 0; mi < mdInstances.length; mi++){
+          var inst = mdInstances[mi];
+          for(var gi = 0; gi < inst.rows.length; gi++){
+            if(inst.rows[gi].dataset.key === key){
+              inst.rows[gi].classList.remove('ctl-hidden');
+              inst.select(gi);
+              return;
+            }
+          }
         }
-      }
-    };
+      };
+    }
   }
 
   /* ---------- theme switch ---------- */
@@ -1052,10 +1064,16 @@
     attach();
     var lists = document.querySelectorAll('#glossary .glossary-list, #signals .glossary-list');
     for(var i = 0; i < lists.length; i++){ buildRail(lists[i]); }
-    // #glossary gets the left-index + fixed-detail-pane layout; #signals
-    // (a much shorter list) keeps its original single-column accordion.
+    // ROUND U: #signals now gets the same left-index + fixed-detail-pane
+    // layout as #glossary (13 signals read just fine as a nav list, and she
+    // asked for this page to match the glossary page's layout) -- reusing
+    // buildMasterDetail as-is since it was already written generically
+    // against whichever `list` element it's handed, never hardcoded to
+    // #glossary specifically.
     var glossList = document.querySelector('#glossary .glossary-list');
     if(glossList) buildMasterDetail(glossList);
+    var signalsList = document.querySelector('#signals .glossary-list');
+    if(signalsList) buildMasterDetail(signalsList);
     initTheme();
     initTop();
     initLangMemory();

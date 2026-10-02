@@ -71,10 +71,29 @@
     catch(e){ return null; }
   }
 
+  /* Round U (#210): each card now carries data-dy-card so CSS can give it a
+     small left accent + icon matching what the card is actually about
+     (headline/gauges/movers/flow/anomaly) -- the five cards used to be
+     visually identical bordered boxes with a tiny 9px mono label, so the
+     page had to be READ start to finish rather than scanned. The icons
+     reuse the stroke-only, currentColor style already used everywhere
+     else on this site (admin shortcut buttons, Journal cards, etc). */
+  var DY_ICO = {
+    headline:'<path d="M4 18V6a2 2 0 012-2h11l3 4-3 4H6a2 2 0 01-2-2z"/>',
+    gauges:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
+    movers:'<path d="M3 17l5-5 4 4 8-9"/><path d="M15 7h5v5"/>',
+    flow:'<path d="M3 8c3 0 3 3 6 3s3-3 6-3 3 3 6 3"/><path d="M3 16c3 0 3 3 6 3s3-3 6-3 3 3 6 3"/>',
+    anomaly:'<path d="M12 3l9 16H3z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor"/>'
+  };
+  function dyLabHTML(kind, label){
+    return '<div class="dy-lab"><svg class="dy-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      DY_ICO[kind] + '</svg><span>' + esc(label) + '</span></div>';
+  }
+
   function headlineHTML(){
     var al = regimeAlert();
     var txt = al && al.text ? esc(al.text) : esc(tx(T.quiet));
-    return '<div class="dy-card"><div class="dy-lab">' + esc(tx(T.headlineL)) + '</div>' +
+    return '<div class="dy-card" data-dy-card="headline">' + dyLabHTML('headline', tx(T.headlineL)) +
       '<div class="dy-txt">' + txt + '</div></div>';
   }
 
@@ -87,7 +106,7 @@
     } else {
       body = esc(tx(T.scoreNA));
     }
-    return '<div class="dy-card"><div class="dy-lab">' + esc(tx(T.scoreL)) + '</div>' +
+    return '<div class="dy-card" data-dy-card="gauges">' + dyLabHTML('gauges', tx(T.scoreL)) +
       '<div class="dy-txt">' + body + '</div>' +
       '<button type="button" class="dy-go" data-dy-go="regime">' + esc(tx(T.goRegime)) + '</button></div>';
   }
@@ -102,7 +121,7 @@
       rows.push({ tk:tk, name:r.name || '', chg:r.chg_pct });
     });
     if (!rows.length) {
-      return '<div class="dy-card"><div class="dy-lab">' + esc(tx(T.moversL)) + '</div>' +
+      return '<div class="dy-card" data-dy-card="movers">' + dyLabHTML('movers', tx(T.moversL)) +
         '<div class="dy-txt">' + esc(tx(T.noMovers)) + '</div></div>';
     }
     rows.sort(function(a,b){ return b.chg - a.chg; });
@@ -112,7 +131,7 @@
       return '<div class="dy-mrow"><span>' + esc(r.tk) + '</span><span class="' +
         (r.chg >= 0 ? 'up' : 'dn') + '">' + sgn(r.chg, 1) + '%</span></div>';
     }
-    return '<div class="dy-card"><div class="dy-lab">' + esc(tx(T.moversL)) + '</div>' +
+    return '<div class="dy-card" data-dy-card="movers">' + dyLabHTML('movers', tx(T.moversL)) +
       '<div class="dy-movers">' +
         '<div class="dy-mcol"><div class="dy-mh">' + esc(tx(T.gainH)) + '</div>' + gainers.map(rowHTML).join('') + '</div>' +
         '<div class="dy-mcol"><div class="dy-mh">' + esc(tx(T.loseH)) + '</div>' + losers.map(rowHTML).join('') + '</div>' +
@@ -124,7 +143,7 @@
     var sect = (s.flows && s.flows.sector) || [];
     var rows = sect.filter(function(r){ return r && r.en && isNum(r.m1); });
     if (rows.length < 2) {
-      return '<div class="dy-card"><div class="dy-lab">' + esc(tx(T.flowL)) + '</div>' +
+      return '<div class="dy-card" data-dy-card="flow">' + dyLabHTML('flow', tx(T.flowL)) +
         '<div class="dy-txt">' + esc(tx(T.flowNA)) + '</div></div>';
     }
     rows.sort(function(a,b){ return b.m1 - a.m1; });
@@ -134,7 +153,7 @@
       .replace('{av}', sgn(top.m1, 1))
       .replace('{b}', esc(tx({en:bot.en, th:bot.th || bot.en})))
       .replace('{bv}', sgn(bot.m1, 1));
-    return '<div class="dy-card"><div class="dy-lab">' + esc(tx(T.flowL)) + '</div>' +
+    return '<div class="dy-card" data-dy-card="flow">' + dyLabHTML('flow', tx(T.flowL)) +
       '<div class="dy-txt">' + txt + '</div></div>';
   }
 
@@ -148,7 +167,7 @@
     } else {
       body = esc(tx(T.anomNA));
     }
-    return '<div class="dy-card"><div class="dy-lab">' + esc(tx(T.anomL)) + '</div>' +
+    return '<div class="dy-card" data-dy-card="anomaly">' + dyLabHTML('anomaly', tx(T.anomL)) +
       '<div class="dy-txt">' + body + '</div>' +
       '<button type="button" class="dy-go" data-dy-go="anomaly">' + esc(tx(T.goAnom)) + '</button></div>';
   }
