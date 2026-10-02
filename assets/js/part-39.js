@@ -1052,8 +1052,14 @@
   var SHOCK_ARCH_KEYWORDS = {
     value: ['bank','financ','insur','energy','oil','gas','petro','industr','material','steel','cement','construct','property','real estate','conglomerate',
             'ธนาคาร','การเงิน','ประกัน','พลังงาน','น้ำมัน','ปิโตร','อุตสาหกรรม','วัสดุ','อสังหา','ก่อสร้าง'],
-    growth: ['tech','software','semiconductor','internet','ecommerce','electronic','media','entertainment',
-             'เทคโนโลยี','ไอที','อิเล็กทรอนิกส์','สื่อ','บันเทิง'],
+    /* "consumer cyclical" is checked here, ahead of defensive's generic
+       "consumer" keyword below -- otherwise it matches that instead and a
+       discretionary-spending sector (autos, travel, e-commerce) gets
+       grouped as defensive, which is backwards. "Consumer Defensive" still
+       correctly falls through to the defensive bucket since this exact
+       phrase isn't in it. */
+    growth: ['tech','software','semiconductor','internet','ecommerce','electronic','media','entertainment','consumer cyclical',
+             'เทคโนโลยี','ไอที','อิเล็กทรอนิกส์','สื่อ','บันเทิง','สินค้าฟุ่มเฟือย'],
     dividend: ['telecom','utilit','infrastructure','transport','communicat','reit','logistics',
                'โทรคมนาคม','สาธารณูปโภค','ขนส่ง','สื่อสาร','กองทุนอสังหา','โลจิสติกส์'],
     defensive: ['health','hospital','pharma','staple','food','beverage','consumer','retail','agri',
