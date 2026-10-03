@@ -1056,7 +1056,15 @@
     if(LOCKED_ROUTES.indexOf(id) === -1) return false;
     if(currentTier === 'full') return false;
     if(currentTier === 'editor') return EDITOR_ROUTES.indexOf(id) === -1;
-    if(currentTier === 'member') return MEMBER_ROUTES.indexOf(id) === -1;
+    /* Round AA (#264): the old `currentTier === 'member'` branch that used
+       to sit here is gone -- it trusted the exact same unsigned
+       sessionStorage flag a visitor can hand-write in devtools
+       (`sessionStorage.setItem('spacez.auth', JSON.stringify({tier:'member',t:Date.now()}))`,
+       reload, done), and nothing in this file ever legitimately produces
+       tier:'member' through a real login (see init()'s own comment on the
+       accepted-tier list above). MEMBER_ROUTES access now rests entirely
+       on the real, server-verified LINE/Telegram/Facebook/Google link
+       state below, which a forged flag cannot fake. */
     if(MEMBER_ROUTES.indexOf(id) !== -1 && (lineIsLinkedNow() || tgIsLinkedNow() || fbIsLinkedNow() || googleIsLinkedNow())) return false;
     return true;
   }
@@ -1158,7 +1166,25 @@
   // so other closures (e.g. the Compare Stocks module) can check whether the
   // current visitor is logged in as admin ('full' tier) without needing
   // access to this module's private currentTier variable.
-  window.__SPZ_TIER = function(){ return currentTier; };
+  /* Round AA (#264): a plain `window.__SPZ_TIER = function(){ return currentTier; };`
+     assignment (as it was before) can be overwritten by anyone with
+     devtools just as easily as the sessionStorage flag can be forged --
+     `window.__SPZ_TIER = () => 'full'` in the console would have worked
+     every bit as well as faking the storage key. defineProperty with
+     writable:false/configurable:false makes that exact one-liner silently
+     fail (assigning to a non-writable property is a no-op outside strict
+     mode, and throws under it) -- it does not stop someone willing to dig
+     into the Sources panel and patch the underlying closure directly, but
+     it does close the single-line console trick, same spirit as the
+     sessionStorage fix above. */
+  try {
+    Object.defineProperty(window, '__SPZ_TIER', {
+      value: function(){ return currentTier; },
+      writable: false, configurable: false, enumerable: true
+    });
+  } catch(e){
+    window.__SPZ_TIER = function(){ return currentTier; };
+  }
   // '__cmpAdminOnly__' is not a real route id / never appears in MEMBER_ROUTES,
   // so neededTier() on it always resolves to 'admin' -- reusing the existing
   // toast() copy/UI ("please log in as admin") for the Compare Stocks PDF
@@ -1247,7 +1273,21 @@
       var raw = sessionStorage.getItem('spacez.auth');
       if(raw){
         var o = JSON.parse(raw);
-        if(o && (o.tier === 'full' || o.tier === 'member' || o.tier === 'editor') && o.t && (Date.now() - o.t) < 12 * 60 * 60 * 1000) tier = o.tier;
+        /* Round AA (#264): 'member' was removed from this accepted-tier list
+           on purpose -- there has never actually been a password/code input
+           that produces a real finishUnlock('member') anywhere in this
+           file (grep confirms it; the Member pane only has LINE/Telegram/
+           Facebook/Google buttons, no text field), so the only way
+           sessionStorage.spacez.auth could ever legitimately contain
+           tier:'member' was by someone hand-writing it in devtools -- a
+           real bypass she specifically flagged, not a hypothetical one.
+           Real member access already has its own, genuinely server-backed
+           check (lineIsLinkedNow()/tgIsLinkedNow()/fbIsLinkedNow()/
+           googleIsLinkedNow() in isLockedRoute() below), so dropping
+           'member' here closes that forged-flag path for every real
+           visitor with zero behavior change -- nobody was ever reaching
+           it honestly in the first place. */
+        if(o && (o.tier === 'full' || o.tier === 'editor') && o.t && (Date.now() - o.t) < 12 * 60 * 60 * 1000) tier = o.tier;
       }
     } catch(e){}
     applyTier(tier);

@@ -45,7 +45,14 @@
       'compare.lede':'Pick 2 to 10 stocks from the directory and scan them side-by-side — or add your own below. Debt-to-equity, net margin, and price-to-book are simplified estimates for teaching purposes; the rest matches the live directory data.',
       'compare.hint':'Select 2 to 10 stocks, then run the scan.',
       'compare.selectedLabel':'selected',
-      'compare.scanBtn':'Scan &amp; Compare',
+      /* Round AA: fixed a pre-existing display bug -- applyLang() sets this
+         via el.textContent (no data-i18n-html on the button), which does
+         NOT decode HTML entities, so the escaped '&amp;' used to render
+         literally as the five characters "&amp;" (visible as "SCAN &AMP;
+         COMPARE" once the button's own uppercase styling applied). A plain
+         '&' is correct here; it only needed escaping if this string were
+         ever inserted as innerHTML, which it isn't. */
+      'compare.scanBtn':'Scan & Compare',
       'compare.bulkSelAll':'Select all','compare.bulkClear':'Clear',
       'compare.bulkGroup':'Select all',
       'compare.bulkRandomBtn':'Random pick',
