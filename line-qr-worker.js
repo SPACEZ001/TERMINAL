@@ -1135,6 +1135,32 @@ async function handleAdminAnnouncementsDelete(request, env) {
 // ---------------------------------------------------------------------
 const CLASSROOM_CONTENT_KV_KEY = "classroom:content";
 
+// The content-update call comes from CLASSROOM_CONTENT_UPLOADER.html, a
+// standalone local-only tool she opens straight off disk (file://) or from
+// whatever localhost port happens to be free that day -- never from one of
+// the site's own deployed origins. The shared corsHeaders()/pickAllowedOrigin()
+// above only ever allow the site's own known origins (ALLOWED_ORIGIN), so a
+// file:// request would be silently dropped by the BROWSER as a CORS
+// failure before the X-Admin-Key check below even runs -- indistinguishable
+// from a real network error, which is exactly the generic "Load failed"
+// dead end this used to hit. These two routes use a wildcard origin instead:
+// that only controls who may READ the response in a browser, never who may
+// call the endpoint (anyone could already curl it with no Origin header at
+// all) -- the actual gate stays isAdminKeyValid() below, unchanged.
+function classroomCorsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, X-Admin-Key",
+  };
+}
+function classroomJson(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json; charset=utf-8", ...classroomCorsHeaders() },
+  });
+}
+
 async function getClassroomContent(env) {
   const raw = await env.SESSIONS.get(CLASSROOM_CONTENT_KV_KEY, "json");
   return raw && typeof raw === "object" ? raw : {};
@@ -1144,19 +1170,19 @@ async function putClassroomContent(content, env) {
 }
 
 async function handleClassroomContent(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!isAdminKeyValid(request, env)) return classroomJson({ error: "unauthorized" }, 401);
   const content = await getClassroomContent(env);
-  return json({ content }, env);
+  return classroomJson({ content });
 }
 
 async function handleAdminClassroomContentUpdate(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!isAdminKeyValid(request, env)) return classroomJson({ error: "unauthorized" }, 401);
   let body;
-  try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  try { body = await request.json(); } catch (e) { return classroomJson({ error: "bad_request" }, 400); }
   const content = body && typeof body.content === "object" && body.content ? body.content : null;
-  if (!content) return json({ error: "bad_request" }, env, 400);
+  if (!content) return classroomJson({ error: "bad_request" }, 400);
   await putClassroomContent(content, env);
-  return json({ ok: true }, env);
+  return classroomJson({ ok: true });
 }
 
 // ---------------------------------------------------------------------
@@ -1409,6 +1435,15 @@ export default {
     const allowOrigin = pickAllowedOrigin(request, env);
 
     if (request.method === "OPTIONS") {
+      // Classroom-content routes always answer preflight with a wildcard
+      // origin (see classroomCorsHeaders() above) -- the standalone local
+      // uploader tool calls these from file:// or an arbitrary localhost
+      // port, neither of which is in ALLOWED_ORIGIN, so the normal
+      // allowlisted preflight below would fail before isAdminKeyValid()
+      // ever ran.
+      if (url.pathname === "/api/classroom/content" || url.pathname === "/api/admin/classroom-content/update") {
+        return new Response(null, { headers: classroomCorsHeaders() });
+      }
       return withCorsOrigin(new Response(null, { headers: corsHeaders(env) }), allowOrigin);
     }
 
@@ -1438,8 +1473,8 @@ export default {
       if (url.pathname === "/api/admin/announcements/create" && request.method === "POST") return withCorsOrigin(await handleAdminAnnouncementsCreate(request, env), allowOrigin);
       if (url.pathname === "/api/admin/announcements/update" && request.method === "POST") return withCorsOrigin(await handleAdminAnnouncementsUpdate(request, env), allowOrigin);
       if (url.pathname === "/api/admin/announcements/delete" && request.method === "POST") return withCorsOrigin(await handleAdminAnnouncementsDelete(request, env), allowOrigin);
-      if (url.pathname === "/api/classroom/content" && request.method === "GET") return withCorsOrigin(await handleClassroomContent(request, env), allowOrigin);
-      if (url.pathname === "/api/admin/classroom-content/update" && request.method === "POST") return withCorsOrigin(await handleAdminClassroomContentUpdate(request, env), allowOrigin);
+      if (url.pathname === "/api/classroom/content" && request.method === "GET") return await handleClassroomContent(request, env);
+      if (url.pathname === "/api/admin/classroom-content/update" && request.method === "POST") return await handleAdminClassroomContentUpdate(request, env);
 
       return withCorsOrigin(json({ error: "not_found" }, env, 404), allowOrigin);
     } catch (err) {
@@ -1452,7 +1487,12 @@ export default {
       // can show a real message for, rather than a dead end.
       const msg = String((err && err.message) || err || "");
       const quota = /quota|limit|429|too many/i.test(msg);
-      return withCorsOrigin(json({ error: quota ? "quota_exceeded" : "internal_error" }, env, quota ? 503 : 500), allowOrigin);
+      const status = quota ? 503 : 500;
+      const body = { error: quota ? "quota_exceeded" : "internal_error" };
+      if (url.pathname === "/api/classroom/content" || url.pathname === "/api/admin/classroom-content/update") {
+        return classroomJson(body, status);
+      }
+      return withCorsOrigin(json(body, env, status), allowOrigin);
     }
   },
 };
