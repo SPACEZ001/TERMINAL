@@ -1225,6 +1225,137 @@ async function handleAdminControlGridContentUpdate(request, env) {
 }
 
 // ---------------------------------------------------------------------
+// Round AB: Quiet Value Scanner -- unlike the Classroom/Control Grid, this
+// page's "secret" was never static text, it's a scoring FORMULA (the
+// value/quality/quiet/room weights and thresholds below) applied to the
+// site's own public market snapshot. part-62.js had no server gate AND no
+// client-side window.__SPZ_TIER() check at all -- it just computed the
+// composite ranking straight in the browser from window.__SPZ_LIVE, so the
+// formula itself (not just its output) was fully readable via view-source.
+//
+// Fix: the formula now runs HERE, never shipped to the browser. The raw
+// input (data/market.json) is already public static data served by this
+// site's own GitHub Pages, so there's nothing secret to protect in the
+// fetch -- only in the math applied to it, which this endpoint keeps
+// server-side and returns only the final top-12 result list for. No KV,
+// no uploader tool: unlike the static-content pages, there's nothing to
+// seed -- every authenticated request recomputes fresh off the live
+// (30-minute-refreshed) snapshot.
+// ---------------------------------------------------------------------
+const QUIETVALUE_SNAPSHOT_URL = "https://spacez001.github.io/TERMINAL/data/market.json";
+
+function qvIsNum(v) { return typeof v === "number" && isFinite(v); }
+function qvClamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+
+function qvPctRank(list, val, lowerIsBetter) {
+  if (!list.length) return null;
+  const beat = list.filter((x) => (lowerIsBetter ? x > val : x < val)).length;
+  return (beat / list.length) * 100;
+}
+
+function qvValueScore(universePE, universePB, r) {
+  let parts = [];
+  if (qvIsNum(r.pe) && r.pe > 0 && universePE.length >= 8) parts.push(qvPctRank(universePE, r.pe, true));
+  if (qvIsNum(r.pb) && r.pb > 0 && universePB.length >= 8) parts.push(qvPctRank(universePB, r.pb, true));
+  parts = parts.filter((p) => p != null);
+  if (!parts.length) return null;
+  return parts.reduce((a, b) => a + b, 0) / parts.length;
+}
+
+function qvQualityScore(universe, r) {
+  let parts = [];
+  if (qvIsNum(r.roe) && universe.roe.length >= 8) parts.push(qvPctRank(universe.roe, r.roe, false));
+  if (qvIsNum(r.roic) && universe.roic.length >= 8) parts.push(qvPctRank(universe.roic, r.roic, false));
+  if (qvIsNum(r.margin) && universe.margin.length >= 8) parts.push(qvPctRank(universe.margin, r.margin, false));
+  parts = parts.filter((p) => p != null);
+  if (!parts.length) return null;
+  const base = parts.reduce((a, b) => a + b, 0) / parts.length;
+  let penalty = 1;
+  if (qvIsNum(r.de)) {
+    if (r.de > 4) penalty = 0.55;
+    else if (r.de > 2) penalty = 0.75;
+    else if (r.de > 1) penalty = 0.9;
+  }
+  return { score: base * penalty, penalized: penalty < 1 };
+}
+
+function qvQuietScore(r) {
+  if (!qvIsNum(r.rsi) || !qvIsNum(r.m1)) return null;
+  return qvClamp(100 - qvClamp(Math.abs(r.rsi - 50) * 2, 0, 60) - qvClamp(Math.abs(r.m1) * 3, 0, 40), 0, 100);
+}
+
+function qvRoomScore(r) {
+  if (!qvIsNum(r.off_high)) return null;
+  const dist = Math.abs(r.off_high - -35);
+  return qvClamp(100 - dist * 3, 0, 100);
+}
+
+function computeQuietValue(stocks) {
+  const tickers = Object.keys(stocks);
+  const universePE = [];
+  const universePB = [];
+  const universeQ = { roe: [], roic: [], margin: [] };
+  tickers.forEach((t) => {
+    const r = stocks[t];
+    if (!r || r.stale) return;
+    if (qvIsNum(r.pe) && r.pe > 0) universePE.push(r.pe);
+    if (qvIsNum(r.pb) && r.pb > 0) universePB.push(r.pb);
+    if (qvIsNum(r.roe)) universeQ.roe.push(r.roe);
+    if (qvIsNum(r.roic)) universeQ.roic.push(r.roic);
+    if (qvIsNum(r.margin)) universeQ.margin.push(r.margin);
+  });
+
+  const out = [];
+  tickers.forEach((t) => {
+    const r = stocks[t];
+    if (!r || r.stale) return;
+    const val = qvValueScore(universePE, universePB, r);
+    if (val == null) return;
+    const quiet = qvQuietScore(r);
+    if (quiet == null) return;
+    const room = qvRoomScore(r);
+    if (room == null) return;
+    const qual = qvQualityScore(universeQ, r);
+    const qualScore = qual ? qual.score : 50;
+    const composite = val * 0.35 + qualScore * 0.3 + quiet * 0.2 + room * 0.15;
+    out.push({
+      t,
+      r: { name: r.name || "", sector: r.sector || "", rsi: r.rsi, m1: r.m1, off_high: r.off_high },
+      val,
+      qual: qual ? { penalized: qual.penalized } : null,
+      qualScore,
+      quiet,
+      room,
+      composite,
+    });
+  });
+
+  out.sort((a, b) => b.composite - a.composite);
+  return out.filter((x) => x.composite >= 60).slice(0, 12);
+}
+
+async function handleQuietValueResults(request, env) {
+  if (!isAdminKeyValid(request, env)) return localToolJson({ error: "unauthorized" }, 401);
+  let snap;
+  try {
+    const r = await fetch(QUIETVALUE_SNAPSHOT_URL, { cf: { cacheTtl: 300, cacheEverything: true } });
+    if (!r.ok) return localToolJson({ error: "snapshot_unavailable" }, 502);
+    snap = await r.json();
+  } catch (e) {
+    return localToolJson({ error: "snapshot_unavailable" }, 502);
+  }
+  const stocks = snap && typeof snap.stocks === "object" ? snap.stocks : null;
+  if (!stocks) return localToolJson({ error: "snapshot_unavailable" }, 502);
+  let results;
+  try {
+    results = computeQuietValue(stocks);
+  } catch (e) {
+    return localToolJson({ error: "compute_failed" }, 500);
+  }
+  return localToolJson({ generated_at: snap.generated_at || null, results });
+}
+
+// ---------------------------------------------------------------------
 // TELEGRAM LOGIN (Round R) — a second, independent QR login next to LINE,
 // added per her request for "another way to log in besides LINE". Deliberately
 // a SEPARATE bot from the site's existing watchlist bot (scripts/telegram_bot.py,
@@ -1479,6 +1610,7 @@ export default {
     const LOCAL_TOOL_PATHS = [
       "/api/classroom/content", "/api/admin/classroom-content/update",
       "/api/controlgrid/content", "/api/admin/controlgrid-content/update",
+      "/api/quietvalue/results",
     ];
 
     if (request.method === "OPTIONS") {
@@ -1523,6 +1655,7 @@ export default {
       if (url.pathname === "/api/admin/classroom-content/update" && request.method === "POST") return await handleAdminClassroomContentUpdate(request, env);
       if (url.pathname === "/api/controlgrid/content" && request.method === "GET") return await handleControlGridContent(request, env);
       if (url.pathname === "/api/admin/controlgrid-content/update" && request.method === "POST") return await handleAdminControlGridContentUpdate(request, env);
+      if (url.pathname === "/api/quietvalue/results" && request.method === "GET") return await handleQuietValueResults(request, env);
 
       return withCorsOrigin(json({ error: "not_found" }, env, 404), allowOrigin);
     } catch (err) {
