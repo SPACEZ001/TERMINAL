@@ -1356,6 +1356,88 @@ async function handleQuietValueResults(request, env) {
 }
 
 // ---------------------------------------------------------------------
+// Round AB: Print Report -- same situation as Quiet Value Scanner, no
+// server gate AND no client-side window.__SPZ_TIER() check at all. Two
+// sub-sections (Market Cycle, Gold Analysis) each turn several public
+// market.json readings into ONE classification -- a regime phase, an
+// up/down/mixed gold verdict. The descriptive bullets built around these
+// (part-49.js's goldForecastHTML()) stay client-side: they're generic
+// prose over numbers that are already public (dxy.m1 < 0 is visible in
+// the number itself), nothing worth protecting there. Only the AGGREGATE
+// RULE -- how several signals combine into one classification -- is
+// hidden here, mirroring exactly what's hidden for Quiet Value's
+// composite. Ported verbatim from part-49.js's cycleSignal() and
+// goldForecastHTML()'s scoring block.
+// ---------------------------------------------------------------------
+const PRINTREPORT_SNAPSHOT_URL = QUIETVALUE_SNAPSHOT_URL; // same public data/market.json
+
+function prIsNum(v) { return typeof v === "number" && isFinite(v); }
+
+function prFindAssetRow(list, enName) {
+  for (let i = 0; i < (list || []).length; i++) if (list[i] && list[i].en === enName) return list[i];
+  return null;
+}
+
+function computeCyclePhaseId(regime) {
+  if (!regime) return "mid";
+  let score = 0;
+  const curveInv = prIsNum(regime.curve_10y_3m) && regime.curve_10y_3m < 0;
+  if (prIsNum(regime.cyclical_vs_defensive_1m)) score += regime.cyclical_vs_defensive_1m > 0 ? 1 : -1;
+  if (prIsNum(regime.cyclical_vs_defensive_3m)) score += regime.cyclical_vs_defensive_3m > 0 ? 1 : -1;
+  if (prIsNum(regime.curve_10y_3m)) score += curveInv ? -2 : 1;
+  if (prIsNum(regime.breadth_200)) score += regime.breadth_200 >= 60 ? 1 : regime.breadth_200 <= 40 ? -1 : 0;
+  return curveInv && score <= -1 ? "rec" : score >= 2 ? "early" : score <= -2 ? "late" : "mid";
+}
+
+function computeGoldVerdict(macro, regime, flowsAsset) {
+  if (!macro && !regime) return { verdict: "mixed", rateNote: null };
+  let score = 0;
+  const m = macro, r = regime, list = flowsAsset || [];
+
+  if (m && m.dxy && prIsNum(m.dxy.m1)) score += m.dxy.m1 < 0 ? 1 : -1;
+  if (m && m.us10y && prIsNum(m.us10y.m1) && prIsNum(m.us10y.price)) score += m.us10y.m1 < 0 ? 1 : -1;
+  const curveInv = r && prIsNum(r.curve_10y_3m) && r.curve_10y_3m < 0;
+  if (r && prIsNum(r.curve_10y_3m)) score += curveInv ? 1 : 0;
+  let vixV = null;
+  if (m) { if (prIsNum(m.vix)) vixV = m.vix; else if (m.vix && prIsNum(m.vix.price)) vixV = m.vix.price; }
+  const vixRow = prFindAssetRow(list, "Volatility (VIX)");
+  const vixM1 = vixRow && prIsNum(vixRow.m1) ? vixRow.m1 : null;
+  if (prIsNum(vixV) && prIsNum(vixM1)) score += vixM1 > 0 ? 1 : -1;
+  if (r && prIsNum(r.cyclical_vs_defensive_1m)) score += r.cyclical_vs_defensive_1m < 0 ? 1 : -1;
+
+  const verdict = score >= 2 ? "up" : score <= -2 ? "down" : "mixed";
+  let rateNote = null;
+  if (m && m.us10y && prIsNum(m.us10y.m1) && m.us10y.m1 > 0.5) rateNote = "hike";
+  else if (m && m.us10y && prIsNum(m.us10y.m1) && m.us10y.m1 < -0.5) rateNote = "cut";
+  return { verdict, rateNote };
+}
+
+async function handlePrintReportAnalysis(request, env) {
+  if (!isAdminKeyValid(request, env)) return localToolJson({ error: "unauthorized" }, 401);
+  let snap;
+  try {
+    const r = await fetch(PRINTREPORT_SNAPSHOT_URL, { cf: { cacheTtl: 300, cacheEverything: true } });
+    if (!r.ok) return localToolJson({ error: "snapshot_unavailable" }, 502);
+    snap = await r.json();
+  } catch (e) {
+    return localToolJson({ error: "snapshot_unavailable" }, 502);
+  }
+  let cyclePhaseId, gold;
+  try {
+    cyclePhaseId = computeCyclePhaseId(snap && snap.regime);
+    gold = computeGoldVerdict(snap && snap.macro, snap && snap.regime, snap && snap.flows && snap.flows.asset);
+  } catch (e) {
+    return localToolJson({ error: "compute_failed" }, 500);
+  }
+  return localToolJson({
+    generated_at: snap.generated_at || null,
+    cyclePhaseId,
+    goldVerdict: gold.verdict,
+    goldRateNote: gold.rateNote,
+  });
+}
+
+// ---------------------------------------------------------------------
 // TELEGRAM LOGIN (Round R) — a second, independent QR login next to LINE,
 // added per her request for "another way to log in besides LINE". Deliberately
 // a SEPARATE bot from the site's existing watchlist bot (scripts/telegram_bot.py,
@@ -1610,7 +1692,7 @@ export default {
     const LOCAL_TOOL_PATHS = [
       "/api/classroom/content", "/api/admin/classroom-content/update",
       "/api/controlgrid/content", "/api/admin/controlgrid-content/update",
-      "/api/quietvalue/results",
+      "/api/quietvalue/results", "/api/printreport/analysis",
     ];
 
     if (request.method === "OPTIONS") {
@@ -1656,6 +1738,7 @@ export default {
       if (url.pathname === "/api/controlgrid/content" && request.method === "GET") return await handleControlGridContent(request, env);
       if (url.pathname === "/api/admin/controlgrid-content/update" && request.method === "POST") return await handleAdminControlGridContentUpdate(request, env);
       if (url.pathname === "/api/quietvalue/results" && request.method === "GET") return await handleQuietValueResults(request, env);
+      if (url.pathname === "/api/printreport/analysis" && request.method === "GET") return await handlePrintReportAnalysis(request, env);
 
       return withCorsOrigin(json({ error: "not_found" }, env, 404), allowOrigin);
     } catch (err) {

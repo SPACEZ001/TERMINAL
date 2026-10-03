@@ -294,8 +294,105 @@
                     th:'เงินสด พันธบัตรรัฐบาลคุณภาพสูง และทองคำ มักเป็นที่พักเงินที่ไหลออกจากสินทรัพย์เสี่ยงในอดีตช่วงตลาดปรับฐานแรง โดยเฉพาะทองคำที่ไม่มีกำไรบริษัทให้ผิดหวัง เพราะไม่ได้ตั้งราคาจากผลประกอบการของบริษัทใดเลย'},
     bubbleRepSafeEx:{en:'Example: gold (GLD), long-term US Treasuries (TLT)',th:'ตัวอย่าง: ทองคำ (GLD), พันธบัตรรัฐบาลสหรัฐฯ ระยะยาว (TLT)'},
     bubbleRepTrendNote:{en:'Where the cycle sits right now, for context alongside the score above:',
-                        th:'วัฏจักรตลาดตอนนี้อยู่ช่วงไหน เพื่อประกอบการอ่านคะแนนด้านบน:'}
+                        th:'วัฏจักรตลาดตอนนี้อยู่ช่วงไหน เพื่อประกอบการอ่านคะแนนด้านบน:'},
+
+    /* Round AB: this page had no server gate AND no client-side
+       window.__SPZ_TIER() check at all -- the Market Cycle phase and
+       Gold verdict classifications ran straight from the live snapshot
+       in the browser. The classification rule is now computed server-
+       side (see line-qr-worker.js's computeCyclePhaseId/computeGoldVerdict);
+       every report type requires the same shared admin key before it will
+       render, same as the other admin tools. */
+    adminOnly: { en:'Admins only.', th:'เฉพาะแอดมินเท่านั้น' },
+    keyLede: { en:'This report\'s market-cycle and gold-verdict calls are now computed on the server, not in the page you downloaded — enter the same admin key used on Connected Users / Announcements / the Classroom to generate reports.',
+               th:'การตัดสินวัฏจักรตลาดและมุมมองทองคำของรายงานนี้ถูกคำนวณบนเซิร์ฟเวอร์แล้ว ไม่ได้คำนวณในหน้าเว็บที่ดาวน์โหลดมาอีกต่อไป — ใส่รหัสแอดมินเดียวกับที่ใช้ในหน้า Connected Users / ประกาศ / ห้องเรียน เพื่อสร้างรายงาน' },
+    keyPh: { en:'Admin key', th:'รหัสแอดมิน' },
+    keySubmit: { en:'Unlock', th:'ปลดล็อก' },
+    keyErrBad: { en:'Incorrect key — try again.', th:'รหัสไม่ถูกต้อง ลองใหม่อีกครั้ง' },
+    keyErrNet: { en:'Could not reach the server — try again.', th:'เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ ลองใหม่อีกครั้ง' },
+    analysisLoading: { en:'Preparing report…', th:'กำลังเตรียมรายงาน…' },
+    retry: { en:'Try again', th:'ลองใหม่' }
   };
+
+  // Round AB: same Worker, same sessionStorage key as Connected Users /
+  // Announcements / the Classroom / Control Grid / Quiet Value Scanner --
+  // one admin key unlocks all of them.
+  var WORKER_BASE = 'https://spacez-line-link.spacezblack.workers.dev';
+  var ADMIN_KEY_STORAGE = 'spz_admin_users_key';
+
+  function getAdminKey(){
+    try { return sessionStorage.getItem(ADMIN_KEY_STORAGE) || ''; } catch(e){ return ''; }
+  }
+  function setAdminKey(k){
+    try { sessionStorage.setItem(ADMIN_KEY_STORAGE, k); } catch(e){}
+  }
+  function clearAdminKey(){
+    try { sessionStorage.removeItem(ADMIN_KEY_STORAGE); } catch(e){}
+  }
+
+  // analysisCache: null until fetched, then { cyclePhaseId, goldVerdict, goldRateNote }.
+  // Every report type gates on this (not just Gold/Market Summary) -- simplest
+  // and most consistent with the rest of the page already being labelled
+  // "Admin Only", and she already unlocks this same key once per session for
+  // the other admin tools anyway.
+  var analysisCache = null;
+  var analysisLoading = false;
+  var analysisErr = null; // null | 'bad' | 'net'
+
+  function fetchPrintReportAnalysis(){
+    var key = getAdminKey();
+    if(!key) return;
+    analysisLoading = true; analysisErr = null;
+    renderReport();
+    fetch(WORKER_BASE + '/api/printreport/analysis', { headers:{ 'X-Admin-Key': key } })
+      .then(function(r){
+        if(r.status === 401){ clearAdminKey(); analysisErr = 'bad'; analysisCache = null; analysisLoading = false; renderReport(); return null; }
+        if(!r.ok) throw new Error('bad_status');
+        return r.json();
+      })
+      .then(function(data){
+        if(!data) return;
+        analysisCache = { cyclePhaseId: data.cyclePhaseId || 'mid', goldVerdict: data.goldVerdict || 'mixed', goldRateNote: data.goldRateNote || null };
+        analysisLoading = false;
+        renderReport();
+      })
+      .catch(function(){ analysisErr = 'net'; analysisLoading = false; renderReport(); });
+  }
+
+  function analysisKeyGateHTML(){
+    return '<div class="ewv-keygate">' +
+      '<div class="ewv-keygate-icon">🔑</div>' +
+      '<p class="ewv-keygate-lede">' + esc(T(UI.keyLede)) + '</p>' +
+      '<input type="password" class="ewv-key-input" data-pr-key="input" autocomplete="off" spellcheck="false" placeholder="' + esc(T(UI.keyPh)) + '">' +
+      '<button type="button" class="ewv-key-btn" data-pr-key="submit">' + esc(T(UI.keySubmit)) + '</button>' +
+      (analysisErr === 'bad' ? '<div class="ewv-key-err">' + esc(T(UI.keyErrBad)) + '</div>' : '') +
+    '</div>';
+  }
+
+  function analysisNetErrorHTML(){
+    return '<div class="ewv-content-err">' +
+      '<p>' + esc(T(UI.keyErrNet)) + '</p>' +
+      '<button type="button" class="ewv-key-btn" data-pr-key="retry">' + esc(T(UI.retry)) + '</button>' +
+    '</div>';
+  }
+
+  function submitAnalysisKey(host){
+    var input = host && host.querySelector('[data-pr-key="input"]');
+    var key = input ? input.value.trim() : '';
+    if(!key) return;
+    setAdminKey(key);
+    fetchPrintReportAnalysis();
+  }
+
+  function wireAnalysisGate(host){
+    if(!host) return;
+    var input = host.querySelector('[data-pr-key="input"]');
+    if(input) input.addEventListener('keydown', function(ev){ if(ev.key === 'Enter') submitAnalysisKey(host); });
+    var submit = host.querySelector('[data-pr-key="submit"]');
+    if(submit) submit.addEventListener('click', function(){ submitAnalysisKey(host); });
+    var retry = host.querySelector('[data-pr-key="retry"]');
+    if(retry) retry.addEventListener('click', fetchPrintReportAnalysis);
+  }
 
   var sec = null;
   var mode = 'full';               /* 'full' | 'select' */
@@ -988,30 +1085,29 @@
     return CYCLE_PHASES[1];
   }
 
+  /* Round AB: the phase CLASSIFICATION (the score/threshold rule that used
+     to live here) is now computed server-side -- see analysisCache,
+     populated by fetchPrintReportAnalysis(). The driver readouts below are
+     unchanged and still built from the public snapshot directly: they're
+     just labelled live numbers, nothing secret about displaying them. */
   function cycleSignal(){
     var snap; try { snap = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot(); } catch(e){}
     var r = snap && snap.regime;
-    if(!r) return null;
-    var score = 0, curveInv = isNum(r.curve_10y_3m) && r.curve_10y_3m < 0;
+    if(!r || !analysisCache) return null;
     var drivers = [];
     if(isNum(r.cyclical_vs_defensive_1m)){
-      score += r.cyclical_vs_defensive_1m > 0 ? 1 : -1;
       drivers.push([T({en:'Cyclicals vs Defensives (1M)',th:'หุ้นวัฏจักร vs ตั้งรับ (1 เดือน)'}), fmtSigned(r.cyclical_vs_defensive_1m, 2) + '%']);
     }
     if(isNum(r.cyclical_vs_defensive_3m)){
-      score += r.cyclical_vs_defensive_3m > 0 ? 1 : -1;
       drivers.push([T({en:'Cyclicals vs Defensives (3M)',th:'หุ้นวัฏจักร vs ตั้งรับ (3 เดือน)'}), fmtSigned(r.cyclical_vs_defensive_3m, 2) + '%']);
     }
     if(isNum(r.curve_10y_3m)){
-      score += curveInv ? -2 : 1;
       drivers.push([T(UI.regCurve), fmtSigned(r.curve_10y_3m, 2)]);
     }
     if(isNum(r.breadth_200)){
-      score += r.breadth_200 >= 60 ? 1 : (r.breadth_200 <= 40 ? -1 : 0);
       drivers.push([T(UI.regBreadth), r.breadth_200.toFixed(0) + '%']);
     }
-    var phaseId = curveInv && score <= -1 ? 'rec' : (score >= 2 ? 'early' : score <= -2 ? 'late' : 'mid');
-    return { phaseId:phaseId, drivers:drivers };
+    return { phaseId:analysisCache.cyclePhaseId, drivers:drivers };
   }
 
   function marketCycleHTML(){
@@ -1268,16 +1364,21 @@
       '<div class="pr-flow-wrap">' + rowsHTML + '</div>';
   }
 
+  /* Round AB: the VERDICT and rate-note CLASSIFICATION (the score/
+     threshold rule that used to live here) is now computed server-side --
+     see analysisCache. Every bullet below is unchanged: generic prose
+     built from numbers that are already public in data/market.json (a
+     direction like "DXY fell" is visible in the number itself), nothing
+     secret about narrating them. */
   function goldForecastHTML(){
     var snap; try { snap = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot(); } catch(e){}
     var m = snap && snap.macro, r = snap && snap.regime;
     var list = (snap && snap.flows && snap.flows.asset) || [];
-    if(!m && !r) return '';
-    var score = 0, bullets = [];
+    if((!m && !r) || !analysisCache) return '';
+    var bullets = [];
 
     if(m && m.dxy && isNum(m.dxy.m1)){
       var dxyM1 = m.dxy.m1, dxyDown = dxyM1 < 0;
-      score += dxyDown ? 1 : -1;
       bullets.push((dxyDown ? '▲ ' : '▼ ') + T({
         en:'DXY has ' + (dxyDown ? 'fallen' : 'risen') + ' ' + Math.abs(dxyM1).toFixed(1) + '% over 1 month — a ' + (dxyDown ? 'weaker' : 'stronger') + ' dollar is typically a ' + (dxyDown ? 'tailwind' : 'headwind') + ' for dollar-priced gold.',
         th:'DXY ' + (dxyDown ? 'อ่อนค่าลง' : 'แข็งค่าขึ้น') + ' ' + Math.abs(dxyM1).toFixed(1) + '% ในรอบ 1 เดือน — ดอลลาร์ที่' + (dxyDown ? 'อ่อนค่า' : 'แข็งค่า') + 'มักเป็น' + (dxyDown ? 'แรงหนุน' : 'แรงกดดัน') + 'ต่อทองคำซึ่งตั้งราคาเป็นดอลลาร์'
@@ -1285,7 +1386,6 @@
     }
     if(m && m.us10y && isNum(m.us10y.m1) && isNum(m.us10y.price)){
       var y10m1 = m.us10y.m1, y10Down = y10m1 < 0;
-      score += y10Down ? 1 : -1;
       bullets.push((y10Down ? '▲ ' : '▼ ') + T({
         en:'The US 10-year yield is at ' + m.us10y.price.toFixed(2) + '% and has ' + (y10Down ? 'fallen' : 'risen') + ' ' + Math.abs(y10m1).toFixed(1) + '% over the past month — ' + (y10Down ? 'falling yields lower' : 'rising yields raise') + ' the opportunity cost of holding non-yielding gold.',
         th:'ผลตอบแทนพันธบัตรสหรัฐ 10 ปี อยู่ที่ ' + m.us10y.price.toFixed(2) + '% และ' + (y10Down ? 'ลดลง' : 'เพิ่มขึ้น') + ' ' + Math.abs(y10m1).toFixed(1) + '% ในรอบ 1 เดือน — ดอกเบี้ยที่' + (y10Down ? 'ลดลงช่วยลด' : 'เพิ่มขึ้นเพิ่ม') + 'ต้นทุนค่าเสียโอกาสของการถือทองคำที่ไม่มีดอกเบี้ย'
@@ -1293,7 +1393,6 @@
     }
     var curveInv = r && isNum(r.curve_10y_3m) && r.curve_10y_3m < 0;
     if(r && isNum(r.curve_10y_3m)){
-      score += curveInv ? 1 : 0;
       bullets.push((curveInv ? '▲ ' : '· ') + T({
         en:'The 10Y-3M yield curve is ' + (curveInv ? ('inverted at ' + r.curve_10y_3m.toFixed(2) + ' — historically a recession-risk signal that supports safe-haven demand') : ('positive at +' + r.curve_10y_3m.toFixed(2) + ', a normal shape that does not by itself argue for safe-haven flows')) + '.',
         th:'เส้นอัตราผลตอบแทน 10ปี-3เดือน ' + (curveInv ? ('กลับหัวที่ ' + r.curve_10y_3m.toFixed(2) + ' — ในอดีตเป็นสัญญาณความเสี่ยงถดถอยที่หนุนแรงซื้อสินทรัพย์ปลอดภัย') : ('เป็นบวกที่ +' + r.curve_10y_3m.toFixed(2) + ' รูปทรงปกติ ไม่ได้บ่งชี้แรงซื้อสินทรัพย์ปลอดภัยด้วยตัวเอง'))
@@ -1304,7 +1403,6 @@
     var vixRow = findAssetRow(list, 'Volatility (VIX)');
     var vixM1 = vixRow && isNum(vixRow.m1) ? vixRow.m1 : null;
     if(isNum(vixV) && isNum(vixM1)){
-      score += vixM1 > 0 ? 1 : -1;
       bullets.push((vixM1 > 0 ? '▲ ' : '▼ ') + T({
         en:'VIX is at ' + vixV.toFixed(1) + ' and ' + (vixM1 > 0 ? 'rising' : 'falling') + ' (' + fmtSigned(vixM1, 1) + '% over 1 month) — ' + (vixM1 > 0 ? 'a firming fear gauge tends to pull money toward gold' : 'a calming fear gauge tends to reduce urgency for safe havens') + '.',
         th:'VIX อยู่ที่ ' + vixV.toFixed(1) + ' และกำลัง' + (vixM1 > 0 ? 'สูงขึ้น' : 'ลดลง') + ' (' + fmtSigned(vixM1, 1) + '% ในรอบ 1 เดือน) — ' + (vixM1 > 0 ? 'ดัชนีความกลัวที่สูงขึ้นมักดึงเงินเข้าหาทองคำ' : 'ดัชนีความกลัวที่สงบลงมักลดความเร่งด่วนของแรงซื้อสินทรัพย์ปลอดภัย')
@@ -1312,20 +1410,19 @@
     }
     if(r && isNum(r.cyclical_vs_defensive_1m)){
       var cvd = r.cyclical_vs_defensive_1m, defLead = cvd < 0;
-      score += defLead ? 1 : -1;
       bullets.push((defLead ? '▲ ' : '▼ ') + T({
         en:'Defensive sectors are ' + (defLead ? 'outperforming' : 'underperforming') + ' cyclicals by ' + Math.abs(cvd).toFixed(1) + '% over 1 month — ' + (defLead ? 'a defensive tilt that usually travels with safe-haven demand' : 'a cyclical tilt that usually travels with risk-on positioning, away from gold') + '.',
         th:'หุ้นกลุ่มตั้งรับ' + (defLead ? 'ทำผลงานดีกว่า' : 'แย่กว่า') + 'หุ้นกลุ่มวัฏจักรอยู่ ' + Math.abs(cvd).toFixed(1) + '% ในรอบ 1 เดือน — ' + (defLead ? 'ภาพตั้งรับแบบนี้มักมาพร้อมแรงซื้อสินทรัพย์ปลอดภัย' : 'ภาพวัฏจักรแบบนี้มักมาพร้อมการเปิดรับความเสี่ยง ซึ่งมักหนีจากทองคำ')
       }));
     }
 
-    var verdict = score >= 2 ? T(UI.goldVerdictUp) : (score <= -2 ? T(UI.goldVerdictDown) : T(UI.goldVerdictMixed));
-    var verdictCls = score >= 2 ? 'pr-up' : (score <= -2 ? 'pr-down' : '');
+    var verdict = analysisCache.goldVerdict === 'up' ? T(UI.goldVerdictUp) : (analysisCache.goldVerdict === 'down' ? T(UI.goldVerdictDown) : T(UI.goldVerdictMixed));
+    var verdictCls = analysisCache.goldVerdict === 'up' ? 'pr-up' : (analysisCache.goldVerdict === 'down' ? 'pr-down' : '');
 
     var rateNote = '';
-    if(m && m.us10y && isNum(m.us10y.m1) && m.us10y.m1 > 0.5){
+    if(analysisCache.goldRateNote === 'hike'){
       rateNote = '<div class="pr-dd-narrative"><b>' + esc(T(UI.goldRateHikeLbl)) + '</b> ' + esc(T(UI.goldRateHikeNote)) + '</div>';
-    } else if(m && m.us10y && isNum(m.us10y.m1) && m.us10y.m1 < -0.5){
+    } else if(analysisCache.goldRateNote === 'cut'){
       rateNote = '<div class="pr-dd-narrative"><b>' + esc(T(UI.goldRateCutLbl)) + '</b> ' + esc(T(UI.goldRateCutNote)) + '</div>';
     }
 
@@ -1816,6 +1913,26 @@
   function renderReport(){
     var host = sec && sec.querySelector('[data-pr="sheet"]');
     if(!host) return;
+
+    // Round AB: this whole feature is already labelled "Admin Only" in its
+    // own UI copy -- gate it the same way every other admin tool on the
+    // site is gated: a cosmetic tier placeholder (this page had none at
+    // all before), then the shared admin key before anything server-backed
+    // can render. She already unlocks this same key once per session for
+    // the other admin tools, so in practice this rarely shows once she's
+    // used any one of them.
+    if(window.__SPZ_TIER && window.__SPZ_TIER() !== 'full'){
+      host.innerHTML = '<div class="qrp-locked">' + esc(T(UI.adminOnly)) + '</div>';
+      return;
+    }
+    if(!getAdminKey()){ host.innerHTML = analysisKeyGateHTML(); wireAnalysisGate(host); return; }
+    if(analysisLoading){ host.innerHTML = '<div class="ewv-content-loading">' + esc(T(UI.analysisLoading)) + '</div>'; return; }
+    if(analysisErr === 'net'){ host.innerHTML = analysisNetErrorHTML(); wireAnalysisGate(host); return; }
+    if(analysisCache === null){
+      if(!analysisErr) fetchPrintReportAnalysis(); // key present, nothing fetched yet -- kick it off
+      return; // fetchPrintReportAnalysis() repaints the loading state itself
+    }
+
     host.innerHTML = reportType === 'gold' ? goldReportHTML()
       : reportType === 'idea' ? ideaReportHTML()
       : reportType === 'announcement' ? announcementReportHTML()
