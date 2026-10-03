@@ -1135,29 +1135,31 @@ async function handleAdminAnnouncementsDelete(request, env) {
 // ---------------------------------------------------------------------
 const CLASSROOM_CONTENT_KV_KEY = "classroom:content";
 
-// The content-update call comes from CLASSROOM_CONTENT_UPLOADER.html, a
-// standalone local-only tool she opens straight off disk (file://) or from
-// whatever localhost port happens to be free that day -- never from one of
-// the site's own deployed origins. The shared corsHeaders()/pickAllowedOrigin()
-// above only ever allow the site's own known origins (ALLOWED_ORIGIN), so a
-// file:// request would be silently dropped by the BROWSER as a CORS
-// failure before the X-Admin-Key check below even runs -- indistinguishable
-// from a real network error, which is exactly the generic "Load failed"
-// dead end this used to hit. These two routes use a wildcard origin instead:
-// that only controls who may READ the response in a browser, never who may
-// call the endpoint (anyone could already curl it with no Origin header at
-// all) -- the actual gate stays isAdminKeyValid() below, unchanged.
-function classroomCorsHeaders() {
+// Shared by every "local uploader tool" content-update route below
+// (CLASSROOM_CONTENT_UPLOADER.html, CONTROLGRID_CONTENT_UPLOADER.html, and
+// any future one): each is a standalone local-only HTML file opened straight
+// off disk (file://) or from whatever localhost port happens to be free that
+// day -- never from one of the site's own deployed origins. The shared
+// corsHeaders()/pickAllowedOrigin() above only ever allow the site's own
+// known origins (ALLOWED_ORIGIN), so a file:// request would be silently
+// dropped by the BROWSER as a CORS failure before the X-Admin-Key check
+// below even runs -- indistinguishable from a real network error, which is
+// exactly the generic "Load failed" dead end this used to hit. These routes
+// use a wildcard origin instead: that only controls who may READ the
+// response in a browser, never who may call the endpoint (anyone could
+// already curl it with no Origin header at all) -- the actual gate stays
+// isAdminKeyValid() below, unchanged.
+function localToolCorsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, X-Admin-Key",
   };
 }
-function classroomJson(data, status = 200) {
+function localToolJson(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json; charset=utf-8", ...classroomCorsHeaders() },
+    headers: { "Content-Type": "application/json; charset=utf-8", ...localToolCorsHeaders() },
   });
 }
 
@@ -1170,19 +1172,56 @@ async function putClassroomContent(content, env) {
 }
 
 async function handleClassroomContent(request, env) {
-  if (!isAdminKeyValid(request, env)) return classroomJson({ error: "unauthorized" }, 401);
+  if (!isAdminKeyValid(request, env)) return localToolJson({ error: "unauthorized" }, 401);
   const content = await getClassroomContent(env);
-  return classroomJson({ content });
+  return localToolJson({ content });
 }
 
 async function handleAdminClassroomContentUpdate(request, env) {
-  if (!isAdminKeyValid(request, env)) return classroomJson({ error: "unauthorized" }, 401);
+  if (!isAdminKeyValid(request, env)) return localToolJson({ error: "unauthorized" }, 401);
   let body;
-  try { body = await request.json(); } catch (e) { return classroomJson({ error: "bad_request" }, 400); }
+  try { body = await request.json(); } catch (e) { return localToolJson({ error: "bad_request" }, 400); }
   const content = body && typeof body.content === "object" && body.content ? body.content : null;
-  if (!content) return classroomJson({ error: "bad_request" }, 400);
+  if (!content) return localToolJson({ error: "bad_request" }, 400);
   await putClassroomContent(content, env);
-  return classroomJson({ ok: true });
+  return localToolJson({ ok: true });
+}
+
+// ---------------------------------------------------------------------
+// CONTROL GRID content gate -- same reasoning and same pattern as the
+// Elliott Wave Classroom above, applied to the "Who Controls the World's
+// Money?" admin briefing (part-54.js). That page had NO content protection
+// at all before this -- not even a client-side __SPZ_TIER() check -- so its
+// full bilingual essay, the ten-spoke diagram data, the confirmed/
+// speculation lists and the stats table were always present in the shipped
+// JS regardless of tier. Single blob per language (the page has no node
+// tree to preserve, unlike the classroom), still gated by the same
+// ADMIN_USERS_KEY/env.SESSIONS -- no new secret or binding here either.
+// ---------------------------------------------------------------------
+const CONTROLGRID_CONTENT_KV_KEY = "controlgrid:content";
+
+async function getControlGridContent(env) {
+  const raw = await env.SESSIONS.get(CONTROLGRID_CONTENT_KV_KEY, "json");
+  return raw && typeof raw === "object" ? raw : {};
+}
+async function putControlGridContent(content, env) {
+  await env.SESSIONS.put(CONTROLGRID_CONTENT_KV_KEY, JSON.stringify(content));
+}
+
+async function handleControlGridContent(request, env) {
+  if (!isAdminKeyValid(request, env)) return localToolJson({ error: "unauthorized" }, 401);
+  const content = await getControlGridContent(env);
+  return localToolJson({ content });
+}
+
+async function handleAdminControlGridContentUpdate(request, env) {
+  if (!isAdminKeyValid(request, env)) return localToolJson({ error: "unauthorized" }, 401);
+  let body;
+  try { body = await request.json(); } catch (e) { return localToolJson({ error: "bad_request" }, 400); }
+  const content = body && typeof body.content === "object" && body.content ? body.content : null;
+  if (!content) return localToolJson({ error: "bad_request" }, 400);
+  await putControlGridContent(content, env);
+  return localToolJson({ ok: true });
 }
 
 // ---------------------------------------------------------------------
@@ -1434,15 +1473,22 @@ export default {
     const url = new URL(request.url);
     const allowOrigin = pickAllowedOrigin(request, env);
 
+    // Every route served to a standalone local uploader tool (see
+    // localToolCorsHeaders() above) -- add a new one here and its preflight,
+    // dispatch and error-catch handling all pick it up automatically.
+    const LOCAL_TOOL_PATHS = [
+      "/api/classroom/content", "/api/admin/classroom-content/update",
+      "/api/controlgrid/content", "/api/admin/controlgrid-content/update",
+    ];
+
     if (request.method === "OPTIONS") {
-      // Classroom-content routes always answer preflight with a wildcard
-      // origin (see classroomCorsHeaders() above) -- the standalone local
-      // uploader tool calls these from file:// or an arbitrary localhost
-      // port, neither of which is in ALLOWED_ORIGIN, so the normal
-      // allowlisted preflight below would fail before isAdminKeyValid()
-      // ever ran.
-      if (url.pathname === "/api/classroom/content" || url.pathname === "/api/admin/classroom-content/update") {
-        return new Response(null, { headers: classroomCorsHeaders() });
+      // Local-tool routes always answer preflight with a wildcard origin --
+      // the standalone uploader tools call these from file:// or an
+      // arbitrary localhost port, neither of which is in ALLOWED_ORIGIN, so
+      // the normal allowlisted preflight below would fail before
+      // isAdminKeyValid() ever ran.
+      if (LOCAL_TOOL_PATHS.indexOf(url.pathname) !== -1) {
+        return new Response(null, { headers: localToolCorsHeaders() });
       }
       return withCorsOrigin(new Response(null, { headers: corsHeaders(env) }), allowOrigin);
     }
@@ -1475,6 +1521,8 @@ export default {
       if (url.pathname === "/api/admin/announcements/delete" && request.method === "POST") return withCorsOrigin(await handleAdminAnnouncementsDelete(request, env), allowOrigin);
       if (url.pathname === "/api/classroom/content" && request.method === "GET") return await handleClassroomContent(request, env);
       if (url.pathname === "/api/admin/classroom-content/update" && request.method === "POST") return await handleAdminClassroomContentUpdate(request, env);
+      if (url.pathname === "/api/controlgrid/content" && request.method === "GET") return await handleControlGridContent(request, env);
+      if (url.pathname === "/api/admin/controlgrid-content/update" && request.method === "POST") return await handleAdminControlGridContentUpdate(request, env);
 
       return withCorsOrigin(json({ error: "not_found" }, env, 404), allowOrigin);
     } catch (err) {
@@ -1489,8 +1537,8 @@ export default {
       const quota = /quota|limit|429|too many/i.test(msg);
       const status = quota ? 503 : 500;
       const body = { error: quota ? "quota_exceeded" : "internal_error" };
-      if (url.pathname === "/api/classroom/content" || url.pathname === "/api/admin/classroom-content/update") {
-        return classroomJson(body, status);
+      if (LOCAL_TOOL_PATHS.indexOf(url.pathname) !== -1) {
+        return localToolJson(body, status);
       }
       return withCorsOrigin(json(body, env, status), allowOrigin);
     }
