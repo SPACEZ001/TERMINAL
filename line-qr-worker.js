@@ -1120,6 +1120,46 @@ async function handleAdminAnnouncementsDelete(request, env) {
 }
 
 // ---------------------------------------------------------------------
+// ELLIOTT WAVE CLASSROOM content gate -- the lesson text/diagrams used to
+// ship straight to every visitor inside part-65.js's own client JS, so the
+// admin-only check on that page was only a show/hide switch: anyone could
+// read the content from the downloaded file via devtools regardless of
+// tier, even after the sessionStorage-forgery bug was closed. This moves
+// the actual content into KV, served only after a real server-checked
+// X-Admin-Key -- the same gate already used for Connected Users and
+// Announcements, so it needs no new secret and no new KV binding: it
+// reuses env.ADMIN_USERS_KEY and env.SESSIONS exactly as those do.
+// content shape: { [nodeId]: { en: "<html>", th: "<html>" } }, written
+// whole by the standalone local uploader tool (never shipped to the
+// public site) and read whole by the classroom page itself.
+// ---------------------------------------------------------------------
+const CLASSROOM_CONTENT_KV_KEY = "classroom:content";
+
+async function getClassroomContent(env) {
+  const raw = await env.SESSIONS.get(CLASSROOM_CONTENT_KV_KEY, "json");
+  return raw && typeof raw === "object" ? raw : {};
+}
+async function putClassroomContent(content, env) {
+  await env.SESSIONS.put(CLASSROOM_CONTENT_KV_KEY, JSON.stringify(content));
+}
+
+async function handleClassroomContent(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  const content = await getClassroomContent(env);
+  return json({ content }, env);
+}
+
+async function handleAdminClassroomContentUpdate(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const content = body && typeof body.content === "object" && body.content ? body.content : null;
+  if (!content) return json({ error: "bad_request" }, env, 400);
+  await putClassroomContent(content, env);
+  return json({ ok: true }, env);
+}
+
+// ---------------------------------------------------------------------
 // TELEGRAM LOGIN (Round R) — a second, independent QR login next to LINE,
 // added per her request for "another way to log in besides LINE". Deliberately
 // a SEPARATE bot from the site's existing watchlist bot (scripts/telegram_bot.py,
@@ -1398,6 +1438,8 @@ export default {
       if (url.pathname === "/api/admin/announcements/create" && request.method === "POST") return withCorsOrigin(await handleAdminAnnouncementsCreate(request, env), allowOrigin);
       if (url.pathname === "/api/admin/announcements/update" && request.method === "POST") return withCorsOrigin(await handleAdminAnnouncementsUpdate(request, env), allowOrigin);
       if (url.pathname === "/api/admin/announcements/delete" && request.method === "POST") return withCorsOrigin(await handleAdminAnnouncementsDelete(request, env), allowOrigin);
+      if (url.pathname === "/api/classroom/content" && request.method === "GET") return withCorsOrigin(await handleClassroomContent(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/classroom-content/update" && request.method === "POST") return withCorsOrigin(await handleAdminClassroomContentUpdate(request, env), allowOrigin);
 
       return withCorsOrigin(json({ error: "not_found" }, env, 404), allowOrigin);
     } catch (err) {
