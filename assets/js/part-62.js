@@ -1,4 +1,22 @@
 
+/* ===========================================================================
+   Round AB: Quiet Value Scanner. This page's "secret" was never static
+   text -- it's a scoring FORMULA (value/quality/quiet/room weights and
+   thresholds) applied to the site's own public market snapshot. Unlike
+   every other admin-only page, this one had NO window.__SPZ_TIER() check
+   at all AND no server gate: the formula ran straight in the browser from
+   window.__SPZ_LIVE, so the weights/thresholds themselves were readable
+   via view-source, not just the output.
+
+   Fixed the same direction as the Classroom/Control Grid: the formula now
+   runs only in the Worker (see line-qr-worker.js's computeQuietValue()),
+   gated by the same X-Admin-Key. Unlike those two pages there is no KV and
+   no uploader tool here -- there's nothing to seed. The raw input
+   (data/market.json) is already public static data this site serves
+   itself, so the Worker just re-fetches it and re-runs the math server-
+   side on every authenticated request, always reflecting the live
+   (30-minute-refreshed) snapshot without any manual publish step. Only
+   the final top-12 ranked list crosses the wire -- never the formula. */
 (function(){
   'use strict';
   if (window.__SPZ_QUIETVALUE) return;
@@ -6,15 +24,26 @@
   function L(){ return document.documentElement.getAttribute('lang') === 'th' ? 'th' : 'en'; }
   function tx(o){ return o ? (o[L()] !== undefined ? o[L()] : o.en) : ''; }
   function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  var isNum = function(v){ return typeof v === 'number' && isFinite(v); };
   function clamp(v, a, b){ return v < a ? a : (v > b ? b : v); }
   function sgn(v, d){ return (v >= 0 ? '+' : '') + Number(v).toFixed(d === undefined ? 1 : d); }
   function fill(str, vars){
     return Object.keys(vars).reduce(function(s, k){ return s.split('{' + k + '}').join(vars[k]); }, str);
   }
-  function snapshot(){
-    try { return (window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot()) || null; }
-    catch(e){ return null; }
+
+  // Round AB: same Worker, same sessionStorage key as Connected Users /
+  // Announcements / the Classroom / Control Grid -- one admin key unlocks
+  // all of them.
+  var WORKER_BASE = 'https://spacez-line-link.spacezblack.workers.dev';
+  var ADMIN_KEY_STORAGE = 'spz_admin_users_key';
+
+  function getAdminKey(){
+    try { return sessionStorage.getItem(ADMIN_KEY_STORAGE) || ''; } catch(e){ return ''; }
+  }
+  function setAdminKey(k){
+    try { sessionStorage.setItem(ADMIN_KEY_STORAGE, k); } catch(e){}
+  }
+  function clearAdminKey(){
+    try { sessionStorage.removeItem(ADMIN_KEY_STORAGE); } catch(e){}
   }
 
   var T = {
@@ -36,107 +65,78 @@
     noQual:{en:'no ROE/ROIC/margin data',th:'ไม่มีข้อมูล ROE/ROIC/มาร์จิ้น'},
     dePenalty:{en:'debt load trims the fundamentals score',th:'ภาระหนี้ทำให้คะแนนพื้นฐานลดลง'},
     legend:{en:'A statistical screen built from data this site already tracks (P/E, P/B, ROE, ROIC, margin, debt/equity, RSI, 1-month price change, distance from 52-week high) — not a forecast, not investment advice. A shortlist to research further, not a buy list. Admin-only.',
-      th:'ตัวคัดกรองเชิงสถิติจากข้อมูลที่เว็บนี้มีอยู่แล้ว (P/E, P/B, ROE, ROIC, มาร์จิ้น, หนี้สินต่อทุน, RSI, การเปลี่ยนแปลงราคา 1 เดือน, ระยะห่างจากจุดสูงสุดรอบ 52 สัปดาห์) ไม่ใช่การพยากรณ์หรือคำแนะนำการลงทุน ใช้เป็นรายชื่อไปค้นคว้าต่อ ไม่ใช่รายการให้ซื้อ เฉพาะแอดมิน'}
+      th:'ตัวคัดกรองเชิงสถิติจากข้อมูลที่เว็บนี้มีอยู่แล้ว (P/E, P/B, ROE, ROIC, มาร์จิ้น, หนี้สินต่อทุน, RSI, การเปลี่ยนแปลงราคา 1 เดือน, ระยะห่างจากจุดสูงสุดรอบ 52 สัปดาห์) ไม่ใช่การพยากรณ์หรือคำแนะนำการลงทุน ใช้เป็นรายชื่อไปค้นคว้าต่อ ไม่ใช่รายการให้ซื้อ เฉพาะแอดมิน'},
+
+    adminOnly: { en:'Admins only.', th:'เฉพาะแอดมินเท่านั้น' },
+    keyLede: { en:'This screen\'s ranking is now computed on the server, not in the page you downloaded — enter the same admin key used on Connected Users / Announcements / the Classroom / Control Grid to view it.',
+               th:'การจัดอันดับของหน้านี้ถูกคำนวณบนเซิร์ฟเวอร์แล้ว ไม่ได้คำนวณในหน้าเว็บที่ดาวน์โหลดมาอีกต่อไป — ใส่รหัสแอดมินเดียวกับที่ใช้ในหน้า Connected Users / ประกาศ / ห้องเรียน / ใครคุมเงินโลก เพื่อดูผลลัพธ์' },
+    keyPh: { en:'Admin key', th:'รหัสแอดมิน' },
+    keySubmit: { en:'Unlock', th:'ปลดล็อก' },
+    keyErrBad: { en:'Incorrect key — try again.', th:'รหัสไม่ถูกต้อง ลองใหม่อีกครั้ง' },
+    keyErrNet: { en:'Could not reach the server — try again.', th:'เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ ลองใหม่อีกครั้ง' },
+    loading: { en:'Loading…', th:'กำลังโหลด…' },
+    retry: { en:'Try again', th:'ลองใหม่' }
   };
 
-  function pctRank(list, val, lowerIsBetter){
-    if (!list.length) return null;
-    var beat = list.filter(function(x){ return lowerIsBetter ? x > val : x < val; }).length;
-    return beat / list.length * 100;
+  var sec = null, q = '';
+
+  var resultsCache = null; // null until fetched; then [{t,r:{name,sector,rsi,m1,off_high},val,qual,qualScore,quiet,room,composite}, ...]
+  var resultsLoading = false;
+  var resultsErr = null; // null | 'bad' | 'net'
+
+  function fetchQuietValueResults(){
+    var key = getAdminKey();
+    if(!key) return;
+    resultsLoading = true; resultsErr = null;
+    paint();
+    fetch(WORKER_BASE + '/api/quietvalue/results', { headers:{ 'X-Admin-Key': key } })
+      .then(function(r){
+        if(r.status === 401){ clearAdminKey(); resultsErr = 'bad'; resultsCache = null; resultsLoading = false; paint(); return null; }
+        if(!r.ok) throw new Error('bad_status');
+        return r.json();
+      })
+      .then(function(data){
+        if(!data) return;
+        resultsCache = data.results || [];
+        resultsLoading = false;
+        paint();
+      })
+      .catch(function(){ resultsErr = 'net'; resultsLoading = false; paint(); });
   }
 
-  /* leg 1 -- value, universe-wide (deliberately NOT sector-relative like the
-     Early Signal Screener's valLeg): a stock's P/E and P/B ranked against
-     every tracked stock's, not just same-sector peers. A different lens on
-     "cheap" -- a truly under-the-radar name may not even have obvious
-     sector peers worth comparing to yet. */
-  function valueScore(allRows, universePE, universePB, r){
-    var parts = [];
-    if (isNum(r.pe) && r.pe > 0 && universePE.length >= 8) parts.push(pctRank(universePE, r.pe, true));
-    if (isNum(r.pb) && r.pb > 0 && universePB.length >= 8) parts.push(pctRank(universePB, r.pb, true));
-    parts = parts.filter(function(p){ return p != null; });
-    if (!parts.length) return null;
-    return parts.reduce(function(a,b){ return a+b; }, 0) / parts.length;
+  function keyGateHTML(){
+    return '<div class="ewv-keygate">' +
+      '<div class="ewv-keygate-icon">🔑</div>' +
+      '<p class="ewv-keygate-lede">' + esc(tx(T.keyLede)) + '</p>' +
+      '<input type="password" class="ewv-key-input" data-qv-key="input" autocomplete="off" spellcheck="false" placeholder="' + esc(tx(T.keyPh)) + '">' +
+      '<button type="button" class="ewv-key-btn" data-qv-key="submit">' + esc(tx(T.keySubmit)) + '</button>' +
+      (resultsErr === 'bad' ? '<div class="ewv-key-err">' + esc(tx(T.keyErrBad)) + '</div>' : '') +
+    '</div>';
   }
 
-  /* leg 2 -- fundamental quality: ROE/ROIC/margin ranked (higher = better)
-     against the same universe, then trimmed for heavy debt. Any leg that's
-     missing for this stock is simply left out of the average rather than
-     failing the whole score -- data coverage on these fields is patchy. */
-  function qualityScore(universe, r){
-    var parts = [];
-    if (isNum(r.roe) && universe.roe.length >= 8) parts.push(pctRank(universe.roe, r.roe, false));
-    if (isNum(r.roic) && universe.roic.length >= 8) parts.push(pctRank(universe.roic, r.roic, false));
-    if (isNum(r.margin) && universe.margin.length >= 8) parts.push(pctRank(universe.margin, r.margin, false));
-    parts = parts.filter(function(p){ return p != null; });
-    if (!parts.length) return null;
-    var base = parts.reduce(function(a,b){ return a+b; }, 0) / parts.length;
-    var penalty = 1;
-    if (isNum(r.de)) {
-      if (r.de > 4) penalty = 0.55;
-      else if (r.de > 2) penalty = 0.75;
-      else if (r.de > 1) penalty = 0.9;
-    }
-    return { score: base * penalty, penalized: penalty < 1 };
+  function netErrorHTML(){
+    return '<div class="ewv-content-err">' +
+      '<p>' + esc(tx(T.keyErrNet)) + '</p>' +
+      '<button type="button" class="ewv-key-btn" data-qv-key="retry">' + esc(tx(T.retry)) + '</button>' +
+    '</div>';
   }
 
-  /* leg 3 -- rewards DULLNESS, the exact opposite of the Early Signal
-     Screener's techLeg (which rewards bullish structure already forming).
-     RSI near 50 and a small 1-month move score highest; anything already
-     moving fast in either direction scores low -- that's the point, this
-     scanner is for names nobody's chasing yet. */
-  function quietScore(r){
-    if (!isNum(r.rsi) || !isNum(r.m1)) return null;
-    return clamp(100 - clamp(Math.abs(r.rsi - 50) * 2, 0, 60) - clamp(Math.abs(r.m1) * 3, 0, 40), 0, 100);
+  function submitContentKey(){
+    var input = sec && sec.querySelector('[data-qv-key="input"]');
+    var key = input ? input.value.trim() : '';
+    if(!key) return;
+    setAdminKey(key);
+    fetchQuietValueResults();
   }
 
-  /* leg 4 -- a "sweet spot" band below the 52-week high: meaningfully off
-     the high (so it isn't already back near the top, which is the Early
-     Signal Screener's and Anomaly Scan's territory) but not a name that's
-     been crushed. Centered on -35% off-high, tapering both directions. */
-  function roomScore(r){
-    if (!isNum(r.off_high)) return null;
-    var dist = Math.abs(r.off_high - (-35));
-    return clamp(100 - dist * 3, 0, 100);
-  }
-
-  function compute(){
-    var s = snapshot();
-    if (!s || !s.stocks) return null;
-    var allRows = s.stocks;
-    var tickers = Object.keys(allRows);
-
-    var universePE = [], universePB = [];
-    var universeQ = { roe:[], roic:[], margin:[] };
-    tickers.forEach(function(t){
-      var r = allRows[t];
-      if (!r || r.stale) return;
-      if (isNum(r.pe) && r.pe > 0) universePE.push(r.pe);
-      if (isNum(r.pb) && r.pb > 0) universePB.push(r.pb);
-      if (isNum(r.roe)) universeQ.roe.push(r.roe);
-      if (isNum(r.roic)) universeQ.roic.push(r.roic);
-      if (isNum(r.margin)) universeQ.margin.push(r.margin);
-    });
-
-    var out = [];
-    tickers.forEach(function(t){
-      var r = allRows[t];
-      if (!r || r.stale) return;
-      var val = valueScore(allRows, universePE, universePB, r);
-      if (val == null) return;
-      var quiet = quietScore(r);
-      if (quiet == null) return;
-      var room = roomScore(r);
-      if (room == null) return;
-      var qual = qualityScore(universeQ, r);
-      var qualScore = qual ? qual.score : 50;
-
-      var composite = val * 0.35 + qualScore * 0.30 + quiet * 0.20 + room * 0.15;
-      out.push({ t:t, r:r, val:val, qual:qual, qualScore:qualScore, quiet:quiet, room:room, composite:composite });
-    });
-
-    out.sort(function(a, b){ return b.composite - a.composite; });
-    return out.filter(function(x){ return x.composite >= 60; }).slice(0, 12);
+  function wireContentGate(host){
+    if(!host) return;
+    var input = host.querySelector('[data-qv-key="input"]');
+    if(input) input.addEventListener('keydown', function(ev){ if(ev.key === 'Enter') submitContentKey(); });
+    var submit = host.querySelector('[data-qv-key="submit"]');
+    if(submit) submit.addEventListener('click', submitContentKey);
+    var retry = host.querySelector('[data-qv-key="retry"]');
+    if(retry) retry.addEventListener('click', fetchQuietValueResults);
   }
 
   function legHTML(label, score){
@@ -175,8 +175,6 @@
     '</div>';
   }
 
-  var sec = null, cache = null, q = '';
-
   function rowsOf(list){
     var filtered = list;
     if (q) {
@@ -209,11 +207,21 @@
 
     var list = g('list');
     if (!list) return;
-    var s = snapshot();
-    if (!s) { list.innerHTML = '<div class="ss-empty">' + esc(tx(T.waiting)) + '</div>'; return; }
-    cache = compute();
-    if (!cache) { list.innerHTML = '<div class="ss-empty">' + esc(tx(T.waiting)) + '</div>'; return; }
-    var rows = rowsOf(cache);
+
+    if (window.__SPZ_TIER && window.__SPZ_TIER() !== 'full') {
+      list.innerHTML = '<div class="qrp-locked">' + esc(tx(T.adminOnly)) + '</div>';
+      return;
+    }
+
+    if (!getAdminKey()) { list.innerHTML = keyGateHTML(); wireContentGate(list); return; }
+    if (resultsLoading) { list.innerHTML = '<div class="ewv-content-loading">' + esc(tx(T.loading)) + '</div>'; return; }
+    if (resultsErr === 'net') { list.innerHTML = netErrorHTML(); wireContentGate(list); return; }
+    if (resultsCache === null) {
+      if (!resultsErr) fetchQuietValueResults(); // key present, nothing fetched yet -- kick it off
+      return; // fetchQuietValueResults() repaints the loading state itself
+    }
+
+    var rows = rowsOf(resultsCache);
     if (!rows.length) { list.innerHTML = '<div class="ss-empty">' + esc(tx(T.empty)) + '</div>'; return; }
     list.innerHTML = rows.map(rowHTML).join('');
     bindRowClicks(list);
@@ -254,8 +262,8 @@
       input.addEventListener('input', function(){
         q = input.value;
         var list = sec.querySelector('[data-qv="list"]');
-        if (list && cache) {
-          var rows = rowsOf(cache);
+        if (list && resultsCache) {
+          var rows = rowsOf(resultsCache);
           list.innerHTML = rows.length ? rows.map(rowHTML).join('') : '<div class="ss-empty">' + esc(tx(T.empty)) + '</div>';
           bindRowClicks(list);
         }
@@ -273,22 +281,12 @@
       if (build() || ++tries > 60) clearInterval(iv);
     }, 400);
 
-    document.addEventListener('spz:snapshot', function(){ paint(); });
-    var seed = setInterval(function(){
-      var s = snapshot();
-      if (s) { paint(); clearInterval(seed); }
-    }, 600);
-    setTimeout(function(){ clearInterval(seed); }, 45000);
-
     new MutationObserver(paint)
       .observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
   }
 
-  window.__SPZ_QUIETVALUE = { repaint: paint, rows: function(){ return cache; } };
+  window.__SPZ_QUIETVALUE = { repaint: paint, rows: function(){ return resultsCache; } };
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 1100); });
-  } else {
-    setTimeout(boot, 1100);
-  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
 })();
