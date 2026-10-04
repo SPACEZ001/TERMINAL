@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CEWA48 · SPACEZ Exam Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#000;
+  --bg-2:#050505;
+  --surface:#0a0a0a;
+  --surface-2:#111111;
+  --paper:#f4f6f1;
+  --paper-dim:#dfe8d0;
+  --ink:#f4f6f1;
+  --ink-dim:#b9c2ae;
+  --muted:#8b9186;
+  --border:rgba(233,255,176,.22);
+  --border-soft:rgba(255,255,255,.08);
+  --neon:#e9ffb0;
+  --neon-bright:#f5ffd0;
+  --neon-dim:#7a8a55;
+  --green:#5fa176;
+  --green-bright:#7fd39c;
+  --red:#ff3b4e;
+  --red-bright:#ff6b7a;
+  --radius:14px;
+  --radius-sm:8px;
+  --shadow:0 10px 34px rgba(0,0,0,.55);
+  --sans:'Inter','Noto Sans Thai',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono','Noto Sans Thai','Fira Code',ui-monospace,monospace;
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  background:
+    radial-gradient(ellipse 80% 45% at 50% -5%, rgba(233,255,176,0.06), transparent 60%),
+    var(--bg);
+  color:var(--ink);
+  font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  line-height:1.55;
+  position:relative;
+  overflow-x:hidden;
+}
+.thai{font-family:'Noto Sans Thai',var(--sans);}
+h1,h2,h3{font-family:var(--sans); font-weight:700;}
+.mono{font-family:var(--mono); font-variant-numeric: tabular-nums;}
+
+button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit;}
+a{color:inherit;}
+
+/* ---------- space backdrop: grid + starfield + comets (SPACEZ TERMINAL void theme) ---------- */
+.grid-overlay{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(160,255,160,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(160,255,160,0.05) 1px, transparent 1px);
+  background-size:46px 46px;
+  -webkit-mask-image:radial-gradient(circle at 50% 20%, black, transparent 78%);
+  mask-image:radial-gradient(circle at 50% 20%, black, transparent 78%);
+  opacity:.22;
+}
+.spz-void-stars{
+  display:block;position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background-image:
+    radial-gradient(2.0px 2.0px at 6% 14%,#fff,transparent 70%),
+    radial-gradient(1.5px 1.5px at 18% 62%,#fff,transparent 70%),
+    radial-gradient(2.3px 2.3px at 33% 28%,#fff,transparent 70%),
+    radial-gradient(1.6px 1.6px at 47% 78%,#fff,transparent 70%);
+  background-size:220px 180px;
+  opacity:.5;
+  animation:spzSiteStarsDrift 120s linear infinite, spzSiteTwinkleA 4.4s ease-in-out infinite;
+}
+.spz-void-stars::before{
+  content:'';position:absolute;inset:0;
+  background-image:
+    radial-gradient(2.1px 2.1px at 61% 9%,#fff,transparent 70%),
+    radial-gradient(1.5px 1.5px at 74% 52%,#fff,transparent 70%),
+    radial-gradient(2.0px 2.0px at 88% 22%,#fff,transparent 70%),
+    radial-gradient(1.6px 1.6px at 96% 70%,#fff,transparent 70%);
+  background-size:220px 180px;
+  opacity:.5;
+  animation:spzSiteStarsDrift 120s linear infinite, spzSiteTwinkleB 3.7s ease-in-out infinite;
+  animation-delay:0s, -1.8s;
+}
+.spz-void-stars::after{
+  content:'';position:absolute;inset:0;
+  background-image:
+    radial-gradient(1.4px 1.4px at 12% 90%,#fff,transparent 70%),
+    radial-gradient(1.6px 1.6px at 55% 40%,#fff,transparent 70%),
+    radial-gradient(1.3px 1.3px at 82% 85%,#fff,transparent 70%),
+    radial-gradient(1.5px 1.5px at 40% 5%,#fff,transparent 70%);
+  background-size:220px 180px;
+  opacity:.5;
+  animation:spzSiteStarsDrift 120s linear infinite, spzSiteTwinkleA 4.4s ease-in-out infinite;
+  animation-delay:0s, -2.9s;
+}
+@keyframes spzSiteStarsDrift{0%{background-position:0 0;}100%{background-position:-220px -180px;}}
+@keyframes spzSiteTwinkleA{0%,100%{filter:brightness(.6);}50%{filter:brightness(1.1);}}
+@keyframes spzSiteTwinkleB{0%,100%{filter:brightness(.55);}50%{filter:brightness(1.0);}}
+.spz-void-comet{
+  display:block;position:fixed;left:86%;top:-10%;z-index:-1;pointer-events:none;
+  width:2px;height:64px;border-radius:2px;
+  background:linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.85) 70%, #fff);
+  filter:drop-shadow(0 0 5px rgba(255,255,255,.7));
+  opacity:0;
+  transform:rotate(39deg);
+  animation:spzComet1 11s linear infinite;
+}
+.spz-void-comet.c2{height:52px; animation:spzComet2 15s linear infinite; animation-delay:3s;}
+.spz-void-comet.c3{height:58px; animation:spzComet3 19s linear infinite; animation-delay:7s;}
+.spz-void-comet.c4{height:46px; animation:spzComet4 23s linear infinite; animation-delay:1s;}
+@keyframes spzComet1{0%{left:86%;top:-10%;opacity:0;}4%{opacity:.9;}18%{left:44%;top:60%;opacity:.85;}30%{left:9%;top:118%;opacity:0;}100%{left:9%;top:118%;opacity:0;}}
+@keyframes spzComet2{0%{left:70%;top:-10%;opacity:0;}5%{opacity:.8;}20%{left:25%;top:68%;opacity:.75;}30%{left:-4%;top:118%;opacity:0;}100%{left:-4%;top:118%;opacity:0;}}
+@keyframes spzComet3{0%{left:92%;top:-10%;opacity:0;}4%{opacity:.85;}16%{left:56%;top:56%;opacity:.8;}28%{left:23%;top:118%;opacity:0;}100%{left:23%;top:118%;opacity:0;}}
+@keyframes spzComet4{0%{left:58%;top:-10%;opacity:0;}5%{opacity:.8;}19%{left:13%;top:64%;opacity:.75;}29%{left:-20%;top:118%;opacity:0;}100%{left:-20%;top:118%;opacity:0;}}
+@media (prefers-reduced-motion: reduce){
+  .spz-void-stars, .spz-void-stars::before, .spz-void-stars::after, .spz-void-comet{animation:none;}
+}
+::selection{background:var(--neon);color:#000;}
+
+.screen{display:none; min-height:100vh; width:100%; position:relative; z-index:2;}
+.screen.active{display:block;}
+
+/* ===== Topbar ===== */
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 20px; border-bottom:1px solid var(--border-soft);
+  background:rgba(5,5,5,.78); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  position:sticky; top:0; z-index:40;
+}
+.brand{display:flex; align-items:center; gap:10px; font-family:var(--mono); font-size:13px; letter-spacing:.04em; color:var(--ink-dim);}
+.brand .mark{
+  width:9px; height:9px; border-radius:50%; background:var(--neon); box-shadow:0 0 12px var(--neon);
+  animation:blink 1.5s infinite steps(1);
+}
+@keyframes blink{0%,49%{opacity:1;}50%,100%{opacity:0;}}
+.back-btn{
+  display:flex; align-items:center; gap:6px; padding:7px 12px; border:1px solid var(--border-soft);
+  border-radius:var(--radius-sm); color:var(--ink-dim); font-size:13px; font-family:var(--mono);
+  transition:border-color .15s, color .15s;
+}
+.back-btn:hover{border-color:var(--neon); color:var(--neon-bright);}
+
+/* ===== Lobby ===== */
+.lobby-wrap{max-width:760px; margin:0 auto; padding:36px 20px 80px; position:relative; z-index:2;}
+.eyebrow{
+  font-family:var(--mono); font-size:12px; letter-spacing:.14em; color:var(--neon);
+  display:flex; align-items:center; gap:8px; margin-bottom:14px; text-transform:uppercase;
+}
+.eyebrow::before{content:''; width:18px; height:1px; background:var(--neon-dim);}
+.lobby-title{font-size:34px; font-weight:800; color:var(--paper); margin-bottom:10px; letter-spacing:-.01em;}
+.lobby-sub{color:var(--muted); font-size:15px; max-width:56ch; margin-bottom:34px;}
+
+.ledger-tabs{display:flex; flex-direction:column; gap:14px; margin-bottom:28px;}
+.variant-card{
+  position:relative; border:1px solid var(--border-soft); border-left:3px solid var(--border-soft);
+  border-radius:var(--radius); background:var(--surface); padding:18px 20px 18px 22px;
+  display:flex; align-items:center; gap:16px; transition:border-color .15s, background .15s, transform .1s, box-shadow .15s;
+  text-align:left; width:100%;
+}
+.variant-card:hover{border-color:var(--neon-dim); background:var(--surface-2);}
+.variant-card.selected{border-left-color:var(--neon); border-color:var(--border); background:var(--surface-2); box-shadow:0 0 22px rgba(233,255,176,0.08);}
+.variant-chit{
+  flex-shrink:0; width:46px; height:46px; border-radius:50%; border:1.5px solid var(--neon-dim);
+  display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-weight:700;
+  font-size:14px; color:var(--neon); background:radial-gradient(circle at 35% 30%, rgba(233,255,176,.14), transparent 70%);
+}
+.variant-card.selected .variant-chit{border-color:var(--neon); color:var(--neon-bright); box-shadow:0 0 14px rgba(233,255,176,.25);}
+.variant-body{flex:1; min-width:0;}
+.variant-label{font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.08em; margin-bottom:3px; text-transform:uppercase;}
+.variant-title{font-family:var(--sans); font-size:17px; font-weight:700; color:var(--paper); margin-bottom:6px;}
+.variant-tags{display:flex; flex-wrap:wrap; gap:6px;}
+.tag{font-family:var(--mono); font-size:10.5px; padding:2.5px 7px; border:1px solid var(--border-soft); border-radius:20px; color:var(--muted);}
+.tag.accent{border-color:var(--border); color:var(--neon);}
+
+.lobby-controls{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:22px; flex-wrap:wrap;}
+.shuffle-toggle{
+  display:flex; align-items:center; gap:9px; padding:9px 14px; border:1px solid var(--border-soft);
+  border-radius:var(--radius-sm); font-family:var(--mono); font-size:12.5px; color:var(--ink-dim);
+}
+.shuffle-toggle .dice{font-size:15px;}
+.switch{width:34px; height:18px; border-radius:20px; background:var(--border-soft); position:relative; transition:background .15s; flex-shrink:0;}
+.switch::after{content:''; position:absolute; width:14px; height:14px; border-radius:50%; background:var(--muted); top:2px; left:2px; transition:transform .15s, background .15s;}
+.switch.on{background:rgba(233,255,176,.22);}
+.switch.on::after{transform:translateX(16px); background:var(--neon-bright);}
+
+.start-btn{
+  padding:14px 28px; border-radius:var(--radius-sm); background:var(--neon); color:#060803;
+  font-family:var(--mono); font-weight:700; font-size:13.5px; letter-spacing:.08em;
+  transition:background .15s, transform .1s; box-shadow:0 4px 18px rgba(233,255,176,.2); text-transform:uppercase;
+}
+.start-btn:hover{background:var(--neon-bright);}
+.start-btn:active{transform:scale(.98);}
+.start-btn:disabled{opacity:.35; cursor:not-allowed; box-shadow:none;}
+
+/* ===== Quiz ===== */
+.quiz-wrap{max-width:720px; margin:0 auto; padding:26px 18px 140px; position:relative; z-index:2;}
+.quiz-meta-bar{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:22px; flex-wrap:wrap; gap:8px;}
+.quiz-variant-name{font-family:var(--sans); font-size:19px; font-weight:700; color:var(--paper);}
+.quiz-count{font-family:var(--mono); font-size:12px; color:var(--muted);}
+
+.qcard{
+  border:1px solid var(--border-soft); border-left:2px solid var(--border-soft); border-radius:var(--radius);
+  background:var(--surface); padding:20px 20px 20px 24px; margin-bottom:16px; position:relative;
+}
+.qcard.answered{border-left-color:var(--neon-dim);}
+.qnum{
+  display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%;
+  border:1px solid var(--neon-dim); color:var(--neon); font-family:var(--mono); font-size:12px; font-weight:700;
+  margin-bottom:12px;
+}
+.qtext{font-size:15.5px; color:var(--ink); line-height:1.6; margin-bottom:16px;}
+.qtype-badge{font-family:var(--mono); font-size:9.5px; letter-spacing:.06em; color:var(--muted); border:1px solid var(--border-soft); border-radius:3px; padding:1px 6px; margin-left:8px; vertical-align:2px;}
+
+.choices{display:flex; flex-direction:column; gap:8px;}
+.choice-btn{
+  display:flex; align-items:flex-start; gap:11px; text-align:left; padding:11px 14px;
+  border:1px solid var(--border-soft); border-radius:var(--radius-sm); background:var(--bg-2);
+  font-size:14px; color:var(--ink-dim); transition:border-color .12s, background .12s, color .12s; width:100%;
+}
+.choice-btn:hover{border-color:var(--neon-dim); color:var(--ink);}
+.choice-letter{
+  flex-shrink:0; width:22px; height:22px; border-radius:5px; border:1px solid var(--border-soft);
+  display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:11px; color:var(--muted);
+}
+.choice-btn[aria-checked="true"]{border-color:var(--neon); background:rgba(233,255,176,.08); color:var(--paper);}
+.choice-btn[aria-checked="true"] .choice-letter{border-color:var(--neon); background:var(--neon); color:#060803;}
+.choice-btn[role="checkbox"] .choice-letter{border-radius:4px;}
+
+.tf-row{display:flex; gap:10px;}
+.tf-btn{
+  flex:1; padding:16px; border:1px solid var(--border-soft); border-radius:var(--radius-sm); background:var(--bg-2);
+  font-family:var(--mono); font-size:14px; letter-spacing:.03em; color:var(--ink-dim); display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:border-color .12s, background .12s, color .12s;
+}
+.tf-btn:hover{border-color:var(--neon-dim);}
+.tf-btn[aria-checked="true"].tf-true{border-color:var(--green); background:rgba(95,161,118,.1); color:var(--green-bright);}
+.tf-btn[aria-checked="true"].tf-false{border-color:var(--red); background:rgba(255,59,78,.1); color:var(--red-bright);}
+
+.hud{
+  position:fixed; bottom:88px; right:18px; z-index:35; background:var(--surface); border:1px solid var(--border-soft);
+  border-radius:var(--radius); padding:12px 16px; box-shadow:var(--shadow); font-family:var(--mono); font-size:11px; color:var(--muted);
+  display:flex; flex-direction:column; gap:5px; min-width:132px;
+}
+.hud-row{display:flex; justify-content:space-between; gap:14px;}
+.hud-row b{color:var(--paper); font-weight:700;}
+.hud.warn .hud-row.remaining b{color:var(--red-bright);}
+.hud-bar{height:3px; background:var(--border-soft); border-radius:2px; margin-top:4px; overflow:hidden;}
+.hud-bar-fill{height:100%; background:var(--neon); transition:width .3s;}
+
+.submit-bar{
+  position:fixed; bottom:0; left:0; right:0; z-index:36; background:linear-gradient(to top, rgba(0,0,0,.98), rgba(0,0,0,.85));
+  border-top:1px solid var(--border-soft); padding:14px 18px; display:flex; justify-content:center; backdrop-filter:blur(8px);
+}
+.submit-btn{
+  padding:13px 40px; border-radius:var(--radius-sm); background:var(--neon); color:#060803;
+  font-family:var(--mono); font-weight:700; font-size:13px; letter-spacing:.08em; box-shadow:0 4px 18px rgba(233,255,176,.2); text-transform:uppercase;
+}
+.submit-btn:hover{background:var(--neon-bright);}
+
+/* ===== Results ===== */
+.results-wrap{max-width:720px; margin:0 auto; padding:40px 18px 80px; position:relative; z-index:2;}
+.results-hero{display:flex; flex-direction:column; align-items:center; text-align:center; margin-bottom:36px; position:relative;}
+.stamp{
+  font-family:var(--mono); font-weight:700; font-size:30px; letter-spacing:.14em; text-transform:uppercase;
+  padding:14px 34px; border:2px solid; border-radius:8px;
+  margin-bottom:20px; position:relative;
+}
+.stamp::after{content:'CEWA · CERTIFICATION MOCK EXAM'; position:absolute; bottom:-16px; left:50%; transform:translateX(-50%); font-family:var(--mono); font-size:8px; letter-spacing:.12em; white-space:nowrap; opacity:.55;}
+.stamp.fail{color:var(--red-bright); border-color:var(--red); box-shadow:0 0 22px rgba(255,59,78,.12);}
+.stamp.pass{color:var(--green-bright); border-color:var(--green); box-shadow:0 0 22px rgba(95,161,118,.14);}
+.stamp.master{color:var(--neon-bright); border-color:var(--neon); box-shadow:0 0 26px rgba(233,255,176,.2);}
+.score-line{font-family:var(--mono); font-size:15px; color:var(--ink-dim); margin-bottom:4px;}
+.score-big{font-family:var(--sans); font-size:52px; font-weight:800; color:var(--paper); line-height:1;}
+.results-stats{display:flex; gap:22px; margin-top:18px; font-family:var(--mono); font-size:12px; color:var(--muted);}
+.results-stats b{color:var(--paper);}
+
+.lang-toggle{display:flex; gap:4px; margin:0 auto 22px; width:fit-content; border:1px solid var(--border-soft); border-radius:20px; padding:3px;}
+.lang-btn{padding:6px 16px; border-radius:20px; font-family:var(--mono); font-size:12px; color:var(--muted);}
+.lang-btn.active{background:var(--neon); color:#060803;}
+
+.review-item{border:1px solid var(--border-soft); border-left:3px solid var(--border-soft); border-radius:var(--radius); background:var(--surface); padding:16px 18px; margin-bottom:12px;}
+.review-item.correct{border-left-color:var(--green);}
+.review-item.incorrect{border-left-color:var(--red);}
+.review-head{display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+.review-status{font-family:var(--mono); font-size:10px; letter-spacing:.05em; padding:2px 7px; border-radius:3px;}
+.review-status.correct{background:rgba(95,161,118,.15); color:var(--green-bright);}
+.review-status.incorrect{background:rgba(255,59,78,.15); color:var(--red-bright);}
+.review-q{font-size:14px; color:var(--ink); margin-bottom:10px; line-height:1.55;}
+.review-choices{display:flex; flex-direction:column; gap:5px; margin-bottom:10px;}
+.review-choice{font-size:12.5px; padding:7px 10px; border-radius:5px; border:1px solid var(--border-soft); color:var(--muted); display:flex; gap:8px;}
+.review-choice.was-correct{border-color:var(--green); color:var(--green-bright); background:rgba(95,161,118,.06);}
+.review-choice.was-wrong-pick{border-color:var(--red); color:var(--red-bright); background:rgba(255,59,78,.06);}
+.review-exp{font-size:12.5px; color:var(--ink-dim); line-height:1.6; border-top:1px dashed var(--border-soft); padding-top:10px;}
+
+.retry-bar{display:flex; gap:10px; justify-content:center; margin-top:30px;}
+.retry-btn{padding:12px 24px; border:1px solid var(--border); border-radius:var(--radius-sm); font-family:var(--mono); font-size:12.5px; color:var(--neon);}
+.retry-btn:hover{background:rgba(233,255,176,.08);}
+.retry-btn.primary{background:var(--neon); color:#060803; border-color:var(--neon);}
+
+/* ===== Modal ===== */
+.modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.78); z-index:100; display:none; align-items:center; justify-content:center; padding:20px;}
+.modal-overlay.active{display:flex;}
+.modal-box{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px; max-width:380px; width:100%; box-shadow:var(--shadow);}
+.modal-title{font-family:var(--sans); font-size:17px; font-weight:700; color:var(--paper); margin-bottom:8px;}
+.modal-msg{font-size:13.5px; color:var(--ink-dim); line-height:1.6; margin-bottom:20px;}
+.modal-actions{display:flex; gap:10px; justify-content:flex-end;}
+.modal-btn{padding:9px 18px; border-radius:var(--radius-sm); font-family:var(--mono); font-size:12.5px;}
+.modal-btn.cancel{color:var(--muted); border:1px solid var(--border-soft);}
+.modal-btn.confirm{background:var(--neon); color:#060803;}
+
+canvas#confettiCanvas{position:fixed; inset:0; pointer-events:none; z-index:99;}
+
+@media (max-width:600px){
+  .lobby-title{font-size:27px;}
+  .stamp{font-size:24px; padding:12px 22px;}
+  .score-big{font-size:40px;}
+  .hud{right:10px; bottom:78px; min-width:112px; padding:10px 12px;}
+  .variant-card{padding:14px 14px 14px 16px;}
+}
+</style>
+</head>
+<body>
+
+<div class="grid-overlay"></div>
+<div class="spz-void-stars"></div>
+<div class="spz-void-comet c1"></div>
+<div class="spz-void-comet c2"></div>
+<div class="spz-void-comet c3"></div>
+<div class="spz-void-comet c4"></div>
+
+<div class="topbar">
+  <div class="brand"><span class="mark"></span>SPACEZ exam hub — CEWA48</div>
+  <a class="back-btn" href="index.html">← Back</a>
+</div>
+
+<!-- ================= LOBBY ================= -->
+<section id="screen-lobby" class="screen active">
+  <div class="lobby-wrap">
+    <div class="eyebrow">CERTIFIED ELLIOTT WAVE ANALYST · MOCK EXAM</div>
+    <h1 class="lobby-title">CEWA Mock Exam</h1>
+    <p class="lobby-sub thai">เลือกชุดข้อสอบด้านล่าง แต่ละชุดมีจำนวนข้อ เวลา และรูปแบบคำถามต่างกัน ทำได้ 80% ขึ้นไปถือว่าผ่าน</p>
+
+    <div class="ledger-tabs" id="variantList">
+      <button class="variant-card" data-variant="v1">
+        <div class="variant-chit">I</div>
+        <div class="variant-body">
+          <div class="variant-label">EXAM I · FOUNDATIONS</div>
+          <div class="variant-title">Elliott Wave Analyst — Level I</div>
+          <div class="variant-tags">
+            <span class="tag accent">50 questions</span>
+            <span class="tag">45 min</span>
+            <span class="tag">Single Best Answer</span>
+            <span class="tag">Pass 80%</span>
+          </div>
+        </div>
+      </button>
+
+      <button class="variant-card" data-variant="v2">
+        <div class="variant-chit">II·1</div>
+        <div class="variant-body">
+          <div class="variant-label">CEWA II · PART 1</div>
+          <div class="variant-title">Elliott Wave Analyst — Level II, Part 1</div>
+          <div class="variant-tags">
+            <span class="tag accent">20 questions</span>
+            <span class="tag">45 min</span>
+            <span class="tag">Single Best Answer</span>
+            <span class="tag">Pass 80%</span>
+          </div>
+        </div>
+      </button>
+
+      <button class="variant-card" data-variant="v3">
+        <div class="variant-chit">II·2</div>
+        <div class="variant-body">
+          <div class="variant-label">CEWA II · PART 2</div>
+          <div class="variant-title">Elliott Wave Analyst — Level II, Part 2</div>
+          <div class="variant-tags">
+            <span class="tag accent">20 questions</span>
+            <span class="tag">45 min</span>
+            <span class="tag">Multiple Correct Responses</span>
+            <span class="tag">Pass 80%</span>
+          </div>
+        </div>
+      </button>
+    </div>
+
+    <div class="lobby-controls">
+      <button class="shuffle-toggle" id="shuffleToggle">
+        <span class="dice">🎲</span> Shuffle questions &amp; choices
+        <span class="switch" id="shuffleSwitch"></span>
+      </button>
+      <button class="start-btn" id="startBtn" disabled>START EXAM</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= QUIZ ================= -->
+<section id="screen-quiz" class="screen">
+  <div class="quiz-wrap">
+    <div class="quiz-meta-bar">
+      <div class="quiz-variant-name" id="quizVariantName">—</div>
+      <div class="quiz-count" id="quizCount">0 / 0 answered</div>
+    </div>
+    <div id="questionList"></div>
+  </div>
+
+  <div class="hud" id="hud">
+    <div class="hud-row"><span>Elapsed</span><b id="hudElapsed">00:00</b></div>
+    <div class="hud-row remaining"><span>Remaining</span><b id="hudRemaining">00:00</b></div>
+    <div class="hud-row"><span>Progress</span><b id="hudProgress">0%</b></div>
+    <div class="hud-bar"><div class="hud-bar-fill" id="hudBarFill" style="width:0%"></div></div>
+  </div>
+
+  <div class="submit-bar">
+    <button class="submit-btn" id="submitBtn">SUBMIT EXAM</button>
+  </div>
+</section>
+
+<!-- ================= RESULTS ================= -->
+<section id="screen-results" class="screen">
+  <div class="results-wrap">
+    <div class="results-hero">
+      <div class="stamp" id="gradeStamp">PASS</div>
+      <div class="score-line thai" id="resultsVariantName">—</div>
+      <div class="score-big" id="scoreBig">0%</div>
+      <div class="results-stats">
+        <div><b id="statCorrect">0</b>/<span id="statTotal">0</span> correct</div>
+        <div>Time: <b id="statTime">00:00</b></div>
+      </div>
+    </div>
+
+    <div class="lang-toggle">
+      <button class="lang-btn active" data-lang="en">🇬🇧 English</button>
+      <button class="lang-btn" data-lang="th">🇹🇭 ภาษาไทย</button>
+    </div>
+
+    <div id="reviewList"></div>
+
+    <div class="retry-bar">
+      <button class="retry-btn" id="backToLobbyBtn">← Choose another exam</button>
+      <button class="retry-btn primary" id="retakeBtn">Retake this exam</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MODAL ================= -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle">Submit exam?</div>
+    <div class="modal-msg" id="modalMsg">You still have unanswered questions. Submit anyway?</div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="modalCancel">Cancel</button>
+      <button class="modal-btn confirm" id="modalConfirm">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="confettiCanvas"></canvas>
+
+<script>
+/* ===== Question Banks (QC-validated: balanced answer distribution, length-balanced distractors) ===== */
+const V1_BANK = [{"id": "v1q01", "qType": "single", "diff": "easy", "text": "Which of the following is the start of the Fibonacci sequence?", "choices": [{"id": "a", "letter": "A", "text": "1, 2, 4, 8, 16, 32, 64"}, {"id": "b", "letter": "B", "text": "1, 1, 2, 3, 5, 8, 13, 21"}, {"id": "c", "letter": "C", "text": "2, 3, 5, 7, 11, 13, 17"}, {"id": "d", "letter": "D", "text": "1, 3, 4, 7, 11, 18, 29"}], "correct": ["b"], "expEn": "Each Fibonacci term after the first two is the sum of the two terms before it. The doubling series, the primes and the 1, 3, 4, 7 series (Lucas numbers) follow different rules.", "expTh": "พจน์ของ Fibonacci หลังสองพจน์แรกเท่ากับผลรวมของสองพจน์ก่อนหน้า ส่วนอนุกรมที่เพิ่มเป็นสองเท่า จำนวนเฉพาะ และอนุกรม 1, 3, 4, 7 (Lucas) ใช้กฎอื่น"}, {"id": "v1q02", "qType": "single", "diff": "easy", "text": "A Fibonacci run reads 13, 21, 34, 55 and continues. Which number comes next?", "choices": [{"id": "a", "letter": "A", "text": "110"}, {"id": "b", "letter": "B", "text": "89"}, {"id": "c", "letter": "C", "text": "90"}, {"id": "d", "letter": "D", "text": "84"}], "correct": ["b"], "expEn": "34 + 55 = 89, following the rule that each term is the sum of the previous two. 110 simply doubles 55, and 84 and 90 do not satisfy the addition rule.", "expTh": "34 + 55 = 89 ตามกฎว่าแต่ละพจน์คือผลรวมของสองพจน์ก่อนหน้า ส่วน 110 เป็นการคูณสองของ 55 และ 84 กับ 90 ไม่เข้ากฎการบวก"}, {"id": "v1q03", "qType": "single", "diff": "easy", "text": "As the Fibonacci sequence advances, what does the ratio of each term to the next larger term approach?", "choices": [{"id": "a", "letter": "A", "text": "Approximately 0.382"}, {"id": "b", "letter": "B", "text": "Exactly 0.5"}, {"id": "c", "letter": "C", "text": "Approximately 0.786"}, {"id": "d", "letter": "D", "text": "Approximately 0.618"}], "correct": ["d"], "expEn": "Dividing a term by the next larger term converges on 0.618 (for example 55/89 = 0.618). 0.382 is the ratio of a term to the term two places higher, not the adjacent one.", "expTh": "การหารพจน์ด้วยพจน์ถัดไปที่ใหญ่กว่าจะลู่เข้าสู่ 0.618 (เช่น 55/89 = 0.618) ส่วน 0.382 คืออัตราส่วนกับพจน์ที่สูงกว่าไปสองตำแหน่ง ไม่ใช่พจน์ที่อยู่ติดกัน"}, {"id": "v1q04", "qType": "single", "diff": "easy", "text": "In the Fibonacci sequence, 34 divided by 89 is closest to which ratio?", "choices": [{"id": "a", "letter": "A", "text": "0.618"}, {"id": "b", "letter": "B", "text": "0.382"}, {"id": "c", "letter": "C", "text": "0.236"}, {"id": "d", "letter": "D", "text": "0.500"}], "correct": ["b"], "expEn": "89 is two places above 34, and the ratio of a term to the term two places higher approaches 0.382 (34/89 = 0.382). 0.618 is the adjacent-term ratio and 0.236 is the three-place ratio.", "expTh": "89 อยู่สูงกว่า 34 ไปสองตำแหน่ง อัตราส่วนของพจน์กับพจน์ที่สูงกว่าสองตำแหน่งเข้าใกล้ 0.382 (34/89 = 0.382) ส่วน 0.618 เป็นอัตราส่วนพจน์ติดกัน และ 0.236 เป็นอัตราส่วนสามตำแหน่ง"}, {"id": "v1q05", "qType": "single", "diff": "easy", "text": "How are the numbers 1.618 and 0.618 related?", "choices": [{"id": "a", "letter": "A", "text": "They are reciprocals, and 1.618 exceeds 0.618 by exactly 1"}, {"id": "b", "letter": "B", "text": "Their product is 0.618 and their difference is 0.382"}, {"id": "c", "letter": "C", "text": "Their sum is 2.618 and their product is 1.618"}, {"id": "d", "letter": "D", "text": "They are reciprocals, and together they sum to exactly 2"}], "correct": ["a"], "expEn": "1.618 x 0.618 is about 1, so they are reciprocals, and 1.618 - 0.618 = 1. Their sum is 2.236, not 2 or 2.618.", "expTh": "1.618 x 0.618 ได้ประมาณ 1 จึงเป็นส่วนกลับของกัน และ 1.618 - 0.618 = 1 พอดี ส่วนผลรวมของทั้งสองคือ 2.236 ไม่ใช่ 2 หรือ 2.618"}, {"id": "v1q06", "qType": "single", "diff": "easy", "text": "What is 0.618 multiplied by itself (0.618 squared), rounded to three decimals?", "choices": [{"id": "a", "letter": "A", "text": "0.309"}, {"id": "b", "letter": "B", "text": "0.236"}, {"id": "c", "letter": "C", "text": "0.382"}, {"id": "d", "letter": "D", "text": "0.500"}], "correct": ["c"], "expEn": "0.618 x 0.618 = 0.382. The cube of 0.618 is 0.236, and 0.309 would be half of 0.618, which is not a relationship in the sequence.", "expTh": "0.618 x 0.618 = 0.382 ส่วน 0.618 ยกกำลังสามได้ 0.236 และ 0.309 คือครึ่งหนึ่งของ 0.618 ซึ่งไม่ใช่ความสัมพันธ์ในอนุกรม Fibonacci"}, {"id": "v1q07", "qType": "single", "diff": "medium", "text": "Which expression gives the ratio 2.618?", "choices": [{"id": "a", "letter": "A", "text": "1.618 cubed, which is 4.236"}, {"id": "b", "letter": "B", "text": "1.618 multiplied by 2, which is 3.236"}, {"id": "c", "letter": "C", "text": "1.618 squared, which also equals 1.618 + 1"}, {"id": "d", "letter": "D", "text": "1.618 plus 0.618, which is 2.236"}], "correct": ["c"], "expEn": "1.618 squared is 2.618, and since phi squared equals phi plus 1, it also equals 1.618 + 1. The other expressions give 3.236, 2.236 and 4.236.", "expTh": "1.618 ยกกำลังสองได้ 2.618 และเนื่องจาก phi กำลังสองเท่ากับ phi + 1 จึงเท่ากับ 1.618 + 1 ด้วย นิพจน์อื่นให้ค่า 3.236, 2.236 และ 4.236"}, {"id": "v1q08", "qType": "single", "diff": "easy", "text": "Which pair of consecutive Fibonacci numbers adds up to 89?", "choices": [{"id": "a", "letter": "A", "text": "55 and 89"}, {"id": "b", "letter": "B", "text": "34 and 55"}, {"id": "c", "letter": "C", "text": "13 and 21"}, {"id": "d", "letter": "D", "text": "21 and 34"}], "correct": ["b"], "expEn": "34 + 55 = 89. The other pairs sum to 55, 144 and 34 respectively.", "expTh": "34 + 55 = 89 ส่วนคู่อื่นรวมได้ 55, 144 และ 34 ตามลำดับ"}, {"id": "v1q09", "qType": "single", "diff": "medium", "text": "Which statement about the terms 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144 of the Fibonacci sequence is true?", "choices": [{"id": "a", "letter": "A", "text": "Each term is double the term before it"}, {"id": "b", "letter": "B", "text": "Every third term, starting with 2, is even"}, {"id": "c", "letter": "C", "text": "Odd and even terms strictly alternate"}, {"id": "d", "letter": "D", "text": "Every term after 8 is a prime number"}], "correct": ["b"], "expEn": "The even terms are 2, 8, 34 and 144, every third term. Odd and even terms do not alternate (1, 1, 2, 3, 5, 8), 21 and 55 are not prime, and terms grow by about 1.618, not 2.", "expTh": "พจน์ที่เป็นเลขคู่คือ 2, 8, 34 และ 144 ซึ่งเป็นทุก ๆ พจน์ที่สาม คู่และคี่ไม่ได้สลับกันเป๊ะ 21 กับ 55 ไม่ใช่จำนวนเฉพาะ และแต่ละพจน์โตขึ้นราว 1.618 เท่า ไม่ใช่ 2 เท่า"}, {"id": "v1q10", "qType": "single", "diff": "medium", "text": "A Fibonacci number divided by the number three places to its right, for example 21 divided by 89, approximates which ratio?", "choices": [{"id": "a", "letter": "A", "text": "0.309"}, {"id": "b", "letter": "B", "text": "0.382"}, {"id": "c", "letter": "C", "text": "0.236"}, {"id": "d", "letter": "D", "text": "0.146"}], "correct": ["c"], "expEn": "The three-place ratio is 0.618 cubed, about 0.236 (21/89 = 0.236). 0.382 is the two-place ratio and 0.146 is the four-place ratio.", "expTh": "อัตราส่วนสามตำแหน่งคือ 0.618 ยกกำลังสาม ประมาณ 0.236 (21/89 = 0.236) ส่วน 0.382 เป็นอัตราส่วนสองตำแหน่ง และ 0.146 เป็นอัตราส่วนสี่ตำแหน่ง"}, {"id": "v1q11", "qType": "single", "diff": "medium", "text": "Which quotient of consecutive Fibonacci terms is closest to 1.618?", "choices": [{"id": "a", "letter": "A", "text": "89 divided by 55"}, {"id": "b", "letter": "B", "text": "5 divided by 3"}, {"id": "c", "letter": "C", "text": "13 divided by 8"}, {"id": "d", "letter": "D", "text": "8 divided by 5"}], "correct": ["a"], "expEn": "89/55 = 1.6182, while 13/8 = 1.625, 8/5 = 1.6 and 5/3 = 1.667. The quotients oscillate around 1.618 and converge as the terms get larger.", "expTh": "89/55 = 1.6182 ส่วน 13/8 = 1.625, 8/5 = 1.6 และ 5/3 = 1.667 ผลหารแกว่งรอบ 1.618 และลู่เข้าเมื่อพจน์ใหญ่ขึ้น"}, {"id": "v1q12", "qType": "single", "diff": "easy", "text": "A complete cycle made of a five-wave advance followed by a three-wave decline has how many waves at its own degree?", "choices": [{"id": "a", "letter": "A", "text": "8 waves"}, {"id": "b", "letter": "B", "text": "21 waves"}, {"id": "c", "letter": "C", "text": "13 waves"}, {"id": "d", "letter": "D", "text": "5 waves"}], "correct": ["a"], "expEn": "5 + 3 = 8, two consecutive Fibonacci numbers adding to the next. 13 and 21 are the counts one degree lower for a correction and for an impulse.", "expTh": "5 + 3 = 8 ซึ่งเป็นเลข Fibonacci ที่รวมกันได้ตัวถัดไป ส่วน 13 และ 21 เป็นจำนวนคลื่นที่ degree ต่ำลงหนึ่งขั้นของ correction และ impulse ตามลำดับ"}, {"id": "v1q13", "qType": "single", "diff": "medium", "text": "Counting one degree down, how many waves does a complete five-wave impulse contain in total?", "choices": [{"id": "a", "letter": "A", "text": "13 waves"}, {"id": "b", "letter": "B", "text": "15 waves"}, {"id": "c", "letter": "C", "text": "25 waves"}, {"id": "d", "letter": "D", "text": "21 waves"}], "correct": ["d"], "expEn": "Waves 1, 3 and 5 each have 5 subwaves (15) and waves 2 and 4 each have 3 (6), so 15 + 6 = 21. Counting only the motive subwaves (15) or squaring 5 (25) are common errors.", "expTh": "คลื่น 1, 3, 5 มีคลื่นย่อยอย่างละ 5 (รวม 15) และคลื่น 2, 4 มีอย่างละ 3 (รวม 6) จึงได้ 15 + 6 = 21 การนับแค่คลื่นย่อย motive (15) หรือยกกำลังสอง 5 (25) เป็นความผิดพลาดที่พบบ่อย"}, {"id": "v1q14", "qType": "single", "diff": "medium", "text": "Counting one degree down, how many waves does an A-B-C zigzag contain in total?", "choices": [{"id": "a", "letter": "A", "text": "9 waves"}, {"id": "b", "letter": "B", "text": "13 waves"}, {"id": "c", "letter": "C", "text": "15 waves"}, {"id": "d", "letter": "D", "text": "8 waves"}], "correct": ["b"], "expEn": "A zigzag is 5-3-5, so 5 + 3 + 5 = 13. Nine would result only from wrongly treating each of the three waves as a three.", "expTh": "zigzag เป็น 5-3-5 จึงได้ 5 + 3 + 5 = 13 ส่วน 9 จะได้ก็ต่อเมื่อเข้าใจผิดว่าทั้งสามคลื่นเป็นคลื่นสามส่วนทั้งหมด"}, {"id": "v1q15", "qType": "single", "diff": "medium", "text": "A complete five-three cycle has 8 waves at its own degree. How many waves does the same cycle contain one degree lower?", "choices": [{"id": "a", "letter": "A", "text": "34 waves"}, {"id": "b", "letter": "B", "text": "21 waves"}, {"id": "c", "letter": "C", "text": "55 waves"}, {"id": "d", "letter": "D", "text": "13 waves"}], "correct": ["a"], "expEn": "The impulse supplies 21 waves and the correction 13 waves one degree lower, and 21 + 13 = 34. 21 and 13 are only the two halves.", "expTh": "impulse ให้ 21 คลื่น และ correction ให้ 13 คลื่นที่ degree ต่ำลงหนึ่งขั้น 21 + 13 = 34 ส่วน 21 และ 13 เป็นเพียงครึ่งหนึ่งของวงจรเท่านั้น"}, {"id": "v1q16", "qType": "single", "diff": "medium", "text": "Which series gives the total number of waves in an impulse at successively lower degrees?", "choices": [{"id": "a", "letter": "A", "text": "5, 21, 89"}, {"id": "b", "letter": "B", "text": "5, 15, 45"}, {"id": "c", "letter": "C", "text": "5, 25, 125"}, {"id": "d", "letter": "D", "text": "5, 13, 55"}], "correct": ["a"], "expEn": "5 waves become 21 one degree lower and 21 x 3 + 13 x 2 = 89 at the next degree. 13 and 55 belong to the correction series.", "expTh": "5 คลื่นกลายเป็น 21 เมื่อลงหนึ่ง degree และ 21 x 3 + 13 x 2 = 89 ในขั้นถัดไป ส่วน 13 และ 55 เป็นอนุกรมของ correction"}, {"id": "v1q17", "qType": "single", "diff": "medium", "text": "Which series gives the total number of waves in a three-wave correction at successively lower degrees?", "choices": [{"id": "a", "letter": "A", "text": "3, 8, 21"}, {"id": "b", "letter": "B", "text": "3, 15, 45"}, {"id": "c", "letter": "C", "text": "3, 9, 27"}, {"id": "d", "letter": "D", "text": "3, 13, 55"}], "correct": ["d"], "expEn": "A correction is 3 waves, then 5 + 3 + 5 = 13, then 21 + 13 + 21 = 55. The series 3, 8, 21 is made of Fibonacci numbers but does not reflect the 5-3-5 subdivision.", "expTh": "correction มี 3 คลื่น จากนั้น 5 + 3 + 5 = 13 แล้ว 21 + 13 + 21 = 55 ส่วน 3, 8, 21 แม้เป็นเลข Fibonacci แต่ไม่สะท้อนการแบ่งย่อยแบบ 5-3-5"}, {"id": "v1q18", "qType": "single", "diff": "medium", "text": "What role does the Fibonacci sequence play in the Elliott Wave Principle?", "choices": [{"id": "a", "letter": "A", "text": "It is the mathematical basis, as wave counts and ratios derive from it"}, {"id": "b", "letter": "B", "text": "It is only a timing tool and has no bearing on wave structure"}, {"id": "c", "letter": "C", "text": "It governs corrective waves only, never impulses"}, {"id": "d", "letter": "D", "text": "It replaces wave counting by generating price targets alone"}], "correct": ["a"], "expEn": "Frost and Prechter describe the Fibonacci sequence as the mathematical basis of the Wave Principle: wave counts follow it and many wave relationships use its ratios. It applies to both motive and corrective waves and does not replace counting.", "expTh": "Frost และ Prechter อธิบายว่าอนุกรม Fibonacci เป็นฐานทางคณิตศาสตร์ของ Wave Principle ทั้งจำนวนคลื่นและอัตราส่วนระหว่างคลื่นล้วนมาจากอนุกรมนี้ ใช้ได้ทั้ง motive และ corrective และไม่ได้มาแทนการนับคลื่น"}, {"id": "v1q19", "qType": "single", "diff": "easy", "text": "Who first described the Wave Principle in the 1930s?", "choices": [{"id": "a", "letter": "A", "text": "Ralph Nelson Elliott"}, {"id": "b", "letter": "B", "text": "Charles Dow"}, {"id": "c", "letter": "C", "text": "Leonardo Fibonacci"}, {"id": "d", "letter": "D", "text": "Robert Prechter"}], "correct": ["a"], "expEn": "R. N. Elliott discovered and described the Wave Principle in the 1930s. Fibonacci supplied the number sequence centuries earlier, Dow developed Dow Theory, and Prechter later popularized Elliott's work.", "expTh": "R. N. Elliott เป็นผู้ค้นพบและอธิบาย Wave Principle ในทศวรรษ 1930 ส่วน Fibonacci คิดอนุกรมตัวเลขมาหลายศตวรรษก่อน Dow สร้าง Dow Theory และ Prechter นำผลงานของ Elliott มาเผยแพร่ภายหลัง"}, {"id": "v1q20", "qType": "single", "diff": "medium", "text": "The Fibonacci sequence was introduced to Western Europe in which work by Leonardo of Pisa?", "choices": [{"id": "a", "letter": "A", "text": "De Divina Proportione (1509)"}, {"id": "b", "letter": "B", "text": "Principia Mathematica (1687)"}, {"id": "c", "letter": "C", "text": "Liber Abaci (1202)"}, {"id": "d", "letter": "D", "text": "The Almagest (c. 150)"}], "correct": ["c"], "expEn": "Leonardo of Pisa presented the sequence in Liber Abaci in 1202 through his rabbit-breeding problem. The other titles are by different authors and eras.", "expTh": "Leonardo แห่ง Pisa นำเสนออนุกรมนี้ใน Liber Abaci ปี 1202 ผ่านโจทย์การขยายพันธุ์กระต่าย ส่วนหนังสือเล่มอื่นเป็นของผู้เขียนและยุคสมัยอื่น"}, {"id": "v1q21", "qType": "single", "diff": "easy", "text": "Which of these is a possible depth for a regular wave 2, as a fraction of wave 1?", "choices": [{"id": "a", "letter": "A", "text": "161.8% of wave 1"}, {"id": "b", "letter": "B", "text": "61.8% of wave 1"}, {"id": "c", "letter": "C", "text": "138.2% of wave 1"}, {"id": "d", "letter": "D", "text": "261.8% of wave 1"}], "correct": ["b"], "expEn": "Wave 2 may retrace 61.8% of wave 1, a common depth. A retracement beyond 100% would move past the start of wave 1, which is never allowed.", "expTh": "wave 2 ย่อได้ 61.8% ของ wave 1 ซึ่งเป็นความลึกที่พบบ่อย การย่อเกิน 100% จะผ่านจุดเริ่มต้นของ wave 1 ซึ่งไม่เคยอนุญาต"}, {"id": "v1q22", "qType": "single", "diff": "medium", "text": "Which Fibonacci retracement of wave 3 is the most common depth for wave 4 in an impulse?", "choices": [{"id": "a", "letter": "A", "text": "78.6%"}, {"id": "b", "letter": "B", "text": "61.8%"}, {"id": "c", "letter": "C", "text": "38.2%"}, {"id": "d", "letter": "D", "text": "100%"}], "correct": ["c"], "expEn": "Wave 4 most commonly retraces about 38.2% of wave 3. A deep 61.8% or more risks overlapping wave 1 territory, and 100% would erase the whole wave.", "expTh": "wave 4 มักย่อประมาณ 38.2% ของ wave 3 การย่อลึก 61.8% ขึ้นไปเสี่ยงล้ำเข้าเขตของ wave 1 และ 100% คือการลบคลื่นทั้งหมด"}, {"id": "v1q23", "qType": "single", "diff": "medium", "text": "In an impulse with an extended wave 3, wave 3 is commonly what multiple of wave 1?", "choices": [{"id": "a", "letter": "A", "text": "1.000"}, {"id": "b", "letter": "B", "text": "0.382"}, {"id": "c", "letter": "C", "text": "1.618"}, {"id": "d", "letter": "D", "text": "0.618"}], "correct": ["c"], "expEn": "An extended third wave commonly measures 1.618 times wave 1 (and often more, such as 2.618). Ratios below 1.000 would make wave 3 shorter than wave 1, which is not an extension.", "expTh": "wave 3 ที่ extended มักยาวประมาณ 1.618 เท่าของ wave 1 (และบ่อยครั้งมากกว่านั้น เช่น 2.618) อัตราส่วนต่ำกว่า 1.000 จะทำให้ wave 3 สั้นกว่า wave 1 ซึ่งไม่ใช่ extension"}, {"id": "v1q24", "qType": "single", "diff": "medium", "text": "When wave 3 is the extended wave of an impulse, wave 5 tends toward what relationship with wave 1?", "choices": [{"id": "a", "letter": "A", "text": "Equality with wave 3 in length"}, {"id": "b", "letter": "B", "text": "1.618 times the length of wave 4"}, {"id": "c", "letter": "C", "text": "2.618 times the length of wave 1"}, {"id": "d", "letter": "D", "text": "Equality with wave 1 (or 0.618 times it)"}], "correct": ["d"], "expEn": "With an extended third wave, waves 1 and 5 tend toward equality, and 0.618 is the next most common ratio. Wave 5 normally falls well short of an extended wave 3 rather than equaling it.", "expTh": "เมื่อ wave 3 เป็นคลื่น extended คลื่น 1 และ 5 มักเข้าใกล้ความเท่ากัน และ 0.618 เป็นอัตราส่วนที่พบรองลงมา wave 5 มักสั้นกว่า wave 3 ที่ extended มากแทนที่จะเท่ากัน"}, {"id": "v1q25", "qType": "single", "diff": "hard", "text": "In an impulse with an extended fifth wave, a common target for wave 5 is 1.618 times which distance?", "choices": [{"id": "a", "letter": "A", "text": "The full length of wave 2 measured from its start to its end"}, {"id": "b", "letter": "B", "text": "The full length of wave 4 measured from its start to its end"}, {"id": "c", "letter": "C", "text": "Net travel from the start of wave 1 to the end of wave 4"}, {"id": "d", "letter": "D", "text": "Net travel from the start of wave 1 to the end of wave 3"}], "correct": ["d"], "expEn": "An extended fifth often travels 1.618 times the net distance from the start of wave 1 to the end of wave 3. Wave 4 is not part of that net distance, and waves 2 and 4 alone are not the base.", "expTh": "wave 5 ที่ extended มักวิ่งได้ 1.618 เท่าของระยะสุทธิจากจุดเริ่มต้นของ wave 1 ถึงจุดสิ้นสุดของ wave 3 wave 4 ไม่รวมอยู่ในระยะนี้ และความยาวของ wave 2 หรือ 4 เพียงลำพังก็ไม่ใช่ฐานคำนวณ"}, {"id": "v1q26", "qType": "single", "diff": "medium", "text": "In a zigzag, which relationship between wave C and wave A is among the most common?", "choices": [{"id": "a", "letter": "A", "text": "Wave C equals half of wave B"}, {"id": "b", "letter": "B", "text": "Wave C equals wave A in length"}, {"id": "c", "letter": "C", "text": "Wave C equals 4.236 times wave A"}, {"id": "d", "letter": "D", "text": "Wave C equals 0.236 times wave A"}], "correct": ["b"], "expEn": "Wave C commonly equals wave A, and 1.618 or 0.618 times wave A also occur. Ratios such as 0.236 or 4.236 are far outside the usual range, and wave B is not the reference.", "expTh": "wave C มักยาวเท่า wave A และพบ 1.618 หรือ 0.618 เท่าของ wave A ได้เช่นกัน อัตราส่วน 0.236 หรือ 4.236 อยู่นอกช่วงปกติมาก และ wave B ไม่ใช่ตัวอ้างอิง"}, {"id": "v1q27", "qType": "single", "diff": "medium", "text": "In a contracting triangle, each wave tends to relate to the wave two before it (c to a, d to b, e to c) by about what ratio?", "choices": [{"id": "a", "letter": "A", "text": "1.618"}, {"id": "b", "letter": "B", "text": "0.382"}, {"id": "c", "letter": "C", "text": "1.000"}, {"id": "d", "letter": "D", "text": "0.618"}], "correct": ["d"], "expEn": "In a contracting triangle alternate waves tend to be about 0.618 of their predecessors, so the pattern narrows. 1.618 or 1.000 would produce an expanding or channel-like shape.", "expTh": "ใน contracting triangle คลื่นสลับกันมักมีขนาดประมาณ 0.618 เท่าของคลื่นก่อนหน้า รูปแบบจึงแคบลงเรื่อย ๆ ส่วน 1.618 หรือ 1.000 จะให้รูปขยายหรือเป็นช่องขนาน"}, {"id": "v1q28", "qType": "single", "diff": "medium", "text": "Which sets of bar counts between significant turning points fit Fibonacci time analysis?", "choices": [{"id": "a", "letter": "A", "text": "10, 20, 40 or 80 bars"}, {"id": "b", "letter": "B", "text": "12, 24, 36 or 48 bars"}, {"id": "c", "letter": "C", "text": "7, 14, 28 or 56 bars"}, {"id": "d", "letter": "D", "text": "13, 21, 34 or 55 bars"}], "correct": ["d"], "expEn": "Fibonacci time analysis looks for turns a Fibonacci number of bars apart, such as 13, 21, 34 and 55. The other sets are multiples of 10, 12 or 7, not terms of the sequence.", "expTh": "การวิเคราะห์เวลาแบบ Fibonacci มองหาจุดเปลี่ยนที่ห่างกันเป็นจำนวนแท่งตามเลข Fibonacci เช่น 13, 21, 34 และ 55 ชุดอื่นเป็นพหุคูณของ 10, 12 หรือ 7 ไม่ใช่พจน์ของอนุกรม"}, {"id": "v1q29", "qType": "single", "diff": "easy", "text": "Wave 1 rises from 100 to 140, then wave 2 falls to 108. Is this labeling valid, and how much of wave 1 did wave 2 retrace?", "choices": [{"id": "a", "letter": "A", "text": "Invalid; wave 2 retraced 108% of wave 1"}, {"id": "b", "letter": "B", "text": "Valid; wave 2 retraced 80% of wave 1, under 100%"}, {"id": "c", "letter": "C", "text": "Invalid; wave 2 may not retrace more than 61.8%"}, {"id": "d", "letter": "D", "text": "Valid; wave 2 retraced only 32% of wave 1"}], "correct": ["b"], "expEn": "Wave 1 is 40 points and the decline of 32 points is 80% of it. The only limit is that wave 2 may not go beyond the start of wave 1 (100), which 108 respects.", "expTh": "wave 1 ยาว 40 จุด และการลงมา 32 จุดคือ 80% ของมัน ข้อจำกัดเดียวคือ wave 2 ห้ามผ่านจุดเริ่มต้นของ wave 1 (100) ซึ่ง 108 ไม่ผ่านจึงใช้ได้"}, {"id": "v1q30", "qType": "single", "diff": "easy", "text": "Wave 1 of an advance rises from 200 to 300. What is the 61.8% retracement level of that wave?", "choices": [{"id": "a", "letter": "A", "text": "250.0"}, {"id": "b", "letter": "B", "text": "276.4"}, {"id": "c", "letter": "C", "text": "261.8"}, {"id": "d", "letter": "D", "text": "238.2"}], "correct": ["d"], "expEn": "Wave 1 is 100 points, so a 61.8% retracement is 61.8 points below the top: 300 - 61.8 = 238.2. 261.8 adds the move to the base instead, and 276.4 is the 23.6% level.", "expTh": "wave 1 ยาว 100 จุด การย่อ 61.8% คือลงมา 61.8 จุดจากยอด: 300 - 61.8 = 238.2 ส่วน 261.8 เป็นการบวกจากฐาน และ 276.4 เป็นระดับ 23.6%"}, {"id": "v1q31", "qType": "single", "diff": "easy", "text": "Which statement is a cardinal rule of an impulse?", "choices": [{"id": "a", "letter": "A", "text": "Wave 3 can never be the shortest of waves 1, 3 and 5"}, {"id": "b", "letter": "B", "text": "Wave 4 must retrace at least 38.2% of wave 3"}, {"id": "c", "letter": "C", "text": "Wave 5 must always exceed wave 3 in length"}, {"id": "d", "letter": "D", "text": "Wave 3 must be the longest of waves 1, 3 and 5"}], "correct": ["a"], "expEn": "Wave 3 may not be the shortest, but it need not be the longest, because wave 1 or wave 5 can be longer. Wave 5 can be truncated, and no minimum depth is required for wave 4.", "expTh": "wave 3 ห้ามเป็นคลื่นที่สั้นที่สุดในสามคลื่น แต่ไม่จำเป็นต้องยาวที่สุด เพราะ wave 1 หรือ wave 5 อาจยาวกว่าได้ wave 5 อาจ truncated และไม่มีข้อกำหนดความลึกขั้นต่ำของ wave 4"}, {"id": "v1q32", "qType": "single", "diff": "medium", "text": "In which five-wave structure is it permitted for wave 4 to enter the price territory of wave 1?", "choices": [{"id": "a", "letter": "A", "text": "An impulse with an extended wave 3"}, {"id": "b", "letter": "B", "text": "An impulse with an extended fifth"}, {"id": "c", "letter": "C", "text": "A diagonal triangle"}, {"id": "d", "letter": "D", "text": "An impulse with a truncated fifth"}], "correct": ["c"], "expEn": "Overlap between waves 4 and 1 is permitted only in a diagonal. Every regular impulse, whether it has an extension or a truncation, must keep wave 4 out of wave 1 territory.", "expTh": "การที่ wave 4 ซ้อนกับ wave 1 อนุญาตเฉพาะใน diagonal เท่านั้น impulse ปกติทุกแบบ ไม่ว่าจะมี extension หรือ truncation ต้องไม่ให้ wave 4 เข้าเขตของ wave 1"}, {"id": "v1q33", "qType": "single", "diff": "medium", "text": "In a typical stock-market impulse advance, during which wave is trading volume usually heaviest?", "choices": [{"id": "a", "letter": "A", "text": "Wave 1, when the new trend first appears"}, {"id": "b", "letter": "B", "text": "Wave 2, when the prior trend is retraced"}, {"id": "c", "letter": "C", "text": "Wave 3, the strongest and broadest advance"}, {"id": "d", "letter": "D", "text": "Wave 5, when the final push of the advance occurs"}], "correct": ["c"], "expEn": "In stocks, volume usually reaches its peak in the third wave, which is normally the strongest and most broadly supported advance. Volume in the fifth wave is typically lighter than in the third.", "expTh": "ในตลาดหุ้น volume มักสูงสุดใน wave 3 ซึ่งโดยปกติเป็นช่วงขาขึ้นที่แรงและมีผู้ร่วมมากที่สุด ส่วน volume ใน wave 5 มักเบากว่า wave 3"}, {"id": "v1q34", "qType": "single", "diff": "easy", "text": "Which subdivision sequence describes a flat correction?", "choices": [{"id": "a", "letter": "A", "text": "3-3-5"}, {"id": "b", "letter": "B", "text": "5-3-5-3-5"}, {"id": "c", "letter": "C", "text": "3-3-3-3-3"}, {"id": "d", "letter": "D", "text": "5-3-5"}], "correct": ["a"], "expEn": "A flat subdivides 3-3-5. 5-3-5 is a zigzag, 3-3-3-3-3 is a triangle and 5-3-5-3-5 is an impulse.", "expTh": "flat แบ่งย่อยเป็น 3-3-5 ส่วน 5-3-5 คือ zigzag, 3-3-3-3-3 คือ triangle และ 5-3-5-3-5 คือ impulse"}, {"id": "v1q35", "qType": "single", "diff": "easy", "text": "A contracting triangle consists of five waves labeled a-b-c-d-e. How does each of those waves subdivide?", "choices": [{"id": "a", "letter": "A", "text": "5-3-5-3-5"}, {"id": "b", "letter": "B", "text": "3-3-3-3-3"}, {"id": "c", "letter": "C", "text": "5-5-5-5-5"}, {"id": "d", "letter": "D", "text": "3-3-5-3-3"}], "correct": ["b"], "expEn": "Every leg of a triangle is a three-wave corrective structure, giving 3-3-3-3-3. 5-3-5-3-5 describes an impulse.", "expTh": "ทุกขาของ triangle เป็นโครงสร้างคลื่นแก้สามส่วน จึงได้ 3-3-3-3-3 ส่วน 5-3-5-3-5 เป็นของ impulse"}, {"id": "v1q36", "qType": "single", "diff": "medium", "text": "Where may a triangle appear within the Wave Principle?", "choices": [{"id": "a", "letter": "A", "text": "Wave A of a zigzag"}, {"id": "b", "letter": "B", "text": "Wave 4 of an impulse"}, {"id": "c", "letter": "C", "text": "Wave 2 of an impulse"}, {"id": "d", "letter": "D", "text": "Wave 3 of an impulse"}], "correct": ["b"], "expEn": "Triangles occur in the fourth-wave position, as wave B, or as an X wave, never in wave 2 and never as a motive wave. Wave A of a zigzag is a five-wave motive structure.", "expTh": "triangle เกิดในตำแหน่ง wave 4, เป็น wave B หรือเป็น wave X แต่ไม่เกิดใน wave 2 และไม่เป็นคลื่น motive ส่วน wave A ของ zigzag เป็นโครงสร้าง motive ห้าคลื่น"}, {"id": "v1q37", "qType": "single", "diff": "medium", "text": "In which positions does an ending diagonal appear?", "choices": [{"id": "a", "letter": "A", "text": "As wave 3 of an impulse or wave A"}, {"id": "b", "letter": "B", "text": "As wave 2 or wave 4 of an impulse"}, {"id": "c", "letter": "C", "text": "As wave B of a flat or wave X"}, {"id": "d", "letter": "D", "text": "As wave 5 of an impulse or wave C"}], "correct": ["d"], "expEn": "An ending diagonal appears in the fifth-wave position or as the final C wave of a correction, typically after an advanced move. It does not occur as wave 3, in waves 2 and 4, or in B and X waves.", "expTh": "ending diagonal เกิดในตำแหน่ง wave 5 หรือเป็น wave C ตัวสุดท้ายของ correction มักตามหลังการเคลื่อนไหวที่ไปไกลแล้ว ไม่เกิดเป็น wave 3, wave 2, wave 4, wave B หรือ wave X"}, {"id": "v1q38", "qType": "single", "diff": "medium", "text": "What distinguishes an ending diagonal from a regular impulse?", "choices": [{"id": "a", "letter": "A", "text": "Wave 3 is always the shortest wave"}, {"id": "b", "letter": "B", "text": "Wave 2 retraces more than 100% of wave 1"}, {"id": "c", "letter": "C", "text": "It consists of three waves rather than five"}, {"id": "d", "letter": "D", "text": "Wave 4 overlaps wave 1, and the shape is a wedge"}], "correct": ["d"], "expEn": "An ending diagonal is a wedge in which wave 4 overlaps the territory of wave 1. It still has five waves, and the rule that wave 3 is never the shortest and wave 2 never exceeds 100% still applies.", "expTh": "ending diagonal เป็นรูปลิ่มที่ wave 4 ซ้อนเขตของ wave 1 ยังคงมีห้าคลื่น และกฎว่า wave 3 ห้ามสั้นที่สุด กับ wave 2 ห้ามย่อเกิน 100% ยังใช้อยู่"}, {"id": "v1q39", "qType": "single", "diff": "easy", "text": "How many of the three motive waves (1, 3 and 5) of an impulse are usually extended?", "choices": [{"id": "a", "letter": "A", "text": "Usually only one of the three"}, {"id": "b", "letter": "B", "text": "All three of them equally"}, {"id": "c", "letter": "C", "text": "Always waves 1 and 5 together"}, {"id": "d", "letter": "D", "text": "None, since extensions occur in corrections"}], "correct": ["a"], "expEn": "Generally only one of the three motive waves is extended, most often wave 3 in stocks. Extensions are a feature of motive waves, not corrections.", "expTh": "โดยทั่วไปมีเพียงหนึ่งในสามคลื่น motive ที่ extended ซึ่งในหุ้นมักเป็น wave 3 extension เป็นลักษณะของคลื่น motive ไม่ใช่ correction"}, {"id": "v1q40", "qType": "single", "diff": "medium", "text": "In wave terms, what does a truncated fifth wave describe?", "choices": [{"id": "a", "letter": "A", "text": "A fifth wave that fails to move beyond the end of wave 3"}, {"id": "b", "letter": "B", "text": "A third wave that is shorter than wave 1"}, {"id": "c", "letter": "C", "text": "A fourth wave that overlaps wave 1"}, {"id": "d", "letter": "D", "text": "A fifth wave that exceeds 1.618 times wave 3"}], "correct": ["a"], "expEn": "A truncation occurs when wave 5 fails to exceed the end of wave 3, and it usually follows a very strong third wave. It does not involve overlap and is unrelated to a wave 3 shorter than wave 1.", "expTh": "truncation คือ wave 5 ที่ไปไม่ถึงจุดสิ้นสุดของ wave 3 มักเกิดหลัง wave 3 ที่แรงมาก ไม่เกี่ยวกับการซ้อนเขต และไม่ใช่กรณี wave 3 สั้นกว่า wave 1"}, {"id": "v1q41", "qType": "single", "diff": "medium", "text": "What is the standard way to draw the channel containing waves 3 through 5 of an impulse?", "choices": [{"id": "a", "letter": "A", "text": "Connect the ends of waves 3 and 4 and project it forward"}, {"id": "b", "letter": "B", "text": "Draw horizontal lines through the ends of waves 2 and 3"}, {"id": "c", "letter": "C", "text": "Connect the ends of waves 1 and 5, then draw a parallel from the end of wave 3"}, {"id": "d", "letter": "D", "text": "Connect the ends of waves 2 and 4, then draw a parallel from the end of wave 3"}], "correct": ["d"], "expEn": "The base line joins the ends of waves 2 and 4 and a parallel through the peak of wave 3 completes the channel. The other constructions do not follow the trend of the impulse.", "expTh": "เส้นฐานลากเชื่อมจุดสิ้นสุดของ wave 2 และ 4 แล้วลากเส้นขนานผ่านยอด wave 3 จึงได้ช่องแนวโน้ม วิธีอื่นไม่ได้ตามทิศทางแนวโน้มของ impulse"}, {"id": "v1q42", "qType": "single", "diff": "easy", "text": "In a five-wave impulse labeled 1-2-3-4-5, which waves are the counter-trend corrective waves?", "choices": [{"id": "a", "letter": "A", "text": "Waves 2 and 4"}, {"id": "b", "letter": "B", "text": "Waves 1, 3 and 5"}, {"id": "c", "letter": "C", "text": "Waves 2 and 3"}, {"id": "d", "letter": "D", "text": "Waves 4 and 5"}], "correct": ["a"], "expEn": "Waves 1, 3 and 5 are motive waves that move with the trend, while waves 2 and 4 are the corrective waves that move against it.", "expTh": "wave 1, 3 และ 5 เป็น motive wave ที่เคลื่อนที่ตามแนวโน้ม ส่วน wave 2 และ 4 เป็นคลื่นแก้ที่เคลื่อนสวนแนวโน้ม"}, {"id": "v1q43", "qType": "single", "diff": "medium", "text": "Which describes an expanded (irregular) flat?", "choices": [{"id": "a", "letter": "A", "text": "Wave B retraces about 38.2% of wave A and wave C ends beyond wave A"}, {"id": "b", "letter": "B", "text": "Wave B exceeds the start of wave A and wave C ends beyond the end of wave A"}, {"id": "c", "letter": "C", "text": "Wave B exceeds the start of wave A but wave C fails to reach the end of wave A"}, {"id": "d", "letter": "D", "text": "Waves A, B and C are each five-wave moves of equal length"}], "correct": ["b"], "expEn": "In an expanded flat wave B goes past the start of A and C goes past the end of A. If C fails to reach the end of A it is a running flat, and flats are 3-3-5, not three fives.", "expTh": "ใน expanded flat wave B ไปเกินจุดเริ่มของ A และ wave C ไปเกินจุดสิ้นสุดของ A ถ้า C ไปไม่ถึงจุดสิ้นสุดของ A จะเป็น running flat และ flat เป็น 3-3-5 ไม่ใช่ห้าคลื่นทั้งสามขา"}, {"id": "v1q44", "qType": "single", "diff": "medium", "text": "In a double three, what connects the two simple corrective patterns?", "choices": [{"id": "a", "letter": "A", "text": "A running triangle labeled wave B"}, {"id": "b", "letter": "B", "text": "Nothing; the patterns share a single endpoint"}, {"id": "c", "letter": "C", "text": "A corrective X wave, often a three-wave pattern"}, {"id": "d", "letter": "D", "text": "A five-wave impulse labeled wave 3"}], "correct": ["c"], "expEn": "A double three joins two simple corrective patterns (W and Y) with a corrective connecting wave labeled X. An impulse cannot connect corrective patterns.", "expTh": "double three เชื่อมรูปแบบ correction ง่าย ๆ สองรูป (W และ Y) ด้วยคลื่นเชื่อมแบบ corrective ที่เรียก X ส่วน impulse ไม่สามารถเชื่อมรูปแบบ correction ได้"}, {"id": "v1q45", "qType": "single", "diff": "easy", "text": "Which wave of an impulse is usually the strongest and longest?", "choices": [{"id": "a", "letter": "A", "text": "Wave 2"}, {"id": "b", "letter": "B", "text": "Wave 5"}, {"id": "c", "letter": "C", "text": "Wave 3"}, {"id": "d", "letter": "D", "text": "Wave 1"}], "correct": ["c"], "expEn": "Wave 3 is usually the strongest and often the longest wave. Wave 1 is typically the least recognized, wave 5 is often weaker in breadth and momentum, and wave 2 is a correction.", "expTh": "wave 3 มักแรงที่สุดและมักยาวที่สุด wave 1 มักถูกรับรู้น้อยที่สุด wave 5 มักอ่อนกว่าในด้านวงกว้างและโมเมนตัม ส่วน wave 2 เป็นคลื่นแก้"}, {"id": "v1q46", "qType": "single", "diff": "hard", "text": "Where do corrections tend to find support or resistance, according to the Wave Principle guideline?", "choices": [{"id": "a", "letter": "A", "text": "The price area of the preceding fourth wave of one lesser degree"}, {"id": "b", "letter": "B", "text": "The price level of the preceding wave 2 high"}, {"id": "c", "letter": "C", "text": "The 161.8% extension of the prior impulse"}, {"id": "d", "letter": "D", "text": "The exact starting level of the prior impulse every time"}], "correct": ["a"], "expEn": "Corrective waves tend to end in the area of the fourth wave of one lesser degree within the preceding impulse. The other levels are not a guideline and a full retracement to the origin is not required.", "expTh": "คลื่นแก้มักจบในบริเวณของ wave 4 ของ degree ที่ต่ำกว่าหนึ่งขั้นภายใน impulse ก่อนหน้า ระดับอื่นไม่ใช่แนวปฏิบัติ และไม่จำเป็นต้องย่อกลับถึงจุดเริ่มต้นเสมอไป"}, {"id": "v1q47", "qType": "single", "diff": "medium", "text": "Why is semilogarithmic scaling preferred over arithmetic scaling on long-term charts?", "choices": [{"id": "a", "letter": "A", "text": "It forces corrective waves to retrace by Fibonacci ratios"}, {"id": "b", "letter": "B", "text": "It removes the need to apply the cardinal wave rules"}, {"id": "c", "letter": "C", "text": "It converts time cycles into Fibonacci intervals"}, {"id": "d", "letter": "D", "text": "Equal percentage moves take equal vertical distance on the chart"}], "correct": ["d"], "expEn": "On a semilog chart equal percentage changes occupy equal distances, which keeps wave proportions meaningful over long spans. It does not alter the rules or the ratios the market produces.", "expTh": "บนกราฟ semilog การเปลี่ยนแปลงเป็นเปอร์เซ็นต์เท่ากันจะมีระยะแนวตั้งเท่ากัน ทำให้สัดส่วนของคลื่นมีความหมายในช่วงเวลายาว ไม่ได้เปลี่ยนกฎหรืออัตราส่วนที่ตลาดสร้างขึ้น"}, {"id": "v1q48", "qType": "single", "diff": "easy", "text": "Which wave of an A-B-C zigzag subdivides into three waves?", "choices": [{"id": "a", "letter": "A", "text": "Wave A only"}, {"id": "b", "letter": "B", "text": "Wave C only"}, {"id": "c", "letter": "C", "text": "Waves A and C"}, {"id": "d", "letter": "D", "text": "Wave B only"}], "correct": ["d"], "expEn": "A zigzag is 5-3-5, so only wave B is a three. Waves A and C are five-wave structures.", "expTh": "zigzag เป็น 5-3-5 ดังนั้นเฉพาะ wave B เท่านั้นที่เป็นสามคลื่น ส่วน wave A และ wave C เป็นโครงสร้างห้าคลื่น"}, {"id": "v1q49", "qType": "single", "diff": "medium", "text": "An impulse has an extended third wave subdivided into five smaller waves. How many distinct waves does the whole structure appear to contain?", "choices": [{"id": "a", "letter": "A", "text": "8"}, {"id": "b", "letter": "B", "text": "7"}, {"id": "c", "letter": "C", "text": "9"}, {"id": "d", "letter": "D", "text": "13"}], "correct": ["c"], "expEn": "Waves 1, 2, 4 and 5 give four waves, and the extended wave 3 contributes its five subwaves, so 4 + 5 = 9. Nine is the usual count for an impulse with one extension.", "expTh": "wave 1, 2, 4 และ 5 ให้สี่คลื่น และ wave 3 ที่ extended มีคลื่นย่อยห้าคลื่น จึงได้ 4 + 5 = 9 ซึ่งเป็นจำนวนคลื่นปกติของ impulse ที่มีหนึ่ง extension"}, {"id": "v1q50", "qType": "single", "diff": "medium", "text": "After a triangle in the fourth-wave position, the thrust of wave 5 is typically about as long as what?", "choices": [{"id": "a", "letter": "A", "text": "The length of wave 2 of the impulse"}, {"id": "b", "letter": "B", "text": "2.618 times wave 1"}, {"id": "c", "letter": "C", "text": "The widest part of the triangle"}, {"id": "d", "letter": "D", "text": "The full length of wave 3"}], "correct": ["c"], "expEn": "The thrust that follows a triangle tends to be about the length of the triangle's widest part, measured from the breakout point. Waves 1 to 3 are not the reference.", "expTh": "การพุ่งหลัง triangle มักยาวประมาณส่วนที่กว้างที่สุดของ triangle โดยวัดจากจุดทะลุ ไม่ได้อิงกับ wave 1 ถึง 3"}];
+const V2_BANK = [{"id": "v2q01", "qType": "single", "diff": "medium", "text": "Wave 1 of an advance runs from 100 to 130 and wave 2 ends at 112. Projecting wave 3 at 1.618 times wave 1 from the correct origin, where does wave 3 end?", "choices": [{"id": "a", "letter": "A", "text": "148.5"}, {"id": "b", "letter": "B", "text": "142.0"}, {"id": "c", "letter": "C", "text": "160.5"}, {"id": "d", "letter": "D", "text": "178.5"}], "correct": ["c"], "expEn": "Wave 1 is 30 points and 1.618 x 30 = 48.5. Wave 3 is projected from the end of wave 2: 112 + 48.5 = 160.5. Adding it to 130 (178.5) or 100 (148.5) uses the wrong origin, and 142.0 is only a 1.000 relationship.", "expTh": "wave 1 ยาว 30 จุด และ 1.618 x 30 = 48.5 ต้องฉาย wave 3 จากจุดสิ้นสุดของ wave 2: 112 + 48.5 = 160.5 การบวกจาก 130 (178.5) หรือ 100 (148.5) ใช้จุดเริ่มผิด และ 142.0 เป็นแค่ความสัมพันธ์ 1.000"}, {"id": "v2q02", "qType": "single", "diff": "medium", "text": "An impulse is counted: wave 1 from 50 to 80, wave 2 to 66, wave 3 to 140, wave 4 to 118. If wave 5 equals wave 1 in length, where does it end?", "choices": [{"id": "a", "letter": "A", "text": "170"}, {"id": "b", "letter": "B", "text": "148"}, {"id": "c", "letter": "C", "text": "166.5"}, {"id": "d", "letter": "D", "text": "136.5"}], "correct": ["b"], "expEn": "Wave 1 is 30 points, so equality projects wave 5 from the end of wave 4: 118 + 30 = 148. 136.5 uses 0.618 x 30 from 118, 170 starts from the wave 3 top, and 166.5 uses 1.618 x 30 from 118.", "expTh": "wave 1 ยาว 30 จุด ความเท่ากันจึงฉาย wave 5 จากจุดสิ้นสุดของ wave 4: 118 + 30 = 148 ส่วน 136.5 ใช้ 0.618 x 30 จาก 118, 170 เริ่มจากยอด wave 3 และ 166.5 ใช้ 1.618 x 30 จาก 118"}, {"id": "v2q03", "qType": "single", "diff": "hard", "text": "An impulse is counted: wave 1 from 1,000 to 1,200, wave 2 to 1,100, wave 3 to 1,500, wave 4 to 1,380. If wave 5 is extended to 1.618 times the net distance from the start of wave 1 to the end of wave 3, where does it end?", "choices": [{"id": "a", "letter": "A", "text": "1,689"}, {"id": "b", "letter": "B", "text": "2,189"}, {"id": "c", "letter": "C", "text": "2,309"}, {"id": "d", "letter": "D", "text": "2,027"}], "correct": ["b"], "expEn": "The net distance is 1,500 - 1,000 = 500, and 1.618 x 500 = 809. Projected from the end of wave 4, 1,380 + 809 = 2,189. 2,309 starts at the wave 3 top, 1,689 uses 0.618, and 2,027 uses wave 3 alone (400 x 1.618).", "expTh": "ระยะสุทธิคือ 1,500 - 1,000 = 500 และ 1.618 x 500 = 809 ฉายจากจุดสิ้นสุดของ wave 4: 1,380 + 809 = 2,189 ส่วน 2,309 เริ่มจากยอด wave 3, 1,689 ใช้ 0.618 และ 2,027 ใช้ wave 3 เพียงลำพัง (400 x 1.618)"}, {"id": "v2q04", "qType": "single", "diff": "medium", "text": "An advance is counted: wave 1 from 100 to 160, wave 2 to 124, wave 3 to 250. At what level does a 38.2% retracement of wave 3 place wave 4?", "choices": [{"id": "a", "letter": "A", "text": "201.9"}, {"id": "b", "letter": "B", "text": "172.1"}, {"id": "c", "letter": "C", "text": "187.0"}, {"id": "d", "letter": "D", "text": "220.3"}], "correct": ["a"], "expEn": "Wave 3 is 250 - 124 = 126 points, and 0.382 x 126 = 48.1. Subtracting from the top gives 250 - 48.1 = 201.9, well above the wave 1 high of 160. 172.1 is the 61.8% level, 187.0 the 50% level and 220.3 the 23.6% level.", "expTh": "wave 3 ยาว 250 - 124 = 126 จุด และ 0.382 x 126 = 48.1 ลบจากยอดได้ 250 - 48.1 = 201.9 ซึ่งสูงกว่ายอด wave 1 ที่ 160 มาก ส่วน 172.1 คือระดับ 61.8%, 187.0 คือ 50% และ 220.3 คือ 23.6%"}, {"id": "v2q05", "qType": "single", "diff": "medium", "text": "A zigzag decline starts with wave A from 500 to 440, and wave B rallies to 470. If wave C equals 1.618 times wave A, where does it end?", "choices": [{"id": "a", "letter": "A", "text": "410.0"}, {"id": "b", "letter": "B", "text": "372.9"}, {"id": "c", "letter": "C", "text": "342.9"}, {"id": "d", "letter": "D", "text": "402.9"}], "correct": ["b"], "expEn": "Wave A is 60 points and 1.618 x 60 = 97.1. Wave C is projected from the end of wave B: 470 - 97.1 = 372.9. 342.9 starts at the end of A, 402.9 at the start of A, and 410.0 is equality with wave A.", "expTh": "wave A ยาว 60 จุด และ 1.618 x 60 = 97.1 wave C ฉายจากจุดสิ้นสุดของ wave B: 470 - 97.1 = 372.9 ส่วน 342.9 เริ่มจากจุดสิ้นสุดของ A, 402.9 เริ่มจากจุดเริ่มของ A และ 410.0 คือความเท่ากับ wave A"}, {"id": "v2q06", "qType": "single", "diff": "hard", "text": "An uptrend is corrected by a flat that begins at 1,000. Wave A falls to 900, and wave B rallies to 123.6% of wave A, ending at 1,023.6. If wave C is projected at 1.618 times wave A from the end of wave B, where does it end?", "choices": [{"id": "a", "letter": "A", "text": "738.2"}, {"id": "b", "letter": "B", "text": "861.8"}, {"id": "c", "letter": "C", "text": "838.2"}, {"id": "d", "letter": "D", "text": "923.6"}], "correct": ["b"], "expEn": "Wave A is 100 points, so 1.618 x 100 = 161.8. Subtracting from the end of wave B: 1,023.6 - 161.8 = 861.8, which lies beyond the end of A at 900, consistent with an expanded flat. 738.2 starts at A's end, 838.2 at A's start, and 923.6 uses equality.", "expTh": "wave A ยาว 100 จุด จึงได้ 1.618 x 100 = 161.8 ลบจากจุดสิ้นสุดของ wave B: 1,023.6 - 161.8 = 861.8 ซึ่งต่ำกว่าจุดสิ้นสุดของ A ที่ 900 สอดคล้องกับ expanded flat ส่วน 738.2 เริ่มจากจุดสิ้นสุดของ A, 838.2 เริ่มจากจุดเริ่มของ A และ 923.6 ใช้ความเท่ากัน"}, {"id": "v2q07", "qType": "single", "diff": "medium", "text": "An advance is labeled wave 1 from 100 to 160, wave 2 to 124 and wave 3 to 250. Wave 4 then declines to 158. What does this imply?", "choices": [{"id": "a", "letter": "A", "text": "The count is valid, because overlap matters only below the wave 2 low at 124"}, {"id": "b", "letter": "B", "text": "The count is valid, because wave 4 retraced only 73% of wave 3, under 100%"}, {"id": "c", "letter": "C", "text": "The count is invalid, because wave 4 may not retrace more than 61.8% of wave 3"}, {"id": "d", "letter": "D", "text": "Wave 4 has entered wave 1 territory, so this cannot be a regular impulse"}], "correct": ["d"], "expEn": "Wave 1 ended at 160, and a regular impulse forbids wave 4 from trading below it; 158 is an overlap. The relevant limit is the wave 1 end, not the wave 2 low or a percentage of wave 3, and no 61.8% cap exists.", "expTh": "wave 1 จบที่ 160 และ impulse ปกติห้าม wave 4 ลงต่ำกว่านั้น 158 จึงเป็นการซ้อนเขต ข้อจำกัดที่เกี่ยวข้องคือจุดสิ้นสุดของ wave 1 ไม่ใช่จุดต่ำของ wave 2 หรือสัดส่วนของ wave 3 และไม่มีเพดาน 61.8%"}, {"id": "v2q08", "qType": "single", "diff": "hard", "text": "Consider this count: wave 1 runs 200 to 260, wave 2 ends at 224, wave 3 ends at 270, wave 4 ends at 262 and wave 5 ends at 330. Which statement pinpoints the flaw?", "choices": [{"id": "a", "letter": "A", "text": "Wave 5 is longer than wave 3, which is never permitted"}, {"id": "b", "letter": "B", "text": "Wave 2 retraced more than 100% of wave 1 by ending at 224"}, {"id": "c", "letter": "C", "text": "Wave 4 at 262 overlaps wave 1 territory, which ends at 260"}, {"id": "d", "letter": "D", "text": "Wave 3 (46 points) is shorter than wave 1 (60) and wave 5 (68)"}], "correct": ["d"], "expEn": "Wave 3 is 270 - 224 = 46 points, shorter than both wave 1 (60) and wave 5 (68), which violates the rule. Wave 4 at 262 stays above 260, wave 2 retraced 60%, and a longer wave 5 is allowed.", "expTh": "wave 3 ยาว 270 - 224 = 46 จุด สั้นกว่าทั้ง wave 1 (60) และ wave 5 (68) จึงผิดกฎ wave 4 ที่ 262 ยังอยู่เหนือ 260, wave 2 ย่อไป 60% และ wave 5 ยาวกว่า wave 3 ได้"}, {"id": "v2q09", "qType": "single", "diff": "hard", "text": "A Primary-degree impulse is subdivided through the Intermediate degree and then the Minor degree. How many Minor-degree waves does it contain?", "choices": [{"id": "a", "letter": "A", "text": "89"}, {"id": "b", "letter": "B", "text": "34"}, {"id": "c", "letter": "C", "text": "55"}, {"id": "d", "letter": "D", "text": "144"}], "correct": ["a"], "expEn": "A five-wave impulse contains 21 waves one degree lower and 89 waves two degrees lower. 55 is the count for a correction two degrees lower, 34 for a complete cycle one degree lower, and 144 for a complete cycle two degrees lower.", "expTh": "impulse ห้าคลื่นมี 21 คลื่นที่ degree ต่ำลงหนึ่งขั้น และ 89 คลื่นที่ต่ำลงสองขั้น 55 คือจำนวนของ correction ที่ต่ำลงสองขั้น, 34 คือวงจรเต็มที่ต่ำลงหนึ่งขั้น และ 144 คือวงจรเต็มที่ต่ำลงสองขั้น"}, {"id": "v2q10", "qType": "single", "diff": "hard", "text": "A Primary-degree five-wave advance is followed by a Primary-degree three-wave decline. Counting down through the Intermediate and Minor degrees, how many Minor-degree waves does the full cycle contain?", "choices": [{"id": "a", "letter": "A", "text": "55"}, {"id": "b", "letter": "B", "text": "89"}, {"id": "c", "letter": "C", "text": "233"}, {"id": "d", "letter": "D", "text": "144"}], "correct": ["d"], "expEn": "The advance holds 89 Minor waves (5, 21, 89) and the decline holds 55 (3, 13, 55), so 89 + 55 = 144. The full cycle counts 8, 34 and 144 waves at Primary, Intermediate and Minor degrees.", "expTh": "คลื่นขาขึ้นมี 89 คลื่นที่ระดับ Minor (5, 21, 89) และคลื่นขาลงมี 55 (3, 13, 55) รวมเป็น 89 + 55 = 144 วงจรเต็มมี 8, 34 และ 144 คลื่นที่ระดับ Primary, Intermediate และ Minor"}, {"id": "v2q11", "qType": "single", "diff": "medium", "text": "Wave 1 lasts 13 bars. If wave 3 lasts 1.618 times as long as wave 1, how many bars does wave 3 last?", "choices": [{"id": "a", "letter": "A", "text": "26"}, {"id": "b", "letter": "B", "text": "34"}, {"id": "c", "letter": "C", "text": "8"}, {"id": "d", "letter": "D", "text": "21"}], "correct": ["d"], "expEn": "13 x 1.618 = 21.03, about 21 bars, and 13 and 21 are adjacent Fibonacci numbers. 8 is 0.618 x 13, 26 is simple doubling, and 34 is 2.618 x 13.", "expTh": "13 x 1.618 = 21.03 หรือประมาณ 21 แท่ง และ 13 กับ 21 เป็นเลข Fibonacci ที่อยู่ติดกัน ส่วน 8 คือ 0.618 x 13, 26 คือการคูณสอง และ 34 คือ 2.618 x 13"}, {"id": "v2q12", "qType": "single", "diff": "hard", "text": "In a contracting triangle, alternate waves relate by about 0.618 (c to a, e to c). If wave a spans 200 points, about how long is wave e?", "choices": [{"id": "a", "letter": "A", "text": "76.4"}, {"id": "b", "letter": "B", "text": "47.2"}, {"id": "c", "letter": "C", "text": "123.6"}, {"id": "d", "letter": "D", "text": "100.0"}], "correct": ["a"], "expEn": "Wave c is about 0.618 x 200 = 123.6 and wave e about 0.618 x 123.6 = 76.4, which equals 0.382 x 200. 123.6 is wave c, 47.2 is a further step down, and 100.0 uses 0.5.", "expTh": "wave c ประมาณ 0.618 x 200 = 123.6 และ wave e ประมาณ 0.618 x 123.6 = 76.4 ซึ่งเท่ากับ 0.382 x 200 ส่วน 123.6 คือ wave c, 47.2 เป็นอีกขั้นที่ต่ำลง และ 100.0 ใช้ 0.5"}, {"id": "v2q13", "qType": "single", "diff": "hard", "text": "A triangle forms wave 4 within an advance. Its widest part measures 45 points and wave e ends at 810. If the thrust equals the widest part of the triangle, where does wave 5 end?", "choices": [{"id": "a", "letter": "A", "text": "827"}, {"id": "b", "letter": "B", "text": "838"}, {"id": "c", "letter": "C", "text": "883"}, {"id": "d", "letter": "D", "text": "855"}], "correct": ["d"], "expEn": "The thrust after a triangle is about as long as its widest part: 810 + 45 = 855. 883 uses 1.618 x 45, 838 uses 0.618 x 45 and 827 uses 0.382 x 45.", "expTh": "การพุ่งหลัง triangle ยาวประมาณส่วนที่กว้างที่สุดของมัน: 810 + 45 = 855 ส่วน 883 ใช้ 1.618 x 45, 838 ใช้ 0.618 x 45 และ 827 ใช้ 0.382 x 45"}, {"id": "v2q14", "qType": "single", "diff": "medium", "text": "Wave 1 rises from 20 to 35 and wave 2 ends at 27. If wave 3 is extended to 2.618 times wave 1, where does wave 3 end?", "choices": [{"id": "a", "letter": "A", "text": "59.3"}, {"id": "b", "letter": "B", "text": "66.3"}, {"id": "c", "letter": "C", "text": "51.3"}, {"id": "d", "letter": "D", "text": "74.3"}], "correct": ["b"], "expEn": "Wave 1 is 15 points and 2.618 x 15 = 39.3. From the end of wave 2: 27 + 39.3 = 66.3. 74.3 starts at the wave 1 top, 51.3 uses 1.618 and 59.3 starts at the origin of wave 1.", "expTh": "wave 1 ยาว 15 จุด และ 2.618 x 15 = 39.3 จากจุดสิ้นสุดของ wave 2: 27 + 39.3 = 66.3 ส่วน 74.3 เริ่มจากยอด wave 1, 51.3 ใช้ 1.618 และ 59.3 เริ่มจากจุดเริ่มต้นของ wave 1"}, {"id": "v2q15", "qType": "single", "diff": "medium", "text": "A double zigzag declines in wave W from 1,000 to 900. Wave X then retraces 40% of wave W. If wave Y equals wave W in length, where does wave Y end?", "choices": [{"id": "a", "letter": "A", "text": "878.2"}, {"id": "b", "letter": "B", "text": "800"}, {"id": "c", "letter": "C", "text": "840"}, {"id": "d", "letter": "D", "text": "740"}], "correct": ["c"], "expEn": "Wave W spans 100 points, and a 40% retracement lifts wave X to 900 + 40 = 940. Wave Y equal to wave W falls another 100 points from 940, ending at 840.", "expTh": "wave W ยาว 100 จุด และการย้อน 40% ทำให้ wave X ขึ้นไปที่ 900 + 40 = 940 หาก wave Y ยาวเท่า wave W จะลงต่ออีก 100 จุดจาก 940 และจบที่ 840"}, {"id": "v2q16", "qType": "single", "diff": "hard", "text": "In an uptrend, wave 2 ends at 110 on bar 10 and wave 4 ends at 150 on bar 30, and wave 3 peaks at 180 on bar 20. The upper channel line is drawn parallel to the 2-4 base line through the wave 3 peak. What value does it reach at bar 40?", "choices": [{"id": "a", "letter": "A", "text": "240"}, {"id": "b", "letter": "B", "text": "170"}, {"id": "c", "letter": "C", "text": "220"}, {"id": "d", "letter": "D", "text": "200"}], "correct": ["c"], "expEn": "The base line rises (150 - 110) / (30 - 10) = 2 points per bar. The parallel through 180 at bar 20 reaches 180 + 2 x 20 = 220 at bar 40. 200 is the upper line at bar 30, and 170 is the base line at bar 40.", "expTh": "เส้นฐานชันขึ้น (150 - 110) / (30 - 10) = 2 จุดต่อแท่ง เส้นขนานที่ผ่าน 180 ที่แท่ง 20 จึงไปถึง 180 + 2 x 20 = 220 ที่แท่ง 40 ส่วน 200 คือค่าเส้นบนที่แท่ง 30 และ 170 คือเส้นฐานที่แท่ง 40"}, {"id": "v2q17", "qType": "single", "diff": "medium", "text": "Wave 1 runs from 1,000 to 1,150, wave 2 ends at 1,070 and wave 3 ends at 1,312.7. Which ratio of wave 3 to wave 1 does this show?", "choices": [{"id": "a", "letter": "A", "text": "1.618"}, {"id": "b", "letter": "B", "text": "1.382"}, {"id": "c", "letter": "C", "text": "2.618"}, {"id": "d", "letter": "D", "text": "1.000"}], "correct": ["a"], "expEn": "Wave 3 is 1,312.7 - 1,070 = 242.7 points and wave 1 is 150, so 242.7 / 150 = 1.618. 2.618 would require a wave 3 of 392.7 points.", "expTh": "wave 3 ยาว 1,312.7 - 1,070 = 242.7 จุด และ wave 1 ยาว 150 จึงได้ 242.7 / 150 = 1.618 ส่วน 2.618 ต้องใช้ wave 3 ยาว 392.7 จุด"}, {"id": "v2q18", "qType": "single", "diff": "hard", "text": "Consecutive Fibonacci squares add to a later Fibonacci number. The squares of 8 and 13 sum to which Fibonacci number?", "choices": [{"id": "a", "letter": "A", "text": "144"}, {"id": "b", "letter": "B", "text": "377"}, {"id": "c", "letter": "C", "text": "233"}, {"id": "d", "letter": "D", "text": "610"}], "correct": ["c"], "expEn": "8 squared is 64 and 13 squared is 169, so the sum is 233, which is the next Fibonacci number after 144. 377 and 610 follow 233 and are too large, and 144 is too small.", "expTh": "8 ยกกำลังสองได้ 64 และ 13 ยกกำลังสองได้ 169 ผลรวมคือ 233 ซึ่งเป็นเลข Fibonacci ถัดจาก 144 ส่วน 377 และ 610 อยู่หลัง 233 จึงใหญ่เกิน และ 144 เล็กเกินไป"}, {"id": "v2q19", "qType": "single", "diff": "hard", "text": "The first ten Fibonacci numbers, 1, 1, 2, 3, 5, 8, 13, 21, 34 and 55, add up to 143. Which Fibonacci number is exactly one greater than this sum?", "choices": [{"id": "a", "letter": "A", "text": "89"}, {"id": "b", "letter": "B", "text": "377"}, {"id": "c", "letter": "C", "text": "144"}, {"id": "d", "letter": "D", "text": "233"}], "correct": ["c"], "expEn": "The sum of the first n Fibonacci numbers equals the (n + 2)th term minus 1, and the twelfth term is 144. 89 and 233 are different terms and cannot equal 143 + 1.", "expTh": "ผลรวมของ n พจน์แรกของ Fibonacci เท่ากับพจน์ที่ (n + 2) ลบ 1 และพจน์ที่ 12 คือ 144 ส่วน 89 และ 233 เป็นพจน์อื่นและไม่เท่ากับ 143 + 1"}, {"id": "v2q20", "qType": "single", "diff": "medium", "text": "A five-wave advance rises from 400 to 900, and the following correction retraces 38.2% of the whole advance. At what level does the correction end?", "choices": [{"id": "a", "letter": "A", "text": "709"}, {"id": "b", "letter": "B", "text": "650"}, {"id": "c", "letter": "C", "text": "309"}, {"id": "d", "letter": "D", "text": "591"}], "correct": ["a"], "expEn": "The advance is 500 points, and 0.382 x 500 = 191. Subtracting from the top gives 900 - 191 = 709. 591 is the 61.8% level, 650 the 50% level and 309 is 0.618 x 500 measured as a distance.", "expTh": "คลื่นขาขึ้นยาว 500 จุด และ 0.382 x 500 = 191 ลบจากยอดได้ 900 - 191 = 709 ส่วน 591 คือระดับ 61.8%, 650 คือ 50% และ 309 คือ 0.618 x 500 ซึ่งเป็นระยะทางไม่ใช่ระดับราคา"}];
+const V3_BANK = [{"id": "v3q01", "qType": "multi", "diff": "medium", "text": "Pick every correct property of the series 1, 1, 2, 3, 5, 8, 13, 21 and onward. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "The ratio of a term to the next term approaches exactly 0.5 as the sequence advances"}, {"id": "b", "letter": "B", "text": "Each term after the first two equals the sum of the two terms before it"}, {"id": "c", "letter": "C", "text": "Each term after the first two is the product of the two terms before it"}, {"id": "d", "letter": "D", "text": "The ratio of a term to the next term approaches 0.618 as the sequence advances"}], "correct": ["b", "d"], "expEn": "The sequence is built by adding the two previous terms, and the adjacent-term ratio converges on 0.618. It does not converge on 0.5, and the product rule would grow far faster than the sequence does.", "expTh": "อนุกรมสร้างจากการบวกสองพจน์ก่อนหน้า และอัตราส่วนพจน์ติดกันลู่เข้าสู่ 0.618 ไม่ใช่ 0.5 และกฎการคูณจะโตเร็วกว่าอนุกรม Fibonacci มาก"}, {"id": "v3q02", "qType": "multi", "diff": "medium", "text": "Choose each true arithmetic relationship among the ratios 0.382, 0.618, 1.618 and 2.618. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "1.618 multiplied by 0.618 is approximately 1.000"}, {"id": "b", "letter": "B", "text": "0.382 multiplied by 2.618 is approximately 1.000"}, {"id": "c", "letter": "C", "text": "0.618 multiplied by 2.618 is approximately 1.000"}, {"id": "d", "letter": "D", "text": "1.618 plus 0.618 equals exactly 2.000"}], "correct": ["a", "b"], "expEn": "1.618 and 0.618 are reciprocals, as are 0.382 and 2.618. 0.618 x 2.618 is 1.618, and 1.618 + 0.618 is 2.236, not 2.", "expTh": "1.618 กับ 0.618 เป็นส่วนกลับของกัน เช่นเดียวกับ 0.382 กับ 2.618 ส่วน 0.618 x 2.618 ได้ 1.618 และ 1.618 + 0.618 ได้ 2.236 ไม่ใช่ 2"}, {"id": "v3q03", "qType": "multi", "diff": "medium", "text": "Pick the accurate wave totals when an impulse or correction is broken down by one degree. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "A five-wave impulse contains 21 waves at the next lower degree"}, {"id": "b", "letter": "B", "text": "A three-wave correction contains 13 waves at the next lower degree"}, {"id": "c", "letter": "C", "text": "A complete five-three cycle contains 21 waves at the next lower degree"}, {"id": "d", "letter": "D", "text": "A five-wave impulse contains 15 waves at the next lower degree"}], "correct": ["a", "b"], "expEn": "An impulse is 5-3-5-3-5, or 21 waves, and a correction is 5-3-5, or 13 waves. Fifteen counts only the motive subwaves, and a complete cycle one degree lower holds 21 + 13 = 34 waves.", "expTh": "impulse เป็น 5-3-5-3-5 หรือ 21 คลื่น และ correction เป็น 5-3-5 หรือ 13 คลื่น 15 นับเฉพาะคลื่นย่อย motive และวงจรเต็มที่ต่ำลงหนึ่งขั้นมี 21 + 13 = 34 คลื่น"}, {"id": "v3q04", "qType": "multi", "diff": "medium", "text": "Choose every typical retracement depth that fits impulse behavior. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave 4 commonly retraces 161.8% of wave 3 in a regular impulse"}, {"id": "b", "letter": "B", "text": "Wave 2 commonly retraces 61.8% or 50% of wave 1"}, {"id": "c", "letter": "C", "text": "Wave 2 commonly retraces 123.6% of wave 1 in a regular impulse"}, {"id": "d", "letter": "D", "text": "Wave 4 most commonly retraces about 38.2% of wave 3"}], "correct": ["b", "d"], "expEn": "Wave 2 often retraces 61.8% or 50% of wave 1, and wave 4 often retraces 38.2% of wave 3. Any retracement beyond 100% would exceed the start of wave 1 or the start of wave 3.", "expTh": "wave 2 มักย่อ 61.8% หรือ 50% ของ wave 1 และ wave 4 มักย่อ 38.2% ของ wave 3 การย่อเกิน 100% จะผ่านจุดเริ่มของ wave 1 หรือ wave 3"}, {"id": "v3q05", "qType": "multi", "diff": "hard", "text": "Select the guidelines linking waves 1, 3 and 5 that Elliott analysts rely on. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave 3 must measure at least 1.618 times wave 1 to be valid"}, {"id": "b", "letter": "B", "text": "Wave 3 often measures about 1.618 times wave 1, or more when extended"}, {"id": "c", "letter": "C", "text": "With an extended wave 3, waves 1 and 5 tend toward equality"}, {"id": "d", "letter": "D", "text": "An extended wave 5 often measures 1.618 times the net travel of waves 1 to 3"}], "correct": ["b", "c", "d"], "expEn": "These are guidelines: 1.618 is common for wave 3, equality (or 0.618) links waves 1 and 5 when wave 3 extends, and an extended fifth often travels 1.618 times the net travel of waves 1 to 3. No minimum multiple is required for wave 3 to be valid.", "expTh": "ทั้งหมดเป็นแนวปฏิบัติ: 1.618 พบบ่อยใน wave 3, ความเท่ากัน (หรือ 0.618) เชื่อม wave 1 กับ 5 เมื่อ wave 3 extended และ wave 5 ที่ extended มักวิ่ง 1.618 เท่าของระยะสุทธิของ wave 1 ถึง 3 ไม่มีขั้นต่ำที่ wave 3 ต้องมีเพื่อให้ใช้ได้"}, {"id": "v3q06", "qType": "multi", "diff": "hard", "text": "With wave 1 running from 100 to 150, pick each correct level calculation. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "If wave 2 ends at 120, a 1.618 projection of wave 3 ends at 230.9"}, {"id": "b", "letter": "B", "text": "The 61.8% retracement level of wave 1 is 130.9"}, {"id": "c", "letter": "C", "text": "The 61.8% retracement level of wave 1 is 119.1"}, {"id": "d", "letter": "D", "text": "If wave 2 ends at 120, a 1.618 projection of wave 3 ends at 200.9"}], "correct": ["c", "d"], "expEn": "Wave 1 is 50 points, so 0.618 x 50 = 30.9 and 150 - 30.9 = 119.1. The 1.618 projection is 80.9 points from the end of wave 2: 120 + 80.9 = 200.9, while 130.9 adds to the base and 230.9 projects from the wave 1 top.", "expTh": "wave 1 ยาว 50 จุด จึงได้ 0.618 x 50 = 30.9 และ 150 - 30.9 = 119.1 การฉาย 1.618 คือ 80.9 จุดจากจุดสิ้นสุดของ wave 2: 120 + 80.9 = 200.9 ส่วน 130.9 บวกจากฐาน และ 230.9 ฉายจากยอด wave 1"}, {"id": "v3q07", "qType": "multi", "diff": "medium", "text": "Select the true consequences of alternation between waves 2 and 4. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "A sharp wave 2 suggests a sideways wave 4, such as a flat or triangle"}, {"id": "b", "letter": "B", "text": "Alternation requires wave 4 to retrace more than wave 2"}, {"id": "c", "letter": "C", "text": "A violation of alternation invalidates the impulse count"}, {"id": "d", "letter": "D", "text": "A sideways wave 2 suggests a sharp wave 4, such as a zigzag"}], "correct": ["a", "d"], "expEn": "Alternation works both ways: a sharp correction tends to be followed by a sideways one and the reverse. It is a guideline, not a rule, and says nothing about requiring a deeper wave 4.", "expTh": "alternation ใช้ได้ทั้งสองทาง: การแก้ตัวแรงมักตามด้วยการแก้แบบไซด์เวย์ และกลับกัน เป็นแนวปฏิบัติ ไม่ใช่กฎ และไม่ได้กำหนดให้ wave 4 ลึกกว่า"}, {"id": "v3q08", "qType": "multi", "diff": "medium", "text": "Choose the true descriptions of triangle structure and placement. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Each of the five waves of a contracting triangle subdivides into three waves"}, {"id": "b", "letter": "B", "text": "The five waves of a triangle subdivide 5-3-5-3-5"}, {"id": "c", "letter": "C", "text": "A triangle can occur in the fourth-wave position of an impulse"}, {"id": "d", "letter": "D", "text": "A triangle can occur in the second-wave position of an impulse"}], "correct": ["a", "c"], "expEn": "A triangle is a 3-3-3-3-3 pattern that appears in wave 4, wave B or wave X. It never appears in wave 2, and 5-3-5-3-5 is the impulse structure.", "expTh": "triangle เป็นรูปแบบ 3-3-3-3-3 ที่ปรากฏใน wave 4, wave B หรือ wave X ไม่ปรากฏใน wave 2 และ 5-3-5-3-5 เป็นโครงสร้างของ impulse"}, {"id": "v3q09", "qType": "multi", "diff": "medium", "text": "Pick every accurate description of diagonal behavior. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "In a diagonal, wave 2 may retrace more than 100% of wave 1"}, {"id": "b", "letter": "B", "text": "In a diagonal, wave 4 overlaps the territory of wave 1"}, {"id": "c", "letter": "C", "text": "An ending diagonal appears in the fifth-wave position or as wave C"}, {"id": "d", "letter": "D", "text": "An ending diagonal appears in the third-wave position"}], "correct": ["b", "c"], "expEn": "Overlap of wave 4 into wave 1 is the signature of a diagonal, and the ending type is found as wave 5 or wave C. Wave 2 still may not retrace more than 100% of wave 1.", "expTh": "การซ้อนของ wave 4 เข้าเขต wave 1 เป็นเอกลักษณ์ของ diagonal และชนิด ending พบเป็น wave 5 หรือ wave C ส่วน wave 2 ยังคงห้ามย่อเกิน 100% ของ wave 1"}, {"id": "v3q10", "qType": "multi", "diff": "medium", "text": "Choose all valid observations about extended waves in an impulse. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "An extended wave always subdivides into only three waves"}, {"id": "b", "letter": "B", "text": "Waves 2 and 4 of an impulse are the waves that normally extend"}, {"id": "c", "letter": "C", "text": "Usually only one of waves 1, 3 and 5 of an impulse is extended"}, {"id": "d", "letter": "D", "text": "An impulse with one extended wave appears to have nine waves"}], "correct": ["c", "d"], "expEn": "Extensions normally occur in one motive wave and show as nine waves in total (4 + the extension's 5). Waves 2 and 4 are corrective, and an extended motive wave is composed of five subwaves.", "expTh": "extension มักเกิดในคลื่น motive เพียงหนึ่งคลื่น และเห็นเป็นเก้าคลื่นรวม (4 + 5 ของ extension) wave 2 และ 4 เป็นคลื่นแก้ และคลื่น motive ที่ extended ประกอบด้วยห้าคลื่นย่อย"}, {"id": "v3q11", "qType": "multi", "diff": "hard", "text": "Mark each labeled count below that cannot be a regular impulse. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave 1 from 1,000 to 1,100, wave 2 to 1,038, wave 3 to 1,330, wave 4 to 1,210, wave 5 to 1,300"}, {"id": "b", "letter": "B", "text": "Wave 1 from 200 to 260, wave 2 to 224, wave 3 to 270, wave 4 to 262, wave 5 to 330"}, {"id": "c", "letter": "C", "text": "Wave 1 from 500 to 540, wave 2 to 498, wave 3 to 600, wave 4 to 560, wave 5 to 640"}, {"id": "d", "letter": "D", "text": "Wave 1 from 100 to 140, wave 2 to 115, wave 3 to 190, wave 4 to 150, wave 5 to 185"}], "correct": ["b", "c"], "expEn": "The first sequence has wave 3 of 46 points, shorter than wave 1 (60) and wave 5 (68). The second has wave 2 at 498, below the start of wave 1 at 500. The others have valid wave 3 lengths and no overlap, and their short fifth waves are only truncations.", "expTh": "ลำดับแรกมี wave 3 ยาว 46 จุด สั้นกว่า wave 1 (60) และ wave 5 (68) ลำดับที่สองมี wave 2 ที่ 498 ต่ำกว่าจุดเริ่มของ wave 1 ที่ 500 ลำดับอื่นมี wave 3 ยาวถูกต้องและไม่มีการซ้อนเขต wave 5 ที่สั้นเป็นเพียง truncation"}, {"id": "v3q12", "qType": "multi", "diff": "hard", "text": "Pick each correct wave total two degrees below an impulse or a correction. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "A complete five-three cycle contains 55 waves two degrees lower"}, {"id": "b", "letter": "B", "text": "A five-wave impulse contains 89 waves two degrees lower"}, {"id": "c", "letter": "C", "text": "A three-wave correction contains 55 waves two degrees lower"}, {"id": "d", "letter": "D", "text": "A five-wave impulse contains 55 waves two degrees lower"}], "correct": ["b", "c"], "expEn": "An impulse runs 5, 21, 89 and a correction 3, 13, 55 across successive degrees. A complete five-three cycle runs 8, 34, 144, so two degrees lower it has 144 waves, not 55.", "expTh": "impulse ไล่เป็น 5, 21, 89 และ correction เป็น 3, 13, 55 ข้ามแต่ละ degree วงจรเต็ม 5-3 ไล่เป็น 8, 34, 144 ดังนั้นที่ต่ำลงสองขั้นจึงมี 144 คลื่น ไม่ใช่ 55"}, {"id": "v3q13", "qType": "multi", "diff": "easy", "text": "Mark every number that belongs to the Fibonacci sequence. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "144"}, {"id": "b", "letter": "B", "text": "233"}, {"id": "c", "letter": "C", "text": "121"}, {"id": "d", "letter": "D", "text": "89"}], "correct": ["a", "b", "d"], "expEn": "89, 144 and 233 are consecutive terms of the sequence (55 + 89 = 144 and 89 + 144 = 233). 121 is 11 squared and does not appear in it.", "expTh": "89, 144 และ 233 เป็นพจน์ติดกันของอนุกรม (55 + 89 = 144 และ 89 + 144 = 233) ส่วน 121 คือ 11 ยกกำลังสอง ซึ่งไม่อยู่ในอนุกรมนี้"}, {"id": "v3q14", "qType": "multi", "diff": "hard", "text": "Pick the Fibonacci quotients that come out near 0.382. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "13 divided by 34"}, {"id": "b", "letter": "B", "text": "21 divided by 34"}, {"id": "c", "letter": "C", "text": "34 divided by 21"}, {"id": "d", "letter": "D", "text": "34 divided by 89"}], "correct": ["a", "d"], "expEn": "13/34 = 0.382 and 34/89 = 0.382, each two places apart in the sequence. 21/34 = 0.618 is an adjacent ratio and 34/21 = 1.619 is its reciprocal.", "expTh": "13/34 = 0.382 และ 34/89 = 0.382 ซึ่งห่างกันสองตำแหน่งในอนุกรม ส่วน 21/34 = 0.618 เป็นอัตราส่วนพจน์ติดกัน และ 34/21 = 1.619 เป็นส่วนกลับของมัน"}, {"id": "v3q15", "qType": "multi", "diff": "medium", "text": "Choose all accurate descriptions of zigzag and flat structure. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "A zigzag subdivides into a 5-3-5 pattern"}, {"id": "b", "letter": "B", "text": "A flat subdivides into a 3-3-5 pattern"}, {"id": "c", "letter": "C", "text": "In a flat, wave A subdivides into five waves"}, {"id": "d", "letter": "D", "text": "In an expanded flat, wave B passes the start of wave A"}], "correct": ["a", "b", "d"], "expEn": "A zigzag is 5-3-5 and a flat is 3-3-5; in an expanded flat wave B exceeds the start of wave A. Wave A of a flat is a three, which is what separates it from a zigzag.", "expTh": "zigzag เป็น 5-3-5 และ flat เป็น 3-3-5 ใน expanded flat wave B เกินจุดเริ่มของ wave A ส่วน wave A ของ flat เป็นสามคลื่น ซึ่งเป็นสิ่งที่แยกมันออกจาก zigzag"}, {"id": "v3q16", "qType": "multi", "diff": "medium", "text": "Choose each sound statement about measuring time with Fibonacci numbers. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Significant turning points often fall a Fibonacci number of bars apart, such as 21 or 34"}, {"id": "b", "letter": "B", "text": "A count is invalid whenever a turn does not occur on an exact Fibonacci bar"}, {"id": "c", "letter": "C", "text": "Wave durations of 21 and 34 bars are related by approximately 0.618"}, {"id": "d", "letter": "D", "text": "Fibonacci time relationships apply only to wave 3 of an impulse"}], "correct": ["a", "c"], "expEn": "Time can be measured in Fibonacci numbers of bars, and 21/34 = 0.618. These are tendencies that can apply to any wave, not strict rules that invalidate a count.", "expTh": "เวลาวัดเป็นจำนวนแท่งตามเลข Fibonacci ได้ และ 21/34 = 0.618 เป็นแนวโน้มที่ใช้ได้กับคลื่นใดก็ได้ ไม่ใช่กฎเข้มงวดที่ทำให้การนับผิด"}, {"id": "v3q17", "qType": "multi", "diff": "hard", "text": "Mark every true identity involving the golden ratio. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "1.618 squared equals 1.618 plus 1"}, {"id": "b", "letter": "B", "text": "0.618 squared equals 1 minus 0.618"}, {"id": "c", "letter": "C", "text": "1.618 equals (1 + the square root of 5) / 2"}, {"id": "d", "letter": "D", "text": "1.618 cubed equals exactly 3.236"}], "correct": ["a", "b", "c"], "expEn": "Phi satisfies phi squared = phi + 1, and 0.618 squared = 0.382 = 1 - 0.618; phi is exactly (1 + sqrt 5) / 2. Phi cubed is 4.236, while 3.236 is double 1.618.", "expTh": "phi ทำให้ phi กำลังสอง = phi + 1 และ 0.618 กำลังสอง = 0.382 = 1 - 0.618 และ phi เท่ากับ (1 + รากที่สองของ 5) / 2 พอดี phi กำลังสามคือ 4.236 ส่วน 3.236 คือสองเท่าของ 1.618"}, {"id": "v3q18", "qType": "multi", "diff": "medium", "text": "Pick the true statements about channel lines drawn through an impulse. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "The base line connects the ends of waves 2 and 4"}, {"id": "b", "letter": "B", "text": "The upper line is always drawn through the end of wave 4"}, {"id": "c", "letter": "C", "text": "A throw-over can push wave 5 beyond the upper channel line"}, {"id": "d", "letter": "D", "text": "Wave 5 must always end exactly on the upper channel line"}], "correct": ["a", "c"], "expEn": "The 2-4 line forms the base, and wave 5 can overshoot the parallel in a throw-over or fall short of it. A parallel through the wave 3 peak, not wave 4, defines the upper line.", "expTh": "เส้น 2-4 เป็นเส้นฐาน และ wave 5 อาจทะลุเส้นขนานในรูป throw-over หรืออาจไปไม่ถึงก็ได้ เส้นขนานที่ผ่านยอด wave 3 ไม่ใช่ wave 4 เป็นตัวกำหนดเส้นบน"}, {"id": "v3q19", "qType": "multi", "diff": "easy", "text": "Mark all degrees ranked lower than Primary. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Intermediate degree"}, {"id": "b", "letter": "B", "text": "Cycle degree"}, {"id": "c", "letter": "C", "text": "Minor degree"}, {"id": "d", "letter": "D", "text": "Minuette degree"}], "correct": ["a", "c", "d"], "expEn": "Intermediate, Minor and Minuette sit below Primary, while Cycle is the next larger degree above Primary.", "expTh": "Intermediate, Minor และ Minuette อยู่ต่ำกว่า Primary ส่วน Cycle เป็น degree ที่ใหญ่กว่า Primary หนึ่งขั้น"}, {"id": "v3q20", "qType": "multi", "diff": "medium", "text": "Select every wave C to wave A ratio commonly seen in zigzags. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave C equals wave A"}, {"id": "b", "letter": "B", "text": "Wave C equals 4.236 times wave A"}, {"id": "c", "letter": "C", "text": "Wave C equals 1.618 times wave A"}, {"id": "d", "letter": "D", "text": "Wave C equals 0.618 times wave A"}], "correct": ["a", "c", "d"], "expEn": "Wave C commonly equals wave A, and 1.618 or 0.618 times wave A also occur. 4.236 times wave A is far outside the usual range.", "expTh": "wave C มักยาวเท่า wave A และพบ 1.618 หรือ 0.618 เท่าของ wave A ได้เช่นกัน ส่วน 4.236 เท่าของ wave A อยู่นอกช่วงปกติมาก"}];
+</script>
+<script>
+(function(){
+"use strict";
+
+const VARIANTS = {
+  v1: { bank:V1_BANK, name:'Elliott Wave Analyst — Level I', nameTh:'CEWA I · พื้นฐาน', minutes:45, key:'v1' },
+  v2: { bank:V2_BANK, name:'Elliott Wave Analyst — Level II, Part 1', nameTh:'CEWA II · ตอนที่ 1', minutes:45, key:'v2' },
+  v3: { bank:V3_BANK, name:'Elliott Wave Analyst — Level II, Part 2', nameTh:'CEWA II · ตอนที่ 2', minutes:45, key:'v3' },
+};
+
+const state = {
+  shuffled: false,
+  selectedVariant: null,
+  currentVariant: null,
+  questions: [],
+  answers: {},      // qid -> string id (single/tf) or array of ids (multi)
+  startTime: null,
+  timerInterval: null,
+  remainingSeconds: 0,
+  lang: 'en',
+  lastResult: null,
+};
+
+/* ---------- Seeded RNG + Fisher-Yates (deep clone before shuffling) ---------- */
+function mulberry32(seed){
+  let a = seed >>> 0;
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function fisherYates(arr, rnd){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(rnd()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function deepCloneBank(bank){
+  return bank.map(q => ({
+    ...q,
+    choices: q.choices ? q.choices.map(c => ({...c})) : undefined,
+    correct: [...q.correct]
+  }));
+}
+
+/* ---------- Custom modal (avoids window.confirm for in-app browser compatibility) ---------- */
+const modalOverlay = document.getElementById('modalOverlay');
+const modalTitle = document.getElementById('modalTitle');
+const modalMsg = document.getElementById('modalMsg');
+const modalCancel = document.getElementById('modalCancel');
+const modalConfirm = document.getElementById('modalConfirm');
+let modalResolve = null;
+function showModal(title, msg, confirmLabel){
+  modalTitle.textContent = title;
+  modalMsg.textContent = msg;
+  modalConfirm.textContent = confirmLabel || 'Confirm';
+  modalOverlay.classList.add('active');
+  return new Promise(resolve => { modalResolve = resolve; });
+}
+modalCancel.addEventListener('click', ()=>{ modalOverlay.classList.remove('active'); if(modalResolve) modalResolve(false); });
+modalConfirm.addEventListener('click', ()=>{ modalOverlay.classList.remove('active'); if(modalResolve) modalResolve(true); });
+modalOverlay.addEventListener('click', (e)=>{ if(e.target===modalOverlay){ modalOverlay.classList.remove('active'); if(modalResolve) modalResolve(false); } });
+
+/* ---------- Screen switching ---------- */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+/* ---------- Lobby ---------- */
+const variantList = document.getElementById('variantList');
+const startBtn = document.getElementById('startBtn');
+const shuffleToggle = document.getElementById('shuffleToggle');
+const shuffleSwitch = document.getElementById('shuffleSwitch');
+
+variantList.addEventListener('click', (e)=>{
+  const card = e.target.closest('.variant-card');
+  if(!card) return;
+  document.querySelectorAll('.variant-card').forEach(c=>c.classList.remove('selected'));
+  card.classList.add('selected');
+  state.selectedVariant = card.getAttribute('data-variant');
+  startBtn.disabled = false;
+});
+
+shuffleToggle.addEventListener('click', ()=>{
+  state.shuffled = !state.shuffled;
+  shuffleSwitch.classList.toggle('on', state.shuffled);
+});
+
+startBtn.addEventListener('click', ()=>{
+  if(!state.selectedVariant) return;
+  beginExam(state.selectedVariant);
+});
+
+/* ---------- Begin exam ---------- */
+function beginExam(variantKey){
+  const v = VARIANTS[variantKey];
+  state.currentVariant = variantKey;
+  let bank = deepCloneBank(v.bank);
+  if(state.shuffled){
+    const seed = (Date.now() ^ Math.floor(Math.random()*1e9)) >>> 0;
+    const rnd = mulberry32(seed);
+    bank = fisherYates(bank, rnd);
+    bank = bank.map(q=>{
+      if(q.qType==='tf') return q;
+      const rnd2 = mulberry32((seed ^ hashId(q.id)) >>> 0);
+      return {...q, choices: fisherYates(q.choices, rnd2)};
+    });
+  }
+  state.questions = bank;
+  state.answers = {};
+  state.remainingSeconds = v.minutes * 60;
+  state.startTime = Date.now();
+
+  document.getElementById('quizVariantName').textContent = v.name;
+  renderQuestions();
+  updateHud();
+  showScreen('screen-quiz');
+  startTimer();
+}
+function hashId(str){
+  let h=0; for(let i=0;i<str.length;i++){ h=(h*31 + str.charCodeAt(i))|0; }
+  return h;
+}
+
+/* ---------- Render questions ---------- */
+const questionList = document.getElementById('questionList');
+function renderQuestions(){
+  const frag = document.createDocumentFragment();
+  state.questions.forEach((q, idx) => {
+    const card = document.createElement('div');
+    card.className = 'qcard';
+    card.setAttribute('data-qcard', q.id);
+
+    const typeLabel = q.qType==='tf' ? 'TRUE / FALSE' : (q.qType==='multi' ? 'SELECT ALL THAT APPLY' : 'SINGLE BEST ANSWER');
+    let html = `<div class="qnum">${idx+1}</div>`;
+    html += `<div class="qtext">${escapeHtml(q.text)}<span class="qtype-badge">${typeLabel}</span></div>`;
+
+    if(q.qType === 'tf'){
+      html += `<div class="tf-row" role="radiogroup" data-qid="${q.id}" data-qtype="tf">
+        <button class="tf-btn tf-true" role="radio" aria-checked="false" data-cid="true">✓ TRUE</button>
+        <button class="tf-btn tf-false" role="radio" aria-checked="false" data-cid="false">✗ FALSE</button>
+      </div>`;
+    } else if(q.qType === 'multi'){
+      html += `<div class="choices" role="group" data-qid="${q.id}" data-qtype="multi">`;
+      q.choices.forEach(c=>{
+        html += `<button class="choice-btn" role="checkbox" aria-checked="false" data-cid="${c.id}">
+          <span class="choice-letter">${c.letter}</span><span>${escapeHtml(c.text)}</span>
+        </button>`;
+      });
+      html += `</div>`;
+    } else {
+      html += `<div class="choices" role="radiogroup" data-qid="${q.id}" data-qtype="single">`;
+      q.choices.forEach(c=>{
+        html += `<button class="choice-btn" role="radio" aria-checked="false" data-cid="${c.id}">
+          <span class="choice-letter">${c.letter}</span><span>${escapeHtml(c.text)}</span>
+        </button>`;
+      });
+      html += `</div>`;
+    }
+    card.innerHTML = html;
+    frag.appendChild(card);
+  });
+  questionList.innerHTML = '';
+  questionList.appendChild(frag);
+}
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+/* ---------- Answer selection (event delegation via data-* attrs) ---------- */
+questionList.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-cid]');
+  if(!btn) return;
+  const group = btn.closest('[data-qid]');
+  const qid = group.getAttribute('data-qid');
+  const qtype = group.getAttribute('data-qtype');
+  const cid = btn.getAttribute('data-cid');
+
+  if(qtype === 'multi'){
+    const cur = Array.isArray(state.answers[qid]) ? state.answers[qid].slice() : [];
+    const pos = cur.indexOf(cid);
+    if(pos >= 0) cur.splice(pos,1); else cur.push(cid);
+    state.answers[qid] = cur;
+    group.querySelectorAll('[data-cid]').forEach(b=>{
+      b.setAttribute('aria-checked', cur.includes(b.getAttribute('data-cid')) ? 'true' : 'false');
+    });
+  } else {
+    state.answers[qid] = cid;
+    group.querySelectorAll('[data-cid]').forEach(b=>{
+      b.setAttribute('aria-checked', b.getAttribute('data-cid')===cid ? 'true' : 'false');
+    });
+  }
+  const card = btn.closest('.qcard');
+  const answered = qtype==='multi' ? (state.answers[qid]||[]).length>0 : !!state.answers[qid];
+  card.classList.toggle('answered', answered);
+  updateHud();
+});
+
+/* ---------- Timer / HUD ---------- */
+function startTimer(){
+  clearInterval(state.timerInterval);
+  state.timerInterval = setInterval(()=>{
+    state.remainingSeconds--;
+    if(state.remainingSeconds <= 0){
+      state.remainingSeconds = 0;
+      clearInterval(state.timerInterval);
+      finishExam();
+      return;
+    }
+    updateHud();
+  }, 1000);
+}
+function fmtTime(totalSeconds){
+  const m = Math.floor(totalSeconds/60), s = totalSeconds%60;
+  return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function updateHud(){
+  const elapsed = Math.floor((Date.now()-state.startTime)/1000);
+  document.getElementById('hudElapsed').textContent = fmtTime(elapsed);
+  document.getElementById('hudRemaining').textContent = fmtTime(state.remainingSeconds);
+  const answeredCount = state.questions.filter(q=>{
+    const a = state.answers[q.id];
+    return q.qType==='multi' ? (Array.isArray(a) && a.length>0) : !!a;
+  }).length;
+  const total = state.questions.length;
+  const pct = total ? Math.round((answeredCount/total)*100) : 0;
+  document.getElementById('hudProgress').textContent = pct+'%';
+  document.getElementById('hudBarFill').style.width = pct+'%';
+  document.getElementById('quizCount').textContent = answeredCount+' / '+total+' answered';
+  const hud = document.getElementById('hud');
+  hud.classList.toggle('warn', state.remainingSeconds <= 300);
+}
+
+/* ---------- Submit / Grading ---------- */
+document.getElementById('submitBtn').addEventListener('click', async ()=>{
+  const total = state.questions.length;
+  const answeredCount = state.questions.filter(q=>{
+    const a = state.answers[q.id];
+    return q.qType==='multi' ? (Array.isArray(a) && a.length>0) : !!a;
+  }).length;
+  if(answeredCount < total){
+    const ok = await showModal('Submit exam?', `You have answered ${answeredCount} of ${total} questions. Submit anyway?`, 'Submit');
+    if(!ok) return;
+  } else {
+    const ok = await showModal('Submit exam?', 'You will not be able to change your answers after submitting.', 'Submit');
+    if(!ok) return;
+  }
+  finishExam();
+});
+
+function isCorrect(q){
+  const a = state.answers[q.id];
+  if(q.qType === 'multi'){
+    if(!Array.isArray(a)) return false;
+    const sortedA = a.slice().sort().join(',');
+    const sortedC = q.correct.slice().sort().join(',');
+    return sortedA === sortedC && sortedA.length>0;
+  }
+  return a === q.correct[0];
+}
+
+function finishExam(){
+  clearInterval(state.timerInterval);
+  const total = state.questions.length;
+  let correctCount = 0;
+  state.questions.forEach(q=>{ if(isCorrect(q)) correctCount++; });
+  const pct = total ? Math.round((correctCount/total)*100) : 0;
+  const elapsedSeconds = Math.floor((Date.now()-state.startTime)/1000);
+  let grade = 'fail';
+  if(pct >= 90) grade = 'master';
+  else if(pct >= 80) grade = 'pass';
+  state.lastResult = { correctCount, total, pct, elapsedSeconds, grade };
+  renderResults();
+  showScreen('screen-results');
+  if(grade !== 'fail') launchConfetti(grade);
+}
+
+/* ---------- Results ---------- */
+function renderResults(){
+  const v = VARIANTS[state.currentVariant];
+  const r = state.lastResult;
+  const stamp = document.getElementById('gradeStamp');
+  stamp.className = 'stamp ' + r.grade;
+  stamp.textContent = r.grade === 'master' ? 'MASTER' : (r.grade === 'pass' ? 'PASS' : 'FAIL');
+  document.getElementById('resultsVariantName').textContent = v.name;
+  document.getElementById('scoreBig').textContent = r.pct + '%';
+  document.getElementById('statCorrect').textContent = r.correctCount;
+  document.getElementById('statTotal').textContent = r.total;
+  document.getElementById('statTime').textContent = fmtTime(r.elapsedSeconds);
+  renderReviewList();
+}
+
+function renderReviewList(){
+  const list = document.getElementById('reviewList');
+  const frag = document.createDocumentFragment();
+  state.questions.forEach((q, idx)=>{
+    const ok = isCorrect(q);
+    const item = document.createElement('div');
+    item.className = 'review-item ' + (ok ? 'correct' : 'incorrect');
+
+    let html = `<div class="review-head">
+      <span class="qnum" style="margin-bottom:0;width:24px;height:24px;font-size:11px;">${idx+1}</span>
+      <span class="review-status ${ok?'correct':'incorrect'}">${ok?'CORRECT':'INCORRECT'}</span>
+    </div>`;
+    html += `<div class="review-q">${escapeHtml(q.text)}</div>`;
+    html += `<div class="review-choices">`;
+
+    if(q.qType === 'tf'){
+      const picked = state.answers[q.id];
+      const correctVal = q.correct[0];
+      ['true','false'].forEach(val=>{
+        let cls = '';
+        if(val === correctVal) cls = 'was-correct';
+        else if(val === picked && val !== correctVal) cls = 'was-wrong-pick';
+        const label = val==='true' ? '✓ TRUE' : '✗ FALSE';
+        const marker = (val===picked) ? ' — your answer' : '';
+        html += `<div class="review-choice ${cls}">${label}${marker}</div>`;
+      });
+    } else {
+      const picked = state.answers[q.id];
+      const pickedArr = q.qType==='multi' ? (Array.isArray(picked)?picked:[]) : (picked?[picked]:[]);
+      q.choices.forEach(c=>{
+        let cls = '';
+        const isC = q.correct.includes(c.id);
+        const wasPicked = pickedArr.includes(c.id);
+        if(isC) cls = 'was-correct';
+        else if(wasPicked) cls = 'was-wrong-pick';
+        const marker = wasPicked ? ' — your answer' : '';
+        html += `<div class="review-choice ${cls}">${c.letter}. ${escapeHtml(c.text)}${marker}</div>`;
+      });
+    }
+    html += `</div>`;
+    html += `<div class="review-exp" data-exp-en="${escapeHtml(q.expEn)}" data-exp-th="${escapeHtml(q.expTh)}">${escapeHtml(state.lang==='th'?q.expTh:q.expEn)}</div>`;
+    item.innerHTML = html;
+    frag.appendChild(item);
+  });
+  list.innerHTML = '';
+  list.appendChild(frag);
+}
+
+document.querySelectorAll('.lang-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.lang = btn.getAttribute('data-lang');
+    document.querySelectorAll('.review-exp').forEach(el=>{
+      el.textContent = state.lang==='th' ? el.getAttribute('data-exp-th') : el.getAttribute('data-exp-en');
+    });
+  });
+});
+
+document.getElementById('backToLobbyBtn').addEventListener('click', ()=>{
+  showScreen('screen-lobby');
+});
+document.getElementById('retakeBtn').addEventListener('click', ()=>{
+  beginExam(state.currentVariant);
+});
+
+/* ---------- Confetti (canvas, no external deps) ---------- */
+const confettiCanvas = document.getElementById('confettiCanvas');
+const ctx = confettiCanvas.getContext('2d');
+function resizeCanvas(){ confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight; }
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function launchConfetti(grade){
+  if(!ctx) return;
+  const colors = grade === 'master' ? ['#e9ffb0','#f5ffd0','#7fd39c'] : ['#5fa176','#7fd39c','#e9ffb0'];
+  const particles = [];
+  const count = grade === 'master' ? 140 : 90;
+  for(let i=0;i<count;i++){
+    particles.push({
+      x: Math.random()*confettiCanvas.width,
+      y: -20 - Math.random()*200,
+      vx: (Math.random()-0.5)*2.5,
+      vy: 2 + Math.random()*3,
+      size: 4 + Math.random()*5,
+      color: colors[Math.floor(Math.random()*colors.length)],
+      rot: Math.random()*Math.PI*2,
+      vr: (Math.random()-0.5)*0.2,
+      life: 0
+    });
+  }
+  let frame = 0;
+  const maxFrames = 220;
+  function tick(){
+    frame++;
+    ctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+    particles.forEach(p=>{
+      p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.vy += 0.02;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = Math.max(0, 1 - frame/maxFrames);
+      ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
+      ctx.restore();
+    });
+    if(frame < maxFrames){
+      requestAnimationFrame(tick);
+    } else {
+      ctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+})();
+</script>
+</body>
+</html>
