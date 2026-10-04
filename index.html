@@ -3479,5 +3479,372 @@
     document.getElementById('pwBasic').addEventListener('input', () => hideErr('lockError'));
   });
 </script>
+<!-- ═══════════ SPACEZ · HOW THE VAULT TOOLS WORK — popup explainer (open with index.html#how) ═══════════ -->
+<style id="spzhCss">
+#spzh{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(0,0,0,.84);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);font-family:'IBM Plex Sans Thai',sans-serif;color:#f0f0f0}
+#spzh.open{display:flex}
+#spzh *{box-sizing:border-box}
+.spzh-box{position:relative;width:min(980px,100%);max-height:100%;overflow:auto;background:#07070a;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:18px 20px 16px;box-shadow:0 30px 90px rgba(0,0,0,.7),0 0 60px rgba(10,132,255,.08)}
+.spzh-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.spzh-head h2{font-size:1.05rem;font-weight:700;letter-spacing:.02em}
+.spzh-head small{color:#8e8e93;font-size:.78rem}
+.spzh-x{margin-left:auto;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#f0f0f0;width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:1.1rem;line-height:1}
+.spzh-x:hover{background:rgba(255,69,58,.2)}
+.spzh-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.spzh-tab{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:#9a9aa0;border-radius:999px;padding:7px 13px;font:600 .8rem 'IBM Plex Sans Thai',sans-serif;cursor:pointer;transition:.2s}
+.spzh-tab:hover{color:#fff}
+.spzh-tab.active{color:#fff;border-color:#0a84ff;background:rgba(10,132,255,.16)}
+.spzh-stage{position:relative;background:radial-gradient(ellipse at 50% 0%,rgba(10,132,255,.07),transparent 65%),#0a0a0d;border:1px solid rgba(255,255,255,.08);border-radius:14px;min-height:300px;overflow:hidden}
+.spzh-sc{display:none;padding:6px}
+.spzh-sc.on{display:block}
+.spzh-sc svg{display:block;width:100%;height:auto}
+.spzh-cap{margin:12px 2px 6px;min-height:3.4em;font-size:1rem;line-height:1.6;color:#e8e8ea}
+.spzh-cap b{color:#30d158}
+.spzh-ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.spzh-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#f0f0f0;border-radius:10px;padding:7px 14px;font:600 .82rem 'IBM Plex Sans Thai',sans-serif;cursor:pointer}
+.spzh-btn:hover{background:rgba(10,132,255,.2);border-color:#0a84ff}
+.spzh-dots{display:flex;gap:6px;margin-left:auto}
+.spzh-dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.18);cursor:pointer;transition:.25s}
+.spzh-dot.on{background:#0a84ff;transform:scale(1.35)}
+.spzh-dot.past{background:rgba(10,132,255,.5)}
+/* svg parts */
+.spzh-sc text{font-family:'IBM Plex Sans Thai',sans-serif;fill:#f0f0f0}
+.spzh-sc .mono{font-family:'IBM Plex Mono',monospace}
+.spzh-sc .t1{font-size:15px;font-weight:700}
+.spzh-sc .t2{font-size:12.5px;fill:#9a9aa6}
+.spzh-sc .t3{font-size:11px;fill:#8e8e93}
+.spzh-sc .nd{fill:#101015;stroke:rgba(255,255,255,.16);stroke-width:1.3;transition:fill .4s,stroke .4s}
+.spzh-sc .nd.b{stroke:rgba(10,132,255,.6)}
+.spzh-sc .nd.g{stroke:rgba(48,209,88,.6)}
+.spzh-sc .nd.y{stroke:rgba(255,214,10,.6)}
+.spzh-sc .act .nd,.spzh-sc .nd.act{fill:rgba(10,132,255,.2);stroke:#0a84ff}
+.spzh-sc .act.gr .nd{fill:rgba(48,209,88,.17);stroke:#30d158}
+.spzh-sc .arrow{fill:none;stroke:#0a84ff;stroke-width:2;stroke-dasharray:6 6;animation:spzhDash 1s linear infinite}
+.spzh-sc .arrow.g{stroke:#30d158}
+.spzh-sc .arrow.r{stroke:#ff453a}
+@keyframes spzhDash{to{stroke-dashoffset:-12}}
+.spzh-sc [data-from]{opacity:0;transition:opacity .55s}
+.spzh-sc [data-from].show{opacity:1}
+.spzh-sc [data-move]{transition:transform 1.2s cubic-bezier(.4,0,.2,1),opacity .55s}
+.spzh-sc .gear{transform-box:fill-box;transform-origin:center;animation:spzhSpin 3s linear infinite}
+@keyframes spzhSpin{to{transform:rotate(360deg)}}
+.spzh-sc .pulse{transform-box:fill-box;transform-origin:center;animation:spzhPulse 1.8s ease-in-out infinite}
+@keyframes spzhPulse{50%{transform:scale(1.08);opacity:.75}}
+.spzh-sc .blink{animation:spzhBlink 1s steps(2) infinite}
+@keyframes spzhBlink{50%{opacity:0}}
+/* checklist scene */
+.spzh-list{padding:14px 16px;display:grid;gap:18px;grid-template-columns:1fr 1fr}
+.spzh-col h3{font-size:.95rem;margin-bottom:10px;color:#0a84ff}
+.spzh-col h3.g{color:#30d158}
+.spzh-col ol{list-style:none;margin:0;padding:0;display:grid;gap:7px;counter-reset:s}
+.spzh-col li{counter-increment:s;position:relative;padding:9px 12px 9px 44px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:#101015;font-size:.9rem;line-height:1.5;transition:.4s;opacity:.35}
+.spzh-col li::before{content:counter(s);position:absolute;left:12px;top:8px;width:23px;height:23px;border-radius:50%;background:rgba(255,255,255,.1);display:grid;place-items:center;font:700 .75rem 'IBM Plex Mono',monospace}
+.spzh-col li.show{opacity:1}
+.spzh-col li.act{border-color:#0a84ff;background:rgba(10,132,255,.14)}
+.spzh-col li.act::before{background:#0a84ff}
+.spzh-col li code{font:600 .8rem 'IBM Plex Mono',monospace;color:#ffd60a}
+.spzh-warn{grid-column:1/-1;border:1px solid rgba(255,214,10,.45);background:rgba(255,214,10,.07);border-radius:10px;padding:10px 14px;font-size:.88rem;line-height:1.6}
+@media(max-width:700px){.spzh-list{grid-template-columns:1fr}.spzh-box{padding:14px}}
+</style>
+
+<div id="spzh" role="dialog" aria-modal="true" aria-label="อธิบายการทำงานของเครื่องมือตู้เซฟ">
+  <div class="spzh-box">
+    <div class="spzh-head">
+      <h2>ตู้เซฟข้อสอบทำงานยังไง</h2><small>เครื่องมือ 2 ตัว + หน้าเว็บ index.html</small>
+      <button class="spzh-x" id="spzhX" aria-label="ปิด">✕</button>
+    </div>
+    <div class="spzh-tabs" id="spzhTabs">
+      <button class="spzh-tab active">1 · ภาพรวม</button>
+      <button class="spzh-tab">2 · ADMIN_GENERATOR</button>
+      <button class="spzh-tab">3 · EXAM_CATALOG_GENERATOR</button>
+      <button class="spzh-tab">4 · ผู้เข้าชมเปิดเว็บ</button>
+      <button class="spzh-tab">5 · เอาไปใช้ยังไง</button>
+    </div>
+
+    <div class="spzh-stage">
+
+      <!-- ═══ SCENE 1 : OVERVIEW ═══ -->
+      <div class="spzh-sc on">
+        <svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="spzhAr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#0a84ff"/></marker>
+            <marker id="spzhArG" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#30d158"/></marker>
+          </defs>
+          <!-- admin tool -->
+          <g data-from="0" data-act="1" class="">
+            <rect class="nd b" x="30" y="36" width="240" height="110" rx="14"/>
+            <text class="t1 mono" x="150" y="76" text-anchor="middle">ADMIN_GENERATOR</text>
+            <text class="t2" x="150" y="100" text-anchor="middle">ทำ "ตู้เซฟ" ใบใหม่</text>
+            <text class="t3" x="150" y="122" text-anchor="middle">ใช้ตอนตั้งรหัส / เปลี่ยนรหัส</text>
+          </g>
+          <!-- catalog tool -->
+          <g data-from="0" data-act="2" class="gr">
+            <rect class="nd g" x="30" y="226" width="240" height="110" rx="14"/>
+            <text class="t1 mono" x="150" y="266" text-anchor="middle" style="font-size:13.5px">EXAM_CATALOG_GENERATOR</text>
+            <text class="t2" x="150" y="290" text-anchor="middle">เปิดตู้เดิม → เพิ่ม CEWA → ล็อกกลับ</text>
+            <text class="t3" x="150" y="312" text-anchor="middle">ใช้ทุกครั้งที่มีชุดข้อสอบใหม่</text>
+          </g>
+          <!-- index.html -->
+          <g data-from="0" data-act="3">
+            <rect class="nd y" x="320" y="110" width="200" height="160" rx="14"/>
+            <text class="t1 mono" x="420" y="140" text-anchor="middle">index.html</text>
+            <!-- vault icon -->
+            <g class="pulse"><rect x="388" y="160" width="64" height="52" rx="9" fill="#17171d" stroke="#ffd60a" stroke-width="2"/>
+            <circle cx="420" cy="182" r="9" fill="none" stroke="#ffd60a" stroke-width="2"/><rect x="418" y="182" width="4" height="14" fill="#ffd60a"/></g>
+            <text class="t2" x="420" y="238" text-anchor="middle">ถือ "ตู้เซฟ" ที่ล็อกอยู่</text>
+            <text class="t3" x="420" y="257" text-anchor="middle">(ข้อความรหัสลับยาว ๆ)</text>
+          </g>
+          <!-- visitor -->
+          <g data-from="0" data-act="4">
+            <rect class="nd" x="560" y="110" width="170" height="160" rx="14"/>
+            <text class="t1" x="645" y="140" text-anchor="middle">ผู้เข้าชมเว็บ</text>
+            <rect x="585" y="156" width="120" height="30" rx="7" fill="#17171d" stroke="rgba(255,255,255,.2)"/>
+            <text class="t3 mono" x="645" y="176" text-anchor="middle">รหัส ••••••</text>
+            <text class="t2" x="645" y="214" text-anchor="middle">ใส่รหัส → ตู้เปิด</text>
+            <text class="t2" x="645" y="236" text-anchor="middle">→ เห็นข้อสอบ</text>
+          </g>
+          <!-- arrows -->
+          <path data-from="1" class="arrow" d="M270 90 C300 90 300 140 318 150" marker-end="url(#spzhAr)"/>
+          <text data-from="1" class="t3" x="292" y="72" text-anchor="middle">วางตู้ใบใหม่</text>
+          <path data-from="2" class="arrow g" d="M270 282 C300 282 300 232 318 222" marker-end="url(#spzhArG)"/>
+          <text data-from="2" class="t3" x="298" y="318" text-anchor="middle">วางตู้ที่อัพเดต</text>
+          <path data-from="3" class="arrow" d="M520 190 L558 190" marker-end="url(#spzhAr)"/>
+          <text data-from="3" class="t3" x="540" y="172" text-anchor="middle">เปิดเอง</text>
+          <!-- packets -->
+          
+        </svg>
+      </div>
+
+      <!-- ═══ SCENE 2 : ADMIN_GENERATOR ═══ -->
+      <div class="spzh-sc">
+        <svg viewBox="0 0 760 410" xmlns="http://www.w3.org/2000/svg">
+          <defs><marker id="spzhAr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#0a84ff"/></marker></defs>
+          <text class="t2" x="95" y="26" text-anchor="middle">สิ่งที่ใส่เข้าไป</text>
+          <g data-from="0"><rect class="nd y" x="20" y="40" width="150" height="76" rx="12"/><text class="t1" x="95" y="74" text-anchor="middle">รหัสผ่าน</text><text class="t3 mono" x="95" y="97" text-anchor="middle">••••••••</text></g>
+          <g data-from="0"><rect class="nd" x="20" y="140" width="150" height="76" rx="12"/><text class="t1" x="95" y="174" text-anchor="middle">ระดับสิทธิ์</text><text class="t3" x="95" y="197" text-anchor="middle">Basic / Full</text></g>
+          <g data-from="0"><rect class="nd" x="20" y="240" width="150" height="76" rx="12"/><text class="t1" x="95" y="274" text-anchor="middle">รายการที่ปลดล็อก</text><text class="t3" x="95" y="297" text-anchor="middle">CEWA1 … CEWA400</text></g>
+          <!-- cascade panel -->
+          <g data-from="1">
+            <rect x="215" y="14" width="340" height="382" rx="16" fill="#0d0d12" stroke="rgba(10,132,255,.45)" stroke-width="1.4"/>
+            <text class="t1 mono" x="385" y="42" text-anchor="middle" style="fill:#0a84ff">CASCADE v4</text>
+            <text class="t3" x="385" y="60" text-anchor="middle">เครื่องบดรหัส — ตั้งใจให้ช้า เพื่อกันคนเดารหัส</text>
+          </g>
+          <g data-from="1" data-act="2"><rect class="nd" x="235" y="74" width="300" height="62" rx="11"/><text class="t1" x="250" y="100" style="font-size:13.5px">① บดรหัสผ่าน</text><text class="t3 mono" x="250" y="121">PBKDF2-SHA512 · 300,000 รอบ</text></g>
+          <g data-from="1" data-act="3"><rect class="nd" x="235" y="150" width="300" height="86" rx="11"/><text class="t1" x="250" y="176" style="font-size:13.5px">② วนซ้ำ 5 รอบ</text><text class="t3" x="250" y="196">สร้างกุญแจ → สุ่ม → บดซ้ำ → ผสม</text><text class="t3 mono" x="250" y="216">HKDF · AES-CTR · PBKDF2 · HMAC</text>
+            <g class="gear"><circle cx="498" cy="193" r="17" fill="none" stroke="#0a84ff" stroke-width="3" stroke-dasharray="7 5"/><circle cx="498" cy="193" r="5" fill="#0a84ff"/></g></g>
+          <g data-from="1" data-act="4"><rect class="nd" x="235" y="250" width="300" height="62" rx="11"/><text class="t1" x="250" y="276" style="font-size:13.5px">③ ได้ "กุญแจจริง"</text><text class="t3 mono" x="250" y="297">HKDF-SHA512 → 2 กุญแจ</text></g>
+          <g data-from="1" data-act="5"><rect class="nd" x="235" y="326" width="300" height="56" rx="11"/><text class="t1" x="250" y="351" style="font-size:13.5px">④ ล็อก 2 ชั้น</text><text class="t3 mono" x="250" y="371">AES-CTR (ใน) + AES-GCM (นอก · กันแก้)</text></g>
+          <!-- input packets flow in -->
+          <path data-from="1" class="arrow" d="M172 78 L212 78 M172 178 L212 178 M172 278 L212 278" marker-end="url(#spzhAr2)"/>
+          <!-- output vault -->
+          <g data-from="6">
+            <rect class="nd y" x="590" y="70" width="150" height="130" rx="14"/>
+            <text class="t1" x="665" y="98" text-anchor="middle">ตู้เซฟ</text>
+            <text class="t3 mono" x="665" y="124" text-anchor="middle">{"v":4,"s1":"Aaia…</text>
+            <text class="t3 mono" x="665" y="142" text-anchor="middle">"gates":[{"iv":"tv…</text>
+            <text class="t3 mono" x="665" y="160" text-anchor="middle">"ct":"8E0lnoN9R…</text>
+            <text class="t3" x="665" y="186" text-anchor="middle">อ่านไม่ออกถ้าไม่มีรหัส</text>
+          </g>
+          <path data-from="6" class="arrow" d="M557 135 L588 135" marker-end="url(#spzhAr2)"/>
+          <g data-from="7"><rect class="nd" x="590" y="270" width="150" height="100" rx="14"/><text class="t1 mono" x="665" y="304" text-anchor="middle">index.html</text><text class="t3" x="665" y="328" text-anchor="middle">วางทับ</text><text class="t3 mono" x="665" y="346" text-anchor="middle">const VAULT_…</text></g>
+          <g data-from="7" data-move="7:0,0"><rect x="654" y="206" width="22" height="16" rx="4" fill="#ffd60a"/></g>
+          <path data-from="7" class="arrow" d="M665 202 L665 266" marker-end="url(#spzhAr2)"/>
+        </svg>
+      </div>
+
+      <!-- ═══ SCENE 3 : EXAM_CATALOG_GENERATOR ═══ -->
+      <div class="spzh-sc">
+        <svg viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg">
+          <defs><marker id="spzhAr3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#30d158"/></marker></defs>
+          <!-- old vault inside the tool -->
+          <g data-from="0"><rect class="nd y" x="18" y="130" width="150" height="110" rx="14"/><text class="t1" x="93" y="164" text-anchor="middle">ตู้เซฟเดิม</text><text class="t3" x="93" y="186" text-anchor="middle">มีสำเนาฝังอยู่ใน</text><text class="t3" x="93" y="204" text-anchor="middle">เครื่องมืออยู่แล้ว</text></g>
+          <!-- tool panel -->
+          <g data-from="0"><rect x="205" y="12" width="360" height="396" rx="16" fill="#0d0d12" stroke="rgba(48,209,88,.45)" stroke-width="1.4"/><text class="t1 mono" x="385" y="38" text-anchor="middle" style="fill:#30d158;font-size:13px">EXAM_CATALOG_GENERATOR</text></g>
+          <path data-from="1" class="arrow g" d="M170 185 L203 185" marker-end="url(#spzhAr3)"/>
+          <g data-from="1" data-act="1" class="gr"><rect class="nd" x="225" y="54" width="320" height="52" rx="10"/><text class="t1" x="240" y="76" style="font-size:13px">① ใส่รหัสเดิม → กด Open</text><text class="t3" x="240" y="94">เครื่องมือบดรหัสแล้วไขตู้เดิมให้ (ในเครื่องเธอเอง)</text></g>
+          <g data-from="2" data-act="2" class="gr"><rect class="nd" x="225" y="118" width="320" height="170" rx="10"/><text class="t1" x="240" y="140" style="font-size:13px">② รายการข้อสอบ แก้/เพิ่ม/ลบ ได้</text>
+            <text class="t3 mono" x="240" y="164">#45  CEWA45  CEWA45xd2e4….html</text>
+            <text class="t3 mono" x="240" y="182">#46  CEWA46  CEWA46xc198….html</text>
+            <text class="t3 mono" x="240" y="200">#47  CEWA47  CEWA47xa99b….html</text>
+            <g data-from="3"><rect x="233" y="208" width="304" height="22" rx="6" fill="rgba(48,209,88,.18)" stroke="#30d158"/><text class="t3 mono" x="240" y="223" style="fill:#7ee89a">+ #48 CEWA48  CEWA48xbc7f….html</text></g>
+            <g data-from="3"><rect x="233" y="234" width="304" height="22" rx="6" fill="rgba(48,209,88,.18)" stroke="#30d158"/><text class="t3 mono" x="240" y="249" style="fill:#7ee89a">+ #49 CEWA49  CEWA49x9f62….html</text></g>
+            <g data-from="3"><rect x="233" y="260" width="304" height="22" rx="6" fill="rgba(48,209,88,.18)" stroke="#30d158"/><text class="t3 mono" x="240" y="275" style="fill:#7ee89a">+ #50 CEWA50  CEWA50x865a….html</text></g>
+          </g>
+          <g data-from="4" data-act="4" class="gr"><rect class="nd" x="225" y="300" width="320" height="52" rx="10"/><text class="t1" x="240" y="322" style="font-size:13px">③ กด Generate updated vault</text><text class="t3" x="240" y="340">ล็อกรายการใหม่ด้วยรหัสเดิม → ได้ตู้ใบใหม่</text></g>
+          <g data-from="5" data-act="5" class="gr"><rect class="nd" x="225" y="362" width="320" height="36" rx="10"/><text class="t2" x="240" y="385" style="fill:#7ee89a;font-size:12.5px">④ Self-test ✓ ลองเปิดตู้ใหม่ ตรวจครบทุกแถว</text></g>
+          <!-- new vault -->
+          <g data-from="4"><rect class="nd y" x="600" y="130" width="142" height="110" rx="14"/><text class="t1" x="671" y="164" text-anchor="middle">ตู้เซฟใหม่</text><text class="t3" x="671" y="186" text-anchor="middle">กดปุ่ม Copy</text><text class="t3 mono" x="671" y="206" text-anchor="middle">const VAULT_FULL</text></g>
+          <path data-from="4" class="arrow g" d="M547 326 C580 326 580 200 598 190" marker-end="url(#spzhAr3)"/>
+          <!-- paste into index -->
+          <path data-from="6" class="arrow g" d="M671 242 L671 330" marker-end="url(#spzhAr3)"/>
+          <g data-from="4" data-move="4:0,0;6:0,76"><rect x="660" y="246" width="22" height="16" rx="4" fill="#ffd60a"/></g>
+          <g data-from="6"><rect class="nd" x="596" y="334" width="150" height="70" rx="12"/><text class="t1 mono" x="671" y="364" text-anchor="middle">index.html</text><text class="t3" x="671" y="386" text-anchor="middle">วางทับ แล้ว push ✓</text></g>
+        </svg>
+      </div>
+
+      <!-- ═══ SCENE 4 : VISITOR ═══ -->
+      <div class="spzh-sc">
+        <svg viewBox="0 0 760 400" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="spzhAr4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#0a84ff"/></marker>
+            <marker id="spzhAr4r" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#ff453a"/></marker>
+          </defs>
+          <!-- browser frame -->
+          <rect class="nd" x="20" y="16" width="720" height="368" rx="14"/>
+          <circle cx="42" cy="36" r="5" fill="#ff453a"/><circle cx="60" cy="36" r="5" fill="#ffd60a"/><circle cx="78" cy="36" r="5" fill="#30d158"/>
+          <text class="t3 mono" x="380" y="40" text-anchor="middle">spacez001.github.io/TERMINAL/</text>
+          <line x1="20" y1="54" x2="740" y2="54" stroke="rgba(255,255,255,.1)"/>
+          <!-- password -->
+          <g data-from="0"><text class="t1" x="40" y="92">① ผู้เข้าชมพิมพ์รหัส</text>
+            <rect x="40" y="104" width="230" height="38" rx="9" fill="#17171d" stroke="rgba(255,255,255,.22)"/>
+            <text class="t2 mono" x="56" y="128" style="letter-spacing:3px">••••••••</text><rect class="blink" x="168" y="114" width="2" height="18" fill="#0a84ff"/>
+          </g>
+          <!-- cascade running inside the browser -->
+          <path data-from="1" class="arrow" d="M272 123 L330 123" marker-end="url(#spzhAr4)"/>
+          <g data-from="1" data-act="1,2"><rect class="nd" x="334" y="82" width="190" height="82" rx="12"/><text class="t1 mono" x="429" y="108" text-anchor="middle" style="fill:#0a84ff;font-size:13px">CASCADE v4</text><text class="t3" x="429" y="130" text-anchor="middle">เบราว์เซอร์บดรหัส</text><text class="t3" x="429" y="148" text-anchor="middle">แบบเดียวกับเครื่องมือ</text>
+            <g class="gear"><circle cx="500" cy="100" r="9" fill="none" stroke="#0a84ff" stroke-width="2.5" stroke-dasharray="4 3"/></g></g>
+          <!-- vault in page -->
+          <g data-from="1"><rect class="nd y" x="560" y="82" width="160" height="82" rx="12"/><text class="t1" x="640" y="110" text-anchor="middle">ตู้เซฟใน index.html</text><text class="t3" x="640" y="132" text-anchor="middle">ข้อความรหัสลับ</text><text class="t3" x="640" y="150" text-anchor="middle">(ทุกคนโหลดมาได้)</text></g>
+          <path data-from="1" class="arrow" d="M558 123 L526 123" marker-end="url(#spzhAr4)"/>
+          <!-- correct -->
+          <g data-from="2" data-act="2" class="gr"><rect class="nd g" x="40" y="190" width="330" height="84" rx="12"/><text class="t1" x="56" y="216" style="fill:#30d158">② รหัสถูก → ตู้เปิด ✓</text><text class="t3" x="56" y="238">ได้รายการ + ลิงก์ข้อสอบกลับมา</text><text class="t3" x="56" y="256">แสดงเป็นปุ่ม CEWA แต่ละชุด</text></g>
+          <g data-from="3" data-act="3">
+            <rect x="40" y="288" width="64" height="40" rx="8" fill="rgba(48,209,88,.15)" stroke="#30d158"/><text class="t3 mono" x="72" y="313" text-anchor="middle">CEWA1</text>
+            <rect x="112" y="288" width="64" height="40" rx="8" fill="rgba(48,209,88,.15)" stroke="#30d158"/><text class="t3 mono" x="144" y="313" text-anchor="middle">CEWA2</text>
+            <rect x="184" y="288" width="64" height="40" rx="8" fill="rgba(48,209,88,.15)" stroke="#30d158"/><text class="t3 mono" x="216" y="313" text-anchor="middle">CEWA3</text>
+            <text class="t2" x="262" y="313">…  CEWA50</text>
+          </g>
+          <!-- wrong -->
+          <g data-from="4" data-act="4"><rect class="nd" x="400" y="190" width="320" height="84" rx="12" style="stroke:#ff453a"/><text class="t1" x="416" y="216" style="fill:#ff453a">③ รหัสผิด → ตู้ไม่เปิด ✗</text><text class="t3" x="416" y="238">ขึ้น "Tampering Detected"</text><text class="t3" x="416" y="256">ไม่เห็นรายการอะไรเลย</text></g>
+          <g data-from="4"><rect x="400" y="288" width="64" height="40" rx="8" fill="rgba(255,69,58,.12)" stroke="#ff453a" stroke-dasharray="4 3"/><text class="t3" x="432" y="313" text-anchor="middle">🔒</text>
+            <rect x="472" y="288" width="64" height="40" rx="8" fill="rgba(255,69,58,.12)" stroke="#ff453a" stroke-dasharray="4 3"/><text class="t3" x="504" y="313" text-anchor="middle">🔒</text></g>
+          <text data-from="5" class="t2" x="380" y="364" text-anchor="middle">ทุกอย่างเกิดในเบราว์เซอร์ของผู้เข้าชมเอง — เว็บเก็บแค่ตู้ที่ล็อกอยู่</text>
+        </svg>
+      </div>
+
+      <!-- ═══ SCENE 5 : HOW TO USE ═══ -->
+      <div class="spzh-sc">
+        <div class="spzh-list">
+          <div class="spzh-col">
+            <h3 class="g">เมื่อมี "ชุดข้อสอบใหม่" (ทำบ่อยที่สุด)</h3>
+            <ol>
+              <li data-from="0" data-act="0">เอาไฟล์ข้อสอบขึ้น GitHub ให้เรียบร้อยก่อน (ชื่อไฟล์ <code>CEWA51x….html</code>)</li>
+              <li data-from="1" data-act="1">เปิด <code>EXAM_CATALOG_GENERATOR.html</code> ในเบราว์เซอร์</li>
+              <li data-from="2" data-act="2">เลือกแท็บ Basic หรือ Full → ใส่รหัส → กด <code>Open</code></li>
+              <li data-from="3" data-act="3">เพิ่ม/แก้แถวชื่อไฟล์ให้ตรงกับข้อสอบใหม่</li>
+              <li data-from="4" data-act="4">กด <code>Generate updated vault</code> → ต้องขึ้น PASSED</li>
+              <li data-from="5" data-act="5">กด Copy → เปิด <code>index.html</code> → วางทับ <code>const VAULT_…</code></li>
+              <li data-from="6" data-act="6">ทำซ้ำอีกแท็บ (Basic และ Full) → push ขึ้นเว็บ</li>
+            </ol>
+          </div>
+          <div class="spzh-col">
+            <h3>เมื่อ "เปลี่ยนรหัสผ่าน" หรือสร้างระดับสิทธิ์ใหม่</h3>
+            <ol>
+              <li data-from="7" data-act="7">เปิด <code>ADMIN_GENERATOR.html</code></li>
+              <li data-from="7" data-act="7">เลือกระดับสิทธิ์ ใส่รหัสใหม่ + รายการที่ปลดล็อก</li>
+              <li data-from="8" data-act="8">กด Generate → ต้องผ่าน self-test</li>
+              <li data-from="8" data-act="8">วางตู้ใหม่ทับใน <code>index.html</code> แล้ว push</li>
+            </ol>
+            <p style="margin-top:12px;font-size:.84rem;color:#9a9aa0;line-height:1.6">รหัสเก่าจะเปิดตู้ใหม่ไม่ได้อีก — แจ้งคนที่ใช้รหัสเดิมด้วย</p>
+          </div>
+          <div class="spzh-warn" data-from="9" style="display:block">⚠ เครื่องมือทั้งสองเก็บ <b>สำเนาตู้เซฟไว้ในตัวไฟล์</b> — หลังวางตู้ใหม่ลง <code>index.html</code> แล้ว สำเนาในเครื่องมือจะเก่ากว่าเว็บ ก่อนเพิ่มชุดข้อสอบรอบหน้าให้ใช้ช่อง "Load latest vault" ในเครื่องมือ (วางบล็อก <code>const VAULT_…</code> จาก index.html) เพื่อไม่ให้ทับของใหม่ด้วยรายการเก่า</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="spzh-cap" id="spzhCap"></div>
+    <div class="spzh-ctl">
+      <button class="spzh-btn" id="spzhPrev">◀ ก่อนหน้า</button>
+      <button class="spzh-btn" id="spzhPlay">❚❚ หยุด</button>
+      <button class="spzh-btn" id="spzhNext">ถัดไป ▶</button>
+      <div class="spzh-dots" id="spzhDots"></div>
+    </div>
+  </div>
+</div>
+
+<script id="spzhJs">
+(function(){
+  var root=document.getElementById('spzh'); if(!root) return;
+  var scenes=[].slice.call(root.querySelectorAll('.spzh-sc'));
+  var tabs=[].slice.call(root.querySelectorAll('.spzh-tab'));
+  var cap=document.getElementById('spzhCap'), dotsEl=document.getElementById('spzhDots'), playBtn=document.getElementById('spzhPlay');
+  var CAPS=[
+    ['ระบบนี้มี <b>3 ส่วน</b>: เครื่องมือ 2 ตัวบนเครื่องของเธอ และหน้าเว็บ index.html ที่ผู้เข้าชมเปิด',
+     '<b>ADMIN_GENERATOR</b> ทำ "ตู้เซฟ" ใบใหม่ (ตอนตั้งหรือเปลี่ยนรหัส) แล้วเอาไปวางไว้ใน index.html',
+     '<b>EXAM_CATALOG_GENERATOR</b> เปิดตู้เดิมด้วยรหัสเดิม เพิ่มชุดข้อสอบใหม่ แล้วล็อกกลับและวางทับตู้เก่า',
+     'index.html ถือแต่ตู้ที่ล็อกอยู่ — ใครโหลดมาก็อ่านไม่ออกถ้าไม่มีรหัส',
+     'ผู้เข้าชมใส่รหัส เบราว์เซอร์ของเขาเปิดตู้เอง แล้วเห็นปุ่มข้อสอบ'],
+    ['ใส่ 3 อย่าง: <b>รหัสผ่าน</b>, <b>ระดับสิทธิ์</b> (Basic/Full) และ <b>รายการที่ปลดล็อก</b>',
+     'ข้อมูลทั้งหมดเข้าเครื่อง <b>CASCADE v4</b> ซึ่งทำงานบนเครื่องเธอเอง ไม่ส่งออกอินเทอร์เน็ต',
+     'ขั้น ①: บดรหัสผ่าน 300,000 รอบ — <b>ตั้งใจให้ช้า</b> เพื่อให้คนเดารหัสทีละตัวไม่ไหว',
+     'ขั้น ②: วนซ้ำ 5 รอบ สร้างกุญแจ สุ่ม บดซ้ำ ผสม ทำให้ข้อมูลยิ่งเดายาก',
+     'ขั้น ③: ได้ "กุญแจจริง" สองดอกสำหรับล็อกข้อมูล',
+     'ขั้น ④: ล็อก <b>2 ชั้น</b> — ชั้นในกันอ่าน ชั้นนอก (AES-GCM) กันคนแอบแก้ ถ้าถูกแก้ตู้จะเปิดไม่ได้',
+     'ผลลัพธ์คือ <b>ตู้เซฟ</b> เป็นข้อความรหัสลับ อ่านไม่ออกถ้าไม่มีรหัส',
+     'ก็อปตู้นี้ไปวางทับ <b>const VAULT_…</b> ใน index.html แล้ว push ขึ้นเว็บ'],
+    ['เครื่องมือนี้มี <b>สำเนาตู้เดิม</b> ฝังอยู่ในตัวแล้ว เธอไม่ต้องสร้างใหม่ทั้งหมด',
+     'ใส่รหัสเดิม กด Open — เครื่องมือบดรหัสแล้ว <b>ไขตู้เดิม</b> ให้ในเครื่องเธอเอง',
+     'ข้างในเห็นรายการข้อสอบทั้งหมด (CEWA1–400) แก้ ลบ หรือเพิ่มแถวได้',
+     'เพิ่มแถวชุดใหม่ เช่น <b>CEWA48, 49, 50</b> พร้อมชื่อไฟล์ (ที่มีรหัสสุ่ม x… ต่อท้าย)',
+     'กด <b>Generate updated vault</b> — ล็อกรายการใหม่ด้วยรหัสเดิม ได้ตู้ใบใหม่',
+     'เครื่องมือ <b>ลองไขตู้ใหม่เองทันที</b> เทียบทุกแถว ถ้าขึ้น PASSED ถึงปลอดภัยพอจะวาง',
+     'กด Copy วางทับใน index.html แล้ว push — เว็บจะเห็นชุดข้อสอบใหม่ทันที'],
+    ['ผู้เข้าชมเปิดเว็บแล้ว <b>พิมพ์รหัส</b>',
+     'เบราว์เซอร์รัน CASCADE v4 แบบเดียวกับเครื่องมือ กับ <b>ตู้ที่ฝังอยู่ใน index.html</b>',
+     'ถ้ารหัสถูก ตู้ปลดล็อก — ได้รายการข้อสอบและลิงก์กลับมา',
+     'เว็บแสดงเป็นปุ่ม CEWA ของแต่ละชุดให้กดเข้าทำข้อสอบ',
+     'ถ้ารหัสผิด หรือมีคนแอบแก้ตู้ จะเปิดไม่ได้ ไม่เห็นรายการอะไรเลย',
+     'ทุกอย่างเกิดในเบราว์เซอร์ของผู้เข้าชมเอง — เว็บเก็บแค่ตู้ที่ล็อกอยู่'],
+    ['<b>ชุดข้อสอบใหม่:</b> เริ่มจากเอาไฟล์ข้อสอบขึ้น GitHub ให้เรียบร้อยก่อน',
+     'เปิด EXAM_CATALOG_GENERATOR ในเบราว์เซอร์',
+     'เลือกแท็บ → ใส่รหัส → Open',
+     'เพิ่ม/แก้แถวชื่อไฟล์ให้ตรง',
+     'กด Generate → ต้องขึ้น PASSED',
+     'Copy แล้ววางทับ const VAULT_… ใน index.html',
+     'ทำให้ครบทั้ง Basic และ Full แล้ว push',
+     '<b>เปลี่ยนรหัส / สร้างสิทธิ์ใหม่:</b> ใช้ ADMIN_GENERATOR',
+     'Generate → วางทับใน index.html → push',
+     'จุดที่ต้องระวัง: สำเนาตู้ที่ฝังในเครื่องมือจะเก่ากว่าเว็บหลังอัพเดต']
+  ];
+  var si=0, st=0, playing=true, timer=null, DELAY=3600;
+  function setHash(on){ try{ if(on){ if(location.hash!=='#how') history.replaceState(null,'',location.pathname+location.search+'#how'); } else if(location.hash==='#how'){ history.replaceState(null,'',location.pathname+location.search); } }catch(e){} }
+  function acts(el){ return String(el.getAttribute('data-act')).split(',').map(Number); }
+  function apply(){
+    scenes.forEach(function(s,i){ s.classList.toggle('on',i===si); });
+    tabs.forEach(function(t,i){ t.classList.toggle('active',i===si); });
+    var sc=scenes[si];
+    [].forEach.call(sc.querySelectorAll('[data-from]'),function(el){ el.classList.toggle('show', st>=+el.getAttribute('data-from')); });
+    [].forEach.call(sc.querySelectorAll('[data-act]'),function(el){ el.classList.toggle('act', acts(el).indexOf(st)>-1); });
+    [].forEach.call(sc.querySelectorAll('[data-move]'),function(el){
+      var best=null; el.getAttribute('data-move').split(';').forEach(function(p){ var a=p.split(':'); if(+a[0]<=st) best=a[1]; });
+      if(best){ var xy=best.split(','); el.style.transform='translate('+xy[0]+'px,'+xy[1]+'px)'; }
+    });
+    var n=CAPS[si].length; cap.innerHTML=CAPS[si][st];
+    dotsEl.innerHTML=''; for(var i=0;i<n;i++){ (function(i){ var d=document.createElement('span'); d.className='spzh-dot'+(i===st?' on':(i<st?' past':'')); d.onclick=function(){ st=i; apply(); restart(); }; dotsEl.appendChild(d); })(i); }
+  }
+  function move(dir){
+    var n=CAPS[si].length; st+=dir;
+    if(st>=n){ st=0; if(playing && root.getAttribute('data-auto')==='tour'){ si=(si+1)%scenes.length; } }
+    if(st<0){ st=0; }
+    apply();
+  }
+  function restart(){ clearInterval(timer); if(playing) timer=setInterval(function(){ move(1); },DELAY); }
+  function show(i){ si=i; st=0; apply(); restart(); }
+  function openIt(){ root.classList.add('open'); document.documentElement.style.overflow='hidden'; setHash(true); si=0; st=0; apply(); restart(); }
+  function closeIt(){ root.classList.remove('open'); document.documentElement.style.overflow=''; clearInterval(timer); setHash(false); }
+  tabs.forEach(function(t,i){ t.addEventListener('click',function(){ show(i); }); });
+  document.getElementById('spzhX').addEventListener('click',closeIt);
+  root.addEventListener('click',function(e){ if(e.target===root) closeIt(); });
+  document.getElementById('spzhPrev').addEventListener('click',function(){ if(st>0){ st--; apply(); restart(); } });
+  document.getElementById('spzhNext').addEventListener('click',function(){ var n=CAPS[si].length; if(st<n-1){ st++; } else { st=0; } apply(); restart(); });
+  playBtn.addEventListener('click',function(){ playing=!playing; playBtn.textContent=playing?'❚❚ หยุด':'▶ เล่น'; restart(); });
+  document.addEventListener('keydown',function(e){ if(!root.classList.contains('open')) return; if(e.key==='Escape') closeIt(); if(e.key==='ArrowRight') document.getElementById('spzhNext').click(); if(e.key==='ArrowLeft') document.getElementById('spzhPrev').click(); },true);
+  function check(){ if(location.hash==='#how') openIt(); else if(root.classList.contains('open')) { root.classList.remove('open'); document.documentElement.style.overflow=''; clearInterval(timer); } }
+  window.addEventListener('hashchange',check);
+  window.spzOpenHow=openIt;
+  if(location.hash==='#how') { if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',check); else check(); }
+})();
+</script>
+<!-- ═══════════ /HOW IT WORKS ═══════════ -->
 </body>
 </html>
