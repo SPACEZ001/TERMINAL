@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CEWA38 · SPACEZ Exam Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#000;
+  --bg-2:#050505;
+  --surface:#0a0a0a;
+  --surface-2:#111111;
+  --paper:#f4f6f1;
+  --paper-dim:#dfe8d0;
+  --ink:#f4f6f1;
+  --ink-dim:#b9c2ae;
+  --muted:#8b9186;
+  --border:rgba(233,255,176,.22);
+  --border-soft:rgba(255,255,255,.08);
+  --neon:#e9ffb0;
+  --neon-bright:#f5ffd0;
+  --neon-dim:#7a8a55;
+  --green:#5fa176;
+  --green-bright:#7fd39c;
+  --red:#ff3b4e;
+  --red-bright:#ff6b7a;
+  --radius:14px;
+  --radius-sm:8px;
+  --shadow:0 10px 34px rgba(0,0,0,.55);
+  --sans:'Inter','Noto Sans Thai',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono','Noto Sans Thai','Fira Code',ui-monospace,monospace;
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  background:
+    radial-gradient(ellipse 80% 45% at 50% -5%, rgba(233,255,176,0.06), transparent 60%),
+    var(--bg);
+  color:var(--ink);
+  font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  line-height:1.55;
+  position:relative;
+  overflow-x:hidden;
+}
+.thai{font-family:'Noto Sans Thai',var(--sans);}
+h1,h2,h3{font-family:var(--sans); font-weight:700;}
+.mono{font-family:var(--mono); font-variant-numeric: tabular-nums;}
+
+button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit;}
+a{color:inherit;}
+
+/* ---------- space backdrop: grid + starfield + comets (SPACEZ TERMINAL void theme) ---------- */
+.grid-overlay{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(160,255,160,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(160,255,160,0.05) 1px, transparent 1px);
+  background-size:46px 46px;
+  -webkit-mask-image:radial-gradient(circle at 50% 20%, black, transparent 78%);
+  mask-image:radial-gradient(circle at 50% 20%, black, transparent 78%);
+  opacity:.22;
+}
+.spz-void-stars{
+  display:block;position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background-image:
+    radial-gradient(2.0px 2.0px at 6% 14%,#fff,transparent 70%),
+    radial-gradient(1.5px 1.5px at 18% 62%,#fff,transparent 70%),
+    radial-gradient(2.3px 2.3px at 33% 28%,#fff,transparent 70%),
+    radial-gradient(1.6px 1.6px at 47% 78%,#fff,transparent 70%);
+  background-size:220px 180px;
+  opacity:.5;
+  animation:spzSiteStarsDrift 120s linear infinite, spzSiteTwinkleA 4.4s ease-in-out infinite;
+}
+.spz-void-stars::before{
+  content:'';position:absolute;inset:0;
+  background-image:
+    radial-gradient(2.1px 2.1px at 61% 9%,#fff,transparent 70%),
+    radial-gradient(1.5px 1.5px at 74% 52%,#fff,transparent 70%),
+    radial-gradient(2.0px 2.0px at 88% 22%,#fff,transparent 70%),
+    radial-gradient(1.6px 1.6px at 96% 70%,#fff,transparent 70%);
+  background-size:220px 180px;
+  opacity:.5;
+  animation:spzSiteStarsDrift 120s linear infinite, spzSiteTwinkleB 3.7s ease-in-out infinite;
+  animation-delay:0s, -1.8s;
+}
+.spz-void-stars::after{
+  content:'';position:absolute;inset:0;
+  background-image:
+    radial-gradient(1.4px 1.4px at 12% 90%,#fff,transparent 70%),
+    radial-gradient(1.6px 1.6px at 55% 40%,#fff,transparent 70%),
+    radial-gradient(1.3px 1.3px at 82% 85%,#fff,transparent 70%),
+    radial-gradient(1.5px 1.5px at 40% 5%,#fff,transparent 70%);
+  background-size:220px 180px;
+  opacity:.5;
+  animation:spzSiteStarsDrift 120s linear infinite, spzSiteTwinkleA 4.4s ease-in-out infinite;
+  animation-delay:0s, -2.9s;
+}
+@keyframes spzSiteStarsDrift{0%{background-position:0 0;}100%{background-position:-220px -180px;}}
+@keyframes spzSiteTwinkleA{0%,100%{filter:brightness(.6);}50%{filter:brightness(1.1);}}
+@keyframes spzSiteTwinkleB{0%,100%{filter:brightness(.55);}50%{filter:brightness(1.0);}}
+.spz-void-comet{
+  display:block;position:fixed;left:86%;top:-10%;z-index:-1;pointer-events:none;
+  width:2px;height:64px;border-radius:2px;
+  background:linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.85) 70%, #fff);
+  filter:drop-shadow(0 0 5px rgba(255,255,255,.7));
+  opacity:0;
+  transform:rotate(39deg);
+  animation:spzComet1 11s linear infinite;
+}
+.spz-void-comet.c2{height:52px; animation:spzComet2 15s linear infinite; animation-delay:3s;}
+.spz-void-comet.c3{height:58px; animation:spzComet3 19s linear infinite; animation-delay:7s;}
+.spz-void-comet.c4{height:46px; animation:spzComet4 23s linear infinite; animation-delay:1s;}
+@keyframes spzComet1{0%{left:86%;top:-10%;opacity:0;}4%{opacity:.9;}18%{left:44%;top:60%;opacity:.85;}30%{left:9%;top:118%;opacity:0;}100%{left:9%;top:118%;opacity:0;}}
+@keyframes spzComet2{0%{left:70%;top:-10%;opacity:0;}5%{opacity:.8;}20%{left:25%;top:68%;opacity:.75;}30%{left:-4%;top:118%;opacity:0;}100%{left:-4%;top:118%;opacity:0;}}
+@keyframes spzComet3{0%{left:92%;top:-10%;opacity:0;}4%{opacity:.85;}16%{left:56%;top:56%;opacity:.8;}28%{left:23%;top:118%;opacity:0;}100%{left:23%;top:118%;opacity:0;}}
+@keyframes spzComet4{0%{left:58%;top:-10%;opacity:0;}5%{opacity:.8;}19%{left:13%;top:64%;opacity:.75;}29%{left:-20%;top:118%;opacity:0;}100%{left:-20%;top:118%;opacity:0;}}
+@media (prefers-reduced-motion: reduce){
+  .spz-void-stars, .spz-void-stars::before, .spz-void-stars::after, .spz-void-comet{animation:none;}
+}
+::selection{background:var(--neon);color:#000;}
+
+.screen{display:none; min-height:100vh; width:100%; position:relative; z-index:2;}
+.screen.active{display:block;}
+
+/* ===== Topbar ===== */
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 20px; border-bottom:1px solid var(--border-soft);
+  background:rgba(5,5,5,.78); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  position:sticky; top:0; z-index:40;
+}
+.brand{display:flex; align-items:center; gap:10px; font-family:var(--mono); font-size:13px; letter-spacing:.04em; color:var(--ink-dim);}
+.brand .mark{
+  width:9px; height:9px; border-radius:50%; background:var(--neon); box-shadow:0 0 12px var(--neon);
+  animation:blink 1.5s infinite steps(1);
+}
+@keyframes blink{0%,49%{opacity:1;}50%,100%{opacity:0;}}
+.back-btn{
+  display:flex; align-items:center; gap:6px; padding:7px 12px; border:1px solid var(--border-soft);
+  border-radius:var(--radius-sm); color:var(--ink-dim); font-size:13px; font-family:var(--mono);
+  transition:border-color .15s, color .15s;
+}
+.back-btn:hover{border-color:var(--neon); color:var(--neon-bright);}
+
+/* ===== Lobby ===== */
+.lobby-wrap{max-width:760px; margin:0 auto; padding:36px 20px 80px; position:relative; z-index:2;}
+.eyebrow{
+  font-family:var(--mono); font-size:12px; letter-spacing:.14em; color:var(--neon);
+  display:flex; align-items:center; gap:8px; margin-bottom:14px; text-transform:uppercase;
+}
+.eyebrow::before{content:''; width:18px; height:1px; background:var(--neon-dim);}
+.lobby-title{font-size:34px; font-weight:800; color:var(--paper); margin-bottom:10px; letter-spacing:-.01em;}
+.lobby-sub{color:var(--muted); font-size:15px; max-width:56ch; margin-bottom:34px;}
+
+.ledger-tabs{display:flex; flex-direction:column; gap:14px; margin-bottom:28px;}
+.variant-card{
+  position:relative; border:1px solid var(--border-soft); border-left:3px solid var(--border-soft);
+  border-radius:var(--radius); background:var(--surface); padding:18px 20px 18px 22px;
+  display:flex; align-items:center; gap:16px; transition:border-color .15s, background .15s, transform .1s, box-shadow .15s;
+  text-align:left; width:100%;
+}
+.variant-card:hover{border-color:var(--neon-dim); background:var(--surface-2);}
+.variant-card.selected{border-left-color:var(--neon); border-color:var(--border); background:var(--surface-2); box-shadow:0 0 22px rgba(233,255,176,0.08);}
+.variant-chit{
+  flex-shrink:0; width:46px; height:46px; border-radius:50%; border:1.5px solid var(--neon-dim);
+  display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-weight:700;
+  font-size:14px; color:var(--neon); background:radial-gradient(circle at 35% 30%, rgba(233,255,176,.14), transparent 70%);
+}
+.variant-card.selected .variant-chit{border-color:var(--neon); color:var(--neon-bright); box-shadow:0 0 14px rgba(233,255,176,.25);}
+.variant-body{flex:1; min-width:0;}
+.variant-label{font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.08em; margin-bottom:3px; text-transform:uppercase;}
+.variant-title{font-family:var(--sans); font-size:17px; font-weight:700; color:var(--paper); margin-bottom:6px;}
+.variant-tags{display:flex; flex-wrap:wrap; gap:6px;}
+.tag{font-family:var(--mono); font-size:10.5px; padding:2.5px 7px; border:1px solid var(--border-soft); border-radius:20px; color:var(--muted);}
+.tag.accent{border-color:var(--border); color:var(--neon);}
+
+.lobby-controls{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:22px; flex-wrap:wrap;}
+.shuffle-toggle{
+  display:flex; align-items:center; gap:9px; padding:9px 14px; border:1px solid var(--border-soft);
+  border-radius:var(--radius-sm); font-family:var(--mono); font-size:12.5px; color:var(--ink-dim);
+}
+.shuffle-toggle .dice{font-size:15px;}
+.switch{width:34px; height:18px; border-radius:20px; background:var(--border-soft); position:relative; transition:background .15s; flex-shrink:0;}
+.switch::after{content:''; position:absolute; width:14px; height:14px; border-radius:50%; background:var(--muted); top:2px; left:2px; transition:transform .15s, background .15s;}
+.switch.on{background:rgba(233,255,176,.22);}
+.switch.on::after{transform:translateX(16px); background:var(--neon-bright);}
+
+.start-btn{
+  padding:14px 28px; border-radius:var(--radius-sm); background:var(--neon); color:#060803;
+  font-family:var(--mono); font-weight:700; font-size:13.5px; letter-spacing:.08em;
+  transition:background .15s, transform .1s; box-shadow:0 4px 18px rgba(233,255,176,.2); text-transform:uppercase;
+}
+.start-btn:hover{background:var(--neon-bright);}
+.start-btn:active{transform:scale(.98);}
+.start-btn:disabled{opacity:.35; cursor:not-allowed; box-shadow:none;}
+
+/* ===== Quiz ===== */
+.quiz-wrap{max-width:720px; margin:0 auto; padding:26px 18px 140px; position:relative; z-index:2;}
+.quiz-meta-bar{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:22px; flex-wrap:wrap; gap:8px;}
+.quiz-variant-name{font-family:var(--sans); font-size:19px; font-weight:700; color:var(--paper);}
+.quiz-count{font-family:var(--mono); font-size:12px; color:var(--muted);}
+
+.qcard{
+  border:1px solid var(--border-soft); border-left:2px solid var(--border-soft); border-radius:var(--radius);
+  background:var(--surface); padding:20px 20px 20px 24px; margin-bottom:16px; position:relative;
+}
+.qcard.answered{border-left-color:var(--neon-dim);}
+.qnum{
+  display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%;
+  border:1px solid var(--neon-dim); color:var(--neon); font-family:var(--mono); font-size:12px; font-weight:700;
+  margin-bottom:12px;
+}
+.qtext{font-size:15.5px; color:var(--ink); line-height:1.6; margin-bottom:16px;}
+.qtype-badge{font-family:var(--mono); font-size:9.5px; letter-spacing:.06em; color:var(--muted); border:1px solid var(--border-soft); border-radius:3px; padding:1px 6px; margin-left:8px; vertical-align:2px;}
+
+.choices{display:flex; flex-direction:column; gap:8px;}
+.choice-btn{
+  display:flex; align-items:flex-start; gap:11px; text-align:left; padding:11px 14px;
+  border:1px solid var(--border-soft); border-radius:var(--radius-sm); background:var(--bg-2);
+  font-size:14px; color:var(--ink-dim); transition:border-color .12s, background .12s, color .12s; width:100%;
+}
+.choice-btn:hover{border-color:var(--neon-dim); color:var(--ink);}
+.choice-letter{
+  flex-shrink:0; width:22px; height:22px; border-radius:5px; border:1px solid var(--border-soft);
+  display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:11px; color:var(--muted);
+}
+.choice-btn[aria-checked="true"]{border-color:var(--neon); background:rgba(233,255,176,.08); color:var(--paper);}
+.choice-btn[aria-checked="true"] .choice-letter{border-color:var(--neon); background:var(--neon); color:#060803;}
+.choice-btn[role="checkbox"] .choice-letter{border-radius:4px;}
+
+.tf-row{display:flex; gap:10px;}
+.tf-btn{
+  flex:1; padding:16px; border:1px solid var(--border-soft); border-radius:var(--radius-sm); background:var(--bg-2);
+  font-family:var(--mono); font-size:14px; letter-spacing:.03em; color:var(--ink-dim); display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:border-color .12s, background .12s, color .12s;
+}
+.tf-btn:hover{border-color:var(--neon-dim);}
+.tf-btn[aria-checked="true"].tf-true{border-color:var(--green); background:rgba(95,161,118,.1); color:var(--green-bright);}
+.tf-btn[aria-checked="true"].tf-false{border-color:var(--red); background:rgba(255,59,78,.1); color:var(--red-bright);}
+
+.hud{
+  position:fixed; bottom:88px; right:18px; z-index:35; background:var(--surface); border:1px solid var(--border-soft);
+  border-radius:var(--radius); padding:12px 16px; box-shadow:var(--shadow); font-family:var(--mono); font-size:11px; color:var(--muted);
+  display:flex; flex-direction:column; gap:5px; min-width:132px;
+}
+.hud-row{display:flex; justify-content:space-between; gap:14px;}
+.hud-row b{color:var(--paper); font-weight:700;}
+.hud.warn .hud-row.remaining b{color:var(--red-bright);}
+.hud-bar{height:3px; background:var(--border-soft); border-radius:2px; margin-top:4px; overflow:hidden;}
+.hud-bar-fill{height:100%; background:var(--neon); transition:width .3s;}
+
+.submit-bar{
+  position:fixed; bottom:0; left:0; right:0; z-index:36; background:linear-gradient(to top, rgba(0,0,0,.98), rgba(0,0,0,.85));
+  border-top:1px solid var(--border-soft); padding:14px 18px; display:flex; justify-content:center; backdrop-filter:blur(8px);
+}
+.submit-btn{
+  padding:13px 40px; border-radius:var(--radius-sm); background:var(--neon); color:#060803;
+  font-family:var(--mono); font-weight:700; font-size:13px; letter-spacing:.08em; box-shadow:0 4px 18px rgba(233,255,176,.2); text-transform:uppercase;
+}
+.submit-btn:hover{background:var(--neon-bright);}
+
+/* ===== Results ===== */
+.results-wrap{max-width:720px; margin:0 auto; padding:40px 18px 80px; position:relative; z-index:2;}
+.results-hero{display:flex; flex-direction:column; align-items:center; text-align:center; margin-bottom:36px; position:relative;}
+.stamp{
+  font-family:var(--mono); font-weight:700; font-size:30px; letter-spacing:.14em; text-transform:uppercase;
+  padding:14px 34px; border:2px solid; border-radius:8px;
+  margin-bottom:20px; position:relative;
+}
+.stamp::after{content:'CEWA · CERTIFICATION MOCK EXAM'; position:absolute; bottom:-16px; left:50%; transform:translateX(-50%); font-family:var(--mono); font-size:8px; letter-spacing:.12em; white-space:nowrap; opacity:.55;}
+.stamp.fail{color:var(--red-bright); border-color:var(--red); box-shadow:0 0 22px rgba(255,59,78,.12);}
+.stamp.pass{color:var(--green-bright); border-color:var(--green); box-shadow:0 0 22px rgba(95,161,118,.14);}
+.stamp.master{color:var(--neon-bright); border-color:var(--neon); box-shadow:0 0 26px rgba(233,255,176,.2);}
+.score-line{font-family:var(--mono); font-size:15px; color:var(--ink-dim); margin-bottom:4px;}
+.score-big{font-family:var(--sans); font-size:52px; font-weight:800; color:var(--paper); line-height:1;}
+.results-stats{display:flex; gap:22px; margin-top:18px; font-family:var(--mono); font-size:12px; color:var(--muted);}
+.results-stats b{color:var(--paper);}
+
+.lang-toggle{display:flex; gap:4px; margin:0 auto 22px; width:fit-content; border:1px solid var(--border-soft); border-radius:20px; padding:3px;}
+.lang-btn{padding:6px 16px; border-radius:20px; font-family:var(--mono); font-size:12px; color:var(--muted);}
+.lang-btn.active{background:var(--neon); color:#060803;}
+
+.review-item{border:1px solid var(--border-soft); border-left:3px solid var(--border-soft); border-radius:var(--radius); background:var(--surface); padding:16px 18px; margin-bottom:12px;}
+.review-item.correct{border-left-color:var(--green);}
+.review-item.incorrect{border-left-color:var(--red);}
+.review-head{display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+.review-status{font-family:var(--mono); font-size:10px; letter-spacing:.05em; padding:2px 7px; border-radius:3px;}
+.review-status.correct{background:rgba(95,161,118,.15); color:var(--green-bright);}
+.review-status.incorrect{background:rgba(255,59,78,.15); color:var(--red-bright);}
+.review-q{font-size:14px; color:var(--ink); margin-bottom:10px; line-height:1.55;}
+.review-choices{display:flex; flex-direction:column; gap:5px; margin-bottom:10px;}
+.review-choice{font-size:12.5px; padding:7px 10px; border-radius:5px; border:1px solid var(--border-soft); color:var(--muted); display:flex; gap:8px;}
+.review-choice.was-correct{border-color:var(--green); color:var(--green-bright); background:rgba(95,161,118,.06);}
+.review-choice.was-wrong-pick{border-color:var(--red); color:var(--red-bright); background:rgba(255,59,78,.06);}
+.review-exp{font-size:12.5px; color:var(--ink-dim); line-height:1.6; border-top:1px dashed var(--border-soft); padding-top:10px;}
+
+.retry-bar{display:flex; gap:10px; justify-content:center; margin-top:30px;}
+.retry-btn{padding:12px 24px; border:1px solid var(--border); border-radius:var(--radius-sm); font-family:var(--mono); font-size:12.5px; color:var(--neon);}
+.retry-btn:hover{background:rgba(233,255,176,.08);}
+.retry-btn.primary{background:var(--neon); color:#060803; border-color:var(--neon);}
+
+/* ===== Modal ===== */
+.modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.78); z-index:100; display:none; align-items:center; justify-content:center; padding:20px;}
+.modal-overlay.active{display:flex;}
+.modal-box{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px; max-width:380px; width:100%; box-shadow:var(--shadow);}
+.modal-title{font-family:var(--sans); font-size:17px; font-weight:700; color:var(--paper); margin-bottom:8px;}
+.modal-msg{font-size:13.5px; color:var(--ink-dim); line-height:1.6; margin-bottom:20px;}
+.modal-actions{display:flex; gap:10px; justify-content:flex-end;}
+.modal-btn{padding:9px 18px; border-radius:var(--radius-sm); font-family:var(--mono); font-size:12.5px;}
+.modal-btn.cancel{color:var(--muted); border:1px solid var(--border-soft);}
+.modal-btn.confirm{background:var(--neon); color:#060803;}
+
+canvas#confettiCanvas{position:fixed; inset:0; pointer-events:none; z-index:99;}
+
+@media (max-width:600px){
+  .lobby-title{font-size:27px;}
+  .stamp{font-size:24px; padding:12px 22px;}
+  .score-big{font-size:40px;}
+  .hud{right:10px; bottom:78px; min-width:112px; padding:10px 12px;}
+  .variant-card{padding:14px 14px 14px 16px;}
+}
+</style>
+</head>
+<body>
+
+<div class="grid-overlay"></div>
+<div class="spz-void-stars"></div>
+<div class="spz-void-comet c1"></div>
+<div class="spz-void-comet c2"></div>
+<div class="spz-void-comet c3"></div>
+<div class="spz-void-comet c4"></div>
+
+<div class="topbar">
+  <div class="brand"><span class="mark"></span>SPACEZ exam hub — CEWA38</div>
+  <a class="back-btn" href="index.html">← Back</a>
+</div>
+
+<!-- ================= LOBBY ================= -->
+<section id="screen-lobby" class="screen active">
+  <div class="lobby-wrap">
+    <div class="eyebrow">CERTIFIED ELLIOTT WAVE ANALYST · MOCK EXAM</div>
+    <h1 class="lobby-title">CEWA Mock Exam</h1>
+    <p class="lobby-sub thai">เลือกชุดข้อสอบด้านล่าง แต่ละชุดมีจำนวนข้อ เวลา และรูปแบบคำถามต่างกัน ทำได้ 80% ขึ้นไปถือว่าผ่าน</p>
+
+    <div class="ledger-tabs" id="variantList">
+      <button class="variant-card" data-variant="v1">
+        <div class="variant-chit">I</div>
+        <div class="variant-body">
+          <div class="variant-label">EXAM I · FOUNDATIONS</div>
+          <div class="variant-title">Elliott Wave Analyst — Level I</div>
+          <div class="variant-tags">
+            <span class="tag accent">50 questions</span>
+            <span class="tag">45 min</span>
+            <span class="tag">Single Best Answer</span>
+            <span class="tag">Pass 80%</span>
+          </div>
+        </div>
+      </button>
+
+      <button class="variant-card" data-variant="v2">
+        <div class="variant-chit">II·1</div>
+        <div class="variant-body">
+          <div class="variant-label">CEWA II · PART 1</div>
+          <div class="variant-title">Elliott Wave Analyst — Level II, Part 1</div>
+          <div class="variant-tags">
+            <span class="tag accent">20 questions</span>
+            <span class="tag">45 min</span>
+            <span class="tag">Single Best Answer</span>
+            <span class="tag">Pass 80%</span>
+          </div>
+        </div>
+      </button>
+
+      <button class="variant-card" data-variant="v3">
+        <div class="variant-chit">II·2</div>
+        <div class="variant-body">
+          <div class="variant-label">CEWA II · PART 2</div>
+          <div class="variant-title">Elliott Wave Analyst — Level II, Part 2</div>
+          <div class="variant-tags">
+            <span class="tag accent">20 questions</span>
+            <span class="tag">45 min</span>
+            <span class="tag">Multiple Correct Responses</span>
+            <span class="tag">Pass 80%</span>
+          </div>
+        </div>
+      </button>
+    </div>
+
+    <div class="lobby-controls">
+      <button class="shuffle-toggle" id="shuffleToggle">
+        <span class="dice">🎲</span> Shuffle questions &amp; choices
+        <span class="switch" id="shuffleSwitch"></span>
+      </button>
+      <button class="start-btn" id="startBtn" disabled>START EXAM</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= QUIZ ================= -->
+<section id="screen-quiz" class="screen">
+  <div class="quiz-wrap">
+    <div class="quiz-meta-bar">
+      <div class="quiz-variant-name" id="quizVariantName">—</div>
+      <div class="quiz-count" id="quizCount">0 / 0 answered</div>
+    </div>
+    <div id="questionList"></div>
+  </div>
+
+  <div class="hud" id="hud">
+    <div class="hud-row"><span>Elapsed</span><b id="hudElapsed">00:00</b></div>
+    <div class="hud-row remaining"><span>Remaining</span><b id="hudRemaining">00:00</b></div>
+    <div class="hud-row"><span>Progress</span><b id="hudProgress">0%</b></div>
+    <div class="hud-bar"><div class="hud-bar-fill" id="hudBarFill" style="width:0%"></div></div>
+  </div>
+
+  <div class="submit-bar">
+    <button class="submit-btn" id="submitBtn">SUBMIT EXAM</button>
+  </div>
+</section>
+
+<!-- ================= RESULTS ================= -->
+<section id="screen-results" class="screen">
+  <div class="results-wrap">
+    <div class="results-hero">
+      <div class="stamp" id="gradeStamp">PASS</div>
+      <div class="score-line thai" id="resultsVariantName">—</div>
+      <div class="score-big" id="scoreBig">0%</div>
+      <div class="results-stats">
+        <div><b id="statCorrect">0</b>/<span id="statTotal">0</span> correct</div>
+        <div>Time: <b id="statTime">00:00</b></div>
+      </div>
+    </div>
+
+    <div class="lang-toggle">
+      <button class="lang-btn active" data-lang="en">🇬🇧 English</button>
+      <button class="lang-btn" data-lang="th">🇹🇭 ภาษาไทย</button>
+    </div>
+
+    <div id="reviewList"></div>
+
+    <div class="retry-bar">
+      <button class="retry-btn" id="backToLobbyBtn">← Choose another exam</button>
+      <button class="retry-btn primary" id="retakeBtn">Retake this exam</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MODAL ================= -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle">Submit exam?</div>
+    <div class="modal-msg" id="modalMsg">You still have unanswered questions. Submit anyway?</div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="modalCancel">Cancel</button>
+      <button class="modal-btn confirm" id="modalConfirm">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="confettiCanvas"></canvas>
+
+<script>
+/* ===== Question Banks (QC-validated: balanced answer distribution, length-balanced distractors) ===== */
+const V1_BANK = [{"id": "v1q01", "qType": "single", "diff": "easy", "text": "In standard Elliott Wave terminology, what is the internal subdivision of a single zigzag correction?", "choices": [{"id": "a", "letter": "A", "text": "3-3-5, labeled A-B-C"}, {"id": "b", "letter": "B", "text": "5-3-5-3-5, labeled A-B-C-D-E"}, {"id": "c", "letter": "C", "text": "5-3-5, labeled A-B-C"}, {"id": "d", "letter": "D", "text": "3-3-3, labeled A-B-C"}], "correct": ["c"], "expEn": "A single zigzag subdivides 5-3-5: wave A is a five-wave impulsive structure, wave B is a three-wave corrective structure, and wave C is again five waves, with the whole pattern labeled A-B-C. The 3-3-5 count belongs to a flat, and 5-3-5-3-5 with five legs describes a triangle, not a zigzag.", "expTh": "ซิกแซกแบบเดี่ยวมีโครงสร้างภายในแบบ 5-3-5 คือคลื่น A เป็นคลื่นส่ง 5 คลื่นย่อย คลื่น B เป็นคลื่นปรับ 3 คลื่นย่อย และคลื่น C เป็น 5 คลื่นย่อยอีกครั้ง โดยเรียกรวมว่า A-B-C ส่วนโครงสร้าง 3-3-5 คือแฟลต และ 5-3-5-3-5 ที่มีห้าขาคือสามเหลี่ยม ไม่ใช่ซิกแซก"}, {"id": "v1q02", "qType": "single", "diff": "easy", "text": "A single zigzag is best described as which type of corrective pattern?", "choices": [{"id": "a", "letter": "A", "text": "A sideways correction that retraces most of the prior wave in price"}, {"id": "b", "letter": "B", "text": "A horizontal, contracting five-wave overlapping pattern"}, {"id": "c", "letter": "C", "text": "A correction that always subdivides into a flat followed by a triangle"}, {"id": "d", "letter": "D", "text": "A sharp, steeply angled correction that moves counter-trend"}], "correct": ["d"], "expEn": "Zigzags are the 'sharp' corrective pattern in Elliott Wave theory, cutting steeply against the prior trend. Flats are the sideways type that retrace a large portion of the prior wave, and triangles are horizontal, overlapping five-leg patterns, neither of which describes a zigzag.", "expTh": "ซิกแซกเป็นรูปแบบคลื่นปรับที่ 'คม' คือเคลื่อนที่สวนทางแนวโน้มเดิมอย่างชัน ส่วนแฟลตเป็นรูปแบบแนวนอนที่ปรับคืนราคาส่วนใหญ่ของคลื่นก่อนหน้า และสามเหลี่ยมเป็นรูปแบบแนวนอนที่มีห้าขาซ้อนทับกัน ซึ่งทั้งสองอย่างนี้ไม่ใช่ลักษณะของซิกแซก"}, {"id": "v1q03", "qType": "single", "diff": "easy", "text": "In a zigzag labeled A-B-C correcting an uptrend, which statement about wave B is generally true?", "choices": [{"id": "a", "letter": "A", "text": "Wave B typically retraces close to 100% of wave A"}, {"id": "b", "letter": "B", "text": "Wave B retraces only part of A and fails to return to A's start"}, {"id": "c", "letter": "C", "text": "Wave B must subdivide into five waves, not three"}, {"id": "d", "letter": "D", "text": "Wave B always exceeds the starting point of wave A"}], "correct": ["b"], "expEn": "In a standard zigzag, wave B is a shallow counter-move that retraces only part of wave A and does not return to where wave A began. A B wave retracing close to 100% describes a flat, not a zigzag, and B subdivides into three waves, not five.", "expTh": "ในซิกแซกมาตรฐาน คลื่น B เป็นการเคลื่อนที่สวนทางเพียงเล็กน้อย ปรับคืนเพียงบางส่วนของคลื่น A และไม่กลับไปถึงจุดเริ่มต้นของคลื่น A การที่คลื่น B ปรับคืนใกล้ 100% เป็นลักษณะของแฟลต ไม่ใช่ซิกแซก และคลื่น B มีโครงสร้าง 3 คลื่นย่อย ไม่ใช่ 5"}, {"id": "v1q04", "qType": "single", "diff": "easy", "text": "Which wave of a zigzag is the one that subdivides into three waves rather than five?", "choices": [{"id": "a", "letter": "A", "text": "Wave B"}, {"id": "b", "letter": "B", "text": "Wave A"}, {"id": "c", "letter": "C", "text": "Wave C"}, {"id": "d", "letter": "D", "text": "Both A and C"}], "correct": ["a"], "expEn": "In the 5-3-5 structure of a zigzag, only the middle wave, B, subdivides into three waves; both A and C are five-wave impulsive structures.", "expTh": "ในโครงสร้าง 5-3-5 ของซิกแซก มีเพียงคลื่นกลางคือคลื่น B เท่านั้นที่แบ่งเป็น 3 คลื่นย่อย ส่วนคลื่น A และ C ทั้งสองเป็นโครงสร้างคลื่นส่ง 5 คลื่นย่อย"}, {"id": "v1q05", "qType": "single", "diff": "medium", "text": "Why do analysts refer to the zigzag as a 'sharp' correction?", "choices": [{"id": "a", "letter": "A", "text": "Because it always completes in fewer bars than any other pattern"}, {"id": "b", "letter": "B", "text": "Because it moves steeply counter-trend, retracing less than a flat"}, {"id": "c", "letter": "C", "text": "Because its C wave is always shorter than its A wave"}, {"id": "d", "letter": "D", "text": "Because it cannot appear as wave 4 in a motive sequence"}], "correct": ["b"], "expEn": "The term 'sharp' refers to the zigzag's steep, decisive move against the prior trend, even though it typically retraces a smaller net portion of that trend than a flat. It has no fixed rule about bar count, C is often equal to or longer than A, and zigzags can appear in wave 4, though flats are more typical there.", "expTh": "คำว่า 'คม' หมายถึงการเคลื่อนที่อย่างชันและเด็ดขาดสวนทางแนวโน้มเดิมของซิกแซก แม้ว่าโดยรวมแล้วมักปรับคืนแนวโน้มนั้นในสัดส่วนที่น้อยกว่าแฟลต ซิกแซกไม่มีกฎตายตัวเรื่องจำนวนแท่งราคา คลื่น C มักเท่ากับหรือยาวกว่าคลื่น A และซิกแซกก็สามารถปรากฏในคลื่น 4 ได้ แม้แฟลตจะพบได้บ่อยกว่าในตำแหน่งนั้น"}, {"id": "v1q06", "qType": "single", "diff": "medium", "text": "As a general guideline, wave B within a zigzag tends to retrace what portion of wave A?", "choices": [{"id": "a", "letter": "A", "text": "More than 100% of wave A's length"}, {"id": "b", "letter": "B", "text": "Exactly 78.6% in nearly all cases"}, {"id": "c", "letter": "C", "text": "Between 100% and 123.6% of wave A"}, {"id": "d", "letter": "D", "text": "Less than 61.8%, commonly 50%-61.8%"}], "correct": ["d"], "expEn": "A common guideline is that wave B in a zigzag retraces less than 61.8% of wave A, often in the 50%-61.8% zone. Retracements at or beyond 100% belong to flats and expanded flats, not zigzags.", "expTh": "แนวทางทั่วไปคือคลื่น B ในซิกแซกมักปรับคืนน้อยกว่า 61.8% ของคลื่น A โดยส่วนใหญ่อยู่ในช่วง 50%-61.8% ส่วนการปรับคืนที่เท่ากับหรือมากกว่า 100% เป็นลักษณะของแฟลตและแฟลตขยาย ไม่ใช่ซิกแซก"}, {"id": "v1q07", "qType": "single", "diff": "medium", "text": "In a standard zigzag, how does wave C typically compare to wave A in terms of net price travel?", "choices": [{"id": "a", "letter": "A", "text": "Wave C is always shorter than wave A"}, {"id": "b", "letter": "B", "text": "Wave C exactly equals wave A with no variation"}, {"id": "c", "letter": "C", "text": "Wave C travels at least as far as A, often somewhat further"}, {"id": "d", "letter": "D", "text": "Wave C typically retraces only half the distance of A"}], "correct": ["c"], "expEn": "Wave C in a zigzag typically travels at least as far as wave A, and frequently extends beyond it by a Fibonacci multiple. It is not required to be exactly equal every time, nor is it typically shorter than A.", "expTh": "คลื่น C ในซิกแซกมักเคลื่อนที่ได้ระยะทางอย่างน้อยเท่ากับคลื่น A และบ่อยครั้งยาวกว่าด้วยอัตราฟีโบนัชชี โดยไม่จำเป็นต้องเท่ากันทุกครั้งเป๊ะๆ และไม่ใช่ว่าจะสั้นกว่าคลื่น A เสมอไป"}, {"id": "v1q08", "qType": "single", "diff": "medium", "text": "A trader observes a correction where wave B retraces 92% of wave A. Based on EWP guidelines, is this consistent with a textbook zigzag?", "choices": [{"id": "a", "letter": "A", "text": "No, such a deep B-wave retracement is more characteristic of a flat than a zigzag"}, {"id": "b", "letter": "B", "text": "Yes, this is the textbook-typical retracement for a zigzag"}, {"id": "c", "letter": "C", "text": "Yes, because zigzag B waves must always exceed 90%"}, {"id": "d", "letter": "D", "text": "No, because zigzag B waves can never exceed 38.2%"}], "correct": ["a"], "expEn": "A 92% retracement of wave A by wave B is far deeper than the typical zigzag guideline (under 61.8%) and instead matches the deep-B-wave character of a flat. Zigzag B waves are not required to stay under 38.2% either, just generally under roughly 61.8%.", "expTh": "การที่คลื่น B ปรับคืนคลื่น A ถึง 92% นั้นลึกกว่าแนวทางปกติของซิกแซกมาก (ซึ่งมักต่ำกว่า 61.8%) และสอดคล้องกับลักษณะคลื่น B ที่ลึกของแฟลตมากกว่า อย่างไรก็ตามคลื่น B ของซิกแซกก็ไม่จำเป็นต้องต่ำกว่า 38.2% เสมอไป เพียงแต่โดยทั่วไปมักต่ำกว่าประมาณ 61.8%"}, {"id": "v1q09", "qType": "single", "diff": "medium", "text": "Which relationship is commonly used to project the length of wave C in a zigzag?", "choices": [{"id": "a", "letter": "A", "text": "Wave C is often related to wave A by equality or a Fibonacci multiple such as 1.618"}, {"id": "b", "letter": "B", "text": "Wave C has no typical relationship to wave A and cannot be projected"}, {"id": "c", "letter": "C", "text": "Wave C is always exactly 2.618 times wave A"}, {"id": "d", "letter": "D", "text": "Wave C is measured only against wave B, never wave A"}], "correct": ["a"], "expEn": "A frequently used guideline projects wave C as equal to wave A, or related to it by a Fibonacci ratio such as 1.618. There is no rule fixing C at exactly 2.618 times A, and C is compared to A, not only to B.", "expTh": "แนวทางที่ใช้บ่อยคือคาดการณ์คลื่น C ให้เท่ากับคลื่น A หรือสัมพันธ์กันด้วยอัตราฟีโบนัชชีเช่น 1.618 เท่า โดยไม่มีกฎที่กำหนดตายตัวว่าคลื่น C ต้องเท่ากับ 2.618 เท่าของคลื่น A เสมอ และคลื่น C จะถูกเทียบกับคลื่น A ไม่ใช่เทียบกับคลื่น B เพียงอย่างเดียว"}, {"id": "v1q10", "qType": "single", "diff": "easy", "text": "Which of the following best distinguishes a zigzag's price action from a flat's?", "choices": [{"id": "a", "letter": "A", "text": "A zigzag always takes longer in time than a flat"}, {"id": "b", "letter": "B", "text": "A zigzag's A wave is corrective while a flat's A wave is impulsive"}, {"id": "c", "letter": "C", "text": "A zigzag makes more net progress against the prior trend than a flat does"}, {"id": "d", "letter": "D", "text": "A zigzag can only occur in bull markets, never bear markets"}], "correct": ["c"], "expEn": "Zigzags are distinguished from flats by making greater net price progress against the prior trend, even though a flat's B wave retraces more of wave A individually. Zigzags can occur in both bull and bear markets, and in both patterns wave A is impulsive (five waves).", "expTh": "ซิกแซกแตกต่างจากแฟลตโดยการเคลื่อนที่คืบหน้าสวนทางแนวโน้มเดิมได้มากกว่าในภาพรวม แม้ว่าคลื่น B ของแฟลตจะปรับคืนคลื่น A แต่ละช่วงได้ลึกกว่าก็ตาม ซิกแซกเกิดขึ้นได้ทั้งในตลาดขาขึ้นและขาลง และในทั้งสองรูปแบบคลื่น A เป็นคลื่นส่ง (5 คลื่นย่อย) เหมือนกัน"}, {"id": "v1q11", "qType": "single", "diff": "easy", "text": "What is the correct wave label sequence for a double zigzag?", "choices": [{"id": "a", "letter": "A", "text": "A-B-C-D-E"}, {"id": "b", "letter": "B", "text": "W-X-Y"}, {"id": "c", "letter": "C", "text": "W-X-Y-X-Z"}, {"id": "d", "letter": "D", "text": "1-2-3-4-5"}], "correct": ["b"], "expEn": "A double zigzag consists of two zigzag patterns connected by a single X wave, labeled W-X-Y. A-B-C-D-E labels a triangle, W-X-Y-X-Z labels a triple zigzag, and 1-2-3-4-5 labels a motive impulse.", "expTh": "ซิกแซกคู่ประกอบด้วยรูปแบบซิกแซกสองชุดที่เชื่อมกันด้วยคลื่น X หนึ่งคลื่น เรียกว่า W-X-Y ส่วน A-B-C-D-E คือสามเหลี่ยม, W-X-Y-X-Z คือซิกแซกสามชุด และ 1-2-3-4-5 คือคลื่นส่ง"}, {"id": "v1q12", "qType": "single", "diff": "medium", "text": "What is the primary purpose of a double zigzag forming instead of a single zigzag?", "choices": [{"id": "a", "letter": "A", "text": "To signal that the larger trend has permanently reversed"}, {"id": "b", "letter": "B", "text": "To indicate that the next motive wave will be a fifth-wave extension"}, {"id": "c", "letter": "C", "text": "To replace the need for a wave 4 in the larger degree"}, {"id": "d", "letter": "D", "text": "To extend the correction when a single zigzag is not sufficient in price or time"}], "correct": ["d"], "expEn": "Multi-zigzags form when a single zigzag is not enough to correct the prior move adequately in price or time, so the market adds a second zigzag connected by an X wave. They do not signal a permanent trend reversal, nor do they dictate anything about future wave-5 extensions or eliminate the need for a wave 4.", "expTh": "ซิกแซกหลายชุดเกิดขึ้นเมื่อซิกแซกเดี่ยวเพียงชุดเดียวยังปรับคืนราคาหรือเวลาของคลื่นก่อนหน้าได้ไม่เพียงพอ ตลาดจึงสร้างซิกแซกชุดที่สองเชื่อมด้วยคลื่น X ซิกแซกคู่ไม่ได้บอกว่าแนวโน้มใหญ่กลับตัวอย่างถาวร และไม่ได้บ่งบอกเรื่องคลื่น 5 ขยาย หรือทำให้ไม่ต้องมีคลื่น 4 ในดีกรีที่ใหญ่ขึ้น"}, {"id": "v1q13", "qType": "single", "diff": "easy", "text": "In a double zigzag W-X-Y, what type of wave is X?", "choices": [{"id": "a", "letter": "A", "text": "Always a simple zigzag and nothing else"}, {"id": "b", "letter": "B", "text": "An impulsive five-wave structure"}, {"id": "c", "letter": "C", "text": "A fourth zigzag nested inside wave Y"}, {"id": "d", "letter": "D", "text": "A corrective wave, typically itself a zigzag, flat, or triangle"}], "correct": ["d"], "expEn": "The connecting X wave in a double zigzag is itself a corrective structure, and it can take the form of a zigzag, flat, or triangle, not only a zigzag. It is not impulsive, and it is not a fourth zigzag nested inside Y.", "expTh": "คลื่น X ที่เชื่อมในซิกแซกคู่เป็นโครงสร้างคลื่นปรับเช่นกัน และสามารถอยู่ในรูปของซิกแซก แฟลต หรือสามเหลี่ยมก็ได้ ไม่จำเป็นต้องเป็นซิกแซกเท่านั้น และไม่ใช่คลื่นส่ง อีกทั้งไม่ใช่ซิกแซกชุดที่สี่ซ้อนอยู่ในคลื่น Y"}, {"id": "v1q14", "qType": "single", "diff": "medium", "text": "In a double zigzag correcting a prior uptrend, how does wave X typically behave relative to wave W?", "choices": [{"id": "a", "letter": "A", "text": "Wave X always travels beyond the start of W, canceling the correction"}, {"id": "b", "letter": "B", "text": "Wave X must retrace exactly 61.8% of wave W, no more and no less"}, {"id": "c", "letter": "C", "text": "Wave X retraces part of W without negating the correction's progress"}, {"id": "d", "letter": "D", "text": "Wave X is always longer in price than both W and Y combined"}], "correct": ["c"], "expEn": "Wave X is a counter-move that retraces part of wave W, but it does not travel so far as to negate the progress the correction has made. There is no requirement that it retrace exactly 61.8%, nor that it be longer than both W and Y combined.", "expTh": "คลื่น X เป็นการเคลื่อนที่สวนทางที่ปรับคืนบางส่วนของคลื่น W แต่จะไม่เคลื่อนที่ไปไกลจนทำให้ความคืบหน้าของการปรับฐานหมดไป โดยไม่มีข้อกำหนดว่าต้องปรับคืนพอดี 61.8% หรือต้องยาวกว่าคลื่น W และ Y รวมกัน"}, {"id": "v1q15", "qType": "single", "diff": "medium", "text": "Which statement about the Y wave of a double zigzag is accurate?", "choices": [{"id": "a", "letter": "A", "text": "Wave Y is itself a complete zigzag and usually carries the correction to a new extreme beyond wave W"}, {"id": "b", "letter": "B", "text": "Wave Y is always a three-wave flat, never a zigzag"}, {"id": "c", "letter": "C", "text": "Wave Y is optional and often omitted from the count"}, {"id": "d", "letter": "D", "text": "Wave Y must be shorter than wave X in every instance"}], "correct": ["a"], "expEn": "In a double zigzag, wave Y is itself a complete zigzag that typically extends the correction to a new price extreme beyond the end of wave W. It is not a flat, it is a required component (not optional), and it has no rule requiring it to be shorter than X.", "expTh": "ในซิกแซกคู่ คลื่น Y เป็นซิกแซกที่สมบูรณ์ในตัวเอง และมักพาการปรับฐานไปถึงจุดสุดขั้วใหม่ที่เกินกว่าจุดสิ้นสุดของคลื่น W คลื่น Y ไม่ใช่แฟลต และเป็นองค์ประกอบที่จำเป็น ไม่ใช่ตัวเลือก และไม่มีกฎว่าต้องสั้นกว่าคลื่น X เสมอไป"}, {"id": "v1q16", "qType": "single", "diff": "easy", "text": "What is the correct label sequence for a triple zigzag?", "choices": [{"id": "a", "letter": "A", "text": "W-X-Y, nothing more"}, {"id": "b", "letter": "B", "text": "W-X-Y-X-Z, in full"}, {"id": "c", "letter": "C", "text": "A-B-C-X-A-B-C format"}, {"id": "d", "letter": "D", "text": "W-X-Y-Z, four parts"}], "correct": ["b"], "expEn": "A triple zigzag connects three zigzag patterns with two X waves, labeled W-X-Y-X-Z. W-X-Y labels a double zigzag, and the other two options are not standard EWP labels.", "expTh": "ซิกแซกสามชุดเชื่อมรูปแบบซิกแซกสามชุดด้วยคลื่น X สองคลื่น เรียกว่า W-X-Y-X-Z ส่วน W-X-Y คือซิกแซกคู่ และตัวเลือกอื่นไม่ใช่รูปแบบการเรียกชื่อมาตรฐานของ EWP"}, {"id": "v1q17", "qType": "single", "diff": "easy", "text": "How many discrete zigzag patterns make up a triple zigzag?", "choices": [{"id": "a", "letter": "A", "text": "Two"}, {"id": "b", "letter": "B", "text": "Three"}, {"id": "c", "letter": "C", "text": "Four"}, {"id": "d", "letter": "D", "text": "Five"}], "correct": ["b"], "expEn": "By definition, a triple zigzag is composed of three separate zigzag patterns (W, Y, and Z) connected by X waves.", "expTh": "ตามคำนิยาม ซิกแซกสามชุดประกอบด้วยรูปแบบซิกแซกที่แยกกันสามชุด (W, Y และ Z) ซึ่งเชื่อมต่อกันด้วยคลื่น X"}, {"id": "v1q18", "qType": "single", "diff": "easy", "text": "How many connecting X waves appear within a triple zigzag?", "choices": [{"id": "a", "letter": "A", "text": "One"}, {"id": "b", "letter": "B", "text": "Three"}, {"id": "c", "letter": "C", "text": "Zero"}, {"id": "d", "letter": "D", "text": "Two"}], "correct": ["d"], "expEn": "A triple zigzag requires two X waves to connect its three zigzag components (between W and Y, and between Y and Z). A double zigzag uses only one X wave.", "expTh": "ซิกแซกสามชุดต้องใช้คลื่น X สองคลื่นเพื่อเชื่อมองค์ประกอบซิกแซกทั้งสามชุด (ระหว่าง W กับ Y และระหว่าง Y กับ Z) ส่วนซิกแซกคู่ใช้คลื่น X เพียงหนึ่งคลื่นเท่านั้น"}, {"id": "v1q19", "qType": "single", "diff": "medium", "text": "Triple zigzags are generally considered, relative to double zigzags, to be:", "choices": [{"id": "a", "letter": "A", "text": "More common and the default expectation for any wave 2"}, {"id": "b", "letter": "B", "text": "Required whenever a double zigzag completes"}, {"id": "c", "letter": "C", "text": "Rarer, appearing less frequently in actual markets"}, {"id": "d", "letter": "D", "text": "Identical in frequency to double zigzags"}], "correct": ["c"], "expEn": "Triple zigzags are rarer than double zigzags in practice; analysts should not default to expecting one. A double zigzag completing does not require a third leg to follow, and the two are not equally frequent.", "expTh": "ในทางปฏิบัติ ซิกแซกสามชุดเกิดขึ้นน้อยกว่าซิกแซกคู่ นักวิเคราะห์ไม่ควรตั้งสมมติฐานว่าจะเกิดขึ้นเป็นค่าเริ่มต้น การที่ซิกแซกคู่จบลงไม่ได้แปลว่าจะต้องมีขาที่สามตามมา และทั้งสองรูปแบบก็ไม่มีความถี่เท่ากัน"}, {"id": "v1q20", "qType": "single", "diff": "medium", "text": "In a triple zigzag, which component pattern is repeated across W, Y, and Z?", "choices": [{"id": "a", "letter": "A", "text": "Each of W, Y, and Z is itself a zigzag"}, {"id": "b", "letter": "B", "text": "Each of W, Y, and Z is itself a flat"}, {"id": "c", "letter": "C", "text": "Each of W, Y, and Z is itself a triangle"}, {"id": "d", "letter": "D", "text": "W is a zigzag, Y is a flat, and Z is a triangle by rule"}], "correct": ["a"], "expEn": "By definition, every component of a triple zigzag — W, Y, and Z — is itself a zigzag; that is what makes it a triple zigzag rather than a combination of mixed pattern types.", "expTh": "ตามคำนิยาม องค์ประกอบทุกชุดของซิกแซกสามชุด คือ W, Y และ Z ล้วนเป็นซิกแซกทั้งหมด ซึ่งเป็นสิ่งที่ทำให้เรียกว่าซิกแซกสามชุด แทนที่จะเป็นการรวมกันของรูปแบบที่ต่างชนิดกัน"}, {"id": "v1q21", "qType": "single", "diff": "easy", "text": "What is the internal subdivision of a regular flat correction?", "choices": [{"id": "a", "letter": "A", "text": "3-3-5, labeled A-B-C"}, {"id": "b", "letter": "B", "text": "5-3-5, labeled A-B-C"}, {"id": "c", "letter": "C", "text": "3-3-3, labeled A-B-C"}, {"id": "d", "letter": "D", "text": "5-3-5-3-5, labeled A-B-C-D-E"}], "correct": ["a"], "expEn": "A flat subdivides 3-3-5: wave A is corrective (three waves), wave B is also corrective (three waves), and wave C is impulsive (five waves), all labeled A-B-C. 5-3-5 belongs to a zigzag, and the other options do not match any standard flat.", "expTh": "แฟลตมีโครงสร้างภายในแบบ 3-3-5 คือคลื่น A เป็นคลื่นปรับ (3 คลื่นย่อย) คลื่น B ก็เป็นคลื่นปรับ (3 คลื่นย่อย) และคลื่น C เป็นคลื่นส่ง (5 คลื่นย่อย) เรียกรวมว่า A-B-C ส่วน 5-3-5 เป็นของซิกแซก และตัวเลือกอื่นไม่ตรงกับแฟลตมาตรฐานใดเลย"}, {"id": "v1q22", "qType": "single", "diff": "easy", "text": "Which wave in a flat correction subdivides into five waves?", "choices": [{"id": "a", "letter": "A", "text": "Wave A"}, {"id": "b", "letter": "B", "text": "Wave B"}, {"id": "c", "letter": "C", "text": "Both A and B"}, {"id": "d", "letter": "D", "text": "Wave C"}], "correct": ["d"], "expEn": "In the 3-3-5 structure of a flat, only wave C is impulsive and subdivides into five waves; both A and B are corrective three-wave structures.", "expTh": "ในโครงสร้าง 3-3-5 ของแฟลต มีเพียงคลื่น C เท่านั้นที่เป็นคลื่นส่งและแบ่งเป็น 5 คลื่นย่อย ส่วนคลื่น A และ B ทั้งสองเป็นโครงสร้างคลื่นปรับแบบ 3 คลื่นย่อย"}, {"id": "v1q23", "qType": "single", "diff": "medium", "text": "Flats are often described as 'sideways' corrections because:", "choices": [{"id": "a", "letter": "A", "text": "They never move against the prior trend at all"}, {"id": "b", "letter": "B", "text": "They retrace most of the prior wave but make little net progress against the trend"}, {"id": "c", "letter": "C", "text": "Their wave B always exceeds wave A by more than 50%"}, {"id": "d", "letter": "D", "text": "They always take less total time to complete than a zigzag does"}], "correct": ["b"], "expEn": "Flats earn the 'sideways' label because wave B retraces most of wave A, and wave C then typically ends near wave A's level, so the overall structure makes little net headway against the larger trend despite internal movement. Flats do move against the trend to some degree, and there is no fixed rule about B exceeding A by 50% or about completing faster than a zigzag.", "expTh": "แฟลตถูกเรียกว่าการปรับฐานแบบ 'แนวนอน' เพราะคลื่น B ปรับคืนคลื่น A ไปมากแล้วคลื่น C ก็มักจบลงใกล้ระดับของคลื่น A ทำให้โครงสร้างโดยรวมคืบหน้าสวนทางแนวโน้มใหญ่ได้น้อยมาก แม้จะมีการเคลื่อนไหวภายในก็ตาม แฟลตยังคงเคลื่อนที่สวนทางแนวโน้มอยู่บ้าง และไม่มีกฎตายตัวว่าคลื่น B ต้องเกินคลื่น A 50% หรือต้องจบเร็วกว่าซิกแซก"}, {"id": "v1q24", "qType": "single", "diff": "medium", "text": "Flat corrections are relatively more common in which market context, according to EWP?", "choices": [{"id": "a", "letter": "A", "text": "Only in markets with no discernible trend at all"}, {"id": "b", "letter": "B", "text": "Only during fifth-wave extensions, never elsewhere"}, {"id": "c", "letter": "C", "text": "Strongly trending markets, often as wave 4 or a B wave"}, {"id": "d", "letter": "D", "text": "Only immediately after a triangle, never before"}], "correct": ["c"], "expEn": "EWP observes that flats tend to appear more often in strongly trending markets, commonly as a wave 4 or as a B wave within a larger correction. They are not restricted to trendless markets, fifth-wave extensions, or the position right after a triangle.", "expTh": "ตามหลัก EWP แฟลตมักปรากฏบ่อยขึ้นในตลาดที่มีแนวโน้มแข็งแรง โดยพบได้บ่อยในตำแหน่งคลื่น 4 หรือเป็นคลื่น B ภายในการปรับฐานที่ใหญ่กว่า แฟลตไม่ได้จำกัดอยู่แค่ตลาดที่ไม่มีแนวโน้ม คลื่น 5 ขยาย หรือตำแหน่งที่อยู่ถัดจากสามเหลี่ยมเท่านั้น"}, {"id": "v1q25", "qType": "single", "diff": "medium", "text": "Which of the following is a defining feature shared by all three flat subtypes (regular, expanded, running)?", "choices": [{"id": "a", "letter": "A", "text": "All three subtypes require wave C to fall short of wave A's endpoint"}, {"id": "b", "letter": "B", "text": "All three subtypes require wave B to exceed wave A's starting point"}, {"id": "c", "letter": "C", "text": "All subdivide 3-3-5 and are labeled A-B-C"}, {"id": "d", "letter": "D", "text": "All three subtypes are impulsive overall rather than corrective"}], "correct": ["c"], "expEn": "All flat subtypes share the same 3-3-5, A-B-C internal subdivision; what differs between regular, expanded, and running flats is only how far B and C travel relative to wave A. A short C is specific to running flats, a B wave beyond A's start is specific to expanded and running flats, and flats overall are corrective, not impulsive.", "expTh": "แฟลตทุกชนิดย่อยมีโครงสร้างภายในแบบ 3-3-5 และเรียกว่า A-B-C เหมือนกัน สิ่งที่ต่างกันระหว่างแฟลตปกติ แฟลตขยาย และแฟลตวิ่ง อยู่ที่ระยะทางของคลื่น B และ C เมื่อเทียบกับคลื่น A เท่านั้น คลื่น C ที่สั้นเป็นลักษณะเฉพาะของแฟลตวิ่ง ส่วนคลื่น B ที่เกินจุดเริ่มต้นของคลื่น A เป็นลักษณะของแฟลตขยายและแฟลตวิ่ง และแฟลตโดยรวมเป็นคลื่นปรับ ไม่ใช่คลื่นส่ง"}, {"id": "v1q26", "qType": "single", "diff": "easy", "text": "In a regular flat, wave B typically terminates:", "choices": [{"id": "a", "letter": "A", "text": "Well beyond the starting level of wave A"}, {"id": "b", "letter": "B", "text": "Near wave A's starting level, close to a 100% retracement"}, {"id": "c", "letter": "C", "text": "At less than 50% retracement of wave A"}, {"id": "d", "letter": "D", "text": "Exactly at the halfway point of wave A"}], "correct": ["b"], "expEn": "A regular flat's wave B ends close to the level where wave A began, approximating a 100% retracement. Exceeding that level describes an expanded or running flat, and a shallow retracement under 50% is more typical of a zigzag.", "expTh": "คลื่น B ของแฟลตปกติมักจบลงใกล้ระดับที่คลื่น A เริ่มต้น ซึ่งใกล้เคียงการปรับคืน 100% การที่เกินระดับนั้นเป็นลักษณะของแฟลตขยายหรือแฟลตวิ่ง และการปรับคืนที่ตื้นกว่า 50% เป็นลักษณะของซิกแซกมากกว่า"}, {"id": "v1q27", "qType": "single", "diff": "easy", "text": "In a regular flat, where does wave C typically terminate relative to wave A's endpoint?", "choices": [{"id": "a", "letter": "A", "text": "Far beyond wave A's endpoint, by several multiples"}, {"id": "b", "letter": "B", "text": "Well short of wave A's endpoint, truncating badly"}, {"id": "c", "letter": "C", "text": "At exactly the same price as wave B's endpoint"}, {"id": "d", "letter": "D", "text": "Near the level of wave A's endpoint, slightly beyond or about equal to it"}], "correct": ["d"], "expEn": "In a regular flat, wave C ends near wave A's endpoint, either about equal to it or slightly beyond. Extending far beyond A's endpoint fits an expanded flat, and falling well short fits a running flat.", "expTh": "ในแฟลตปกติ คลื่น C จะจบลงใกล้จุดสิ้นสุดของคลื่น A ไม่ว่าจะเท่ากันหรือเกินไปเล็กน้อย การที่ยาวเกินจุดสิ้นสุดของคลื่น A ไปมากเป็นลักษณะของแฟลตขยาย และการที่สั้นกว่ามากเป็นลักษณะของแฟลตวิ่ง"}, {"id": "v1q28", "qType": "single", "diff": "medium", "text": "A regular flat is sometimes considered the 'textbook' or most common-looking flat because:", "choices": [{"id": "a", "letter": "A", "text": "Its B and C waves stay close to the boundaries set by wave A, producing a roughly even sideways shape"}, {"id": "b", "letter": "B", "text": "It is the only flat subtype that can appear as wave 4"}, {"id": "c", "letter": "C", "text": "It is the only flat subtype with a five-wave C wave"}, {"id": "d", "letter": "D", "text": "Its wave B always subdivides into five waves instead of three"}], "correct": ["a"], "expEn": "The regular flat keeps B and C close to the boundaries of wave A, which gives it the classic, contained sideways shape often shown in textbooks. All flat subtypes can appear as wave 4, all have a five-wave C, and B always subdivides into three waves in every flat subtype.", "expTh": "แฟลตปกติทำให้คลื่น B และ C อยู่ใกล้ขอบเขตที่คลื่น A กำหนดไว้ ทำให้ได้รูปทรงแนวนอนที่กระชับตามภาพในตำรา แฟลตทุกชนิดย่อยสามารถเป็นคลื่น 4 ได้ ทุกชนิดมีคลื่น C ห้าคลื่นย่อยเหมือนกัน และคลื่น B ก็แบ่งเป็นสามคลื่นย่อยเสมอในแฟลตทุกชนิด"}, {"id": "v1q29", "qType": "single", "diff": "medium", "text": "If wave B of a flat retraces approximately 95%-105% of wave A and wave C ends near wave A's endpoint, this is most consistent with:", "choices": [{"id": "a", "letter": "A", "text": "An expanded flat"}, {"id": "b", "letter": "B", "text": "A running flat"}, {"id": "c", "letter": "C", "text": "A contracting triangle"}, {"id": "d", "letter": "D", "text": "A regular flat"}], "correct": ["d"], "expEn": "A B wave near 95%-105% of A combined with a C wave ending near A's endpoint is the classic signature of a regular flat. An expanded flat needs B clearly beyond A's start and C clearly beyond A's end; a running flat needs C to fall short; and a triangle has a different 5-leg overlapping structure entirely.", "expTh": "คลื่น B ที่ปรับคืนประมาณ 95%-105% ของคลื่น A ร่วมกับคลื่น C ที่จบใกล้จุดสิ้นสุดของคลื่น A เป็นลักษณะคลาสสิกของแฟลตปกติ ส่วนแฟลตขยายต้องมีคลื่น B เกินจุดเริ่มต้นของ A อย่างชัดเจนและคลื่น C เกินจุดสิ้นสุดของ A อย่างชัดเจน แฟลตวิ่งต้องมีคลื่น C สั้นกว่าจุดสิ้นสุดของ A และสามเหลี่ยมก็มีโครงสร้างห้าขาซ้อนทับที่แตกต่างไปโดยสิ้นเชิง"}, {"id": "v1q30", "qType": "single", "diff": "medium", "text": "Which outcome would disqualify a pattern from being labeled a regular flat?", "choices": [{"id": "a", "letter": "A", "text": "Wave C terminating significantly beyond the level reached by wave A"}, {"id": "b", "letter": "B", "text": "Wave B terminating near the starting level of wave A"}, {"id": "c", "letter": "C", "text": "Wave C subdividing into five waves"}, {"id": "d", "letter": "D", "text": "Wave A being corrective in internal structure"}], "correct": ["a"], "expEn": "A wave C that extends significantly beyond wave A's endpoint points to an expanded flat instead of a regular flat. A B wave near A's start, a five-wave C, and a corrective (three-wave) A are all standard, expected features of a regular flat, not disqualifying ones.", "expTh": "คลื่น C ที่ยาวเกินจุดสิ้นสุดของคลื่น A ไปอย่างมีนัยสำคัญ บ่งบอกว่าเป็นแฟลตขยาย ไม่ใช่แฟลตปกติ ส่วนคลื่น B ที่จบใกล้จุดเริ่มต้นของคลื่น A คลื่น C ที่มีห้าคลื่นย่อย และคลื่น A ที่เป็นคลื่นปรับ (3 คลื่นย่อย) ล้วนเป็นลักษณะมาตรฐานที่คาดหวังได้ของแฟลตปกติ ไม่ใช่สิ่งที่ตัดคุณสมบัติ"}, {"id": "v1q31", "qType": "single", "diff": "easy", "text": "An expanded flat is distinguished from a regular flat primarily by:", "choices": [{"id": "a", "letter": "A", "text": "Wave B failing to retrace even 50% of wave A"}, {"id": "b", "letter": "B", "text": "Wave C terminating well short of wave A's endpoint"}, {"id": "c", "letter": "C", "text": "Wave B moving beyond A's start, and wave C moving beyond A's endpoint"}, {"id": "d", "letter": "D", "text": "Wave A subdividing into three waves instead of five"}], "correct": ["c"], "expEn": "The defining feature of an expanded flat is that both B and C extend beyond the boundaries set by wave A, unlike a regular flat where they stay close to those boundaries. A shallow B wave describes a zigzag-like move, a short C describes a running flat, and wave A is corrective (three waves) in every flat subtype, including expanded flats.", "expTh": "ลักษณะสำคัญของแฟลตขยายคือคลื่น B และ C ทั้งสองเคลื่อนที่เกินขอบเขตที่คลื่น A กำหนดไว้ ต่างจากแฟลตปกติที่คลื่น B และ C จะอยู่ใกล้ขอบเขตนั้น ส่วนคลื่น B ที่ตื้นเป็นลักษณะคล้ายซิกแซก คลื่น C ที่สั้นเป็นลักษณะของแฟลตวิ่ง และคลื่น A เป็นคลื่นปรับ (3 คลื่นย่อย) ในแฟลตทุกชนิดย่อยรวมถึงแฟลตขยายด้วย"}, {"id": "v1q32", "qType": "single", "diff": "medium", "text": "In an expanded flat correcting an uptrend, where does wave B's peak typically fall relative to the start of wave A?", "choices": [{"id": "a", "letter": "A", "text": "Below the start of wave A"}, {"id": "b", "letter": "B", "text": "Above the start of wave A, a new high beyond it"}, {"id": "c", "letter": "C", "text": "Exactly at the start of wave A"}, {"id": "d", "letter": "D", "text": "Below the ending level of wave A"}], "correct": ["b"], "expEn": "In an expanded flat, wave B pushes to a new extreme beyond the starting point of wave A, which is what makes the pattern look 'irregular' compared to a regular flat where B stays below that starting level.", "expTh": "ในแฟลตขยาย คลื่น B จะดันไปถึงจุดสุดขั้วใหม่ที่เกินจุดเริ่มต้นของคลื่น A ซึ่งเป็นสิ่งที่ทำให้รูปแบบนี้ดู 'ผิดปกติ' เมื่อเทียบกับแฟลตปกติที่คลื่น B จะอยู่ต่ำกว่าระดับจุดเริ่มต้นนั้น"}, {"id": "v1q33", "qType": "single", "diff": "medium", "text": "Why is an expanded flat sometimes called an 'irregular' flat?", "choices": [{"id": "a", "letter": "A", "text": "Because its B and C waves extend beyond the boundaries of wave A"}, {"id": "b", "letter": "B", "text": "Because it lacks a B wave entirely in its structure"}, {"id": "c", "letter": "C", "text": "Because its C wave is corrective rather than impulsive"}, {"id": "d", "letter": "D", "text": "Because it only appears once per decade in real markets"}], "correct": ["a"], "expEn": "The 'irregular' name reflects how B and C both break beyond wave A's boundaries, unlike the contained shape of a regular flat. Expanded flats still have a B wave, their C wave is impulsive like in any flat, and they are not confined to rare, once-per-decade occurrences.", "expTh": "ชื่อ 'ผิดปกติ' สะท้อนถึงการที่คลื่น B และ C ทั้งสองทะลุขอบเขตของคลื่น A ต่างจากรูปทรงที่กระชับของแฟลตปกติ แฟลตขยายยังคงมีคลื่น B เสมอ คลื่น C ของมันก็เป็นคลื่นส่งเหมือนแฟลตทุกชนิด และไม่ได้เกิดขึ้นเฉพาะปีละครั้งหรือทศวรรษละครั้งเท่านั้น"}, {"id": "v1q34", "qType": "single", "diff": "medium", "text": "In an expanded flat, how does wave C's length typically compare to wave A?", "choices": [{"id": "a", "letter": "A", "text": "Wave C is always exactly equal to wave A"}, {"id": "b", "letter": "B", "text": "Wave C is usually longer, often 1.618 times wave A"}, {"id": "c", "letter": "C", "text": "Wave C is always shorter than wave A"}, {"id": "d", "letter": "D", "text": "Wave C has no typical relationship to wave A at all"}], "correct": ["b"], "expEn": "In an expanded flat, wave C commonly travels further than wave A, often related to it by a Fibonacci ratio such as 1.618, consistent with C extending beyond A's endpoint. Exact equality or a shorter C would be more typical of a regular or running flat.", "expTh": "ในแฟลตขยาย คลื่น C มักเคลื่อนที่ได้ไกลกว่าคลื่น A โดยสัมพันธ์กันด้วยอัตราฟีโบนัชชีเช่น 1.618 เท่า ซึ่งสอดคล้องกับการที่คลื่น C ยาวเกินจุดสิ้นสุดของคลื่น A ส่วนการที่เท่ากันพอดีหรือสั้นกว่าจะเป็นลักษณะของแฟลตปกติหรือแฟลตวิ่งมากกว่า"}, {"id": "v1q35", "qType": "single", "diff": "medium", "text": "A market rallies in wave A, then declines in wave B to a low beneath the start of wave A, then rallies in wave C to a new high beyond the end of wave A. This sequence best fits:", "choices": [{"id": "a", "letter": "A", "text": "A regular flat"}, {"id": "b", "letter": "B", "text": "A running flat"}, {"id": "c", "letter": "C", "text": "An expanded flat"}, {"id": "d", "letter": "D", "text": "A single zigzag"}], "correct": ["c"], "expEn": "B exceeding the start of A and C exceeding the end of A, both in the direction away from the prior A boundaries, is the classic expanded-flat signature. A regular flat keeps B and C close to A's boundaries, a running flat needs C to fall short, and a zigzag subdivides 5-3-5, not 3-3-5.", "expTh": "การที่คลื่น B เกินจุดเริ่มต้นของคลื่น A และคลื่น C เกินจุดสิ้นสุดของคลื่น A ทั้งสองในทิศทางที่ออกจากขอบเขตเดิมของคลื่น A เป็นลักษณะคลาสสิกของแฟลตขยาย ส่วนแฟลตปกติจะให้คลื่น B และ C อยู่ใกล้ขอบเขตของคลื่น A แฟลตวิ่งต้องมีคลื่น C สั้นกว่า และซิกแซกมีโครงสร้าง 5-3-5 ไม่ใช่ 3-3-5"}, {"id": "v1q36", "qType": "single", "diff": "easy", "text": "A running flat is distinguished from an expanded flat primarily by:", "choices": [{"id": "a", "letter": "A", "text": "Wave B failing to exceed the start of wave A"}, {"id": "b", "letter": "B", "text": "Wave A subdividing into five waves instead of three"}, {"id": "c", "letter": "C", "text": "Wave C exceeding wave A's endpoint by a wide margin"}, {"id": "d", "letter": "D", "text": "Wave C failing to reach wave A's endpoint, truncating short"}], "correct": ["d"], "expEn": "The defining feature of a running flat is that wave C, despite wave B exceeding wave A's start as in an expanded flat, fails to reach wave A's endpoint. Wave B still exceeds A's start in a running flat (as in an expanded flat), wave A subdivides into three waves in all flat types, and a C that exceeds A's endpoint by a wide margin describes an expanded flat instead.", "expTh": "ลักษณะสำคัญของแฟลตวิ่งคือคลื่น C ไม่สามารถไปถึงจุดสิ้นสุดของคลื่น A ได้ แม้ว่าคลื่น B จะเกินจุดเริ่มต้นของคลื่น A เหมือนในแฟลตขยายก็ตาม คลื่น B ในแฟลตวิ่งยังคงเกินจุดเริ่มต้นของ A เหมือนแฟลตขยาย คลื่น A แบ่งเป็นสามคลื่นย่อยในแฟลตทุกชนิด และคลื่น C ที่เกินจุดสิ้นสุดของ A ไปมากเป็นลักษณะของแฟลตขยายต่างหาก"}, {"id": "v1q37", "qType": "single", "diff": "medium", "text": "Running flats are generally considered to be:", "choices": [{"id": "a", "letter": "A", "text": "The most common of all corrective patterns"}, {"id": "b", "letter": "B", "text": "Relatively rare and a sign of strong underlying trend momentum"}, {"id": "c", "letter": "C", "text": "Only possible in wave 2 of a motive sequence"}, {"id": "d", "letter": "D", "text": "Impossible to distinguish from a regular flat in real time"}], "correct": ["b"], "expEn": "Running flats are relatively uncommon and are read as a sign of powerful underlying trend momentum, since the correction cannot even fully retrace to wave A's endpoint. They are not the most common corrective pattern, are not confined only to wave 2, and can be distinguished from a regular flat once wave C's shortfall becomes evident.", "expTh": "แฟลตวิ่งพบได้ไม่บ่อยนัก และถูกตีความว่าเป็นสัญญาณของแรงส่งของแนวโน้มหลักที่แข็งแรงมาก เนื่องจากการปรับฐานไม่สามารถปรับคืนไปถึงจุดสิ้นสุดของคลื่น A ได้เต็มที่ แฟลตวิ่งไม่ใช่รูปแบบคลื่นปรับที่พบได้บ่อยที่สุด ไม่ได้จำกัดอยู่แค่คลื่น 2 เท่านั้น และสามารถแยกแยะจากแฟลตปกติได้เมื่อเห็นว่าคลื่น C สั้นกว่าที่ควร"}, {"id": "v1q38", "qType": "single", "diff": "medium", "text": "In a running flat correcting an uptrend, wave B typically:", "choices": [{"id": "a", "letter": "A", "text": "Exceeds the starting level of wave A, similar to an expanded flat"}, {"id": "b", "letter": "B", "text": "Fails to retrace even 38.2% of wave A"}, {"id": "c", "letter": "C", "text": "Terminates exactly at the start of wave A"}, {"id": "d", "letter": "D", "text": "Subdivides into five waves instead of three"}], "correct": ["a"], "expEn": "Like an expanded flat, a running flat has a wave B that exceeds the starting level of wave A; what differs is that wave C then falls short of wave A's endpoint. B retracing less than 38.2%, terminating exactly at A's start, or subdividing into five waves would not match a running flat.", "expTh": "เช่นเดียวกับแฟลตขยาย แฟลตวิ่งมีคลื่น B ที่เกินจุดเริ่มต้นของคลื่น A สิ่งที่ต่างกันคือคลื่น C จะสั้นกว่าจุดสิ้นสุดของคลื่น A การที่คลื่น B ปรับคืนน้อยกว่า 38.2% จบลงพอดีที่จุดเริ่มต้นของ A หรือแบ่งเป็นห้าคลื่นย่อย ล้วนไม่ตรงกับแฟลตวิ่ง"}, {"id": "v1q39", "qType": "single", "diff": "medium", "text": "Why does a running flat suggest strong trending momentum in the direction of the larger trend?", "choices": [{"id": "a", "letter": "A", "text": "Because its wave B always exceeds wave A by more than 200%"}, {"id": "b", "letter": "B", "text": "Because it always precedes a trend reversal within just one wave"}, {"id": "c", "letter": "C", "text": "Because wave C must subdivide into three waves rather than five"}, {"id": "d", "letter": "D", "text": "Because wave C cannot retrace back to where wave A ended, showing the trend barely allows a pullback"}], "correct": ["d"], "expEn": "A running flat's telltale sign of strength is that wave C cannot even reach back to wave A's endpoint, implying the larger trend resumed so quickly that the correction was cut short. There is no 200% rule for wave B, no requirement that a reversal follow within one wave, and wave C is still impulsive (five waves) in a running flat.", "expTh": "สัญญาณบอกความแข็งแรงของแฟลตวิ่งคือคลื่น C ไม่สามารถย้อนกลับไปถึงจุดสิ้นสุดของคลื่น A ได้เลย ซึ่งบ่งบอกว่าแนวโน้มใหญ่กลับมาเร็วมากจนการปรับฐานถูกตัดสั้นลง ไม่มีกฎที่กำหนดว่าคลื่น B ต้องเกิน 200% ไม่มีข้อกำหนดว่าต้องกลับตัวภายในหนึ่งคลื่นถัดไป และคลื่น C ก็ยังคงเป็นคลื่นส่ง (ห้าคลื่นย่อย) เหมือนเดิมในแฟลตวิ่ง"}, {"id": "v1q40", "qType": "single", "diff": "medium", "text": "A market in a strong uptrend forms a small A-B-C where B moves well above the start of A, but C stalls and reverses before reaching the level of A's end. This is best classified as:", "choices": [{"id": "a", "letter": "A", "text": "A regular flat"}, {"id": "b", "letter": "B", "text": "An expanded flat"}, {"id": "c", "letter": "C", "text": "A running flat"}, {"id": "d", "letter": "D", "text": "A triple zigzag"}], "correct": ["c"], "expEn": "B exceeding A's start combined with C stalling before reaching A's end is the specific signature of a running flat. A regular flat would keep B near A's start; an expanded flat would need C to exceed A's end, not fall short of it; and a triple zigzag is an entirely different multi-zigzag structure.", "expTh": "การที่คลื่น B เกินจุดเริ่มต้นของคลื่น A ร่วมกับคลื่น C ที่หยุดชะงักก่อนถึงจุดสิ้นสุดของคลื่น A เป็นลักษณะเฉพาะของแฟลตวิ่ง ส่วนแฟลตปกติจะให้คลื่น B อยู่ใกล้จุดเริ่มต้นของ A แฟลตขยายต้องมีคลื่น C เกินจุดสิ้นสุดของ A ไม่ใช่สั้นกว่า และซิกแซกสามชุดก็เป็นโครงสร้างซิกแซกหลายชุดที่ต่างออกไปโดยสิ้นเชิง"}, {"id": "v1q41", "qType": "single", "diff": "easy", "text": "A corrective pattern made of two simple corrective structures joined by an X wave is called:", "choices": [{"id": "a", "letter": "A", "text": "A double zigzag"}, {"id": "b", "letter": "B", "text": "A running triangle"}, {"id": "c", "letter": "C", "text": "An ending diagonal"}, {"id": "d", "letter": "D", "text": "A double three"}], "correct": ["d"], "expEn": "Standard EWP terminology calls a combination of two simple corrective patterns (such as a flat and a triangle) joined by an X wave a 'double three.' A double zigzag is a related but distinct category reserved specifically for two zigzags joined by X; 'running triangle' and 'ending diagonal' are not combination labels.", "expTh": "ตามคำศัพท์มาตรฐานของ EWP การรวมกันของรูปแบบคลื่นปรับง่ายๆสองชุด (เช่น แฟลตกับสามเหลี่ยม) ที่เชื่อมด้วยคลื่น X เรียกว่า 'double three' ส่วนซิกแซกคู่เป็นหมวดที่เกี่ยวข้องแต่แยกต่างหาก สงวนไว้เฉพาะกรณีซิกแซกสองชุดที่เชื่อมด้วย X เท่านั้น ส่วน 'running triangle' และ 'ending diagonal' ไม่ใช่ชื่อเรียกของรูปแบบผสม"}, {"id": "v1q42", "qType": "single", "diff": "medium", "text": "Within a combination (double or triple three), what role does the X wave play?", "choices": [{"id": "a", "letter": "A", "text": "It is always an impulsive five-wave structure"}, {"id": "b", "letter": "B", "text": "It marks the final wave of the combination"}, {"id": "c", "letter": "C", "text": "It is a corrective wave connecting two patterns, moving counter to them"}, {"id": "d", "letter": "D", "text": "It must be the longest wave in the entire structure"}], "correct": ["c"], "expEn": "The X wave in a combination is a corrective connector between simple patterns, moving counter to the patterns it separates. It is not impulsive, it is not the final wave (the last simple pattern is), and there is no rule that it must be the longest wave present.", "expTh": "คลื่น X ในรูปแบบผสมทำหน้าที่เป็นตัวเชื่อมแบบคลื่นปรับระหว่างรูปแบบง่ายๆ โดยเคลื่อนที่สวนทางกับรูปแบบที่มันคั่นอยู่ คลื่น X ไม่ใช่คลื่นส่ง ไม่ใช่คลื่นสุดท้ายของโครงสร้าง (รูปแบบง่ายตัวสุดท้ายคือคลื่นสุดท้าย) และไม่มีกฎว่าต้องเป็นคลื่นที่ยาวที่สุดในโครงสร้างทั้งหมด"}, {"id": "v1q43", "qType": "single", "diff": "medium", "text": "Which simple corrective pattern is, by common guideline, most likely to appear as the final component of a combination rather than the first?", "choices": [{"id": "a", "letter": "A", "text": "A zigzag"}, {"id": "b", "letter": "B", "text": "A triangle"}, {"id": "c", "letter": "C", "text": "A flat"}, {"id": "d", "letter": "D", "text": "An impulse"}], "correct": ["b"], "expEn": "A widely cited guideline holds that when a triangle appears in a combination, it most commonly appears as the last component, rarely as the first. Zigzags and flats can appear in either position, and an impulse is a motive, not corrective, structure and does not belong in a combination at all.", "expTh": "แนวทางที่มักถูกอ้างถึงคือเมื่อสามเหลี่ยมปรากฏอยู่ในรูปแบบผสม มักปรากฏเป็นองค์ประกอบตัวสุดท้ายมากที่สุด และพบไม่บ่อยที่จะเป็นตัวแรก ส่วนซิกแซกและแฟลตสามารถปรากฏในตำแหน่งใดก็ได้ และคลื่นส่งเป็นโครงสร้างคลื่นส่ง ไม่ใช่คลื่นปรับ จึงไม่อยู่ในรูปแบบผสมเลย"}, {"id": "v1q44", "qType": "single", "diff": "medium", "text": "A triple three contains how many simple corrective patterns and how many X waves?", "choices": [{"id": "a", "letter": "A", "text": "Three simple patterns and two X waves"}, {"id": "b", "letter": "B", "text": "Two simple patterns and one X wave"}, {"id": "c", "letter": "C", "text": "Three simple patterns and three X waves"}, {"id": "d", "letter": "D", "text": "Four simple patterns and three X waves"}], "correct": ["a"], "expEn": "A triple three, labeled W-X-Y-X-Z, connects three simple corrective patterns (W, Y, Z) using two X waves. Two patterns and one X wave describes a double three instead.", "expTh": "ไทรเพิลธรี (triple three) ซึ่งเรียกว่า W-X-Y-X-Z เชื่อมรูปแบบคลื่นปรับง่ายๆสามชุด (W, Y, Z) ด้วยคลื่น X สองคลื่น ส่วนรูปแบบที่มีสองชุดกับคลื่น X หนึ่งคลื่นคือดับเบิลธรี (double three)"}, {"id": "v1q45", "qType": "single", "diff": "medium", "text": "What is the overall purpose served by combination corrections (double and triple threes)?", "choices": [{"id": "a", "letter": "A", "text": "To always signal the end of the larger-degree trend, without exception"}, {"id": "b", "letter": "B", "text": "To extend a sideways correction in time and price when needed"}, {"id": "c", "letter": "C", "text": "To replace the need for wave 5 in a motive sequence"}, {"id": "d", "letter": "D", "text": "To guarantee that an extension will follow immediately"}], "correct": ["b"], "expEn": "Like multi-zigzags, combinations exist to extend a correction further in time and price when one simple pattern alone does not sufficiently correct the prior move. They do not necessarily signal the end of the larger trend, do not replace wave 5, and do not guarantee any particular extension afterward.", "expTh": "เช่นเดียวกับซิกแซกหลายชุด รูปแบบผสมมีไว้เพื่อยืดการปรับฐานออกไปทั้งในด้านเวลาและราคา เมื่อรูปแบบง่ายเพียงชุดเดียวยังปรับคืนการเคลื่อนที่ก่อนหน้าได้ไม่พอ รูปแบบผสมไม่ได้เป็นสัญญาณว่าแนวโน้มใหญ่จะจบลงเสมอไป ไม่ได้มาแทนคลื่น 5 และไม่ได้เป็นการันตีว่าจะเกิดคลื่นขยายตามมา"}, {"id": "v1q46", "qType": "single", "diff": "medium", "text": "In the classic Elliott channeling technique for a motive wave, the baseline is typically drawn by connecting the endpoints of which two waves?", "choices": [{"id": "a", "letter": "A", "text": "Wave 1 and wave 3"}, {"id": "b", "letter": "B", "text": "Wave 3 and wave 5"}, {"id": "c", "letter": "C", "text": "Wave 2 and wave 4"}, {"id": "d", "letter": "D", "text": "Wave 1 and wave 5"}], "correct": ["c"], "expEn": "The classic channeling technique draws a baseline connecting the endpoints of waves 2 and 4, then adds a parallel line through wave 3 (or wave 1) to help project wave 5. Connecting 1-3, 3-5, or 1-5 is not the standard baseline method.", "expTh": "เทคนิคการตีกรอบแนวโน้มแบบดั้งเดิมจะลากเส้นฐานเชื่อมจุดสิ้นสุดของคลื่น 2 และคลื่น 4 จากนั้นลากเส้นคู่ขนานผ่านคลื่น 3 (หรือคลื่น 1) เพื่อช่วยคาดการณ์คลื่น 5 การเชื่อม 1-3, 3-5 หรือ 1-5 ไม่ใช่วิธีลากเส้นฐานมาตรฐาน"}, {"id": "v1q47", "qType": "single", "diff": "medium", "text": "After drawing the baseline through waves 2 and 4, the parallel channel line is drawn through the extreme of which wave to help project wave 5?", "choices": [{"id": "a", "letter": "A", "text": "The extreme reached by wave 4 alone"}, {"id": "b", "letter": "B", "text": "The extreme reached by wave 2 alone"}, {"id": "c", "letter": "C", "text": "The extreme reached by wave 5 itself, after the fact"}, {"id": "d", "letter": "D", "text": "The extreme of wave 3, or wave 1 if wave 3 does not fit"}], "correct": ["d"], "expEn": "The parallel channel line is drawn through the extreme of wave 3; if that line does not properly contain wave 3, it is redrawn through wave 1 instead. Waves 2 and 4 already define the baseline, and drawing the parallel line through wave 5 after the fact defeats the purpose of projecting it in advance.", "expTh": "เส้นคู่ขนานจะลากผ่านจุดสุดขั้วของคลื่น 3 หากเส้นนั้นไม่ครอบคลุมคลื่น 3 อย่างเหมาะสม ก็จะเปลี่ยนไปลากผ่านคลื่น 1 แทน คลื่น 2 และ 4 ถูกใช้กำหนดเส้นฐานไปแล้ว และการลากเส้นคู่ขนานผ่านคลื่น 5 ภายหลังที่คลื่น 5 เกิดขึ้นแล้วก็ไม่มีประโยชน์ในการคาดการณ์ล่วงหน้า"}, {"id": "v1q48", "qType": "single", "diff": "medium", "text": "If wave 5 approaches the upper parallel channel line on declining momentum and stops short of it, this is often called:", "choices": [{"id": "a", "letter": "A", "text": "A throw-under"}, {"id": "b", "letter": "B", "text": "A throw-over"}, {"id": "c", "letter": "C", "text": "An extension"}, {"id": "d", "letter": "D", "text": "A truncation of wave 3"}], "correct": ["a"], "expEn": "When wave 5 fails to reach the projected parallel channel line, typically on weakening momentum, this is called a throw-under. A throw-over is the opposite case where wave 5 pushes beyond the line, an extension refers to an elongated wave within the impulse, and truncation of wave 3 is unrelated to channeling.", "expTh": "เมื่อคลื่น 5 ไม่สามารถไปถึงเส้นคู่ขนานที่คาดการณ์ไว้ได้ โดยมักเกิดขึ้นพร้อมกับแรงส่งที่อ่อนลง เรียกว่า throw-under ส่วน throw-over คือกรณีตรงข้ามที่คลื่น 5 ดันทะลุเส้นไป การขยาย (extension) หมายถึงคลื่นที่ยืดยาวผิดปกติภายในคลื่นส่ง และการตัดสั้นของคลื่น 3 ก็ไม่เกี่ยวข้องกับการตีกรอบแนวโน้ม"}, {"id": "v1q49", "qType": "single", "diff": "medium", "text": "If wave 5 pushes through and closes beyond the upper parallel channel line with strong momentum, this is often called:", "choices": [{"id": "a", "letter": "A", "text": "A throw-under, the opposite outcome"}, {"id": "b", "letter": "B", "text": "A failure, an unrelated EWP term"}, {"id": "c", "letter": "C", "text": "A running correction, a flat subtype"}, {"id": "d", "letter": "D", "text": "A throw-over, the opposite of a throw-under"}], "correct": ["d"], "expEn": "A throw-over describes wave 5 pushing through and closing beyond the upper parallel channel line, typically on strong momentum. A throw-under is the opposite (falling short), 'failure' in EWP usually refers to a different concept (a truncated fifth wave), and a running correction is a flat subtype, unrelated to channeling.", "expTh": "throw-over หมายถึงกรณีที่คลื่น 5 ดันทะลุและปิดเหนือเส้นคู่ขนานด้านบน โดยมักเกิดขึ้นพร้อมแรงส่งที่แข็งแรง ส่วน throw-under คือกรณีตรงข้าม (ไปไม่ถึงเส้น) คำว่า 'failure' ในศัพท์ EWP มักหมายถึงแนวคิดอื่น (คลื่น 5 ที่ถูกตัดสั้น) และ running correction เป็นแฟลตชนิดย่อย ไม่เกี่ยวข้องกับการตีกรอบแนวโน้ม"}, {"id": "v1q50", "qType": "single", "diff": "medium", "text": "For a zigzag correction, a trend channel is typically drawn by connecting the start of wave A and the end of wave B, then projecting a parallel line through the end of wave A to help estimate the likely endpoint of:", "choices": [{"id": "a", "letter": "A", "text": "Wave B's own endpoint"}, {"id": "b", "letter": "B", "text": "Wave C's likely endpoint"}, {"id": "c", "letter": "C", "text": "Wave A itself, re-estimated"}, {"id": "d", "letter": "D", "text": "The next wave 1 to follow"}], "correct": ["b"], "expEn": "For corrective zigzags, the channel technique connects the start of A to the end of B as a baseline, with a parallel line through A's endpoint used to help project where wave C is likely to terminate. The line is not used to re-estimate waves A or B after the fact, nor does it project a future wave 1.", "expTh": "สำหรับซิกแซกที่เป็นคลื่นปรับ เทคนิคการตีกรอบจะลากเส้นฐานเชื่อมจุดเริ่มต้นของคลื่น A กับจุดสิ้นสุดของคลื่น B จากนั้นลากเส้นคู่ขนานผ่านจุดสิ้นสุดของคลื่น A เพื่อช่วยคาดการณ์ว่าคลื่น C มีโอกาสจบที่ใด เส้นนี้ไม่ได้ใช้ย้อนประเมินคลื่น A หรือ B ใหม่ และไม่ได้ใช้คาดการณ์คลื่น 1 ในอนาคต"}];
+const V2_BANK = [{"id": "v2q01", "qType": "single", "diff": "medium", "text": "A single zigzag completes as wave 2 of a five-wave impulse. Wave B of that zigzag retraces 80% of wave A. What does this suggest about the pattern's classification?", "choices": [{"id": "a", "letter": "A", "text": "This is fully consistent with a standard zigzag and requires no reconsideration"}, {"id": "b", "letter": "B", "text": "This confirms the pattern must be a running flat rather than any zigzag variant"}, {"id": "c", "letter": "C", "text": "This confirms wave C will necessarily be shorter than wave A"}, {"id": "d", "letter": "D", "text": "The pattern may not be a standard zigzag; such a deep B-wave retracement is more typical of a flat"}], "correct": ["d"], "expEn": "An 80% retracement of A by B is well beyond the typical zigzag guideline (under roughly 61.8%) and instead resembles the deep B-wave behavior of a flat, so the analyst should reconsider the labeling. It does not by itself confirm a running flat specifically (that requires checking wave C too), and it says nothing certain about wave C's length relative to A.", "expTh": "การที่คลื่น B ปรับคืนคลื่น A ถึง 80% นั้นเกินกว่าแนวทางปกติของซิกแซก (ซึ่งมักต่ำกว่าประมาณ 61.8%) ไปมาก และมีลักษณะคล้ายคลื่น B ที่ลึกของแฟลตมากกว่า นักวิเคราะห์จึงควรพิจารณาการนับคลื่นใหม่ อย่างไรก็ตามยังไม่สามารถยืนยันได้ทันทีว่าเป็นแฟลตวิ่งโดยเฉพาะ (ต้องตรวจคลื่น C ด้วย) และไม่ได้บอกอะไรที่แน่ชัดเกี่ยวกับความยาวของคลื่น C เทียบกับคลื่น A"}, {"id": "v2q02", "qType": "single", "diff": "hard", "text": "In a double zigzag W-X-Y correcting a decline, wave Y terminates at a lower low than wave W's low, and wave X retraced only a modest portion of wave W. What does the relationship between X and the two zigzags confirm about X's role?", "choices": [{"id": "a", "letter": "A", "text": "X must be an impulsive wave because it moves in the same direction as the larger trend"}, {"id": "b", "letter": "B", "text": "X is a corrective, counter-trend wave that connects W and Y without erasing the progress of the correction"}, {"id": "c", "letter": "C", "text": "X confirms that the correction is actually a flat, not a double zigzag"}, {"id": "d", "letter": "D", "text": "X indicates the double zigzag has failed and should be relabeled as a triangle"}], "correct": ["b"], "expEn": "X's modest retracement of W, followed by Y extending the correction to a new extreme, is exactly the connecting role X plays in a double zigzag: corrective, counter to W and Y, but not large enough to erase the correction's progress. X moving against W does not make it impulsive, nothing here suggests a flat (which would need a very deep single B wave rather than two zigzag legs), and a triangle has a completely different five-leg overlapping structure.", "expTh": "การที่คลื่น X ปรับคืนคลื่น W เพียงเล็กน้อย และคลื่น Y พาการปรับฐานไปถึงจุดสุดขั้วใหม่ เป็นบทบาทที่ถูกต้องของคลื่น X ในซิกแซกคู่ คือเป็นคลื่นปรับที่สวนทาง W และ Y แต่ไม่มากพอที่จะลบความคืบหน้าของการปรับฐาน การที่ X เคลื่อนสวนทาง W ไม่ได้ทำให้มันเป็นคลื่นส่ง และไม่มีสิ่งใดบ่งบอกว่าเป็นแฟลต (ซึ่งต้องมีคลื่น B เดี่ยวที่ลึกมาก ไม่ใช่สองขาซิกแซก) ส่วนสามเหลี่ยมก็มีโครงสร้างห้าขาซ้อนทับที่ต่างออกไปโดยสิ้นเชิง"}, {"id": "v2q03", "qType": "single", "diff": "medium", "text": "A zigzag's wave A travels 100 points. Wave C is observed to travel 161.8 points in the same direction as A. Which statement about this relationship is most accurate?", "choices": [{"id": "a", "letter": "A", "text": "This fits a common Fibonacci guideline in which wave C extends to 1.618 times wave A"}, {"id": "b", "letter": "B", "text": "This is an invalid zigzag because C cannot exceed A by more than 100%"}, {"id": "c", "letter": "C", "text": "This proves the pattern must actually be an impulse, not a correction"}, {"id": "d", "letter": "D", "text": "Wave C must now be relabeled as wave 3 of a new five-wave advance"}], "correct": ["a"], "expEn": "A C-to-A ratio of 1.618 is one of the most commonly observed Fibonacci relationships in zigzags and is fully valid. There is no rule limiting how far C can exceed A, this relationship does not transform a corrective pattern into an impulse, and it gives no basis for relabeling C as a wave 3.", "expTh": "อัตราส่วนคลื่น C ต่อคลื่น A ที่ 1.618 เท่า เป็นหนึ่งในความสัมพันธ์แบบฟีโบนัชชีที่พบได้บ่อยที่สุดในซิกแซก และถือว่าถูกต้องสมบูรณ์ ไม่มีกฎจำกัดว่าคลื่น C จะเกินคลื่น A ได้มากเท่าใด ความสัมพันธ์นี้ไม่ได้เปลี่ยนรูปแบบคลื่นปรับให้กลายเป็นคลื่นส่ง และไม่มีเหตุผลใดที่จะเปลี่ยนชื่อคลื่น C เป็นคลื่น 3"}, {"id": "v2q04", "qType": "single", "diff": "hard", "text": "An analyst sees wave B retrace just 35% of wave A, followed by a wave C that travels well beyond the end of wave A. How does this combination support labeling the pattern as a zigzag rather than a flat?", "choices": [{"id": "a", "letter": "A", "text": "It does not support a zigzag label, since flats also require a shallow B wave"}, {"id": "b", "letter": "B", "text": "It suggests the pattern is actually a triangle, given the shallow B wave"}, {"id": "c", "letter": "C", "text": "A shallow B wave and a C wave exceeding A fit the sharp, trend-penetrating character of a zigzag"}, {"id": "d", "letter": "D", "text": "It indicates wave C is corrective rather than impulsive in nature"}], "correct": ["c"], "expEn": "A shallow B (35% of A) paired with a C wave that extends well beyond A's endpoint is the hallmark combination of a sharp, trend-penetrating zigzag, not a flat, which requires a deep B wave near 100% of A. Flats need a deep B wave, not a shallow one; a shallow B wave does not indicate a triangle; and wave C in a zigzag is impulsive (five waves), not corrective.", "expTh": "คลื่น B ที่ตื้น (35% ของคลื่น A) ร่วมกับคลื่น C ที่ยาวเกินจุดสิ้นสุดของคลื่น A ไปมาก เป็นลักษณะผสมที่บ่งบอกถึงซิกแซกที่คมและคืบหน้าสวนทางแนวโน้มได้มาก ไม่ใช่แฟลตซึ่งต้องมีคลื่น B ที่ลึกใกล้ 100% ของคลื่น A แฟลตต้องการคลื่น B ที่ลึก ไม่ใช่ตื้น คลื่น B ที่ตื้นไม่ได้บ่งบอกถึงสามเหลี่ยม และคลื่น C ในซิกแซกเป็นคลื่นส่ง (ห้าคลื่นย่อย) ไม่ใช่คลื่นปรับ"}, {"id": "v2q05", "qType": "single", "diff": "medium", "text": "A correction shows three distinct A-B-C zigzag structures separated by two corrective X waves, with the overall move extending further than a typical double zigzag. How should this pattern be labeled?", "choices": [{"id": "a", "letter": "A", "text": "W-X-Y, a double zigzag with an extra subdivision"}, {"id": "b", "letter": "B", "text": "A-B-C-D-E, a contracting triangle pattern"}, {"id": "c", "letter": "C", "text": "1-2-3-4-5, a five-wave impulse with an extended third"}, {"id": "d", "letter": "D", "text": "W-X-Y-X-Z, a triple zigzag with two X waves"}], "correct": ["d"], "expEn": "Three zigzag components connected by two X waves is, by definition, a triple zigzag labeled W-X-Y-X-Z. A double zigzag has only one X wave and two zigzag components, a triangle has a different five-leg overlapping structure, and this is a corrective, not motive, sequence.", "expTh": "การมีซิกแซกสามชุดเชื่อมต่อกันด้วยคลื่น X สองคลื่น ตามคำนิยามคือซิกแซกสามชุดที่เรียกว่า W-X-Y-X-Z ซิกแซกคู่มีคลื่น X เพียงหนึ่งคลื่นและซิกแซกเพียงสองชุด สามเหลี่ยมมีโครงสร้างห้าขาซ้อนทับที่ต่างออกไป และลำดับนี้เป็นคลื่นปรับ ไม่ใช่คลื่นส่ง"}, {"id": "v2q06", "qType": "single", "diff": "hard", "text": "Why might an analyst initially mislabel a triple zigzag as a simple impulsive five-wave move?", "choices": [{"id": "a", "letter": "A", "text": "Because the W-X-Y-X-Z sequence can resemble five legs, though each leg is corrective"}, {"id": "b", "letter": "B", "text": "Because a triple zigzag always has exactly five impulsive legs by definition"}, {"id": "c", "letter": "C", "text": "Because triple zigzags are classified as motive waves in EWP terminology"}, {"id": "d", "letter": "D", "text": "Because the X waves in a triple zigzag always subdivide into five waves"}], "correct": ["a"], "expEn": "The five-leg visual rhythm of W-X-Y-X-Z (three zigzags plus two X waves) can superficially resemble a five-wave impulse, but each leg is internally corrective, which is the key difference an analyst must check. A triple zigzag is not defined as impulsive, it is not classified as a motive wave in EWP, and its X waves are corrective, not necessarily five-wave structures.", "expTh": "จังหวะภาพที่มีห้าขาของ W-X-Y-X-Z (ซิกแซกสามชุดบวกคลื่น X สองคลื่น) อาจดูคล้ายคลื่นส่งห้าคลื่นในเบื้องต้น แต่แต่ละขามีโครงสร้างภายในเป็นคลื่นปรับ ซึ่งเป็นความแตกต่างสำคัญที่นักวิเคราะห์ต้องตรวจสอบ ซิกแซกสามชุดไม่ได้ถูกนิยามว่าเป็นคลื่นส่ง ไม่ได้ถูกจัดเป็นคลื่นส่งใน EWP และคลื่น X ของมันเป็นคลื่นปรับ ไม่จำเป็นต้องมีโครงสร้างห้าคลื่นย่อยแต่อย่างใด"}, {"id": "v2q07", "qType": "single", "diff": "medium", "text": "A correction forms 3-3-5 with wave B retracing 98% of wave A and wave C ending just 3% beyond wave A's endpoint. Which flat subtype does this best match, and why?", "choices": [{"id": "a", "letter": "A", "text": "An expanded flat, since wave C exceeds A's endpoint at all"}, {"id": "b", "letter": "B", "text": "A regular flat, since B and C stay close to A's boundaries"}, {"id": "c", "letter": "C", "text": "A running flat, since wave B exceeds 90% of wave A"}, {"id": "d", "letter": "D", "text": "A triangle, since the overall pattern is 3-3-5"}], "correct": ["b"], "expEn": "A 98% B-wave retracement and a C wave only 3% beyond A's endpoint both stay close to A's boundaries, which is the signature of a regular flat, not a dramatic overshoot. A tiny 3% overshoot does not rise to the level of a true expanded flat, a running flat requires C to fall short rather than exceed A, and a triangle has a 5-3-5-3-5 structure labeled A-B-C-D-E, not 3-3-5.", "expTh": "คลื่น B ที่ปรับคืน 98% และคลื่น C ที่เกินจุดสิ้นสุดของคลื่น A เพียง 3% ทั้งสองอยู่ใกล้ขอบเขตของคลื่น A มาก ซึ่งเป็นลักษณะของแฟลตปกติ ไม่ใช่การทะลุขอบเขตอย่างมีนัยสำคัญ การเกินเพียง 3% ยังไม่ถึงระดับของแฟลตขยายที่แท้จริง แฟลตวิ่งต้องการให้คลื่น C สั้นกว่า ไม่ใช่เกินคลื่น A และสามเหลี่ยมมีโครงสร้าง 5-3-5-3-5 เรียกว่า A-B-C-D-E ไม่ใช่ 3-3-5"}, {"id": "v2q08", "qType": "single", "diff": "medium", "text": "A trader mistakes a regular flat for a sideways consolidation with no wave count. What structural feature, if correctly identified, would reveal the corrective wave count?", "choices": [{"id": "a", "letter": "A", "text": "Recognizing that the move subdivides into five waves down, three waves back, and five waves again"}, {"id": "b", "letter": "B", "text": "Recognizing that the entire move must be a single unlabeled consolidation with no internal structure"}, {"id": "c", "letter": "C", "text": "Recognizing that the move subdivides into three waves down (or up), three waves back, and five waves in the direction of wave A, labeled A-B-C"}, {"id": "d", "letter": "D", "text": "Recognizing that the move must contain exactly one X wave connecting two separate patterns"}], "correct": ["c"], "expEn": "Seeing the 3-3-5 subdivision labeled A-B-C is exactly what identifies a regular flat as a structured correction rather than an unlabeled consolidation. The 5-3-5 count describes a zigzag instead, the claim of 'no internal structure' is simply wrong, and a flat itself contains no X wave (that would describe a combination).", "expTh": "การเห็นโครงสร้าง 3-3-5 ที่เรียกว่า A-B-C เป็นสิ่งที่บอกได้ชัดเจนว่าเป็นแฟลตปกติซึ่งมีโครงสร้างคลื่นที่ชัดเจน ไม่ใช่การเคลื่อนไหวแนวนอนที่ไม่มีโครงสร้าง โครงสร้าง 5-3-5 เป็นของซิกแซกแทน ข้อความที่ว่า 'ไม่มีโครงสร้างภายใน' นั้นผิด และแฟลตเองก็ไม่มีคลื่น X อยู่ภายใน (คลื่น X จะพบในรูปแบบผสมเท่านั้น)"}, {"id": "v2q09", "qType": "single", "diff": "medium", "text": "In a decline, wave A drops from 100 to 90. Wave B then rallies to 105 (above the start of wave A). Wave C then declines to 80 (beyond wave A's endpoint). How should this structure be classified?", "choices": [{"id": "a", "letter": "A", "text": "A regular flat, since B and C both extend beyond wave A"}, {"id": "b", "letter": "B", "text": "A running flat, since C fails to reach the end of wave A"}, {"id": "c", "letter": "C", "text": "An expanded flat, since B exceeds the start of A and C exceeds the end of A"}, {"id": "d", "letter": "D", "text": "A zigzag, since C travels further than A"}], "correct": ["c"], "expEn": "B rallying to 105 (above the starting level of 100) and C falling to 80 (beyond the 90 endpoint of A) together match the expanded-flat definition exactly. 'Regular flat' is a contradiction since regular flats stay close to A's boundaries rather than exceeding them; C here reaches well beyond, not short of, A's endpoint, ruling out a running flat; and the 3-3-5 structure implied by a flat framing rules out a zigzag label.", "expTh": "การที่คลื่น B ดีดขึ้นไปที่ 105 (เกินระดับเริ่มต้นที่ 100) และคลื่น C ร่วงลงไปที่ 80 (เกินจุดสิ้นสุดของ A ที่ 90) ตรงกับคำนิยามของแฟลตขยายพอดี 'แฟลตปกติ' ขัดแย้งในตัวเองเพราะแฟลตปกติจะอยู่ใกล้ขอบเขตของคลื่น A ไม่ใช่เกินออกไป ในที่นี้คลื่น C ไปถึงจุดที่เกินจุดสิ้นสุดของ A ไปมาก ไม่ใช่สั้นกว่า จึงตัดแฟลตวิ่งออกไปได้ และโครงสร้าง 3-3-5 ที่บ่งบอกถึงแฟลตก็ตัดความเป็นซิกแซกออกไปด้วย"}, {"id": "v2q10", "qType": "single", "diff": "hard", "text": "Why can an expanded flat be mistaken for an impulsive continuation of the prior trend while wave B is in progress?", "choices": [{"id": "a", "letter": "A", "text": "Because wave B always subdivides into five impulsive waves, identical to a motive wave"}, {"id": "b", "letter": "B", "text": "Because an expanded flat never exceeds the trend extreme set before wave A began"}, {"id": "c", "letter": "C", "text": "Because wave A in an expanded flat is always impulsive and indistinguishable from a wave 1"}, {"id": "d", "letter": "D", "text": "Because wave B pushes to a new extreme beyond the start of wave A, mimicking the look of a trend continuation before wave C reverses it"}], "correct": ["d"], "expEn": "While wave B is still forming, its push to a new price extreme beyond wave A's starting level can look like the prior trend resuming, which is why expanded flats are easy to misread in real time before C reverses the move. Wave B always subdivides into three waves (not five) in any flat, an expanded flat by definition does exceed the trend extreme set before A began, and wave A in a flat is corrective (three waves), not an impulsive wave 1.", "expTh": "ขณะที่คลื่น B ยังก่อตัวอยู่ การที่มันดันไปถึงจุดสุดขั้วใหม่ที่เกินระดับเริ่มต้นของคลื่น A อาจดูคล้ายกับแนวโน้มเดิมที่กลับมาอีกครั้ง ซึ่งเป็นสาเหตุที่แฟลตขยายมักถูกตีความผิดในช่วงเวลาจริงก่อนที่คลื่น C จะกลับทิศทาง คลื่น B แบ่งเป็นสามคลื่นย่อย (ไม่ใช่ห้า) ในแฟลตทุกชนิด แฟลตขยายตามคำนิยามจะเกินจุดสุดขั้วของแนวโน้มที่เกิดก่อนคลื่น A เริ่มต้น และคลื่น A ในแฟลตเป็นคลื่นปรับ (สามคลื่นย่อย) ไม่ใช่คลื่น 1 ที่เป็นคลื่นส่ง"}, {"id": "v2q11", "qType": "single", "diff": "medium", "text": "During a powerful uptrend, a pullback forms with wave B moving above the start of wave A, but wave C stalls well below wave A's endpoint before the uptrend resumes sharply. What does the shortfall in wave C suggest about the underlying trend?", "choices": [{"id": "a", "letter": "A", "text": "It suggests the uptrend has exhausted itself and a reversal is imminent"}, {"id": "b", "letter": "B", "text": "It suggests the uptrend is too strong to allow a full retracement, as in a running flat"}, {"id": "c", "letter": "C", "text": "It suggests the pattern must be relabeled as an expanded flat, since C fell short"}, {"id": "d", "letter": "D", "text": "It suggests wave B must be relabeled as a new wave 1 of a fresh impulse"}], "correct": ["b"], "expEn": "A C wave that falls well short of wave A's endpoint, following a B wave that exceeded A's start, is the classic running-flat signature of an underlying trend too strong to allow a full pullback. This is the opposite of trend exhaustion, falling short of A's endpoint is what distinguishes a running flat from an expanded flat (where C would exceed A's endpoint), and wave B within a flat is corrective, not a new impulsive wave 1.", "expTh": "คลื่น C ที่สั้นกว่าจุดสิ้นสุดของคลื่น A มาก หลังจากคลื่น B ที่เกินจุดเริ่มต้นของคลื่น A เป็นลักษณะคลาสสิกของแฟลตวิ่งที่บ่งบอกว่าแนวโน้มหลักแข็งแรงเกินกว่าจะยอมให้เกิดการปรับคืนแบบเต็มที่ ซึ่งตรงข้ามกับการหมดแรงของแนวโน้ม การที่สั้นกว่าจุดสิ้นสุดของ A คือสิ่งที่แยกแฟลตวิ่งจากแฟลตขยาย (ที่คลื่น C จะเกินจุดสิ้นสุดของ A) และคลื่น B ในแฟลตเป็นคลื่นปรับ ไม่ใช่คลื่น 1 ใหม่ที่เป็นคลื่นส่ง"}, {"id": "v2q12", "qType": "single", "diff": "medium", "text": "An analyst initially labels a correction as a regular flat, but later notices wave C terminated well short of wave A's endpoint. What relabeling is most appropriate?", "choices": [{"id": "a", "letter": "A", "text": "Relabel the pattern as a running flat, since the truncated C wave is its distinguishing feature"}, {"id": "b", "letter": "B", "text": "Relabel the pattern as an expanded flat, since C fell short of A"}, {"id": "c", "letter": "C", "text": "Relabel the pattern as a zigzag, since C fell short of A"}, {"id": "d", "letter": "D", "text": "No relabeling is needed, since regular flats commonly show truncated C waves"}], "correct": ["a"], "expEn": "A wave C that falls well short of wave A's endpoint is specifically the defining feature of a running flat, so that is the correct relabel. An expanded flat requires C to exceed A's endpoint, not fall short; falling short does not make the pattern a zigzag, which has an entirely different 5-3-5 count; and regular flats are defined by C staying close to A's endpoint, not truncating badly.", "expTh": "คลื่น C ที่สั้นกว่าจุดสิ้นสุดของคลื่น A มาก คือลักษณะเฉพาะที่กำหนดแฟลตวิ่ง ดังนั้นการเปลี่ยนชื่อที่ถูกต้องคือแฟลตวิ่ง แฟลตขยายต้องการให้คลื่น C เกินจุดสิ้นสุดของ A ไม่ใช่สั้นกว่า การสั้นกว่าไม่ได้ทำให้รูปแบบนี้เป็นซิกแซกซึ่งมีโครงสร้าง 5-3-5 ที่ต่างออกไปโดยสิ้นเชิง และแฟลตปกติถูกกำหนดโดยคลื่น C ที่อยู่ใกล้จุดสิ้นสุดของ A ไม่ใช่สั้นกว่ามาก"}, {"id": "v2q13", "qType": "single", "diff": "hard", "text": "A sideways correction consists of a flat, followed by an X wave, followed by a triangle. How should this structure be classified, and which guideline about component order does it illustrate?", "choices": [{"id": "a", "letter": "A", "text": "A double zigzag, illustrating that triangles commonly serve as the X wave"}, {"id": "b", "letter": "B", "text": "A double three, illustrating the common guideline that a triangle tends to appear as the final component rather than the first"}, {"id": "c", "letter": "C", "text": "A triple three, illustrating that three components are always required"}, {"id": "d", "letter": "D", "text": "A running flat, illustrating that flats and triangles cannot combine"}], "correct": ["b"], "expEn": "Two simple patterns (a flat and a triangle) joined by one X wave is a double three, and the triangle appearing last matches the common guideline about triangle placement in combinations. A double zigzag requires both components to be zigzags, not a flat and triangle; a triple three needs three components, not two; and flats and triangles can combine within a double three, contradicting the last option.", "expTh": "รูปแบบง่ายสองชุด (แฟลตกับสามเหลี่ยม) ที่เชื่อมด้วยคลื่น X หนึ่งคลื่น คือดับเบิลธรี และการที่สามเหลี่ยมอยู่ในตำแหน่งสุดท้ายก็ตรงกับแนวทางทั่วไปเรื่องตำแหน่งของสามเหลี่ยมในรูปแบบผสม ซิกแซกคู่ต้องการให้องค์ประกอบทั้งสองเป็นซิกแซกทั้งคู่ ไม่ใช่แฟลตกับสามเหลี่ยม ไทรเพิลธรีต้องการสามองค์ประกอบ ไม่ใช่สอง และแฟลตกับสามเหลี่ยมก็สามารถรวมกันในดับเบิลธรีได้ ซึ่งขัดกับตัวเลือกสุดท้าย"}, {"id": "v2q14", "qType": "single", "diff": "medium", "text": "In a triple three labeled W-X-Y-X-Z, an analyst finds that the first X wave is itself a small zigzag and the second X wave is a small flat. Is this consistent with EWP guidelines for X waves?", "choices": [{"id": "a", "letter": "A", "text": "Yes, X waves can take the form of any simple corrective pattern, even differing from each other"}, {"id": "b", "letter": "B", "text": "No, both X waves in a triple three must be identical in type"}, {"id": "c", "letter": "C", "text": "No, X waves must always be zigzags and cannot be flats"}, {"id": "d", "letter": "D", "text": "No, a triple three cannot contain more than one X wave"}], "correct": ["a"], "expEn": "X waves are corrective connectors that may take the form of any simple corrective pattern, and there is no requirement that multiple X waves within one combination match each other in type. The other options invent rules that do not exist in EWP: X waves need not be identical, need not always be zigzags, and a triple three requires exactly two X waves by definition.", "expTh": "คลื่น X เป็นตัวเชื่อมแบบคลื่นปรับที่สามารถอยู่ในรูปของรูปแบบคลื่นปรับง่ายๆชนิดใดก็ได้ และไม่มีข้อกำหนดว่าคลื่น X หลายคลื่นภายในรูปแบบผสมเดียวกันต้องเป็นชนิดเดียวกัน ตัวเลือกอื่นเป็นกฎที่ไม่มีอยู่จริงใน EWP คลื่น X ไม่จำเป็นต้องเหมือนกัน ไม่จำเป็นต้องเป็นซิกแซกเสมอ และไทรเพิลธรีก็ต้องมีคลื่น X สองคลื่นตามคำนิยามอยู่แล้ว"}, {"id": "v2q15", "qType": "single", "diff": "hard", "text": "After wave 3 of an impulse completes with unusually high momentum, the baseline connecting waves 2 and 4 does not touch wave 3's extreme when a parallel line is drawn through it. What adjustment does the classic channeling technique suggest?", "choices": [{"id": "a", "letter": "A", "text": "Abandon channeling entirely since wave 3 broke the rules"}, {"id": "b", "letter": "B", "text": "Redraw the baseline using waves 1 and 5 instead of 2 and 4"}, {"id": "c", "letter": "C", "text": "Conclude that wave 5 cannot be projected under any circumstances"}, {"id": "d", "letter": "D", "text": "Draw the parallel channel line through the extreme of wave 1 instead, if wave 3 does not fit the parallel line"}], "correct": ["d"], "expEn": "The classic technique's fallback is to draw the parallel line through wave 1's extreme instead when wave 3 does not fit it properly; the baseline itself still connects waves 2 and 4. Channeling is not abandoned outright, the baseline is not redrawn using waves 1 and 5, and wave 5 can still be projected using this adjusted parallel line.", "expTh": "วิธีสำรองของเทคนิคดั้งเดิมคือเปลี่ยนไปลากเส้นคู่ขนานผ่านจุดสุดขั้วของคลื่น 1 แทน เมื่อคลื่น 3 ไม่พอดีกับเส้นนั้น โดยเส้นฐานยังคงเชื่อมคลื่น 2 และ 4 เช่นเดิม ไม่ใช่การเลิกใช้เทคนิคการตีกรอบไปเลย ไม่ใช่การเปลี่ยนเส้นฐานไปใช้คลื่น 1 กับคลื่น 5 และยังสามารถคาดการณ์คลื่น 5 ได้โดยใช้เส้นคู่ขนานที่ปรับใหม่นี้"}, {"id": "v2q16", "qType": "single", "diff": "medium", "text": "A zigzag correction's wave C approaches the parallel channel line drawn from the start of A through the end of B projected off A's endpoint, but momentum is fading sharply. What outcome does this scenario most likely foreshadow?", "choices": [{"id": "a", "letter": "A", "text": "A throw-over, where wave C exceeds the projected channel line"}, {"id": "b", "letter": "B", "text": "An expanded flat forming instead of a zigzag"}, {"id": "c", "letter": "C", "text": "A throw-under, where wave C falls short of the projected channel line"}, {"id": "d", "letter": "D", "text": "A fourth zigzag forming before the correction ends"}], "correct": ["c"], "expEn": "Fading momentum as wave C approaches the channel line is the classic warning sign of a throw-under, where C falls short of the projected line rather than reaching or exceeding it. A throw-over would instead be signaled by strong, accelerating momentum; nothing here suggests the pattern reclassifying as an expanded flat; and there is no rule requiring a fourth zigzag to appear.", "expTh": "แรงส่งที่อ่อนลงอย่างรวดเร็วขณะคลื่น C เข้าใกล้เส้นคู่ขนาน เป็นสัญญาณเตือนคลาสสิกของ throw-under คือคลื่น C จะไปไม่ถึงเส้นที่คาดการณ์ไว้ ไม่ใช่ไปถึงหรือเกินเส้นนั้น ส่วน throw-over จะถูกบ่งบอกด้วยแรงส่งที่แข็งแรงและเร่งตัวขึ้นแทน ไม่มีสิ่งใดในที่นี้บ่งบอกว่ารูปแบบจะถูกจัดประเภทใหม่เป็นแฟลตขยาย และไม่มีกฎที่กำหนดให้ต้องมีซิกแซกชุดที่สี่เกิดขึ้น"}, {"id": "v2q17", "qType": "single", "diff": "medium", "text": "Which scenario best illustrates why combination corrections and multi-zigzags both rely on the concept of an X wave, despite producing visually different overall shapes?", "choices": [{"id": "a", "letter": "A", "text": "Both require the X wave itself to be an impulsive five-wave structure"}, {"id": "b", "letter": "B", "text": "Both use the X wave as a corrective connector, though multi-zigzags require zigzag-only components"}, {"id": "c", "letter": "C", "text": "Multi-zigzags never use an X wave; only combinations use one"}, {"id": "d", "letter": "D", "text": "Combinations never use an X wave; only multi-zigzags use one"}], "correct": ["b"], "expEn": "The shared mechanism is the corrective X wave connecting simple patterns; the difference is only in what the connected components are allowed to be — all zigzags for a multi-zigzag, versus any mix of simple patterns (zigzag, flat, triangle) for a combination. The X wave is corrective, not impulsive, in both cases, and both structures do use X waves, contrary to the last two options.", "expTh": "กลไกร่วมกันคือคลื่น X ซึ่งเป็นคลื่นปรับที่เชื่อมรูปแบบง่ายๆเข้าด้วยกัน ความแตกต่างอยู่ที่องค์ประกอบที่เชื่อมกันได้เท่านั้น คือต้องเป็นซิกแซกทั้งหมดสำหรับซิกแซกหลายชุด เทียบกับการผสมรูปแบบง่ายชนิดใดก็ได้ (ซิกแซก แฟลต สามเหลี่ยม) สำหรับรูปแบบผสม คลื่น X เป็นคลื่นปรับ ไม่ใช่คลื่นส่ง ในทั้งสองกรณี และทั้งสองโครงสร้างก็ใช้คลื่น X จริง ซึ่งขัดกับสองตัวเลือกหลัง"}, {"id": "v2q18", "qType": "single", "diff": "medium", "text": "An analyst draws a baseline through waves 2 and 4 of an impulse and a parallel line through wave 3's peak. Wave 5 then stalls noticeably below that parallel line on weak volume. What is the most reasonable reading of this outcome?", "choices": [{"id": "a", "letter": "A", "text": "The channeling technique has failed and should never be used again"}, {"id": "b", "letter": "B", "text": "Wave 5 must now be relabeled as an extended wave 3 instead"}, {"id": "c", "letter": "C", "text": "The parallel line should be redrawn through wave 5's own low"}, {"id": "d", "letter": "D", "text": "A throw-under likely occurred; wave 5 may be weaker than the channel suggests"}], "correct": ["d"], "expEn": "Wave 5 stalling well below the projected parallel line on weak volume is a textbook throw-under, which is itself useful information about weakening momentum rather than a failure of the technique. The channel's purpose is to help gauge likely outcomes, not to guarantee a result, so a throw-under doesn't invalidate the method; nothing here supports relabeling wave 5 as an extended wave 3; and redrawing the parallel line through wave 5 after the fact would defeat the purpose of using it as a forward-looking guide.", "expTh": "คลื่น 5 ที่หยุดชะงักต่ำกว่าเส้นคู่ขนานที่คาดการณ์ไว้มากพร้อมปริมาณการซื้อขายที่เบาบาง เป็นตัวอย่างคลาสสิกของ throw-under ซึ่งเป็นข้อมูลที่มีประโยชน์เกี่ยวกับแรงส่งที่อ่อนลง ไม่ใช่ความล้มเหลวของเทคนิค จุดประสงค์ของกรอบแนวโน้มคือช่วยประเมินผลลัพธ์ที่เป็นไปได้ ไม่ใช่การันตีผลลัพธ์ ดังนั้น throw-under จึงไม่ทำให้วิธีนี้ใช้ไม่ได้ ไม่มีสิ่งใดสนับสนุนการเปลี่ยนชื่อคลื่น 5 เป็นคลื่น 3 ที่ขยาย และการลากเส้นคู่ขนานผ่านจุดต่ำของคลื่น 5 ภายหลังก็จะทำให้เสียจุดประสงค์ของการใช้เป็นแนวทางคาดการณ์ล่วงหน้า"}, {"id": "v2q19", "qType": "single", "diff": "hard", "text": "A correction appears to be a flat at first (3-3-5, B retracing 97% of A), but after wave C completes, a new X wave forms and a second 3-3-5 structure begins. How should the overall structure now be understood?", "choices": [{"id": "a", "letter": "A", "text": "As a double three, where the flat (W) is followed by an X wave and a second pattern (Y)"}, {"id": "b", "letter": "B", "text": "As a single flat that has simply extended its C wave"}, {"id": "c", "letter": "C", "text": "As a double zigzag, since two corrective structures are present"}, {"id": "d", "letter": "D", "text": "As a triangle, since a new structure began after the first ended"}], "correct": ["a"], "expEn": "The emergence of an X wave followed by a second corrective pattern after the first flat completed means the whole move should be relabeled as a double three (W-X-Y), with the original flat now understood as component W rather than the entire correction. A single flat does not grow a new X wave and second pattern after completion; the components here are flats, not zigzags, so 'double zigzag' is the wrong category; and a triangle has its own distinct 5-3-5-3-5 overlapping internal structure, not a flat followed by an X wave and another pattern.", "expTh": "การที่มีคลื่น X ปรากฏขึ้นตามด้วยรูปแบบคลื่นปรับชุดที่สองหลังจากแฟลตชุดแรกจบลง หมายความว่าควรเปลี่ยนการมองโครงสร้างทั้งหมดใหม่เป็นดับเบิลธรี (W-X-Y) โดยแฟลตเดิมกลายเป็นองค์ประกอบ W แทนที่จะเป็นการปรับฐานทั้งหมด แฟลตเดี่ยวจะไม่งอกคลื่น X และรูปแบบที่สองออกมาหลังจบแล้ว องค์ประกอบในที่นี้เป็นแฟลต ไม่ใช่ซิกแซก จึงไม่ใช่หมวด 'ซิกแซกคู่' และสามเหลี่ยมก็มีโครงสร้างภายในแบบ 5-3-5-3-5 ที่ซ้อนทับกันเฉพาะตัว ไม่ใช่แฟลตตามด้วยคลื่น X และรูปแบบอื่น"}, {"id": "v2q20", "qType": "single", "diff": "hard", "text": "A zigzag's wave C approaches the parallel channel line (baseline from the start of A to the end of B, projected through A's endpoint) with accelerating momentum and closes beyond it. What does this outcome most likely represent?", "choices": [{"id": "a", "letter": "A", "text": "A throw-under, suggesting wave C fell short of the channel projection"}, {"id": "b", "letter": "B", "text": "A running flat, since wave C exceeded the projected boundary"}, {"id": "c", "letter": "C", "text": "A throw-over, suggesting wave C extended further than the channel line projected"}, {"id": "d", "letter": "D", "text": "A sign that the pattern must now be relabeled as an impulse"}], "correct": ["c"], "expEn": "Accelerating momentum carrying wave C beyond the parallel channel line is a throw-over, indicating the correction's final leg had stronger follow-through than the channel alone projected. A throw-under is the opposite case of falling short; 'running flat' is a flat subtype defined by a short C wave, not a zigzag exceeding its channel; and exceeding a channel line does not reclassify a corrective pattern as an impulse.", "expTh": "แรงส่งที่เร่งตัวขึ้นพาคลื่น C ทะลุเส้นคู่ขนานไปได้ เรียกว่า throw-over ซึ่งบ่งบอกว่าขาสุดท้ายของการปรับฐานมีแรงตามต่อเนื่องมากกว่าที่กรอบแนวโน้มคาดการณ์ไว้ ส่วน throw-under คือกรณีตรงข้ามที่ไปไม่ถึงเส้น 'แฟลตวิ่ง' เป็นแฟลตชนิดย่อยที่กำหนดโดยคลื่น C สั้น ไม่ใช่ซิกแซกที่ทะลุกรอบของตัวเอง และการทะลุเส้นกรอบแนวโน้มก็ไม่ได้ทำให้คลื่นปรับถูกจัดประเภทใหม่เป็นคลื่นส่ง"}];
+const V3_BANK = [{"id": "v3q01", "qType": "multi", "diff": "medium", "text": "Which of the following are true characteristics of a standard single zigzag correction? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "It subdivides 5-3-5 and is labeled A-B-C"}, {"id": "b", "letter": "B", "text": "Wave B typically retraces close to 100% of wave A"}, {"id": "c", "letter": "C", "text": "It typically makes more net progress against the prior trend than a flat"}, {"id": "d", "letter": "D", "text": "Wave C always subdivides into three waves"}], "correct": ["a", "c"], "expEn": "A zigzag's 5-3-5 internal count and its sharp, trend-penetrating character (making more net progress against the trend than a flat) are both standard, textbook features. A deep B-wave retracement near 100% describes a flat instead, and wave C in a zigzag subdivides into five waves (impulsive), not three.", "expTh": "โครงสร้างภายในแบบ 5-3-5 ของซิกแซกและลักษณะที่คมคืบหน้าสวนทางแนวโน้มได้มากกว่าแฟลต ล้วนเป็นลักษณะมาตรฐานตามตำรา ส่วนคลื่น B ที่ปรับคืนลึกใกล้ 100% เป็นลักษณะของแฟลตแทน และคลื่น C ในซิกแซกแบ่งเป็นห้าคลื่นย่อย (คลื่นส่ง) ไม่ใช่สาม"}, {"id": "v3q02", "qType": "multi", "diff": "medium", "text": "Which statements correctly describe multi-zigzag corrections (double and triple zigzags)? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "A triple zigzag contains three X waves in total"}, {"id": "b", "letter": "B", "text": "The X wave(s) within it are themselves corrective patterns"}, {"id": "c", "letter": "C", "text": "Multi-zigzags extend a single zigzag that was insufficient"}, {"id": "d", "letter": "D", "text": "A double zigzag is labeled W-X-Y, connecting two zigzag legs"}], "correct": ["b", "c", "d"], "expEn": "A double zigzag is correctly labeled W-X-Y, its X wave(s) are corrective patterns, and multi-zigzags exist to extend a correction that a single zigzag did not sufficiently complete. A triple zigzag contains only two X waves (connecting three zigzag legs), not three.", "expTh": "ซิกแซกคู่เรียกชื่ออย่างถูกต้องว่า W-X-Y คลื่น X ของมันเป็นรูปแบบคลื่นปรับ และซิกแซกหลายชุดมีขึ้นเพื่อยืดการปรับฐานที่ซิกแซกเดี่ยวทำได้ไม่เพียงพอ ส่วนซิกแซกสามชุดมีคลื่น X เพียงสองคลื่นเท่านั้น (เชื่อมซิกแซกสามขา) ไม่ใช่สามคลื่น"}, {"id": "v3q03", "qType": "multi", "diff": "medium", "text": "Which features distinguish an expanded flat from a regular flat? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave C exceeds the endpoint of wave A"}, {"id": "b", "letter": "B", "text": "The pattern subdivides 3-3-5 instead of 5-3-5"}, {"id": "c", "letter": "C", "text": "Wave B exceeds the starting level of wave A"}, {"id": "d", "letter": "D", "text": "Wave C falls short of wave A's endpoint"}], "correct": ["a", "c"], "expEn": "The distinguishing features of an expanded flat are a B wave that exceeds A's starting level and a C wave that exceeds A's endpoint. A C wave falling short describes a running flat instead, and the 3-3-5 subdivision is shared by all flat subtypes, so it does not distinguish the expanded flat specifically.", "expTh": "ลักษณะที่แยกแฟลตขยายออกมาคือคลื่น B ที่เกินจุดเริ่มต้นของคลื่น A และคลื่น C ที่เกินจุดสิ้นสุดของคลื่น A ส่วนคลื่น C ที่สั้นกว่าเป็นลักษณะของแฟลตวิ่งแทน และโครงสร้าง 3-3-5 เป็นสิ่งที่แฟลตทุกชนิดย่อยมีเหมือนกัน จึงไม่ได้ใช้แยกแฟลตขยายโดยเฉพาะ"}, {"id": "v3q04", "qType": "multi", "diff": "hard", "text": "A corrective structure shows wave B exceeding the start of wave A, and wave C stalling well short of wave A's endpoint before the prior trend resumes forcefully. Which conclusions are justified? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "The pattern should be relabeled as a zigzag"}, {"id": "b", "letter": "B", "text": "This is a running flat correction"}, {"id": "c", "letter": "C", "text": "This is instead an expanded flat"}, {"id": "d", "letter": "D", "text": "The shortfall in wave C suggests strong trend momentum"}], "correct": ["b", "d"], "expEn": "A B wave beyond A's start combined with a C wave that falls well short of A's endpoint is the defining signature of a running flat, and that shortfall is read as a sign of strong underlying trend momentum. It is not an expanded flat, which requires C to exceed (not fall short of) A's endpoint, and B exceeding A's start does not reclassify the pattern as a zigzag, which has an entirely different 5-3-5 count.", "expTh": "คลื่น B ที่เกินจุดเริ่มต้นของคลื่น A ร่วมกับคลื่น C ที่สั้นกว่าจุดสิ้นสุดของคลื่น A มาก เป็นลักษณะเฉพาะที่กำหนดแฟลตวิ่ง และการสั้นกว่านี้ถูกตีความว่าเป็นสัญญาณของแรงส่งแนวโน้มหลักที่แข็งแรง ไม่ใช่แฟลตขยายซึ่งต้องการให้คลื่น C เกิน (ไม่ใช่สั้นกว่า) จุดสิ้นสุดของ A และการที่คลื่น B เกินจุดเริ่มต้นของ A ก็ไม่ได้ทำให้รูปแบบนี้ถูกจัดใหม่เป็นซิกแซกซึ่งมีโครงสร้าง 5-3-5 ที่ต่างออกไปโดยสิ้นเชิง"}, {"id": "v3q05", "qType": "multi", "diff": "medium", "text": "Which of the following are accurate statements about combination corrections (double and triple threes)? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "They connect two or three simple corrective patterns with one or two X waves"}, {"id": "b", "letter": "B", "text": "A triangle, when present, most often appears as the final component"}, {"id": "c", "letter": "C", "text": "The X wave(s) must always be impulsive five-wave structures"}, {"id": "d", "letter": "D", "text": "Their purpose is to extend a sideways correction in time and price"}], "correct": ["a", "b", "d"], "expEn": "Combinations connect two or three simple patterns with one or two X waves, a triangle (when present) is most commonly the final component, and the overall purpose is to extend a sideways correction in time and price. The X wave(s) are corrective, not impulsive, which rules out the third statement.", "expTh": "รูปแบบผสมเชื่อมรูปแบบง่ายสองหรือสามชุดด้วยคลื่น X หนึ่งหรือสองคลื่น สามเหลี่ยม (เมื่อมี) มักปรากฏเป็นองค์ประกอบตัวสุดท้ายบ่อยที่สุด และจุดประสงค์โดยรวมคือยืดการปรับฐานแนวนอนออกไปทั้งด้านเวลาและราคา คลื่น X เป็นคลื่นปรับ ไม่ใช่คลื่นส่ง ซึ่งทำให้ข้อความที่สามไม่ถูกต้อง"}, {"id": "v3q06", "qType": "multi", "diff": "medium", "text": "Which statements about the X wave(s) in a combination or multi-zigzag correction are correct? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "X waves may be a zigzag, flat, or triangle"}, {"id": "b", "letter": "B", "text": "X waves must always retrace at least 61.8%"}, {"id": "c", "letter": "C", "text": "Exactly one X wave is required in every combination"}, {"id": "d", "letter": "D", "text": "X waves are corrective waves, never impulsive"}], "correct": ["a", "d"], "expEn": "X waves are corrective connectors and can take the form of any simple corrective pattern. There is no fixed minimum retracement requirement such as 61.8% for an X wave, and the number of X waves scales with the number of components connected (one for a double three, two for a triple three), not a fixed count of one.", "expTh": "คลื่น X เป็นตัวเชื่อมแบบคลื่นปรับ และสามารถอยู่ในรูปของรูปแบบคลื่นปรับง่ายๆชนิดใดก็ได้ ไม่มีข้อกำหนดขั้นต่ำตายตัวเช่นต้องปรับคืน 61.8% สำหรับคลื่น X และจำนวนคลื่น X จะแปรผันตามจำนวนองค์ประกอบที่เชื่อมกัน (หนึ่งคลื่นสำหรับดับเบิลธรี สองคลื่นสำหรับไทรเพิลธรี) ไม่ใช่จำนวนตายตัวที่หนึ่งเสมอ"}, {"id": "v3q07", "qType": "multi", "diff": "medium", "text": "In the classic Elliott channeling technique applied to a five-wave impulse, which statements are correct? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "A 'throw-over' occurs when wave 5 falls short of the parallel channel line"}, {"id": "b", "letter": "B", "text": "A 'throw-under' occurs when wave 5 falls short of the parallel channel line"}, {"id": "c", "letter": "C", "text": "The baseline is typically drawn connecting the endpoints of waves 2 and 4"}, {"id": "d", "letter": "D", "text": "A parallel line through the extreme of wave 3 (or wave 1, if needed) helps project where wave 5 may end"}], "correct": ["b", "c", "d"], "expEn": "The baseline connects waves 2 and 4, the parallel projection line passes through wave 3's extreme (or wave 1 if needed), and a throw-under is specifically when wave 5 falls short of that parallel line. A throw-over is the opposite case, where wave 5 pushes beyond the line, so the third statement reverses the correct terminology.", "expTh": "เส้นฐานเชื่อมคลื่น 2 กับคลื่น 4 เส้นคู่ขนานที่ใช้คาดการณ์ผ่านจุดสุดขั้วของคลื่น 3 (หรือคลื่น 1 หากจำเป็น) และ throw-under คือกรณีที่คลื่น 5 ไปไม่ถึงเส้นคู่ขนานนั้นพอดี ส่วน throw-over คือกรณีตรงข้ามที่คลื่น 5 ดันทะลุเส้นไป ดังนั้นข้อความที่สามจึงสลับคำศัพท์ที่ถูกต้อง"}, {"id": "v3q08", "qType": "multi", "diff": "medium", "text": "Which of the following help distinguish a zigzag from a flat during real-time analysis? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "A zigzag can only appear as wave 2, never as wave 4 or a B wave"}, {"id": "b", "letter": "B", "text": "A zigzag's B wave typically retraces less of wave A than a flat's B wave does"}, {"id": "c", "letter": "C", "text": "A zigzag's C wave typically makes more net progress beyond wave A's endpoint than a flat's C wave does"}, {"id": "d", "letter": "D", "text": "A flat always completes in three total waves while a zigzag completes in five"}], "correct": ["b", "c"], "expEn": "A shallower B wave and a C wave that extends further beyond A's endpoint are both genuine, practical distinguishing cues between a zigzag and a flat. Both patterns actually complete in three total waves (A-B-C) at this degree, so that statement is false, and zigzags can appear as wave 4 or as a B wave, not only as wave 2.", "expTh": "คลื่น B ที่ตื้นกว่าและคลื่น C ที่คืบหน้าเกินจุดสิ้นสุดของคลื่น A ได้มากกว่า ล้วนเป็นสัญญาณที่ใช้แยกซิกแซกจากแฟลตได้จริงในทางปฏิบัติ ทั้งสองรูปแบบจบลงด้วยสามคลื่นรวม (A-B-C) ในดีกรีนี้เหมือนกัน ข้อความนั้นจึงไม่ถูกต้อง และซิกแซกก็สามารถปรากฏเป็นคลื่น 4 หรือคลื่น B ได้ ไม่ใช่แค่คลื่น 2 เท่านั้น"}, {"id": "v3q09", "qType": "multi", "diff": "hard", "text": "Within combination corrections, which pairings of simple pattern types are consistent with standard EWP guidelines? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "A flat followed by an X wave followed by a triangle"}, {"id": "b", "letter": "B", "text": "A zigzag followed by an X wave followed by a flat"}, {"id": "c", "letter": "C", "text": "A triangle followed by an X wave followed by a zigzag"}, {"id": "d", "letter": "D", "text": "Two flats joined by an X wave, with a triangle required by rule"}], "correct": ["a", "b"], "expEn": "A flat-then-triangle and a zigzag-then-flat are both consistent with standard guidelines for combinations, including the common placement of a triangle as a final component. A triangle appearing first (before a zigzag) goes against the usual guideline that triangles appear last, and there is no rule requiring a triangle whenever two flats combine.", "expTh": "แฟลตตามด้วยสามเหลี่ยม และซิกแซกตามด้วยแฟลต ทั้งสองสอดคล้องกับแนวทางมาตรฐานของรูปแบบผสม รวมถึงการที่สามเหลี่ยมมักอยู่ในตำแหน่งสุดท้าย ส่วนสามเหลี่ยมที่อยู่ก่อนซิกแซกขัดกับแนวทางทั่วไปที่สามเหลี่ยมมักอยู่ท้ายสุด และไม่มีกฎที่กำหนดว่าต้องมีสามเหลี่ยมเมื่อแฟลตสองชุดรวมกัน"}, {"id": "v3q10", "qType": "multi", "diff": "medium", "text": "Which statements correctly describe a triple zigzag? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "It contains three zigzag components"}, {"id": "b", "letter": "B", "text": "It is more common than a double zigzag"}, {"id": "c", "letter": "C", "text": "Each X wave within it is corrective"}, {"id": "d", "letter": "D", "text": "It is labeled W-X-Y-X-Z in full"}], "correct": ["a", "c", "d"], "expEn": "A triple zigzag is labeled W-X-Y-X-Z, contains three zigzag components (W, Y, Z), and its connecting X waves are corrective. It is rarer, not more common, than a double zigzag in actual markets.", "expTh": "ซิกแซกสามชุดเรียกว่า W-X-Y-X-Z มีองค์ประกอบซิกแซกสามชุด (W, Y, Z) และคลื่น X ที่เชื่อมเป็นคลื่นปรับ ในตลาดจริงซิกแซกสามชุดพบได้น้อยกว่า ไม่ใช่บ่อยกว่าซิกแซกคู่"}, {"id": "v3q11", "qType": "multi", "diff": "medium", "text": "In a zigzag, which Fibonacci relationships are commonly observed between wave C and wave A? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "A relationship of C = 4.236 x A, said to be the most common case"}, {"id": "b", "letter": "B", "text": "A fixed relationship of C = 0.382 x A in every zigzag"}, {"id": "c", "letter": "C", "text": "Equality between wave C and wave A"}, {"id": "d", "letter": "D", "text": "Wave C extending to 1.618 times wave A"}], "correct": ["c", "d"], "expEn": "Equality between C and A, and a C that extends to 1.618 times A, are both commonly cited Fibonacci guidelines for zigzags. A 4.236x relationship is not the single most common outcome, and C is not fixed at 0.382 times A, which would make C much shorter than A, contrary to typical zigzag behavior.", "expTh": "ความเท่ากันระหว่างคลื่น C กับคลื่น A และคลื่น C ที่ยาวถึง 1.618 เท่าของคลื่น A ล้วนเป็นแนวทางฟีโบนัชชีที่มักถูกอ้างถึงสำหรับซิกแซก ความสัมพันธ์ที่ 4.236 เท่าไม่ใช่ผลลัพธ์ที่พบมากที่สุดเพียงหนึ่งเดียว และคลื่น C ก็ไม่ได้ถูกกำหนดตายตัวที่ 0.382 เท่า ซึ่งจะทำให้คลื่น C สั้นกว่าคลื่น A มาก ขัดกับลักษณะปกติของซิกแซก"}, {"id": "v3q12", "qType": "multi", "diff": "hard", "text": "A decline's wave A falls from 500 to 450. Wave B then rallies to 520. Wave C then falls to 400. Which statements about this structure are correct? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "This structure cannot be a flat because wave C travelled further than wave A"}, {"id": "b", "letter": "B", "text": "Wave B exceeded the starting level of wave A (500), consistent with an expanded flat"}, {"id": "c", "letter": "C", "text": "Wave C exceeded the ending level of wave A (450), consistent with an expanded flat"}, {"id": "d", "letter": "D", "text": "This structure fits a running flat because wave C fell well below wave A's endpoint"}], "correct": ["b", "c"], "expEn": "Wave B rallying to 520 (above the 500 starting level of A) and wave C falling to 400 (well beyond the 450 ending level of A) together match the expanded-flat definition precisely. This is not a running flat, since C exceeded (rather than fell short of) A's endpoint, and a C wave traveling further than A is entirely normal for an expanded flat, not a disqualifying feature.", "expTh": "คลื่น B ที่ดีดขึ้นไปที่ 520 (เกินระดับเริ่มต้นของ A ที่ 500) และคลื่น C ที่ร่วงลงไปที่ 400 (เกินระดับสิ้นสุดของ A ที่ 450 ไปมาก) ตรงกับคำนิยามของแฟลตขยายพอดี นี่ไม่ใช่แฟลตวิ่ง เพราะคลื่น C เกิน (ไม่ใช่สั้นกว่า) จุดสิ้นสุดของ A และการที่คลื่น C เดินทางไกลกว่าคลื่น A ก็เป็นเรื่องปกติของแฟลตขยาย ไม่ใช่ลักษณะที่ตัดคุณสมบัติ"}, {"id": "v3q13", "qType": "multi", "diff": "hard", "text": "A correction's wave B retraces exactly 100% of wave A, and wave C terminates 2% beyond wave A's endpoint. Which statements are correct? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "This is most consistent with a regular flat pattern"}, {"id": "b", "letter": "B", "text": "This is inconsistent with a running flat, since C did not fall short"}, {"id": "c", "letter": "C", "text": "This is inconsistent with an expanded flat, since B did not exceed A's start"}, {"id": "d", "letter": "D", "text": "This must be relabeled as a zigzag, since wave C exceeded wave A"}], "correct": ["a", "b", "c"], "expEn": "A B wave at exactly 100% of A and a C wave only marginally (2%) beyond A's endpoint both fit a regular flat closely, while ruling out a running flat (C did not fall short) and an expanded flat (B did not clearly exceed A's start). A modest 2% overshoot by C does not reclassify the pattern as a zigzag, which requires an entirely different 5-3-5 internal count.", "expTh": "คลื่น B ที่ปรับคืนพอดี 100% ของคลื่น A และคลื่น C ที่เกินจุดสิ้นสุดของคลื่น A เพียงเล็กน้อย (2%) ทั้งสองสอดคล้องกับแฟลตปกติอย่างใกล้ชิด ขณะเดียวกันก็ตัดแฟลตวิ่งออกไปได้ (เพราะคลื่น C ไม่ได้สั้นกว่า) และตัดแฟลตขยายออกไปได้ (เพราะคลื่น B ไม่ได้เกินจุดเริ่มต้นของ A อย่างชัดเจน) การที่คลื่น C เกินไปเพียงเล็กน้อย 2% ไม่ได้ทำให้ต้องเปลี่ยนชื่อเป็นซิกแซก ซึ่งต้องมีโครงสร้างภายในแบบ 5-3-5 ที่ต่างออกไปโดยสิ้นเชิง"}, {"id": "v3q14", "qType": "multi", "diff": "hard", "text": "Which statements correctly distinguish a 'double three' from a 'double zigzag' in standard EWP terminology? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "A double three's components typically differ in type, e.g. flat and triangle"}, {"id": "b", "letter": "B", "text": "Both combination types are labeled identically as W-X-Y"}, {"id": "c", "letter": "C", "text": "A double three can never include a zigzag component"}, {"id": "d", "letter": "D", "text": "A double zigzag's two components are both zigzags"}], "correct": ["a", "b", "d"], "expEn": "A double zigzag's two components are both zigzags, a double three's components are typically a mix of different simple pattern types, and both structures use the same W-X-Y labeling convention despite that difference in content. A double three can include a zigzag as one of its components (paired with a non-zigzag), so the last statement is false.", "expTh": "องค์ประกอบทั้งสองของซิกแซกคู่เป็นซิกแซกทั้งคู่ องค์ประกอบของดับเบิลธรีมักเป็นรูปแบบง่ายที่ต่างชนิดกัน และทั้งสองโครงสร้างใช้วิธีเรียกชื่อแบบ W-X-Y เหมือนกันแม้เนื้อหาจะต่างกัน ดับเบิลธรีสามารถมีซิกแซกเป็นหนึ่งในองค์ประกอบได้ (จับคู่กับรูปแบบที่ไม่ใช่ซิกแซก) ดังนั้นข้อความสุดท้ายจึงไม่ถูกต้อง"}, {"id": "v3q15", "qType": "multi", "diff": "medium", "text": "Which statements about throw-overs and throw-unders in the context of wave 5 and channeling are accurate? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Throw-overs and throw-unders can only occur on daily charts"}, {"id": "b", "letter": "B", "text": "Observing momentum as wave 5 approaches the channel line can help anticipate which outcome is more likely"}, {"id": "c", "letter": "C", "text": "A throw-over suggests wave 5 pushed beyond the upper parallel channel line with strong momentum"}, {"id": "d", "letter": "D", "text": "A throw-under suggests wave 5 fell short of the upper parallel channel line, often with weaker momentum"}], "correct": ["b", "c", "d"], "expEn": "Throw-overs and throw-unders are correctly defined by wave 5 pushing beyond or falling short of the parallel channel line, respectively, and momentum behavior as wave 5 approaches that line is a useful clue to which outcome is more likely. Neither phenomenon is restricted to daily charts; the channeling technique applies across timeframes.", "expTh": "Throw-over และ throw-under ถูกนิยามอย่างถูกต้องว่าเป็นกรณีที่คลื่น 5 ดันทะลุหรือไปไม่ถึงเส้นคู่ขนานตามลำดับ และการสังเกตแรงส่งขณะคลื่น 5 เข้าใกล้เส้นนั้นเป็นเบาะแสที่มีประโยชน์ว่าผลลัพธ์ใดมีโอกาสมากกว่า ปรากฏการณ์ทั้งสองไม่ได้จำกัดอยู่แค่กราฟรายวันเท่านั้น เทคนิคการตีกรอบแนวโน้มใช้ได้กับทุกช่วงเวลา"}, {"id": "v3q16", "qType": "multi", "diff": "medium", "text": "Which of the following correctly describe why a market might form a double three instead of a single simple corrective pattern? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Combinations are required whenever a triangle appears"}, {"id": "b", "letter": "B", "text": "A single pattern alone did not sufficiently correct the prior move in price or time"}, {"id": "c", "letter": "C", "text": "Double threes always signal an imminent trend reversal of one larger degree"}, {"id": "d", "letter": "D", "text": "The combination allows the correction to continue sideways for a longer duration"}], "correct": ["b", "d"], "expEn": "A double three forms when one simple pattern alone is insufficient, allowing the sideways correction to extend further in duration. It does not always signal an imminent larger-degree reversal, and triangles can also appear as standalone simple patterns without requiring a combination.", "expTh": "ดับเบิลธรีเกิดขึ้นเมื่อรูปแบบง่ายเพียงชุดเดียวยังไม่เพียงพอ ทำให้การปรับฐานแนวนอนยืดออกไปได้นานขึ้น มันไม่ได้เป็นสัญญาณของการกลับตัวในดีกรีที่ใหญ่กว่าในทันทีเสมอไป และสามเหลี่ยมก็สามารถปรากฏเป็นรูปแบบง่ายเดี่ยวๆได้โดยไม่ต้องอยู่ในรูปแบบผสม"}, {"id": "v3q17", "qType": "multi", "diff": "hard", "text": "Which statements about where zigzags commonly appear within a motive wave are consistent with EWP guidelines? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Zigzags commonly appear as wave 2 within an impulse"}, {"id": "b", "letter": "B", "text": "Zigzags can appear as wave 4, though flats are also common there"}, {"id": "c", "letter": "C", "text": "Zigzags can never appear as a B wave in a larger correction"}, {"id": "d", "letter": "D", "text": "A double or triple zigzag could substitute for a simple zigzag in wave 2"}], "correct": ["a", "b", "d"], "expEn": "Zigzags commonly appear as wave 2, can also appear as wave 4 (alongside flats, which are common there too), and in principle a multi-zigzag could occupy the same structural role a simple zigzag would in wave 2. Zigzags frequently do appear as B waves within larger corrections, so that statement is false.", "expTh": "ซิกแซกมักปรากฏเป็นคลื่น 2 และยังสามารถปรากฏเป็นคลื่น 4 ได้ด้วย (ร่วมกับแฟลตซึ่งก็พบได้บ่อยในตำแหน่งนั้น) และในหลักการแล้วซิกแซกหลายชุดก็สามารถเข้ามาแทนที่บทบาทของซิกแซกเดี่ยวในคลื่น 2 ได้ ส่วนซิกแซกก็ปรากฏเป็นคลื่น B ภายในการปรับฐานที่ใหญ่กว่าได้บ่อยครั้ง ดังนั้นข้อความนั้นจึงไม่ถูกต้อง"}, {"id": "v3q18", "qType": "multi", "diff": "medium", "text": "A sideways move subdivides into three waves down, three waves up, and five waves down, with wave B retracing 97% of wave A and wave C ending 1% beyond wave A's low. Which of the following are correct? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "This is most consistent with a regular flat"}, {"id": "b", "letter": "B", "text": "Wave C's five-wave count fits flats generally"}, {"id": "c", "letter": "C", "text": "Wave B's shallow retracement rules out a flat label"}, {"id": "d", "letter": "D", "text": "The pattern as a whole is labeled A-B-C"}], "correct": ["a", "b", "d"], "expEn": "The 3-3-5 subdivision is labeled A-B-C, a 97% B-wave retracement with C ending just 1% beyond A's endpoint matches a regular flat closely, and a five-wave C is a feature shared by all flat subtypes. Wave B's retracement here is deep (97%), not shallow, so the claim that a shallow B wave rules out a flat label is both factually wrong about this scenario and not a valid general rule.", "expTh": "โครงสร้าง 3-3-5 ถูกเรียกว่า A-B-C คลื่น B ที่ปรับคืน 97% ร่วมกับคลื่น C ที่จบเกินจุดสิ้นสุดของ A ไปเพียง 1% สอดคล้องกับแฟลตปกติอย่างใกล้ชิด และคลื่น C ที่มีห้าคลื่นย่อยเป็นลักษณะที่แฟลตทุกชนิดย่อยมีเหมือนกัน คลื่น B ในที่นี้ปรับคืนลึกมาก (97%) ไม่ใช่ตื้น ดังนั้นข้อความที่ว่าคลื่น B ตื้นจะตัดความเป็นแฟลตออกไปนั้นผิดทั้งในกรณีนี้และในหลักการทั่วไป"}, {"id": "v3q19", "qType": "multi", "diff": "medium", "text": "Which statements correctly describe a triple three? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "All three of its components must be flats by rule"}, {"id": "b", "letter": "B", "text": "It is generally less common than a double three"}, {"id": "c", "letter": "C", "text": "It combines three simple corrective patterns using two X waves"}, {"id": "d", "letter": "D", "text": "It shares the W-X-Y-X-Z label used for a triple zigzag"}], "correct": ["b", "c", "d"], "expEn": "A triple three combines three simple patterns with two X waves, shares the W-X-Y-X-Z label sequence with a triple zigzag (though the component types differ), and is generally rarer than a double three. Its three components can be any mix of simple corrective pattern types, not necessarily all flats.", "expTh": "ไทรเพิลธรีรวมรูปแบบง่ายสามชุดด้วยคลื่น X สองคลื่น ใช้ลำดับการเรียกชื่อ W-X-Y-X-Z ร่วมกับซิกแซกสามชุด (แม้ชนิดขององค์ประกอบจะต่างกัน) และโดยทั่วไปพบได้น้อยกว่าดับเบิลธรี องค์ประกอบทั้งสามของมันสามารถเป็นรูปแบบคลื่นปรับง่ายชนิดใดก็ได้ผสมกัน ไม่จำเป็นต้องเป็นแฟลตทั้งหมด"}, {"id": "v3q20", "qType": "multi", "diff": "hard", "text": "Which of the following statements are consistent with standard Elliott Wave Principle teaching on complex corrections? (Select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave 5 projections using parallel channel lines are guidelines, not guaranteed outcomes"}, {"id": "b", "letter": "B", "text": "A flat retraces more of the prior move in price, on average, than a zigzag does"}, {"id": "c", "letter": "C", "text": "A zigzag retraces less of the prior move in price than a flat typically does, while still moving sharply against the trend"}, {"id": "d", "letter": "D", "text": "X waves connecting components of a combination or multi-zigzag are corrective"}], "correct": ["a", "c", "d"], "expEn": "Standard teaching holds that a zigzag typically retraces less of the larger trend in net price terms than a flat does, even though it moves sharply; X waves connecting combination or multi-zigzag components are corrective; and parallel-channel projections for wave 5 are guidelines, not guarantees. The first statement reverses this relationship and is incorrect.", "expTh": "ตามหลักมาตรฐาน ซิกแซกมักปรับคืนแนวโน้มใหญ่ในเชิงราคาสุทธิได้น้อยกว่าแฟลต แม้จะเคลื่อนที่อย่างคมชัดก็ตาม คลื่น X ที่เชื่อมองค์ประกอบของรูปแบบผสมหรือซิกแซกหลายชุดเป็นคลื่นปรับ และการคาดการณ์คลื่น 5 ด้วยเส้นกรอบคู่ขนานเป็นเพียงแนวทาง ไม่ใช่การันตีผลลัพธ์ ข้อความแรกสลับความสัมพันธ์นี้กลับกันและไม่ถูกต้อง"}];
+</script>
+<script>
+(function(){
+"use strict";
+
+const VARIANTS = {
+  v1: { bank:V1_BANK, name:'Elliott Wave Analyst — Level I', nameTh:'CEWA I · พื้นฐาน', minutes:45, key:'v1' },
+  v2: { bank:V2_BANK, name:'Elliott Wave Analyst — Level II, Part 1', nameTh:'CEWA II · ตอนที่ 1', minutes:45, key:'v2' },
+  v3: { bank:V3_BANK, name:'Elliott Wave Analyst — Level II, Part 2', nameTh:'CEWA II · ตอนที่ 2', minutes:45, key:'v3' },
+};
+
+const state = {
+  shuffled: false,
+  selectedVariant: null,
+  currentVariant: null,
+  questions: [],
+  answers: {},      // qid -> string id (single/tf) or array of ids (multi)
+  startTime: null,
+  timerInterval: null,
+  remainingSeconds: 0,
+  lang: 'en',
+  lastResult: null,
+};
+
+/* ---------- Seeded RNG + Fisher-Yates (deep clone before shuffling) ---------- */
+function mulberry32(seed){
+  let a = seed >>> 0;
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function fisherYates(arr, rnd){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(rnd()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function deepCloneBank(bank){
+  return bank.map(q => ({
+    ...q,
+    choices: q.choices ? q.choices.map(c => ({...c})) : undefined,
+    correct: [...q.correct]
+  }));
+}
+
+/* ---------- Custom modal (avoids window.confirm for in-app browser compatibility) ---------- */
+const modalOverlay = document.getElementById('modalOverlay');
+const modalTitle = document.getElementById('modalTitle');
+const modalMsg = document.getElementById('modalMsg');
+const modalCancel = document.getElementById('modalCancel');
+const modalConfirm = document.getElementById('modalConfirm');
+let modalResolve = null;
+function showModal(title, msg, confirmLabel){
+  modalTitle.textContent = title;
+  modalMsg.textContent = msg;
+  modalConfirm.textContent = confirmLabel || 'Confirm';
+  modalOverlay.classList.add('active');
+  return new Promise(resolve => { modalResolve = resolve; });
+}
+modalCancel.addEventListener('click', ()=>{ modalOverlay.classList.remove('active'); if(modalResolve) modalResolve(false); });
+modalConfirm.addEventListener('click', ()=>{ modalOverlay.classList.remove('active'); if(modalResolve) modalResolve(true); });
+modalOverlay.addEventListener('click', (e)=>{ if(e.target===modalOverlay){ modalOverlay.classList.remove('active'); if(modalResolve) modalResolve(false); } });
+
+/* ---------- Screen switching ---------- */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+/* ---------- Lobby ---------- */
+const variantList = document.getElementById('variantList');
+const startBtn = document.getElementById('startBtn');
+const shuffleToggle = document.getElementById('shuffleToggle');
+const shuffleSwitch = document.getElementById('shuffleSwitch');
+
+variantList.addEventListener('click', (e)=>{
+  const card = e.target.closest('.variant-card');
+  if(!card) return;
+  document.querySelectorAll('.variant-card').forEach(c=>c.classList.remove('selected'));
+  card.classList.add('selected');
+  state.selectedVariant = card.getAttribute('data-variant');
+  startBtn.disabled = false;
+});
+
+shuffleToggle.addEventListener('click', ()=>{
+  state.shuffled = !state.shuffled;
+  shuffleSwitch.classList.toggle('on', state.shuffled);
+});
+
+startBtn.addEventListener('click', ()=>{
+  if(!state.selectedVariant) return;
+  beginExam(state.selectedVariant);
+});
+
+/* ---------- Begin exam ---------- */
+function beginExam(variantKey){
+  const v = VARIANTS[variantKey];
+  state.currentVariant = variantKey;
+  let bank = deepCloneBank(v.bank);
+  if(state.shuffled){
+    const seed = (Date.now() ^ Math.floor(Math.random()*1e9)) >>> 0;
+    const rnd = mulberry32(seed);
+    bank = fisherYates(bank, rnd);
+    bank = bank.map(q=>{
+      if(q.qType==='tf') return q;
+      const rnd2 = mulberry32((seed ^ hashId(q.id)) >>> 0);
+      return {...q, choices: fisherYates(q.choices, rnd2)};
+    });
+  }
+  state.questions = bank;
+  state.answers = {};
+  state.remainingSeconds = v.minutes * 60;
+  state.startTime = Date.now();
+
+  document.getElementById('quizVariantName').textContent = v.name;
+  renderQuestions();
+  updateHud();
+  showScreen('screen-quiz');
+  startTimer();
+}
+function hashId(str){
+  let h=0; for(let i=0;i<str.length;i++){ h=(h*31 + str.charCodeAt(i))|0; }
+  return h;
+}
+
+/* ---------- Render questions ---------- */
+const questionList = document.getElementById('questionList');
+function renderQuestions(){
+  const frag = document.createDocumentFragment();
+  state.questions.forEach((q, idx) => {
+    const card = document.createElement('div');
+    card.className = 'qcard';
+    card.setAttribute('data-qcard', q.id);
+
+    const typeLabel = q.qType==='tf' ? 'TRUE / FALSE' : (q.qType==='multi' ? 'SELECT ALL THAT APPLY' : 'SINGLE BEST ANSWER');
+    let html = `<div class="qnum">${idx+1}</div>`;
+    html += `<div class="qtext">${escapeHtml(q.text)}<span class="qtype-badge">${typeLabel}</span></div>`;
+
+    if(q.qType === 'tf'){
+      html += `<div class="tf-row" role="radiogroup" data-qid="${q.id}" data-qtype="tf">
+        <button class="tf-btn tf-true" role="radio" aria-checked="false" data-cid="true">✓ TRUE</button>
+        <button class="tf-btn tf-false" role="radio" aria-checked="false" data-cid="false">✗ FALSE</button>
+      </div>`;
+    } else if(q.qType === 'multi'){
+      html += `<div class="choices" role="group" data-qid="${q.id}" data-qtype="multi">`;
+      q.choices.forEach(c=>{
+        html += `<button class="choice-btn" role="checkbox" aria-checked="false" data-cid="${c.id}">
+          <span class="choice-letter">${c.letter}</span><span>${escapeHtml(c.text)}</span>
+        </button>`;
+      });
+      html += `</div>`;
+    } else {
+      html += `<div class="choices" role="radiogroup" data-qid="${q.id}" data-qtype="single">`;
+      q.choices.forEach(c=>{
+        html += `<button class="choice-btn" role="radio" aria-checked="false" data-cid="${c.id}">
+          <span class="choice-letter">${c.letter}</span><span>${escapeHtml(c.text)}</span>
+        </button>`;
+      });
+      html += `</div>`;
+    }
+    card.innerHTML = html;
+    frag.appendChild(card);
+  });
+  questionList.innerHTML = '';
+  questionList.appendChild(frag);
+}
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+/* ---------- Answer selection (event delegation via data-* attrs) ---------- */
+questionList.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-cid]');
+  if(!btn) return;
+  const group = btn.closest('[data-qid]');
+  const qid = group.getAttribute('data-qid');
+  const qtype = group.getAttribute('data-qtype');
+  const cid = btn.getAttribute('data-cid');
+
+  if(qtype === 'multi'){
+    const cur = Array.isArray(state.answers[qid]) ? state.answers[qid].slice() : [];
+    const pos = cur.indexOf(cid);
+    if(pos >= 0) cur.splice(pos,1); else cur.push(cid);
+    state.answers[qid] = cur;
+    group.querySelectorAll('[data-cid]').forEach(b=>{
+      b.setAttribute('aria-checked', cur.includes(b.getAttribute('data-cid')) ? 'true' : 'false');
+    });
+  } else {
+    state.answers[qid] = cid;
+    group.querySelectorAll('[data-cid]').forEach(b=>{
+      b.setAttribute('aria-checked', b.getAttribute('data-cid')===cid ? 'true' : 'false');
+    });
+  }
+  const card = btn.closest('.qcard');
+  const answered = qtype==='multi' ? (state.answers[qid]||[]).length>0 : !!state.answers[qid];
+  card.classList.toggle('answered', answered);
+  updateHud();
+});
+
+/* ---------- Timer / HUD ---------- */
+function startTimer(){
+  clearInterval(state.timerInterval);
+  state.timerInterval = setInterval(()=>{
+    state.remainingSeconds--;
+    if(state.remainingSeconds <= 0){
+      state.remainingSeconds = 0;
+      clearInterval(state.timerInterval);
+      finishExam();
+      return;
+    }
+    updateHud();
+  }, 1000);
+}
+function fmtTime(totalSeconds){
+  const m = Math.floor(totalSeconds/60), s = totalSeconds%60;
+  return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function updateHud(){
+  const elapsed = Math.floor((Date.now()-state.startTime)/1000);
+  document.getElementById('hudElapsed').textContent = fmtTime(elapsed);
+  document.getElementById('hudRemaining').textContent = fmtTime(state.remainingSeconds);
+  const answeredCount = state.questions.filter(q=>{
+    const a = state.answers[q.id];
+    return q.qType==='multi' ? (Array.isArray(a) && a.length>0) : !!a;
+  }).length;
+  const total = state.questions.length;
+  const pct = total ? Math.round((answeredCount/total)*100) : 0;
+  document.getElementById('hudProgress').textContent = pct+'%';
+  document.getElementById('hudBarFill').style.width = pct+'%';
+  document.getElementById('quizCount').textContent = answeredCount+' / '+total+' answered';
+  const hud = document.getElementById('hud');
+  hud.classList.toggle('warn', state.remainingSeconds <= 300);
+}
+
+/* ---------- Submit / Grading ---------- */
+document.getElementById('submitBtn').addEventListener('click', async ()=>{
+  const total = state.questions.length;
+  const answeredCount = state.questions.filter(q=>{
+    const a = state.answers[q.id];
+    return q.qType==='multi' ? (Array.isArray(a) && a.length>0) : !!a;
+  }).length;
+  if(answeredCount < total){
+    const ok = await showModal('Submit exam?', `You have answered ${answeredCount} of ${total} questions. Submit anyway?`, 'Submit');
+    if(!ok) return;
+  } else {
+    const ok = await showModal('Submit exam?', 'You will not be able to change your answers after submitting.', 'Submit');
+    if(!ok) return;
+  }
+  finishExam();
+});
+
+function isCorrect(q){
+  const a = state.answers[q.id];
+  if(q.qType === 'multi'){
+    if(!Array.isArray(a)) return false;
+    const sortedA = a.slice().sort().join(',');
+    const sortedC = q.correct.slice().sort().join(',');
+    return sortedA === sortedC && sortedA.length>0;
+  }
+  return a === q.correct[0];
+}
+
+function finishExam(){
+  clearInterval(state.timerInterval);
+  const total = state.questions.length;
+  let correctCount = 0;
+  state.questions.forEach(q=>{ if(isCorrect(q)) correctCount++; });
+  const pct = total ? Math.round((correctCount/total)*100) : 0;
+  const elapsedSeconds = Math.floor((Date.now()-state.startTime)/1000);
+  let grade = 'fail';
+  if(pct >= 90) grade = 'master';
+  else if(pct >= 80) grade = 'pass';
+  state.lastResult = { correctCount, total, pct, elapsedSeconds, grade };
+  renderResults();
+  showScreen('screen-results');
+  if(grade !== 'fail') launchConfetti(grade);
+}
+
+/* ---------- Results ---------- */
+function renderResults(){
+  const v = VARIANTS[state.currentVariant];
+  const r = state.lastResult;
+  const stamp = document.getElementById('gradeStamp');
+  stamp.className = 'stamp ' + r.grade;
+  stamp.textContent = r.grade === 'master' ? 'MASTER' : (r.grade === 'pass' ? 'PASS' : 'FAIL');
+  document.getElementById('resultsVariantName').textContent = v.name;
+  document.getElementById('scoreBig').textContent = r.pct + '%';
+  document.getElementById('statCorrect').textContent = r.correctCount;
+  document.getElementById('statTotal').textContent = r.total;
+  document.getElementById('statTime').textContent = fmtTime(r.elapsedSeconds);
+  renderReviewList();
+}
+
+function renderReviewList(){
+  const list = document.getElementById('reviewList');
+  const frag = document.createDocumentFragment();
+  state.questions.forEach((q, idx)=>{
+    const ok = isCorrect(q);
+    const item = document.createElement('div');
+    item.className = 'review-item ' + (ok ? 'correct' : 'incorrect');
+
+    let html = `<div class="review-head">
+      <span class="qnum" style="margin-bottom:0;width:24px;height:24px;font-size:11px;">${idx+1}</span>
+      <span class="review-status ${ok?'correct':'incorrect'}">${ok?'CORRECT':'INCORRECT'}</span>
+    </div>`;
+    html += `<div class="review-q">${escapeHtml(q.text)}</div>`;
+    html += `<div class="review-choices">`;
+
+    if(q.qType === 'tf'){
+      const picked = state.answers[q.id];
+      const correctVal = q.correct[0];
+      ['true','false'].forEach(val=>{
+        let cls = '';
+        if(val === correctVal) cls = 'was-correct';
+        else if(val === picked && val !== correctVal) cls = 'was-wrong-pick';
+        const label = val==='true' ? '✓ TRUE' : '✗ FALSE';
+        const marker = (val===picked) ? ' — your answer' : '';
+        html += `<div class="review-choice ${cls}">${label}${marker}</div>`;
+      });
+    } else {
+      const picked = state.answers[q.id];
+      const pickedArr = q.qType==='multi' ? (Array.isArray(picked)?picked:[]) : (picked?[picked]:[]);
+      q.choices.forEach(c=>{
+        let cls = '';
+        const isC = q.correct.includes(c.id);
+        const wasPicked = pickedArr.includes(c.id);
+        if(isC) cls = 'was-correct';
+        else if(wasPicked) cls = 'was-wrong-pick';
+        const marker = wasPicked ? ' — your answer' : '';
+        html += `<div class="review-choice ${cls}">${c.letter}. ${escapeHtml(c.text)}${marker}</div>`;
+      });
+    }
+    html += `</div>`;
+    html += `<div class="review-exp" data-exp-en="${escapeHtml(q.expEn)}" data-exp-th="${escapeHtml(q.expTh)}">${escapeHtml(state.lang==='th'?q.expTh:q.expEn)}</div>`;
+    item.innerHTML = html;
+    frag.appendChild(item);
+  });
+  list.innerHTML = '';
+  list.appendChild(frag);
+}
+
+document.querySelectorAll('.lang-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.lang = btn.getAttribute('data-lang');
+    document.querySelectorAll('.review-exp').forEach(el=>{
+      el.textContent = state.lang==='th' ? el.getAttribute('data-exp-th') : el.getAttribute('data-exp-en');
+    });
+  });
+});
+
+document.getElementById('backToLobbyBtn').addEventListener('click', ()=>{
+  showScreen('screen-lobby');
+});
+document.getElementById('retakeBtn').addEventListener('click', ()=>{
+  beginExam(state.currentVariant);
+});
+
+/* ---------- Confetti (canvas, no external deps) ---------- */
+const confettiCanvas = document.getElementById('confettiCanvas');
+const ctx = confettiCanvas.getContext('2d');
+function resizeCanvas(){ confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight; }
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function launchConfetti(grade){
+  if(!ctx) return;
+  const colors = grade === 'master' ? ['#e9ffb0','#f5ffd0','#7fd39c'] : ['#5fa176','#7fd39c','#e9ffb0'];
+  const particles = [];
+  const count = grade === 'master' ? 140 : 90;
+  for(let i=0;i<count;i++){
+    particles.push({
+      x: Math.random()*confettiCanvas.width,
+      y: -20 - Math.random()*200,
+      vx: (Math.random()-0.5)*2.5,
+      vy: 2 + Math.random()*3,
+      size: 4 + Math.random()*5,
+      color: colors[Math.floor(Math.random()*colors.length)],
+      rot: Math.random()*Math.PI*2,
+      vr: (Math.random()-0.5)*0.2,
+      life: 0
+    });
+  }
+  let frame = 0;
+  const maxFrames = 220;
+  function tick(){
+    frame++;
+    ctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+    particles.forEach(p=>{
+      p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.vy += 0.02;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = Math.max(0, 1 - frame/maxFrames);
+      ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
+      ctx.restore();
+    });
+    if(frame < maxFrames){
+      requestAnimationFrame(tick);
+    } else {
+      ctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+})();
+</script>
+</body>
+</html>
