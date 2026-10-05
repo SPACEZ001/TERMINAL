@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CEWA52 · SPACEZ Exam Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#000;
+  --bg-2:#050505;
+  --surface:#0a0a0a;
+  --surface-2:#111111;
+  --paper:#f4f6f1;
+  --paper-dim:#dfe8d0;
+  --ink:#f4f6f1;
+  --ink-dim:#b9c2ae;
+  --muted:#8b9186;
+  --border:rgba(233,255,176,.22);
+  --border-soft:rgba(255,255,255,.08);
+  --neon:#e9ffb0;
+  --neon-bright:#f5ffd0;
+  --neon-dim:#7a8a55;
+  --green:#5fa176;
+  --green-bright:#7fd39c;
+  --red:#ff3b4e;
+  --red-bright:#ff6b7a;
+  --radius:14px;
+  --radius-sm:8px;
+  --shadow:0 10px 34px rgba(0,0,0,.55);
+  --sans:'Inter','Noto Sans Thai',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono','Noto Sans Thai','Fira Code',ui-monospace,monospace;
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  background:
+    radial-gradient(ellipse 80% 45% at 50% -5%, rgba(233,255,176,0.06), transparent 60%),
+    var(--bg);
+  color:var(--ink);
+  font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  line-height:1.55;
+  position:relative;
+  overflow-x:hidden;
+}
+.thai{font-family:'Noto Sans Thai',var(--sans);}
+h1,h2,h3{font-family:var(--sans); font-weight:700;}
+.mono{font-family:var(--mono); font-variant-numeric: tabular-nums;}
+
+button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit;}
+a{color:inherit;}
+
+/* ---------- space backdrop: grid + starfield + comets (SPACEZ TERMINAL void theme) ---------- */
+.grid-overlay{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(160,255,160,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(160,255,160,0.05) 1px, transparent 1px);
+  background-size:46px 46px;
+  -webkit-mask-image:radial-gradient(circle at 50% 20%, black, transparent 78%);
+  mask-image:radial-gradient(circle at 50% 20%, black, transparent 78%);
+  opacity:.22;
+}
+.spz-void-stars{
+  display:block;position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background-image:
+    radial-gradient(2.0px 2.0px at 6% 14%,#fff,transparent 70%),
+    radial-gradient(1.5px 1.5px at 18% 62%,#fff,transparent 70%),
+    radial-gradient(2.3px 2.3px at 33% 28%,#fff,transparent 70%),
+    radial-gradient(1.6px 1.6px at 47% 78%,#fff,transparent 70%);
+  background-size:220px 180px;
+  opacity:.5;
+  animation:spzSiteStarsDrift 120s linear infinite, spzSiteTwinkleA 4.4s ease-in-out infinite;
+}
+.spz-void-stars::before{
+  content:'';position:absolute;inset:0;
+  background-image:
+    radial-gradient(2.1px 2.1px at 61% 9%,#fff,transparent 70%),
+    radial-gradient(1.5px 1.5px at 74% 52%,#fff,transparent 70%),
+    radial-gradient(2.0px 2.0px at 88% 22%,#fff,transparent 70%),
+    radial-gradient(1.6px 1.6px at 96% 70%,#fff,transparent 70%);
+  background-size:220px 180px;
+  opacity:.5;
+  animation:spzSiteStarsDrift 120s linear infinite, spzSiteTwinkleB 3.7s ease-in-out infinite;
+  animation-delay:0s, -1.8s;
+}
+.spz-void-stars::after{
+  content:'';position:absolute;inset:0;
+  background-image:
+    radial-gradient(1.4px 1.4px at 12% 90%,#fff,transparent 70%),
+    radial-gradient(1.6px 1.6px at 55% 40%,#fff,transparent 70%),
+    radial-gradient(1.3px 1.3px at 82% 85%,#fff,transparent 70%),
+    radial-gradient(1.5px 1.5px at 40% 5%,#fff,transparent 70%);
+  background-size:220px 180px;
+  opacity:.5;
+  animation:spzSiteStarsDrift 120s linear infinite, spzSiteTwinkleA 4.4s ease-in-out infinite;
+  animation-delay:0s, -2.9s;
+}
+@keyframes spzSiteStarsDrift{0%{background-position:0 0;}100%{background-position:-220px -180px;}}
+@keyframes spzSiteTwinkleA{0%,100%{filter:brightness(.6);}50%{filter:brightness(1.1);}}
+@keyframes spzSiteTwinkleB{0%,100%{filter:brightness(.55);}50%{filter:brightness(1.0);}}
+.spz-void-comet{
+  display:block;position:fixed;left:86%;top:-10%;z-index:-1;pointer-events:none;
+  width:2px;height:64px;border-radius:2px;
+  background:linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.85) 70%, #fff);
+  filter:drop-shadow(0 0 5px rgba(255,255,255,.7));
+  opacity:0;
+  transform:rotate(39deg);
+  animation:spzComet1 11s linear infinite;
+}
+.spz-void-comet.c2{height:52px; animation:spzComet2 15s linear infinite; animation-delay:3s;}
+.spz-void-comet.c3{height:58px; animation:spzComet3 19s linear infinite; animation-delay:7s;}
+.spz-void-comet.c4{height:46px; animation:spzComet4 23s linear infinite; animation-delay:1s;}
+@keyframes spzComet1{0%{left:86%;top:-10%;opacity:0;}4%{opacity:.9;}18%{left:44%;top:60%;opacity:.85;}30%{left:9%;top:118%;opacity:0;}100%{left:9%;top:118%;opacity:0;}}
+@keyframes spzComet2{0%{left:70%;top:-10%;opacity:0;}5%{opacity:.8;}20%{left:25%;top:68%;opacity:.75;}30%{left:-4%;top:118%;opacity:0;}100%{left:-4%;top:118%;opacity:0;}}
+@keyframes spzComet3{0%{left:92%;top:-10%;opacity:0;}4%{opacity:.85;}16%{left:56%;top:56%;opacity:.8;}28%{left:23%;top:118%;opacity:0;}100%{left:23%;top:118%;opacity:0;}}
+@keyframes spzComet4{0%{left:58%;top:-10%;opacity:0;}5%{opacity:.8;}19%{left:13%;top:64%;opacity:.75;}29%{left:-20%;top:118%;opacity:0;}100%{left:-20%;top:118%;opacity:0;}}
+@media (prefers-reduced-motion: reduce){
+  .spz-void-stars, .spz-void-stars::before, .spz-void-stars::after, .spz-void-comet{animation:none;}
+}
+::selection{background:var(--neon);color:#000;}
+
+.screen{display:none; min-height:100vh; width:100%; position:relative; z-index:2;}
+.screen.active{display:block;}
+
+/* ===== Topbar ===== */
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 20px; border-bottom:1px solid var(--border-soft);
+  background:rgba(5,5,5,.78); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  position:sticky; top:0; z-index:40;
+}
+.brand{display:flex; align-items:center; gap:10px; font-family:var(--mono); font-size:13px; letter-spacing:.04em; color:var(--ink-dim);}
+.brand .mark{
+  width:9px; height:9px; border-radius:50%; background:var(--neon); box-shadow:0 0 12px var(--neon);
+  animation:blink 1.5s infinite steps(1);
+}
+@keyframes blink{0%,49%{opacity:1;}50%,100%{opacity:0;}}
+.back-btn{
+  display:flex; align-items:center; gap:6px; padding:7px 12px; border:1px solid var(--border-soft);
+  border-radius:var(--radius-sm); color:var(--ink-dim); font-size:13px; font-family:var(--mono);
+  transition:border-color .15s, color .15s;
+}
+.back-btn:hover{border-color:var(--neon); color:var(--neon-bright);}
+
+/* ===== Lobby ===== */
+.lobby-wrap{max-width:760px; margin:0 auto; padding:36px 20px 80px; position:relative; z-index:2;}
+.eyebrow{
+  font-family:var(--mono); font-size:12px; letter-spacing:.14em; color:var(--neon);
+  display:flex; align-items:center; gap:8px; margin-bottom:14px; text-transform:uppercase;
+}
+.eyebrow::before{content:''; width:18px; height:1px; background:var(--neon-dim);}
+.lobby-title{font-size:34px; font-weight:800; color:var(--paper); margin-bottom:10px; letter-spacing:-.01em;}
+.lobby-sub{color:var(--muted); font-size:15px; max-width:56ch; margin-bottom:34px;}
+
+.ledger-tabs{display:flex; flex-direction:column; gap:14px; margin-bottom:28px;}
+.variant-card{
+  position:relative; border:1px solid var(--border-soft); border-left:3px solid var(--border-soft);
+  border-radius:var(--radius); background:var(--surface); padding:18px 20px 18px 22px;
+  display:flex; align-items:center; gap:16px; transition:border-color .15s, background .15s, transform .1s, box-shadow .15s;
+  text-align:left; width:100%;
+}
+.variant-card:hover{border-color:var(--neon-dim); background:var(--surface-2);}
+.variant-card.selected{border-left-color:var(--neon); border-color:var(--border); background:var(--surface-2); box-shadow:0 0 22px rgba(233,255,176,0.08);}
+.variant-chit{
+  flex-shrink:0; width:46px; height:46px; border-radius:50%; border:1.5px solid var(--neon-dim);
+  display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-weight:700;
+  font-size:14px; color:var(--neon); background:radial-gradient(circle at 35% 30%, rgba(233,255,176,.14), transparent 70%);
+}
+.variant-card.selected .variant-chit{border-color:var(--neon); color:var(--neon-bright); box-shadow:0 0 14px rgba(233,255,176,.25);}
+.variant-body{flex:1; min-width:0;}
+.variant-label{font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.08em; margin-bottom:3px; text-transform:uppercase;}
+.variant-title{font-family:var(--sans); font-size:17px; font-weight:700; color:var(--paper); margin-bottom:6px;}
+.variant-tags{display:flex; flex-wrap:wrap; gap:6px;}
+.tag{font-family:var(--mono); font-size:10.5px; padding:2.5px 7px; border:1px solid var(--border-soft); border-radius:20px; color:var(--muted);}
+.tag.accent{border-color:var(--border); color:var(--neon);}
+
+.lobby-controls{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:22px; flex-wrap:wrap;}
+.shuffle-toggle{
+  display:flex; align-items:center; gap:9px; padding:9px 14px; border:1px solid var(--border-soft);
+  border-radius:var(--radius-sm); font-family:var(--mono); font-size:12.5px; color:var(--ink-dim);
+}
+.shuffle-toggle .dice{font-size:15px;}
+.switch{width:34px; height:18px; border-radius:20px; background:var(--border-soft); position:relative; transition:background .15s; flex-shrink:0;}
+.switch::after{content:''; position:absolute; width:14px; height:14px; border-radius:50%; background:var(--muted); top:2px; left:2px; transition:transform .15s, background .15s;}
+.switch.on{background:rgba(233,255,176,.22);}
+.switch.on::after{transform:translateX(16px); background:var(--neon-bright);}
+
+.start-btn{
+  padding:14px 28px; border-radius:var(--radius-sm); background:var(--neon); color:#060803;
+  font-family:var(--mono); font-weight:700; font-size:13.5px; letter-spacing:.08em;
+  transition:background .15s, transform .1s; box-shadow:0 4px 18px rgba(233,255,176,.2); text-transform:uppercase;
+}
+.start-btn:hover{background:var(--neon-bright);}
+.start-btn:active{transform:scale(.98);}
+.start-btn:disabled{opacity:.35; cursor:not-allowed; box-shadow:none;}
+
+/* ===== Quiz ===== */
+.quiz-wrap{max-width:720px; margin:0 auto; padding:26px 18px 140px; position:relative; z-index:2;}
+.quiz-meta-bar{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:22px; flex-wrap:wrap; gap:8px;}
+.quiz-variant-name{font-family:var(--sans); font-size:19px; font-weight:700; color:var(--paper);}
+.quiz-count{font-family:var(--mono); font-size:12px; color:var(--muted);}
+
+.qcard{
+  border:1px solid var(--border-soft); border-left:2px solid var(--border-soft); border-radius:var(--radius);
+  background:var(--surface); padding:20px 20px 20px 24px; margin-bottom:16px; position:relative;
+}
+.qcard.answered{border-left-color:var(--neon-dim);}
+.qnum{
+  display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%;
+  border:1px solid var(--neon-dim); color:var(--neon); font-family:var(--mono); font-size:12px; font-weight:700;
+  margin-bottom:12px;
+}
+.qtext{font-size:15.5px; color:var(--ink); line-height:1.6; margin-bottom:16px;}
+.qtype-badge{font-family:var(--mono); font-size:9.5px; letter-spacing:.06em; color:var(--muted); border:1px solid var(--border-soft); border-radius:3px; padding:1px 6px; margin-left:8px; vertical-align:2px;}
+
+.choices{display:flex; flex-direction:column; gap:8px;}
+.choice-btn{
+  display:flex; align-items:flex-start; gap:11px; text-align:left; padding:11px 14px;
+  border:1px solid var(--border-soft); border-radius:var(--radius-sm); background:var(--bg-2);
+  font-size:14px; color:var(--ink-dim); transition:border-color .12s, background .12s, color .12s; width:100%;
+}
+.choice-btn:hover{border-color:var(--neon-dim); color:var(--ink);}
+.choice-letter{
+  flex-shrink:0; width:22px; height:22px; border-radius:5px; border:1px solid var(--border-soft);
+  display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:11px; color:var(--muted);
+}
+.choice-btn[aria-checked="true"]{border-color:var(--neon); background:rgba(233,255,176,.08); color:var(--paper);}
+.choice-btn[aria-checked="true"] .choice-letter{border-color:var(--neon); background:var(--neon); color:#060803;}
+.choice-btn[role="checkbox"] .choice-letter{border-radius:4px;}
+
+.tf-row{display:flex; gap:10px;}
+.tf-btn{
+  flex:1; padding:16px; border:1px solid var(--border-soft); border-radius:var(--radius-sm); background:var(--bg-2);
+  font-family:var(--mono); font-size:14px; letter-spacing:.03em; color:var(--ink-dim); display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:border-color .12s, background .12s, color .12s;
+}
+.tf-btn:hover{border-color:var(--neon-dim);}
+.tf-btn[aria-checked="true"].tf-true{border-color:var(--green); background:rgba(95,161,118,.1); color:var(--green-bright);}
+.tf-btn[aria-checked="true"].tf-false{border-color:var(--red); background:rgba(255,59,78,.1); color:var(--red-bright);}
+
+.hud{
+  position:fixed; bottom:88px; right:18px; z-index:35; background:var(--surface); border:1px solid var(--border-soft);
+  border-radius:var(--radius); padding:12px 16px; box-shadow:var(--shadow); font-family:var(--mono); font-size:11px; color:var(--muted);
+  display:flex; flex-direction:column; gap:5px; min-width:132px;
+}
+.hud-row{display:flex; justify-content:space-between; gap:14px;}
+.hud-row b{color:var(--paper); font-weight:700;}
+.hud.warn .hud-row.remaining b{color:var(--red-bright);}
+.hud-bar{height:3px; background:var(--border-soft); border-radius:2px; margin-top:4px; overflow:hidden;}
+.hud-bar-fill{height:100%; background:var(--neon); transition:width .3s;}
+
+.submit-bar{
+  position:fixed; bottom:0; left:0; right:0; z-index:36; background:linear-gradient(to top, rgba(0,0,0,.98), rgba(0,0,0,.85));
+  border-top:1px solid var(--border-soft); padding:14px 18px; display:flex; justify-content:center; backdrop-filter:blur(8px);
+}
+.submit-btn{
+  padding:13px 40px; border-radius:var(--radius-sm); background:var(--neon); color:#060803;
+  font-family:var(--mono); font-weight:700; font-size:13px; letter-spacing:.08em; box-shadow:0 4px 18px rgba(233,255,176,.2); text-transform:uppercase;
+}
+.submit-btn:hover{background:var(--neon-bright);}
+
+/* ===== Results ===== */
+.results-wrap{max-width:720px; margin:0 auto; padding:40px 18px 80px; position:relative; z-index:2;}
+.results-hero{display:flex; flex-direction:column; align-items:center; text-align:center; margin-bottom:36px; position:relative;}
+.stamp{
+  font-family:var(--mono); font-weight:700; font-size:30px; letter-spacing:.14em; text-transform:uppercase;
+  padding:14px 34px; border:2px solid; border-radius:8px;
+  margin-bottom:20px; position:relative;
+}
+.stamp::after{content:'CEWA · CERTIFICATION MOCK EXAM'; position:absolute; bottom:-16px; left:50%; transform:translateX(-50%); font-family:var(--mono); font-size:8px; letter-spacing:.12em; white-space:nowrap; opacity:.55;}
+.stamp.fail{color:var(--red-bright); border-color:var(--red); box-shadow:0 0 22px rgba(255,59,78,.12);}
+.stamp.pass{color:var(--green-bright); border-color:var(--green); box-shadow:0 0 22px rgba(95,161,118,.14);}
+.stamp.master{color:var(--neon-bright); border-color:var(--neon); box-shadow:0 0 26px rgba(233,255,176,.2);}
+.score-line{font-family:var(--mono); font-size:15px; color:var(--ink-dim); margin-bottom:4px;}
+.score-big{font-family:var(--sans); font-size:52px; font-weight:800; color:var(--paper); line-height:1;}
+.results-stats{display:flex; gap:22px; margin-top:18px; font-family:var(--mono); font-size:12px; color:var(--muted);}
+.results-stats b{color:var(--paper);}
+
+.lang-toggle{display:flex; gap:4px; margin:0 auto 22px; width:fit-content; border:1px solid var(--border-soft); border-radius:20px; padding:3px;}
+.lang-btn{padding:6px 16px; border-radius:20px; font-family:var(--mono); font-size:12px; color:var(--muted);}
+.lang-btn.active{background:var(--neon); color:#060803;}
+
+.review-item{border:1px solid var(--border-soft); border-left:3px solid var(--border-soft); border-radius:var(--radius); background:var(--surface); padding:16px 18px; margin-bottom:12px;}
+.review-item.correct{border-left-color:var(--green);}
+.review-item.incorrect{border-left-color:var(--red);}
+.review-head{display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+.review-status{font-family:var(--mono); font-size:10px; letter-spacing:.05em; padding:2px 7px; border-radius:3px;}
+.review-status.correct{background:rgba(95,161,118,.15); color:var(--green-bright);}
+.review-status.incorrect{background:rgba(255,59,78,.15); color:var(--red-bright);}
+.review-q{font-size:14px; color:var(--ink); margin-bottom:10px; line-height:1.55;}
+.review-choices{display:flex; flex-direction:column; gap:5px; margin-bottom:10px;}
+.review-choice{font-size:12.5px; padding:7px 10px; border-radius:5px; border:1px solid var(--border-soft); color:var(--muted); display:flex; gap:8px;}
+.review-choice.was-correct{border-color:var(--green); color:var(--green-bright); background:rgba(95,161,118,.06);}
+.review-choice.was-wrong-pick{border-color:var(--red); color:var(--red-bright); background:rgba(255,59,78,.06);}
+.review-exp{font-size:12.5px; color:var(--ink-dim); line-height:1.6; border-top:1px dashed var(--border-soft); padding-top:10px;}
+
+.retry-bar{display:flex; gap:10px; justify-content:center; margin-top:30px;}
+.retry-btn{padding:12px 24px; border:1px solid var(--border); border-radius:var(--radius-sm); font-family:var(--mono); font-size:12.5px; color:var(--neon);}
+.retry-btn:hover{background:rgba(233,255,176,.08);}
+.retry-btn.primary{background:var(--neon); color:#060803; border-color:var(--neon);}
+
+/* ===== Modal ===== */
+.modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.78); z-index:100; display:none; align-items:center; justify-content:center; padding:20px;}
+.modal-overlay.active{display:flex;}
+.modal-box{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px; max-width:380px; width:100%; box-shadow:var(--shadow);}
+.modal-title{font-family:var(--sans); font-size:17px; font-weight:700; color:var(--paper); margin-bottom:8px;}
+.modal-msg{font-size:13.5px; color:var(--ink-dim); line-height:1.6; margin-bottom:20px;}
+.modal-actions{display:flex; gap:10px; justify-content:flex-end;}
+.modal-btn{padding:9px 18px; border-radius:var(--radius-sm); font-family:var(--mono); font-size:12.5px;}
+.modal-btn.cancel{color:var(--muted); border:1px solid var(--border-soft);}
+.modal-btn.confirm{background:var(--neon); color:#060803;}
+
+canvas#confettiCanvas{position:fixed; inset:0; pointer-events:none; z-index:99;}
+
+@media (max-width:600px){
+  .lobby-title{font-size:27px;}
+  .stamp{font-size:24px; padding:12px 22px;}
+  .score-big{font-size:40px;}
+  .hud{right:10px; bottom:78px; min-width:112px; padding:10px 12px;}
+  .variant-card{padding:14px 14px 14px 16px;}
+}
+</style>
+</head>
+<body>
+
+<div class="grid-overlay"></div>
+<div class="spz-void-stars"></div>
+<div class="spz-void-comet c1"></div>
+<div class="spz-void-comet c2"></div>
+<div class="spz-void-comet c3"></div>
+<div class="spz-void-comet c4"></div>
+
+<div class="topbar">
+  <div class="brand"><span class="mark"></span>SPACEZ exam hub — CEWA52</div>
+  <a class="back-btn" href="index.html">← Back</a>
+</div>
+
+<!-- ================= LOBBY ================= -->
+<section id="screen-lobby" class="screen active">
+  <div class="lobby-wrap">
+    <div class="eyebrow">CERTIFIED ELLIOTT WAVE ANALYST · MOCK EXAM</div>
+    <h1 class="lobby-title">CEWA Mock Exam</h1>
+    <p class="lobby-sub thai">เลือกชุดข้อสอบด้านล่าง แต่ละชุดมีจำนวนข้อ เวลา และรูปแบบคำถามต่างกัน ทำได้ 80% ขึ้นไปถือว่าผ่าน</p>
+
+    <div class="ledger-tabs" id="variantList">
+      <button class="variant-card" data-variant="v1">
+        <div class="variant-chit">I</div>
+        <div class="variant-body">
+          <div class="variant-label">EXAM I · FOUNDATIONS</div>
+          <div class="variant-title">Elliott Wave Analyst — Level I</div>
+          <div class="variant-tags">
+            <span class="tag accent">50 questions</span>
+            <span class="tag">45 min</span>
+            <span class="tag">Single Best Answer</span>
+            <span class="tag">Pass 80%</span>
+          </div>
+        </div>
+      </button>
+
+      <button class="variant-card" data-variant="v2">
+        <div class="variant-chit">II·1</div>
+        <div class="variant-body">
+          <div class="variant-label">CEWA II · PART 1</div>
+          <div class="variant-title">Elliott Wave Analyst — Level II, Part 1</div>
+          <div class="variant-tags">
+            <span class="tag accent">20 questions</span>
+            <span class="tag">45 min</span>
+            <span class="tag">Single Best Answer</span>
+            <span class="tag">Pass 80%</span>
+          </div>
+        </div>
+      </button>
+
+      <button class="variant-card" data-variant="v3">
+        <div class="variant-chit">II·2</div>
+        <div class="variant-body">
+          <div class="variant-label">CEWA II · PART 2</div>
+          <div class="variant-title">Elliott Wave Analyst — Level II, Part 2</div>
+          <div class="variant-tags">
+            <span class="tag accent">20 questions</span>
+            <span class="tag">45 min</span>
+            <span class="tag">Multiple Correct Responses</span>
+            <span class="tag">Pass 80%</span>
+          </div>
+        </div>
+      </button>
+    </div>
+
+    <div class="lobby-controls">
+      <button class="shuffle-toggle" id="shuffleToggle">
+        <span class="dice">🎲</span> Shuffle questions &amp; choices
+        <span class="switch" id="shuffleSwitch"></span>
+      </button>
+      <button class="start-btn" id="startBtn" disabled>START EXAM</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= QUIZ ================= -->
+<section id="screen-quiz" class="screen">
+  <div class="quiz-wrap">
+    <div class="quiz-meta-bar">
+      <div class="quiz-variant-name" id="quizVariantName">—</div>
+      <div class="quiz-count" id="quizCount">0 / 0 answered</div>
+    </div>
+    <div id="questionList"></div>
+  </div>
+
+  <div class="hud" id="hud">
+    <div class="hud-row"><span>Elapsed</span><b id="hudElapsed">00:00</b></div>
+    <div class="hud-row remaining"><span>Remaining</span><b id="hudRemaining">00:00</b></div>
+    <div class="hud-row"><span>Progress</span><b id="hudProgress">0%</b></div>
+    <div class="hud-bar"><div class="hud-bar-fill" id="hudBarFill" style="width:0%"></div></div>
+  </div>
+
+  <div class="submit-bar">
+    <button class="submit-btn" id="submitBtn">SUBMIT EXAM</button>
+  </div>
+</section>
+
+<!-- ================= RESULTS ================= -->
+<section id="screen-results" class="screen">
+  <div class="results-wrap">
+    <div class="results-hero">
+      <div class="stamp" id="gradeStamp">PASS</div>
+      <div class="score-line thai" id="resultsVariantName">—</div>
+      <div class="score-big" id="scoreBig">0%</div>
+      <div class="results-stats">
+        <div><b id="statCorrect">0</b>/<span id="statTotal">0</span> correct</div>
+        <div>Time: <b id="statTime">00:00</b></div>
+      </div>
+    </div>
+
+    <div class="lang-toggle">
+      <button class="lang-btn active" data-lang="en">🇬🇧 English</button>
+      <button class="lang-btn" data-lang="th">🇹🇭 ภาษาไทย</button>
+    </div>
+
+    <div id="reviewList"></div>
+
+    <div class="retry-bar">
+      <button class="retry-btn" id="backToLobbyBtn">← Choose another exam</button>
+      <button class="retry-btn primary" id="retakeBtn">Retake this exam</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MODAL ================= -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle">Submit exam?</div>
+    <div class="modal-msg" id="modalMsg">You still have unanswered questions. Submit anyway?</div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="modalCancel">Cancel</button>
+      <button class="modal-btn confirm" id="modalConfirm">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="confettiCanvas"></canvas>
+
+<script>
+/* ===== Question Banks (QC-validated: balanced answer distribution, length-balanced distractors) ===== */
+const V1_BANK = [{"id": "v1q01", "qType": "single", "diff": "easy", "text": "Which of the following is a rule, rather than a guideline, for a standard five-wave impulse?", "choices": [{"id": "a", "letter": "A", "text": "Wave 3 must always be the longest of the three motive waves, otherwise the whole count is invalid and must be redone"}, {"id": "b", "letter": "B", "text": "Wave 5 must always exceed the length of wave 3, since the final wave carries the trend to its peak"}, {"id": "c", "letter": "C", "text": "Wave 4 must always retrace at least 38.2% of wave 3, otherwise the pattern cannot be an impulse"}, {"id": "d", "letter": "D", "text": "Wave 3 may never be the shortest of the three motive waves 1, 3 and 5, although it need not be the longest"}], "correct": ["d"], "expEn": "A motive wave may never have wave 3 as the shortest of 1, 3 and 5. Wave 3 is merely 'often' the longest, and the 38.2% figure for wave 4 is a guideline, not a rule.", "expTh": "กฎคือ wave 3 ต้องไม่เป็นคลื่นที่สั้นที่สุดในบรรดา wave 1, 3, 5 แต่ไม่จำเป็นต้องยาวที่สุดเสมอไป ส่วนการที่ wave 4 ย้อนตัว 38.2% ของ wave 3 เป็นเพียงแนวทาง (guideline) ไม่ใช่กฎ"}, {"id": "v1q02", "qType": "single", "diff": "easy", "text": "Before developing the Wave Principle in the 1930s, Ralph Nelson Elliott had worked mainly as what?", "choices": [{"id": "a", "letter": "A", "text": "A floor trader on the New York Stock Exchange who recorded all of his own daily fills in a very detailed trading diary"}, {"id": "b", "letter": "B", "text": "A professional accountant who spent years auditing railroad and corporate finances before turning to market study"}, {"id": "c", "letter": "C", "text": "A university mathematics professor who published research on number sequences before turning to markets"}, {"id": "d", "letter": "D", "text": "A newspaper financial editor who tracked daily commentary and headlines about the Dow Jones Industrial Average"}], "correct": ["b"], "expEn": "Elliott was an accountant by profession. After a serious illness forced him into retirement he studied decades of index data and found the repeating wave patterns.", "expTh": "Elliott เป็นนักบัญชีโดยอาชีพ หลังจากป่วยหนักจนต้องเกษียณ เขาจึงศึกษาข้อมูลดัชนีหลายสิบปีและค้นพบรูปแบบคลื่นที่เกิดซ้ำ ไม่ใช่เทรดเดอร์หรืออาจารย์คณิตศาสตร์"}, {"id": "v1q03", "qType": "single", "diff": "easy", "text": "Which medieval mathematician introduced the number sequence 1, 1, 2, 3, 5, 8, 13 to Western Europe in his book of 1202?", "choices": [{"id": "a", "letter": "A", "text": "Leonardo of Pisa, known as Fibonacci, in his work Liber Abaci"}, {"id": "b", "letter": "B", "text": "Leonardo da Vinci, in his notebooks on proportion and the anatomy of the human body"}, {"id": "c", "letter": "C", "text": "Pythagoras of Samos, in his lecture series on number mysticism and musical harmony"}, {"id": "d", "letter": "D", "text": "Johannes Kepler, in his treatise on planetary orbits and the geometry of the solar system"}], "correct": ["a"], "expEn": "Leonardo of Pisa (Fibonacci) presented the sequence in Liber Abaci in 1202. Elliott's later work tied these ratios to the structure of market waves.", "expTh": "Leonardo of Pisa หรือ Fibonacci นำลำดับเลขนี้เข้ามาในยุโรปผ่านหนังสือ Liber Abaci ในปี 1202 ภายหลัง Elliott จึงเชื่อมอัตราส่วนเหล่านี้กับโครงสร้างคลื่นของตลาด"}, {"id": "v1q04", "qType": "single", "diff": "easy", "text": "Counting upward through the degree labels, which degree comes right after Primary?", "choices": [{"id": "a", "letter": "A", "text": "Intermediate degree, since it is the largest degree normally labeled in parentheses on a chart"}, {"id": "b", "letter": "B", "text": "Minor degree, since its waves are the ones normally labeled with plain Arabic numerals"}, {"id": "c", "letter": "C", "text": "Cycle degree, which in turn forms the building block of the next larger Supercycle degree"}, {"id": "d", "letter": "D", "text": "Grand Supercycle degree, since it is always the next step in the sequence above Primary"}], "correct": ["c"], "expEn": "The order from large to small runs Grand Supercycle, Supercycle, Cycle, Primary, Intermediate, Minor, and so on. Cycle is directly above Primary; Intermediate and Minor lie below it.", "expTh": "ลำดับ degree จากใหญ่ไปเล็กคือ Grand Supercycle, Supercycle, Cycle, Primary, Intermediate, Minor ... ดังนั้น Cycle อยู่เหนือ Primary โดยตรง ส่วน Intermediate และ Minor เล็กกว่า Primary"}, {"id": "v1q05", "qType": "single", "diff": "easy", "text": "Which behavior is typical when a second wave bottoms within an impulse?", "choices": [{"id": "a", "letter": "A", "text": "It is usually the strongest wave, accompanied by the broadest participation and heaviest volume"}, {"id": "b", "letter": "B", "text": "It is usually a quick, shallow pause that retraces under 10% of wave 1 before the trend resumes"}, {"id": "c", "letter": "C", "text": "It often travels beyond the start of wave 1 when sentiment turns strongly against the trend"}, {"id": "d", "letter": "D", "text": "It often retraces a large share of wave 1, and the sentiment is that the old trend has resumed"}], "correct": ["d"], "expEn": "Wave 2 commonly corrects deeply, often 50% to 61.8% of wave 1, as most participants believe the prior trend is back. It can never retrace more than 100% of wave 1.", "expTh": "Wave 2 มักย้อนตัวลึก ราว 50%-61.8% ของ wave 1 ทำให้คนส่วนใหญ่เชื่อว่าแนวโน้มเดิมกลับมา และไม่มีทางย้อนเกิน 100% ของ wave 1 ส่วนคลื่นที่แรงที่สุดคือ wave 3"}, {"id": "v1q06", "qType": "single", "diff": "easy", "text": "In a typical impulse, which wave is usually the strongest, with the widest participation and the most convincing confirmation from indicators?", "choices": [{"id": "a", "letter": "A", "text": "Wave 3, which commonly shows rapid advance, expanding volume and a breakout that fundamentals begin to support"}, {"id": "b", "letter": "B", "text": "Wave 1, which usually draws the broadest public participation because a brand new trend is so easy to recognize"}, {"id": "c", "letter": "C", "text": "Wave 5, which usually shows the strongest breadth and volume because optimism is at its highest"}, {"id": "d", "letter": "D", "text": "Wave 4, which usually shows the sharpest gains because it follows the extended wave 3 and starts afresh"}], "correct": ["a"], "expEn": "Wave 3 is typically the most powerful wave, often the longest, with high volume and wide participation. Wave 5 is usually marked by waning momentum and narrower breadth in stocks.", "expTh": "Wave 3 มักเป็นคลื่นที่แรงที่สุด ยาวที่สุดบ่อยครั้ง มีวอลลุ่มและการมีส่วนร่วมสูง ขณะที่ wave 5 ในตลาดหุ้นมักมีโมเมนตัมอ่อนลงและ breadth แคบลง"}, {"id": "v1q07", "qType": "single", "diff": "easy", "text": "How do the three legs of a zigzag subdivide internally?", "choices": [{"id": "a", "letter": "A", "text": "Three-three-five, with waves A and B each subdividing into three waves and wave C into five"}, {"id": "b", "letter": "B", "text": "Five-three-five, with waves A and C each subdividing into five waves and wave B into three"}, {"id": "c", "letter": "C", "text": "Five-five-five, with every wave subdividing as an impulse and moving in the direction of the trend"}, {"id": "d", "letter": "D", "text": "Three-five-three, with wave B as the only impulsive leg and waves A and C each in three"}], "correct": ["b"], "expEn": "A zigzag is a 5-3-5 pattern. A 3-3-5 structure describes a flat, which is the other common three-wave correction.", "expTh": "Zigzag มีโครงสร้าง 5-3-5 คือ wave A และ C แบ่งย่อยเป็น 5 คลื่น ส่วน wave B เป็น 3 คลื่น ส่วนโครงสร้าง 3-3-5 เป็นของ flat"}, {"id": "v1q08", "qType": "single", "diff": "easy", "text": "Which correction is characterized by a 3-3-5 subdivision of its A, B and C legs?", "choices": [{"id": "a", "letter": "A", "text": "A zigzag, in which wave B retraces a small part of wave A and wave C then moves against the trend in five waves"}, {"id": "b", "letter": "B", "text": "A contracting triangle, in which every leg is a three and each swing is smaller than the one that preceded it"}, {"id": "c", "letter": "C", "text": "A flat, in which wave B retraces most or all of wave A and wave C then moves against the trend in five waves"}, {"id": "d", "letter": "D", "text": "An ending diagonal, in which every leg is a three and wave C is contained within converging boundary lines"}], "correct": ["c"], "expEn": "A flat is a 3-3-5 correction. Since wave A is only a three, wave B retraces most of it. A zigzag is 5-3-5, and a triangle is 3-3-3-3-3.", "expTh": "Flat มีโครงสร้าง 3-3-5 คือ wave A และ B เป็น 3 คลื่น ส่วน wave C เป็น 5 คลื่น เนื่องจาก wave A เป็นเพียง 3 คลื่น wave B จึงย้อนกลับไปได้เกือบทั้งหมด ส่วน zigzag เป็น 5-3-5 และ triangle เป็น 3-3-3-3-3"}, {"id": "v1q09", "qType": "single", "diff": "easy", "text": "When a decline is classified as a zigzag, how do its three lettered legs subdivide at the next lower degree?", "choices": [{"id": "a", "letter": "A", "text": "Wave A is a three-wave move, wave B is a three-wave move, and wave C is a five-wave move"}, {"id": "b", "letter": "B", "text": "Wave A is a five-wave move, wave B is a five-wave move, and wave C is a three-wave move"}, {"id": "c", "letter": "C", "text": "Wave A is a five-wave move, wave B is a three-wave move, and wave C is again a five-wave move"}, {"id": "d", "letter": "D", "text": "Waves A, B and C each subdivide into three waves, producing a nine-wave sideways structure"}], "correct": ["c"], "expEn": "A zigzag is a 5-3-5 pattern: A and C are motive (five-wave) legs and B is corrective. The 3-3-5 sequence described in the first distractor belongs to a flat.", "expTh": "zigzag มีโครงสร้าง 5-3-5 คือ wave A และ C เป็นคลื่นขับเคลื่อน 5 คลื่น ส่วน wave B เป็นคลื่นปรับฐาน 3 คลื่น ส่วนโครงสร้าง 3-3-5 เป็นของ flat"}, {"id": "v1q10", "qType": "single", "diff": "easy", "text": "Analysts label a correction a flat when its first two legs both subdivide into threes and its last leg is a five. What is the subdivision sequence of a flat?", "choices": [{"id": "a", "letter": "A", "text": "5-3-5, with wave A and wave C each made of five waves and only wave B made of three waves"}, {"id": "b", "letter": "B", "text": "3-5-3, with the middle wave B made of five waves and both outer legs made of three waves"}, {"id": "c", "letter": "C", "text": "3-3-3, since every leg of any correction must subdivide into three waves and never into five"}, {"id": "d", "letter": "D", "text": "3-3-5, with waves A and B each made of three waves and wave C made of five waves"}], "correct": ["d"], "expEn": "A flat is 3-3-5. Because wave A has only three waves, the market is giving a weaker first leg than in a zigzag, which is why a flat is called a sideways correction.", "expTh": "flat มีโครงสร้าง 3-3-5 เพราะ wave A มีเพียง 3 คลื่น แรงของขาแรกจึงอ่อนกว่าใน zigzag ซึ่งเป็นเหตุผลที่ flat ถูกจัดเป็นการปรับฐานแบบ sideways"}, {"id": "v1q11", "qType": "single", "diff": "easy", "text": "Name the flat variety in which the B leg overshoots the origin of the A leg and the C leg then travels past the terminus of the A leg.", "choices": [{"id": "a", "letter": "A", "text": "An expanded flat, in which both overshoots carry price past the earlier extremes"}, {"id": "b", "letter": "B", "text": "A regular flat, in which wave B always reaches exactly the starting level of wave A and never exceeds it"}, {"id": "c", "letter": "C", "text": "A running flat, in which wave C also finishes far beyond the end of wave A in the same direction as wave A"}, {"id": "d", "letter": "D", "text": "A zigzag, because wave C is longer than wave A and so the first two legs cannot be threes"}], "correct": ["a"], "expEn": "In an expanded flat, B exceeds the start of A and C exceeds the end of A. In a running flat C fails to reach the end of A, and a regular flat has B near the start of A.", "expTh": "ใน expanded flat คลื่น B เกินจุดเริ่มของ A และ C เลยจุดสิ้นสุดของ A ส่วน running flat นั้น C ไปไม่ถึงจุดสิ้นสุดของ A และ regular flat มี B ใกล้จุดเริ่มของ A"}, {"id": "v1q12", "qType": "single", "diff": "easy", "text": "What is the rule governing wave B in a zigzag?", "choices": [{"id": "a", "letter": "A", "text": "Wave B must retrace at least 61.8% of wave A, otherwise the pattern is rejected as a zigzag altogether"}, {"id": "b", "letter": "B", "text": "Wave B may not retrace more than 100% of wave A, because ending beyond the start of A would instead indicate a flat"}, {"id": "c", "letter": "C", "text": "Wave B must be longer than wave C, so that the correction ends with a smaller final leg than its middle leg"}, {"id": "d", "letter": "D", "text": "Wave B must be a five-wave move, since waves A and C are both motive legs in a zigzag correction"}], "correct": ["b"], "expEn": "A zigzag is a sharp correction in which B stays within A. A B wave that goes beyond the start of A changes the classification to an expanded or running flat.", "expTh": "ใน zigzag คลื่น B ห้ามย้อนเกิน 100% ของ A เพราะถ้าเกินจุดเริ่มของ A รูปแบบจะกลายเป็น flat (expanded หรือ running) ส่วนความยาว 61.8% เป็นเพียงแนวทางไม่ใช่กฎ"}, {"id": "v1q13", "qType": "single", "diff": "easy", "text": "A trader sees a decline whose first leg clearly subdivides into five waves. Which correction family does that observation allow?", "choices": [{"id": "a", "letter": "A", "text": "The zigzag family, because a five-wave first leg is characteristic of a zigzag, whereas flats begin with a three-wave first leg"}, {"id": "b", "letter": "B", "text": "The flat family, because flats begin with five waves in wave A before turning sideways with wave B"}, {"id": "c", "letter": "C", "text": "The triangle family, because the five-wave first leg is the first of the five legs of a contracting triangle"}, {"id": "d", "letter": "D", "text": "No correction family, because any five-wave first leg proves that the market has completed an impulse"}], "correct": ["a"], "expEn": "A five-wave wave A signals a zigzag (5-3-5) or a double or triple zigzag. Flats have a three-wave wave A. The five could still be the first part of a larger impulse, so subsequent action must confirm.", "expTh": "wave A ที่แยกเป็น 5 คลื่นชี้ไปที่ตระกูล zigzag (5-3-5, double, triple) ส่วน flat มี wave A เป็น 3 คลื่น แต่การนับ 5 คลื่นอาจเป็นส่วนหนึ่งของ impulse ใหญ่ได้ ต้องรอดูการเคลื่อนไหวต่อไปยืนยัน"}, {"id": "v1q14", "qType": "single", "diff": "easy", "text": "During a bear market, how do most investors tend to interpret the B-wave rally?", "choices": [{"id": "a", "letter": "A", "text": "As a clear warning that the bear market is accelerating, so selling pressure is expected to increase"}, {"id": "b", "letter": "B", "text": "As a rare buying opportunity that only a handful of contrarian traders will recognize in real time"}, {"id": "c", "letter": "C", "text": "As a resumption of the bull market, a bull trap that often shows weaker breadth than the earlier advance"}, {"id": "d", "letter": "D", "text": "As the final stage of the decline, since sentiment is expected to be at its most pessimistic extreme"}], "correct": ["c"], "expEn": "Wave B is typically a bull trap: many believe the old trend has resumed even though participation is narrower. Pessimism and panic belong to wave C.", "expTh": "wave B ในตลาดหมีมักถูกมองว่าเป็นการกลับมาของตลาดกระทิง เป็น bull trap ที่ breadth อ่อนกว่าการขึ้นก่อนหน้า ความมองโลกในแง่ร้ายและแตกตื่นเป็นลักษณะของ wave C"}, {"id": "v1q15", "qType": "single", "diff": "easy", "text": "Which of these corrective patterns is classed as a sharp correction rather than a sideways one?", "choices": [{"id": "a", "letter": "A", "text": "The regular flat, which retraces the prior trend segment almost completely while moving mostly sideways"}, {"id": "b", "letter": "B", "text": "The expanded flat, which overshoots the start of the prior leg and so is classed with the sharp patterns"}, {"id": "c", "letter": "C", "text": "The contracting triangle, which retraces steeply in its first leg before the later legs converge"}, {"id": "d", "letter": "D", "text": "The zigzag, which makes a steep retracement of the prior trend segment"}], "correct": ["d"], "expEn": "Zigzags, along with their double and triple versions, are sharp. Flats and triangles are sideways, which is what makes alternation with a sharp pattern possible.", "expTh": "zigzag (รวม double และ triple) เป็นการปรับฐานแบบ sharp ส่วน flat และ triangle เป็นแบบ sideways ซึ่งทำให้เกิด alternation กับรูปแบบ sharp ได้"}, {"id": "v1q16", "qType": "single", "diff": "easy", "text": "Which retracement zone is typical for a wave 2 correction relative to the length of wave 1?", "choices": [{"id": "a", "letter": "A", "text": "Roughly 23.6% to 38.2% of wave 1, since a second wave always stays shallow and ends quickly"}, {"id": "b", "letter": "B", "text": "Roughly 50% to 61.8% of wave 1, though wave 2 can go deeper without exceeding 100%"}, {"id": "c", "letter": "C", "text": "Roughly 78.6% to 100% of wave 1, since a second wave normally retests the origin of the move"}, {"id": "d", "letter": "D", "text": "Roughly 127% to 161.8% of wave 1, since a second wave usually exceeds the start of the first"}], "correct": ["b"], "expEn": "Wave 2 commonly retraces 50% to 61.8% of wave 1 but may never exceed 100%. The 38.2% level is typical for wave 4.", "expTh": "wave 2 มักย้อนราว 50% ถึง 61.8% ของ wave 1 และห้ามเกิน 100% ส่วนระดับ 38.2% มักเป็นของ wave 4"}, {"id": "v1q17", "qType": "single", "diff": "medium", "text": "In the notation of Frost and Prechter, waves of Intermediate degree in an impulse are labeled with which style?", "choices": [{"id": "a", "letter": "A", "text": "Arabic numerals enclosed in circles, such as 1, 2, 3, 4, 5 with a ring around each"}, {"id": "b", "letter": "B", "text": "Plain Arabic numerals without any enclosure, such as 1, 2, 3, 4, 5"}, {"id": "c", "letter": "C", "text": "Arabic numerals enclosed in parentheses, such as (1), (2), (3), (4), (5)"}, {"id": "d", "letter": "D", "text": "Roman numerals in capital letters, such as I, II, III, IV, V"}], "correct": ["c"], "expEn": "Intermediate waves use numbers in parentheses, Primary uses circled numbers, Minor uses plain numbers, and Cycle uses capital Roman numerals.", "expTh": "คลื่นระดับ Intermediate ใช้ตัวเลขอารบิกในวงเล็บ เช่น (1), (2), (3) ส่วน Primary ใช้ตัวเลขในวงกลม, Minor ใช้ตัวเลขธรรมดา และ Cycle ใช้เลขโรมันตัวใหญ่"}, {"id": "v1q18", "qType": "single", "diff": "medium", "text": "Comparing equities activity at the final advancing leg with the middle leg, what is the usual volume pattern?", "choices": [{"id": "a", "letter": "A", "text": "It is usually far heavier than in wave 3, so a record volume reading in wave 5 is the normal and expected outcome"}, {"id": "b", "letter": "B", "text": "It is usually lighter than in wave 3, so a new price high on lower volume is a common sign of a maturing advance"}, {"id": "c", "letter": "C", "text": "It is usually identical to wave 3, because volume is always proportional to the percentage change in price"}, {"id": "d", "letter": "D", "text": "It is usually near zero, because trading volume stops completely once wave 4 has ended"}], "correct": ["b"], "expEn": "In stocks, volume normally runs lighter in wave 5 than in wave 3, which gives a divergence between price and volume.", "expTh": "ในตลาดหุ้น วอลลุ่มของ wave 5 มักเบากว่า wave 3 ทำให้เกิด divergence ระหว่างราคากับวอลลุ่ม"}, {"id": "v1q19", "qType": "single", "diff": "medium", "text": "In an upward impulse, which pair of points defines the base channel line used to forecast where wave 5 may end?", "choices": [{"id": "a", "letter": "A", "text": "The tops of waves 1 and 3, since the base line of an upward channel must always connect the highs"}, {"id": "b", "letter": "B", "text": "The start of wave 1 and the end of wave 5, drawn after the fact and extended across the whole pattern"}, {"id": "c", "letter": "C", "text": "The ends of wave 3 and wave 4, since a base line runs from the most recent peak to the following low"}, {"id": "d", "letter": "D", "text": "The ends of waves 2 and 4, with a parallel line drawn through the end of wave 3 as the upper boundary"}], "correct": ["d"], "expEn": "The base line joins the ends of waves 2 and 4, and a parallel line through the wave 3 peak marks the likely upper limit for wave 5. The line joining the wave 1 and wave 3 highs is not the base line.", "expTh": "เส้นฐานของ channel ลากเชื่อมจุดสิ้นสุดของ wave 2 และ wave 4 แล้วลากเส้นขนานผ่านยอด wave 3 เพื่อประเมินขอบบนของ wave 5 ส่วนเส้นที่เชื่อมยอด wave 1 และ 3 ไม่ใช่เส้นฐาน"}, {"id": "v1q20", "qType": "single", "diff": "medium", "text": "What does a throw-over indicate in channel analysis of a fifth wave?", "choices": [{"id": "a", "letter": "A", "text": "Prices briefly pierce the upper channel line and then fall back inside it, which often signals that the fifth wave is ending"}, {"id": "b", "letter": "B", "text": "Prices stop short of the upper channel line, which proves that wave 5 is a failure and must be truncated"}, {"id": "c", "letter": "C", "text": "Prices fall through the lower channel line and stay below it for several weeks, which proves that the impulse has just begun"}, {"id": "d", "letter": "D", "text": "Prices move along the upper channel line for several months, which proves that wave 5 is only wave 3 of a larger degree"}], "correct": ["a"], "expEn": "A throw-over is a brief overshoot of the upper trendline that quickly reverses back into the channel, a typical sign that the fifth wave is ending. Stopping short of the line is a different matter and does not define a throw-over.", "expTh": "Throw-over คือการที่ราคาทะลุเส้น channel ด้านบนชั่วคราวแล้วกลับเข้ามาในช่อง เป็นสัญญาณที่พบบ่อยของ wave 5 ที่ใกล้จบ ไม่ใช่การที่ราคาไปไม่ถึงเส้น"}, {"id": "v1q21", "qType": "single", "diff": "medium", "text": "Wave 2 was a violent zigzag that gave back most of wave 1. Using alternation, what form should an analyst anticipate for wave 4?", "choices": [{"id": "a", "letter": "A", "text": "Another deep zigzag of the same shape, since a correct count requires waves 2 and 4 to look identical"}, {"id": "b", "letter": "B", "text": "A sideways correction such as a flat, a triangle or a double three, instead of another sharp zigzag"}, {"id": "c", "letter": "C", "text": "A shallow retracement of under 23.6% of wave 3 in the form of a straight line with no subdivisions"}, {"id": "d", "letter": "D", "text": "A five-wave decline, since wave 4 must take the form of an impulse whenever wave 2 was a sharp correction"}], "correct": ["b"], "expEn": "Alternation says that if one corrective wave is sharp, the other will usually be sideways, and the reverse. Corrections are never fives, so wave 4 cannot be an impulse.", "expTh": "Alternation บอกว่าถ้าคลื่นปรับฐานหนึ่งเป็นแบบ sharp อีกอันมักเป็นแบบ sideways เช่น flat หรือ triangle ไม่ใช่ zigzag ซ้ำ และคลื่นแก้ไม่เคยเป็น 5 คลื่นโดยรวม"}, {"id": "v1q22", "qType": "single", "diff": "medium", "text": "When wave 3 of an impulse is the extended wave, which relationship between waves 1 and 5 does the guideline of equality favor?", "choices": [{"id": "a", "letter": "A", "text": "Wave 5 should always be exactly 2.618 times the length of wave 1, since extensions repeat across waves"}, {"id": "b", "letter": "B", "text": "Wave 1 should always be longer than wave 5 by at least 1.618 times, since wave 3 absorbs the momentum"}, {"id": "c", "letter": "C", "text": "Waves 1 and 5 tend toward equality in length, or toward a 0.618 relationship between them"}, {"id": "d", "letter": "D", "text": "Waves 1 and 5 should have no relationship at all, since an extended wave 3 breaks every proportion"}], "correct": ["c"], "expEn": "When one wave extends, the other two motive waves tend toward equality or a 0.618 relationship. These are guidelines, not rules, but they are useful for forecasting wave 5.", "expTh": "เมื่อ wave 3 เป็น extension คลื่น 1 และ 5 มักมีความยาวใกล้เคียงกัน หรืออยู่ในอัตราส่วน 0.618 ซึ่งเป็นแนวทางที่ช่วยคาดการณ์จุดสิ้นสุดของ wave 5"}, {"id": "v1q23", "qType": "single", "diff": "medium", "text": "Under which circumstance does the no-overlap restriction between waves 4 and 1 stop applying?", "choices": [{"id": "a", "letter": "A", "text": "In a diagonal, where overlap between waves 4 and 1 is a characteristic feature of the wedge-shaped pattern"}, {"id": "b", "letter": "B", "text": "In any impulse that has an extended wave 5, because the extension compensates for the overlap"}, {"id": "c", "letter": "C", "text": "In any impulse whose wave 3 is the shortest wave, because the overlap then proves the shortness"}, {"id": "d", "letter": "D", "text": "In every standard impulse, provided the overlap is shallower than 38.2% of wave 1 and wave 3 is not the shortest"}], "correct": ["a"], "expEn": "Overlap is forbidden in a standard impulse but is typical of leading and ending diagonals. Extensions and a shallow overlap size do not make an exception.", "expTh": "ใน impulse มาตรฐาน wave 4 ห้ามซ้อนเข้าไปในเขตราคาของ wave 1 แต่ใน diagonal (ทั้ง leading และ ending) การซ้อนเป็นลักษณะเฉพาะของรูปแบบ ไม่ว่า extension หรือขนาดการซ้อนจะเป็นเท่าไรก็ไม่ใช่ข้อยกเว้น"}, {"id": "v1q24", "qType": "single", "diff": "medium", "text": "An analyst notes a fifth wave that stops short of the third wave extreme. Which feature makes it a genuine failure of this kind?", "choices": [{"id": "a", "letter": "A", "text": "A fifth wave that subdivides into three waves and ends beyond wave 3 because the trend lacks real momentum, which is the common case"}, {"id": "b", "letter": "B", "text": "A fifth wave that ends exactly at the end of wave 3 and forms a double top that never gets broken"}, {"id": "c", "letter": "C", "text": "A fifth wave that is shorter than wave 1 and wave 3 by a ratio of at least 0.618 when measured in percent"}, {"id": "d", "letter": "D", "text": "A fifth wave that subdivides into five waves but fails to move beyond the end of wave 3, usually after an unusually strong wave 3"}], "correct": ["d"], "expEn": "In a truncation, wave 5 fails to exceed the end of wave 3 but still contains five waves. It typically follows a very strong third wave and is a sign of weakness.", "expTh": "Truncation คือ wave 5 ที่แบ่งย่อยเป็น 5 คลื่นแต่ไปไม่ถึงจุดสิ้นสุดของ wave 3 มักเกิดหลัง wave 3 ที่แรงผิดปกติ เป็นสัญญาณความอ่อนแรง"}, {"id": "v1q25", "qType": "single", "diff": "medium", "text": "Which limit applies to the rebound labeled B inside a zigzag?", "choices": [{"id": "a", "letter": "A", "text": "Wave B must retrace at least 90% of wave A, otherwise the pattern is called a flat and not a zigzag at all"}, {"id": "b", "letter": "B", "text": "Wave B never retraces more than the whole of wave A, since a rebound beyond the start of A would indicate a flat instead"}, {"id": "c", "letter": "C", "text": "Wave B must be a five-wave impulse that travels beyond the start of wave A before wave C begins"}, {"id": "d", "letter": "D", "text": "Wave B must retrace exactly 61.8% of wave A, so that wave C is guaranteed to equal wave A"}], "correct": ["b"], "expEn": "In a zigzag, B stays within the span of A. A B wave that goes beyond A's start indicates a flat or other sideways pattern, not a zigzag.", "expTh": "ใน zigzag wave B ไม่ย้อนเกินจุดเริ่มของ wave A ถ้า B ไปเกินจุดเริ่มของ A แสดงว่าเป็น flat หรือรูปแบบ sideways"}, {"id": "v1q26", "qType": "single", "diff": "medium", "text": "What is a double zigzag?", "choices": [{"id": "a", "letter": "A", "text": "Two zigzags linked by a five-wave impulse labeled X, written W-X-Y, which occurs whenever the first zigzag fails to carry far enough"}, {"id": "b", "letter": "B", "text": "A single zigzag whose wave C subdivides as a second zigzag, which forms the pattern A-B-C-D-E when the first zigzag is too shallow"}, {"id": "c", "letter": "C", "text": "Two zigzags linked by a connecting corrective wave labeled X, written W-X-Y, which occurs when the first zigzag fails to carry far enough"}, {"id": "d", "letter": "D", "text": "A zigzag followed by a flat and joined by wave X, written W-X-Y, which is formed whenever the market has a strong trend"}], "correct": ["c"], "expEn": "A double zigzag consists of two zigzags separated by a corrective X wave, labeled W-X-Y. The X wave is corrective, not an impulse.", "expTh": "Double zigzag คือ zigzag สองชุดเชื่อมกันด้วย wave X ซึ่งเป็นคลื่นปรับฐาน เรียกเป็น W-X-Y เกิดเมื่อ zigzag แรกไปได้ไม่ไกลพอ ส่วน X ไม่ใช่ impulse"}, {"id": "v1q27", "qType": "single", "diff": "medium", "text": "After a top at 600, a correction runs: wave A ends at 560, wave B ends at 598, and wave C ends at 553. Waves A and B are threes and wave C is a five. Which pattern is this?", "choices": [{"id": "a", "letter": "A", "text": "An expanded flat, since wave C ends beyond the end of wave A, which on its own always makes the pattern expanded"}, {"id": "b", "letter": "B", "text": "A running flat, since wave B retraced nearly all of wave A while wave C then continued sharply lower"}, {"id": "c", "letter": "C", "text": "A zigzag, since wave C is a five-wave decline that goes beyond the end of wave A"}, {"id": "d", "letter": "D", "text": "A regular flat, since wave B ends near the start of wave A and wave C ends only slightly beyond the end of A"}], "correct": ["d"], "expEn": "Wave B retraced 38 of 40 points, which is 95% of A, and stayed below the start of A at 600. Wave C went only 7 points beyond the low of A, so this is a regular flat. A zigzag needs a 5-3-5 structure, and here wave A is a three.", "expTh": "Wave B ย้อน 38 จาก 40 จุด (95% ของ A) และไม่เกินจุดเริ่มของ A ที่ 600 ส่วน wave C ลงเกินจุดต่ำของ A เพียง 7 จุด จึงเป็น regular flat ไม่ใช่ zigzag เพราะ wave A เป็นแค่ 3 คลื่น"}, {"id": "v1q28", "qType": "single", "diff": "medium", "text": "What does the appearance of a flat, rather than a zigzag, usually tell an analyst about the underlying trend?", "choices": [{"id": "a", "letter": "A", "text": "That the underlying trend is strong, so the impulse wave which follows tends to be powerful"}, {"id": "b", "letter": "B", "text": "That the underlying trend is weak, so the next impulse wave is likely to be a failure"}, {"id": "c", "letter": "C", "text": "That the underlying trend has already reversed, so the flat is the first part of a new bear market"}, {"id": "d", "letter": "D", "text": "That the underlying trend is neutral, so the next impulse wave is equally likely to go either way"}], "correct": ["a"], "expEn": "Flats reflect strong underlying force: the market barely retreats before resuming the trend, so the following impulse is often powerful. A deep zigzag implies the opposite.", "expTh": "Flat สะท้อนแรงของแนวโน้มหลักที่แข็งแกร่ง เพราะตลาดย่อลงเพียงเล็กน้อยก่อนไปต่อ คลื่นimpulse ถัดไปจึงมักแรง ส่วน zigzag ที่ลึกบ่งชี้ตรงข้าม"}, {"id": "v1q29", "qType": "single", "diff": "medium", "text": "In a bull market, an analyst sees a five-wave decline. Which conclusion is consistent with the rules for corrective waves?", "choices": [{"id": "a", "letter": "A", "text": "It is a finished correction, because a five-wave decline is the strongest possible evidence of selling exhaustion"}, {"id": "b", "letter": "B", "text": "It is a new bear market of the same degree, because only impulses can move against the larger trend"}, {"id": "c", "letter": "C", "text": "It cannot be a complete correction by itself; it is only a leg, such as wave A or C, of a larger correction, or the start of a reversal"}, {"id": "d", "letter": "D", "text": "It is a valid fourth wave, because wave 4 may subdivide into five waves when wave 3 was extended"}], "correct": ["c"], "expEn": "A correction as a whole is never a five. A five-wave move against the trend can only be one leg, A or C, of a three-wave correction, or the start of a trend reversal.", "expTh": "คลื่นแก้โดยรวมไม่เคยเป็น 5 คลื่น การลง 5 คลื่นสวนแนวโน้มอาจเป็นเพียงขา A หรือ C ของคลื่นแก้ที่ใหญ่กว่า ไม่ใช่คลื่นแก้ที่จบสมบูรณ์"}, {"id": "v1q30", "qType": "single", "diff": "medium", "text": "A zigzag decline begins at 4,000. Wave A ends at 3,600, wave B at 3,840. If wave C is equal in length to wave A, where does it end?", "choices": [{"id": "a", "letter": "A", "text": "3,200, found by subtracting wave A's 400 points from the end of wave A"}, {"id": "b", "letter": "B", "text": "3,440, found by subtracting wave A's 400 points from the end of wave B"}, {"id": "c", "letter": "C", "text": "3,593, found by subtracting 61.8% of wave A from the end of wave B"}, {"id": "d", "letter": "D", "text": "3,600, found by subtracting wave B's 240-point rebound from the end of wave B"}], "correct": ["b"], "expEn": "Wave A is 400 points and C is projected from the end of wave B: 3,840 - 400 = 3,440. Note that wave B retraced 240/400 = 60% of A, which is consistent with a zigzag.", "expTh": "Wave A ยาว 400 จุด และ wave C คำนวณจากปลาย wave B: 3,840 - 400 = 3,440 โดย wave B ย้อน 240/400 = 60% ของ A ซึ่งสอดคล้องกับ zigzag"}, {"id": "v1q31", "qType": "single", "diff": "medium", "text": "A counter-trend rally in a bear market starts at 250, and wave A lifts it to 310. Wave B gives back 40% of wave A, and wave C then equals 1.618 times the length of wave A. Where does wave C end?", "choices": [{"id": "a", "letter": "A", "text": "383.1, found by adding 97.1 points to the wave B low at 286"}, {"id": "b", "letter": "B", "text": "407.1, found by adding 97.1 points to the end of wave A at 310"}, {"id": "c", "letter": "C", "text": "347.1, found by adding 97.1 points to the start of wave A at 250"}, {"id": "d", "letter": "D", "text": "346.0, found by adding wave A's own 60 points to the wave B low at 286"}], "correct": ["a"], "expEn": "Wave A is 60 points, so a 40% wave B ends at 310 - 24 = 286. Wave C is 1.618 x 60 = 97.1 points, projected from the end of wave B: 286 + 97.1 = 383.1. Projecting from the top of wave A overstates the target by the size of wave B.", "expTh": "Wave A ยาว 60 จุด ดังนั้น wave B ที่ย้อน 40% จะจบที่ 310 - 24 = 286 ส่วน wave C ยาว 1.618 x 60 = 97.1 จุด ต้องวัดจากปลาย wave B: 286 + 97.1 = 383.1 การวัดจากยอด wave A จะทำให้เป้าหมายสูงเกินจริงเท่ากับขนาดของ wave B"}, {"id": "v1q32", "qType": "single", "diff": "medium", "text": "Which feature distinguishes a running flat from an expanded flat?", "choices": [{"id": "a", "letter": "A", "text": "Wave B ends short of the start of wave A, and wave C then travels well beyond the end of wave A"}, {"id": "b", "letter": "B", "text": "Wave C subdivides into three waves rather than five, so the pattern completes as a 3-3-3 structure"}, {"id": "c", "letter": "C", "text": "Wave A is a five-wave move, and wave B retraces about 38.2% of it before wave C begins"}, {"id": "d", "letter": "D", "text": "Wave B ends beyond the start of wave A, but wave C fails to travel past the end of wave A"}], "correct": ["d"], "expEn": "Both overshoot with wave B, but in a running flat wave C is truncated relative to A, a sign of a very strong underlying trend in the larger direction. Its subdivision is still 3-3-5.", "expTh": "ทั้งสองแบบมี wave B เกินจุดเริ่มของ A แต่ใน running flat คลื่น C ไปไม่ถึงจุดสิ้นสุดของ A ซึ่งบ่งชี้ว่าแนวโน้มหลักแข็งแกร่งมาก โครงสร้างย่อยยังเป็น 3-3-5"}, {"id": "v1q33", "qType": "single", "diff": "medium", "text": "What are the building blocks of a double zigzag, and what ties them together?", "choices": [{"id": "a", "letter": "A", "text": "Two zigzags joined by an intervening corrective wave labeled X, and the whole pattern is labeled W-X-Y"}, {"id": "b", "letter": "B", "text": "Two zigzags joined by a five-wave impulse labeled X, which then gives the whole pattern a 5-5-5 look"}, {"id": "c", "letter": "C", "text": "A zigzag followed by a flat of the same degree, with no connecting wave between the two patterns"}, {"id": "d", "letter": "D", "text": "Three consecutive zigzags separated by two X waves, so that the whole pattern is labeled W-X-Y-X-Z"}], "correct": ["a"], "expEn": "A double zigzag has W and Y as zigzags with a corrective X wave between them, labeled W-X-Y. Three zigzags with two X waves would be a triple zigzag.", "expTh": "double zigzag ประกอบด้วย zigzag สองชุดเชื่อมด้วยคลื่นปรับฐาน X ติดป้าย W-X-Y ส่วนการมี zigzag สามชุดกับ X สองตัวคือ triple zigzag (W-X-Y-X-Z)"}, {"id": "v1q34", "qType": "single", "diff": "medium", "text": "A market falls from 1,000 to 880 as wave A of a zigzag, rebounds 50% of that decline as wave B, and wave C then equals wave A in length. Where does wave C end?", "choices": [{"id": "a", "letter": "A", "text": "At 760, because wave C is measured from the end of wave A at 880 and covers 120 points"}, {"id": "b", "letter": "B", "text": "At 880, because equal-length waves must finish at the same price level as wave A did"}, {"id": "c", "letter": "C", "text": "At 820, because wave C is measured from the end of wave B at 940 and covers 120 points"}, {"id": "d", "letter": "D", "text": "At roughly 746, because wave C is assumed to be 1.618 times the length of wave A from 940"}], "correct": ["c"], "expEn": "Wave B retraces half of 120 points, to 940. Wave C of equal length goes 120 points beyond that, to 820. Measuring from the end of A, as in the first distractor, ignores the B rebound.", "expTh": "wave B ย้อน 50% ของ 120 จุด ไปที่ 940 จากนั้น wave C ยาวเท่า A คือ 120 จุด จึงลงไปที่ 820 การวัดจากจุดสิ้นสุดของ A (880) เป็นความผิดพลาดเพราะมองข้ามการดีดของ wave B"}, {"id": "v1q35", "qType": "single", "diff": "medium", "text": "A flat corrects an advance that peaked at 500. Wave A falls to 440, wave B rises to 123.6% of wave A's length above 440, and wave C then equals 1.618 times wave A, measured from the end of wave B. Where does wave C end?", "choices": [{"id": "a", "letter": "A", "text": "At about 343, since wave C is measured from the end of wave A at 440 rather than from the end of wave B"}, {"id": "b", "letter": "B", "text": "At about 417, since wave B ended near 514 and wave C covers about 97 points"}, {"id": "c", "letter": "C", "text": "At about 403, since wave C is measured from the peak of 500 at the start of wave A and covers about 97 points"}, {"id": "d", "letter": "D", "text": "At about 380, since wave C simply equals wave A and covers 60 points below the end of wave A at 440"}], "correct": ["b"], "expEn": "Wave A is 60 points, so wave B adds 74.16 to 440 and ends near 514, above the 500 start of A. Wave C is 1.618 x 60, about 97 points, below 514, giving roughly 417: an expanded flat.", "expTh": "wave A ยาว 60 จุด wave B = 1.236 x 60 = 74.16 บวกจาก 440 ได้ประมาณ 514 ซึ่งเกินจุดเริ่ม 500 ส่วน wave C = 1.618 x 60 ประมาณ 97 จุด ลบจาก 514 ได้ประมาณ 417 เป็น expanded flat"}, {"id": "v1q36", "qType": "single", "diff": "medium", "text": "After a high at 300, a correction unfolds: a three-wave decline to 270, a three-wave rally to 298, and a five-wave decline to 266. How should this correction be classified?", "choices": [{"id": "a", "letter": "A", "text": "As an expanded flat, since wave C finished below the low of wave A and this alone defines an expanded flat"}, {"id": "b", "letter": "B", "text": "As a running flat, since wave B rallied to a level close to the start of wave A and wave C then went lower"}, {"id": "c", "letter": "C", "text": "As a zigzag, since the five-wave final leg shows the same motive thrust that appears in a 5-3-5 pattern"}, {"id": "d", "letter": "D", "text": "As a regular flat, since wave B stopped just short of the start of wave A and wave C ended just beyond the end of wave A"}], "correct": ["d"], "expEn": "The 3-3-5 sequence rules out a zigzag. B at 298 is slightly under 300 and C at 266 is slightly under 270, so both are near the A levels: a regular flat. An expanded flat needs B above 300.", "expTh": "ลำดับ 3-3-5 ตัด zigzag ออก B ที่ 298 ต่ำกว่า 300 เล็กน้อยและ C ที่ 266 เลย 270 ไปเล็กน้อย จึงเป็น regular flat ส่วน expanded flat ต้องมี B สูงกว่า 300"}, {"id": "v1q37", "qType": "single", "diff": "medium", "text": "Within a bear market, a counter-trend rally begins at a low of 400. It advances in three waves to 440, falls in three waves to 392, then rallies in five waves to 462. What is the best label for this rally?", "choices": [{"id": "a", "letter": "A", "text": "A regular flat, because a flat is defined only by its 3-3-5 subdivision and not by where waves B and C end"}, {"id": "b", "letter": "B", "text": "A running flat, because wave B fell below 400 and wave C therefore finished beyond the top of wave A"}, {"id": "c", "letter": "C", "text": "An expanded flat, because wave B undercut the start of wave A and wave C ended beyond the end of wave A"}, {"id": "d", "letter": "D", "text": "A zigzag, because the five-wave advance to 462 is the final leg of a three-lettered structure"}], "correct": ["c"], "expEn": "The 3-3-5 count makes it a flat. B at 392 goes beyond the 400 start of A, and C at 462 goes beyond the 440 end of A, which defines an expanded flat. A running flat would have C ending below 440.", "expTh": "โครงสร้าง 3-3-5 เป็น flat โดย B ที่ 392 ต่ำกว่าจุดเริ่ม 400 และ C ที่ 462 สูงกว่าปลาย A ที่ 440 จึงเป็น expanded flat ถ้าเป็น running flat C จะจบต่ำกว่า 440"}, {"id": "v1q38", "qType": "single", "diff": "medium", "text": "Why is a single five-wave move against the prevailing trend not treated as a complete correction?", "choices": [{"id": "a", "letter": "A", "text": "Corrections must always have exactly three waves, so any five-wave move must be relabeled as a three-wave move"}, {"id": "b", "letter": "B", "text": "Corrections never form as impulses, so such a move is only part of a larger corrective pattern, such as wave A of a zigzag"}, {"id": "c", "letter": "C", "text": "Five-wave moves occur only in the direction of the trend, so a counter-trend five can never appear at any degree"}, {"id": "d", "letter": "D", "text": "Five-wave moves are legitimate corrections only when they retrace at least 61.8% of the prior trend segment"}], "correct": ["b"], "expEn": "Corrective patterns are never fives overall. A counter-trend five can be wave A of a zigzag, or a leg of a larger structure, so analysts wait for the rest of the pattern. Retracement size does not turn a five into a correction.", "expTh": "คลื่นปรับฐานโดยรวมไม่เคยเป็น impulse 5 คลื่น ดังนั้น 5 คลื่นสวนแนวโน้มจึงเป็นเพียงส่วนหนึ่ง เช่น wave A ของ zigzag ไม่ใช่การปรับฐานสมบูรณ์ ส่วนเปอร์เซ็นต์การย้อนไม่ได้เปลี่ยน 5 คลื่นให้เป็นคลื่นปรับฐาน"}, {"id": "v1q39", "qType": "single", "diff": "medium", "text": "What internal form can the final lettered leg of a zigzag take?", "choices": [{"id": "a", "letter": "A", "text": "Only a five-wave impulse, because an ending diagonal may appear solely as wave 5 of an impulse"}, {"id": "b", "letter": "B", "text": "A three-wave zigzag or a flat, because wave C is always corrective when it lies inside a correction"}, {"id": "c", "letter": "C", "text": "A contracting triangle, because wave C is the final leg of a pattern and so can end the sequence sideways"}, {"id": "d", "letter": "D", "text": "Either a five-wave impulse or an ending diagonal, because wave C is a motive wave in a 5-3-5 pattern"}], "correct": ["d"], "expEn": "Wave C of a zigzag is a motive wave. It is most often an impulse but may be an ending diagonal, just as a diagonal may end wave 5. It is not a corrective pattern.", "expTh": "wave C ของ zigzag เป็นคลื่นขับเคลื่อน ส่วนใหญ่เป็น impulse แต่ก็เป็น ending diagonal ได้ เช่นเดียวกับ wave 5 ที่เป็น ending diagonal ได้ ไม่ใช่รูปแบบปรับฐาน"}, {"id": "v1q40", "qType": "single", "diff": "medium", "text": "Which description best fits a typical wave C of a bear market?", "choices": [{"id": "a", "letter": "A", "text": "Devastating, broad and powerful, with the recognition that a bear market is under way and few places to hide"}, {"id": "b", "letter": "B", "text": "Hesitant and narrow, with most participants still convinced that the previous bull market is intact"}, {"id": "c", "letter": "C", "text": "Gentle and shallow, with volume contracting and sentiment gradually shifting toward complacency"}, {"id": "d", "letter": "D", "text": "Short and sharp, driven mainly by a handful of speculative issues while the broad market holds steady"}], "correct": ["a"], "expEn": "Wave C has the character of a third wave: powerful, wide and unmistakable, as nearly all stocks decline. The hesitant description, with the bull market still presumed intact, fits waves A and B rather than wave C.", "expTh": "wave C ในตลาดหมีมีลักษณะคล้าย third wave คือรุนแรงและกว้าง เกือบทุกหุ้นลดลงและคนส่วนใหญ่ตระหนักว่าเป็นตลาดหมี ส่วนตัวเลือกที่บอกว่าตลาดกระทิงยังไม่จบ เป็นลักษณะของ wave A และ B ไม่ใช่ wave C"}, {"id": "v1q41", "qType": "single", "diff": "medium", "text": "Wave 2 of an impulse has taken the form of a deep zigzag. Based on the guideline of alternation, which form should an analyst expect from wave 4?", "choices": [{"id": "a", "letter": "A", "text": "Another deep zigzag of similar proportions, since the guideline states that waves 2 and 4 should mirror one another"}, {"id": "b", "letter": "B", "text": "A diagonal ending-type pattern, since only impulsive structures can alternate with a preceding zigzag"}, {"id": "c", "letter": "C", "text": "A zigzag that retraces the same percentage of wave 3 as wave 2 retraced of wave 1, to keep symmetry"}, {"id": "d", "letter": "D", "text": "A sideways correction, such as a flat, a triangle or a double three, since wave 4 tends to differ from the sharp wave 2"}], "correct": ["d"], "expEn": "Alternation says that if wave 2 is sharp, wave 4 will likely be sideways, and vice versa. It is a guideline rather than a rule, so exceptions are possible.", "expTh": "หลัก alternation บอกว่าถ้า wave 2 เป็นแบบ sharp wave 4 มักเป็นแบบ sideways เช่น flat, triangle หรือ double three และกลับกัน แต่เป็นเพียงแนวทาง ไม่ใช่กฎ จึงมีข้อยกเว้นได้"}, {"id": "v1q42", "qType": "single", "diff": "medium", "text": "In the Fibonacci sequence 34, 55, 89, 144, the number 89 lies two places above 34. Which ratio does 34 divided by 89 approximate?", "choices": [{"id": "a", "letter": "A", "text": "0.618, the ratio obtained by dividing a Fibonacci number by the next one in the sequence"}, {"id": "b", "letter": "B", "text": "0.382, the ratio obtained by dividing a Fibonacci number by the one two places higher"}, {"id": "c", "letter": "C", "text": "0.236, the ratio obtained by dividing a Fibonacci number by the one three places higher"}, {"id": "d", "letter": "D", "text": "0.500, the ratio obtained by dividing a Fibonacci number by a number roughly twice its size"}], "correct": ["b"], "expEn": "34/89 = 0.382. Dividing by the next term gives 0.618 (34/55), and dividing by the term three places higher gives 0.236 (34/144).", "expTh": "34/89 = 0.382 หารด้วยตัวถัดไป (34/55) ได้ 0.618 และหารด้วยตัวที่สูงกว่าสามตำแหน่ง (34/144) ได้ 0.236"}, {"id": "v1q43", "qType": "single", "diff": "medium", "text": "A completed regular flat is examined at the next lower degree, with each lettered wave showing its standard subdivision. How many waves are there in total?", "choices": [{"id": "a", "letter": "A", "text": "13, from 5 waves in A, 3 waves in B and 5 waves in C"}, {"id": "b", "letter": "B", "text": "9, from 3 waves in each of the three lettered legs of the correction"}, {"id": "c", "letter": "C", "text": "11, from 3 waves in A, 3 waves in B and 5 waves in C"}, {"id": "d", "letter": "D", "text": "8, from a five-wave advance combined with a three-wave retracement"}], "correct": ["c"], "expEn": "A flat is 3-3-5, giving 3 + 3 + 5 = 11 subwaves. The 13-wave count belongs to a zigzag (5-3-5). Unlike the zigzag, the flat total is not a Fibonacci number.", "expTh": "flat เป็น 3-3-5 รวมเป็น 3 + 3 + 5 = 11 คลื่นย่อย ส่วน 13 คือ zigzag (5-3-5) และจำนวนรวมของ flat (11) ไม่ใช่เลข Fibonacci"}, {"id": "v1q44", "qType": "single", "diff": "medium", "text": "An analyst projects that wave 2 will give back 61.8% of a first wave that advanced from 100 to 160. What price marks the projected end of wave 2?", "choices": [{"id": "a", "letter": "A", "text": "About 122.9, which is 160 minus 61.8% of the 60-point advance"}, {"id": "b", "letter": "B", "text": "About 137.1, which is 160 minus 38.2% of the 60-point advance"}, {"id": "c", "letter": "C", "text": "About 98.9, which is 61.8% of the 160 price level taken as a percentage of the price"}, {"id": "d", "letter": "D", "text": "About 130.0, which is 160 minus 50% of the 60-point advance"}], "correct": ["a"], "expEn": "Retracements are measured on the length of the move: 0.618 x 60 = 37.08, so 160 - 37.08 = 122.92. Taking 61.8% of the price level gives 98.9, which is also below the 100 start and would break the wave 2 rule.", "expTh": "การย้อนวัดจากความยาวของคลื่น 0.618 x 60 = 37.08 ดังนั้น 160 - 37.08 = 122.92 ถ้าคิด 61.8% ของระดับราคา จะได้ 98.9 ซึ่งต่ำกว่าจุดเริ่มที่ 100 และจะละเมิดกฎของ wave 2"}, {"id": "v1q45", "qType": "single", "diff": "medium", "text": "Wave 1 ran from 100 to 150, wave 2 ended at 120, and wave 3 peaked at 220. Which candidate low for wave 4 would break a rule rather than merely depart from a typical guideline?", "choices": [{"id": "a", "letter": "A", "text": "A low of 181.8, because retracing exactly 38.2% of wave 3 is below the typical depth for a fourth wave"}, {"id": "b", "letter": "B", "text": "A low of 148, because it enters the price territory of wave 1, which ended at 150"}, {"id": "c", "letter": "C", "text": "A low of 170, because a fifty percent retracement of wave 3 is deeper than the guideline allows"}, {"id": "d", "letter": "D", "text": "A low of 158.2, because a fourth wave must never retrace more than 38.2% of the preceding third wave"}], "correct": ["b"], "expEn": "In a standard impulse wave 4 may not overlap wave 1's territory, so a low of 148 (below 150) breaks the rule. Lows of 181.8, 170 and 158.2 retrace 38.2%, 50% and 61.8% of wave 3 and remain legal.", "expTh": "ใน impulse มาตรฐาน wave 4 ห้ามล้ำเข้าไปในช่วงราคาของ wave 1 จุดต่ำ 148 ต่ำกว่า 150 จึงผิดกฎ ส่วน 181.8, 170 และ 158.2 คือการย้อน 38.2%, 50% และ 61.8% ของ wave 3 ซึ่งยังถูกต้อง"}, {"id": "v1q46", "qType": "single", "diff": "medium", "text": "In a W-X-Y bear-market correction, the first zigzag drops from 1,000 to 900 and the X leg bounces to 950. If the second zigzag is assumed equal in length to the first, what is its target?", "choices": [{"id": "a", "letter": "A", "text": "At 850, since wave Y starts at the end of X (950) and falls 100 points"}, {"id": "b", "letter": "B", "text": "At 800, since wave Y starts at the end of W (900) and falls 100 points"}, {"id": "c", "letter": "C", "text": "At 900, since wave Y equals wave W when it ends at the same price level as W did"}, {"id": "d", "letter": "D", "text": "At about 888, since wave Y is taken as 0.618 times wave W from the end of wave X"}], "correct": ["a"], "expEn": "Wave Y starts where X ends (950), so equality with W (100 points) puts the end at 850. Measuring from the end of W ignores the X rebound.", "expTh": "wave Y เริ่มจากปลาย X ที่ 950 ดังนั้นเมื่อ Y ยาวเท่า W (100 จุด) จะจบที่ 850 การวัดจากปลาย W เป็นการมองข้ามการดีดของ X"}, {"id": "v1q47", "qType": "single", "diff": "medium", "text": "In a zigzag, wave C ends short of the end of wave A. What does this truncation typically imply?", "choices": [{"id": "a", "letter": "A", "text": "Weak force in the larger trend, so the correction is likely to extend into a deeper double zigzag"}, {"id": "b", "letter": "B", "text": "A wave B that retraced exactly 100% of wave A, so wave C had too little room to travel further"}, {"id": "c", "letter": "C", "text": "A pattern that is invalid, since wave C of a zigzag must always end beyond the end of wave A"}, {"id": "d", "letter": "D", "text": "Unusually strong force in the larger trend that runs opposite to the correction, which makes such a truncation rare"}], "correct": ["d"], "expEn": "A truncated C wave is unusual and reflects very strong force in the larger trend, in the direction opposite to the correction. It is not a violation of any rule.", "expTh": "wave C ที่ truncate พบได้น้อย สะท้อนแรงของแนวโน้มใหญ่ที่แข็งแกร่งมากในทิศทางตรงข้ามกับการปรับฐาน ไม่ใช่การฝ่าฝืนกฎ"}, {"id": "v1q48", "qType": "single", "diff": "hard", "text": "After a top at 1,000, a correction unfolds: wave A (three waves) ends at 920, wave B (three waves) ends at 1,040, and wave C (five waves) ends at 945. Which pattern is this?", "choices": [{"id": "a", "letter": "A", "text": "An expanded flat, since wave B ends beyond the start of wave A, which by itself is enough to define the pattern"}, {"id": "b", "letter": "B", "text": "A regular flat, since wave B ends close to the start of wave A and wave C ends near the end of A"}, {"id": "c", "letter": "C", "text": "A running flat, since wave B ends beyond the start of wave A while wave C fails to reach the end of wave A"}, {"id": "d", "letter": "D", "text": "A truncated zigzag, since wave C is a five-wave decline that falls short of the low of wave A"}], "correct": ["c"], "expEn": "Wave B went beyond 1,000, to 1,040, as in an expanded flat, but wave C stopped at 945, 25 points above A's low of 920. This combination is a running flat, which is rare and signals a very strong underlying trend.", "expTh": "Wave B ขึ้นเกิน 1,000 ไปที่ 1,040 เหมือน expanded flat แต่ wave C หยุดที่ 945 ซึ่งสูงกว่าจุดต่ำของ A ที่ 920 อยู่ 25 จุด จึงเป็น running flat ซึ่งพบได้น้อยและบ่งชี้แนวโน้มหลักที่แข็งแกร่งมาก"}, {"id": "v1q49", "qType": "single", "diff": "hard", "text": "A top is at 1,200. Wave A of an expanded flat ends at 1,100 and wave B ends at 1,236. If wave C is projected at 1.618 times wave A, where does it end?", "choices": [{"id": "a", "letter": "A", "text": "About 1,038, found by subtracting 161.8 points from the start of wave A at 1,200"}, {"id": "b", "letter": "B", "text": "About 938, found by subtracting 161.8 points from the end of wave A at 1,100"}, {"id": "c", "letter": "C", "text": "About 1,074, found by subtracting 161.8 points from the end of wave B"}, {"id": "d", "letter": "D", "text": "About 1,136, found by subtracting 100 points from the end of wave B"}], "correct": ["c"], "expEn": "Wave A is 100 points and wave C is projected from the end of B: 1,236 - 161.8 = 1,074.2. This is below A's low at 1,100, as required for an expanded flat. Wave B went to 136% of A.", "expTh": "Wave A ยาว 100 จุด และ wave C คำนวณจากปลาย B: 1,236 - 161.8 = 1,074.2 ซึ่งต่ำกว่าจุดต่ำของ A ที่ 1,100 ตามที่ expanded flat ต้องการ โดย wave B ขึ้นไป 136% ของ A"}, {"id": "v1q50", "qType": "single", "diff": "hard", "text": "Wave 1 of an advance ended at 900, and wave 3 peaked at 1,000. Wave 4 then unfolds as three waves down to 940, three waves up to 1,030, and five waves down to 955, after which prices surge. What is the best assessment?", "choices": [{"id": "a", "letter": "A", "text": "A running flat that obeys the rule: wave 4 stays above 900, and the truncated wave C signals a strong underlying uptrend"}, {"id": "b", "letter": "B", "text": "An expanded flat that obeys the rule, since wave B above 1,000 means wave C must have gone below 940"}, {"id": "c", "letter": "C", "text": "A violation of the overlap rule, since wave C fell within the price territory covered by wave 1 and wave 2"}, {"id": "d", "letter": "D", "text": "An invalid count, since a failure to reach the end of wave A means the decline must be relabeled as an impulse"}], "correct": ["a"], "expEn": "B (1,030) exceeds the start of A (1,000) and C (955) fails to reach the end of A (940): a running flat. Its low of 940 remains above wave 1's top of 900, so no overlap occurs. A strong move after it is typical.", "expTh": "B ที่ 1,030 เกินจุดเริ่มของ A (1,000) และ C ที่ 955 ไปไม่ถึงจุดสิ้นสุดของ A (940) จึงเป็น running flat ต่ำสุด 940 ยังอยู่เหนือยอด wave 1 ที่ 900 จึงไม่ overlap และแรงขึ้นต่อมาเป็นลักษณะทั่วไป"}];
+const V2_BANK = [{"id": "v2q01", "qType": "single", "diff": "medium", "text": "A counter-trend rally off a bottom at 4,000 is unfolding as a zigzag. Wave A tops at 4,420, wave B pulls back to 4,200 (about 52% of A), and wave C is expected to equal wave A. Where should wave C end?", "choices": [{"id": "a", "letter": "A", "text": "About 4,840, which is the wave A high of 4,420 plus the 420-point length of wave A"}, {"id": "b", "letter": "B", "text": "About 4,880, which is the wave B low of 4,200 plus 1.618 times the 420-point wave A"}, {"id": "c", "letter": "C", "text": "About 4,460, which is the wave B low of 4,200 plus 0.618 times the 420-point wave A"}, {"id": "d", "letter": "D", "text": "About 4,620, which is the wave B low of 4,200 plus the 420-point length of wave A"}], "correct": ["d"], "expEn": "Wave A is 420 points (4,000 to 4,420), and a wave C equal to A is measured from the end of wave B: 4,200 + 420 = 4,620. Adding 420 to the wave A high mixes up the starting point of wave C, and 1.618 or 0.618 times A are different relationships than the equality stated.", "expTh": "wave A ยาว 420 จุด (4,000 ถึง 4,420) และ wave C ที่เท่ากับ A ต้องวัดจากจุดสิ้นสุดของ wave B คือ 4,200 + 420 = 4,620 การบวก 420 เข้ากับจุดสูงของ wave A เป็นการวัดจากจุดเริ่มผิด ส่วน 1.618 หรือ 0.618 เท่าของ A เป็นอัตราส่วนอื่นที่โจทย์ไม่ได้กำหนด"}, {"id": "v2q02", "qType": "single", "diff": "medium", "text": "A decline from 6,400 reaches 5,900 in three waves. A three-wave rally then lifts price to 6,380, and a five-wave decline follows to 5,870. Which pattern best describes the A-B-C sequence?", "choices": [{"id": "a", "letter": "A", "text": "A regular flat, because wave A has three waves, B retraced about 96% of A, and C ended only 30 points past A's low"}, {"id": "b", "letter": "B", "text": "A zigzag, because wave C ended below the wave A low and unfolded in the five-wave form that zigzags require"}, {"id": "c", "letter": "C", "text": "An expanded flat, because wave C finished beyond the end of wave A, which is what separates expanded from regular flats"}, {"id": "d", "letter": "D", "text": "A running flat, because wave B came very close to the start of wave A while C overshot the low of wave A slightly"}], "correct": ["a"], "expEn": "In a flat, wave A has three waves (3-3-5), B retraces at least about 90% of A (here 480 of 500 points = 96%), and C ends slightly beyond A. A zigzag needs a five-wave A and a shallow B, and an expanded flat needs B to exceed the start of A.", "expTh": "ใน flat wave A เป็น 3 คลื่น (3-3-5), wave B ย้อนอย่างน้อยราว 90% ของ A (ที่นี่ 480 จาก 500 จุด = 96%) และ wave C จบเลย A เพียงเล็กน้อย zigzag ต้องมี A เป็นห้าคลื่นและ B ย้อนตื้น ส่วน expanded flat ต้องให้ B เลยจุดเริ่มของ A"}, {"id": "v2q03", "qType": "single", "diff": "hard", "text": "A correction is unfolding as an expanded flat. Wave A fell from 5,000 to 4,600, wave B is expected to rise to 123.6% of wave A (measured from the A low), and wave C is expected to be 161.8% of wave A. Where does wave C end?", "choices": [{"id": "a", "letter": "A", "text": "About 3,953, which is the wave A low of 4,600 less 647 points"}, {"id": "b", "letter": "B", "text": "About 4,694, which is the wave B high near 5,094 less 400 points"}, {"id": "c", "letter": "C", "text": "About 4,447, which is the wave B high near 5,094 less 647 points"}, {"id": "d", "letter": "D", "text": "About 4,353, which is the wave A starting level of 5,000 less 647 points"}], "correct": ["c"], "expEn": "Wave A is 400 points, so B = 4,600 + 1.236 x 400 = about 5,094 and C = 1.618 x 400 = about 647 points long. Measured from the B high, C ends near 5,094 - 647 = 4,447. Subtracting from the A low or A start uses the wrong base, and 400 points would be C equal to A.", "expTh": "wave A ยาว 400 จุด ดังนั้น B = 4,600 + 1.236 x 400 ≈ 5,094 และ C = 1.618 x 400 ≈ 647 จุด วัดจากจุดสูงของ B ได้ 5,094 - 647 ≈ 4,447 การลบจากจุดต่ำของ A หรือจุดเริ่มของ A ใช้ฐานผิด และ 400 จุดคือกรณี C เท่ากับ A"}, {"id": "v2q04", "qType": "single", "diff": "hard", "text": "In a bear market, wave 3 bottomed at 3,000. A three-wave rally (A) reached 3,240, wave B fell to 2,952 in three waves, and a five-wave rally (C) topped at 3,225, short of the wave A high. What does this pattern imply?", "choices": [{"id": "a", "letter": "A", "text": "An expanded flat, whose C wave failing to reach A's high signals that the bear market is exhausted and a reversal is near"}, {"id": "b", "letter": "B", "text": "A running flat, whose C wave failing to reach A's high signals a strong underlying downtrend, so a forceful wave 5 decline is likely"}, {"id": "c", "letter": "C", "text": "A regular flat, since wave B dipped under the start of A, which is typical of a trend that is losing downward momentum"}, {"id": "d", "letter": "D", "text": "A zigzag, since the five-wave C wave topped under A, which warns that the downtrend has ended and a rally should follow"}], "correct": ["b"], "expEn": "Wave B went beyond the start of wave A (below 3,000) and C failed to reach the end of A (3,240), which defines a running flat. This form reflects a very strong underlying trend, so the next move in the trend direction tends to be powerful. An expanded flat requires C to exceed A's end.", "expTh": "wave B ลงต่ำกว่าจุดเริ่มของ wave A (ต่ำกว่า 3,000) และ C ไปไม่ถึงปลาย A (3,240) ซึ่งเป็นนิยามของ running flat รูปแบบนี้สะท้อนแนวโน้มหลักที่แข็งแกร่งมาก คลื่นถัดไปในทิศทางแนวโน้มมักรุนแรง ส่วน expanded flat ต้องให้ C เลยปลาย A"}, {"id": "v2q05", "qType": "single", "diff": "medium", "text": "A correction begins with a three-wave decline from 6,000 to 5,500. If the pattern is to be a flat rather than a zigzag, what is the minimum level at which wave B should end, using the guideline that B retraces at least 90% of wave A?", "choices": [{"id": "a", "letter": "A", "text": "About 5,809, which is only a 61.8% retracement of the 500-point wave A from the A low"}, {"id": "b", "letter": "B", "text": "About 5,750, which is a 50% retracement of the 500-point wave A from the A low"}, {"id": "c", "letter": "C", "text": "About 5,691, which is just a 38.2% retracement of the 500-point wave A from the A low"}, {"id": "d", "letter": "D", "text": "About 5,950, which is 90% of the 500-point wave A retraced from the A low"}], "correct": ["d"], "expEn": "90% of 500 points is 450, and 5,500 + 450 = 5,950. The 61.8%, 50% and 38.2% levels are the usual zigzag-type retracements of wave A and would make the B wave too shallow for a flat.", "expTh": "90% ของ 500 จุดคือ 450 และ 5,500 + 450 = 5,950 ระดับ 61.8%, 50% และ 38.2% เป็นการย้อนแบบที่พบใน zigzag ซึ่งทำให้ wave B ตื้นเกินกว่าจะเป็น flat"}, {"id": "v2q06", "qType": "single", "diff": "hard", "text": "An analyst studying a decline logs seven consecutive legs with these subdivisions: five waves, three waves, five waves, three waves, five waves, three waves, five waves. No leg overlaps in a way that fits an impulse. Which interpretation fits the count?", "choices": [{"id": "a", "letter": "A", "text": "A triple zigzag W-X-Y-X-Z, since three separate legs each contain five waves"}, {"id": "b", "letter": "B", "text": "A double zigzag W-X-Y, made of a 5-3-5 zigzag, a three-wave X, and a second 5-3-5 zigzag"}, {"id": "c", "letter": "C", "text": "A double flat, since a corrective sequence containing two sets of 3-3-5 legs is linked by a connecting X wave"}, {"id": "d", "letter": "D", "text": "An impulse with extended wave 3 and wave 5, since five-wave legs alternate with three-wave legs"}], "correct": ["b"], "expEn": "Seven legs of 5-3-5, 3, 5-3-5 are a zigzag, an X wave, and a second zigzag, which is a double zigzag. A triple zigzag needs three zigzags and two X waves (eleven legs), and a flat starts with a three-wave A, not five.", "expTh": "เจ็ดขาแบบ 5-3-5, 3, 5-3-5 คือ zigzag หนึ่งชุด คลื่น X และ zigzag อีกชุด จึงเป็น double zigzag ส่วน triple zigzag ต้องมี zigzag สามชุดกับ X สองคลื่น (รวมสิบเอ็ดขา) และ flat เริ่มด้วย A สามคลื่น ไม่ใช่ห้า"}, {"id": "v2q07", "qType": "single", "diff": "hard", "text": "An advance began at 1,000. Wave 1 ended at 1,500, wave 2 was a sharp zigzag down to 1,120, and wave 3 ran to 2,300. Applying alternation and the common 38.2% depth for wave 4, which expectation is most consistent?", "choices": [{"id": "a", "letter": "A", "text": "A sideways correction such as a flat, with its low near 1,849, which is 38.2% of wave 3 retraced"}, {"id": "b", "letter": "B", "text": "Another sharp zigzag that drops to about 1,571, which is 61.8% of wave 3 retraced"}, {"id": "c", "letter": "C", "text": "A flat that sinks to about 1,449, which is roughly 72% of wave 3 retraced and just under the wave 1 high"}, {"id": "d", "letter": "D", "text": "A zigzag that returns to the wave 2 low near 1,120, which is a complete retracement of wave 3"}], "correct": ["a"], "expEn": "Wave 3 is 1,180 points (1,120 to 2,300), and 38.2% of that is about 451, so a shallow flat would end near 2,300 - 451 = 1,849. Alternation calls for a sideways pattern after a sharp wave 2, and a drop below the wave 1 high at 1,500 would violate the overlap rule.", "expTh": "wave 3 ยาว 1,180 จุด (1,120 ถึง 2,300) 38.2% ของนี้ราว 451 จุด flat ตื้นจึงจบใกล้ 2,300 - 451 = 1,849 หลัง wave 2 ที่แหลมคม alternation ชี้ว่า wave 4 ควรเป็นแบบ sideways และการลงต่ำกว่าจุดสูงของ wave 1 ที่ 1,500 จะผิดกฎการซ้อนทับ"}, {"id": "v2q08", "qType": "single", "diff": "hard", "text": "Wave 1 rose from 4,000 to 4,800. Wave 2 is an expanded flat in which A ended at 4,300 and B ended at 4,918. Which candidate length for wave C would invalidate the wave 2 count?", "choices": [{"id": "a", "letter": "A", "text": "A C wave of 809 points (1.618 times A), ending near 4,109, which is above the start of wave 1"}, {"id": "b", "letter": "B", "text": "A C wave of 880 points, ending near 4,038, which is still above the start of wave 1"}, {"id": "c", "letter": "C", "text": "A C wave of 930 points, ending near 3,988, which is below the start of wave 1"}, {"id": "d", "letter": "D", "text": "A C wave of 916 points, ending near 4,002, which holds just above the start of wave 1"}], "correct": ["c"], "expEn": "Wave 2 may not retrace more than 100% of wave 1, so C must end above 4,000, which allows a maximum length of 918 points from the 4,918 B high. A 930-point C ends at 3,988, below the wave 1 start. The other three ends, 4,109, 4,038 and 4,002, all stay above it.", "expTh": "wave 2 ห้ามย้อนเกิน 100% ของ wave 1 จึงต้องจบเหนือ 4,000 ทำให้ C ยาวได้สูงสุด 918 จุดจากจุดสูงของ B ที่ 4,918 C ยาว 930 จุดจบที่ 3,988 ต่ำกว่าจุดเริ่มของ wave 1 ส่วนอีกสามตัวเลือกจบที่ 4,109, 4,038 และ 4,002 ซึ่งยังอยู่เหนือจุดนั้น"}, {"id": "v2q09", "qType": "single", "diff": "hard", "text": "A five-wave decline from 7,200 to 6,500 is followed by a three-wave rebound to 6,860 and then a five-wave decline to 5,893, completing a zigzag. What is wave C's length as a multiple of wave A?", "choices": [{"id": "a", "letter": "A", "text": "About 1.87 times wave A, since C fell 1,307 points from the start of wave A against A's 700 points"}, {"id": "b", "letter": "B", "text": "About 0.87 times wave A, since C fell 607 points from the A low against A's 700 points"}, {"id": "c", "letter": "C", "text": "About 1.38 times wave A, since C fell 967 points from the B high against A's 700 points"}, {"id": "d", "letter": "D", "text": "About 0.51 times wave A, since the B rebound of 360 points is compared with A's 700 points"}], "correct": ["c"], "expEn": "C is measured from the end of B: 6,860 - 5,893 = 967 points, and 967 / 700 is about 1.38, a Fibonacci-type ratio. Measuring from the start of A (1,307) or the end of A (607) uses the wrong base, and 360 / 700 is the B retracement, not C.", "expTh": "C วัดจากจุดสิ้นสุดของ B คือ 6,860 - 5,893 = 967 จุด และ 967 / 700 ≈ 1.38 ซึ่งเป็นอัตราส่วนแบบ Fibonacci การวัดจากจุดเริ่มของ A (1,307) หรือปลาย A (607) ใช้ฐานผิด และ 360 / 700 คือการย้อนของ B ไม่ใช่ C"}, {"id": "v2q10", "qType": "single", "diff": "hard", "text": "Wave 1 rose from 2,000 to 2,800. Wave 2 is a zigzag in which A fell to 2,560 and B rallied to 2,690. If wave C equals 1.618 times wave A, where does it end and how much of wave 1 is retraced?", "choices": [{"id": "a", "letter": "A", "text": "About 2,450, a retracement of roughly 44% of wave 1, since C equals A in length"}, {"id": "b", "letter": "B", "text": "About 2,302, a retracement of roughly 62% of wave 1"}, {"id": "c", "letter": "C", "text": "About 2,062, a retracement of roughly 92% of wave 1, since C is 2.618 times A"}, {"id": "d", "letter": "D", "text": "About 2,542, a retracement of roughly 32% of wave 1, since C is 0.618 times A"}], "correct": ["b"], "expEn": "Wave A is 240 points, so C = 1.618 x 240 = about 388 points below the B high: 2,690 - 388 = about 2,302. Wave 1 is 800 points and 2,800 - 2,302 = 498, or about 62%, so the C target coincides with the 61.8% retracement of wave 1.", "expTh": "wave A ยาว 240 จุด ดังนั้น C = 1.618 x 240 ≈ 388 จุดใต้จุดสูงของ B คือ 2,690 - 388 ≈ 2,302 wave 1 ยาว 800 จุด และ 2,800 - 2,302 = 498 หรือราว 62% ดังนั้นเป้าหมายของ C ตรงกับการย้อน 61.8% ของ wave 1"}, {"id": "v2q11", "qType": "single", "diff": "hard", "text": "A decline from 1,500 begins an A-B-C zigzag. Its first leg falls in five waves with these ends: 1,440, 1,475, 1,425, 1,456 and 1,415. Wave 4 at 1,456 overlaps the end of wave 1 at 1,440, and the five waves fall within converging boundary lines. What follows?", "choices": [{"id": "a", "letter": "A", "text": "The overlap is acceptable because wave A of a zigzag can be a leading diagonal, so the A-B-C zigzag count stands"}, {"id": "b", "letter": "B", "text": "The count is invalid because wave A of a zigzag must be a true impulse, and any overlap between waves 1 and 4 voids it"}, {"id": "c", "letter": "C", "text": "The count must become a flat, since overlapping waves inside the first leg are a signature of wave A in a flat"}, {"id": "d", "letter": "D", "text": "The overlap is acceptable only for wave C of a zigzag, so this leg cannot be wave A and the count must be revised"}], "correct": ["a"], "expEn": "Leading diagonals can appear in wave 1 of an impulse or in wave A of a zigzag, and overlap between wave 4 and wave 1 is a defining feature of a diagonal. The five-wave leg keeps the 5-3-5 zigzag structure intact, whereas a flat needs a three-wave A.", "expTh": "leading diagonal พบได้ใน wave 1 ของ impulse หรือใน wave A ของ zigzag และการซ้อนทับระหว่าง wave 4 กับ wave 1 เป็นลักษณะของ diagonal ขาห้าคลื่นนี้ยังรักษาโครงสร้าง 5-3-5 ของ zigzag ไว้ ขณะที่ flat ต้องมี A สามคลื่น"}, {"id": "v2q12", "qType": "single", "diff": "hard", "text": "An advance has wave 1 from 1,000 to 1,400, wave 2 at 1,200 and an extended wave 3 to 2,000. Wave 4 is a running flat: A to 1,780, B to 2,044, and C ending at 1,790. If wave 5 equals wave 1 in length, where does it end?", "choices": [{"id": "a", "letter": "A", "text": "About 2,400, which is the wave 3 high of 2,000 plus the 400-point length of wave 1"}, {"id": "b", "letter": "B", "text": "About 2,180, which is the wave A low of 1,780 plus the 400-point length of wave 1"}, {"id": "c", "letter": "C", "text": "About 2,284, which is the wave 4 low of 1,790 plus 0.618 times the 800-point wave 3"}, {"id": "d", "letter": "D", "text": "About 2,190, which is the wave 4 low of 1,790 plus the 400-point length of wave 1"}], "correct": ["d"], "expEn": "When wave 3 is extended, waves 5 and 1 tend toward equality, with wave 5 measured from the end of wave 4. Wave 1 is 400 points, and the running flat ends at 1,790, so wave 5 targets about 1,790 + 400 = 2,190. Using the A low or the wave 3 high gives the wrong base.", "expTh": "เมื่อ wave 3 ขยายตัว wave 5 กับ wave 1 มีแนวโน้มเท่ากัน โดยวัด wave 5 จากจุดสิ้นสุดของ wave 4 wave 1 ยาว 400 จุด และ running flat จบที่ 1,790 เป้าหมายของ wave 5 จึงราว 1,790 + 400 = 2,190 การใช้จุดต่ำของ A หรือจุดสูงของ wave 3 เป็นฐานผิด"}, {"id": "v2q13", "qType": "single", "diff": "hard", "text": "An advance has a wave 1 high of 4,200 and a wave 3 high of 5,200. Wave 4 begins; A falls to 4,900 and B rallies to 5,290 in three waves. An analyst wants to relabel wave 3 as unfinished. What is the best response?", "choices": [{"id": "a", "letter": "A", "text": "Relabel the move: any price above the wave 3 high means wave 3 continued, so the dip to 4,900 becomes wave ii of wave 3"}, {"id": "b", "letter": "B", "text": "Reject wave 4 entirely: wave 4 may not retrace to a point where wave B rises above the high of wave 3"}, {"id": "c", "letter": "C", "text": "Keep the flat count: B of an expanded flat ends beyond the start of A, here the wave 3 high, so what matters is a five-wave C staying above 4,200"}, {"id": "d", "letter": "D", "text": "Keep the flat count only if wave B reverses before it exceeds 5,200, since B may not pass the wave 3 high"}], "correct": ["c"], "expEn": "Wave B of an expanded flat ends beyond the start of wave A, which here is the wave 3 high, so 5,290 is normal. The count remains valid provided B is three waves and the subsequent C wave in five waves does not enter wave 1's range at 4,200.", "expTh": "wave B ของ expanded flat จบเลยจุดเริ่มของ wave A ซึ่งในที่นี้คือจุดสูงของ wave 3 ดังนั้น 5,290 เป็นเรื่องปกติ การนับยังใช้ได้ตราบที่ B เป็นสามคลื่น และ C ห้าคลื่นที่ตามมาไม่ลงเข้าเขตของ wave 1 ที่ 4,200"}, {"id": "v2q14", "qType": "single", "diff": "hard", "text": "Wave 1 rose from 3,000 to 4,000. Wave 2 is a double zigzag: W fell to 3,600, X rose to 3,780, and Y is expected to equal W. Where does Y end, and is the wave 2 count acceptable?", "choices": [{"id": "a", "letter": "A", "text": "Near 3,380, a 38% retracement of wave 1, so the count is acceptable because it stays above the wave 1 start of 3,000"}, {"id": "b", "letter": "B", "text": "Near 3,200, an 80% retracement of wave 1, so the count is acceptable because Y measured from the W low stays above 3,000"}, {"id": "c", "letter": "C", "text": "Near 2,980, below the start of wave 1, so the count is invalid because wave 2 may not retrace more than 100% of wave 1"}, {"id": "d", "letter": "D", "text": "Near 3,380, a 62% retracement of wave 1, so the count is acceptable because it stays above the wave 1 start of 3,000"}], "correct": ["d"], "expEn": "W is 400 points, and Y equal to W is measured from the end of X: 3,780 - 400 = 3,380. Wave 1 is 1,000 points, and 4,000 - 3,380 = 620, so wave 2 retraces 62% and stays above 3,000. Measuring Y from the W low gives 3,200, the wrong base.", "expTh": "W ยาว 400 จุด และ Y ที่เท่ากับ W วัดจากปลาย X คือ 3,780 - 400 = 3,380 wave 1 ยาว 1,000 จุด และ 4,000 - 3,380 = 620 ดังนั้น wave 2 ย้อน 62% และยังอยู่เหนือ 3,000 การวัด Y จากจุดต่ำของ W ได้ 3,200 ซึ่งใช้ฐานผิด"}, {"id": "v2q15", "qType": "single", "diff": "hard", "text": "A market falls from 9,000 to 8,600 in three waves (A), rallies to 9,150 in three waves (B), and then drops to 8,520 in three waves. An analyst declares an expanded flat complete because 8,520 is below the wave A low. What is wrong with this?", "choices": [{"id": "a", "letter": "A", "text": "Nothing is wrong, because wave C of an expanded flat may have three waves whenever it ends below the wave A low"}, {"id": "b", "letter": "B", "text": "Wave C of a flat must unfold in five waves, so a three-wave drop cannot be a finished C wave and the count needs revision"}, {"id": "c", "letter": "C", "text": "Wave C must end exactly at the wave A low of 8,600, so a drop to 8,520 shows that the flat is invalid"}, {"id": "d", "letter": "D", "text": "Wave B should have ended below 9,000, so a rally to 9,150 shows that the pattern cannot be any kind of flat"}], "correct": ["b"], "expEn": "In a flat the sequence is 3-3-5, so wave C is an impulse (or ending diagonal) with five waves. A three-wave decline must be reconsidered, for example as part of a longer correction. Exceeding the A low is allowed, and B above 9,000 is exactly what expanded flats do.", "expTh": "ใน flat ลำดับคือ 3-3-5 ดังนั้น wave C เป็น impulse (หรือ ending diagonal) ห้าคลื่น การลงสามคลื่นต้องตีความใหม่ เช่นเป็นส่วนของการปรับฐานที่ยาวกว่า การเลยจุดต่ำของ A ทำได้ และ B เหนือ 9,000 เป็นสิ่งที่ expanded flat ทำอยู่แล้ว"}, {"id": "v2q16", "qType": "single", "diff": "hard", "text": "Wave 3 began at 3,500 and unfolded as i to 3,900, ii to 3,700, iii to 4,600, iv to 4,350, and v to 4,900. Wave 4 is expected to be a zigzag. According to the guideline about the fourth wave of one lesser degree, where is wave 4 most likely to end?", "choices": [{"id": "a", "letter": "A", "text": "Within the range of wave iv, roughly between 4,350 and 4,600"}, {"id": "b", "letter": "B", "text": "Within the range of wave ii, roughly between 3,700 and 3,900"}, {"id": "c", "letter": "C", "text": "Near the top of wave v, roughly between 4,700 and 4,900"}, {"id": "d", "letter": "D", "text": "Back at the wave 2 low, roughly between 3,500 and 3,700"}], "correct": ["a"], "expEn": "A correction tends to end within the price range of the fourth wave of one lesser degree. Here that is wave iv, which spans 4,600 (the iii high) down to 4,350. The wave ii range and wave 2 low would be a far deeper retracement, and 4,700 to 4,900 would barely be a correction.", "expTh": "การปรับฐานมักจบในช่วงราคาของ wave สี่ในดีกรีที่เล็กลงหนึ่งระดับ ในที่นี้คือ wave iv ซึ่งครอบคลุมจาก 4,600 (จุดสูงของ iii) ลงถึง 4,350 ช่วงของ wave ii และจุดต่ำของ wave 2 คือการย้อนที่ลึกกว่ามาก และ 4,700 ถึง 4,900 แทบไม่ใช่การปรับฐาน"}, {"id": "v2q17", "qType": "single", "diff": "hard", "text": "A zigzag decline starts at 1,000 at bar 0. Wave A bottoms at 900 on bar 10, and wave B peaks at 960 on bar 18. A trendline drawn from the start through the B peak is copied parallel through the A low. What value does that base line show at bar 28?", "choices": [{"id": "a", "letter": "A", "text": "About 860, the A low of 900 less the same 40-point fall that the start-to-B line makes over 18 bars"}, {"id": "b", "letter": "B", "text": "About 720, from a slope of 10 points per bar between the start and the A low"}, {"id": "c", "letter": "C", "text": "About 938, which is where the original line through the B peak stands at that bar"}, {"id": "d", "letter": "D", "text": "About 820, from a slope of roughly 4.4 points per bar projected from the A low"}], "correct": ["a"], "expEn": "The line from (bar 0, 1,000) through (bar 18, 960) falls 40 points over 18 bars. Copied through the A low at bar 10, it falls another 40 points by bar 28, giving 900 - 40 = 860. 938 is the original upper line, and the other values use wrong slopes.", "expTh": "เส้นจาก (แท่ง 0, 1,000) ผ่านจุดสูงของ B (แท่ง 18, 960) ลดลง 40 จุดใน 18 แท่ง เมื่อลากขนานผ่านจุดต่ำของ A ที่แท่ง 10 จะลดลงอีก 40 จุดเมื่อถึงแท่ง 28 ได้ 900 - 40 = 860 ส่วน 938 คือเส้นบนเดิม และค่าอื่นใช้ความชันผิด"}, {"id": "v2q18", "qType": "single", "diff": "medium", "text": "Wave 3 rose from 1,200 to 2,000 (800 points). Wave 4 is a regular flat with A at 1,820, B at 1,985, and C at 1,780. How much of wave 3 did wave 4 retrace, and is the wave 1 high of 1,500 respected?", "choices": [{"id": "a", "letter": "A", "text": "About 22.5%, and yes, because the A low of 1,820 is the true extreme of the flat"}, {"id": "b", "letter": "B", "text": "About 55%, and no, because C has to fall back below the wave 1 high at 1,500 first"}, {"id": "c", "letter": "C", "text": "About 27.5%, and yes, because the flat's low of 1,780 stays well above 1,500"}, {"id": "d", "letter": "D", "text": "About 37.5%, and yes, because B retraced 165 points of the 180-point wave A"}], "correct": ["c"], "expEn": "The flat's lowest point is the C low of 1,780, so wave 4 retraced 2,000 - 1,780 = 220 points, or 220 / 800 = 27.5% of wave 3. That is shallow, and 1,780 remains above the wave 1 high of 1,500.", "expTh": "จุดต่ำสุดของ flat คือจุดต่ำของ C ที่ 1,780 ดังนั้น wave 4 ย้อน 2,000 - 1,780 = 220 จุด หรือ 220 / 800 = 27.5% ของ wave 3 ซึ่งตื้น และ 1,780 ยังเหนือจุดสูงของ wave 1 ที่ 1,500"}, {"id": "v2q19", "qType": "single", "diff": "hard", "text": "Four decline-then-recovery-then-decline sequences each begin at 6,000 and have A ending at 5,700. Which one is a running flat?", "choices": [{"id": "a", "letter": "A", "text": "B high 6,060 and C low 5,610, so B exceeded the start of A and C finished beyond A's low"}, {"id": "b", "letter": "B", "text": "B high 6,040 and C low 5,720, so B exceeded the start of A while C stopped short of A's low"}, {"id": "c", "letter": "C", "text": "B high 5,980 and C low 5,680, so B nearly reached the start of A and C slightly passed A's low"}, {"id": "d", "letter": "D", "text": "B high 5,850 and C low 5,420, so B stayed shallow while C ran far beyond A's low"}], "correct": ["b"], "expEn": "A running flat has B beyond the start of A (6,040 above 6,000) and C failing to reach A's end (5,720 above 5,700). The 6,060/5,610 set is an expanded flat, 5,980/5,680 is a regular flat, and 5,850/5,420 has a shallow B and a long C, like a zigzag.", "expTh": "running flat มี B เลยจุดเริ่มของ A (6,040 สูงกว่า 6,000) และ C ไปไม่ถึงปลาย A (5,720 สูงกว่า 5,700) ชุด 6,060/5,610 คือ expanded flat, 5,980/5,680 คือ regular flat และ 5,850/5,420 มี B ตื้นกับ C ยาว คล้าย zigzag"}, {"id": "v2q20", "qType": "single", "diff": "hard", "text": "An advance shows a wave 1 high at 3,400 and a wave 3 high at 3,900. Wave 4 unfolds as a flat: A at 3,620, B at 3,880, and C at 3,380. An analyst keeps the five-wave impulse label. What is the proper assessment?", "choices": [{"id": "a", "letter": "A", "text": "The label holds, because overlap is allowed inside a flat, since wave C is only a sub-wave and not the full wave 4"}, {"id": "b", "letter": "B", "text": "The label holds, because wave 4 only needs to stay above the wave 2 low rather than the wave 1 high"}, {"id": "c", "letter": "C", "text": "The label fails, because wave B at 3,880 came within 20 points of the wave 3 high, which makes the flat too shallow"}, {"id": "d", "letter": "D", "text": "The impulse label fails, because the C low of 3,380 falls below the wave 1 high of 3,400, so the count must be reconsidered"}], "correct": ["d"], "expEn": "In an impulse, wave 4 may not enter the price territory of wave 1, and the whole of wave 4, including C, counts. The C low of 3,380 is below the wave 1 high of 3,400, so the count must change. A B wave near or above the wave 3 high is perfectly normal in a flat.", "expTh": "ใน impulse wave 4 ห้ามเข้าเขตราคาของ wave 1 และทั้ง wave 4 รวมถึง C ถูกนับ จุดต่ำของ C ที่ 3,380 ต่ำกว่าจุดสูงของ wave 1 ที่ 3,400 จึงต้องเปลี่ยนการนับ ส่วน B ใกล้หรือเหนือจุดสูงของ wave 3 เป็นเรื่องปกติของ flat"}];
+const V3_BANK = [{"id": "v3q01", "qType": "multi", "diff": "medium", "text": "Which statements correctly describe the internal structure and behavior of a zigzag correction? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave A subdivides into five waves, as an impulse or a leading diagonal"}, {"id": "b", "letter": "B", "text": "Wave A subdivides into three waves, because every leg of a correction must be a three"}, {"id": "c", "letter": "C", "text": "Wave C subdivides into five waves and normally travels beyond the end of wave A"}, {"id": "d", "letter": "D", "text": "Wave B subdivides into three waves and ends short of the origin of wave A"}], "correct": ["a", "c", "d"], "expEn": "A zigzag is 5-3-5: waves A and C are motive (impulse or diagonal), B is a three that does not retrace all of A, and C normally passes the end of A. Wave A as a three would describe a flat, not a zigzag.", "expTh": "zigzag มีโครงสร้าง 5-3-5 คือ wave A และ C เป็น motive (impulse หรือ diagonal) ส่วน B เป็น three และไม่ย้อนกลับถึงจุดเริ่มของ A โดย C มักไปเกินปลายของ A ถ้า wave A เป็น three จะเป็นลักษณะของ flat ไม่ใช่ zigzag"}, {"id": "v3q02", "qType": "multi", "diff": "medium", "text": "A downward zigzag runs from wave A's start at 240 to its low at 200, then wave B rallies to 220. Which statements are correct? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "A wave C of 1.618 times wave A would end near 140, measured down from the end of wave B"}, {"id": "b", "letter": "B", "text": "A wave C low of 205 would be a truncation, because it fails to pass wave A's low of 200"}, {"id": "c", "letter": "C", "text": "A wave C equal to wave A would end at 180, measured down from the end of wave B"}, {"id": "d", "letter": "D", "text": "Wave B retraced exactly half of wave A, which fits a zigzag"}], "correct": ["b", "c", "d"], "expEn": "Wave A is 40 points and B recovered 20 (50%). C equal to A ends at 220 - 40 = 180, while 1.618 x 40 = 64.7 puts C near 155, not 140 (that would be a 2.0 projection). A low of 205 stops above 200, so C would be truncated.", "expTh": "wave A ยาว 40 จุด และ B ฟื้น 20 จุด (50%) ถ้า C เท่ากับ A จะจบที่ 220 - 40 = 180 ส่วน 1.618 x 40 = 64.7 ทำให้ C อยู่ราว 155 ไม่ใช่ 140 (ซึ่งเป็นการคาด 2.0 เท่า) ถ้า C ลงมาแค่ 205 ก็ไม่ผ่านจุดต่ำของ A ที่ 200 จึงเป็น truncation"}, {"id": "v3q03", "qType": "multi", "diff": "medium", "text": "A corrective sequence is labeled W-X-Y, with two zigzags joined by an X wave. Which claims about such a double zigzag are accurate? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Each of the two zigzags, W and Y, subdivides 5-3-5"}, {"id": "b", "letter": "B", "text": "The X wave is a five-wave impulse against W, which is why the pattern needs a second zigzag"}, {"id": "c", "letter": "C", "text": "It is classed as a sharp correction, in contrast to a flat, which is a sideways one"}, {"id": "d", "letter": "D", "text": "The connecting X wave is a corrective structure that moves against W and Y"}], "correct": ["a", "c", "d"], "expEn": "A double zigzag links two zigzags (W and Y) with a corrective X wave in the opposite direction, and like a single zigzag it is a sharp correction. X is a three-type correction, never an impulse, since an impulse would signal a trend change instead of a connector.", "expTh": "double zigzag คือ zigzag สองชุด (W และ Y) เชื่อมกันด้วย X ที่เป็น corrective สวนทิศทาง และเหมือน zigzag เดี่ยวคือเป็น sharp correction ส่วน X ไม่ใช่ impulse เพราะ impulse จะบ่งชี้การเปลี่ยนแนวโน้มแทนที่จะเป็นตัวเชื่อม"}, {"id": "v3q04", "qType": "multi", "diff": "medium", "text": "Each correction below follows a rise and subdivides 3-3-5 with a downward A-B-C. Which labels fit the stated prices? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "A from 100 to 80, B up to 107, C down to 84: an expanded flat"}, {"id": "b", "letter": "B", "text": "A from 100 to 80, B up to 98, C down to 78: a regular flat"}, {"id": "c", "letter": "C", "text": "A from 100 to 80, B up to 90, C down to 62: a running flat"}, {"id": "d", "letter": "D", "text": "A from 100 to 80, B up to 108, C down to 70: an expanded flat"}], "correct": ["b", "d"], "expEn": "A regular flat has B near A's start (98 vs 100) and C slightly past A's end (78 vs 80). An expanded flat has B beyond A's start and C beyond A's end (108 and 70). B at 107 with C stopping at 84 is a running flat, and B at only 90 with C at 62 does not fit a running flat.", "expTh": "regular flat มี B อยู่ใกล้จุดเริ่มของ A (98 เทียบ 100) และ C เลยปลาย A เล็กน้อย (78 เทียบ 80) expanded flat มี B เลยจุดเริ่มของ A และ C เลยปลาย A (108 และ 70) ส่วน B ที่ 107 แล้ว C หยุดที่ 84 เป็น running flat และ B แค่ 90 กับ C ที่ 62 ไม่ใช่ running flat"}, {"id": "v3q05", "qType": "multi", "diff": "medium", "text": "A correction in a bull trend shows wave B overshooting the origin of A and wave C stopping short of A's end. Which claims about this form are correct? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave C fails to reach the end of wave A, which separates it from the expanded flat"}, {"id": "b", "letter": "B", "text": "Wave B ends beyond the starting point of wave A, unlike a regular flat"}, {"id": "c", "letter": "C", "text": "Wave A subdivides into five waves, since the strong trend pushes it as a motive leg"}, {"id": "d", "letter": "D", "text": "It is rare and tends to reflect a very strong underlying trend"}], "correct": ["a", "b", "d"], "expEn": "In a running flat B exceeds A's start and C falls short of A's end, a rare form that shows powerful trend pressure. It still subdivides 3-3-5, so wave A is a three, not a five.", "expTh": "ใน running flat คลื่น B เลยจุดเริ่มของ A และ C ไปไม่ถึงปลายของ A เป็นรูปแบบที่หายาก สะท้อนแรงของแนวโน้มหลักที่แข็งมาก แต่ยังแบ่งย่อย 3-3-5 ดังนั้น wave A เป็น three ไม่ใช่ five"}, {"id": "v3q06", "qType": "multi", "diff": "hard", "text": "An analyst reads the pullback from a 1,000 peak as an expanded flat whose wave A drops 100 points to 900. B is projected at 1.236 times A back up, and C at 1.618 times A back down from B. Which claims are correct? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave B ends near 1,024, slightly above the start of wave A"}, {"id": "b", "letter": "B", "text": "Wave C ends near 838, because 1.618 times A is measured from the top at 1,000"}, {"id": "c", "letter": "C", "text": "Wave C ends near 862, measured down from the end of wave B"}, {"id": "d", "letter": "D", "text": "A wave B above 1,000 rules out any flat, so the count must be re-labeled a zigzag"}], "correct": ["a", "c"], "expEn": "B retraces 123.6 of A's 100 points, ending near 1,023.6, and C of 161.8 points from there ends near 861.8. Projecting C from the start of A is the wrong base, and B beyond A's start is exactly what defines an expanded flat, not a zigzag.", "expTh": "B ย้อน 123.6 จุดจาก A ที่ยาว 100 จุด จึงจบใกล้ 1,023.6 และ C ยาว 161.8 จุดจากตรงนั้นจึงลงมาที่ราว 861.8 การวัด C จากจุดเริ่มของ A เป็นฐานที่ผิด และ B ที่เลยจุดเริ่มของ A คือสิ่งที่นิยาม expanded flat ไม่ใช่ zigzag"}, {"id": "v3q07", "qType": "multi", "diff": "medium", "text": "An analyst is cataloguing properties that apply to corrective waves in general. Which claims are valid? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "A corrective pattern as a whole never counts as a five-wave advance, though some legs are motive"}, {"id": "b", "letter": "B", "text": "Corrective patterns are labeled with letters, such as A-B-C or W-X-Y, and not with numbers"}, {"id": "c", "letter": "C", "text": "A corrective wave is never permitted to retrace more than 61.8% of the preceding motive wave"}, {"id": "d", "letter": "D", "text": "Corrective waves always move against the larger trend and never take the form of any pattern with sideways drift"}], "correct": ["a", "b"], "expEn": "Corrections use letter labels and are never a five as a whole pattern, even though zigzag legs A and C subdivide into fives. No rule caps retracement at 61.8%, and sideways flats are a normal corrective form.", "expTh": "corrective ใช้ตัวอักษรเป็นป้ายกำกับ เช่น A-B-C หรือ W-X-Y และทั้งรูปแบบไม่นับเป็นห้าคลื่น แม้บางขา เช่น A และ C ของ zigzag จะแบ่งเป็นห้า ไม่มีกฎจำกัดการย้อนไว้ที่ 61.8% และ flat ที่เคลื่อนข้างเป็นรูปแบบ corrective ปกติ"}, {"id": "v3q08", "qType": "multi", "diff": "medium", "text": "In an uptrend, wave 2 of the current impulse was a deep zigzag. Which expectations follow from the guideline of alternation for wave 4? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave 4 is likely to be a sideways pattern, such as a flat or triangle"}, {"id": "b", "letter": "B", "text": "Wave 4 must retrace the same percentage of wave 3 as wave 2 retraced of wave 1"}, {"id": "c", "letter": "C", "text": "Wave 4 is likely to differ in form from wave 2 and may be shallower"}, {"id": "d", "letter": "D", "text": "Wave 4 should also be a zigzag so the two corrections show symmetry of character"}], "correct": ["a", "c"], "expEn": "Alternation says that if one corrective wave is sharp the other will probably be sideways, so a deep zigzag in wave 2 points to a flat or triangle in wave 4. It does not demand symmetry or equal retracements.", "expTh": "guideline of alternation ระบุว่าถ้า corrective หนึ่งเป็นแบบ sharp อีกอันมักเป็น sideways ดังนั้น wave 2 ที่เป็น zigzag ลึกชี้ว่า wave 4 น่าจะเป็น flat หรือ triangle ไม่ได้บังคับให้สมมาตรกันหรือย้อนเท่ากันทุกเปอร์เซ็นต์"}, {"id": "v3q09", "qType": "multi", "diff": "hard", "text": "Wave 1 of an impulse peaked at 250 and wave 3 peaked at 300. Wave 4 is a flat: A falls to 270, B rallies to 297, and C falls to 268. Which statements are correct? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave B must be re-labeled as an expanded flat because it rose above 270"}, {"id": "b", "letter": "B", "text": "Wave C ended 2 points beyond wave A, which fits a regular flat"}, {"id": "c", "letter": "C", "text": "Wave 4 overlaps wave 1's price territory, so the impulse count fails"}, {"id": "d", "letter": "D", "text": "Wave B retraced 90% of wave A, rising 27 of the 30 points"}], "correct": ["b", "d"], "expEn": "A fell 30 points and B recovered 27 (90%), with C ending slightly past A's low at 268 versus 270, a regular flat. The low of 268 stays above wave 1's peak at 250, and expansion would require B to exceed 300, wave A's start.", "expTh": "A ลง 30 จุด และ B ฟื้น 27 จุด (90%) โดย C จบที่ 268 เลยจุดต่ำของ A (270) เล็กน้อย เป็น regular flat ราคา 268 ยังสูงกว่ายอด wave 1 ที่ 250 จึงไม่ overlap และการเป็น expanded flat ต้องให้ B ขึ้นเกิน 300 ซึ่งเป็นจุดเริ่มของ A"}, {"id": "v3q10", "qType": "multi", "diff": "medium", "text": "After a first leg down from 100 to 70 labeled wave A, which candidate endings for the next rebound B fit a zigzag count? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "B ends at 85, retracing about half of wave A and staying below 100"}, {"id": "b", "letter": "B", "text": "B ends at 106, above the start of wave A, so a zigzag still fits"}, {"id": "c", "letter": "C", "text": "B ends at 62, below the end of wave A, which a zigzag B may do"}, {"id": "d", "letter": "D", "text": "B ends at 79, retracing about 30% of wave A and staying above 70"}], "correct": ["a", "d"], "expEn": "In a zigzag wave B holds below A's origin and above A's end, so 85 and 79 fit. A B wave above 100 would define an expanded flat, and one below 70 would mean wave A was not yet complete.", "expTh": "ใน zigzag wave B ต้องอยู่ต่ำกว่าจุดเริ่มของ A และสูงกว่าปลายของ A ดังนั้น 85 และ 79 เข้าเกณฑ์ ถ้า B สูงกว่า 100 จะเป็นนิยามของ expanded flat และถ้าต่ำกว่า 70 แปลว่า wave A ยังไม่จบ"}, {"id": "v3q11", "qType": "multi", "diff": "hard", "text": "A downward zigzag begins at 1,200. Wave A falls to 1,080 and wave B rises to 1,140. Which wave C targets are common projections? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "About 946, where C is 1.618 times A, down 194 points from B"}, {"id": "b", "letter": "B", "text": "About 1,066, where C is 0.618 times A, down 74 points from B"}, {"id": "c", "letter": "C", "text": "1,020, where C equals A, down 120 points from B"}, {"id": "d", "letter": "D", "text": "About 1,006, where C is 1.618 times A projected from the start at 1,200"}], "correct": ["a", "b", "c"], "expEn": "Wave A is 120 points, so C is projected from B's end at 1,140: 1.0 x gives 1,020, 0.618 x (74.2) gives about 1,066, and 1.618 x (194.2) gives about 946. Measuring from the start at 1,200 uses the wrong anchor.", "expTh": "wave A ยาว 120 จุด จึงต้องคาด C จากปลาย B ที่ 1,140 คือ 1.0 เท่าได้ 1,020, 0.618 เท่า (74.2) ได้ราว 1,066 และ 1.618 เท่า (194.2) ได้ราว 946 การวัดจากจุดเริ่มที่ 1,200 ใช้จุดอ้างอิงผิด"}, {"id": "v3q12", "qType": "multi", "diff": "hard", "text": "A double zigzag starts at 1,000. W falls to 800, X rallies to 900, and Y is expected to equal W in length. Which statements are correct? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "X retraced half of wave W, which is a normal connector"}, {"id": "b", "letter": "B", "text": "Y equal to W would end near 700, measured down from the end of X"}, {"id": "c", "letter": "C", "text": "Y reaching 800 would equal W, because the pattern returns to W's low"}, {"id": "d", "letter": "D", "text": "X must be rejected, since it did not exceed the start of W at 1,000"}], "correct": ["a", "b"], "expEn": "W is 200 points and X recovered 100 (50%). A Y of equal length from 900 ends at 700, whereas 800 merely revisits W's low. X is only a connector, so it has no need to retrace W entirely.", "expTh": "W ยาว 200 จุด และ X ฟื้น 100 จุด (50%) ถ้า Y ยาวเท่า W จากจุด 900 จะลงถึง 700 ส่วนการลงถึง 800 เป็นเพียงกลับไปแตะจุดต่ำของ W X เป็นแค่ตัวเชื่อมจึงไม่จำเป็นต้องย้อน W ทั้งหมด"}, {"id": "v3q13", "qType": "multi", "diff": "medium", "text": "Among the corrective legs named below, which ones subdivide into five waves? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave A of a regular flat, as it is in a zigzag"}, {"id": "b", "letter": "B", "text": "Wave B of a zigzag, being the counter-trend leg"}, {"id": "c", "letter": "C", "text": "Wave C of a flat, the final leg of a 3-3-5 pattern"}, {"id": "d", "letter": "D", "text": "Wave C of a zigzag, the final leg of a 5-3-5 pattern"}], "correct": ["c", "d"], "expEn": "In both a zigzag (5-3-5) and a flat (3-3-5) the final leg C is motive. A flat's wave A is a three, as is wave B of a zigzag.", "expTh": "ทั้ง zigzag (5-3-5) และ flat (3-3-5) มีขาสุดท้ายคือ C ที่เป็น motive แบ่งเป็นห้า ส่วน wave A ของ flat เป็น three เช่นเดียวกับ wave B ของ zigzag"}, {"id": "v3q14", "qType": "multi", "diff": "medium", "text": "Within an advancing five-wave impulse, which placements of corrective patterns are valid? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "A zigzag occupying the position of wave 2, a corrective slot"}, {"id": "b", "letter": "B", "text": "A flat occupying the position of wave 3, since flats are the strongest correction"}, {"id": "c", "letter": "C", "text": "A zigzag occupying the position of wave 5, since it is the steepest pattern"}, {"id": "d", "letter": "D", "text": "A flat occupying the position of wave 4, a corrective slot"}], "correct": ["a", "d"], "expEn": "Waves 2 and 4 are the corrective slots of an impulse, so a zigzag in wave 2 and a flat in wave 4 are typical. Waves 3 and 5 are motive, and flats and zigzags are not motive patterns.", "expTh": "คลื่น 2 และ 4 เป็นตำแหน่งของ corrective ใน impulse จึงพบ zigzag ที่ wave 2 และ flat ที่ wave 4 ได้ตามปกติ ส่วนคลื่น 3 และ 5 เป็น motive ซึ่ง flat และ zigzag ไม่ใช่รูปแบบ motive"}, {"id": "v3q15", "qType": "multi", "diff": "medium", "text": "Which statements reflect common guidelines for the depth of corrections in an impulse? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave 4 usually retraces a larger share of wave 3 than wave 2 retraces of wave 1"}, {"id": "b", "letter": "B", "text": "A correction often ends within the price range of the fourth wave of one lesser degree"}, {"id": "c", "letter": "C", "text": "Wave 2 commonly retraces about 61.8% of wave 1"}, {"id": "d", "letter": "D", "text": "Wave 4 commonly retraces about 38.2% of wave 3"}], "correct": ["b", "c", "d"], "expEn": "Corrections tend to terminate in the area of the prior fourth wave of lesser degree, with typical retracements near 61.8% for wave 2 and 38.2% for wave 4. Wave 4 is normally the shallower one, so the first claim is reversed.", "expTh": "correction มักจบในช่วงราคาของ wave 4 ระดับต่ำกว่าหนึ่งระดับ โดย wave 2 มักย้อนราว 61.8% และ wave 4 ราว 38.2% และ wave 4 มักตื้นกว่า จึงข้อแรกกลับด้าน"}, {"id": "v3q16", "qType": "multi", "diff": "hard", "text": "A rally peaks at 800, and a correction begins with a three-wave decline to 720 as wave A. Wave B will also unfold in three waves. Which claims about the possible depth of wave B are correct? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "A wave B top at 792 would make this an expanded flat, because it retraces 90% of wave A"}, {"id": "b", "letter": "B", "text": "A wave B top at 824 would retrace 130% of wave A and pass the 800 origin, fitting an expanded flat"}, {"id": "c", "letter": "C", "text": "A wave B top at 792 would retrace 90% of wave A, meeting the usual minimum for a flat's B leg"}, {"id": "d", "letter": "D", "text": "A wave B top at 744 would retrace 30% of wave A, a normal depth for the B leg of a flat"}], "correct": ["b", "c"], "expEn": "Wave A is 80 points, so 792 is a 72-point (90%) retracement, the usual lower bound for a flat's B leg but still below the 800 origin, so a regular flat. A top at 824 is 104 points (130%) and exceeds the origin, which defines an expanded flat. A 744 top retraces only 30%, which is too shallow for a flat and points toward a zigzag.", "expTh": "Wave A ยาว 80 จุด ดังนั้น 792 คือการย้อน 72 จุด (90%) ซึ่งเป็นขอบล่างตามปกติของ wave B ใน flat แต่ยังต่ำกว่าจุดเริ่มที่ 800 จึงเป็น regular flat ส่วนยอดที่ 824 ย้อน 104 จุด (130%) และเลยจุดเริ่มต้น จึงเป็น expanded flat ส่วน 744 ย้อนเพียง 30% ซึ่งตื้นเกินไปสำหรับ flat และชี้ไปทาง zigzag มากกว่า"}, {"id": "v3q17", "qType": "multi", "diff": "medium", "text": "A three-wave correction has been identified as either a flat or a zigzag. Which observations favor a flat over a zigzag? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave A subdivides into three waves instead of five"}, {"id": "b", "letter": "B", "text": "Wave B retraces nearly all of wave A or more"}, {"id": "c", "letter": "C", "text": "Wave C subdivides into five waves"}, {"id": "d", "letter": "D", "text": "Wave B retraces less than half of wave A"}], "correct": ["a", "b"], "expEn": "A flat is 3-3-5 with a deep B, whereas a zigzag is 5-3-5 with a shallower B. Wave C is a five in both patterns, so it does not separate them, and a shallow B supports a zigzag.", "expTh": "flat เป็น 3-3-5 และ B ย้อนลึก ส่วน zigzag เป็น 5-3-5 และ B ย้อนตื้นกว่า ขา C เป็นห้าทั้งสองแบบจึงแยกไม่ได้ และ B ที่ย้อนน้อยกว่าครึ่งสนับสนุน zigzag"}, {"id": "v3q18", "qType": "multi", "diff": "medium", "text": "Considering where diagonal patterns can appear within a zigzag, which claims are correct? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave C of a zigzag may be a leading diagonal, since C is a motive leg"}, {"id": "b", "letter": "B", "text": "Wave A of a zigzag may occasionally be a leading diagonal"}, {"id": "c", "letter": "C", "text": "Wave C of a zigzag may be an ending diagonal"}, {"id": "d", "letter": "D", "text": "Wave A of a zigzag may be an ending diagonal, since A is a motive leg"}], "correct": ["b", "c"], "expEn": "Leading diagonals are found in the wave 1 or wave A position, and ending diagonals in the wave 5 or wave C position; the reverse pairings are not characteristic.", "expTh": "leading diagonal พบที่ตำแหน่ง wave 1 หรือ wave A ส่วน ending diagonal พบที่ตำแหน่ง wave 5 หรือ wave C การจับคู่กลับด้านไม่ใช่ลักษณะของรูปแบบเหล่านี้"}, {"id": "v3q19", "qType": "multi", "diff": "medium", "text": "A very long correction is counted as W-X-Y-X-Z with every W, Y and Z a zigzag. Which claims describe this triple zigzag? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave Z must be a flat, since the pattern ends with a sideways correction"}, {"id": "b", "letter": "B", "text": "It contains three zigzags linked by two X waves, each X moving against the trend of the zigzags"}, {"id": "c", "letter": "C", "text": "It is more common than a double zigzag because each added zigzag lowers its odds of failing"}, {"id": "d", "letter": "D", "text": "It is rarer than a double zigzag, since it strings together three zigzags"}], "correct": ["b", "d"], "expEn": "A triple zigzag strings three zigzags together with two X waves and is rarer than the double version. Wave Z is itself a zigzag, so it is not a flat.", "expTh": "triple zigzag ประกอบด้วย zigzag สามชุดเชื่อมด้วย X สองตัว และพบน้อยกว่า double zigzag ส่วน Z ก็เป็น zigzag ไม่ใช่ flat"}, {"id": "v3q20", "qType": "multi", "diff": "hard", "text": "After wave 1 lifted an impulse from 100 to 130, wave 2 is unfolding as a zigzag with A down to 115 and B up to 124. Which claims are correct? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "A wave C of 1.618 times A would end near 99.7, which would violate the wave 2 rule"}, {"id": "b", "letter": "B", "text": "A wave C below 100 is acceptable because only closing prices matter for the rule"}, {"id": "c", "letter": "C", "text": "Wave B retraced 60% of wave A, rising 9 of the 15 points"}, {"id": "d", "letter": "D", "text": "A wave C equal to A would end at 109, which stays above wave 1's start at 100"}], "correct": ["a", "c", "d"], "expEn": "Wave A is 15 points and B recovered 9 (60%). C equal to A ends at 109, but 1.618 x 15 = 24.3 would take C to about 99.7, below wave 1's start at 100, which wave 2 may never exceed. No closing-price exception exists.", "expTh": "wave A ยาว 15 จุด และ B ฟื้น 9 จุด (60%) C เท่ากับ A จะจบที่ 109 แต่ 1.618 x 15 = 24.3 จะดัน C ลงราว 99.7 ต่ำกว่าจุดเริ่มของ wave 1 (100) ซึ่ง wave 2 ห้ามเกิน และไม่มีข้อยกเว้นเรื่องราคาปิด"}];
+</script>
+<script>
+(function(){
+"use strict";
+
+const VARIANTS = {
+  v1: { bank:V1_BANK, name:'Elliott Wave Analyst — Level I', nameTh:'CEWA I · พื้นฐาน', minutes:45, key:'v1' },
+  v2: { bank:V2_BANK, name:'Elliott Wave Analyst — Level II, Part 1', nameTh:'CEWA II · ตอนที่ 1', minutes:45, key:'v2' },
+  v3: { bank:V3_BANK, name:'Elliott Wave Analyst — Level II, Part 2', nameTh:'CEWA II · ตอนที่ 2', minutes:45, key:'v3' },
+};
+
+const state = {
+  shuffled: false,
+  selectedVariant: null,
+  currentVariant: null,
+  questions: [],
+  answers: {},      // qid -> string id (single/tf) or array of ids (multi)
+  startTime: null,
+  timerInterval: null,
+  remainingSeconds: 0,
+  lang: 'en',
+  lastResult: null,
+};
+
+/* ---------- Seeded RNG + Fisher-Yates (deep clone before shuffling) ---------- */
+function mulberry32(seed){
+  let a = seed >>> 0;
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function fisherYates(arr, rnd){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(rnd()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function deepCloneBank(bank){
+  return bank.map(q => ({
+    ...q,
+    choices: q.choices ? q.choices.map(c => ({...c})) : undefined,
+    correct: [...q.correct]
+  }));
+}
+
+/* ---------- Custom modal (avoids window.confirm for in-app browser compatibility) ---------- */
+const modalOverlay = document.getElementById('modalOverlay');
+const modalTitle = document.getElementById('modalTitle');
+const modalMsg = document.getElementById('modalMsg');
+const modalCancel = document.getElementById('modalCancel');
+const modalConfirm = document.getElementById('modalConfirm');
+let modalResolve = null;
+function showModal(title, msg, confirmLabel){
+  modalTitle.textContent = title;
+  modalMsg.textContent = msg;
+  modalConfirm.textContent = confirmLabel || 'Confirm';
+  modalOverlay.classList.add('active');
+  return new Promise(resolve => { modalResolve = resolve; });
+}
+modalCancel.addEventListener('click', ()=>{ modalOverlay.classList.remove('active'); if(modalResolve) modalResolve(false); });
+modalConfirm.addEventListener('click', ()=>{ modalOverlay.classList.remove('active'); if(modalResolve) modalResolve(true); });
+modalOverlay.addEventListener('click', (e)=>{ if(e.target===modalOverlay){ modalOverlay.classList.remove('active'); if(modalResolve) modalResolve(false); } });
+
+/* ---------- Screen switching ---------- */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+/* ---------- Lobby ---------- */
+const variantList = document.getElementById('variantList');
+const startBtn = document.getElementById('startBtn');
+const shuffleToggle = document.getElementById('shuffleToggle');
+const shuffleSwitch = document.getElementById('shuffleSwitch');
+
+variantList.addEventListener('click', (e)=>{
+  const card = e.target.closest('.variant-card');
+  if(!card) return;
+  document.querySelectorAll('.variant-card').forEach(c=>c.classList.remove('selected'));
+  card.classList.add('selected');
+  state.selectedVariant = card.getAttribute('data-variant');
+  startBtn.disabled = false;
+});
+
+shuffleToggle.addEventListener('click', ()=>{
+  state.shuffled = !state.shuffled;
+  shuffleSwitch.classList.toggle('on', state.shuffled);
+});
+
+startBtn.addEventListener('click', ()=>{
+  if(!state.selectedVariant) return;
+  beginExam(state.selectedVariant);
+});
+
+/* ---------- Begin exam ---------- */
+function beginExam(variantKey){
+  const v = VARIANTS[variantKey];
+  state.currentVariant = variantKey;
+  let bank = deepCloneBank(v.bank);
+  if(state.shuffled){
+    const seed = (Date.now() ^ Math.floor(Math.random()*1e9)) >>> 0;
+    const rnd = mulberry32(seed);
+    bank = fisherYates(bank, rnd);
+    bank = bank.map(q=>{
+      if(q.qType==='tf') return q;
+      const rnd2 = mulberry32((seed ^ hashId(q.id)) >>> 0);
+      return {...q, choices: fisherYates(q.choices, rnd2)};
+    });
+  }
+  state.questions = bank;
+  state.answers = {};
+  state.remainingSeconds = v.minutes * 60;
+  state.startTime = Date.now();
+
+  document.getElementById('quizVariantName').textContent = v.name;
+  renderQuestions();
+  updateHud();
+  showScreen('screen-quiz');
+  startTimer();
+}
+function hashId(str){
+  let h=0; for(let i=0;i<str.length;i++){ h=(h*31 + str.charCodeAt(i))|0; }
+  return h;
+}
+
+/* ---------- Render questions ---------- */
+const questionList = document.getElementById('questionList');
+function renderQuestions(){
+  const frag = document.createDocumentFragment();
+  state.questions.forEach((q, idx) => {
+    const card = document.createElement('div');
+    card.className = 'qcard';
+    card.setAttribute('data-qcard', q.id);
+
+    const typeLabel = q.qType==='tf' ? 'TRUE / FALSE' : (q.qType==='multi' ? 'SELECT ALL THAT APPLY' : 'SINGLE BEST ANSWER');
+    let html = `<div class="qnum">${idx+1}</div>`;
+    html += `<div class="qtext">${escapeHtml(q.text)}<span class="qtype-badge">${typeLabel}</span></div>`;
+
+    if(q.qType === 'tf'){
+      html += `<div class="tf-row" role="radiogroup" data-qid="${q.id}" data-qtype="tf">
+        <button class="tf-btn tf-true" role="radio" aria-checked="false" data-cid="true">✓ TRUE</button>
+        <button class="tf-btn tf-false" role="radio" aria-checked="false" data-cid="false">✗ FALSE</button>
+      </div>`;
+    } else if(q.qType === 'multi'){
+      html += `<div class="choices" role="group" data-qid="${q.id}" data-qtype="multi">`;
+      q.choices.forEach(c=>{
+        html += `<button class="choice-btn" role="checkbox" aria-checked="false" data-cid="${c.id}">
+          <span class="choice-letter">${c.letter}</span><span>${escapeHtml(c.text)}</span>
+        </button>`;
+      });
+      html += `</div>`;
+    } else {
+      html += `<div class="choices" role="radiogroup" data-qid="${q.id}" data-qtype="single">`;
+      q.choices.forEach(c=>{
+        html += `<button class="choice-btn" role="radio" aria-checked="false" data-cid="${c.id}">
+          <span class="choice-letter">${c.letter}</span><span>${escapeHtml(c.text)}</span>
+        </button>`;
+      });
+      html += `</div>`;
+    }
+    card.innerHTML = html;
+    frag.appendChild(card);
+  });
+  questionList.innerHTML = '';
+  questionList.appendChild(frag);
+}
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+/* ---------- Answer selection (event delegation via data-* attrs) ---------- */
+questionList.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-cid]');
+  if(!btn) return;
+  const group = btn.closest('[data-qid]');
+  const qid = group.getAttribute('data-qid');
+  const qtype = group.getAttribute('data-qtype');
+  const cid = btn.getAttribute('data-cid');
+
+  if(qtype === 'multi'){
+    const cur = Array.isArray(state.answers[qid]) ? state.answers[qid].slice() : [];
+    const pos = cur.indexOf(cid);
+    if(pos >= 0) cur.splice(pos,1); else cur.push(cid);
+    state.answers[qid] = cur;
+    group.querySelectorAll('[data-cid]').forEach(b=>{
+      b.setAttribute('aria-checked', cur.includes(b.getAttribute('data-cid')) ? 'true' : 'false');
+    });
+  } else {
+    state.answers[qid] = cid;
+    group.querySelectorAll('[data-cid]').forEach(b=>{
+      b.setAttribute('aria-checked', b.getAttribute('data-cid')===cid ? 'true' : 'false');
+    });
+  }
+  const card = btn.closest('.qcard');
+  const answered = qtype==='multi' ? (state.answers[qid]||[]).length>0 : !!state.answers[qid];
+  card.classList.toggle('answered', answered);
+  updateHud();
+});
+
+/* ---------- Timer / HUD ---------- */
+function startTimer(){
+  clearInterval(state.timerInterval);
+  state.timerInterval = setInterval(()=>{
+    state.remainingSeconds--;
+    if(state.remainingSeconds <= 0){
+      state.remainingSeconds = 0;
+      clearInterval(state.timerInterval);
+      finishExam();
+      return;
+    }
+    updateHud();
+  }, 1000);
+}
+function fmtTime(totalSeconds){
+  const m = Math.floor(totalSeconds/60), s = totalSeconds%60;
+  return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function updateHud(){
+  const elapsed = Math.floor((Date.now()-state.startTime)/1000);
+  document.getElementById('hudElapsed').textContent = fmtTime(elapsed);
+  document.getElementById('hudRemaining').textContent = fmtTime(state.remainingSeconds);
+  const answeredCount = state.questions.filter(q=>{
+    const a = state.answers[q.id];
+    return q.qType==='multi' ? (Array.isArray(a) && a.length>0) : !!a;
+  }).length;
+  const total = state.questions.length;
+  const pct = total ? Math.round((answeredCount/total)*100) : 0;
+  document.getElementById('hudProgress').textContent = pct+'%';
+  document.getElementById('hudBarFill').style.width = pct+'%';
+  document.getElementById('quizCount').textContent = answeredCount+' / '+total+' answered';
+  const hud = document.getElementById('hud');
+  hud.classList.toggle('warn', state.remainingSeconds <= 300);
+}
+
+/* ---------- Submit / Grading ---------- */
+document.getElementById('submitBtn').addEventListener('click', async ()=>{
+  const total = state.questions.length;
+  const answeredCount = state.questions.filter(q=>{
+    const a = state.answers[q.id];
+    return q.qType==='multi' ? (Array.isArray(a) && a.length>0) : !!a;
+  }).length;
+  if(answeredCount < total){
+    const ok = await showModal('Submit exam?', `You have answered ${answeredCount} of ${total} questions. Submit anyway?`, 'Submit');
+    if(!ok) return;
+  } else {
+    const ok = await showModal('Submit exam?', 'You will not be able to change your answers after submitting.', 'Submit');
+    if(!ok) return;
+  }
+  finishExam();
+});
+
+function isCorrect(q){
+  const a = state.answers[q.id];
+  if(q.qType === 'multi'){
+    if(!Array.isArray(a)) return false;
+    const sortedA = a.slice().sort().join(',');
+    const sortedC = q.correct.slice().sort().join(',');
+    return sortedA === sortedC && sortedA.length>0;
+  }
+  return a === q.correct[0];
+}
+
+function finishExam(){
+  clearInterval(state.timerInterval);
+  const total = state.questions.length;
+  let correctCount = 0;
+  state.questions.forEach(q=>{ if(isCorrect(q)) correctCount++; });
+  const pct = total ? Math.round((correctCount/total)*100) : 0;
+  const elapsedSeconds = Math.floor((Date.now()-state.startTime)/1000);
+  let grade = 'fail';
+  if(pct >= 90) grade = 'master';
+  else if(pct >= 80) grade = 'pass';
+  state.lastResult = { correctCount, total, pct, elapsedSeconds, grade };
+  renderResults();
+  showScreen('screen-results');
+  if(grade !== 'fail') launchConfetti(grade);
+}
+
+/* ---------- Results ---------- */
+function renderResults(){
+  const v = VARIANTS[state.currentVariant];
+  const r = state.lastResult;
+  const stamp = document.getElementById('gradeStamp');
+  stamp.className = 'stamp ' + r.grade;
+  stamp.textContent = r.grade === 'master' ? 'MASTER' : (r.grade === 'pass' ? 'PASS' : 'FAIL');
+  document.getElementById('resultsVariantName').textContent = v.name;
+  document.getElementById('scoreBig').textContent = r.pct + '%';
+  document.getElementById('statCorrect').textContent = r.correctCount;
+  document.getElementById('statTotal').textContent = r.total;
+  document.getElementById('statTime').textContent = fmtTime(r.elapsedSeconds);
+  renderReviewList();
+}
+
+function renderReviewList(){
+  const list = document.getElementById('reviewList');
+  const frag = document.createDocumentFragment();
+  state.questions.forEach((q, idx)=>{
+    const ok = isCorrect(q);
+    const item = document.createElement('div');
+    item.className = 'review-item ' + (ok ? 'correct' : 'incorrect');
+
+    let html = `<div class="review-head">
+      <span class="qnum" style="margin-bottom:0;width:24px;height:24px;font-size:11px;">${idx+1}</span>
+      <span class="review-status ${ok?'correct':'incorrect'}">${ok?'CORRECT':'INCORRECT'}</span>
+    </div>`;
+    html += `<div class="review-q">${escapeHtml(q.text)}</div>`;
+    html += `<div class="review-choices">`;
+
+    if(q.qType === 'tf'){
+      const picked = state.answers[q.id];
+      const correctVal = q.correct[0];
+      ['true','false'].forEach(val=>{
+        let cls = '';
+        if(val === correctVal) cls = 'was-correct';
+        else if(val === picked && val !== correctVal) cls = 'was-wrong-pick';
+        const label = val==='true' ? '✓ TRUE' : '✗ FALSE';
+        const marker = (val===picked) ? ' — your answer' : '';
+        html += `<div class="review-choice ${cls}">${label}${marker}</div>`;
+      });
+    } else {
+      const picked = state.answers[q.id];
+      const pickedArr = q.qType==='multi' ? (Array.isArray(picked)?picked:[]) : (picked?[picked]:[]);
+      q.choices.forEach(c=>{
+        let cls = '';
+        const isC = q.correct.includes(c.id);
+        const wasPicked = pickedArr.includes(c.id);
+        if(isC) cls = 'was-correct';
+        else if(wasPicked) cls = 'was-wrong-pick';
+        const marker = wasPicked ? ' — your answer' : '';
+        html += `<div class="review-choice ${cls}">${c.letter}. ${escapeHtml(c.text)}${marker}</div>`;
+      });
+    }
+    html += `</div>`;
+    html += `<div class="review-exp" data-exp-en="${escapeHtml(q.expEn)}" data-exp-th="${escapeHtml(q.expTh)}">${escapeHtml(state.lang==='th'?q.expTh:q.expEn)}</div>`;
+    item.innerHTML = html;
+    frag.appendChild(item);
+  });
+  list.innerHTML = '';
+  list.appendChild(frag);
+}
+
+document.querySelectorAll('.lang-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.lang = btn.getAttribute('data-lang');
+    document.querySelectorAll('.review-exp').forEach(el=>{
+      el.textContent = state.lang==='th' ? el.getAttribute('data-exp-th') : el.getAttribute('data-exp-en');
+    });
+  });
+});
+
+document.getElementById('backToLobbyBtn').addEventListener('click', ()=>{
+  showScreen('screen-lobby');
+});
+document.getElementById('retakeBtn').addEventListener('click', ()=>{
+  beginExam(state.currentVariant);
+});
+
+/* ---------- Confetti (canvas, no external deps) ---------- */
+const confettiCanvas = document.getElementById('confettiCanvas');
+const ctx = confettiCanvas.getContext('2d');
+function resizeCanvas(){ confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight; }
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function launchConfetti(grade){
+  if(!ctx) return;
+  const colors = grade === 'master' ? ['#e9ffb0','#f5ffd0','#7fd39c'] : ['#5fa176','#7fd39c','#e9ffb0'];
+  const particles = [];
+  const count = grade === 'master' ? 140 : 90;
+  for(let i=0;i<count;i++){
+    particles.push({
+      x: Math.random()*confettiCanvas.width,
+      y: -20 - Math.random()*200,
+      vx: (Math.random()-0.5)*2.5,
+      vy: 2 + Math.random()*3,
+      size: 4 + Math.random()*5,
+      color: colors[Math.floor(Math.random()*colors.length)],
+      rot: Math.random()*Math.PI*2,
+      vr: (Math.random()-0.5)*0.2,
+      life: 0
+    });
+  }
+  let frame = 0;
+  const maxFrames = 220;
+  function tick(){
+    frame++;
+    ctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+    particles.forEach(p=>{
+      p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.vy += 0.02;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = Math.max(0, 1 - frame/maxFrames);
+      ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
+      ctx.restore();
+    });
+    if(frame < maxFrames){
+      requestAnimationFrame(tick);
+    } else {
+      ctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+})();
+</script>
+</body>
+</html>

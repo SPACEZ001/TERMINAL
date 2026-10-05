@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CEWA51 · SPACEZ Exam Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#000;
+  --bg-2:#050505;
+  --surface:#0a0a0a;
+  --surface-2:#111111;
+  --paper:#f4f6f1;
+  --paper-dim:#dfe8d0;
+  --ink:#f4f6f1;
+  --ink-dim:#b9c2ae;
+  --muted:#8b9186;
+  --border:rgba(233,255,176,.22);
+  --border-soft:rgba(255,255,255,.08);
+  --neon:#e9ffb0;
+  --neon-bright:#f5ffd0;
+  --neon-dim:#7a8a55;
+  --green:#5fa176;
+  --green-bright:#7fd39c;
+  --red:#ff3b4e;
+  --red-bright:#ff6b7a;
+  --radius:14px;
+  --radius-sm:8px;
+  --shadow:0 10px 34px rgba(0,0,0,.55);
+  --sans:'Inter','Noto Sans Thai',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono','Noto Sans Thai','Fira Code',ui-monospace,monospace;
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  background:
+    radial-gradient(ellipse 80% 45% at 50% -5%, rgba(233,255,176,0.06), transparent 60%),
+    var(--bg);
+  color:var(--ink);
+  font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  line-height:1.55;
+  position:relative;
+  overflow-x:hidden;
+}
+.thai{font-family:'Noto Sans Thai',var(--sans);}
+h1,h2,h3{font-family:var(--sans); font-weight:700;}
+.mono{font-family:var(--mono); font-variant-numeric: tabular-nums;}
+
+button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit;}
+a{color:inherit;}
+
+/* ---------- space backdrop: grid + starfield + comets (SPACEZ TERMINAL void theme) ---------- */
+.grid-overlay{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(160,255,160,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(160,255,160,0.05) 1px, transparent 1px);
+  background-size:46px 46px;
+  -webkit-mask-image:radial-gradient(circle at 50% 20%, black, transparent 78%);
+  mask-image:radial-gradient(circle at 50% 20%, black, transparent 78%);
+  opacity:.22;
+}
+.spz-void-stars{
+  display:block;position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background-image:
+    radial-gradient(2.0px 2.0px at 6% 14%,#fff,transparent 70%),
+    radial-gradient(1.5px 1.5px at 18% 62%,#fff,transparent 70%),
+    radial-gradient(2.3px 2.3px at 33% 28%,#fff,transparent 70%),
+    radial-gradient(1.6px 1.6px at 47% 78%,#fff,transparent 70%);
+  background-size:220px 180px;
+  opacity:.5;
+  animation:spzSiteStarsDrift 120s linear infinite, spzSiteTwinkleA 4.4s ease-in-out infinite;
+}
+.spz-void-stars::before{
+  content:'';position:absolute;inset:0;
+  background-image:
+    radial-gradient(2.1px 2.1px at 61% 9%,#fff,transparent 70%),
+    radial-gradient(1.5px 1.5px at 74% 52%,#fff,transparent 70%),
+    radial-gradient(2.0px 2.0px at 88% 22%,#fff,transparent 70%),
+    radial-gradient(1.6px 1.6px at 96% 70%,#fff,transparent 70%);
+  background-size:220px 180px;
+  opacity:.5;
+  animation:spzSiteStarsDrift 120s linear infinite, spzSiteTwinkleB 3.7s ease-in-out infinite;
+  animation-delay:0s, -1.8s;
+}
+.spz-void-stars::after{
+  content:'';position:absolute;inset:0;
+  background-image:
+    radial-gradient(1.4px 1.4px at 12% 90%,#fff,transparent 70%),
+    radial-gradient(1.6px 1.6px at 55% 40%,#fff,transparent 70%),
+    radial-gradient(1.3px 1.3px at 82% 85%,#fff,transparent 70%),
+    radial-gradient(1.5px 1.5px at 40% 5%,#fff,transparent 70%);
+  background-size:220px 180px;
+  opacity:.5;
+  animation:spzSiteStarsDrift 120s linear infinite, spzSiteTwinkleA 4.4s ease-in-out infinite;
+  animation-delay:0s, -2.9s;
+}
+@keyframes spzSiteStarsDrift{0%{background-position:0 0;}100%{background-position:-220px -180px;}}
+@keyframes spzSiteTwinkleA{0%,100%{filter:brightness(.6);}50%{filter:brightness(1.1);}}
+@keyframes spzSiteTwinkleB{0%,100%{filter:brightness(.55);}50%{filter:brightness(1.0);}}
+.spz-void-comet{
+  display:block;position:fixed;left:86%;top:-10%;z-index:-1;pointer-events:none;
+  width:2px;height:64px;border-radius:2px;
+  background:linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.85) 70%, #fff);
+  filter:drop-shadow(0 0 5px rgba(255,255,255,.7));
+  opacity:0;
+  transform:rotate(39deg);
+  animation:spzComet1 11s linear infinite;
+}
+.spz-void-comet.c2{height:52px; animation:spzComet2 15s linear infinite; animation-delay:3s;}
+.spz-void-comet.c3{height:58px; animation:spzComet3 19s linear infinite; animation-delay:7s;}
+.spz-void-comet.c4{height:46px; animation:spzComet4 23s linear infinite; animation-delay:1s;}
+@keyframes spzComet1{0%{left:86%;top:-10%;opacity:0;}4%{opacity:.9;}18%{left:44%;top:60%;opacity:.85;}30%{left:9%;top:118%;opacity:0;}100%{left:9%;top:118%;opacity:0;}}
+@keyframes spzComet2{0%{left:70%;top:-10%;opacity:0;}5%{opacity:.8;}20%{left:25%;top:68%;opacity:.75;}30%{left:-4%;top:118%;opacity:0;}100%{left:-4%;top:118%;opacity:0;}}
+@keyframes spzComet3{0%{left:92%;top:-10%;opacity:0;}4%{opacity:.85;}16%{left:56%;top:56%;opacity:.8;}28%{left:23%;top:118%;opacity:0;}100%{left:23%;top:118%;opacity:0;}}
+@keyframes spzComet4{0%{left:58%;top:-10%;opacity:0;}5%{opacity:.8;}19%{left:13%;top:64%;opacity:.75;}29%{left:-20%;top:118%;opacity:0;}100%{left:-20%;top:118%;opacity:0;}}
+@media (prefers-reduced-motion: reduce){
+  .spz-void-stars, .spz-void-stars::before, .spz-void-stars::after, .spz-void-comet{animation:none;}
+}
+::selection{background:var(--neon);color:#000;}
+
+.screen{display:none; min-height:100vh; width:100%; position:relative; z-index:2;}
+.screen.active{display:block;}
+
+/* ===== Topbar ===== */
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 20px; border-bottom:1px solid var(--border-soft);
+  background:rgba(5,5,5,.78); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  position:sticky; top:0; z-index:40;
+}
+.brand{display:flex; align-items:center; gap:10px; font-family:var(--mono); font-size:13px; letter-spacing:.04em; color:var(--ink-dim);}
+.brand .mark{
+  width:9px; height:9px; border-radius:50%; background:var(--neon); box-shadow:0 0 12px var(--neon);
+  animation:blink 1.5s infinite steps(1);
+}
+@keyframes blink{0%,49%{opacity:1;}50%,100%{opacity:0;}}
+.back-btn{
+  display:flex; align-items:center; gap:6px; padding:7px 12px; border:1px solid var(--border-soft);
+  border-radius:var(--radius-sm); color:var(--ink-dim); font-size:13px; font-family:var(--mono);
+  transition:border-color .15s, color .15s;
+}
+.back-btn:hover{border-color:var(--neon); color:var(--neon-bright);}
+
+/* ===== Lobby ===== */
+.lobby-wrap{max-width:760px; margin:0 auto; padding:36px 20px 80px; position:relative; z-index:2;}
+.eyebrow{
+  font-family:var(--mono); font-size:12px; letter-spacing:.14em; color:var(--neon);
+  display:flex; align-items:center; gap:8px; margin-bottom:14px; text-transform:uppercase;
+}
+.eyebrow::before{content:''; width:18px; height:1px; background:var(--neon-dim);}
+.lobby-title{font-size:34px; font-weight:800; color:var(--paper); margin-bottom:10px; letter-spacing:-.01em;}
+.lobby-sub{color:var(--muted); font-size:15px; max-width:56ch; margin-bottom:34px;}
+
+.ledger-tabs{display:flex; flex-direction:column; gap:14px; margin-bottom:28px;}
+.variant-card{
+  position:relative; border:1px solid var(--border-soft); border-left:3px solid var(--border-soft);
+  border-radius:var(--radius); background:var(--surface); padding:18px 20px 18px 22px;
+  display:flex; align-items:center; gap:16px; transition:border-color .15s, background .15s, transform .1s, box-shadow .15s;
+  text-align:left; width:100%;
+}
+.variant-card:hover{border-color:var(--neon-dim); background:var(--surface-2);}
+.variant-card.selected{border-left-color:var(--neon); border-color:var(--border); background:var(--surface-2); box-shadow:0 0 22px rgba(233,255,176,0.08);}
+.variant-chit{
+  flex-shrink:0; width:46px; height:46px; border-radius:50%; border:1.5px solid var(--neon-dim);
+  display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-weight:700;
+  font-size:14px; color:var(--neon); background:radial-gradient(circle at 35% 30%, rgba(233,255,176,.14), transparent 70%);
+}
+.variant-card.selected .variant-chit{border-color:var(--neon); color:var(--neon-bright); box-shadow:0 0 14px rgba(233,255,176,.25);}
+.variant-body{flex:1; min-width:0;}
+.variant-label{font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.08em; margin-bottom:3px; text-transform:uppercase;}
+.variant-title{font-family:var(--sans); font-size:17px; font-weight:700; color:var(--paper); margin-bottom:6px;}
+.variant-tags{display:flex; flex-wrap:wrap; gap:6px;}
+.tag{font-family:var(--mono); font-size:10.5px; padding:2.5px 7px; border:1px solid var(--border-soft); border-radius:20px; color:var(--muted);}
+.tag.accent{border-color:var(--border); color:var(--neon);}
+
+.lobby-controls{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:22px; flex-wrap:wrap;}
+.shuffle-toggle{
+  display:flex; align-items:center; gap:9px; padding:9px 14px; border:1px solid var(--border-soft);
+  border-radius:var(--radius-sm); font-family:var(--mono); font-size:12.5px; color:var(--ink-dim);
+}
+.shuffle-toggle .dice{font-size:15px;}
+.switch{width:34px; height:18px; border-radius:20px; background:var(--border-soft); position:relative; transition:background .15s; flex-shrink:0;}
+.switch::after{content:''; position:absolute; width:14px; height:14px; border-radius:50%; background:var(--muted); top:2px; left:2px; transition:transform .15s, background .15s;}
+.switch.on{background:rgba(233,255,176,.22);}
+.switch.on::after{transform:translateX(16px); background:var(--neon-bright);}
+
+.start-btn{
+  padding:14px 28px; border-radius:var(--radius-sm); background:var(--neon); color:#060803;
+  font-family:var(--mono); font-weight:700; font-size:13.5px; letter-spacing:.08em;
+  transition:background .15s, transform .1s; box-shadow:0 4px 18px rgba(233,255,176,.2); text-transform:uppercase;
+}
+.start-btn:hover{background:var(--neon-bright);}
+.start-btn:active{transform:scale(.98);}
+.start-btn:disabled{opacity:.35; cursor:not-allowed; box-shadow:none;}
+
+/* ===== Quiz ===== */
+.quiz-wrap{max-width:720px; margin:0 auto; padding:26px 18px 140px; position:relative; z-index:2;}
+.quiz-meta-bar{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:22px; flex-wrap:wrap; gap:8px;}
+.quiz-variant-name{font-family:var(--sans); font-size:19px; font-weight:700; color:var(--paper);}
+.quiz-count{font-family:var(--mono); font-size:12px; color:var(--muted);}
+
+.qcard{
+  border:1px solid var(--border-soft); border-left:2px solid var(--border-soft); border-radius:var(--radius);
+  background:var(--surface); padding:20px 20px 20px 24px; margin-bottom:16px; position:relative;
+}
+.qcard.answered{border-left-color:var(--neon-dim);}
+.qnum{
+  display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%;
+  border:1px solid var(--neon-dim); color:var(--neon); font-family:var(--mono); font-size:12px; font-weight:700;
+  margin-bottom:12px;
+}
+.qtext{font-size:15.5px; color:var(--ink); line-height:1.6; margin-bottom:16px;}
+.qtype-badge{font-family:var(--mono); font-size:9.5px; letter-spacing:.06em; color:var(--muted); border:1px solid var(--border-soft); border-radius:3px; padding:1px 6px; margin-left:8px; vertical-align:2px;}
+
+.choices{display:flex; flex-direction:column; gap:8px;}
+.choice-btn{
+  display:flex; align-items:flex-start; gap:11px; text-align:left; padding:11px 14px;
+  border:1px solid var(--border-soft); border-radius:var(--radius-sm); background:var(--bg-2);
+  font-size:14px; color:var(--ink-dim); transition:border-color .12s, background .12s, color .12s; width:100%;
+}
+.choice-btn:hover{border-color:var(--neon-dim); color:var(--ink);}
+.choice-letter{
+  flex-shrink:0; width:22px; height:22px; border-radius:5px; border:1px solid var(--border-soft);
+  display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:11px; color:var(--muted);
+}
+.choice-btn[aria-checked="true"]{border-color:var(--neon); background:rgba(233,255,176,.08); color:var(--paper);}
+.choice-btn[aria-checked="true"] .choice-letter{border-color:var(--neon); background:var(--neon); color:#060803;}
+.choice-btn[role="checkbox"] .choice-letter{border-radius:4px;}
+
+.tf-row{display:flex; gap:10px;}
+.tf-btn{
+  flex:1; padding:16px; border:1px solid var(--border-soft); border-radius:var(--radius-sm); background:var(--bg-2);
+  font-family:var(--mono); font-size:14px; letter-spacing:.03em; color:var(--ink-dim); display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:border-color .12s, background .12s, color .12s;
+}
+.tf-btn:hover{border-color:var(--neon-dim);}
+.tf-btn[aria-checked="true"].tf-true{border-color:var(--green); background:rgba(95,161,118,.1); color:var(--green-bright);}
+.tf-btn[aria-checked="true"].tf-false{border-color:var(--red); background:rgba(255,59,78,.1); color:var(--red-bright);}
+
+.hud{
+  position:fixed; bottom:88px; right:18px; z-index:35; background:var(--surface); border:1px solid var(--border-soft);
+  border-radius:var(--radius); padding:12px 16px; box-shadow:var(--shadow); font-family:var(--mono); font-size:11px; color:var(--muted);
+  display:flex; flex-direction:column; gap:5px; min-width:132px;
+}
+.hud-row{display:flex; justify-content:space-between; gap:14px;}
+.hud-row b{color:var(--paper); font-weight:700;}
+.hud.warn .hud-row.remaining b{color:var(--red-bright);}
+.hud-bar{height:3px; background:var(--border-soft); border-radius:2px; margin-top:4px; overflow:hidden;}
+.hud-bar-fill{height:100%; background:var(--neon); transition:width .3s;}
+
+.submit-bar{
+  position:fixed; bottom:0; left:0; right:0; z-index:36; background:linear-gradient(to top, rgba(0,0,0,.98), rgba(0,0,0,.85));
+  border-top:1px solid var(--border-soft); padding:14px 18px; display:flex; justify-content:center; backdrop-filter:blur(8px);
+}
+.submit-btn{
+  padding:13px 40px; border-radius:var(--radius-sm); background:var(--neon); color:#060803;
+  font-family:var(--mono); font-weight:700; font-size:13px; letter-spacing:.08em; box-shadow:0 4px 18px rgba(233,255,176,.2); text-transform:uppercase;
+}
+.submit-btn:hover{background:var(--neon-bright);}
+
+/* ===== Results ===== */
+.results-wrap{max-width:720px; margin:0 auto; padding:40px 18px 80px; position:relative; z-index:2;}
+.results-hero{display:flex; flex-direction:column; align-items:center; text-align:center; margin-bottom:36px; position:relative;}
+.stamp{
+  font-family:var(--mono); font-weight:700; font-size:30px; letter-spacing:.14em; text-transform:uppercase;
+  padding:14px 34px; border:2px solid; border-radius:8px;
+  margin-bottom:20px; position:relative;
+}
+.stamp::after{content:'CEWA · CERTIFICATION MOCK EXAM'; position:absolute; bottom:-16px; left:50%; transform:translateX(-50%); font-family:var(--mono); font-size:8px; letter-spacing:.12em; white-space:nowrap; opacity:.55;}
+.stamp.fail{color:var(--red-bright); border-color:var(--red); box-shadow:0 0 22px rgba(255,59,78,.12);}
+.stamp.pass{color:var(--green-bright); border-color:var(--green); box-shadow:0 0 22px rgba(95,161,118,.14);}
+.stamp.master{color:var(--neon-bright); border-color:var(--neon); box-shadow:0 0 26px rgba(233,255,176,.2);}
+.score-line{font-family:var(--mono); font-size:15px; color:var(--ink-dim); margin-bottom:4px;}
+.score-big{font-family:var(--sans); font-size:52px; font-weight:800; color:var(--paper); line-height:1;}
+.results-stats{display:flex; gap:22px; margin-top:18px; font-family:var(--mono); font-size:12px; color:var(--muted);}
+.results-stats b{color:var(--paper);}
+
+.lang-toggle{display:flex; gap:4px; margin:0 auto 22px; width:fit-content; border:1px solid var(--border-soft); border-radius:20px; padding:3px;}
+.lang-btn{padding:6px 16px; border-radius:20px; font-family:var(--mono); font-size:12px; color:var(--muted);}
+.lang-btn.active{background:var(--neon); color:#060803;}
+
+.review-item{border:1px solid var(--border-soft); border-left:3px solid var(--border-soft); border-radius:var(--radius); background:var(--surface); padding:16px 18px; margin-bottom:12px;}
+.review-item.correct{border-left-color:var(--green);}
+.review-item.incorrect{border-left-color:var(--red);}
+.review-head{display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+.review-status{font-family:var(--mono); font-size:10px; letter-spacing:.05em; padding:2px 7px; border-radius:3px;}
+.review-status.correct{background:rgba(95,161,118,.15); color:var(--green-bright);}
+.review-status.incorrect{background:rgba(255,59,78,.15); color:var(--red-bright);}
+.review-q{font-size:14px; color:var(--ink); margin-bottom:10px; line-height:1.55;}
+.review-choices{display:flex; flex-direction:column; gap:5px; margin-bottom:10px;}
+.review-choice{font-size:12.5px; padding:7px 10px; border-radius:5px; border:1px solid var(--border-soft); color:var(--muted); display:flex; gap:8px;}
+.review-choice.was-correct{border-color:var(--green); color:var(--green-bright); background:rgba(95,161,118,.06);}
+.review-choice.was-wrong-pick{border-color:var(--red); color:var(--red-bright); background:rgba(255,59,78,.06);}
+.review-exp{font-size:12.5px; color:var(--ink-dim); line-height:1.6; border-top:1px dashed var(--border-soft); padding-top:10px;}
+
+.retry-bar{display:flex; gap:10px; justify-content:center; margin-top:30px;}
+.retry-btn{padding:12px 24px; border:1px solid var(--border); border-radius:var(--radius-sm); font-family:var(--mono); font-size:12.5px; color:var(--neon);}
+.retry-btn:hover{background:rgba(233,255,176,.08);}
+.retry-btn.primary{background:var(--neon); color:#060803; border-color:var(--neon);}
+
+/* ===== Modal ===== */
+.modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.78); z-index:100; display:none; align-items:center; justify-content:center; padding:20px;}
+.modal-overlay.active{display:flex;}
+.modal-box{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px; max-width:380px; width:100%; box-shadow:var(--shadow);}
+.modal-title{font-family:var(--sans); font-size:17px; font-weight:700; color:var(--paper); margin-bottom:8px;}
+.modal-msg{font-size:13.5px; color:var(--ink-dim); line-height:1.6; margin-bottom:20px;}
+.modal-actions{display:flex; gap:10px; justify-content:flex-end;}
+.modal-btn{padding:9px 18px; border-radius:var(--radius-sm); font-family:var(--mono); font-size:12.5px;}
+.modal-btn.cancel{color:var(--muted); border:1px solid var(--border-soft);}
+.modal-btn.confirm{background:var(--neon); color:#060803;}
+
+canvas#confettiCanvas{position:fixed; inset:0; pointer-events:none; z-index:99;}
+
+@media (max-width:600px){
+  .lobby-title{font-size:27px;}
+  .stamp{font-size:24px; padding:12px 22px;}
+  .score-big{font-size:40px;}
+  .hud{right:10px; bottom:78px; min-width:112px; padding:10px 12px;}
+  .variant-card{padding:14px 14px 14px 16px;}
+}
+</style>
+</head>
+<body>
+
+<div class="grid-overlay"></div>
+<div class="spz-void-stars"></div>
+<div class="spz-void-comet c1"></div>
+<div class="spz-void-comet c2"></div>
+<div class="spz-void-comet c3"></div>
+<div class="spz-void-comet c4"></div>
+
+<div class="topbar">
+  <div class="brand"><span class="mark"></span>SPACEZ exam hub — CEWA51</div>
+  <a class="back-btn" href="index.html">← Back</a>
+</div>
+
+<!-- ================= LOBBY ================= -->
+<section id="screen-lobby" class="screen active">
+  <div class="lobby-wrap">
+    <div class="eyebrow">CERTIFIED ELLIOTT WAVE ANALYST · MOCK EXAM</div>
+    <h1 class="lobby-title">CEWA Mock Exam</h1>
+    <p class="lobby-sub thai">เลือกชุดข้อสอบด้านล่าง แต่ละชุดมีจำนวนข้อ เวลา และรูปแบบคำถามต่างกัน ทำได้ 80% ขึ้นไปถือว่าผ่าน</p>
+
+    <div class="ledger-tabs" id="variantList">
+      <button class="variant-card" data-variant="v1">
+        <div class="variant-chit">I</div>
+        <div class="variant-body">
+          <div class="variant-label">EXAM I · FOUNDATIONS</div>
+          <div class="variant-title">Elliott Wave Analyst — Level I</div>
+          <div class="variant-tags">
+            <span class="tag accent">50 questions</span>
+            <span class="tag">45 min</span>
+            <span class="tag">Single Best Answer</span>
+            <span class="tag">Pass 80%</span>
+          </div>
+        </div>
+      </button>
+
+      <button class="variant-card" data-variant="v2">
+        <div class="variant-chit">II·1</div>
+        <div class="variant-body">
+          <div class="variant-label">CEWA II · PART 1</div>
+          <div class="variant-title">Elliott Wave Analyst — Level II, Part 1</div>
+          <div class="variant-tags">
+            <span class="tag accent">20 questions</span>
+            <span class="tag">45 min</span>
+            <span class="tag">Single Best Answer</span>
+            <span class="tag">Pass 80%</span>
+          </div>
+        </div>
+      </button>
+
+      <button class="variant-card" data-variant="v3">
+        <div class="variant-chit">II·2</div>
+        <div class="variant-body">
+          <div class="variant-label">CEWA II · PART 2</div>
+          <div class="variant-title">Elliott Wave Analyst — Level II, Part 2</div>
+          <div class="variant-tags">
+            <span class="tag accent">20 questions</span>
+            <span class="tag">45 min</span>
+            <span class="tag">Multiple Correct Responses</span>
+            <span class="tag">Pass 80%</span>
+          </div>
+        </div>
+      </button>
+    </div>
+
+    <div class="lobby-controls">
+      <button class="shuffle-toggle" id="shuffleToggle">
+        <span class="dice">🎲</span> Shuffle questions &amp; choices
+        <span class="switch" id="shuffleSwitch"></span>
+      </button>
+      <button class="start-btn" id="startBtn" disabled>START EXAM</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= QUIZ ================= -->
+<section id="screen-quiz" class="screen">
+  <div class="quiz-wrap">
+    <div class="quiz-meta-bar">
+      <div class="quiz-variant-name" id="quizVariantName">—</div>
+      <div class="quiz-count" id="quizCount">0 / 0 answered</div>
+    </div>
+    <div id="questionList"></div>
+  </div>
+
+  <div class="hud" id="hud">
+    <div class="hud-row"><span>Elapsed</span><b id="hudElapsed">00:00</b></div>
+    <div class="hud-row remaining"><span>Remaining</span><b id="hudRemaining">00:00</b></div>
+    <div class="hud-row"><span>Progress</span><b id="hudProgress">0%</b></div>
+    <div class="hud-bar"><div class="hud-bar-fill" id="hudBarFill" style="width:0%"></div></div>
+  </div>
+
+  <div class="submit-bar">
+    <button class="submit-btn" id="submitBtn">SUBMIT EXAM</button>
+  </div>
+</section>
+
+<!-- ================= RESULTS ================= -->
+<section id="screen-results" class="screen">
+  <div class="results-wrap">
+    <div class="results-hero">
+      <div class="stamp" id="gradeStamp">PASS</div>
+      <div class="score-line thai" id="resultsVariantName">—</div>
+      <div class="score-big" id="scoreBig">0%</div>
+      <div class="results-stats">
+        <div><b id="statCorrect">0</b>/<span id="statTotal">0</span> correct</div>
+        <div>Time: <b id="statTime">00:00</b></div>
+      </div>
+    </div>
+
+    <div class="lang-toggle">
+      <button class="lang-btn active" data-lang="en">🇬🇧 English</button>
+      <button class="lang-btn" data-lang="th">🇹🇭 ภาษาไทย</button>
+    </div>
+
+    <div id="reviewList"></div>
+
+    <div class="retry-bar">
+      <button class="retry-btn" id="backToLobbyBtn">← Choose another exam</button>
+      <button class="retry-btn primary" id="retakeBtn">Retake this exam</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MODAL ================= -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle">Submit exam?</div>
+    <div class="modal-msg" id="modalMsg">You still have unanswered questions. Submit anyway?</div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="modalCancel">Cancel</button>
+      <button class="modal-btn confirm" id="modalConfirm">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="confettiCanvas"></canvas>
+
+<script>
+/* ===== Question Banks (QC-validated: balanced answer distribution, length-balanced distractors) ===== */
+const V1_BANK = [{"id": "v1q01", "qType": "single", "diff": "easy", "text": "Which statement about the lengths of waves 1, 3 and 5 is a firm rule rather than a guideline?", "choices": [{"id": "a", "letter": "A", "text": "Wave 3 must be the longest of the three, since it is the strongest wave of the pattern"}, {"id": "b", "letter": "B", "text": "Wave 5 must be longer than wave 1, since the advance has to end with a new momentum high"}, {"id": "c", "letter": "C", "text": "Waves 1 and 5 must be equal when wave 3 extends, since the pattern requires exact symmetry"}, {"id": "d", "letter": "D", "text": "Wave 3 may not be the shortest of the three, though it need not be the longest"}], "correct": ["d"], "expEn": "The rule says wave 3 can never be the shortest of waves 1, 3 and 5; it need not be the longest, because wave 1 or wave 5 may extend. Equality of waves 1 and 5 is only a guideline, and wave 5 may be the shortest.", "expTh": "กฎคือ wave 3 ห้ามสั้นที่สุดในบรรดา wave 1, 3 และ 5 แต่ไม่จำเป็นต้องยาวที่สุด เพราะ wave 1 หรือ wave 5 อาจ extend แทนได้ ส่วนความเท่ากันของ wave 1 และ 5 เป็นเพียง guideline และ wave 5 สั้นที่สุดได้"}, {"id": "v1q02", "qType": "single", "diff": "easy", "text": "In Elliott terminology, what is an extension?", "choices": [{"id": "a", "letter": "A", "text": "A stretched motive wave whose subdivisions are exaggerated, normally seen in just one of the actionary waves"}, {"id": "b", "letter": "B", "text": "A fourth wave that stretches back into the price territory of wave 1 before the advance finally resumes"}, {"id": "c", "letter": "C", "text": "A fifth wave that falls short of the end of wave 3 even though wave 3 was unusually strong and long"}, {"id": "d", "letter": "D", "text": "A correction that carries beyond the starting point of the impulse it is retracing in full"}], "correct": ["a"], "expEn": "An extension is an elongated impulse wave with exaggerated subdivisions, and ordinarily only one of waves 1, 3 and 5 extends. Failure of wave 5 to pass wave 3 is a truncation, a different phenomenon.", "expTh": "extension คือคลื่นขับเคลื่อนที่ยืดยาวและมีคลื่นย่อยชัดเจนเกินปกติ โดยทั่วไปมีเพียงหนึ่งใน wave 1, 3, 5 เท่านั้นที่ extend ส่วน wave 5 ที่ไปไม่ถึงปลาย wave 3 เรียกว่า truncation ซึ่งเป็นคนละเรื่องกัน"}, {"id": "v1q03", "qType": "single", "diff": "easy", "text": "In a typical stock-market bull advance, which actionary wave is most often the extended one?", "choices": [{"id": "a", "letter": "A", "text": "Wave 5, which in stocks normally outruns waves 1 and 3 because of late-cycle enthusiasm"}, {"id": "b", "letter": "B", "text": "Wave 1, because the first leg out of a bear market is typically the most explosive"}, {"id": "c", "letter": "C", "text": "Wave 3, which usually carries the heaviest participation of the whole advance"}, {"id": "d", "letter": "D", "text": "Wave 4, because sideways corrections frequently stretch into the longest wave of the pattern"}], "correct": ["c"], "expEn": "In stocks the third wave is the one that extends most often. Wave 4 is a corrective wave and cannot be an extension in the motive sense, and fifth-wave extensions are the more typical feature of commodities.", "expTh": "ในตลาดหุ้น wave 3 คือคลื่นที่ extend บ่อยที่สุด ส่วน wave 4 เป็นคลื่นปรับฐาน จึงไม่ใช่ extension แบบคลื่นขับเคลื่อน และ extension ใน wave 5 เป็นลักษณะที่พบบ่อยกว่าในตลาดสินค้าโภคภัณฑ์"}, {"id": "v1q04", "qType": "single", "diff": "easy", "text": "Which description fits the usual personality of wave 3 in a bull-market impulse?", "choices": [{"id": "a", "letter": "A", "text": "Hesitant and narrow, driven by a handful of leaders while most participants stay openly skeptical of the whole rally"}, {"id": "b", "letter": "B", "text": "Powerful and broad, usually the most dynamic leg with widespread participation and obvious trend confirmation"}, {"id": "c", "letter": "C", "text": "Euphoric but weakening, showing narrower breadth and lagging momentum as the advance nears its end"}, {"id": "d", "letter": "D", "text": "A sharp retracement that wipes out most of the prior gain and convinces many that the bear market has returned"}], "correct": ["b"], "expEn": "Wave 3 is generally the strongest and most powerful wave, with broad participation and clear trend confirmation. The weakening euphoria describes wave 5, and the deep retracement describes wave 2.", "expTh": "wave 3 มักเป็นคลื่นที่แรงและกว้างที่สุด มีผู้ร่วมตลาดมาก และยืนยันแนวโน้มชัดเจน ส่วนลักษณะที่เริ่มอ่อนแรงท่ามกลางความคึกคักเป็นของ wave 5 และการย้อนลึกเป็นของ wave 2"}, {"id": "v1q05", "qType": "single", "diff": "easy", "text": "Compared with wave 3 in a stock-market bull impulse, how does wave 5 typically behave?", "choices": [{"id": "a", "letter": "A", "text": "Volume and breadth both exceed wave 3 because the public finally joins in at full force"}, {"id": "b", "letter": "B", "text": "Volume is unchanged and breadth is identical, since waves 3 and 5 are always equal in personality"}, {"id": "c", "letter": "C", "text": "Volume and breadth are lighter even though sentiment is more optimistic than at any earlier stage"}, {"id": "d", "letter": "D", "text": "Prices accelerate faster than in wave 3 and gaps become more frequent than during any earlier wave"}], "correct": ["c"], "expEn": "Wave 5 normally shows less dynamic breadth and lighter volume than wave 3, yet optimism is high, so momentum divergences are typical. Gaps and the greatest acceleration belong more to wave 3.", "expTh": "wave 5 ในตลาดหุ้นมักมี volume และ breadth น้อยกว่า wave 3 แม้ความมองโลกในแง่ดีจะสูงมาก จึงมักเกิด divergence ของโมเมนตัม ส่วน gap และการเร่งตัวแรงสุดมักอยู่ใน wave 3"}, {"id": "v1q06", "qType": "single", "diff": "easy", "text": "Which corrective wave in a bull-market impulse usually frightens investors into thinking the old bear market has returned?", "choices": [{"id": "a", "letter": "A", "text": "Wave 4, since it usually erases more than 61.8% of wave 3 before the final advance"}, {"id": "b", "letter": "B", "text": "Wave 4, since it normally drops into the price territory of wave 1 on heavy volume"}, {"id": "c", "letter": "C", "text": "Wave 2, since it always retraces exactly 100% of wave 1 before turning higher"}, {"id": "d", "letter": "D", "text": "Wave 2, since it often retraces a large share of wave 1 on fading volume"}], "correct": ["d"], "expEn": "Wave 2 commonly retraces a large part of wave 1, which convinces many that the bear market is back. It may never retrace more than 100% of wave 1, and wave 4 typically gives back much less of wave 3.", "expTh": "wave 2 มักย้อนกลับเป็นสัดส่วนมากของ wave 1 ทำให้หลายคนเชื่อว่าตลาดหมีกลับมาแล้ว แต่ห้ามย้อนเกิน 100% ของ wave 1 และ wave 4 มักให้คืนส่วนของ wave 3 น้อยกว่ามาก"}, {"id": "v1q07", "qType": "single", "diff": "easy", "text": "Which number sequence did R. N. Elliott present in Nature's Law as the mathematical basis of the Wave Principle?", "choices": [{"id": "a", "letter": "A", "text": "1, 2, 3, 5, 8, 13, 21, 34, 55, 89, where each number is the sum of the two before it"}, {"id": "b", "letter": "B", "text": "1, 3, 4, 7, 11, 18, 29, 47, 76, where each number is the sum of the two before it"}, {"id": "c", "letter": "C", "text": "2, 3, 5, 7, 11, 13, 17, 19, 23, 29, where each number can be divided only by itself and one"}, {"id": "d", "letter": "D", "text": "1, 2, 4, 8, 16, 32, 64, 128, 256, where each number is double the number before it"}], "correct": ["a"], "expEn": "Elliott tied the wave pattern to the Fibonacci summation series 1, 2, 3, 5, 8, 13, 21, 34 and so on, where each term is the sum of the previous two. The other lists are Lucas numbers, primes and powers of two.", "expTh": "Elliott เชื่อมรูปแบบคลื่นเข้ากับลำดับ Fibonacci คือ 1, 2, 3, 5, 8, 13, 21, 34 ... โดยแต่ละตัวเท่ากับผลบวกของสองตัวก่อนหน้า ส่วนชุดตัวเลขอื่นคือ Lucas, จำนวนเฉพาะ และกำลังของสอง"}, {"id": "v1q08", "qType": "single", "diff": "easy", "text": "Who first identified the Wave Principle after studying decades of stock-market data in the 1930s?", "choices": [{"id": "a", "letter": "A", "text": "Charles H. Dow, the newspaper editor whose averages and essays gave rise to Dow Theory"}, {"id": "b", "letter": "B", "text": "Ralph Nelson Elliott, an accountant who examined many years of Dow Jones average data"}, {"id": "c", "letter": "C", "text": "Leonardo Fibonacci, the medieval mathematician who worked out the ratio from market records"}, {"id": "d", "letter": "D", "text": "W. D. Gann, the trader who published a hierarchy of degrees and the five-three structure"}], "correct": ["b"], "expEn": "R. N. Elliott, an accountant, discovered the Wave Principle in the 1930s from studying stock-average data. Dow's theory is a separate body of work, and Fibonacci lived centuries before any market data series existed.", "expTh": "R. N. Elliott ซึ่งเป็นนักบัญชี ค้นพบ Wave Principle ในทศวรรษ 1930 จากการศึกษาข้อมูลดัชนีหุ้นย้อนหลังหลายสิบปี ส่วนทฤษฎีของ Dow เป็นผลงานคนละชิ้น และ Fibonacci มีชีวิตก่อนยุคข้อมูลตลาดหลายร้อยปี"}, {"id": "v1q09", "qType": "single", "diff": "easy", "text": "Statistically, which actionary wave most often turns out to be the extended one in stock-market impulses?", "choices": [{"id": "a", "letter": "A", "text": "Wave 3, which is typically the longest and most dynamic advance of the sequence"}, {"id": "b", "letter": "B", "text": "Wave 1, because every new trend starts with its most violent thrust"}, {"id": "c", "letter": "C", "text": "Wave 5, because the final push always carries the greatest momentum"}, {"id": "d", "letter": "D", "text": "Wave 4, because corrective waves tend to stretch out and absorb the most price"}], "correct": ["a"], "expEn": "In equities the extension most commonly appears in wave 3, whereas in commodities wave 5 is the usual candidate. Wave 5 extends less often in stocks, and wave 4 is corrective so it does not extend.", "expTh": "ในตลาดหุ้น extension มักเกิดใน wave 3 ซึ่งมักยาวและแรงที่สุดของลำดับ ส่วนในตลาดสินค้าโภคภัณฑ์ wave 5 มักเป็นคลื่นที่ขยาย wave 5 ในหุ้นขยายได้น้อยกว่า และ wave 4 เป็นคลื่นปรับฐานจึงไม่เกิด extension"}, {"id": "v1q10", "qType": "single", "diff": "easy", "text": "When an impulse contains one extended wave, how many small waves of the same degree can the whole sequence be counted as?", "choices": [{"id": "a", "letter": "A", "text": "Seven waves, because the extension adds only two extra small corrections"}, {"id": "b", "letter": "B", "text": "Nine waves, because the extension supplies five subwaves in place of one"}, {"id": "c", "letter": "C", "text": "Eleven waves, because each of the three actionary waves must extend a little"}, {"id": "d", "letter": "D", "text": "Thirteen waves, because the extension doubles every wave around it"}], "correct": ["b"], "expEn": "An extended wave subdivides into five clear subwaves of nearly the same size, so the full impulse can show nine waves (for a third-wave extension: wave 1, wave 2, five subwaves, wave 4 and wave 5). Only one actionary wave normally extends, which rules out the larger totals.", "expTh": "คลื่นที่เกิด extension จะแบ่งเป็น 5 คลื่นย่อยที่ขนาดใกล้เคียงกัน ทำให้ทั้ง impulse นับได้เป็น 9 คลื่น ปกติมีเพียงคลื่นขับเคลื่อนเดียวที่ขยาย จึงไม่ถึง 11 หรือ 13 คลื่น"}, {"id": "v1q11", "qType": "single", "diff": "easy", "text": "Which set of lengths for waves 1, 3 and 5 is admissible in a bullish impulse?", "choices": [{"id": "a", "letter": "A", "text": "Wave 1 = 25, wave 3 = 17, wave 5 = 21"}, {"id": "b", "letter": "B", "text": "Wave 1 = 18, wave 3 = 11, wave 5 = 20"}, {"id": "c", "letter": "C", "text": "Wave 1 = 18, wave 3 = 26, wave 5 = 12"}, {"id": "d", "letter": "D", "text": "Wave 1 = 30, wave 3 = 19, wave 5 = 24"}], "correct": ["c"], "expEn": "Wave 3 may never be the shortest of the three actionary waves. Only the third set (C) satisfies that, with wave 5 as the shortest. In every other set wave 3 is the shortest, which is not allowed.", "expTh": "wave 3 ห้ามเป็นคลื่นที่สั้นที่สุดในสามคลื่นขับเคลื่อน มีเพียงชุดที่สาม (C) ที่ผ่านเงื่อนไข โดย wave 5 สั้นที่สุด ส่วนชุดอื่นทุกชุด wave 3 สั้นที่สุด ซึ่งไม่อนุญาต"}, {"id": "v1q12", "qType": "single", "diff": "easy", "text": "A trader summarizing the personality of a third wave in an equity bull market would most accurately say it is:", "choices": [{"id": "a", "letter": "A", "text": "A hesitant advance on thin volume while most analysts still expect the rally to fail"}, {"id": "b", "letter": "B", "text": "A narrow-breadth advance whose momentum indicators fail to confirm the new price highs"}, {"id": "c", "letter": "C", "text": "A choppy, overlapping drift upward that is usually the shortest and quietest of the waves"}, {"id": "d", "letter": "D", "text": "A powerful, steady advance with broad participation and usually the heaviest volume of the sequence"}], "correct": ["d"], "expEn": "Wave 3 is usually the strongest and often the longest wave, with the widest participation and the highest volume. Hesitant, doubted trading fits wave 1, and weaker breadth with non-confirmation fits wave 5.", "expTh": "wave 3 มักเป็นคลื่นที่แรงและยาวที่สุด มีผู้ร่วมตลาดกว้างและปริมาณซื้อขายสูงสุดของลำดับ ส่วนการขึ้นอย่างลังเลและมีคนไม่เชื่อเป็นลักษณะของ wave 1 และ breadth ที่แคบพร้อมการไม่ยืนยันเป็นลักษณะของ wave 5"}, {"id": "v1q13", "qType": "single", "diff": "easy", "text": "How does wave B of a zigzag differ from wave B of a flat when retracing wave A?", "choices": [{"id": "a", "letter": "A", "text": "In a zigzag it retraces only part of wave A, while in a flat it retraces most or all of it"}, {"id": "b", "letter": "B", "text": "In a zigzag it exceeds the start of wave A, while in a flat it stops near 38.2% of wave A"}, {"id": "c", "letter": "C", "text": "In both patterns it retraces about 38.2% of wave A and the difference lies only in wave C"}, {"id": "d", "letter": "D", "text": "In a zigzag it retraces all of wave A, while in a flat it retraces only about half of it"}], "correct": ["a"], "expEn": "In a zigzag, wave B retraces only part of wave A (usually no more than about 61.8%), whereas in a flat it retraces most or all of wave A. The other options misstate these depths.", "expTh": "ใน zigzag wave B ย้อนกลับเพียงบางส่วนของ wave A (โดยทั่วไปไม่เกินราว 61.8%) ส่วนใน flat จะย้อนกลับเกือบหมดหรือทั้งหมดของ wave A ตัวเลือกอื่นระบุความลึกผิด"}, {"id": "v1q14", "qType": "single", "diff": "easy", "text": "In a regular flat, how do waves A, B and C subdivide?", "choices": [{"id": "a", "letter": "A", "text": "Waves A and C each in five waves, and wave B in three waves"}, {"id": "b", "letter": "B", "text": "Waves A and B each in three waves, and wave C in five waves"}, {"id": "c", "letter": "C", "text": "Waves A, B and C each in three waves, forming a 3-3-3 sequence"}, {"id": "d", "letter": "D", "text": "Wave A in three waves, wave B in five waves, and wave C in three waves"}], "correct": ["b"], "expEn": "A flat is a 3-3-5 pattern. The 5-3-5 count belongs to the zigzag, and an all-three structure does not describe a three-wave flat.", "expTh": "flat เป็นโครงสร้าง 3-3-5 คือ A และ B แบ่งเป็น 3 คลื่น ส่วน C แบ่งเป็น 5 คลื่น การนับ 5-3-5 เป็นของ zigzag และโครงสร้างที่เป็น 3 ทั้งหมดไม่ใช่ flat"}, {"id": "v1q15", "qType": "single", "diff": "easy", "text": "Which sequence correctly continues the Fibonacci summation series 13, 21, 34?", "choices": [{"id": "a", "letter": "A", "text": "55, 88, 143"}, {"id": "b", "letter": "B", "text": "54, 88, 142"}, {"id": "c", "letter": "C", "text": "55, 89, 145"}, {"id": "d", "letter": "D", "text": "55, 89, 144"}], "correct": ["d"], "expEn": "Each term is the sum of the previous two: 21 + 34 = 55, 34 + 55 = 89 and 55 + 89 = 144. The other sequences contain an arithmetic slip somewhere in the chain.", "expTh": "แต่ละพจน์เท่ากับผลบวกของสองพจน์ก่อนหน้า 21 + 34 = 55, 34 + 55 = 89 และ 55 + 89 = 144 ชุดตัวเลขอื่นมีความผิดพลาดในการบวกอยู่ที่ใดที่หนึ่ง"}, {"id": "v1q16", "qType": "single", "diff": "easy", "text": "Which statement about the golden ratio and its derived ratios is accurate?", "choices": [{"id": "a", "letter": "A", "text": "Squaring 0.618 gives about 0.236, and squaring 1.618 gives about 4.236"}, {"id": "b", "letter": "B", "text": "Squaring 0.618 gives about 0.500, and squaring 1.618 gives about 3.000"}, {"id": "c", "letter": "C", "text": "Squaring 0.618 gives about 0.382, and squaring 1.618 gives about 2.618"}, {"id": "d", "letter": "D", "text": "Squaring 0.618 gives about 0.146, and squaring 1.618 gives about 1.272"}], "correct": ["c"], "expEn": "0.618 x 0.618 = 0.382 and 1.618 x 1.618 = 2.618. The values 0.236 and 4.236 are produced by cubing, not squaring.", "expTh": "0.618 x 0.618 = 0.382 และ 1.618 x 1.618 = 2.618 ส่วนค่า 0.236 และ 4.236 ได้จากการยกกำลังสามไม่ใช่กำลังสอง"}, {"id": "v1q17", "qType": "single", "diff": "medium", "text": "One five-wave advance and its three-wave correction are each subdivided once, down one degree. What is the combined number of smaller waves in the pair?", "choices": [{"id": "a", "letter": "A", "text": "34 waves, made up of 21 in the impulse and 13 in the correction"}, {"id": "b", "letter": "B", "text": "21 waves, made up of 13 in the impulse and 8 in the correction"}, {"id": "c", "letter": "C", "text": "40 waves, made up of 25 in the impulse and 15 in the correction"}, {"id": "d", "letter": "D", "text": "29 waves, made up of 19 in the impulse and 10 in the correction"}], "correct": ["a"], "expEn": "The five-wave impulse becomes 5+3+5+3+5 = 21 waves and the three-wave correction becomes 5+3+5 = 13, giving 34, a Fibonacci number. The 40 comes from wrongly counting every wave as five subwaves (25 + 15).", "expTh": "impulse 5 คลื่นแตกเป็น 5+3+5+3+5 = 21 คลื่น และ correction 3 คลื่นแตกเป็น 5+3+5 = 13 คลื่น รวมเป็น 34 ซึ่งเป็นเลข Fibonacci ส่วน 40 มาจากการนับทุกคลื่นเป็น 5 คลื่นย่อยอย่างผิด ๆ (25 + 15)"}, {"id": "v1q18", "qType": "single", "diff": "medium", "text": "How many degrees of trend did Elliott himself name, from the largest to the smallest?", "choices": [{"id": "a", "letter": "A", "text": "Seven degrees, running from Supercycle down to Minuette"}, {"id": "b", "letter": "B", "text": "Twelve degrees, running from Millennium down to Micro-scale"}, {"id": "c", "letter": "C", "text": "Nine degrees, running from Grand Supercycle down to Subminuette"}, {"id": "d", "letter": "D", "text": "Five degrees, running from Cycle down to Minor"}], "correct": ["c"], "expEn": "Elliott named nine degrees of trend, from Grand Supercycle through Supercycle, Cycle, Primary, Intermediate, Minor, Minute, Minuette and Subminuette.", "expTh": "Elliott ตั้งชื่อระดับของแนวโน้มไว้ 9 ระดับ ตั้งแต่ Grand Supercycle, Supercycle, Cycle, Primary, Intermediate, Minor, Minute, Minuette จนถึง Subminuette"}, {"id": "v1q19", "qType": "single", "diff": "medium", "text": "In standard Elliott notation, how are impulse waves of Intermediate degree labeled?", "choices": [{"id": "a", "letter": "A", "text": "Arabic numerals enclosed in circles, which is the usual convention reserved for the Primary degree"}, {"id": "b", "letter": "B", "text": "Arabic numerals enclosed in parentheses, as in (1), (2), (3), (4), (5)"}, {"id": "c", "letter": "C", "text": "Plain Arabic numerals with no enclosure at all, which is the usual convention reserved for Minor degree"}, {"id": "d", "letter": "D", "text": "Capital Roman numerals with no enclosure, which is the convention reserved for Cycle degree"}], "correct": ["b"], "expEn": "Intermediate degree uses numerals in parentheses, (1) through (5). Circled numerals denote Primary, plain numerals denote Minor, and capital Roman numerals denote Cycle.", "expTh": "degree ระดับ Intermediate ใช้เลขอารบิกในวงเล็บ เช่น (1) ถึง (5) ส่วนเลขในวงกลมใช้กับ Primary เลขธรรมดาใช้กับ Minor และเลขโรมันตัวใหญ่ใช้กับ Cycle"}, {"id": "v1q20", "qType": "single", "diff": "medium", "text": "According to the Wave Principle, what establishes the degree of a particular wave?", "choices": [{"id": "a", "letter": "A", "text": "Its duration measured in calendar time, with a Primary wave lasting several months to a few years"}, {"id": "b", "letter": "B", "text": "Its point size measured on the chart, with each degree defined by a fixed minimum number of index points"}, {"id": "c", "letter": "C", "text": "Its volume measured against the moving average, with higher degrees always showing heavier turnover"}, {"id": "d", "letter": "D", "text": "Its form and its position relative to the component and adjacent waves, not an absolute length of time or distance"}], "correct": ["d"], "expEn": "Degree is determined by form and relative position in the structure, not by fixed durations, point sizes or volume. Time ranges given for degrees are only approximate illustrations.", "expTh": "degree ของคลื่นถูกกำหนดด้วยรูปแบบและตำแหน่งสัมพัทธ์เมื่อเทียบกับคลื่นย่อยและคลื่นข้างเคียง ไม่ใช่ระยะเวลา จำนวนจุด หรือ volume ที่ตายตัว ช่วงเวลาที่ระบุไว้สำหรับแต่ละ degree เป็นเพียงค่าประมาณ"}, {"id": "v1q21", "qType": "single", "diff": "medium", "text": "Wave 4 appears complete. How can a trend channel be used to estimate where wave 5 will end?", "choices": [{"id": "a", "letter": "A", "text": "Draw a line through the start of wave 1 and the end of wave 3, then a parallel line through wave 4"}, {"id": "b", "letter": "B", "text": "Draw a line through the ends of waves 2 and 4, then a parallel line through the end of wave 3"}, {"id": "c", "letter": "C", "text": "Draw a line through the ends of waves 1 and 3, then a parallel line through the end of wave 2"}, {"id": "d", "letter": "D", "text": "Draw a horizontal line at the end of wave 3 and project the width of wave 1 beyond it"}], "correct": ["b"], "expEn": "The base line connects the ends of waves 2 and 4, and a parallel drawn from the end of wave 3 marks the area where wave 5 often terminates. The other constructions do not describe the standard channel for the fifth wave.", "expTh": "ลากเส้นเชื่อมจุดสิ้นสุดของ wave 2 และ wave 4 แล้วลากเส้นขนานผ่านปลาย wave 3 พื้นที่ใกล้เส้นบนนี้มักเป็นจุดจบของ wave 5 ส่วนวิธีอื่นไม่ใช่การทำ channel มาตรฐานสำหรับ wave 5"}, {"id": "v1q22", "qType": "single", "diff": "medium", "text": "What is a throw-over in channeling an impulse?", "choices": [{"id": "a", "letter": "A", "text": "A fourth wave that breaks the lower channel line and then continues lower into wave 1 territory"}, {"id": "b", "letter": "B", "text": "A third wave that fails to reach the upper channel line, signalling that wave 5 is expected to be an extension"}, {"id": "c", "letter": "C", "text": "A fifth wave that briefly pierces the upper channel line, after which price quickly drops back inside the channel"}, {"id": "d", "letter": "D", "text": "A second wave that overshoots the base line, which proves the impulse count is actually a zigzag"}], "correct": ["c"], "expEn": "A throw-over is a fifth wave that exceeds the upper channel boundary and then quickly returns inside the channel. A wave 4 violating wave 1 territory would break the impulse rules.", "expTh": "throw-over คือ wave 5 ที่ทะลุเส้น channel ด้านบนชั่วคราวแล้วหลุดกลับเข้ามาในกรอบอย่างรวดเร็ว ส่วน wave 4 ที่ลงไปในเขตของ wave 1 จะขัดกฎของ impulse"}, {"id": "v1q23", "qType": "single", "diff": "medium", "text": "Where in a stock-market impulse are daily price gaps most likely to appear?", "choices": [{"id": "a", "letter": "A", "text": "At the very end of wave 2, because the retracement always finishes with a dramatic opening gap"}, {"id": "b", "letter": "B", "text": "Throughout wave 4, because sideways corrections are defined by repeated overnight gaps"}, {"id": "c", "letter": "C", "text": "Only in wave 1, because the first leg of a new trend is the thinnest and least liquid"}, {"id": "d", "letter": "D", "text": "During wave 3, the most dynamic stretch, when the trend is obvious and demand is broad"}], "correct": ["d"], "expEn": "Price gaps are most characteristic of the powerful third wave, when the trend is obvious and demand is broad. The other options place gaps in the corrective waves or only in the first wave, which is not where they typically cluster.", "expTh": "price gap มักเกิดใน wave 3 ซึ่งเป็นช่วงที่แรงที่สุด แนวโน้มชัดเจนและแรงซื้อกว้าง ตัวเลือกอื่นวาง gap ไว้ในคลื่นปรับฐานหรือเฉพาะ wave 1 ซึ่งไม่ใช่ที่ที่ gap มักเกิดขึ้น"}, {"id": "v1q24", "qType": "single", "diff": "medium", "text": "When wave 3 extends, which multiple of wave 1 is a commonly watched Fibonacci target for its length?", "choices": [{"id": "a", "letter": "A", "text": "2.618 times wave 1, a step above the more ordinary 1.618 relationship"}, {"id": "b", "letter": "B", "text": "0.618 times wave 1, since extension rules shrink wave 3 below the length of the first wave"}, {"id": "c", "letter": "C", "text": "1.000 times wave 1, since equality between waves 1 and 3 identifies an extended third"}, {"id": "d", "letter": "D", "text": "0.382 times wave 1, since a long wave 3 normally pairs with a very shallow wave 2"}], "correct": ["a"], "expEn": "A normal wave 3 often measures about 1.618 times wave 1, while an extended wave 3 frequently reaches 2.618 times wave 1 or more. Ratios below 1.0 would not describe a long wave 3 at all.", "expTh": "wave 3 ปกติมักยาวราว 1.618 เท่าของ wave 1 ส่วน wave 3 ที่ extend มักไปถึง 2.618 เท่าหรือมากกว่า ส่วนอัตราส่วนที่ต่ำกว่า 1.0 ไม่ได้อธิบายคลื่น wave 3 ที่ยาวเลย"}, {"id": "v1q25", "qType": "single", "diff": "medium", "text": "Wave 1 climbs from 100 to 130 and wave 2 bottoms at 112. Where would a wave 3 equal to 1.618 times wave 1 end?", "choices": [{"id": "a", "letter": "A", "text": "About 178.5, found by adding 48.5 points to the wave 1 high"}, {"id": "b", "letter": "B", "text": "About 148.5, found by adding 48.5 points to the start of wave 1"}, {"id": "c", "letter": "C", "text": "About 142.0, found by adding the length of wave 1 to the wave 2 low"}, {"id": "d", "letter": "D", "text": "About 160.5, found by adding 48.5 points to the wave 2 low"}], "correct": ["d"], "expEn": "Wave 1 is 30 points, and 1.618 x 30 is about 48.5. Wave 3 is projected from the end of wave 2, so 112 + 48.5 = about 160.5; adding to the wave 1 high or its start measures from the wrong base.", "expTh": "wave 1 ยาว 30 จุด และ 1.618 x 30 ≈ 48.5 การฉายเป้าหมายของ wave 3 ต้องเริ่มจากจุดสิ้นสุดของ wave 2 คือ 112 + 48.5 ≈ 160.5 การบวกจากยอด wave 1 หรือจุดเริ่มต้นเป็นการใช้ฐานผิด"}, {"id": "v1q26", "qType": "single", "diff": "medium", "text": "Which statement describes the equality guideline when one actionary wave is extended?", "choices": [{"id": "a", "letter": "A", "text": "Wave 5 tends to be exactly 2.618 times wave 1, since extension forces a larger fifth wave"}, {"id": "b", "letter": "B", "text": "The two non-extended actionary waves tend toward equality in price length, or toward a 0.618 relationship"}, {"id": "c", "letter": "C", "text": "Wave 1 tends to be at least twice wave 5, since an extended wave 3 leaves little room"}, {"id": "d", "letter": "D", "text": "They tend to be unrelated, since only waves 2 and 4 follow ratio guidelines in impulses"}], "correct": ["b"], "expEn": "With an extended third wave, the remaining actionary waves 1 and 5 tend to be equal, or related by 0.618 (or 1.618). Equality is a guideline, not a rule, and no 2.618 requirement applies to wave 5.", "expTh": "เมื่อ wave 3 เป็นคลื่น extend คลื่นขับเคลื่อนที่เหลือคือ wave 1 และ wave 5 มักยาวเท่ากัน หรือมีสัดส่วน 0.618 (หรือ 1.618) ต่อกัน ทั้งนี้เป็นเพียง guideline ไม่ใช่กฎ และไม่มีข้อบังคับให้ wave 5 เป็น 2.618 เท่า"}, {"id": "v1q27", "qType": "single", "diff": "medium", "text": "Wave 3 is extended, wave 1 gained 24 points, and wave 4 ended at 168. By the equality guideline, where would wave 5 end?", "choices": [{"id": "a", "letter": "A", "text": "About 192, adding the wave 1 length of 24 points to the wave 4 low"}, {"id": "b", "letter": "B", "text": "About 144, subtracting the wave 1 length of 24 points from the wave 4 low"}, {"id": "c", "letter": "C", "text": "About 216, adding twice the wave 1 length of 48 points to the wave 4 low"}, {"id": "d", "letter": "D", "text": "About 180, adding half the wave 1 length of 12 points to the wave 4 low"}], "correct": ["a"], "expEn": "With wave 3 extended, wave 5 tends to equal wave 1, so project 24 points upward from the wave 4 low of 168 to get about 192. Subtracting would project down, and 216 or 180 use other multiples.", "expTh": "เมื่อ wave 3 extend wave 5 มักยาวเท่า wave 1 จึงฉาย 24 จุดขึ้นจากจุดต่ำ wave 4 ที่ 168 ได้ประมาณ 192 การลบคือการฉายลง ส่วน 216 และ 180 ใช้ตัวคูณอื่น"}, {"id": "v1q28", "qType": "single", "diff": "medium", "text": "An analyst counts wave 1 = 40 points, wave 3 = 35 points and wave 5 = 50 points in a bull impulse. What is the proper conclusion?", "choices": [{"id": "a", "letter": "A", "text": "The count is valid, because wave 5 is the longest and so qualifies as an extended fifth wave"}, {"id": "b", "letter": "B", "text": "The count is valid, because wave 3 only has to exceed the length of wave 2 to be acceptable"}, {"id": "c", "letter": "C", "text": "The count breaks a rule, because wave 3 is shorter than both waves 1 and 5"}, {"id": "d", "letter": "D", "text": "The count breaks a rule, because wave 5 may not exceed wave 1 by more than 1.618 times"}], "correct": ["c"], "expEn": "Wave 3 may never be the shortest of waves 1, 3 and 5, and here it is shorter than both. The count must be revised, even though an extended fifth would otherwise be allowed.", "expTh": "wave 3 ห้ามสั้นที่สุดในบรรดา wave 1, 3, 5 แต่ในที่นี้สั้นกว่าทั้งสองคลื่น การนับนี้จึงผิดกฎและต้องแก้ใหม่ แม้ว่า wave 5 ที่ extend โดยทั่วไปจะเป็นไปได้ก็ตาม"}, {"id": "v1q29", "qType": "single", "diff": "medium", "text": "Under what conditions is a fifth wave most likely to fall short of the end of wave 3 (a truncation)?", "choices": [{"id": "a", "letter": "A", "text": "After an exceptionally strong third wave that exhausted buying power before the final advance"}, {"id": "b", "letter": "B", "text": "After a weak third wave that was shorter than wave 1, which leaves wave 5 without any momentum"}, {"id": "c", "letter": "C", "text": "After a wave 4 that retraced more than 61.8% of wave 3 and drained all remaining demand"}, {"id": "d", "letter": "D", "text": "After a wave 2 that was a flat correction, since flats always prevent a fifth wave from advancing"}], "correct": ["a"], "expEn": "Truncation tends to follow an unusually powerful third wave, where the move is so strong that the fifth cannot exceed it. A weak third wave is not the typical setting for a truncation.", "expTh": "truncation มักเกิดหลัง wave 3 ที่แรงผิดปกติ จนกำลังซื้อหมดและ wave 5 ไปไม่ถึงปลาย wave 3 ส่วน wave 3 ที่อ่อนไม่ใช่บริบทปกติของ truncation"}, {"id": "v1q30", "qType": "single", "diff": "medium", "text": "After an impulse ends with an extended fifth wave, where does the first corrective phase usually find support?", "choices": [{"id": "a", "letter": "A", "text": "Near the high of wave 3 of the larger impulse, which now acts as resistance turned support"}, {"id": "b", "letter": "B", "text": "Near the starting point of wave 1 of the whole impulse, which is the usual full retracement level"}, {"id": "c", "letter": "C", "text": "In the area of the second wave of the extension itself, reached by a swift retracement"}, {"id": "d", "letter": "D", "text": "Near the midpoint of the extended fifth wave, where half of its gain is given back"}], "correct": ["c"], "expEn": "A correction following an extended fifth wave typically retraces swiftly to the area of the extension's own second wave. Going back to the start of wave 1 would be unusual.", "expTh": "การปรับฐานหลัง wave 5 ที่ extend มักย้อนลงเร็วไปบริเวณ wave 2 ของตัว extension เอง การย้อนกลับไปถึงจุดเริ่ม wave 1 ถือว่าไม่ปกติ"}, {"id": "v1q31", "qType": "single", "diff": "medium", "text": "What should an analyst expect from wave 4 of a bull-market impulse if it behaves in character?", "choices": [{"id": "a", "letter": "A", "text": "Usually a steep, fast correction that gives back most of wave 3 and often tests the end of wave 1 itself"}, {"id": "b", "letter": "B", "text": "Usually a powerful, high-volume advance in which breadth is wider than at any earlier point in the whole pattern"}, {"id": "c", "letter": "C", "text": "Usually a brief pause that always lasts exactly as long as wave 2 and retraces the same percentage"}, {"id": "d", "letter": "D", "text": "Often a sideways, time-consuming correction that gives back only a modest part of wave 3, near 38.2% as a typical depth"}], "correct": ["d"], "expEn": "Wave 4 is often a sideways, complex correction of modest depth, with roughly 38.2% of wave 3 being a common retracement. It tends to alternate with wave 2 rather than repeat it, and it may not enter wave 1 territory.", "expTh": "wave 4 มักเป็นการปรับฐานแบบแกว่งไซด์เวย์ ใช้เวลานาน ให้คืน wave 3 ไม่มาก โดยระดับ 38.2% พบบ่อย และมักสลับลักษณะกับ wave 2 ไม่ใช่ซ้ำแบบเดิม อีกทั้งห้ามเข้าเขตของ wave 1"}, {"id": "v1q32", "qType": "single", "diff": "medium", "text": "Which statement correctly contrasts extension habits in stock averages with those in commodity markets?", "choices": [{"id": "a", "letter": "A", "text": "Both extend most often in wave 1, because the opening leg out of a trough is the most explosive one"}, {"id": "b", "letter": "B", "text": "Stock averages extend most often in wave 3, whereas commodities most often extend in wave 5"}, {"id": "c", "letter": "C", "text": "Stock averages extend most often in wave 5, whereas commodities most often extend in wave 3"}, {"id": "d", "letter": "D", "text": "Neither market extends in a motive wave, because extensions are a feature of corrections alone"}], "correct": ["b"], "expEn": "In commodity markets, fifth-wave extensions are the common form, unlike stocks where wave 3 extends most often. Wave 4 is a corrective wave, so it is not an actionary wave that can extend.", "expTh": "ในตลาดสินค้าโภคภัณฑ์ extension มักเกิดใน wave 5 ต่างจากตลาดหุ้นที่มักเกิดใน wave 3 ส่วน wave 4 เป็นคลื่นปรับฐาน จึงไม่ใช่คลื่นขับเคลื่อนที่จะ extend ได้"}, {"id": "v1q33", "qType": "single", "diff": "medium", "text": "If the extension in an impulse falls in the third wave, how are the two remaining actionary waves usually proportioned to one another?", "choices": [{"id": "a", "letter": "A", "text": "Wave 5 must be at least 1.618 times wave 1 so that the advance keeps accelerating"}, {"id": "b", "letter": "B", "text": "Wave 1 is usually about twice the length of wave 5 because momentum decays after an extension"}, {"id": "c", "letter": "C", "text": "They share no dependable proportion, since a long third wave absorbs all the symmetry"}, {"id": "d", "letter": "D", "text": "They tend toward equality in price and often in time, or wave 5 relates to wave 1 by about 0.618"}], "correct": ["d"], "expEn": "The equality guideline says that when wave 3 extends, waves 1 and 5 tend to be equal in length, and wave 5 is often 0.618 of wave 1 as an alternative. Requiring wave 5 to be larger confuses this with the case of an extended fifth.", "expTh": "หลัก equality ระบุว่าเมื่อ wave 3 เป็นคลื่นที่ขยาย wave 1 และ wave 5 มักยาวใกล้เคียงกันทั้งราคาและบ่อยครั้งทั้งเวลา หรือ wave 5 มักเป็น 0.618 ของ wave 1 การบังคับให้ wave 5 ใหญ่กว่าเป็นการสับสนกับกรณี wave 5 extension"}, {"id": "v1q34", "qType": "single", "diff": "medium", "text": "A bull impulse shows wave 1 and wave 3 of nearly equal length, and wave 3 is not especially forceful. What does the extension guideline lead an analyst to expect?", "choices": [{"id": "a", "letter": "A", "text": "That wave 5 is the likely extended wave of the sequence"}, {"id": "b", "letter": "B", "text": "That wave 5 will be truncated, because equal early waves signal exhaustion in the move"}, {"id": "c", "letter": "C", "text": "That wave 4 will expand into a nine-wave correction to restore the balance of the pattern"}, {"id": "d", "letter": "D", "text": "That wave 3 will later be relabeled as the extension once wave 5 has completed"}], "correct": ["a"], "expEn": "Normally only one of the three actionary waves extends. When waves 1 and 3 are similar in size, the extension is expected to be saved for wave 5. Truncation is tied to an exceptionally strong third wave, not to equal early waves.", "expTh": "ปกติมีเพียงหนึ่งในสามคลื่นขับเคลื่อนที่เกิด extension เมื่อ wave 1 กับ wave 3 มีขนาดใกล้เคียงกัน จึงคาดว่า extension จะเกิดที่ wave 5 ส่วน truncation สัมพันธ์กับ wave 3 ที่แรงผิดปกติ ไม่ใช่การที่คลื่นแรก ๆ เท่ากัน"}, {"id": "v1q35", "qType": "single", "diff": "medium", "text": "A market climbs from 100 to 130, pulls back to 112, and then launches a third wave measuring 1.618 times the first advance. Approximately what price does that third wave reach?", "choices": [{"id": "a", "letter": "A", "text": "Near 178.5, found by adding 48.5 to the top of wave 1"}, {"id": "b", "letter": "B", "text": "Near 160.5, found by adding 48.5 to the wave 2 low"}, {"id": "c", "letter": "C", "text": "Near 190.5, found by adding 2.618 times wave 1 to the wave 2 low"}, {"id": "d", "letter": "D", "text": "Near 210.3, found by multiplying the wave 1 high by 1.618 directly"}], "correct": ["b"], "expEn": "Wave 1 measures 30 points, and 1.618 x 30 = 48.54. A third wave begins at the end of wave 2, so the target is 112 + 48.54 = about 160.5. Adding to 130 starts from the wrong pivot, and 2.618 is a different ratio.", "expTh": "wave 1 ยาว 30 จุด และ 1.618 x 30 = 48.54 เนื่องจาก wave 3 เริ่มจากจุดสิ้นสุดของ wave 2 เป้าหมายคือ 112 + 48.54 = ประมาณ 160.5 การบวกจาก 130 คือเริ่มจากจุดผิด และ 2.618 เป็นอัตราส่วนอื่น"}, {"id": "v1q36", "qType": "single", "diff": "medium", "text": "Which retracement of wave 1 is regarded as most typical for a second wave under the Fibonacci guidelines?", "choices": [{"id": "a", "letter": "A", "text": "Only about 23.6% of wave 1, since a second wave is always a minor pause"}, {"id": "b", "letter": "B", "text": "Roughly 78.6% to 100%, because deeper pullbacks are the signature of wave 2"}, {"id": "c", "letter": "C", "text": "Roughly 50% to 61.8% of wave 1, though it may not exceed 100%"}, {"id": "d", "letter": "D", "text": "Anywhere up to 138.2% of wave 1, because only wave 1's top limits the pullback"}], "correct": ["c"], "expEn": "Second waves most commonly retrace 50% or 61.8% of wave 1, and they can never retrace more than 100%, because the low of wave 1 may not be breached. Retracements beyond 100% would violate the rule.", "expTh": "wave 2 มักย่อกลับประมาณ 50% ถึง 61.8% ของ wave 1 และห้ามเกิน 100% เพราะจุดต่ำสุดของ wave 1 ห้ามถูกทำลาย การย่อเกิน 100% จึงผิดกฎ"}, {"id": "v1q37", "qType": "single", "diff": "medium", "text": "A third wave rises from 62 to 182, with wave 1 having topped at 80. If wave 4 retraces the common 38.2% of wave 3, about where does it bottom?", "choices": [{"id": "a", "letter": "A", "text": "Near 122.0, which would be a 50% retracement of wave 3"}, {"id": "b", "letter": "B", "text": "Near 107.8, which would be a 61.8% retracement of wave 3"}, {"id": "c", "letter": "C", "text": "Near 136.2, which stays well above the wave 1 high"}, {"id": "d", "letter": "D", "text": "Near 153.7, which would be a 23.6% retracement of wave 3"}], "correct": ["c"], "expEn": "Wave 3 spans 120 points, and 0.382 x 120 = 45.84, so wave 4 bottoms near 182 - 45.84 = 136.2. The other prices correspond to 50%, 61.8% and 23.6% retracements, and all of them also stay above the wave 1 high.", "expTh": "wave 3 ยาว 120 จุด และ 0.382 x 120 = 45.84 จึงได้ wave 4 ลงถึงราว 182 - 45.84 = 136.2 ราคาอื่นสอดคล้องกับการย่อ 50%, 61.8% และ 23.6% ตามลำดับ และทุกระดับยังอยู่เหนือจุดสูงของ wave 1"}, {"id": "v1q38", "qType": "single", "diff": "medium", "text": "Suppose the second wave in a forming five-wave advance took the shape of a steep zigzag that gave back about 62% of the first wave. What does alternation suggest the fourth wave will most probably look like?", "choices": [{"id": "a", "letter": "A", "text": "A second steep zigzag retracing about 62% of wave 3 to keep the rhythm consistent"}, {"id": "b", "letter": "B", "text": "A five-wave decline that falls below the low of wave 2 before the trend resumes"}, {"id": "c", "letter": "C", "text": "A motive wave in the opposite direction that overlaps the price area of wave 1"}, {"id": "d", "letter": "D", "text": "A shallower, sideways correction such as a flat, triangle or combination"}], "correct": ["d"], "expEn": "Alternation says that if one corrective wave is sharp, the other is likely to be sideways, and often shallower in depth. A wave 4 that imitates wave 2 is less probable, and a move below wave 2 would not be a correction at all.", "expTh": "หลัก alternation กล่าวว่าถ้าคลื่นปรับฐานหนึ่งเป็นแบบ sharp อีกคลื่นมักเป็นแบบ sideways และมักตื้นกว่า wave 4 ที่เลียนแบบ wave 2 จึงมีโอกาสน้อยกว่า และการลงต่ำกว่า wave 2 ไม่ใช่การปรับฐานอีกต่อไป"}, {"id": "v1q39", "qType": "single", "diff": "medium", "text": "A correction ends with wave B above the start of wave A, and wave C then falls short of the end of wave A. What does this running flat usually signal?", "choices": [{"id": "a", "letter": "A", "text": "A weak underlying trend, with the larger move about to reverse completely"}, {"id": "b", "letter": "B", "text": "An unusually strong underlying trend in the direction of the larger move"}, {"id": "c", "letter": "C", "text": "Exhaustion of the preceding impulse, which will be followed by a deeper zigzag"}, {"id": "d", "letter": "D", "text": "A failed fifth wave, since the correction did not reach the previous extreme"}], "correct": ["b"], "expEn": "In a running flat, wave C fails to reach the end of A, which shows the larger-degree trend is so strong that sellers cannot make progress. The shortfall does not mean reversal or a truncated fifth, which is a motive-wave concept.", "expTh": "ใน running flat wave C ไปไม่ถึงปลาย wave A แสดงว่าเทรนด์ใหญ่แข็งแกร่งมากจนฝ่ายตรงข้ามกดราคาไม่ลง การที่ไปไม่ถึงไม่ได้แปลว่ากลับตัว และ truncated fifth เป็นแนวคิดของคลื่นขับเคลื่อน"}, {"id": "v1q40", "qType": "single", "diff": "medium", "text": "A decline runs from 200 to 180 in three waves, rebounds in three waves to 204, then falls in five waves to 175. Which corrective form fits best?", "choices": [{"id": "a", "letter": "A", "text": "An expanded flat, because wave B exceeds the start of A and wave C ends beyond A"}, {"id": "b", "letter": "B", "text": "A zigzag, because the decline ends in a five-wave wave C beyond the low of A"}, {"id": "c", "letter": "C", "text": "A running flat, because wave B ends above the start of wave A"}, {"id": "d", "letter": "D", "text": "A regular flat, because waves A and B retrace each other almost exactly"}], "correct": ["a"], "expEn": "Wave A has three waves, so the pattern is a flat family member. Wave B (204) goes beyond 200 and wave C (175) drops below 180, making it an expanded flat. A zigzag needs a five-wave wave A, and a running flat needs wave C to stop short.", "expTh": "wave A มี 3 คลื่น จึงเป็นกลุ่ม flat และ wave B (204) เกินจุดเริ่ม 200 ส่วน wave C (175) ต่ำกว่า 180 จึงเป็น expanded flat ส่วน zigzag ต้องมี wave A 5 คลื่น และ running flat ต้องให้ wave C ไปไม่ถึงปลาย wave A"}, {"id": "v1q41", "qType": "single", "diff": "medium", "text": "Within a downward zigzag the first leg drops 100 to 80, and the second leg recovers as far as 90. Assuming the final leg matches the first leg in size, what price completes the pattern?", "choices": [{"id": "a", "letter": "A", "text": "At about 57.6, which is 1.618 times wave A below the end of wave B"}, {"id": "b", "letter": "B", "text": "At about 70.0, which is 20 points below the end of wave B"}, {"id": "c", "letter": "C", "text": "At about 77.6, which is 0.618 times wave A below the end of wave B"}, {"id": "d", "letter": "D", "text": "At about 80.0, which is 20 points below the start of wave A"}], "correct": ["b"], "expEn": "Wave A measures 20 points, and wave C is measured from the end of wave B, so 90 - 20 = 70. The 1.618 and 0.618 multiples give 57.6 and 77.6, and 80 measures from the wrong starting point.", "expTh": "wave A ยาว 20 จุด และ wave C วัดจากปลาย wave B จึงได้ 90 - 20 = 70 ส่วน 1.618 และ 0.618 เท่าให้ 57.6 และ 77.6 ตามลำดับ และ 80 วัดจากจุดเริ่มผิด"}, {"id": "v1q42", "qType": "single", "diff": "medium", "text": "How is the thrust expected after a contracting triangle usually estimated?", "choices": [{"id": "a", "letter": "A", "text": "By about 1.618 times the full impulse that preceded the triangle, projected from its apex"}, {"id": "b", "letter": "B", "text": "By the length of wave 3 of the larger sequence, measured from the end of wave e"}, {"id": "c", "letter": "C", "text": "By about the widest part of the triangle, projected from the breakout point"}, {"id": "d", "letter": "D", "text": "By the distance between the converging trendlines at the apex, doubled for confirmation"}], "correct": ["c"], "expEn": "The thrust that follows a triangle is typically about the length of the widest part of the triangle, measured from the breakout point. The apex has no width to measure, so it provides no useful distance.", "expTh": "แรงทะลุหลัง contracting triangle โดยทั่วไปประมาณเท่าส่วนที่กว้างที่สุดของ triangle วัดจากจุด breakout ส่วนจุด apex ไม่มีความกว้างให้วัด จึงไม่ให้ระยะที่ใช้ได้"}, {"id": "v1q43", "qType": "single", "diff": "medium", "text": "When a complete five-three cycle is examined one degree lower, how many waves does it contain?", "choices": [{"id": "a", "letter": "A", "text": "34 waves, made of 21 in the advance and 13 in the decline"}, {"id": "b", "letter": "B", "text": "21 waves, made of 13 in the advance and 8 in the decline"}, {"id": "c", "letter": "C", "text": "55 waves, made of 34 in the advance and 21 in the decline"}, {"id": "d", "letter": "D", "text": "13 waves, made of 8 in the advance and 5 in the decline"}], "correct": ["a"], "expEn": "Each of the five advancing waves breaks into 5 or 3 subwaves, giving 21 for the advance, and the three-wave decline yields 13. The total, 34, is a Fibonacci number, consistent with the 5 + 3 = 8 count at the larger degree.", "expTh": "คลื่นขาขึ้น 5 คลื่นแต่ละคลื่นแบ่งเป็น 5 หรือ 3 คลื่นย่อย รวมเป็น 21 และขาลง 3 คลื่นรวมเป็น 13 ผลรวม 34 เป็นเลข Fibonacci สอดคล้องกับการนับ 5 + 3 = 8 ที่ระดับใหญ่กว่า"}, {"id": "v1q44", "qType": "single", "diff": "medium", "text": "Which breadth behavior is characteristic of a fifth wave in a stock bull market compared with the third wave?", "choices": [{"id": "a", "letter": "A", "text": "The advance-decline line makes its steepest gains as nearly every issue joins the rally"}, {"id": "b", "letter": "B", "text": "Breadth widens sharply because the late-arriving public buys lagging, undervalued stocks"}, {"id": "c", "letter": "C", "text": "Breadth stays equal to wave 3, with only the pace of advance cooling off a little"}, {"id": "d", "letter": "D", "text": "The advance-decline line often fails to confirm new price highs as fewer issues participate"}], "correct": ["d"], "expEn": "Fifth waves usually show optimism, but a smaller portion of stocks takes part, so the advance-decline line tends to peak before the averages. Peak breadth belongs to the third wave.", "expTh": "wave 5 มักมีความมองโลกในแง่ดี แต่หุ้นที่ร่วมวงมีสัดส่วนน้อยลง เส้น advance-decline จึงมักทำจุดสูงก่อนดัชนี breadth สูงสุดเป็นของ wave 3"}, {"id": "v1q45", "qType": "single", "diff": "medium", "text": "How do most participants typically regard wave B of a bear market while it is unfolding?", "choices": [{"id": "a", "letter": "A", "text": "As the start of the panic phase, with heavy liquidation of nearly all stocks"}, {"id": "b", "letter": "B", "text": "As a resumption of the bull market, which tends to trap late buyers expecting more gains"}, {"id": "c", "letter": "C", "text": "As a minor irritation, since few people notice any change in market direction"}, {"id": "d", "letter": "D", "text": "As a confirmed bear market bottom, which draws in only the most cautious investors"}], "correct": ["b"], "expEn": "Wave B is commonly seen as a return to the old bull trend, a bull trap. Panic belongs to wave C, and wave A is the stage often dismissed as a normal pullback.", "expTh": "โดยทั่วไป wave B ถูกมองว่าเป็นการกลับมาของตลาดกระทิง เป็นกับดัก bull trap ส่วนความตื่นตระหนกเป็นของ wave C และ wave A มักถูกมองว่าเป็นแค่การพักตัวปกติ"}, {"id": "v1q46", "qType": "single", "diff": "medium", "text": "Which of these accurately captures the behavior of a failed (truncated) fifth wave?", "choices": [{"id": "a", "letter": "A", "text": "Wave 5 stops before it completes a count, so it carries only three subwaves"}, {"id": "b", "letter": "B", "text": "Wave 5 ends below the low of wave 4 after retracing more than 100% of that wave"}, {"id": "c", "letter": "C", "text": "Wave 5 exceeds the trend channel but ends at once without any further subdivision"}, {"id": "d", "letter": "D", "text": "Wave 5 fails to move beyond the end of wave 3 yet still subdivides into five waves, often after a very strong third wave"}], "correct": ["d"], "expEn": "A truncation (failure) occurs when wave 5 fails to exceed the end of wave 3, and it still has five subwaves. It tends to follow an unusually powerful third wave. A fifth with only three waves would be corrective, which signals a different count.", "expTh": "truncation หรือ failure เกิดเมื่อ wave 5 ไปไม่เกินปลาย wave 3 แต่ยังแบ่งเป็น 5 คลื่นย่อย มักเกิดหลัง wave 3 ที่แรงผิดปกติ ถ้า wave 5 มีเพียง 3 คลื่นย่อยจะเป็นโครงสร้างปรับฐานซึ่งหมายถึงการนับที่ต่างออกไป"}, {"id": "v1q47", "qType": "single", "diff": "medium", "text": "Inside a fifth-wave extension, the subwave pivots run 400 (start), 440, 420, 520, 484 and 560. Which statement about this extension is correct?", "choices": [{"id": "a", "letter": "A", "text": "It is invalid, because wave iii is longer than wave v and the last wave of an extension must be the longest"}, {"id": "b", "letter": "B", "text": "It is invalid, because wave ii retraced 50% of wave i, which is deeper than a second wave is allowed to go"}, {"id": "c", "letter": "C", "text": "It is valid, because wave iii (100 points) is not the shortest and wave iv (484) stays above the wave i high of 440"}, {"id": "d", "letter": "D", "text": "It is invalid, because wave iv at 484 is lower than the wave iii high of 520, which no fourth wave may be"}], "correct": ["c"], "expEn": "Wave i is 40 points, wave iii 100 and wave v 76, so wave iii is not the shortest, and wave iv at 484 holds above wave i's high of 440. A 50% second wave is normal, every fourth wave ends below the third-wave high, and no rule makes the last wave the longest.", "expTh": "wave i ยาว 40 จุด wave iii ยาว 100 และ wave v ยาว 76 จุด wave iii จึงไม่ใช่คลื่นที่สั้นที่สุด และ wave iv ที่ 484 ยังอยู่เหนือจุดสูงของ wave i ที่ 440 การที่ wave ii ย้อน 50% เป็นเรื่องปกติ wave 4 ทุกครั้งจบต่ำกว่าจุดสูงของ wave 3 และไม่มีกฎบังคับให้คลื่นสุดท้ายยาวที่สุด"}, {"id": "v1q48", "qType": "single", "diff": "medium", "text": "A late advance shows converging trendlines, each subwave dividing into three, and wave 4 dipping into the price area of wave 1. What is the best label?", "choices": [{"id": "a", "letter": "A", "text": "An ending diagonal, a 3-3-3-3-3 pattern in which wave 4 overlaps wave 1"}, {"id": "b", "letter": "B", "text": "A regular impulse, since overlap between waves 1 and 4 is allowed in fifth waves"}, {"id": "c", "letter": "C", "text": "An expanding triangle, since each of its legs subdivides into three waves"}, {"id": "d", "letter": "D", "text": "A running flat, since the wedge shape signals very strong underlying strength"}], "correct": ["a"], "expEn": "Overlap of waves 1 and 4, converging lines and a 3-3-3-3-3 count are the signatures of an ending diagonal, usually in wave 5 or wave C. A regular impulse subdivides 5-3-5-3-5 and does not allow that overlap.", "expTh": "การที่ wave 4 ซ้อนทับ wave 1 เส้นแนวโน้มบีบเข้าหากัน และการนับ 3-3-3-3-3 เป็นลักษณะของ ending diagonal ซึ่งมักอยู่ใน wave 5 หรือ wave C ส่วน impulse ปกติแบ่ง 5-3-5-3-5 และห้ามซ้อนทับเช่นนั้น"}, {"id": "v1q49", "qType": "single", "diff": "hard", "text": "An impulse has a normal wave 1, a normal wave 2, an extended wave 3 that itself shows five clear subwaves, then a normal wave 4 and wave 5. How many waves of nearly similar size can be counted from the start of wave 1 to the end of wave 5?", "choices": [{"id": "a", "letter": "A", "text": "Nine, because waves 1 and 2, the five subwaves of the extension, then waves 4 and 5 are all visible"}, {"id": "b", "letter": "B", "text": "Seven, because the five subwaves of the extension replace waves 3 and 4 and wave 5 together"}, {"id": "c", "letter": "C", "text": "Eleven, because both wave 1 and wave 5 also show five clear subwaves of their own"}, {"id": "d", "letter": "D", "text": "Five, because the extension is counted as a single wave and its subwaves are ignored"}], "correct": ["a"], "expEn": "An extended wave contains five subwaves, so the advance shows 2 + 5 + 2 = 9 waves of nearly the same size. Counting only five ignores the subdivisions that define an extension.", "expTh": "extension มี 5 คลื่นย่อย ดังนั้นภาพรวมจึงเห็น 2 + 5 + 2 = 9 คลื่นขนาดใกล้เคียงกัน การนับเพียง 5 คลื่นเป็นการมองข้ามคลื่นย่อยที่ทำให้เป็น extension"}, {"id": "v1q50", "qType": "single", "diff": "hard", "text": "An impulse starts at 50. Wave 1 ends at 70, wave 2 at 60, wave 3 at 120 and wave 4 at 100. If wave 5 is an extension equal to 1.618 times the net distance from the start of wave 1 to the end of wave 3, projected from the wave 4 low, where does it target?", "choices": [{"id": "a", "letter": "A", "text": "About 233.3, since 113.3 is added to the top of wave 3 at 120"}, {"id": "b", "letter": "B", "text": "About 197.1, since 1.618 times the wave 3 length of 60 is added to 100"}, {"id": "c", "letter": "C", "text": "About 170.0, since the net distance of 70 is added to the wave 4 low at 100"}, {"id": "d", "letter": "D", "text": "About 213.3, since 1.618 x 70 = 113.3 is added to 100"}], "correct": ["d"], "expEn": "The net travel from the start of wave 1 (50) to the end of wave 3 (120) is 70, and 1.618 x 70 = 113.26. A fifth-wave extension is projected from the end of wave 4, so 100 + 113.26 = about 213.3. Using wave 3 alone, or a 1.0 ratio, gives other numbers.", "expTh": "ระยะสุทธิจากจุดเริ่ม wave 1 (50) ถึงปลาย wave 3 (120) เท่ากับ 70 และ 1.618 x 70 = 113.26 การฉายเป้า wave 5 extension ทำจากปลาย wave 4 จึงได้ 100 + 113.26 = ประมาณ 213.3 ส่วนการใช้ความยาว wave 3 อย่างเดียวหรืออัตราส่วน 1.0 จะได้ตัวเลขอื่น"}];
+const V2_BANK = [{"id": "v2q01", "qType": "single", "diff": "medium", "text": "A bull move starts at 2,000. The labeled turning points are 2,180 (end of wave 1), 2,090 (wave 2), 2,390 (wave 3), 2,300 (wave 4) and 2,830 (wave 5). Which statement about the count is right?", "choices": [{"id": "a", "letter": "A", "text": "Invalid, because wave 3 (300 points) is not the longest of the three actionary waves, and wave 3 must always be the longest"}, {"id": "b", "letter": "B", "text": "Valid impulse with an extended fifth wave: wave 5 (530 points) is the longest, and wave 3 (300) still exceeds wave 1 (180)"}, {"id": "c", "letter": "C", "text": "Valid impulse with an extended third wave, because wave 3 is 1.67 times the length of wave 1 and so qualifies as extended"}, {"id": "d", "letter": "D", "text": "Invalid, because wave 5 (530 points) is more than 1.618 times wave 3, which no fifth wave may exceed in a legitimate impulse"}], "correct": ["b"], "expEn": "Wave 4 (2,300) stays above wave 1's high of 2,180, and wave 3 (300 points) is longer than wave 1 (180 points), so it is not the shortest. Wave 3 need not be the longest; here wave 5 (530 points) is the extended wave, and no 1.618 cap exists on it.", "expTh": "wave 4 ที่ 2,300 ยังอยู่เหนือจุดสูงของ wave 1 (2,180) และ wave 3 ยาว 300 จุดซึ่งมากกว่า wave 1 (180 จุด) จึงไม่ใช่คลื่นที่สั้นที่สุด wave 3 ไม่จำเป็นต้องยาวที่สุด ในที่นี้ wave 5 (530 จุด) เป็น extended wave และไม่มีกฎจำกัดว่า wave 5 ต้องไม่เกิน 1.618 เท่าของ wave 3"}, {"id": "v2q02", "qType": "single", "diff": "hard", "text": "Wave 1 climbed from 2,000 to 2,240, wave 2 fell to 2,120, and an extended wave 3 peaked at 2,750. Wave 4 bottomed at 2,560. If wave 5 equals wave 1 in length, where does it end?", "choices": [{"id": "a", "letter": "A", "text": "About 2,990, adding 240 points to the wave 3 peak of 2,750 as if wave 5 began there"}, {"id": "b", "letter": "B", "text": "About 2,708, adding 0.618 times wave 1 (about 148 points) to the wave 4 low of 2,560"}, {"id": "c", "letter": "C", "text": "About 2,949, adding 0.618 times wave 3 (about 389 points) to the wave 4 low of 2,560"}, {"id": "d", "letter": "D", "text": "About 2,800, adding 240 points to the wave 4 low of 2,560"}], "correct": ["d"], "expEn": "When wave 3 is extended, waves 1 and 5 tend toward equality, and wave 5 is measured from the end of wave 4: 2,560 + 240 = 2,800. Starting from the wave 3 peak is a measurement error, and the 0.618 variants use the wrong ratio or the wrong base wave.", "expTh": "เมื่อ wave 3 เป็น extended wave, wave 1 และ wave 5 มักมีความยาวใกล้เคียงกัน และ wave 5 ต้องวัดจากปลาย wave 4: 2,560 + 240 = 2,800 การวัดจากยอด wave 3 เป็นความผิดพลาดในการวัด ส่วนตัวเลือก 0.618 ใช้สัดส่วนหรือคลื่นฐานผิด"}, {"id": "v2q03", "qType": "single", "diff": "hard", "text": "In a bull market, wave 1 rose from 1,200 to 1,380 and wave 2 fell to 1,290. Wave 3 then extended to 1,980, and wave 4 bottomed at 1,790. An analyst projects wave 5 at 38.2% of the net distance traveled from the start of wave 1 to the end of wave 3. Where is the target?", "choices": [{"id": "a", "letter": "A", "text": "About 2,054, which is 264 points (0.382 x 690) above the wave 4 low, using the wave 3 length alone"}, {"id": "b", "letter": "B", "text": "About 2,278, which is 298 points (0.382 x 780) above the wave 3 high rather than the wave 4 low"}, {"id": "c", "letter": "C", "text": "About 2,088, which is 298 points (0.382 x 780) above the wave 4 low"}, {"id": "d", "letter": "D", "text": "About 2,570, which is 780 points above the wave 4 low, treating wave 5 as equal to waves 1 through 3"}], "correct": ["c"], "expEn": "The net distance of waves 1 through 3 is 1,980 - 1,200 = 780 points. Taking 38.2% gives about 298, and wave 5 is added to the end of wave 4: 1,790 + 298 = 2,088. Using only wave 3 (690 points) or starting from the wave 3 high gives a different, incorrect level.", "expTh": "ระยะสุทธิของ wave 1 ถึง wave 3 คือ 1,980 - 1,200 = 780 จุด 38.2% ของระยะนี้ได้ราว 298 จุด และ wave 5 ต้องบวกจากปลาย wave 4: 1,790 + 298 = 2,088 การใช้เฉพาะ wave 3 (690 จุด) หรือเริ่มจากยอด wave 3 จะได้ระดับที่ไม่ถูกต้อง"}, {"id": "v2q04", "qType": "single", "diff": "hard", "text": "A rally is labeled as follows: 100 (start), 160 (wave 1), 128 (wave 2), 176 (wave 3), 164 (wave 4) and 248 (wave 5). What is the proper conclusion?", "choices": [{"id": "a", "letter": "A", "text": "Invalid, because wave 3 (48 points) is shorter than both wave 1 (60 points) and wave 5 (84 points)"}, {"id": "b", "letter": "B", "text": "The count is valid, because the longer wave 5 (84 points) is an extension that offsets a short wave 3"}, {"id": "c", "letter": "C", "text": "The count is invalid, because wave 4 at 164 has overlapped the 160 high of wave 1 by four points"}, {"id": "d", "letter": "D", "text": "The count is valid, because wave 3 (48 points) is longer than the 12-point wave 4 that follows it"}], "correct": ["a"], "expEn": "Wave 3 may never be the shortest actionary wave, and 48 points is shorter than both 60 and 84. Wave 4 at 164 stays above 160, so there is no overlap, and an extended wave 5 does not excuse a shortest wave 3.", "expTh": "wave 3 ต้องไม่เป็นคลื่น actionary ที่สั้นที่สุด แต่ 48 จุดสั้นกว่าทั้ง 60 และ 84 wave 4 ที่ 164 ยังอยู่เหนือ 160 จึงไม่มี overlap และการที่ wave 5 เป็น extension ก็ไม่ทำให้ wave 3 ที่สั้นที่สุดกลายเป็นถูกกฎ"}, {"id": "v2q05", "qType": "single", "diff": "medium", "text": "A market rose from 6,200 to 6,800 as wave 1, then fell to 6,450 on shrinking volume. Price now breaks above 6,800 on volume 70% above the wave 1 peak, with nearly every sector joining in. Which interpretation fits wave personality best?", "choices": [{"id": "a", "letter": "A", "text": "A typical wave 5 is under way: heavy volume and broad participation are the hallmarks of the final wave of an advance"}, {"id": "b", "letter": "B", "text": "A typical wave B is under way: a retracement of 58% followed by a high-volume breakout is the signature of a bull trap"}, {"id": "c", "letter": "C", "text": "A typical wave 4 is ending: a 58% pullback on shrinking volume fits the sideways, complex character of a fourth wave"}, {"id": "d", "letter": "D", "text": "A typical wave 3 is under way: a 58% wave 2, then a breakout on heavy volume and broad participation"}], "correct": ["d"], "expEn": "The retracement of wave 1 was 350/600, about 58%, and a decline on thin volume followed by a heavy, broad breakout above the wave 1 high is the classic start of wave 3. Fifth waves usually show narrower participation and lighter volume than wave 3.", "expTh": "wave 2 ย้อน wave 1 ไป 350/600 หรือราว 58% และการลงด้วยวอลุ่มบางตามด้วยการทะลุเหนือจุดสูง wave 1 ด้วยวอลุ่มมากและตลาดร่วมกันขึ้นอย่างกว้างขวาง คือลักษณะการเริ่มต้นของ wave 3 โดยทั่วไป ส่วน wave 5 มักมีการมีส่วนร่วมแคบกว่าและวอลุ่มเบากว่า wave 3"}, {"id": "v2q06", "qType": "single", "diff": "hard", "text": "Wave 1 ran from 3,000 to 3,400. Wave 2 retraced exactly 61.8% of wave 1, and wave 3 then equals 1.618 times wave 1. Where does wave 3 end?", "choices": [{"id": "a", "letter": "A", "text": "About 3,800, measured from the wave 2 low of about 3,153"}, {"id": "b", "letter": "B", "text": "About 4,047, measured from the wave 1 high of 3,400"}, {"id": "c", "letter": "C", "text": "About 3,553, measured from the wave 2 low at 1.0 times wave 1"}, {"id": "d", "letter": "D", "text": "About 4,200, measured from the wave 2 low at 2.618 times wave 1"}], "correct": ["a"], "expEn": "Wave 2 ends at 3,400 - 0.618 x 400, or about 3,153. Wave 3 is measured from there: 3,153 + 1.618 x 400 (about 647) = 3,800. Measuring from the wave 1 high gives 4,047, an error, while the other choices use the wrong ratio.", "expTh": "wave 2 จบที่ 3,400 - 0.618 x 400 หรือราว 3,153 wave 3 วัดจากจุดนั้น: 3,153 + 1.618 x 400 (ราว 647) = 3,800 การวัดจากยอด wave 1 ได้ 4,047 ซึ่งผิด ส่วนตัวเลือกอื่นใช้อัตราส่วนผิด"}, {"id": "v2q07", "qType": "single", "diff": "hard", "text": "Wave 1 rose from 800 to 900, wave 2 fell to 840, and an extended wave 3 reached 1,240. Assuming wave 4 retraces exactly 38.2% of wave 3, where does it end?", "choices": [{"id": "a", "letter": "A", "text": "About 1,072, because 38.2% is taken from the whole 440-point advance since the start of wave 1"}, {"id": "b", "letter": "B", "text": "About 1,087, because 38.2% of wave 3 (400 points) is about 153 points"}, {"id": "c", "letter": "C", "text": "About 993, because wave 4 retraces 61.8% of wave 3, the usual depth for a fourth wave"}, {"id": "d", "letter": "D", "text": "About 1,146, because wave 4 retraces only 23.6% of wave 3, the usual depth for a fourth wave"}], "correct": ["b"], "expEn": "Wave 3 covers 1,240 - 840 = 400 points, and 38.2% of that is about 153, which puts wave 4 near 1,087, well above wave 1's high of 900. The other levels use a wrong base (440 points) or a wrong ratio.", "expTh": "wave 3 ครอบคลุม 1,240 - 840 = 400 จุด และ 38.2% ของระยะนี้คือราว 153 จุด ทำให้ wave 4 อยู่ใกล้ 1,087 ซึ่งสูงกว่าจุดสูงของ wave 1 (900) มาก ระดับอื่นใช้ฐานการวัดผิด (440 จุด) หรืออัตราส่วนผิด"}, {"id": "v2q08", "qType": "single", "diff": "hard", "text": "After a long rally, a final advance runs 500 (start), 580, 538, 604, 568 and 612, and every one of its five legs subdivides into three waves. The legs measure 80, 66 and 44 points for waves 1, 3 and 5. What is the best reading?", "choices": [{"id": "a", "letter": "A", "text": "A leading diagonal, because any overlap of wave 4 with wave 1 shows that a new trend is starting"}, {"id": "b", "letter": "B", "text": "An invalid impulse, because wave 4 at 568 has entered wave 1's territory and no pattern permits overlap"}, {"id": "c", "letter": "C", "text": "An ending diagonal: overlap of wave 4 (568) into wave 1 (580) is allowed, and the legs contract as expected"}, {"id": "d", "letter": "D", "text": "An impulse with a truncated fifth wave, because wave 5 (44 points) is shorter than wave 3 (66 points)"}], "correct": ["c"], "expEn": "A contracting 3-3-3-3-3 structure at the end of an extended advance is an ending diagonal, the one motive pattern where wave 4 normally overlaps wave 1. Wave 4 (568) stays above wave 2 (538), and wave 5 (612) exceeds wave 3 (604).", "expTh": "โครงสร้าง 3-3-3-3-3 ที่หดตัวลงในช่วงท้ายของการขึ้นยาวคือ ending diagonal ซึ่งเป็น motive pattern เดียวที่ wave 4 มักเข้าไป overlap wave 1 ได้ wave 4 (568) ยังอยู่เหนือ wave 2 (538) และ wave 5 (612) สูงกว่าปลาย wave 3 (604)"}, {"id": "v2q09", "qType": "single", "diff": "hard", "text": "An impulse runs 1,000 (start), 1,100 (wave 1), 1,040 (wave 2), 1,380 (wave 3), 1,250 (wave 4), and 1,365 (wave 5, with five clear subwaves). What does this tell the analyst?", "choices": [{"id": "a", "letter": "A", "text": "Invalid count, because wave 5 must exceed the end of wave 3 in every impulse that is labeled as complete"}, {"id": "b", "letter": "B", "text": "Valid count, but wave 5 must be relabeled as wave 4 of an extended wave 3 that is still unfolding to the upside"}, {"id": "c", "letter": "C", "text": "Valid count, but only if wave 5 retraced at least 61.8% of wave 4, which keeps the truncation within tolerance"}, {"id": "d", "letter": "D", "text": "Valid truncated fifth wave: wave 5 failed to pass the wave 3 high of 1,380, which is common after a very strong third wave"}], "correct": ["d"], "expEn": "Wave 3 is 340 points, 3.4 times wave 1, an exceptionally strong third wave. A fifth wave with five subwaves that ends 15 points short of 1,380 is a truncation, which breaks no rule and tends to follow such strength.", "expTh": "wave 3 ยาว 340 จุด หรือ 3.4 เท่าของ wave 1 ซึ่งเป็น third wave ที่แข็งแกร่งมาก wave 5 ที่มี 5 subwaves แต่จบต่ำกว่า 1,380 อยู่ 15 จุดคือ truncation ซึ่งไม่ผิดกฎใด และมักเกิดหลัง wave 3 ที่แรงเช่นนี้"}, {"id": "v2q10", "qType": "single", "diff": "hard", "text": "A fifth wave began at 5,200. Within it, wave i reached 5,350, wave ii fell to 5,290, wave iii reached 5,640, wave iv fell to 5,540, and wave v topped at 5,760, making an extended fifth. Where is the first decline most likely to end?", "choices": [{"id": "a", "letter": "A", "text": "The area of 5,290, the end of wave ii of the extension, in a quick retracement of the whole extension"}, {"id": "b", "letter": "B", "text": "The area of 5,540, the end of wave iv, where the extension last paused, with the decline expected to stop there"}, {"id": "c", "letter": "C", "text": "The area of 5,200, the start of the fifth wave, which is the only valid support under the extension"}, {"id": "d", "letter": "D", "text": "The area of 5,640, the high of wave iii, since a retest of the prior peak is expected before more decline"}], "correct": ["a"], "expEn": "After an extended fifth wave, the market tends to retrace quickly and fully, ending in the area of wave ii of the extension (5,290). Stopping at wave iv's low (5,540) would be a much shallower decline than the guideline implies, and the start of the fifth wave is not required support.", "expTh": "หลัง extended fifth wave ตลาดมักย้อนกลับเร็วและลึก โดยลงมาสิ้นสุดบริเวณ wave ii ของ extension (5,290) การหยุดที่จุดต่ำของ wave iv (5,540) จะตื้นกว่าที่แนวทางคาดไว้มาก และจุดเริ่มของ fifth wave ไม่ใช่แนวรับที่ต้องรักษาไว้"}, {"id": "v2q11", "qType": "single", "diff": "hard", "text": "A market advances 150 points in wave 1, from 2,000 to 2,150, then pulls back in wave 2 to 2,060. Suppose the third wave is a big extension measuring 2.618 times wave 1. What is the projected end of wave 3?", "choices": [{"id": "a", "letter": "A", "text": "About 2,303, which adds roughly 243 points to the wave 2 low, using 1.618 times wave 1"}, {"id": "b", "letter": "B", "text": "About 2,453, which adds roughly 393 points to the wave 2 low"}, {"id": "c", "letter": "C", "text": "About 2,543, which adds roughly 393 points to the wave 1 high instead of to the wave 2 low"}, {"id": "d", "letter": "D", "text": "About 2,695, which adds roughly 635 points to the wave 2 low, using 4.236 times wave 1"}], "correct": ["b"], "expEn": "Wave 1 is 150 points, and 2.618 x 150 is about 393. Wave 3 is measured from the end of wave 2: 2,060 + 393 = 2,453. Adding to the wave 1 high gives 2,543, an error, and the other choices use 1.618 or 4.236.", "expTh": "wave 1 ยาว 150 จุด และ 2.618 x 150 ได้ราว 393 จุด wave 3 วัดจากปลาย wave 2: 2,060 + 393 = 2,453 การบวกจากยอด wave 1 ได้ 2,543 ซึ่งผิด ส่วนตัวเลือกอื่นใช้อัตราส่วน 1.618 หรือ 4.236"}, {"id": "v2q12", "qType": "single", "diff": "hard", "text": "On a daily chart, the wave 2 low is 1,100 (day 20) and the wave 4 low is 1,300 (day 60). The wave 3 peak is 1,480 (day 45). A trendline through the two lows is drawn, and a parallel is drawn through the wave 3 peak. Where is that parallel on day 80?", "choices": [{"id": "a", "letter": "A", "text": "About 1,480, since the upper channel line is horizontal at the wave 3 peak"}, {"id": "b", "letter": "B", "text": "About 1,400, since the base line itself is 100 points above wave 4 low after 20 more days"}, {"id": "c", "letter": "C", "text": "About 1,655, since the line rises 5 points a day and gains 175 points over the 35 days after day 45"}, {"id": "d", "letter": "D", "text": "About 1,880, since the slope of 5 points a day is applied for all 80 days from the wave 3 peak"}], "correct": ["c"], "expEn": "The base line rises (1,300 - 1,100) / 40 = 5 points per day. The parallel through the 1,480 peak at day 45 reaches 1,480 + 5 x 35 = 1,655 on day 80, the level where the fifth wave may meet the upper channel line.", "expTh": "เส้นฐานชันขึ้น (1,300 - 1,100) / 40 = 5 จุดต่อวัน เส้นขนานที่ผ่านยอด 1,480 ในวันที่ 45 จะอยู่ที่ 1,480 + 5 x 35 = 1,655 ในวันที่ 80 ซึ่งเป็นระดับที่ wave 5 อาจไปแตะเส้นบนของ channel"}, {"id": "v2q13", "qType": "single", "diff": "medium", "text": "A rally from 1,500 to 1,850 is labeled wave 1. The decline that follows reaches 1,700, a 43% retracement, but it subdivides cleanly into five waves. How should the analyst treat the label wave 2?", "choices": [{"id": "a", "letter": "A", "text": "Keep it: a 43% retracement is shallow enough that the number of subwaves in a second wave does not matter"}, {"id": "b", "letter": "B", "text": "Keep it: wave 2 of an impulse normally subdivides into five waves, which is what separates it from wave 4"}, {"id": "c", "letter": "C", "text": "Reject it only if the decline goes below 1,500, since wave 2 is judged on depth alone and not on structure"}, {"id": "d", "letter": "D", "text": "Reject it: a five-wave decline is impulsive, so it is not a normal wave 2 and a larger decline may be starting"}], "correct": ["d"], "expEn": "A wave 2 is a correction and must subdivide into three waves (or a combination of threes). A five-wave decline is a motive wave, which suggests the 1,850 high may have been a larger peak, whatever the depth of 43%.", "expTh": "wave 2 เป็นคลื่นปรับฐาน จึงต้องแบ่งย่อยเป็นสามคลื่น (หรือ combination ของ three) การลงห้าคลื่นเป็น motive wave ซึ่งชวนให้คิดว่าจุดสูง 1,850 อาจเป็นยอดของระดับที่ใหญ่กว่า ไม่ว่าความลึกจะเป็น 43% ก็ตาม"}, {"id": "v2q14", "qType": "single", "diff": "medium", "text": "An index makes a new high of 5,300 as wave 5, above the wave 3 high of 5,240 (wave 4 low 5,010). Volume is lighter than in wave 3, the advance-decline line peaked with wave 3, and momentum makes a lower high. What is the best reading?", "choices": [{"id": "a", "letter": "A", "text": "Unusual strength: lighter volume with a new high shows that the buyers are in control, so wave 5 must be extended"}, {"id": "b", "letter": "B", "text": "Normal fifth-wave personality: weak breadth and momentum warn of an aging advance, with 5,010 a likely correction target"}, {"id": "c", "letter": "C", "text": "A failed count: wave 5 may only exceed wave 3 on volume and breadth that also exceed the levels set in wave 3"}, {"id": "d", "letter": "D", "text": "A typical third wave: low volume and a lower momentum high are the standard signs of an early advance"}], "correct": ["b"], "expEn": "In stock indexes, wave 5 normally comes with less volume, narrower breadth and momentum divergence compared with wave 3. These non-confirmations warn of exhaustion, and the correction that follows tends to reach the area of the prior fourth wave.", "expTh": "ในดัชนีหุ้น wave 5 มักมาพร้อมวอลุ่มที่เบากว่า ความกว้างของตลาดที่แคบลง และ momentum divergence เมื่อเทียบกับ wave 3 สัญญาณที่ไม่ยืนยันเหล่านี้เตือนว่าแรงหมดลง และการปรับฐานที่ตามมามักลงถึงบริเวณ wave 4 ก่อนหน้า"}, {"id": "v2q15", "qType": "single", "diff": "hard", "text": "Wave 1 rose from 2,000 to 2,300, and a sharp wave 2 fell to 2,115, retracing about 62%. Wave 3 extended to 3,000. Using alternation, the analyst expects a shallow wave 4 retracing 23.6% of wave 3, and then wave 5 equal to wave 1. Where does wave 5 end?", "choices": [{"id": "a", "letter": "A", "text": "About 2,962, since wave 4 ends near 2,662 after a 38.2% retracement and wave 5 adds 300 points"}, {"id": "b", "letter": "B", "text": "About 3,300, since wave 5 adds the 300 points of wave 1 directly to the wave 3 high of 3,000"}, {"id": "c", "letter": "C", "text": "About 3,091, since wave 4 ends near 2,791 and wave 5 adds 300 points"}, {"id": "d", "letter": "D", "text": "About 2,976, since wave 4 ends near 2,791 and wave 5 adds the 185 points of wave 2"}], "correct": ["c"], "expEn": "Wave 3 is 885 points, and 23.6% of that is about 209, so wave 4 ends near 2,791. Adding 300 points (wave 1) gives 3,091. A 38.2% retracement, the wrong starting point, or the wrong wave length each leads to a different level.", "expTh": "wave 3 ยาว 885 จุด และ 23.6% ของระยะนี้ราว 209 จุด ทำให้ wave 4 จบใกล้ 2,791 บวก 300 จุด (ความยาว wave 1) ได้ 3,091 การใช้ retracement 38.2% จุดเริ่มวัดที่ผิด หรือความยาวคลื่นที่ผิด จะได้ระดับอื่น"}, {"id": "v2q16", "qType": "single", "diff": "hard", "text": "In an advance, wave 1 ran 1,900 to 2,040, wave 2 fell to 1,960, wave 3 reached 2,380, wave 4 fell to 2,250, and wave 5 reached 2,385. Which description fits best?", "choices": [{"id": "a", "letter": "A", "text": "Wave 3 (420 points) is the extended wave, and waves 1 and 5 (140 and 135 points) are nearly equal"}, {"id": "b", "letter": "B", "text": "Wave 5 is the extended wave, because it is the only wave that ended above the wave 3 high of 2,380"}, {"id": "c", "letter": "C", "text": "No wave is extended, because extension requires wave 3 to be at least 4.236 times wave 1 in length"}, {"id": "d", "letter": "D", "text": "The count is invalid, because waves 1 and 5 cannot be nearly equal when wave 3 is the longest wave"}], "correct": ["a"], "expEn": "Wave 3 (420 points) is three times wave 1 and far longer than waves 1 and 5, so it is the extension. Waves 1 and 5 differ by only 5 points (about 3.6%), and there is no 4.236 minimum for an extended wave.", "expTh": "wave 3 (420 จุด) ยาวเป็นสามเท่าของ wave 1 และยาวกว่า wave 1 กับ wave 5 มาก จึงเป็น extension ส่วน wave 1 กับ wave 5 ต่างกันเพียง 5 จุด (ราว 3.6%) และไม่มีเกณฑ์ขั้นต่ำ 4.236 สำหรับ extended wave"}, {"id": "v2q17", "qType": "single", "diff": "medium", "text": "Wave 1 ran from 7,400 to 7,900, wave 2 fell to 7,600, and wave 3 reached 8,900. A decline now begins, labeled wave 4. At what level is the impulse count first violated?", "choices": [{"id": "a", "letter": "A", "text": "At any price below 7,600, the low of wave 2, since wave 4 may not retrace beyond wave 2"}, {"id": "b", "letter": "B", "text": "At any price below 8,097, the 61.8% retracement of wave 3, since wave 4 may not go deeper"}, {"id": "c", "letter": "C", "text": "At any price below 7,400, the start of wave 1, since that is the invalidation level for the whole count"}, {"id": "d", "letter": "D", "text": "At any price below 7,900, the high of wave 1, since wave 4 may not overlap wave 1"}], "correct": ["d"], "expEn": "Wave 4 may not overlap the price territory of wave 1, so the violation point is the wave 1 high of 7,900. The wave 2 low and the start of wave 1 are far too low, and no 61.8% depth limit exists for wave 4.", "expTh": "wave 4 ต้องไม่ overlap ช่วงราคาของ wave 1 จุดที่ผิดกฎจึงเป็นจุดสูงของ wave 1 ที่ 7,900 ส่วนจุดต่ำของ wave 2 และจุดเริ่มของ wave 1 ต่ำเกินไปมาก และไม่มีข้อจำกัดความลึก 61.8% สำหรับ wave 4"}, {"id": "v2q18", "qType": "single", "diff": "hard", "text": "Wave A of a correction fell from 3,400 to 3,100, and wave B rose to 3,250. As a zigzag, wave C is expected at 0.618 times wave A. Where does it end?", "choices": [{"id": "a", "letter": "A", "text": "About 3,065, which is 185 points below the end of wave B"}, {"id": "b", "letter": "B", "text": "About 2,915, which is 185 points below the end of wave A"}, {"id": "c", "letter": "C", "text": "About 2,950, which is 300 points below the end of wave B"}, {"id": "d", "letter": "D", "text": "About 2,765, which is 485 points below the end of wave B"}], "correct": ["a"], "expEn": "In a zigzag, wave C is measured from the end of wave B. With A = 300 points, 0.618 x 300 is about 185, so C ends near 3,250 - 185 = 3,065. Measuring from wave A's end, or using 1.0 or 1.618, gives the other levels.", "expTh": "ใน zigzag wave C วัดจากปลาย wave B เมื่อ A = 300 จุด 0.618 x 300 ได้ราว 185 จุด C จึงจบใกล้ 3,250 - 185 = 3,065 การวัดจากปลาย wave A หรือใช้อัตราส่วน 1.0 หรือ 1.618 จะได้ระดับอื่น"}, {"id": "v2q19", "qType": "single", "diff": "hard", "text": "A correction begins with wave A from 800 to 740 in three waves, then wave B rises in three waves to 818. If wave C, in five waves, equals 1.618 times wave A, which pattern is this and where does C end?", "choices": [{"id": "a", "letter": "A", "text": "A running flat, with wave C near 758, only 60 points below the end of wave B"}, {"id": "b", "letter": "B", "text": "An expanded flat, with wave C near 643, about 97 points below the end of wave A"}, {"id": "c", "letter": "C", "text": "An expanded flat, with wave C near 721, about 97 points below the end of wave B"}, {"id": "d", "letter": "D", "text": "A regular flat, with wave C near 721, about 97 points below the end of wave B"}], "correct": ["c"], "expEn": "A 3-3-5 with B (818) beyond the start of A (800) is an expanded flat. C = 1.618 x 60 = about 97 points below B's end gives 721, which is below A's end of 740. Measuring from A's end gives 643, and B retraced 130%, so the flat is not regular.", "expTh": "โครงสร้าง 3-3-5 ที่ B (818) เลยจุดเริ่มของ A (800) คือ expanded flat C = 1.618 x 60 = ราว 97 จุดใต้ปลาย B ได้ 721 ซึ่งต่ำกว่าปลาย A ที่ 740 การวัดจากปลาย A ได้ 643 และ B ย้อนไป 130% จึงไม่ใช่ regular flat"}, {"id": "v2q20", "qType": "single", "diff": "hard", "text": "A projection starts with wave 1 from 1,000 to 1,250 and wave 2 retracing 60% of it. Wave 3 is projected at 1.618 times wave 1, wave 4 at 38.2% of wave 3, and wave 5 equal to wave 1. Where does wave 5 end?", "choices": [{"id": "a", "letter": "A", "text": "About 1,755, since wave 5 equals wave 3 in length from the end of wave 4"}, {"id": "b", "letter": "B", "text": "About 1,600, since wave 3 ends near 1,505 and wave 4 near 1,350"}, {"id": "c", "letter": "C", "text": "About 1,505, since wave 5 equals 0.618 times wave 1 from the end of wave 4"}, {"id": "d", "letter": "D", "text": "About 1,662, since wave 5 equals 0.618 times the net distance of waves 1 through 3"}], "correct": ["b"], "expEn": "Wave 2 ends at 1,100, wave 3 adds 1.618 x 250 = 404.5 to reach 1,504.5, and wave 4 gives back 0.382 x 404.5 = 154.5 to reach 1,350. Wave 5 equal to wave 1 then adds 250 for about 1,600. The others change the wave 5 ratio.", "expTh": "wave 2 จบที่ 1,100, wave 3 บวก 1.618 x 250 = 404.5 ถึง 1,504.5 และ wave 4 ย้อน 0.382 x 404.5 = 154.5 มาที่ 1,350 จากนั้น wave 5 เท่า wave 1 บวกอีก 250 ได้ราว 1,600 ตัวเลือกอื่นเปลี่ยนอัตราส่วนของ wave 5"}];
+const V3_BANK = [{"id": "v3q01", "qType": "multi", "diff": "medium", "text": "A stock-index bull market produces an impulse whose third wave is clearly extended. Which observations fit the extension guidelines? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "The fifth wave must also extend, because extensions always occur in pairs of actionable waves"}, {"id": "b", "letter": "B", "text": "The second wave normally retraces more than 100% of wave 1 so that the third wave can accelerate"}, {"id": "c", "letter": "C", "text": "The extension breaks into five clear subwaves, so the whole impulse can be counted as nine waves instead of five"}, {"id": "d", "letter": "D", "text": "Waves 1 and 5, the two non-extended actionable waves, tend toward equality or a 0.618 relationship"}], "correct": ["c", "d"], "expEn": "The extended wave breaks into five clear subwaves, so the whole impulse can be counted as nine waves, and when wave 3 extends, waves 1 and 5 tend to be equal or related by 0.618. Normally only one of the three actionary waves extends, and wave 2 can never retrace more than 100% of wave 1.", "expTh": "extended wave แบ่งเป็น 5 คลื่นย่อยที่ชัดเจน ทำให้ทั้ง impulse นับได้เป็น 9 คลื่นแทนที่จะเป็น 5 และเมื่อ wave 3 เป็น extended wave 1 กับ wave 5 มักมีขนาดใกล้เคียงกันหรือสัมพันธ์กันที่ 0.618 โดยปกติจะมี extension เพียงคลื่นเดียวจากสามคลื่นขับเคลื่อน ไม่ได้เกิดเป็นคู่ และ wave 2 ห้ามย้อนเกิน 100% ของ wave 1 เด็ดขาด"}, {"id": "v3q02", "qType": "multi", "diff": "medium", "text": "Think about where one of waves 1, 3 or 5 tends to stretch out into an extension. Which observations are sound? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Waves 2 and 4 are the waves that extend, because corrective waves have the most room to stretch"}, {"id": "b", "letter": "B", "text": "A wave only qualifies as an extension once it exceeds the other two actionable waves combined"}, {"id": "c", "letter": "C", "text": "In stock-market impulses the third wave is the most common site of an extension"}, {"id": "d", "letter": "D", "text": "Normally just one of the three actionable waves extends while the other two stay comparable in size"}], "correct": ["c", "d"], "expEn": "Extensions occur in one of the actionable waves (1, 3 or 5), most often wave 3 in stocks, and the other two are usually similar. Waves 2 and 4 are corrective and do not extend as impulses, and no combined-length threshold defines an extension.", "expTh": "extension เกิดขึ้นกับหนึ่งในคลื่นหลัก (1, 3 หรือ 5) โดยในตลาดหุ้น wave 3 เป็นคลื่นที่ extended บ่อยที่สุด และอีกสองคลื่นมักมีขนาดใกล้เคียงกัน ส่วน wave 2 และ wave 4 เป็นคลื่นปรับตัวจึงไม่ extend แบบ impulse และไม่มีเกณฑ์ว่าต้องยาวกว่าอีกสองคลื่นรวมกัน"}, {"id": "v3q03", "qType": "multi", "diff": "hard", "text": "A bullish impulse starts at 400. Wave 1 ends at 460, wave 2 at 424, and wave 3 at 581. Which statements are correct? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave 2 retraced 38.2% of wave 1, which is the standard shallow retracement for second waves"}, {"id": "b", "letter": "B", "text": "Wave 3 spans 157 points, about 2.618 times the 60-point length of wave 1"}, {"id": "c", "letter": "C", "text": "A wave 4 low near 521 would retrace about 38.2% of wave 3 and stay clear of wave 1"}, {"id": "d", "letter": "D", "text": "A wave 4 low at 455 would still be acceptable, since it holds above the wave 2 low of 424"}], "correct": ["b", "c"], "expEn": "Wave 3 runs 424 to 581 (157 points, 2.617 times wave 1's 60), and a 60-point pullback to 521 is 38.2% of 157. A wave 4 at 455 would overlap wave 1's territory (up to 460), and wave 2 retraced 36 of 60 points, or 60%, not 38.2%.", "expTh": "wave 3 วิ่งจาก 424 ถึง 581 คือ 157 จุด ประมาณ 2.618 เท่าของ wave 1 ที่ยาว 60 จุด และการย่อไป 521 คือ 60 จุด หรือ 38.2% ของ 157 พอดี ส่วน wave 4 ที่ 455 จะลงไปทับพื้นที่ของ wave 1 (ถึง 460) จึงผิดกฎ และ wave 2 ย้อน 36 จาก 60 จุด คือ 60% ไม่ใช่ 38.2%"}, {"id": "v3q04", "qType": "multi", "diff": "medium", "text": "Which features usually characterize a third wave in a stock-market impulse? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "It is often the strongest and most powerful advance, frequently with the heaviest trading volume of the sequence"}, {"id": "b", "letter": "B", "text": "Fundamental developments typically begin to confirm the trend, and participation becomes widespread"}, {"id": "c", "letter": "C", "text": "It often leaves gaps on daily charts as the trend runs with little resistance"}, {"id": "d", "letter": "D", "text": "It usually carries the lowest volume of the impulse because the public has not yet noticed the move"}], "correct": ["a", "b", "c"], "expEn": "Third waves are typically the most powerful, with strong volume, gaps in daily data and growing fundamental confirmation. Low volume and public indifference describe the early phase of wave 1 and the end of wave 2, not wave 3.", "expTh": "wave 3 มักเป็นคลื่นที่แรงที่สุด วอลุ่มหนาแน่น เกิดช่องว่างราคา (gap) ในกราฟรายวัน และปัจจัยพื้นฐานเริ่มสนับสนุนแนวโน้มพร้อมการมีส่วนร่วมที่กว้างขึ้น ส่วนวอลุ่มต่ำและความเฉยเมยของสาธารณชนเป็นลักษณะช่วงต้นของ wave 1 และปลาย wave 2 ไม่ใช่ wave 3"}, {"id": "v3q05", "qType": "multi", "diff": "medium", "text": "Compared with the preceding third wave, which features commonly mark a fifth wave in a stock-market impulse? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Momentum indicators often show a negative divergence from their readings at the end of wave 3"}, {"id": "b", "letter": "B", "text": "Momentum indicators normally confirm the new price high with fresh readings above wave 3's peak"}, {"id": "c", "letter": "C", "text": "Trading volume usually surpasses the volume seen in the third wave as the public piles in"}, {"id": "d", "letter": "D", "text": "Fewer stocks participate, so market breadth is narrower even if the averages push to new highs"}], "correct": ["a", "d"], "expEn": "Stock-market fifth waves usually show narrower breadth and momentum divergence, a sign of waning internal strength. Volume is typically lower than in wave 3 (commodities can differ), and confirming indicator highs are the opposite of what is normal.", "expTh": "wave 5 ในตลาดหุ้นมักมีหุ้นที่ร่วมวงน้อยลง (breadth แคบลง) และอินดิเคเตอร์โมเมนตัมเกิด divergence เทียบกับปลาย wave 3 ซึ่งบ่งบอกว่าแรงภายในอ่อนลง ส่วนวอลุ่มมักต่ำกว่า wave 3 (ตลาดสินค้าโภคภัณฑ์อาจต่างออกไป) และการที่อินดิเคเตอร์ยืนยันจุดสูงใหม่เป็นสิ่งตรงข้ามกับที่พบทั่วไป"}, {"id": "v3q06", "qType": "multi", "diff": "medium", "text": "Which statements describe first and second waves in a typical stock-market bull impulse? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave 2 often retraces so much of wave 1 that most observers are convinced the bear market is back"}, {"id": "b", "letter": "B", "text": "About half of first waves are part of a bottoming process, so they are hard to recognize while they develop"}, {"id": "c", "letter": "C", "text": "Wave 1 normally shows the heaviest volume and widest participation of all the waves in the impulse"}, {"id": "d", "letter": "D", "text": "Wave 2 frequently falls below the start of wave 1 when pessimism is strong enough to drive volume higher"}], "correct": ["a", "b"], "expEn": "Many first waves emerge from base-building and are only recognized afterward, and wave 2 often retraces deeply, ending on low volume and volatility. Wave 2 can never go beyond the start of wave 1, and wave 1 volume is usually modest compared with wave 3.", "expTh": "wave 1 ประมาณครึ่งหนึ่งเป็นส่วนหนึ่งของการสร้างฐาน จึงดูออกยากขณะเกิดขึ้น และ wave 2 มักย้อนลึกจนคนส่วนใหญ่เชื่อว่าตลาดหมีกลับมาแล้ว ทั้งนี้ wave 2 ห้ามลงต่ำกว่าจุดเริ่มต้นของ wave 1 และวอลุ่มของ wave 1 มักเป็นแค่ระดับปานกลางเมื่อเทียบกับ wave 3"}, {"id": "v3q07", "qType": "multi", "diff": "medium", "text": "A trader studies the typical behavior of the fourth wave inside a bullish five-wave advance. Which tendencies hold up? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "It must retrace at least half of wave 3, or else the impulse count is considered invalid"}, {"id": "b", "letter": "B", "text": "It often ends in the price area of the fourth wave of one lesser degree within the preceding wave 3"}, {"id": "c", "letter": "C", "text": "If wave 2 was a sharp correction, wave 4 is expected to tend toward a sideways form"}, {"id": "d", "letter": "D", "text": "It commonly retraces about 38.2% of wave 3, which is its typical Fibonacci depth"}], "correct": ["b", "c", "d"], "expEn": "Wave 4 tends to finish near the prior fourth wave of lesser degree, alternates with wave 2, and often retraces around 38.2% of wave 3. No minimum retracement is required; the actual limit is that it may not overlap wave 1.", "expTh": "wave 4 มักจบแถวระดับราคาของ wave 4 ในดีกรีที่เล็กกว่าหนึ่งระดับภายใน wave 3 มีลักษณะ alternation กับ wave 2 (ถ้า wave 2 เป็นแบบรุนแรง wave 4 มักเป็นแบบไซด์เวย์) และมักย้อนประมาณ 38.2% ของ wave 3 ไม่มีกฎว่าต้องย้อนอย่างน้อยครึ่งหนึ่ง ข้อจำกัดจริงคือห้ามทับพื้นที่ของ wave 1"}, {"id": "v3q08", "qType": "multi", "diff": "hard", "text": "Pivots of a finished advance read 200, 240, 220, 290, 262 and 408 for the starts and ends of waves 1 through 5. Evaluate the measurements below. (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave 5 spans 146 points, about 1.618 times the 90-point net travel of waves 1 through 3"}, {"id": "b", "letter": "B", "text": "Wave 5 is the extended wave, since it is longer than both wave 1 and wave 3"}, {"id": "c", "letter": "C", "text": "Wave 4 retraced about 40% of wave 3, a typical depth that leaves wave 1's territory untouched"}, {"id": "d", "letter": "D", "text": "Wave 4 at 262 breaks the overlap rule because it falls below the end of wave 3 at 290"}], "correct": ["a", "b", "c"], "expEn": "Wave 5 runs 262 to 408 (146 points), roughly 1.618 times the 200-to-290 net travel of 90, so it is the extension. Wave 4 gave back 28 of 70 points (40%) and stayed above 240; falling below wave 3's end is simply what a fourth wave does.", "expTh": "wave 5 วิ่งจาก 262 ถึง 408 คือ 146 จุด ประมาณ 1.618 เท่าของระยะสุทธิ 90 จุดของ wave 1 ถึง 3 (200 ถึง 290) และยาวกว่า wave 1 กับ wave 3 จึงเป็น extended wave ส่วน wave 4 ย้อน 28 จาก 70 จุด (40%) และยังอยู่เหนือ 240 การที่ wave 4 ลงต่ำกว่าจุดจบของ wave 3 เป็นเรื่องปกติของคลื่นแก้ ไม่ใช่การทับซ้อนที่ผิดกฎ"}, {"id": "v3q09", "qType": "multi", "diff": "medium", "text": "Four analysts propose bullish impulse counts using these pivots. Which proposals are valid regular impulses? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Start 100, wave 1 to 130, wave 2 to 112, wave 3 to 170, wave 4 to 141, wave 5 to 190"}, {"id": "b", "letter": "B", "text": "Start 100, wave 1 to 150, wave 2 to 120, wave 3 to 160, wave 4 to 152, wave 5 to 222"}, {"id": "c", "letter": "C", "text": "Start 100, wave 1 to 140, wave 2 to 104, wave 3 to 150, wave 4 to 128, wave 5 to 180"}, {"id": "d", "letter": "D", "text": "Start 50, wave 1 to 70, wave 2 to 58, wave 3 to 86, wave 4 to 76, wave 5 to 98"}], "correct": ["a", "d"], "expEn": "Counts A and D are valid: in A wave 3 (58) is the longest with wave 4 at 141 above 130, and in D the waves of 20, 28 and 22 keep wave 3 longer than the others with wave 4 at 76 above 70. In B wave 3 (40) is shorter than waves 1 (50) and 5 (70), and in C wave 4 (128) falls below wave 1's end at 140.", "expTh": "การนับ A และ D ถูกกฎ: ใน A wave 3 (58 จุด) ยาวที่สุดและ wave 4 ที่ 141 อยู่เหนือ 130 ส่วนใน D คลื่น 20, 28 และ 22 จุด ทำให้ wave 3 ไม่สั้นที่สุด และ wave 4 ที่ 76 อยู่เหนือ 70 ส่วนใน B wave 3 (40) สั้นกว่า wave 1 (50) และ wave 5 (70) และใน C wave 4 (128) ลงต่ำกว่าจุดจบ wave 1 ที่ 140 จึงผิดกฎ"}, {"id": "v3q10", "qType": "multi", "diff": "medium", "text": "Which relationships are commonly observed among the waves of a regular impulse? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave 5 often measures about 2.618 times the length of wave 3 when wave 3 is not extended"}, {"id": "b", "letter": "B", "text": "Wave 3 often measures about 1.618 times the length of wave 1"}, {"id": "c", "letter": "C", "text": "Wave 4 often retraces about 61.8% of wave 3, mirroring the typical second wave"}, {"id": "d", "letter": "D", "text": "Wave 2 often retraces roughly 50% to 61.8% of wave 1"}], "correct": ["b", "d"], "expEn": "Wave 3 at 1.618 times wave 1 and a wave 2 retracement near 50% to 61.8% are common Fibonacci relationships. Wave 4 usually retraces less, near 38.2% of wave 3, and wave 5 is typically equal to or smaller than wave 3 rather than 2.618 times it.", "expTh": "ความสัมพันธ์ที่พบบ่อยคือ wave 3 ยาวราว 1.618 เท่าของ wave 1 และ wave 2 มักย้อน 50% ถึง 61.8% ของ wave 1 ส่วน wave 4 มักย้อนตื้นกว่านั้น ราว 38.2% ของ wave 3 และ wave 5 มักเท่ากับหรือเล็กกว่า wave 3 ไม่ใช่ 2.618 เท่า"}, {"id": "v3q11", "qType": "multi", "diff": "medium", "text": "In a bullish count, wave 1 spans 40 points and wave 5 spans 55 points. Which statements about wave 3 are correct if the count is to be a valid impulse? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave 3 must be longer than at least one of the other actionable waves, so it must exceed 40 points"}, {"id": "b", "letter": "B", "text": "Wave 3 must measure about 65 points, because 1.618 times wave 1 is a mandatory minimum"}, {"id": "c", "letter": "C", "text": "Wave 3 must exceed 55 points, since it is required to be the longest of the three actionable waves"}, {"id": "d", "letter": "D", "text": "Wave 3 could measure 50 points and still be valid, even though wave 5 would then be the longest"}], "correct": ["a", "d"], "expEn": "The rule is only that wave 3 may not be the shortest, so here it must beat the shorter wave (40 points). It does not have to be the longest, and 1.618 times wave 1 is a guideline, not a required minimum.", "expTh": "กฎคือ wave 3 ห้ามสั้นที่สุดเท่านั้น ในกรณีนี้จึงต้องยาวกว่าคลื่นที่สั้นกว่า (40 จุด) ไม่จำเป็นต้องยาวที่สุด ดังนั้น 50 จุดก็ใช้ได้แม้ wave 5 จะยาวกว่า ส่วน 1.618 เท่าของ wave 1 เป็นเพียง guideline ไม่ใช่ขั้นต่ำที่บังคับ"}, {"id": "v3q12", "qType": "multi", "diff": "medium", "text": "After an extended fifth wave ends, which statements about the aftermath fit the guidelines? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "The correction normally retraces the entire impulse in one move, back to the origin of wave 1"}, {"id": "b", "letter": "B", "text": "The first corrective decline commonly retraces to the area of the second wave of the extension"}, {"id": "c", "letter": "C", "text": "Extended fifth waves are especially characteristic of commodity markets rather than stock averages"}, {"id": "d", "letter": "D", "text": "The correction that follows must be a triangle, because an extension rules out every other pattern"}], "correct": ["b", "c"], "expEn": "After a fifth-wave extension, the correction tends to retrace to the extension's wave 2 area, and fifth-wave extensions are typical in commodities. A full retracement to the start of wave 1 is not the norm, and no rule forces the correction to be a triangle.", "expTh": "หลัง wave 5 ที่ extended จบ การปรับฐานครั้งแรกมักย้อนมาถึงแถว wave 2 ของส่วน extension และ extended wave 5 เป็นลักษณะที่พบบ่อยในตลาดสินค้าโภคภัณฑ์มากกว่าดัชนีหุ้น การย้อนกลับไปถึงจุดเริ่มของ wave 1 รวดเดียวไม่ใช่เรื่องปกติ และไม่มีกฎที่บังคับให้การปรับฐานต้องเป็น triangle"}, {"id": "v3q13", "qType": "multi", "diff": "medium", "text": "When parallel lines are used to anticipate the end of a rising five-wave sequence, which points are accurate? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "A fifth wave that fails to touch the upper channel line proves the count is not an impulse"}, {"id": "b", "letter": "B", "text": "A fifth wave that overshoots the upper channel line is a throw-over, and price usually falls back inside the channel soon after"}, {"id": "c", "letter": "C", "text": "The channel can only be drawn after wave 5 has finished, because it needs the wave 5 endpoint"}, {"id": "d", "letter": "D", "text": "A line through the ends of waves 2 and 4, with a parallel through the end of wave 3, outlines the channel for wave 5"}], "correct": ["b", "d"], "expEn": "The 2-4 line plus a parallel from wave 3 gives a projection zone for wave 5, and a throw-over beyond it is typically followed by a quick return inside the channel. Channels are guidelines, so wave 5 may stop short, and the channel is available once wave 4 is complete.", "expTh": "เส้นที่ลากผ่านจุดจบ wave 2 และ wave 4 พร้อมเส้นขนานผ่านจุดจบ wave 3 ใช้ประมาณโซนที่ wave 5 อาจไปถึง และ throw-over ที่เลยเส้นบนมักตามด้วยการหลุดกลับเข้ากรอบอย่างรวดเร็ว เส้นแชนเนลเป็นเพียง guideline wave 5 จึงอาจไม่ถึงเส้นได้ และวาดได้ตั้งแต่ wave 4 จบแล้ว ไม่ต้องรอ wave 5"}, {"id": "v3q14", "qType": "multi", "diff": "medium", "text": "An impulse has a first wave of 150 points, a third wave of 52 points and a fifth wave of 50 points. Which statements are correct? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Waves 3 and 5 are nearly equal, as tends to happen for the non-extended pair when wave 1 extends"}, {"id": "b", "letter": "B", "text": "The count is invalid because wave 3 is not the longest of the three actionable waves"}, {"id": "c", "letter": "C", "text": "Wave 1 is the extended wave of this impulse, dwarfing the other two actionable waves"}, {"id": "d", "letter": "D", "text": "The count is invalid because wave 3 is the shortest of the three actionable waves"}], "correct": ["a", "c"], "expEn": "Wave 1 (150) is clearly the extension, and waves 3 (52) and 5 (50) are close in length. Wave 3 is slightly longer than wave 5, so the rule against a shortest wave 3 is satisfied, and wave 3 is not required to be the longest.", "expTh": "wave 1 (150 จุด) เป็น extended wave อย่างชัดเจน และ wave 3 (52) กับ wave 5 (50) มีขนาดใกล้เคียงกัน ซึ่งเป็นแนวโน้มของคู่ที่ไม่ extend เมื่อ wave 1 ยืดยาว wave 3 ยาวกว่า wave 5 เล็กน้อย จึงไม่ผิดกฎห้ามเป็นคลื่นสั้นสุด และไม่จำเป็นต้องยาวที่สุด"}, {"id": "v3q15", "qType": "multi", "diff": "medium", "text": "Comparing zigzags with flats, which descriptions of their internal construction are right? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "In an expanded flat, wave B stops short of the starting point of wave A to show weakness"}, {"id": "b", "letter": "B", "text": "In a running flat, wave B exceeds the start of wave A while wave C fails to pass the end of wave A"}, {"id": "c", "letter": "C", "text": "A zigzag subdivides 5-3-5, with waves A and C each being five-wave structures"}, {"id": "d", "letter": "D", "text": "In a regular flat, wave A subdivides into five waves just as it does in a zigzag"}], "correct": ["b", "c"], "expEn": "A zigzag is 5-3-5, and a running flat has a B wave beyond A's start with a C wave that falls short of A's end. A flat's wave A is a three (3-3-5), and an expanded flat's wave B goes beyond the start of wave A.", "expTh": "zigzag แบ่งเป็น 5-3-5 โดย wave A และ C เป็นห้าคลื่น ส่วน running flat มี wave B เลยจุดเริ่มของ wave A และ wave C ไปไม่ถึงจุดจบของ wave A ในขณะที่ wave A ของ flat เป็นสามคลื่น (3-3-5) และ wave B ของ expanded flat เลยจุดเริ่มของ wave A ไม่ใช่หยุดก่อน"}, {"id": "v3q16", "qType": "multi", "diff": "medium", "text": "Considering relative size in the labeling hierarchy of wave degrees, which comparisons are right? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Intermediate degree is larger than Primary degree, since it sits closer to the Supercycle level"}, {"id": "b", "letter": "B", "text": "Minuette degree is larger than Minute degree, since it sits just under Minor in the hierarchy"}, {"id": "c", "letter": "C", "text": "Cycle degree is larger than Primary degree, which in turn is larger than Intermediate"}, {"id": "d", "letter": "D", "text": "Minor degree is larger than Minute degree, and Minute is larger than Minuette"}], "correct": ["c", "d"], "expEn": "The sequence runs from larger to smaller: Cycle, Primary, Intermediate, Minor, Minute, Minuette. Minuette is smaller than Minute, and Intermediate is smaller than Primary.", "expTh": "ลำดับจากใหญ่ไปเล็กคือ Cycle, Primary, Intermediate, Minor, Minute, Minuette ดังนั้น Minuette เล็กกว่า Minute และ Intermediate เล็กกว่า Primary"}, {"id": "v3q17", "qType": "multi", "diff": "hard", "text": "An ending diagonal in the fifth-wave position has waves 1, 3 and 5 measuring 80, 52 and 30 points. Which statements are correct? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave 4 is expected to overlap the territory of wave 1, which is normal for this pattern"}, {"id": "b", "letter": "B", "text": "Wave 3 is longer than wave 5, so the cardinal rule against a shortest third wave is not broken"}, {"id": "c", "letter": "C", "text": "The count is invalid because the shortest actionable wave is wave 5 rather than wave 1"}, {"id": "d", "letter": "D", "text": "The count is invalid because wave 3 is not the longest of the three actionable waves"}], "correct": ["a", "b"], "expEn": "In a contracting ending diagonal wave 5 can be the shortest, and only wave 3 is barred from that role (52 is greater than 30). Wave 4 overlapping wave 1 is characteristic, and wave 3 need not be the longest.", "expTh": "ใน ending diagonal แบบหดตัว wave 5 เป็นคลื่นสั้นที่สุดได้ ข้อห้ามมีแค่ wave 3 ต้องไม่สั้นที่สุด (52 มากกว่า 30 จึงผ่าน) การที่ wave 4 ทับพื้นที่ wave 1 เป็นลักษณะปกติของรูปแบบนี้ และ wave 3 ไม่จำเป็นต้องยาวที่สุด"}, {"id": "v3q18", "qType": "multi", "diff": "medium", "text": "Wave 1 of a bullish impulse runs from 75 to 120. Which wave 2 outcomes are consistent with the rules? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Wave 2 falls to 92, retracing about 62% of wave 1, a classic deep second-wave retracement"}, {"id": "b", "letter": "B", "text": "Wave 2 falls to 74, a slight overshoot of the origin that is tolerated as a minor deviation"}, {"id": "c", "letter": "C", "text": "Wave 2 falls to 70, retracing about 111% of wave 1 on a sharp but short-lived scare"}, {"id": "d", "letter": "D", "text": "Wave 2 falls to 98, retracing about 49% of wave 1 and staying well above the origin"}], "correct": ["a", "d"], "expEn": "Retracements of about 49% (to 98) and 62% (to 92) are within the rule that wave 2 never retraces more than 100% of wave 1. Any move below 75, whether to 74 or 70, ends the count as a wave 2 regardless of how small the overshoot.", "expTh": "การย้อนราว 49% (ลงมา 98) และ 62% (ลงมา 92) อยู่ในกฎที่ว่า wave 2 ห้ามย้อนเกิน 100% ของ wave 1 ส่วนการลงต่ำกว่า 75 ไม่ว่าจะเป็น 74 หรือ 70 ก็ทำให้การนับเป็น wave 2 ใช้ไม่ได้ ไม่มีการยอมให้ทะลุเล็กน้อย"}, {"id": "v3q19", "qType": "multi", "diff": "hard", "text": "Wave 1 of a bullish impulse rises from 2,000 to 2,300, and wave 2 bottoms at 2,120. Which wave 3 projections are correct? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "Adding 1.618 times wave 1 to the wave 2 low gives a target near 2,605"}, {"id": "b", "letter": "B", "text": "Adding 1.618 times wave 1 to the wave 1 high gives a target near 2,785"}, {"id": "c", "letter": "C", "text": "Adding 2.618 times wave 1 to the wave 2 low gives an extended-wave target near 2,905"}, {"id": "d", "letter": "D", "text": "A wave 3 ending at 2,420 would equal 1.618 times wave 1, making it a typical third wave"}], "correct": ["a", "c"], "expEn": "Wave 1 is 300 points, so 1.618 times is about 485 (2,120 plus 485 is about 2,605) and 2.618 times is about 785 (about 2,905), both measured from the wave 2 low. Projecting from the wave 1 high mixes the origin, and 2,420 is only 300 points above the wave 2 low, equal to wave 1.", "expTh": "wave 1 ยาว 300 จุด ดังนั้น 1.618 เท่า คือประมาณ 485 (2,120 บวก 485 ได้ราว 2,605) และ 2.618 เท่า คือประมาณ 785 (ราว 2,905) โดยวัดจากจุดต่ำ wave 2 การวัดจากจุดสูงของ wave 1 เป็นการวางจุดเริ่มผิด และ 2,420 อยู่เหนือจุดต่ำ wave 2 เพียง 300 จุด เท่ากับ wave 1 พอดี ไม่ใช่ 1.618 เท่า"}, {"id": "v3q20", "qType": "multi", "diff": "medium", "text": "Test your grasp of what an impulse requires and permits. Which of these hold true? (select all that apply)", "choices": [{"id": "a", "letter": "A", "text": "An impulse subdivides 5-3-5-3-5, with waves 1, 3 and 5 each forming five-wave motive structures"}, {"id": "b", "letter": "B", "text": "A truncated fifth wave subdivides into only three waves, which is why it fails to pass wave 3's end"}, {"id": "c", "letter": "C", "text": "Wave 3 must be the longest of the three actionable waves, as stated in the rules of an impulse"}, {"id": "d", "letter": "D", "text": "In a regular impulse wave 4 may not enter wave 1's territory, a restriction diagonals do not share"}], "correct": ["a", "d"], "expEn": "Impulses are 5-3-5-3-5 and bar wave 4 from wave 1's territory, whereas diagonals tolerate overlap. The rule is that wave 3 is never the shortest, not that it is the longest, and a truncated fifth still subdivides into five waves.", "expTh": "impulse แบ่งย่อยแบบ 5-3-5-3-5 และห้าม wave 4 เข้าพื้นที่ wave 1 ส่วน diagonal ยอมให้ทับซ้อนได้ กฎคือ wave 3 ห้ามสั้นที่สุด ไม่ใช่ต้องยาวที่สุด และ truncated fifth ก็ยังแบ่งย่อยเป็นห้าคลื่น ไม่ใช่สามคลื่น"}];
+</script>
+<script>
+(function(){
+"use strict";
+
+const VARIANTS = {
+  v1: { bank:V1_BANK, name:'Elliott Wave Analyst — Level I', nameTh:'CEWA I · พื้นฐาน', minutes:45, key:'v1' },
+  v2: { bank:V2_BANK, name:'Elliott Wave Analyst — Level II, Part 1', nameTh:'CEWA II · ตอนที่ 1', minutes:45, key:'v2' },
+  v3: { bank:V3_BANK, name:'Elliott Wave Analyst — Level II, Part 2', nameTh:'CEWA II · ตอนที่ 2', minutes:45, key:'v3' },
+};
+
+const state = {
+  shuffled: false,
+  selectedVariant: null,
+  currentVariant: null,
+  questions: [],
+  answers: {},      // qid -> string id (single/tf) or array of ids (multi)
+  startTime: null,
+  timerInterval: null,
+  remainingSeconds: 0,
+  lang: 'en',
+  lastResult: null,
+};
+
+/* ---------- Seeded RNG + Fisher-Yates (deep clone before shuffling) ---------- */
+function mulberry32(seed){
+  let a = seed >>> 0;
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function fisherYates(arr, rnd){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(rnd()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function deepCloneBank(bank){
+  return bank.map(q => ({
+    ...q,
+    choices: q.choices ? q.choices.map(c => ({...c})) : undefined,
+    correct: [...q.correct]
+  }));
+}
+
+/* ---------- Custom modal (avoids window.confirm for in-app browser compatibility) ---------- */
+const modalOverlay = document.getElementById('modalOverlay');
+const modalTitle = document.getElementById('modalTitle');
+const modalMsg = document.getElementById('modalMsg');
+const modalCancel = document.getElementById('modalCancel');
+const modalConfirm = document.getElementById('modalConfirm');
+let modalResolve = null;
+function showModal(title, msg, confirmLabel){
+  modalTitle.textContent = title;
+  modalMsg.textContent = msg;
+  modalConfirm.textContent = confirmLabel || 'Confirm';
+  modalOverlay.classList.add('active');
+  return new Promise(resolve => { modalResolve = resolve; });
+}
+modalCancel.addEventListener('click', ()=>{ modalOverlay.classList.remove('active'); if(modalResolve) modalResolve(false); });
+modalConfirm.addEventListener('click', ()=>{ modalOverlay.classList.remove('active'); if(modalResolve) modalResolve(true); });
+modalOverlay.addEventListener('click', (e)=>{ if(e.target===modalOverlay){ modalOverlay.classList.remove('active'); if(modalResolve) modalResolve(false); } });
+
+/* ---------- Screen switching ---------- */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+/* ---------- Lobby ---------- */
+const variantList = document.getElementById('variantList');
+const startBtn = document.getElementById('startBtn');
+const shuffleToggle = document.getElementById('shuffleToggle');
+const shuffleSwitch = document.getElementById('shuffleSwitch');
+
+variantList.addEventListener('click', (e)=>{
+  const card = e.target.closest('.variant-card');
+  if(!card) return;
+  document.querySelectorAll('.variant-card').forEach(c=>c.classList.remove('selected'));
+  card.classList.add('selected');
+  state.selectedVariant = card.getAttribute('data-variant');
+  startBtn.disabled = false;
+});
+
+shuffleToggle.addEventListener('click', ()=>{
+  state.shuffled = !state.shuffled;
+  shuffleSwitch.classList.toggle('on', state.shuffled);
+});
+
+startBtn.addEventListener('click', ()=>{
+  if(!state.selectedVariant) return;
+  beginExam(state.selectedVariant);
+});
+
+/* ---------- Begin exam ---------- */
+function beginExam(variantKey){
+  const v = VARIANTS[variantKey];
+  state.currentVariant = variantKey;
+  let bank = deepCloneBank(v.bank);
+  if(state.shuffled){
+    const seed = (Date.now() ^ Math.floor(Math.random()*1e9)) >>> 0;
+    const rnd = mulberry32(seed);
+    bank = fisherYates(bank, rnd);
+    bank = bank.map(q=>{
+      if(q.qType==='tf') return q;
+      const rnd2 = mulberry32((seed ^ hashId(q.id)) >>> 0);
+      return {...q, choices: fisherYates(q.choices, rnd2)};
+    });
+  }
+  state.questions = bank;
+  state.answers = {};
+  state.remainingSeconds = v.minutes * 60;
+  state.startTime = Date.now();
+
+  document.getElementById('quizVariantName').textContent = v.name;
+  renderQuestions();
+  updateHud();
+  showScreen('screen-quiz');
+  startTimer();
+}
+function hashId(str){
+  let h=0; for(let i=0;i<str.length;i++){ h=(h*31 + str.charCodeAt(i))|0; }
+  return h;
+}
+
+/* ---------- Render questions ---------- */
+const questionList = document.getElementById('questionList');
+function renderQuestions(){
+  const frag = document.createDocumentFragment();
+  state.questions.forEach((q, idx) => {
+    const card = document.createElement('div');
+    card.className = 'qcard';
+    card.setAttribute('data-qcard', q.id);
+
+    const typeLabel = q.qType==='tf' ? 'TRUE / FALSE' : (q.qType==='multi' ? 'SELECT ALL THAT APPLY' : 'SINGLE BEST ANSWER');
+    let html = `<div class="qnum">${idx+1}</div>`;
+    html += `<div class="qtext">${escapeHtml(q.text)}<span class="qtype-badge">${typeLabel}</span></div>`;
+
+    if(q.qType === 'tf'){
+      html += `<div class="tf-row" role="radiogroup" data-qid="${q.id}" data-qtype="tf">
+        <button class="tf-btn tf-true" role="radio" aria-checked="false" data-cid="true">✓ TRUE</button>
+        <button class="tf-btn tf-false" role="radio" aria-checked="false" data-cid="false">✗ FALSE</button>
+      </div>`;
+    } else if(q.qType === 'multi'){
+      html += `<div class="choices" role="group" data-qid="${q.id}" data-qtype="multi">`;
+      q.choices.forEach(c=>{
+        html += `<button class="choice-btn" role="checkbox" aria-checked="false" data-cid="${c.id}">
+          <span class="choice-letter">${c.letter}</span><span>${escapeHtml(c.text)}</span>
+        </button>`;
+      });
+      html += `</div>`;
+    } else {
+      html += `<div class="choices" role="radiogroup" data-qid="${q.id}" data-qtype="single">`;
+      q.choices.forEach(c=>{
+        html += `<button class="choice-btn" role="radio" aria-checked="false" data-cid="${c.id}">
+          <span class="choice-letter">${c.letter}</span><span>${escapeHtml(c.text)}</span>
+        </button>`;
+      });
+      html += `</div>`;
+    }
+    card.innerHTML = html;
+    frag.appendChild(card);
+  });
+  questionList.innerHTML = '';
+  questionList.appendChild(frag);
+}
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+/* ---------- Answer selection (event delegation via data-* attrs) ---------- */
+questionList.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-cid]');
+  if(!btn) return;
+  const group = btn.closest('[data-qid]');
+  const qid = group.getAttribute('data-qid');
+  const qtype = group.getAttribute('data-qtype');
+  const cid = btn.getAttribute('data-cid');
+
+  if(qtype === 'multi'){
+    const cur = Array.isArray(state.answers[qid]) ? state.answers[qid].slice() : [];
+    const pos = cur.indexOf(cid);
+    if(pos >= 0) cur.splice(pos,1); else cur.push(cid);
+    state.answers[qid] = cur;
+    group.querySelectorAll('[data-cid]').forEach(b=>{
+      b.setAttribute('aria-checked', cur.includes(b.getAttribute('data-cid')) ? 'true' : 'false');
+    });
+  } else {
+    state.answers[qid] = cid;
+    group.querySelectorAll('[data-cid]').forEach(b=>{
+      b.setAttribute('aria-checked', b.getAttribute('data-cid')===cid ? 'true' : 'false');
+    });
+  }
+  const card = btn.closest('.qcard');
+  const answered = qtype==='multi' ? (state.answers[qid]||[]).length>0 : !!state.answers[qid];
+  card.classList.toggle('answered', answered);
+  updateHud();
+});
+
+/* ---------- Timer / HUD ---------- */
+function startTimer(){
+  clearInterval(state.timerInterval);
+  state.timerInterval = setInterval(()=>{
+    state.remainingSeconds--;
+    if(state.remainingSeconds <= 0){
+      state.remainingSeconds = 0;
+      clearInterval(state.timerInterval);
+      finishExam();
+      return;
+    }
+    updateHud();
+  }, 1000);
+}
+function fmtTime(totalSeconds){
+  const m = Math.floor(totalSeconds/60), s = totalSeconds%60;
+  return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function updateHud(){
+  const elapsed = Math.floor((Date.now()-state.startTime)/1000);
+  document.getElementById('hudElapsed').textContent = fmtTime(elapsed);
+  document.getElementById('hudRemaining').textContent = fmtTime(state.remainingSeconds);
+  const answeredCount = state.questions.filter(q=>{
+    const a = state.answers[q.id];
+    return q.qType==='multi' ? (Array.isArray(a) && a.length>0) : !!a;
+  }).length;
+  const total = state.questions.length;
+  const pct = total ? Math.round((answeredCount/total)*100) : 0;
+  document.getElementById('hudProgress').textContent = pct+'%';
+  document.getElementById('hudBarFill').style.width = pct+'%';
+  document.getElementById('quizCount').textContent = answeredCount+' / '+total+' answered';
+  const hud = document.getElementById('hud');
+  hud.classList.toggle('warn', state.remainingSeconds <= 300);
+}
+
+/* ---------- Submit / Grading ---------- */
+document.getElementById('submitBtn').addEventListener('click', async ()=>{
+  const total = state.questions.length;
+  const answeredCount = state.questions.filter(q=>{
+    const a = state.answers[q.id];
+    return q.qType==='multi' ? (Array.isArray(a) && a.length>0) : !!a;
+  }).length;
+  if(answeredCount < total){
+    const ok = await showModal('Submit exam?', `You have answered ${answeredCount} of ${total} questions. Submit anyway?`, 'Submit');
+    if(!ok) return;
+  } else {
+    const ok = await showModal('Submit exam?', 'You will not be able to change your answers after submitting.', 'Submit');
+    if(!ok) return;
+  }
+  finishExam();
+});
+
+function isCorrect(q){
+  const a = state.answers[q.id];
+  if(q.qType === 'multi'){
+    if(!Array.isArray(a)) return false;
+    const sortedA = a.slice().sort().join(',');
+    const sortedC = q.correct.slice().sort().join(',');
+    return sortedA === sortedC && sortedA.length>0;
+  }
+  return a === q.correct[0];
+}
+
+function finishExam(){
+  clearInterval(state.timerInterval);
+  const total = state.questions.length;
+  let correctCount = 0;
+  state.questions.forEach(q=>{ if(isCorrect(q)) correctCount++; });
+  const pct = total ? Math.round((correctCount/total)*100) : 0;
+  const elapsedSeconds = Math.floor((Date.now()-state.startTime)/1000);
+  let grade = 'fail';
+  if(pct >= 90) grade = 'master';
+  else if(pct >= 80) grade = 'pass';
+  state.lastResult = { correctCount, total, pct, elapsedSeconds, grade };
+  renderResults();
+  showScreen('screen-results');
+  if(grade !== 'fail') launchConfetti(grade);
+}
+
+/* ---------- Results ---------- */
+function renderResults(){
+  const v = VARIANTS[state.currentVariant];
+  const r = state.lastResult;
+  const stamp = document.getElementById('gradeStamp');
+  stamp.className = 'stamp ' + r.grade;
+  stamp.textContent = r.grade === 'master' ? 'MASTER' : (r.grade === 'pass' ? 'PASS' : 'FAIL');
+  document.getElementById('resultsVariantName').textContent = v.name;
+  document.getElementById('scoreBig').textContent = r.pct + '%';
+  document.getElementById('statCorrect').textContent = r.correctCount;
+  document.getElementById('statTotal').textContent = r.total;
+  document.getElementById('statTime').textContent = fmtTime(r.elapsedSeconds);
+  renderReviewList();
+}
+
+function renderReviewList(){
+  const list = document.getElementById('reviewList');
+  const frag = document.createDocumentFragment();
+  state.questions.forEach((q, idx)=>{
+    const ok = isCorrect(q);
+    const item = document.createElement('div');
+    item.className = 'review-item ' + (ok ? 'correct' : 'incorrect');
+
+    let html = `<div class="review-head">
+      <span class="qnum" style="margin-bottom:0;width:24px;height:24px;font-size:11px;">${idx+1}</span>
+      <span class="review-status ${ok?'correct':'incorrect'}">${ok?'CORRECT':'INCORRECT'}</span>
+    </div>`;
+    html += `<div class="review-q">${escapeHtml(q.text)}</div>`;
+    html += `<div class="review-choices">`;
+
+    if(q.qType === 'tf'){
+      const picked = state.answers[q.id];
+      const correctVal = q.correct[0];
+      ['true','false'].forEach(val=>{
+        let cls = '';
+        if(val === correctVal) cls = 'was-correct';
+        else if(val === picked && val !== correctVal) cls = 'was-wrong-pick';
+        const label = val==='true' ? '✓ TRUE' : '✗ FALSE';
+        const marker = (val===picked) ? ' — your answer' : '';
+        html += `<div class="review-choice ${cls}">${label}${marker}</div>`;
+      });
+    } else {
+      const picked = state.answers[q.id];
+      const pickedArr = q.qType==='multi' ? (Array.isArray(picked)?picked:[]) : (picked?[picked]:[]);
+      q.choices.forEach(c=>{
+        let cls = '';
+        const isC = q.correct.includes(c.id);
+        const wasPicked = pickedArr.includes(c.id);
+        if(isC) cls = 'was-correct';
+        else if(wasPicked) cls = 'was-wrong-pick';
+        const marker = wasPicked ? ' — your answer' : '';
+        html += `<div class="review-choice ${cls}">${c.letter}. ${escapeHtml(c.text)}${marker}</div>`;
+      });
+    }
+    html += `</div>`;
+    html += `<div class="review-exp" data-exp-en="${escapeHtml(q.expEn)}" data-exp-th="${escapeHtml(q.expTh)}">${escapeHtml(state.lang==='th'?q.expTh:q.expEn)}</div>`;
+    item.innerHTML = html;
+    frag.appendChild(item);
+  });
+  list.innerHTML = '';
+  list.appendChild(frag);
+}
+
+document.querySelectorAll('.lang-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.lang = btn.getAttribute('data-lang');
+    document.querySelectorAll('.review-exp').forEach(el=>{
+      el.textContent = state.lang==='th' ? el.getAttribute('data-exp-th') : el.getAttribute('data-exp-en');
+    });
+  });
+});
+
+document.getElementById('backToLobbyBtn').addEventListener('click', ()=>{
+  showScreen('screen-lobby');
+});
+document.getElementById('retakeBtn').addEventListener('click', ()=>{
+  beginExam(state.currentVariant);
+});
+
+/* ---------- Confetti (canvas, no external deps) ---------- */
+const confettiCanvas = document.getElementById('confettiCanvas');
+const ctx = confettiCanvas.getContext('2d');
+function resizeCanvas(){ confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight; }
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function launchConfetti(grade){
+  if(!ctx) return;
+  const colors = grade === 'master' ? ['#e9ffb0','#f5ffd0','#7fd39c'] : ['#5fa176','#7fd39c','#e9ffb0'];
+  const particles = [];
+  const count = grade === 'master' ? 140 : 90;
+  for(let i=0;i<count;i++){
+    particles.push({
+      x: Math.random()*confettiCanvas.width,
+      y: -20 - Math.random()*200,
+      vx: (Math.random()-0.5)*2.5,
+      vy: 2 + Math.random()*3,
+      size: 4 + Math.random()*5,
+      color: colors[Math.floor(Math.random()*colors.length)],
+      rot: Math.random()*Math.PI*2,
+      vr: (Math.random()-0.5)*0.2,
+      life: 0
+    });
+  }
+  let frame = 0;
+  const maxFrames = 220;
+  function tick(){
+    frame++;
+    ctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+    particles.forEach(p=>{
+      p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.vy += 0.02;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = Math.max(0, 1 - frame/maxFrames);
+      ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
+      ctx.restore();
+    });
+    if(frame < maxFrames){
+      requestAnimationFrame(tick);
+    } else {
+      ctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+})();
+</script>
+</body>
+</html>
