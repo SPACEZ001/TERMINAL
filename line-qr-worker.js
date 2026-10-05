@@ -1681,6 +1681,412 @@ function withCorsOrigin(response, origin) {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
+/* =====================================================================
+   EXAM ARENA (CEWA practice / ranked / blitz) -- server-graded quiz.
+
+   Design goals (KV free plan = ~1,000 writes/day, Worker CPU is small):
+   * The question bank lives in KV, one key per exam set ("qz:set:<n>"),
+     uploaded once with QUIZ_BANK_UPLOADER.html. Answers NEVER leave the
+     Worker while a ranked/blitz round is running.
+   * A round is STATELESS: everything the server needs (who, mode, which
+     questions, shuffle, score so far, when the current question was shown)
+     rides in an AES-GCM encrypted token that the browser hands back with
+     each answer. So a round costs ZERO KV writes while it is played.
+   * Only a FINISHED ranked/blitz round may write, and only when it beats
+     that player's previous best on the board (so spamming rounds does not
+     burn the write quota).
+   * Timing is measured by the Worker's own clock from the moment the
+     question was sent. Replaying an old token only makes the answer later,
+     never earlier, so it cannot buy extra thinking time.
+
+   Secret: uses QUIZ_SECRET if set, otherwise falls back to the existing
+   ADMIN_USERS_KEY (no new secret is required).
+   ===================================================================== */
+
+const QZ_META_KEY = "qz:meta";
+const QZ_SET_PREFIX = "qz:set:";
+const QZ_MODES = {
+  // tpq = seconds per question (0 = untimed). multi-answer questions get x1.5.
+  practice: { tpq: 0, ranked: false, counts: [5, 10, 20] },
+  ranked:   { tpq: 45, ranked: true, counts: [10] },
+  blitz:    { tpq: 15, ranked: true, counts: [10] },
+};
+const QZ_GRACE_MS = 2500;         // network slack added to every question timer
+const QZ_TOKEN_MAX_AGE_MS = 3 * 60 * 60 * 1000;
+const QZ_BOARD_MAX = 100;
+const QZ_BOARD_SHOW = 20;
+const QZ_BASE_POINTS = 100;
+const QZ_SPEED_POINTS = 50;
+
+let _qzKey = null;
+const _qzSetCache = new Map(); // per-isolate cache of parsed sets: n -> {at, data}
+
+function b64uEnc(buf) {
+  let s = "";
+  const b = new Uint8Array(buf);
+  for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function b64uDec(str) {
+  str = str.replace(/-/g, "+").replace(/_/g, "/");
+  while (str.length % 4) str += "=";
+  const s = atob(str);
+  const b = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i);
+  return b;
+}
+
+async function qzCryptoKey(env) {
+  const secret = env.QUIZ_SECRET || env.ADMIN_USERS_KEY;
+  if (!secret) return null;
+  if (_qzKey && _qzKey.secret === secret) return _qzKey.key;
+  const raw = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("spz-quiz-v1|" + secret));
+  const key = await crypto.subtle.importKey("raw", raw, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+  _qzKey = { secret, key };
+  return key;
+}
+async function qzSeal(obj, env) {
+  const key = await qzCryptoKey(env);
+  if (!key) throw new Error("quiz_not_configured");
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(JSON.stringify(obj)));
+  const out = new Uint8Array(12 + ct.byteLength);
+  out.set(iv, 0);
+  out.set(new Uint8Array(ct), 12);
+  return b64uEnc(out);
+}
+async function qzOpen(token, env) {
+  try {
+    const key = await qzCryptoKey(env);
+    if (!key || typeof token !== "string" || token.length > 8000) return null;
+    const b = b64uDec(token);
+    const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b.slice(0, 12) }, key, b.slice(12));
+    return JSON.parse(new TextDecoder().decode(pt));
+  } catch (e) { return null; }
+}
+
+function qzRandInt(n) {
+  // unbiased integer in [0, n)
+  const lim = Math.floor(4294967296 / n) * n;
+  const a = new Uint32Array(1);
+  do { crypto.getRandomValues(a); } while (a[0] >= lim);
+  return a[0] % n;
+}
+function qzShuffle(len) {
+  const p = [];
+  for (let i = 0; i < len; i++) p.push(i);
+  if (len <= 2) return p; // True/False keeps its natural order
+  for (let i = len - 1; i > 0; i--) {
+    const j = qzRandInt(i + 1);
+    const t = p[i]; p[i] = p[j]; p[j] = t;
+  }
+  return p;
+}
+
+async function qzGetMeta(env) {
+  const raw = await env.SESSIONS.get(QZ_META_KEY, "json");
+  if (!raw || !raw.sets) return null;
+  return raw;
+}
+async function qzGetSet(n, env) {
+  const hit = _qzSetCache.get(n);
+  if (hit && Date.now() - hit.at < 10 * 60 * 1000) return hit.data;
+  const data = await env.SESSIONS.get(QZ_SET_PREFIX + n, "json");
+  if (!Array.isArray(data)) return null;
+  _qzSetCache.set(n, { at: Date.now(), data });
+  return data;
+}
+async function qzGetQuestion(ref, env) {
+  const set = await qzGetSet(ref[0], env);
+  return set ? set[ref[1]] || null : null;
+}
+
+/* Picks `count` distinct questions uniformly from the whole pool. */
+function qzPickRefs(meta, count) {
+  const ns = Object.keys(meta.sets).map(Number).filter(function (n) { return meta.sets[n] > 0; });
+  let total = 0;
+  const cum = [];
+  ns.forEach(function (n) { total += meta.sets[n]; cum.push(total); });
+  if (total < count) return null;
+  const chosen = new Set();
+  const refs = [];
+  let guard = 0;
+  while (refs.length < count && guard++ < 5000) {
+    const r = qzRandInt(total);
+    let k = 0;
+    while (cum[k] <= r) k++;
+    const base = k ? cum[k - 1] : 0;
+    const ref = [ns[k], r - base];
+    const id = ref[0] + ":" + ref[1];
+    if (chosen.has(id)) continue;
+    chosen.add(id);
+    refs.push(ref);
+  }
+  return refs.length === count ? refs : null;
+}
+
+function qzTpqFor(mode, q) {
+  const base = QZ_MODES[mode].tpq;
+  if (!base) return 0;
+  return q.m ? Math.round(base * 1.5) : base;
+}
+
+/* What the browser may see about a question: text + choices in the shuffled
+   order, never the answer. */
+function qzPublicQuestion(q, perm, i, total, mode) {
+  return {
+    i: i,
+    total: total,
+    t: q.t,
+    c: perm.map(function (k) { return q.c[k]; }),
+    m: q.m ? 1 : 0,
+    tpq: qzTpqFor(mode, q),
+  };
+}
+
+async function qzSessionOr401(code, env) {
+  const sess = await getLinkedSession(code, env);
+  return sess;
+}
+
+function qzBangkokWeekKey(now) {
+  // weeks start Monday 00:00 Asia/Bangkok (UTC+7); 1970-01-05 was a Monday
+  const MON = Date.UTC(1970, 0, 5);
+  const idx = Math.floor((now + 7 * 3600 * 1000 - MON) / (7 * 86400000));
+  const endsAt = MON + (idx + 1) * 7 * 86400000 - 7 * 3600 * 1000;
+  return { key: "w" + idx, endsAt: endsAt };
+}
+function qzBoardKey(mode, period, now) {
+  return "qzlb:" + mode + ":" + (period === "week" ? qzBangkokWeekKey(now).key : "all");
+}
+async function qzGetBoard(key, env) {
+  const raw = await env.SESSIONS.get(key, "json");
+  return Array.isArray(raw) ? raw : [];
+}
+function qzBetter(a, b) {
+  // is entry a better than entry b ?
+  if (a.s !== b.s) return a.s > b.s;
+  return a.ms < b.ms;
+}
+async function qzBoardSubmit(key, entry, env) {
+  const board = await qzGetBoard(key, env);
+  const idx = board.findIndex(function (e) { return e.u === entry.u; });
+  if (idx >= 0) {
+    if (!qzBetter(entry, board[idx])) {
+      // not an improvement: no write, but keep the display name fresh only
+      // when it already changed nothing important -- skipped to save writes
+      return { rank: idx + 1, improved: false };
+    }
+    board.splice(idx, 1);
+  }
+  board.push(entry);
+  board.sort(function (a, b) { return a.s !== b.s ? b.s - a.s : a.ms - b.ms; });
+  const kept = board.slice(0, QZ_BOARD_MAX);
+  await env.SESSIONS.put(key, JSON.stringify(kept));
+  const r = kept.findIndex(function (e) { return e.u === entry.u; });
+  return { rank: r >= 0 ? r + 1 : null, improved: true };
+}
+
+function qzSetEq(a, b) {
+  if (a.length !== b.length) return false;
+  const x = a.slice().sort(), y = b.slice().sort();
+  for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return false;
+  return true;
+}
+
+/* ------------------------------ public API ------------------------------ */
+
+async function handleQuizMeta(request, env) {
+  const meta = await qzGetMeta(env);
+  if (!meta) return json({ ready: false }, env);
+  let total = 0;
+  Object.keys(meta.sets).forEach(function (k) { total += meta.sets[k]; });
+  return json({
+    ready: true,
+    sets: Object.keys(meta.sets).length,
+    questions: total,
+    modes: {
+      practice: { counts: QZ_MODES.practice.counts },
+      ranked: { tpq: QZ_MODES.ranked.tpq, count: 10 },
+      blitz: { tpq: QZ_MODES.blitz.tpq, count: 10 },
+    },
+  }, env);
+}
+
+async function handleQuizStart(request, env) {
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const sess = await qzSessionOr401(body.code, env);
+  if (!sess) return json({ error: "not_linked" }, env, 401);
+  if (!(await qzCryptoKey(env))) return json({ error: "not_configured" }, env, 503);
+  const mode = typeof body.mode === "string" && QZ_MODES[body.mode] ? body.mode : null;
+  if (!mode) return json({ error: "bad_mode" }, env, 400);
+  let count = parseInt(body.count, 10);
+  if (QZ_MODES[mode].counts.indexOf(count) === -1) count = QZ_MODES[mode].counts[Math.min(1, QZ_MODES[mode].counts.length - 1)];
+  const meta = await qzGetMeta(env);
+  if (!meta) return json({ error: "no_bank" }, env, 503);
+  const refs = qzPickRefs(meta, count);
+  if (!refs) return json({ error: "no_bank" }, env, 503);
+  const q0 = await qzGetQuestion(refs[0], env);
+  if (!q0) return json({ error: "no_bank" }, env, 503);
+  const perm = qzShuffle(q0.c.length);
+  const state = {
+    u: sess.userId, m: mode, n: count, r: refs, i: 0, p: perm,
+    ts: Date.now(), t0: Date.now(), sc: 0, ok: 0, ms: 0, lg: [],
+  };
+  return json({
+    mode: mode,
+    token: await qzSeal(state, env),
+    q: qzPublicQuestion(q0, perm, 0, count, mode),
+  }, env);
+}
+
+async function handleQuizAnswer(request, env) {
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const sess = await qzSessionOr401(body.code, env);
+  if (!sess) return json({ error: "not_linked" }, env, 401);
+  const st = await qzOpen(body.token, env);
+  if (!st || st.u !== sess.userId) return json({ error: "bad_token" }, env, 400);
+  const now = Date.now();
+  if (now - st.t0 > QZ_TOKEN_MAX_AGE_MS) return json({ error: "expired" }, env, 400);
+  const mode = st.m;
+  const cfg = QZ_MODES[mode];
+  if (!cfg) return json({ error: "bad_token" }, env, 400);
+
+  const q = await qzGetQuestion(st.r[st.i], env);
+  if (!q) return json({ error: "no_bank" }, env, 503);
+
+  // translate the player's displayed picks back to the real option indexes
+  let picks = Array.isArray(body.choice) ? body.choice : [];
+  picks = picks.map(function (x) { return parseInt(x, 10); })
+    .filter(function (x, k, a) { return x >= 0 && x < st.p.length && a.indexOf(x) === k; });
+  const real = picks.map(function (d) { return st.p[d]; });
+
+  const tpq = qzTpqFor(mode, q);
+  const elapsed = Math.max(0, now - st.ts);
+  const late = !!tpq && elapsed > tpq * 1000 + QZ_GRACE_MS;
+  const right = !late && real.length > 0 && qzSetEq(real, q.a);
+  let pts = 0;
+  if (right) {
+    pts = QZ_BASE_POINTS;
+    if (tpq) pts += Math.round(QZ_SPEED_POINTS * Math.max(0, 1 - elapsed / (tpq * 1000)));
+  }
+
+  // log.k = for each DISPLAYED slot, 1 if that slot is a correct option
+  const logEntry = { k: st.p.map(function (x) { return q.a.indexOf(x) >= 0 ? 1 : 0; }), d: picks, o: right ? 1 : 0, l: late ? 1 : 0, ms: Math.min(elapsed, 600000) };
+  st.lg.push(logEntry);
+  st.sc += pts;
+  st.ok += right ? 1 : 0;
+  st.ms += Math.min(elapsed, tpq ? tpq * 1000 : 600000);
+
+  const reveal = cfg.ranked ? null : { k: logEntry.k, o: logEntry.o, e: q.e || ["", ""] };
+
+  if (st.i + 1 < st.n) {
+    const nq = await qzGetQuestion(st.r[st.i + 1], env);
+    if (!nq) return json({ error: "no_bank" }, env, 503);
+    st.i += 1;
+    st.p = qzShuffle(nq.c.length);
+    st.ts = Date.now();
+    const out = { token: await qzSeal(st, env), q: qzPublicQuestion(nq, st.p, st.i, st.n, mode) };
+    if (reveal) out.reveal = reveal;
+    return json(out, env);
+  }
+
+  // ---- finished ----
+  const review = [];
+  for (let z = 0; z < st.lg.length; z++) {
+    const l = st.lg[z];
+    const rq = z === st.i ? q : await qzGetQuestion(st.r[z], env);
+    review.push({ k: l.k, d: l.d, o: l.o, l: l.l, ms: l.ms, e: (rq && rq.e) || ["", ""] });
+  }
+  const done = { done: true, mode: mode, score: st.sc, correct: st.ok, total: st.n, ms: st.ms, review: review };
+  if (cfg.ranked) {
+    let name = sess.displayName || "";
+    let pic = sess.pictureUrl || "";
+    try {
+      const prof = await getProfile(sess.userId, env);
+      if (prof && prof.nameOverride) name = prof.nameOverride;
+    } catch (e) { /* name fallback is fine */ }
+    const entry = {
+      u: sess.userId, n: (name || "Player").slice(0, 40), p: pic, s: st.sc, c: st.ok, ms: st.ms, at: now,
+    };
+    const all = await qzBoardSubmit(qzBoardKey(mode, "all", now), entry, env);
+    const wk = await qzBoardSubmit(qzBoardKey(mode, "week", now), entry, env);
+    done.rankAll = all.rank; done.rankWeek = wk.rank;
+    done.newBest = !!(all.improved || wk.improved);
+  }
+  return json(done, env);
+}
+
+async function handleQuizLeaderboard(request, env) {
+  const url = new URL(request.url);
+  const mode = url.searchParams.get("mode") === "blitz" ? "blitz" : "ranked";
+  const period = url.searchParams.get("period") === "all" ? "all" : "week";
+  const code = url.searchParams.get("code") || "";
+  const now = Date.now();
+  const board = await qzGetBoard(qzBoardKey(mode, period, now), env);
+  let me = null;
+  if (code) {
+    const sess = await getLinkedSession(code, env);
+    if (sess) me = sess.userId;
+  }
+  const shown = board.slice(0, QZ_BOARD_SHOW).map(function (e, i) {
+    return { rank: i + 1, n: e.n, p: e.p, s: e.s, c: e.c, ms: e.ms, me: me === e.u };
+  });
+  let you = null;
+  if (me) {
+    const idx = board.findIndex(function (e) { return e.u === me; });
+    if (idx >= 0) you = { rank: idx + 1, n: board[idx].n, p: board[idx].p, s: board[idx].s, c: board[idx].c, ms: board[idx].ms, me: true };
+  }
+  return json({
+    mode: mode, period: period, entries: shown, you: you, players: board.length,
+    weekEndsAt: period === "week" ? qzBangkokWeekKey(now).endsAt : null,
+  }, env);
+}
+
+/* ------------------------ admin: bank upload tool ------------------------ */
+
+function qzValidSet(arr) {
+  if (!Array.isArray(arr) || arr.length < 1 || arr.length > 400) return false;
+  for (let i = 0; i < arr.length; i++) {
+    const q = arr[i];
+    if (!q || typeof q.t !== "string" || !Array.isArray(q.c) || q.c.length < 2 || q.c.length > 8) return false;
+    if (!Array.isArray(q.a) || !q.a.length) return false;
+    for (let j = 0; j < q.a.length; j++) if (!(q.a[j] >= 0 && q.a[j] < q.c.length)) return false;
+    if (!q.m && q.a.length !== 1) return false;
+  }
+  return true;
+}
+
+async function handleAdminQuizBankSet(request, env) {
+  if (!isAdminKeyValid(request, env)) return localToolJson({ error: "unauthorized" }, 401);
+  let body;
+  try { body = await request.json(); } catch (e) { return localToolJson({ error: "bad_request" }, 400); }
+  const n = parseInt(body && body.n, 10);
+  if (!(n >= 1 && n <= 9999) || !qzValidSet(body.questions)) return localToolJson({ error: "bad_set" }, 400);
+  await env.SESSIONS.put(QZ_SET_PREFIX + n, JSON.stringify(body.questions));
+  _qzSetCache.delete(n);
+  return localToolJson({ ok: true, n: n, count: body.questions.length });
+}
+
+async function handleAdminQuizBankFinalize(request, env) {
+  if (!isAdminKeyValid(request, env)) return localToolJson({ error: "unauthorized" }, 401);
+  let body;
+  try { body = await request.json(); } catch (e) { return localToolJson({ error: "bad_request" }, 400); }
+  const sets = body && body.sets && typeof body.sets === "object" ? body.sets : null;
+  if (!sets) return localToolJson({ error: "bad_request" }, 400);
+  const clean = {};
+  Object.keys(sets).forEach(function (k) {
+    const n = parseInt(k, 10), c = parseInt(sets[k], 10);
+    if (n >= 1 && c >= 1) clean[n] = c;
+  });
+  await env.SESSIONS.put(QZ_META_KEY, JSON.stringify({ sets: clean, updatedAt: Date.now() }));
+  return localToolJson({ ok: true, sets: Object.keys(clean).length });
+}
+
+/* ====================== end of EXAM ARENA ====================== */
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -1693,6 +2099,7 @@ export default {
       "/api/classroom/content", "/api/admin/classroom-content/update",
       "/api/controlgrid/content", "/api/admin/controlgrid-content/update",
       "/api/quietvalue/results", "/api/printreport/analysis",
+      "/api/admin/quiz-bank/set", "/api/admin/quiz-bank/finalize",
     ];
 
     if (request.method === "OPTIONS") {
@@ -1737,6 +2144,12 @@ export default {
       if (url.pathname === "/api/admin/classroom-content/update" && request.method === "POST") return await handleAdminClassroomContentUpdate(request, env);
       if (url.pathname === "/api/controlgrid/content" && request.method === "GET") return await handleControlGridContent(request, env);
       if (url.pathname === "/api/admin/controlgrid-content/update" && request.method === "POST") return await handleAdminControlGridContentUpdate(request, env);
+      if (url.pathname === "/api/quiz/meta" && request.method === "GET") return withCorsOrigin(await handleQuizMeta(request, env), allowOrigin);
+      if (url.pathname === "/api/quiz/start" && request.method === "POST") return withCorsOrigin(await handleQuizStart(request, env), allowOrigin);
+      if (url.pathname === "/api/quiz/answer" && request.method === "POST") return withCorsOrigin(await handleQuizAnswer(request, env), allowOrigin);
+      if (url.pathname === "/api/quiz/leaderboard" && request.method === "GET") return withCorsOrigin(await handleQuizLeaderboard(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/quiz-bank/set" && request.method === "POST") return await handleAdminQuizBankSet(request, env);
+      if (url.pathname === "/api/admin/quiz-bank/finalize" && request.method === "POST") return await handleAdminQuizBankFinalize(request, env);
       if (url.pathname === "/api/quietvalue/results" && request.method === "GET") return await handleQuietValueResults(request, env);
       if (url.pathname === "/api/printreport/analysis" && request.method === "GET") return await handlePrintReportAnalysis(request, env);
 

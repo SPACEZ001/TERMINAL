@@ -1588,6 +1588,8 @@ var CL_UI = {
              tour, before the risk-quiz/archetypes/glossary/signals that
              build on it. */
           ids:['guided', 'basics', 'start', 'types', 'glossary', 'signals', 'elliott'] },
+        /* Exam Arena (part-67.js): CEWA practice / ranked / blitz + leaderboard */
+        { k:'arena', t:{en:'Test yourself',th:'ทดสอบตัวเอง'}, ids:['arena'] },
         { k:'market', t:{en:'Read the market',th:'อ่านตลาด'},
           /* Round S9: full site-wide reorder, easiest/shortest -> hardest/
              longest. Was now/outlook/regime/anomaly/correl/rulelab/daily/
