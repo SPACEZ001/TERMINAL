@@ -63,6 +63,11 @@
     loadFail:  { en:'Could not load the notes vault. You can import a backup file instead.', th:'โหลดตู้โน้ตไม่สำเร็จ นำเข้าไฟล์สำรองแทนได้' },
     srcLocal:  { en:'Opened from this browser’s saved copy', th:'เปิดจากสำเนาที่บันทึกในเบราว์เซอร์นี้' },
     srcSeed:   { en:'Opened from the starter vault', th:'เปิดจากตู้โน้ตเริ่มต้น' },
+    bulkBtn:   { en:'📋 Paste all 50 lines at once', th:'📋 วางรหัสทีเดียว 50 ชุด' },
+    bulkPh:    { en:'Paste the whole code here (e.g. "01. xxxx", "02. xxxx" …) — numbers are stripped automatically', th:'วางรหัสทั้งหมดตรงนี้ (เช่น "01. xxxx" "02. xxxx" …) ระบบตัดเลขนำหน้าให้เอง' },
+    spreadBtn: { en:'↳ Spread into the passphrase', th:'↳ กระจายลงช่องรหัส' },
+    spreadOk:  { en:'Filled {n}/50 slots · {c} characters — now press Unlock', th:'ใส่แล้ว {n}/50 ช่อง · {c} ตัวอักษร — กดปลดล็อกได้เลย' },
+    spreadNone:{ en:'Nothing to spread — paste your code first.', th:'ยังไม่มีรหัส — วางรหัสก่อนนะ' },
     importLink:{ en:'Import a backup file', th:'นำเข้าไฟล์สำรอง' },
     add:       { en:'+ New note', th:'+ โน้ตใหม่' },
     search:    { en:'Search notes…', th:'ค้นหาโน้ต…' },
@@ -399,6 +404,43 @@
     return list.sort();
   }
 
+
+  /* ---------- paste-friendly master code ----------
+     The 50-field admin code is stored as "01. frag / 02. frag / ..." lines.
+     A one-line password box swallows the line breaks and keeps the "01."
+     labels, so the code never matched. normPass() mirrors the admin login's
+     Spread button: it finds each "NN. frag" pair, places it in slot NN and
+     joins the slots in order (800 chars). Anything that does not look like a
+     numbered/multi-line code is returned untouched, so a normal passphrase
+     (even one with spaces) behaves exactly as before. */
+  function parseSlots(text){
+    var by = {}, n = 0, m, k;
+    var re = /(?:^|\s)(\d{1,2})\s*[.):]\s*(\S+)/g;
+    while((m = re.exec(text))){
+      k = parseInt(m[1], 10);
+      if(k >= 1 && k <= 50 && !by[k]){ by[k] = m[2]; n++; }
+    }
+    if(n < 3){
+      by = {}; n = 0;
+      String(text).split(/\r?\n/).forEach(function(line){
+        var l = /^\s*(\d{1,2})\s+(\S+)\s*$/.exec(line);
+        if(l){ k = parseInt(l[1], 10); if(k >= 1 && k <= 50 && !by[k]){ by[k] = l[2]; n++; } }
+      });
+    }
+    if(n < 3){
+      var toks = String(text).split(/\s+/).filter(Boolean);
+      by = {}; n = 0;
+      if(toks.length >= 20){ toks.forEach(function(t, i){ if(i < 50){ by[i + 1] = t; n++; } }); }
+    }
+    return n >= 3 ? { by:by, n:n } : null;
+  }
+  function normPass(raw){
+    var text = String(raw == null ? '' : raw);
+    var r = parseSlots(text);
+    if(!r) return text;
+    return Object.keys(r.by).map(Number).sort(function(a, b){ return a - b; }).map(function(k){ return r.by[k]; }).join('');
+  }
+
   /* ---------- rendering ---------- */
   function lockView(){
     return '<div class="anx-lock">' +
@@ -409,6 +451,12 @@
         '<input class="anx-input" type="password" name="pass" autocomplete="new-password" spellcheck="false" placeholder="' + esc(T(UI.passPh)) + '"' + (S.busy ? ' disabled' : '') + '>' +
         '<button class="anx-btn pri" type="submit"' + (S.busy ? ' disabled' : '') + '>' + esc(S.busy ? T(UI.unlocking) : T(UI.unlock)) + '</button>' +
       '</form>' +
+      '<div class="anx-bulk"><button class="anx-link" type="button" data-anx="bulktoggle">' + esc(T(UI.bulkBtn)) + '</button>' +
+        '<div class="anx-bulkbox" hidden>' +
+          '<textarea class="anx-input anx-ta" data-anx-in="bulk" rows="6" spellcheck="false" placeholder="' + esc(T(UI.bulkPh)) + '"></textarea>' +
+          '<button class="anx-btn" type="button" data-anx="spread">' + esc(T(UI.spreadBtn)) + '</button>' +
+          '<div class="anx-spreadmsg" aria-live="polite"></div>' +
+        '</div></div>' +
       (S.err ? '<div class="anx-err">' + esc(S.err) + '</div>' : '') +
       '<div class="anx-lock-foot"><button class="anx-link" type="button" data-anx="import">' + esc(T(UI.importLink)) + '</button></div>' +
     '</div>';
@@ -624,6 +672,7 @@
       case 'changepass': S.modal = { type:'pass' }; paint(); break;
       case 'mpass':
         var p = readModalFields();
+        p.p1 = normPass(p.p1); p.p2 = normPass(p.p2);
         if(String(p.p1 || '').length < 8){ S.modal.err = T(UI.passShort); return paint(); }
         if(p.p1 !== p.p2){ S.modal.err = T(UI.passMismatch); return paint(); }
         S.pass = p.p1; S.modal = null; persist(T(UI.passDone)); break;
@@ -636,13 +685,26 @@
         rd.onload = function(){
           var v; try { v = JSON.parse(String(rd.result)); } catch(x){ v = null; }
           if(!v || !v.gates){ S.modal.err = T(UI.impBad); return paint(); }
-          var pw = String(im.ipass || '');
+          var pw = normPass(String(im.ipass || ''));
           openVault(v, pw).then(function(d){
             lsSet(LS_VAULT, JSON.stringify(v)); S.vault = v; S.vaultSrc = T(UI.srcLocal);
             S.data = d; S.pass = pw; S.modal = null; S.openId = null; lsSet(LS_DIRTY, '0'); touch(); startIdle(); paint(); toast(T(UI.toastSaved));
           }).catch(function(){ S.modal.err = T(UI.badPass); paint(); });
         };
         rd.readAsText(im.file[0]); break;
+      case 'bulktoggle':
+        var bb = sec.querySelector('.anx-bulkbox'); if(bb){ bb.hidden = !bb.hidden; var tx = bb.querySelector('textarea'); if(!bb.hidden && tx) tx.focus(); }
+        break;
+      case 'spread':
+        var box = sec.querySelector('.anx-bulkbox'); if(!box) break;
+        var ta = box.querySelector('textarea'), msg = box.querySelector('.anx-spreadmsg'), pin = sec.querySelector('[name=pass]');
+        var rr = parseSlots(ta.value);
+        if(!rr || !pin){ if(msg) msg.textContent = T(UI.spreadNone); break; }
+        var joined = normPass(ta.value);
+        pin.value = joined; ta.value = '';
+        if(msg) msg.textContent = T(UI.spreadOk).replace('{n}', rr.n).replace('{c}', joined.length);
+        pin.focus();
+        break;
       case 'lock': lock(); break;
       case 'replay':
         var holder = sec.querySelector('[data-anx-svg]');
@@ -653,7 +715,7 @@
   function onSubmit(e){
     var f = e.target.closest('[data-anx-form]'); if(!f) return;
     e.preventDefault(); touch();
-    if(f.getAttribute('data-anx-form') === 'unlock') unlock(f.querySelector('[name=pass]').value);
+    if(f.getAttribute('data-anx-form') === 'unlock') unlock(normPass(f.querySelector('[name=pass]').value));
   }
   function onInput(e){
     var t = e.target; touch();
@@ -682,6 +744,10 @@
       '#adminnotes .anx-lock p{font-size:12.5px;color:var(--grey);line-height:1.7;margin-bottom:16px}',
       '#adminnotes .anx-lock form{display:grid;gap:10px}',
       '#adminnotes .anx-lock-foot{margin-top:16px}',
+      '#adminnotes .anx-bulk{margin-top:12px}',
+      '#adminnotes .anx-bulkbox{margin-top:8px;display:flex;flex-direction:column;gap:8px}',
+      '#adminnotes .anx-bulkbox[hidden]{display:none}',
+      '#adminnotes .anx-spreadmsg{font-size:12px;color:var(--neon);min-height:16px}',
       '#adminnotes .anx-input{width:100%;box-sizing:border-box;font-family:var(--mono);font-size:13px;border:1px solid var(--border-dim);border-radius:10px;padding:11px 12px;background:rgba(255,255,255,.03);color:var(--white);outline:none}',
       '#adminnotes .anx-input:focus{border-color:var(--neon)}',
       '#adminnotes .anx-ta{font-family:var(--sans);font-size:13.5px;line-height:1.65;resize:vertical;min-height:200px}',
@@ -795,6 +861,14 @@
     sec.addEventListener('click', onClick);
     sec.addEventListener('submit', onSubmit);
     sec.addEventListener('input', onInput);
+    sec.addEventListener('paste', function(e){
+      var t = e.target;
+      if(!t || t.tagName !== 'INPUT' || t.type !== 'password') return;
+      var txt = ''; try { txt = (e.clipboardData || window.clipboardData).getData('text') || ''; } catch(x){}
+      if(!txt) return;
+      var out = normPass(txt);
+      if(out !== txt && parseSlots(txt)){ e.preventDefault(); t.value = out; touch(); }
+    });
     document.addEventListener('keydown', onKey);
     window.addEventListener('hashchange', function(){ if(S.data && location.hash.indexOf(ROUTE) === -1) lock(); });
     window.addEventListener('pagehide', function(){ if(S.data) lock(); });
