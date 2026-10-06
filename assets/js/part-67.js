@@ -14,6 +14,7 @@
 (function(){
   'use strict';
 
+  var QP_BASE = 100, QP_SPEED = 50;
   var WORKER_BASE = 'https://spacez-line-link.spacezblack.workers.dev';
 
   function L(){ return document.documentElement.getAttribute('lang') === 'th' ? 'th' : 'en'; }
@@ -94,6 +95,8 @@
     errLogin: { en:'Your login has expired. Please log in again.', th:'การเข้าสู่ระบบหมดอายุ โปรดเข้าสู่ระบบใหม่' },
     errConf: { en:'The Arena is not configured on the server yet.', th:'เซิร์ฟเวอร์ยังไม่ได้ตั้งค่าสนามสอบ' },
     retry: { en:'Try again', th:'ลองใหม่' },
+    timedNote: { en:'Pick an answer, then press Confirm to move on. If time runs out, the answer you have selected is submitted automatically.', th:'เลือกคำตอบแล้วกดยืนยันเพื่อไปข้อถัดไป ถ้าหมดเวลาโดยที่เลือกไว้แล้วแต่ยังไม่ได้ยืนยัน ระบบจะส่งคำตอบที่เลือกไว้ให้อัตโนมัติ' },
+    podiumHit: { en:'You are on the podium!', th:'คุณติดโพเดียม!' },
     nocopy: { en:'Copying is disabled in timed modes.', th:'โหมดจับเวลาปิดการคัดลอกข้อความ' },
     d: { en:'d', th:'ว.' }, h2: { en:'h', th:'ชม.' }, m2: { en:'m', th:'น.' }
   };
@@ -103,12 +106,12 @@
   '.az-tabs{display:flex;gap:8px;margin:0 0 22px;flex-wrap:wrap;}' +
   '.az-tab{font-family:var(--mono);font-size:12.5px;letter-spacing:1px;text-transform:uppercase;padding:10px 18px;border-radius:12px;border:1px solid var(--border-dim);background:var(--glass);color:var(--grey);cursor:pointer;}' +
   '.az-tab.on{border-color:var(--neon);color:var(--neon);background:rgba(204,255,0,.06);}' +
-  '.az-card{border:1px solid var(--border-dim);background:#0b0c0a;border-radius:var(--radius);padding:22px;margin-bottom:16px;}' +
+  '.az-card{border:1px solid var(--border-dim);background:rgba(10,11,18,.74);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:var(--radius);padding:22px;margin-bottom:16px;}' +
   '.az-me{display:flex;align-items:center;gap:12px;color:var(--grey);font-size:13.5px;margin-bottom:18px;}' +
   '.az-me img{width:34px;height:34px;border-radius:50%;object-fit:cover;border:1px solid var(--border);}' +
   '.az-me b{color:var(--white);}' +
   '.az-modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}' +
-  '.az-mode{border:1px solid var(--border-dim);background:#0b0c0a;border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:10px;}' +
+  '.az-mode{border:1px solid var(--border-dim);background:rgba(10,11,18,.74);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:10px;}' +
   '.az-mode h3{margin:0;font-size:18px;color:var(--white);display:flex;align-items:center;gap:10px;}' +
   '.az-mode p{margin:0;color:var(--grey);font-size:13.5px;line-height:1.65;flex:1;}' +
   '.az-mode.ranked{border-color:rgba(204,255,0,.3);}' +
@@ -152,26 +155,75 @@
   '.az-rev .a{font-size:13px;color:var(--grey);line-height:1.7;}' +
   '.az-rev .a.bad{color:#ff8a98;} .az-rev .a.ok{color:#7fd39c;}' +
   '.az-seg{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}' +
-  '.az-podium{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:12px;align-items:end;margin:18px 0 22px;}' +
-  '.az-pod{border:1px solid var(--border-dim);background:#0b0c0a;border-radius:var(--radius);padding:16px 10px 14px;text-align:center;position:relative;}' +
-  '.az-pod.p1{padding-top:26px;padding-bottom:22px;border-color:rgba(255,210,74,.55);box-shadow:0 0 28px rgba(255,210,74,.12);}' +
-  '.az-pod.p2{border-color:rgba(207,214,220,.45);}' +
-  '.az-pod.p3{border-color:rgba(208,138,74,.5);}' +
-  '.az-pod svg{width:54px;height:54px;display:block;margin:0 auto 6px;}' +
-  '.az-pod.p1 svg{width:72px;height:72px;}' +
-  '.az-pod .nm{font-size:14px;color:var(--white);word-break:break-word;margin-top:4px;}' +
-  '.az-pod .sc{font-family:var(--mono);font-size:18px;color:var(--neon);margin-top:2px;}' +
-  '.az-pod.p1 .sc{font-size:22px;}' +
-  '.az-pod .sub{font-family:var(--mono);font-size:11px;color:var(--grey);}' +
-  '.az-pod img{width:40px;height:40px;border-radius:50%;object-fit:cover;margin:0 auto;display:block;border:2px solid var(--border);}' +
-  '.az-pod.empty{opacity:.35;}' +
   '.az-runner{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;border:1px solid var(--border-dim);margin-bottom:8px;color:#a5aaa0;font-size:14px;background:rgba(255,255,255,.015);}' +
-  '.az-runner .rk{font-family:var(--mono);width:28px;color:var(--grey-dim);}' +
   '.az-runner .nm{flex:1;word-break:break-word;}' +
   '.az-runner .sc{font-family:var(--mono);color:#b9c58a;}' +
-  '.az-runner.me,.az-pod.me{border-color:var(--neon);}' +
-  '.az-runner img{width:26px;height:26px;border-radius:50%;object-fit:cover;}' +
-  '@media (max-width:560px){.az-podium{grid-template-columns:1fr;} .az-big .az-score{font-size:44px;}}';
+  '.az-runner.me{border-color:var(--neon);box-shadow:0 0 14px rgba(204,255,0,.15);}' +
+  '@media (max-width:560px){.az-big .az-score{font-size:44px;}}' +
+  '#arena{position:relative;overflow:hidden;}' +
+  '#arena>.ewv-wrap{position:relative;z-index:1;}' +
+  '.az-sky{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:radial-gradient(ellipse 55% 38% at 12% 6%,rgba(110,78,255,.20),transparent 70%),radial-gradient(ellipse 48% 36% at 92% 24%,rgba(0,210,255,.12),transparent 70%),radial-gradient(ellipse 60% 40% at 50% 104%,rgba(204,255,0,.07),transparent 70%);}' +
+  '.az-sky i{position:absolute;inset:0;background-image:radial-gradient(1px 1px at 20px 30px,#fff,transparent),radial-gradient(1px 1px at 90px 120px,#bfeaff,transparent),radial-gradient(1.6px 1.6px at 160px 60px,#fff,transparent),radial-gradient(1px 1px at 230px 180px,#ffe9a8,transparent),radial-gradient(1px 1px at 40px 190px,#fff,transparent);background-size:260px 220px;opacity:.6;animation:azTw 5s ease-in-out infinite alternate;}' +
+  '.az-sky i:nth-child(2){background-size:350px 310px;background-position:70px 90px;animation-duration:8s;opacity:.4;}' +
+  '.az-sky i:nth-child(3){background-size:190px 170px;background-position:20px 40px;animation-duration:3.6s;opacity:.3;}' +
+  '.az-sky u{position:absolute;top:12%;left:-20%;width:160px;height:2px;background:linear-gradient(90deg,transparent,#fff);transform:rotate(18deg);opacity:0;animation:azShoot 11s linear infinite;}' +
+  '.az-sky u:nth-of-type(2){top:46%;animation-delay:5.5s;animation-duration:14s;}' +
+  '.az-sky svg{position:absolute;right:-70px;top:90px;width:260px;height:260px;opacity:.5;animation:azFloat 16s ease-in-out infinite;}' +
+  '.az-card,.az-mode{box-shadow:0 0 0 1px rgba(255,255,255,.02),0 10px 40px rgba(0,0,0,.35);}' +
+  '.az-mode{transition:transform .25s,box-shadow .25s,border-color .25s;}' +
+  '.az-mode:hover{transform:translateY(-3px);box-shadow:0 14px 44px rgba(0,0,0,.5),0 0 28px rgba(204,255,0,.10);}' +
+  '.az-mode.blitz:hover{box-shadow:0 14px 44px rgba(0,0,0,.5),0 0 28px rgba(255,59,78,.16);}' +
+  '.az-mi{width:34px;height:34px;flex-shrink:0;filter:drop-shadow(0 0 8px rgba(204,255,0,.45));}' +
+  '.az-mode.blitz .az-mi{filter:drop-shadow(0 0 8px rgba(255,59,78,.55));}' +
+  '.az-tab{transition:all .2s;} .az-tab.on{box-shadow:0 0 16px rgba(204,255,0,.18);}' +
+  '.az-btn{transition:transform .15s,box-shadow .2s;} .az-btn:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 0 18px rgba(204,255,0,.35);} .az-btn.red:not(:disabled):hover{box-shadow:0 0 18px rgba(255,59,78,.45);}' +
+  '.az-timer i{box-shadow:0 0 10px currentColor;color:var(--neon);} .az-timer.low i{color:var(--red);animation:azPulse .6s ease-in-out infinite alternate;}' +
+  '.az-opt{transition:border-color .15s,background .15s,transform .15s;} .az-opt:not(:disabled):hover{transform:translateX(3px);} .az-opt.sel{box-shadow:0 0 16px rgba(204,255,0,.15);}' +
+  '.az-ringwrap{position:relative;width:176px;height:176px;margin:6px auto 4px;}' +
+  '.az-ring{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 0 10px rgba(204,255,0,.4));}' +
+  '.az-ringin{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}' +
+  '.az-ringin .az-score{font-size:42px !important;}' +
+  '.az-podhit{display:flex;align-items:center;justify-content:center;gap:10px;color:#ffd24a;font-family:var(--mono);font-size:13px;letter-spacing:1px;margin:8px 0;}' +
+  '.az-podhit svg{width:44px;height:auto;margin:0 !important;animation:none !important;flex-shrink:0;filter:drop-shadow(0 0 10px rgba(255,210,74,.6));}' +
+  '.az-podium{display:grid;grid-template-columns:1fr 1.12fr 1fr;gap:14px;align-items:end;margin:30px 0 28px;}' +
+  '.az-slot{display:flex;flex-direction:column;position:relative;}' +
+  '.az-slot.s1{--mc:255,210,74;z-index:2;} .az-slot.s2{--mc:207,214,220;} .az-slot.s3{--mc:208,138,74;}' +
+  '.az-pod{position:relative;text-align:center;padding:16px 8px 14px;border:1px solid rgba(var(--mc),.5);border-bottom:0;border-radius:var(--radius) var(--radius) 0 0;background:linear-gradient(180deg,rgba(var(--mc),.12),rgba(10,11,18,.78) 75%);}' +
+  '.az-slot.s1 .az-pod{padding-top:22px;box-shadow:0 -12px 44px rgba(var(--mc),.20);}' +
+  '.az-pod>*{position:relative;z-index:1;}' +
+  '.az-pod.me{box-shadow:0 0 0 1px var(--neon),0 0 22px rgba(204,255,0,.25);}' +
+  '.az-rays{position:absolute !important;z-index:0 !important;left:50%;top:-20px;width:380px;height:380px;margin-left:-190px;background:repeating-conic-gradient(rgba(255,210,74,.16) 0 5deg,transparent 5deg 15deg);-webkit-mask-image:radial-gradient(circle,#000 0,transparent 66%);mask-image:radial-gradient(circle,#000 0,transparent 66%);animation:azSpin 46s linear infinite;pointer-events:none;}' +
+  '.az-troph{width:84px;height:auto;display:block;margin:0 auto 4px;filter:drop-shadow(0 0 14px rgba(var(--mc),.6));animation:azBob 4.2s ease-in-out infinite;overflow:visible;}' +
+  '.az-slot.s1 .az-troph{width:118px;}' +
+  '.az-slot.s2 .az-troph{animation-delay:-1.2s;} .az-slot.s3 .az-troph{animation-delay:-2.4s;}' +
+  '.az-troph .sp{transform-box:fill-box;transform-origin:center;animation:azSpark 2.6s ease-in-out infinite;}' +
+  '.az-troph .sp2{animation-delay:-.9s;} .az-troph .sp3{animation-delay:-1.7s;}' +
+  '.az-ava{width:46px;height:46px;border-radius:50%;margin:8px auto 0;display:flex;align-items:center;justify-content:center;object-fit:cover;background:#10131c;color:rgb(var(--mc,204,255,0));font-family:var(--mono);font-weight:700;font-size:18px;border:2px solid rgb(var(--mc,204,255,0));box-shadow:0 0 14px rgba(var(--mc,204,255,0),.55);}' +
+  '.az-slot.s1 .az-ava{width:56px;height:56px;}' +
+  '.az-pod .nm{font-size:14px;color:var(--white);word-break:break-word;margin-top:8px;}' +
+  '.az-pod .sc{font-family:var(--mono);font-size:19px;color:rgb(var(--mc));margin-top:2px;text-shadow:0 0 12px rgba(var(--mc),.55);}' +
+  '.az-slot.s1 .az-pod .sc{font-size:24px;}' +
+  '.az-pod .sub{font-family:var(--mono);font-size:11px;color:var(--grey);}' +
+  '.az-pod.empty{opacity:.4;}' +
+  '.az-ped{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;border:1px solid rgba(var(--mc),.5);background:linear-gradient(180deg,rgba(var(--mc),.38),rgba(var(--mc),.09) 60%,rgba(10,11,18,.85));box-shadow:inset 0 1px 0 rgba(var(--mc),.95),0 14px 30px rgba(var(--mc),.10);}' +
+  '.az-slot.s1 .az-ped{height:118px;} .az-slot.s2 .az-ped{height:82px;} .az-slot.s3 .az-ped{height:56px;}' +
+  '.az-ped b{font-family:var(--mono);font-weight:800;font-size:46px;line-height:1;background:linear-gradient(180deg,#fff,rgb(var(--mc)));-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 8px rgba(var(--mc),.5));}' +
+  '.az-ped::after{content:"";position:absolute;top:0;left:-70%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.32),transparent);transform:skewX(-20deg);animation:azSweep 5s ease-in-out infinite;}' +
+  '.az-runner{position:relative;overflow:hidden;}' +
+  '.az-runner .rk{position:relative;width:34px;height:34px;flex-shrink:0;}' +
+  '.az-runner .rk svg{width:34px;height:34px;display:block;}' +
+  '.az-runner .az-ava{width:28px;height:28px;font-size:12px;margin:0;border-width:1px;box-shadow:none;}' +
+  '@keyframes azTw{from{opacity:.25}to{opacity:.8}}' +
+  '@keyframes azShoot{0%{transform:translate(0,0) rotate(18deg);opacity:0}2%{opacity:.9}9%{transform:translate(1100px,360px) rotate(18deg);opacity:0}100%{opacity:0}}' +
+  '@keyframes azFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}' +
+  '@keyframes azBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}' +
+  '@keyframes azSpin{to{transform:rotate(360deg)}}' +
+  '@keyframes azSweep{0%,55%{left:-70%}100%{left:130%}}' +
+  '@keyframes azSpark{0%,100%{opacity:.15;transform:scale(.4)}50%{opacity:1;transform:scale(1)}}' +
+  '@keyframes azPulse{from{opacity:.65}to{opacity:1}}' +
+  '@keyframes azRing{from{stroke-dashoffset:var(--c)}to{stroke-dashoffset:var(--o)}}' +
+  '@media (prefers-reduced-motion:reduce){.az-sky *,.az-troph,.az-troph .sp,.az-rays,.az-ped::after,.az-timer i{animation:none !important;}}' +
+  '@media (max-width:560px){.az-podium{gap:6px;} .az-troph{width:58px;} .az-slot.s1 .az-troph{width:78px;} .az-ped b{font-size:30px;} .az-slot.s1 .az-ped{height:88px;} .az-slot.s2 .az-ped{height:62px;} .az-slot.s3 .az-ped{height:42px;} .az-pod .nm{font-size:12px;} .az-pod .sc{font-size:15px;} .az-slot.s1 .az-pod .sc{font-size:18px;} .az-ava{width:36px;height:36px;} .az-slot.s1 .az-ava{width:44px;height:44px;} .az-sky svg{display:none;}}';
 
   var sec = null, bodyEl = null;
   var meta = null, metaErr = false, metaLoading = false;
@@ -226,11 +278,74 @@
   }
 
   /* ------------------------------ menu ------------------------------ */
-  function trophySVG(color){
-    return '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 8h28v14a14 14 0 0 1-28 0V8z" fill="' + color + '" opacity=".95"/>' +
-      '<path d="M18 12H8c0 10 4 16 12 18M46 12h10c0 10-4 16-12 18" fill="none" stroke="' + color + '" stroke-width="3.5" stroke-linecap="round"/>' +
-      '<rect x="28" y="36" width="8" height="10" fill="' + color + '"/><rect x="20" y="46" width="24" height="7" rx="2" fill="' + color + '"/>' +
-      '<rect x="16" y="53" width="32" height="4" rx="2" fill="' + color + '" opacity=".7"/></svg>';
+  var MET = {
+    1:{hi:'#fff6c4',mid:'#ffd24a',lo:'#9a6a08',g:'255,210,74'},
+    2:{hi:'#ffffff',mid:'#cfd6dc',lo:'#66717c',g:'207,214,220'},
+    3:{hi:'#ffdcb4',mid:'#d08a4a',lo:'#6a3510',g:'208,138,74'}
+  };
+  var uid = 0;
+  function starPts(cx, cy, ro, ri){
+    var p = [];
+    for(var k = 0; k < 10; k++){
+      var a = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? ri : ro;
+      p.push((cx + r * Math.cos(a)).toFixed(1) + ',' + (cy + r * Math.sin(a)).toFixed(1));
+    }
+    return p.join(' ');
+  }
+  function sparkle(x, y, r, cls, col){
+    return '<path class="sp ' + cls + '" d="M' + x + ' ' + (y - r) + 'Q' + x + ' ' + y + ' ' + (x + r) + ' ' + y + 'Q' + x + ' ' + y + ' ' + x + ' ' + (y + r) + 'Q' + x + ' ' + y + ' ' + (x - r) + ' ' + y + 'Q' + x + ' ' + y + ' ' + x + ' ' + (y - r) + 'Z" fill="' + col + '"/>';
+  }
+  function trophySVG(pos, dim){
+    var m = MET[pos], id = 'azg' + (++uid);
+    var A = 'url(#' + id + 'a)', B = 'url(#' + id + 'b)';
+    var crown = pos === 1 ?
+      '<path d="M40 8L35 -8l12 8 13-14 13 14 12-8-5 16z" fill="' + A + '" stroke="' + m.lo + '" stroke-width=".8"/>' +
+      '<circle cx="60" cy="-7" r="2.4" fill="#ff5a7a"/><circle cx="43" cy="-2" r="1.8" fill="#47e0ff"/><circle cx="77" cy="-2" r="1.8" fill="#47e0ff"/>' : '';
+    return '<svg class="az-troph" viewBox="0 -20 120 146" aria-hidden="true">' +
+      '<defs><linearGradient id="' + id + 'a" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="' + m.lo + '"/><stop offset=".28" stop-color="' + m.hi + '"/><stop offset=".62" stop-color="' + m.mid + '"/><stop offset="1" stop-color="' + m.lo + '"/></linearGradient>' +
+      '<linearGradient id="' + id + 'b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + m.mid + '"/><stop offset="1" stop-color="' + m.lo + '"/></linearGradient>' +
+      '<radialGradient id="' + id + 'c"><stop offset="0" stop-color="rgb(' + m.g + ')" stop-opacity=".5"/><stop offset="1" stop-color="rgb(' + m.g + ')" stop-opacity="0"/></radialGradient></defs>' +
+      '<circle cx="60" cy="56" r="60" fill="url(#' + id + 'c)"/>' +
+      '<path d="M30 28H15c0 20 8 31 22 35" fill="none" stroke="' + B + '" stroke-width="6" stroke-linecap="round"/>' +
+      '<path d="M90 28h15c0 20-8 31-22 35" fill="none" stroke="' + B + '" stroke-width="6" stroke-linecap="round"/>' +
+      '<path d="M28 18h64v26c0 22-14 38-32 38S28 66 28 44z" fill="' + A + '"/>' +
+      '<rect x="23" y="11" width="74" height="10" rx="5" fill="' + A + '"/>' +
+      '<path d="M39 28c0 17 4 29 12 38" stroke="#fff" stroke-opacity=".6" stroke-width="4" fill="none" stroke-linecap="round"/>' +
+      '<polygon points="' + starPts(62, 45, 12, 5) + '" fill="#fff" fill-opacity=".9"/>' +
+      '<path d="M53 80h14l3 16H50z" fill="' + B + '"/>' +
+      '<rect x="38" y="95" width="44" height="9" rx="3" fill="' + A + '"/>' +
+      '<rect x="29" y="104" width="62" height="16" rx="4" fill="' + A + '"/>' +
+      '<rect x="44" y="108" width="32" height="8" rx="2.5" fill="#080a10" fill-opacity=".6"/>' +
+      '<text x="60" y="114.6" text-anchor="middle" font-size="8" font-weight="700" fill="rgb(' + m.g + ')" font-family="monospace">' + (dim ? '' : pos) + '</text>' +
+      crown +
+      sparkle(12, 10, 7, 'sp1', m.hi) + sparkle(110, 34, 6, 'sp2', '#fff') + sparkle(100, 92, 5, 'sp3', m.hi) +
+      '</svg>';
+  }
+  function rankBadge(n){
+    return '<span class="rk"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M18 2l14 8v16l-14 8L4 26V10z" fill="rgba(204,255,0,.07)" stroke="rgba(204,255,0,.5)" stroke-width="1.4"/>' +
+      '<text x="18" y="22" text-anchor="middle" font-size="' + (n > 99 ? 10 : 12) + '" font-weight="700" fill="#b9c58a" font-family="monospace">' + n + '</text></svg></span>';
+  }
+  function modeIcon(kind){
+    var g = '<defs><linearGradient id="azmi' + kind + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + (kind === 'blitz' ? '#ff8a98' : '#e6ff6a') + '"/><stop offset="1" stop-color="' + (kind === 'blitz' ? '#ff3b4e' : '#00e5ff') + '"/></linearGradient></defs>';
+    var f = 'url(#azmi' + kind + ')', body;
+    if(kind === 'practice') body = '<circle cx="16" cy="16" r="7" fill="' + f + '"/><ellipse cx="16" cy="16" rx="13" ry="4.2" fill="none" stroke="' + f + '" stroke-width="1.8" transform="rotate(-24 16 16)"/>';
+    else if(kind === 'ranked') body = '<path d="M16 2.5l11 3.6v8.2c0 7-4.6 12-11 15.2C9.6 26.3 5 21.3 5 14.3V6.1z" fill="none" stroke="' + f + '" stroke-width="2"/><polygon points="' + starPts(16, 15, 6.5, 2.8) + '" fill="' + f + '"/>';
+    else body = '<path d="M18.5 2L7 18h7.5L12.5 30 25 13h-7.5z" fill="' + f + '"/>';
+    return '<svg class="az-mi" viewBox="0 0 32 32" aria-hidden="true">' + g + body + '</svg>';
+  }
+  function ringSVG(frac){
+    var C = 2 * Math.PI * 52, o = C * (1 - Math.max(0, Math.min(1, frac)));
+    return '<svg class="az-ring" viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="azrg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ccff00"/><stop offset="1" stop-color="#00e5ff"/></linearGradient></defs>' +
+      '<circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="7"/>' +
+      '<circle cx="60" cy="60" r="52" fill="none" stroke="url(#azrg)" stroke-width="7" stroke-linecap="round" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + C.toFixed(1) + '" transform="rotate(-90 60 60)" style="--c:' + C.toFixed(1) + ';--o:' + o.toFixed(1) + ';animation:azRing 1.3s .15s cubic-bezier(.2,.7,.2,1) forwards"/></svg>';
+  }
+  function skyHTML(){
+    return '<i></i><i></i><i></i><u></u><u></u>' +
+      '<svg viewBox="0 0 200 200" aria-hidden="true"><defs><radialGradient id="azpl" cx=".35" cy=".3"><stop offset="0" stop-color="#8a7bff"/><stop offset=".6" stop-color="#3a2f9a"/><stop offset="1" stop-color="#120e3a"/></radialGradient></defs>' +
+      '<ellipse cx="100" cy="100" rx="94" ry="22" fill="none" stroke="rgba(160,190,255,.35)" stroke-width="3" transform="rotate(-20 100 100)"/>' +
+      '<circle cx="100" cy="100" r="46" fill="url(#azpl)"/>' +
+      '<path d="M10 118c40 18 150-8 182-52" fill="none" stroke="rgba(160,190,255,.55)" stroke-width="3" transform="rotate(0)" opacity=".0"/>' +
+      '<ellipse cx="100" cy="100" rx="94" ry="22" fill="none" stroke="rgba(160,190,255,.55)" stroke-width="3" transform="rotate(-20 100 100)" stroke-dasharray="150 400" stroke-dashoffset="-60"/></svg>';
   }
 
   function loginGateHTML(){
@@ -257,12 +372,12 @@
     var cnt = '<select class="az-sel" data-az="count">' + [5, 10, 20].map(function(n){
       return '<option value="' + n + '"' + (n === practiceCount ? ' selected' : '') + '>' + n + '</option>'; }).join('') + '</select>';
     h += '<div class="az-modes">' +
-      '<div class="az-mode"><h3>' + esc(T(U.mPractice)) + ' <span class="az-badge">PRIVATE</span></h3><p>' + esc(T(U.mPracticeD)) + '</p>' +
+      '<div class="az-mode"><h3>' + modeIcon('practice') + esc(T(U.mPractice)) + ' <span class="az-badge">PRIVATE</span></h3><p>' + esc(T(U.mPracticeD)) + '</p>' +
         '<div class="az-row"><label class="az-note">' + esc(T(U.howMany)) + '</label>' + cnt + '</div>' +
         '<button type="button" class="az-btn" data-az="start" data-mode="practice">' + esc(T(U.start)) + '</button></div>' +
-      '<div class="az-mode ranked"><h3>' + esc(T(U.mRanked)) + ' <span class="az-badge">45 ' + esc(T(U.secs)) + '</span></h3><p>' + esc(T(U.mRankedD)) + '</p>' +
+      '<div class="az-mode ranked"><h3>' + modeIcon('ranked') + esc(T(U.mRanked)) + ' <span class="az-badge">45 ' + esc(T(U.secs)) + '</span></h3><p>' + esc(T(U.mRankedD)) + '</p>' +
         '<button type="button" class="az-btn" data-az="start" data-mode="ranked">' + esc(T(U.start)) + '</button></div>' +
-      '<div class="az-mode blitz"><h3>' + esc(T(U.mBlitz)) + ' <span class="az-badge">15 ' + esc(T(U.secs)) + '</span></h3><p>' + esc(T(U.mBlitzD)) + '</p>' +
+      '<div class="az-mode blitz"><h3>' + modeIcon('blitz') + esc(T(U.mBlitz)) + ' <span class="az-badge">15 ' + esc(T(U.secs)) + '</span></h3><p>' + esc(T(U.mBlitzD)) + '</p>' +
         '<button type="button" class="az-btn red" data-az="start" data-mode="blitz">' + esc(T(U.start)) + '</button></div>' +
       '</div>';
     return h;
@@ -335,10 +450,10 @@
         '<div class="az-exp"><b>' + esc(T(U.explain)) + ':</b> ' + esc(txt) + '</div>' +
         '<button type="button" class="az-btn" data-az="next">' + esc(T(run.pending && run.pending.done ? U.finish : U.next)) + '</button>';
     } else {
-      var needConfirm = !(run.mode === 'blitz' && !q.m);
-      if(needConfirm) h += '<button type="button" class="az-btn" data-az="confirm"' + (run.sent || !run.picked.length ? ' disabled' : '') + '>' + esc(T(U.confirm)) + '</button>';
+      h += '<button type="button" class="az-btn" data-az="confirm"' + (run.sent || !run.picked.length ? ' disabled' : '') + '>' + esc(T(U.confirm)) + '</button>';
     }
-    if(nocopy) h += '<p class="az-note" style="margin-top:12px">' + esc(T(U.nocopy)) + '</p>';
+    if(timed) h += '<p class="az-note" style="margin-top:12px">' + esc(T(U.timedNote)) + '</p>';
+    if(nocopy) h += '<p class="az-note" style="margin-top:6px">' + esc(T(U.nocopy)) + '</p>';
     return h + '</div>';
   }
 
@@ -347,7 +462,6 @@
     var q = run.q, p = run.picked, at = p.indexOf(i);
     if(q.m){ if(at >= 0) p.splice(at, 1); else p.push(i); }
     else { run.picked = [i]; }
-    if(!q.m && run.mode === 'blitz'){ submitAnswer(false); return; }
     paint();
   }
 
@@ -396,11 +510,14 @@
   function resultHTML(){
     var f = run.final, letters = 'ABCDEFGH';
     var h = '<div class="az-card"><div class="az-big"><div class="az-qmeta" style="justify-content:center">' + esc(T(U.resultH)) + '</div>';
-    if(run.mode !== 'practice'){
-      h += '<div class="az-score">' + f.score + '</div><div class="az-note">' + esc(T(U.pts)) + '</div>';
-    } else {
-      h += '<div class="az-score">' + f.correct + '/' + f.total + '</div>';
-    }
+    var ranked = run.mode !== 'practice';
+    var frac = ranked ? f.score / (f.total * (QP_BASE + QP_SPEED)) : f.correct / f.total;
+    h += '<div class="az-ringwrap">' + ringSVG(frac) + '<div class="az-ringin">';
+    if(ranked) h += '<div class="az-score" data-count="' + f.score + '">0</div><div class="az-note">' + esc(T(U.pts)) + '</div>';
+    else h += '<div class="az-score">' + f.correct + '/' + f.total + '</div>';
+    h += '</div></div>';
+    var best = Math.min(f.rankWeek || 99, f.rankAll || 99);
+    if(ranked && best <= 3) h += '<div class="az-podhit" style="--mc:' + MET[best].g + '">' + trophySVG(best) + '<span>' + esc(T(U.podiumHit)) + '</span></div>';
     h += '<div class="az-stats"><div><b>' + f.correct + '/' + f.total + '</b>' + esc(T(U.rightN)) + '</div>' +
       '<div><b>' + fmtMs(f.ms) + '</b>' + esc(T(U.timeTotal)) + '</div>';
     if(run.mode !== 'practice'){
@@ -439,7 +556,11 @@
       paint();
     }).catch(function(){ board.loading = false; board.err = true; paint(); });
   }
-  function avatar(p){ return p ? '<img src="' + esc(p) + '" alt="" referrerpolicy="no-referrer">' : ''; }
+  function avatar(p, n){
+    if(p) return '<img class="az-ava" src="' + esc(p) + '" alt="" referrerpolicy="no-referrer">';
+    var ch = String(n || '?').replace(/^\s+/, '').charAt(0).toUpperCase() || '?';
+    return '<span class="az-ava">' + esc(ch) + '</span>';
+  }
 
   function boardHTML(){
     var seg = function(attr, cur, items){
@@ -452,24 +573,25 @@
     var d = board.data, es = d.entries || [];
     h += '<p class="az-note">' + d.players + ' ' + esc(T(U.players)) + (d.weekEndsAt ? ' · ' + esc(T(U.resets)) + ' ' + fmtLeft(Math.max(0, d.weekEndsAt - Date.now())) : '') + '</p>';
     if(!es.length) return h + '<div class="az-card"><p class="az-note">' + esc(T(U.empty)) + '</p></div>';
-    var colors = ['#ffd24a', '#cfd6dc', '#d08a4a'];
     function pod(e, pos){
-      if(!e) return '<div class="az-pod p' + pos + ' empty">' + trophySVG(colors[pos - 1]) + '<div class="nm">–</div></div>';
-      return '<div class="az-pod p' + pos + (e.me ? ' me' : '') + '">' + trophySVG(colors[pos - 1]) + avatar(e.p) +
+      var inner;
+      if(!e) inner = '<div class="az-pod empty">' + trophySVG(pos, true) + '<div class="nm">–</div></div>';
+      else inner = '<div class="az-pod' + (e.me ? ' me' : '') + '">' + (pos === 1 ? '<div class="az-rays"></div>' : '') + trophySVG(pos) + avatar(e.p, e.n) +
         '<div class="nm">' + esc(e.n) + (e.me ? ' (' + esc(T(U.you)) + ')' : '') + '</div>' +
         '<div class="sc">' + e.s + '</div><div class="sub">' + e.c + '/10 · ' + fmtMs(e.ms) + '</div></div>';
+      return '<div class="az-slot s' + pos + '">' + inner + '<div class="az-ped"><b>' + pos + '</b></div></div>';
     }
     h += '<div class="az-podium">' + pod(es[1], 2) + pod(es[0], 1) + pod(es[2], 3) + '</div>';
     if(es.length > 3){
       h += '<div class="az-qmeta">' + esc(T(U.runners)) + '</div>';
       for(var i = 3; i < es.length; i++){
         var e = es[i];
-        h += '<div class="az-runner' + (e.me ? ' me' : '') + '"><span class="rk">' + e.rank + '</span>' + avatar(e.p) +
+        h += '<div class="az-runner' + (e.me ? ' me' : '') + '">' + rankBadge(e.rank) + avatar(e.p, e.n) +
           '<span class="nm">' + esc(e.n) + (e.me ? ' (' + esc(T(U.you)) + ')' : '') + '</span><span class="sc">' + e.s + '</span></div>';
       }
     }
     if(d.you && d.you.rank > es.length){
-      h += '<div class="az-qmeta" style="margin-top:14px">' + esc(T(U.youRank)) + '</div><div class="az-runner me"><span class="rk">' + d.you.rank + '</span>' + avatar(d.you.p) +
+      h += '<div class="az-qmeta" style="margin-top:14px">' + esc(T(U.youRank)) + '</div><div class="az-runner me">' + rankBadge(d.you.rank) + avatar(d.you.p, d.you.n) +
         '<span class="nm">' + esc(d.you.n) + '</span><span class="sc">' + d.you.s + '</span></div>';
     }
     return h;
@@ -501,6 +623,18 @@
     bodyEl.innerHTML = '<div class="az-wrap">' + (showTabs ? tabs : '') + inner + '</div>';
     if(tab === 'play' && view === 'menu' && !sessionCode()) watchLogin(); else stopWatch();
     if(view === 'quiz' && run && run.q.tpq && !run.sent && !run.reveal) tick();
+    countUp();
+  }
+  function countUp(){
+    var els = bodyEl.querySelectorAll('[data-count]');
+    Array.prototype.forEach.call(els, function(el){
+      var to = parseInt(el.getAttribute('data-count'), 10) || 0, t0 = Date.now(), dur = 1100;
+      (function step(){
+        var k = Math.min(1, (Date.now() - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+        el.textContent = Math.round(to * e);
+        if(k < 1 && document.body.contains(el)) requestAnimationFrame(step);
+      })();
+    });
   }
   function watchLogin(){
     if(loginPoll) return;
@@ -541,6 +675,7 @@
     sec.id = 'arena';
     sec.setAttribute('data-route', 'arena');
     sec.innerHTML =
+      '<div class="az-sky">' + skyHTML() + '</div>' +
       '<div class="ewv-wrap">' +
         '<div class="section-head reveal in-view">' +
           '<div class="eyebrow"><span class="cursor"></span><span data-az-h="eb"></span></div>' +
