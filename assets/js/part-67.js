@@ -162,7 +162,7 @@
   '@media (max-width:560px){.az-big .az-score{font-size:44px;}}' +
   '#arena{position:relative;}' +
   '#arena>.ewv-wrap{position:relative;z-index:1;}' +
-  '.az-sky{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:radial-gradient(ellipse 55% 38% at 12% 6%,rgba(110,78,255,.20),transparent 70%),radial-gradient(ellipse 48% 36% at 92% 24%,rgba(0,210,255,.12),transparent 70%),radial-gradient(ellipse 60% 40% at 50% 104%,rgba(204,255,0,.07),transparent 70%);}' +
+  '.az-sky{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;}' +
   '.az-sky i{position:absolute;inset:0;background-image:radial-gradient(1px 1px at 20px 30px,#fff,transparent),radial-gradient(1px 1px at 90px 120px,#bfeaff,transparent),radial-gradient(1.6px 1.6px at 160px 60px,#fff,transparent),radial-gradient(1px 1px at 230px 180px,#ffe9a8,transparent),radial-gradient(1px 1px at 40px 190px,#fff,transparent);background-size:260px 220px;opacity:.6;animation:azTw 5s ease-in-out infinite alternate;}' +
   '.az-sky i:nth-child(2){background-size:350px 310px;background-position:70px 90px;animation-duration:8s;opacity:.4;}' +
   '.az-sky i:nth-child(3){background-size:190px 170px;background-position:20px 40px;animation-duration:3.6s;opacity:.3;}' +
@@ -350,12 +350,7 @@
       '<circle cx="60" cy="60" r="52" fill="none" stroke="url(#azrg)" stroke-width="7" stroke-linecap="round" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + C.toFixed(1) + '" transform="rotate(-90 60 60)" style="--c:' + C.toFixed(1) + ';--o:' + o.toFixed(1) + ';animation:azRing 1.3s .15s cubic-bezier(.2,.7,.2,1) forwards"/></svg>';
   }
   function skyHTML(){
-    return '<i></i><i></i><i></i><u></u><u></u>' +
-      '<svg viewBox="0 0 200 200" aria-hidden="true"><defs><radialGradient id="azpl" cx=".35" cy=".3"><stop offset="0" stop-color="#8a7bff"/><stop offset=".6" stop-color="#3a2f9a"/><stop offset="1" stop-color="#120e3a"/></radialGradient></defs>' +
-      '<ellipse cx="100" cy="100" rx="94" ry="22" fill="none" stroke="rgba(160,190,255,.35)" stroke-width="3" transform="rotate(-20 100 100)"/>' +
-      '<circle cx="100" cy="100" r="46" fill="url(#azpl)"/>' +
-      '<path d="M10 118c40 18 150-8 182-52" fill="none" stroke="rgba(160,190,255,.55)" stroke-width="3" transform="rotate(0)" opacity=".0"/>' +
-      '<ellipse cx="100" cy="100" rx="94" ry="22" fill="none" stroke="rgba(160,190,255,.55)" stroke-width="3" transform="rotate(-20 100 100)" stroke-dasharray="150 400" stroke-dashoffset="-60"/></svg>';
+    return '<i></i><i></i><i></i><u></u><u></u>';
   }
 
   function ico(k){
