@@ -150,7 +150,7 @@
   var CSS = '' +
   '#macro{position:relative;}' +
   '#macro>.ewv-wrap{position:relative;z-index:1;}' +
-  '.mc-sky{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:radial-gradient(ellipse 55% 38% at 10% 8%,rgba(110,78,255,.20),transparent 70%),radial-gradient(ellipse 48% 36% at 92% 30%,rgba(0,210,255,.11),transparent 70%),radial-gradient(ellipse 60% 40% at 50% 104%,rgba(255,120,60,.07),transparent 70%);}' +
+  '.mc-sky{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;}' +
   '.mc-sky i{position:absolute;inset:0;background-image:radial-gradient(1px 1px at 20px 30px,#fff,transparent),radial-gradient(1px 1px at 90px 120px,#bfeaff,transparent),radial-gradient(1.6px 1.6px at 160px 60px,#fff,transparent),radial-gradient(1px 1px at 230px 180px,#ffe9a8,transparent),radial-gradient(1px 1px at 40px 190px,#fff,transparent);background-size:260px 220px;opacity:.6;animation:mcTw 5s ease-in-out infinite alternate;}' +
   '.mc-sky i:nth-child(2){background-size:350px 310px;background-position:70px 90px;animation-duration:8s;opacity:.4;}' +
   '.mc-sky i:nth-child(3){background-size:190px 170px;background-position:20px 40px;animation-duration:3.6s;opacity:.3;}' +
