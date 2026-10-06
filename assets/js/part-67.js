@@ -102,7 +102,7 @@
   };
 
   var CSS = '' +
-  '.az-wrap{max-width:900px;margin:0 auto;}' +
+  '.az-wrap{max-width:none;margin:0;}' +
   '.az-tabs{display:flex;gap:8px;margin:0 0 22px;flex-wrap:wrap;}' +
   '.az-tab{font-family:var(--mono);font-size:12.5px;letter-spacing:1px;text-transform:uppercase;padding:10px 18px;border-radius:12px;border:1px solid var(--border-dim);background:var(--glass);color:var(--grey);cursor:pointer;}' +
   '.az-tab.on{border-color:var(--neon);color:var(--neon);background:rgba(204,255,0,.06);}' +
@@ -160,9 +160,9 @@
   '.az-runner .sc{font-family:var(--mono);color:#b9c58a;}' +
   '.az-runner.me{border-color:var(--neon);box-shadow:0 0 14px rgba(204,255,0,.15);}' +
   '@media (max-width:560px){.az-big .az-score{font-size:44px;}}' +
-  '#arena{position:relative;overflow:hidden;}' +
+  '#arena{position:relative;}' +
   '#arena>.ewv-wrap{position:relative;z-index:1;}' +
-  '.az-sky{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:radial-gradient(ellipse 55% 38% at 12% 6%,rgba(110,78,255,.20),transparent 70%),radial-gradient(ellipse 48% 36% at 92% 24%,rgba(0,210,255,.12),transparent 70%),radial-gradient(ellipse 60% 40% at 50% 104%,rgba(204,255,0,.07),transparent 70%);}' +
+  '.az-sky{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:radial-gradient(ellipse 55% 38% at 12% 6%,rgba(110,78,255,.20),transparent 70%),radial-gradient(ellipse 48% 36% at 92% 24%,rgba(0,210,255,.12),transparent 70%),radial-gradient(ellipse 60% 40% at 50% 104%,rgba(204,255,0,.07),transparent 70%);}' +
   '.az-sky i{position:absolute;inset:0;background-image:radial-gradient(1px 1px at 20px 30px,#fff,transparent),radial-gradient(1px 1px at 90px 120px,#bfeaff,transparent),radial-gradient(1.6px 1.6px at 160px 60px,#fff,transparent),radial-gradient(1px 1px at 230px 180px,#ffe9a8,transparent),radial-gradient(1px 1px at 40px 190px,#fff,transparent);background-size:260px 220px;opacity:.6;animation:azTw 5s ease-in-out infinite alternate;}' +
   '.az-sky i:nth-child(2){background-size:350px 310px;background-position:70px 90px;animation-duration:8s;opacity:.4;}' +
   '.az-sky i:nth-child(3){background-size:190px 170px;background-position:20px 40px;animation-duration:3.6s;opacity:.3;}' +
@@ -185,7 +185,7 @@
   '.az-ringin .az-score{font-size:42px !important;}' +
   '.az-podhit{display:flex;align-items:center;justify-content:center;gap:10px;color:#ffd24a;font-family:var(--mono);font-size:13px;letter-spacing:1px;margin:8px 0;}' +
   '.az-podhit svg{width:44px;height:auto;margin:0 !important;animation:none !important;flex-shrink:0;filter:drop-shadow(0 0 10px rgba(255,210,74,.6));}' +
-  '.az-podium{display:grid;grid-template-columns:1fr 1.12fr 1fr;gap:14px;align-items:end;margin:30px 0 28px;}' +
+  '.az-podium{max-width:980px;margin-left:auto !important;margin-right:auto !important;display:grid;grid-template-columns:1fr 1.12fr 1fr;gap:14px;align-items:end;margin:30px 0 28px;}' +
   '.az-slot{display:flex;flex-direction:column;position:relative;}' +
   '.az-slot.s1{--mc:255,210,74;z-index:2;} .az-slot.s2{--mc:207,214,220;} .az-slot.s3{--mc:208,138,74;}' +
   '.az-pod{position:relative;text-align:center;padding:16px 8px 14px;border:1px solid rgba(var(--mc),.5);border-bottom:0;border-radius:var(--radius) var(--radius) 0 0;background:linear-gradient(180deg,rgba(var(--mc),.12),rgba(10,11,18,.78) 75%);}' +
@@ -213,6 +213,16 @@
   '.az-runner .rk{position:relative;width:34px;height:34px;flex-shrink:0;}' +
   '.az-runner .rk svg{width:34px;height:34px;display:block;}' +
   '.az-runner .az-ava{width:28px;height:28px;font-size:12px;margin:0;border-width:1px;box-shadow:none;}' +
+  '.az-tabs{margin:0 0 20px;}' +
+  '.az-segc{display:inline-flex;gap:4px;padding:4px;border-radius:999px;border:1px solid var(--border-dim);background:rgba(10,11,18,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 6px 24px rgba(0,0,0,.35);max-width:100%;}' +
+  '.az-segc.big .az-sg{padding:12px 26px;font-size:13.5px;}' +
+  '.az-sg{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:9px 18px;border-radius:999px;border:1px solid transparent;background:transparent;color:var(--grey);cursor:pointer;white-space:nowrap;transition:color .2s,background .2s,box-shadow .2s,border-color .2s,transform .15s;}' +
+  '.az-sg svg{width:16px;height:16px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}' +
+  '.az-sg:hover{color:var(--white);background:rgba(255,255,255,.05);}' +
+  '.az-sg.on{color:var(--neon);border-color:color-mix(in srgb,var(--neon) 65%,transparent);background:linear-gradient(135deg,color-mix(in srgb,var(--neon) 24%,transparent),color-mix(in srgb,var(--neon) 7%,transparent));box-shadow:0 0 18px color-mix(in srgb,var(--neon) 32%,transparent),inset 0 1px 0 rgba(255,255,255,.12);}' +
+  '.az-sg.on.red{color:var(--red);border-color:rgba(255,59,78,.65);background:linear-gradient(135deg,rgba(255,59,78,.24),rgba(255,59,78,.06));box-shadow:0 0 18px rgba(255,59,78,.3),inset 0 1px 0 rgba(255,255,255,.12);}' +
+  '.az-filters{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 16px;}' +
+  '@media (max-width:560px){.az-segc{display:flex;width:100%;} .az-sg{flex:1;padding:10px 8px;font-size:11.5px;letter-spacing:.5px;gap:6px;} .az-segc.big .az-sg{padding:12px 8px;font-size:12px;} .az-filters{gap:8px;} .az-filters .az-segc{width:100%;}}' +
   '@keyframes azTw{from{opacity:.25}to{opacity:.8}}' +
   '@keyframes azShoot{0%{transform:translate(0,0) rotate(18deg);opacity:0}2%{opacity:.9}9%{transform:translate(1100px,360px) rotate(18deg);opacity:0}100%{opacity:0}}' +
   '@keyframes azFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}' +
@@ -326,7 +336,7 @@
       '<text x="18" y="22" text-anchor="middle" font-size="' + (n > 99 ? 10 : 12) + '" font-weight="700" fill="#b9c58a" font-family="monospace">' + n + '</text></svg></span>';
   }
   function modeIcon(kind){
-    var g = '<defs><linearGradient id="azmi' + kind + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + (kind === 'blitz' ? '#ff8a98' : '#e6ff6a') + '"/><stop offset="1" stop-color="' + (kind === 'blitz' ? '#ff3b4e' : '#00e5ff') + '"/></linearGradient></defs>';
+    var g = '<defs><linearGradient id="azmi' + kind + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:' + (kind === 'blitz' ? '#ff8a98' : 'var(--neon)') + '"/><stop offset="1" stop-color="' + (kind === 'blitz' ? '#ff3b4e' : '#00e5ff') + '"/></linearGradient></defs>';
     var f = 'url(#azmi' + kind + ')', body;
     if(kind === 'practice') body = '<circle cx="16" cy="16" r="7" fill="' + f + '"/><ellipse cx="16" cy="16" rx="13" ry="4.2" fill="none" stroke="' + f + '" stroke-width="1.8" transform="rotate(-24 16 16)"/>';
     else if(kind === 'ranked') body = '<path d="M16 2.5l11 3.6v8.2c0 7-4.6 12-11 15.2C9.6 26.3 5 21.3 5 14.3V6.1z" fill="none" stroke="' + f + '" stroke-width="2"/><polygon points="' + starPts(16, 15, 6.5, 2.8) + '" fill="' + f + '"/>';
@@ -335,7 +345,7 @@
   }
   function ringSVG(frac){
     var C = 2 * Math.PI * 52, o = C * (1 - Math.max(0, Math.min(1, frac)));
-    return '<svg class="az-ring" viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="azrg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ccff00"/><stop offset="1" stop-color="#00e5ff"/></linearGradient></defs>' +
+    return '<svg class="az-ring" viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="azrg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--neon)"/><stop offset="1" stop-color="#00e5ff"/></linearGradient></defs>' +
       '<circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="7"/>' +
       '<circle cx="60" cy="60" r="52" fill="none" stroke="url(#azrg)" stroke-width="7" stroke-linecap="round" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + C.toFixed(1) + '" transform="rotate(-90 60 60)" style="--c:' + C.toFixed(1) + ';--o:' + o.toFixed(1) + ';animation:azRing 1.3s .15s cubic-bezier(.2,.7,.2,1) forwards"/></svg>';
   }
@@ -346,6 +356,24 @@
       '<circle cx="100" cy="100" r="46" fill="url(#azpl)"/>' +
       '<path d="M10 118c40 18 150-8 182-52" fill="none" stroke="rgba(160,190,255,.55)" stroke-width="3" transform="rotate(0)" opacity=".0"/>' +
       '<ellipse cx="100" cy="100" rx="94" ry="22" fill="none" stroke="rgba(160,190,255,.55)" stroke-width="3" transform="rotate(-20 100 100)" stroke-dasharray="150 400" stroke-dashoffset="-60"/></svg>';
+  }
+
+  function ico(k){
+    var d = {
+      play:'<circle cx="8" cy="8" r="3.6"/><ellipse cx="8" cy="8" rx="7" ry="2.4" transform="rotate(-24 8 8)"/>',
+      board:'<path d="M5 2.5h6v4a3 3 0 0 1-6 0z"/><path d="M5 3.8H2.6c0 2 1 3.2 2.6 3.4M11 3.8h2.4c0 2-1 3.2-2.6 3.4M8 9.8v2.4M5.4 13.5h5.2"/>',
+      ranked:'<path d="M8 1.6l5.4 2v4.1c0 3.1-2.2 5.3-5.4 6.7-3.2-1.4-5.4-3.6-5.4-6.7V3.6z"/><polygon points="' + starPts(8, 7.6, 2.8, 1.2) + '"/>',
+      blitz:'<path d="M9.2 1.5L3.4 9h4.4l-1 5.5L12.6 7H8.2z"/>',
+      week:'<path d="M12.6 9.6A5.6 5.6 0 0 1 6.4 3.4a5.6 5.6 0 1 0 6.2 6.2z"/>',
+      all:'<polygon points="' + starPts(8, 8.3, 6.6, 2.9) + '"/>'
+    };
+    return '<svg viewBox="0 0 16 16" aria-hidden="true">' + (d[k] || '') + '</svg>';
+  }
+  function segHTML(attr, cur, items, big){
+    return '<div class="az-segc' + (big ? ' big' : '') + '" role="tablist">' + items.map(function(it){
+      var on = cur === it[0];
+      return '<button type="button" role="tab" aria-selected="' + on + '" class="az-sg' + (on ? ' on' : '') + (it[0] === 'blitz' ? ' red' : '') + '" data-az="' + attr + '" data-v="' + it[0] + '">' + ico(it[2]) + '<span>' + esc(T(it[1])) + '</span></button>';
+    }).join('') + '</div>';
   }
 
   function loginGateHTML(){
@@ -563,11 +591,7 @@
   }
 
   function boardHTML(){
-    var seg = function(attr, cur, items){
-      return '<div class="az-seg">' + items.map(function(it){
-        return '<button type="button" class="az-tab' + (cur === it[0] ? ' on' : '') + '" data-az="' + attr + '" data-v="' + it[0] + '">' + esc(T(it[1])) + '</button>'; }).join('') + '</div>';
-    };
-    var h = seg('bmode', board.mode, [['ranked', U.bRanked], ['blitz', U.bBlitz]]) + seg('bper', board.period, [['week', U.pWeek], ['all', U.pAll]]);
+    var h = '<div class="az-filters">' + segHTML('bmode', board.mode, [['ranked', U.bRanked, 'ranked'], ['blitz', U.bBlitz, 'blitz']]) + segHTML('bper', board.period, [['week', U.pWeek, 'week'], ['all', U.pAll, 'all']]) + '</div>';
     if(board.loading) return h + '<p class="az-note">' + esc(T(U.starting)) + '</p>';
     if(board.err || !board.data) return h + '<div class="az-err">' + esc(T(U.err)) + '</div><button type="button" class="az-btn ghost" data-az="reload-board">' + esc(T(U.retry)) + '</button>';
     var d = board.data, es = d.entries || [];
@@ -610,8 +634,7 @@
 
   function paint(){
     if(!bodyEl) return;
-    var tabs = '<div class="az-tabs"><button type="button" class="az-tab' + (tab === 'play' ? ' on' : '') + '" data-az="tab" data-v="play">' + esc(T(U.tabPlay)) +
-      '</button><button type="button" class="az-tab' + (tab === 'board' ? ' on' : '') + '" data-az="tab" data-v="board">' + esc(T(U.tabBoard)) + '</button></div>';
+    var tabs = '<div class="az-tabs">' + segHTML('tab', tab, [['play', U.tabPlay, 'play'], ['board', U.tabBoard, 'board']], true) + '</div>';
     var inner;
     if(tab === 'board') inner = boardHTML();
     else if(view === 'loading') inner = '<p class="az-note">' + esc(T(U.starting)) + '</p>';
