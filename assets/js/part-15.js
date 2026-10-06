@@ -1603,7 +1603,7 @@ var CL_UI = {
              cluster (turning-point radar, anomaly scan, correlation
              matrix, rule lab, daily auto-summary), which assumes the
              earlier pages already make sense. */
-          ids:['now', 'outlook', 'flow', 'globe', 'infl', 'desk', 'scenarios', 'regime', 'anomaly', 'correl', 'rulelab', 'daily'] },
+          ids:['now', 'outlook', 'flow', 'globe', 'infl', 'macro', 'desk', 'scenarios', 'regime', 'anomaly', 'correl', 'rulelab', 'daily'] },
         { k:'tools',  t:{en:'Workbench',th:'เครื่องมือ'},
           /* 'printreport' and 'pro' deliberately left out -- see NAV_HIDDEN
              above; 'pro' (Institutional Pro Desk) is reachable only via a
