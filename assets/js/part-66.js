@@ -47,8 +47,10 @@
   function lsSet(k, v){ try { localStorage.setItem(k, v); return true; } catch(e){ return false; } }
 
   var UI = {
-    eb:   { en:'ADMIN ONLY · ENCRYPTED', th:'เฉพาะแอดมิน · เข้ารหัส' },
-    h:    { en:'Secret Notes', th:'โน้ตลับ' },
+    eb:   { en:'ADMIN · EDITOR', th:'แอดมิน · EDITOR' },
+    h:    { en:'Notes', th:'โน้ต' },
+    roNote: { en:'Editor view — read only.', th:'มุมมอง Editor — อ่านได้อย่างเดียว' },
+    autoOpen: { en:'Opening your notes…', th:'กำลังเปิดโน้ต…' },
     lede: { en:'Your private study notes. Encrypted in this browser with the same CASCADE construction as the 50-field login — nothing is stored or sent in plain text.',
             th:'โน้ตส่วนตัวสำหรับจดความเข้าใจของเธอ เข้ารหัสในเบราว์เซอร์ด้วยระบบ CASCADE แบบเดียวกับรหัส 50 ช่อง ไม่มีอะไรถูกเก็บหรือส่งออกเป็นข้อความธรรมดา' },
     adminOnly: { en:'This page is only available to the site admin.', th:'หน้านี้ใช้ได้เฉพาะแอดมินของเว็บไซต์เท่านั้น' },
@@ -370,7 +372,36 @@
   var S = { vault:null, vaultSrc:'', data:null, pass:null, openId:null, q:'', tag:'', busy:false, busyMsg:'', msg:'', err:'', modal:null, lastActive:0 };
   var sec = null, idleTimer = null, copiedTimer = null, toastTimer = null;
 
-  function isAdmin(){ return !!(window.__SPZ_TIER && window.__SPZ_TIER() === 'full'); }
+  /* Round AD: Admin and Editor can both open Notes without typing a
+     passphrase. Editor opens a separate copy of the vault encrypted with
+     the Editor code (assets/data/notes.editor.vault.json) and is read-only.
+     Admin opens the main vault with the passphrase remembered on this
+     device after the first successful unlock (localStorage, this browser
+     only) -- the lock form only appears the first time on a new device. */
+  var LS_PASS = 'spz_notes_pass_v1';
+  var EDITOR_SEED_URL = 'assets/data/notes.editor.vault.json';
+  function tier(){ try { return window.__SPZ_TIER ? window.__SPZ_TIER() : 'basic'; } catch(e){ return 'basic'; } }
+  function isAdmin(){ var t = tier(); return t === 'full' || t === 'editor'; }
+  function isEditor(){ return tier() === 'editor'; }
+  function onPage(){ return (location.hash || '') === '#/' + ROUTE; }
+  function autoUnlock(){
+    if(S.data || S.busy || S.autoTried || !onPage()) return;
+    S.autoTried = true;
+    if(isEditor()){
+      var code = ''; try { code = sessionStorage.getItem('spz_editor_code') || ''; } catch(e){}
+      if(!code) return;
+      S.busy = true; S.err = ''; S.ro = true;
+      fetch(EDITOR_SEED_URL, { cache:'no-store' }).then(function(r){ if(!r.ok) throw new Error('http'); return r.json(); }).then(function(v){
+        S.vault = v; S.vaultSrc = T(UI.srcSeed);
+        return openVault(v, code);
+      }).then(function(d){ S.data = d; S.pass = null; S.busy = false; touch(); startIdle(); paint(); })
+        .catch(function(){ S.busy = false; S.err = T(UI.loadFail); paint(); });
+      paint();
+      return;
+    }
+    var pass = lsGet(LS_PASS);
+    if(pass) unlock(pass);
+  }
   function touch(){ S.lastActive = Date.now(); }
   function fmtDate(ts){
     try { return new Date(ts).toLocaleString(L() === 'th' ? 'th-TH' : 'en-GB', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }); } catch(e){ return ''; }
@@ -552,7 +583,7 @@
     if(S.modal){ var act = document.activeElement; keep = act && act.getAttribute && act.getAttribute('data-f'); }
     var html;
     if(!isAdmin()) html = '<div class="anx-empty">' + esc(T(UI.adminOnly)) + '</div>';
-    else if(!S.data) html = lockView();
+    else if(!S.data){ autoUnlock(); html = (S.busy || (isEditor() && !S.err)) ? '<div class="anx-empty">' + esc(T(UI.autoOpen)) + '</div>' : lockView(); }
     else if(S.openId){
       var n = S.data.notes.filter(function(x){ return x.id === S.openId; })[0];
       html = n ? noteView(n) : listView();
@@ -560,6 +591,8 @@
     if(S.busy && S.data) html += '<div class="anx-busy"><div class="anx-spin"></div><div>' + esc(S.busyMsg) + '</div></div>';
     if(S.msg) html += '<div class="anx-toast">' + esc(S.msg) + '</div>';
     html += modalView();
+    if(S.data && S.ro) html = '<div class="anx-ro-note">' + esc(T(UI.roNote)) + '</div>' + html;
+    sec.classList.toggle('anx-ro', !!S.ro);
     body.innerHTML = html;
     sec.querySelector('[data-anx-eb]').textContent = T(UI.eb);
     sec.querySelector('[data-anx-h]').textContent = T(UI.h);
@@ -587,15 +620,16 @@
     S.busy = true; S.err = ''; paint();
     var go = S.vault ? Promise.resolve() : loadVault();
     go.then(function(){ return openVault(S.vault, pass); }).then(function(d){
-      S.data = d; S.pass = pass; S.busy = false; S.openId = null; touch(); startIdle(); paint();
+      S.data = d; S.pass = pass; S.busy = false; S.openId = null; S.ro = false; if(!isEditor()) lsSet(LS_PASS, pass); touch(); startIdle(); paint();
     }).catch(function(e){
       S.busy = false; S.data = null; S.pass = null;
+      if(lsGet(LS_PASS) === pass){ try { localStorage.removeItem(LS_PASS); } catch(x){} }
       S.err = (e && e.message === 'Tampering Detected') ? T(UI.badPass) : T(UI.loadFail);
       paint();
     });
   }
   function lock(){
-    S.data = null; S.pass = null; S.openId = null; S.modal = null; S.q = ''; S.tag = ''; S.busy = false; S.err = '';
+    S.data = null; S.pass = null; S.openId = null; S.modal = null; S.q = ''; S.tag = ''; S.busy = false; S.err = ''; S.autoTried = false; S.ro = false; S.vault = null;
     clearInterval(idleTimer); idleTimer = null; paint();
   }
   function startIdle(){
@@ -603,6 +637,7 @@
     idleTimer = setInterval(function(){ if(S.data && Date.now() - S.lastActive > IDLE_MS) lock(); }, 15000);
   }
   function persist(okMsg){
+    if(S.ro) return Promise.resolve();
     S.busy = true; S.busyMsg = T(UI.saving); paint();
     S.data.rev = (S.data.rev || 0) + 1;
     return generateVault(S.pass, S.data).then(function(v){
@@ -675,7 +710,7 @@
         p.p1 = normPass(p.p1); p.p2 = normPass(p.p2);
         if(String(p.p1 || '').length < 8){ S.modal.err = T(UI.passShort); return paint(); }
         if(p.p1 !== p.p2){ S.modal.err = T(UI.passMismatch); return paint(); }
-        S.pass = p.p1; S.modal = null; persist(T(UI.passDone)); break;
+        S.pass = p.p1; lsSet(LS_PASS, p.p1); S.modal = null; persist(T(UI.passDone)); break;
       case 'export': downloadVault(); break;
       case 'import': S.modal = { type:'import' }; paint(); break;
       case 'mimport':
@@ -870,11 +905,12 @@
       if(out !== txt && parseSlots(txt)){ e.preventDefault(); t.value = out; touch(); }
     });
     document.addEventListener('keydown', onKey);
-    window.addEventListener('hashchange', function(){ if(S.data && location.hash.indexOf(ROUTE) === -1) lock(); });
+    window.addEventListener('hashchange', function(){ if(S.data && location.hash.indexOf(ROUTE) === -1) lock(); else if(onPage()) paint(); });
+    document.addEventListener('spz:tier', function(){ lock(); });
     window.addEventListener('pagehide', function(){ if(S.data) lock(); });
     window.__spzAddRoute({
       id:ROUTE, feat:true, after:'qrcode', t:UI.h,
-      d:{ en:'Private encrypted study notes. Admin-only.', th:'โน้ตส่วนตัวที่เข้ารหัส เฉพาะแอดมิน' }
+      d:{ en:'Encrypted study notes. Admin and Editor (read-only).', th:'โน้ตที่เข้ารหัส แอดมินและ Editor (อ่านอย่างเดียว)' }
     });
     paint();
     /* Reloading while on #/adminnotes: the router fell back to home before this

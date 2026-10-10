@@ -62,7 +62,47 @@
   var ADMIN_KEY_STORAGE = 'spz_admin_users_key';
 
   function getAdminKey(){
-    try { return sessionStorage.getItem(ADMIN_KEY_STORAGE) || ''; } catch(e){ return ''; }
+    try {
+      var k = sessionStorage.getItem(ADMIN_KEY_STORAGE) || '';
+      /* Round AD: an Editor reads the same content with their own code --
+         the Worker accepts it for this read-only endpoint only. */
+      if(!k && window.__SPZ_TIER && window.__SPZ_TIER() === 'editor') k = sessionStorage.getItem('spz_editor_code') || '';
+      return k;
+    } catch(e){ return ''; }
+  }
+  function canRead(){
+    var t = window.__SPZ_TIER ? window.__SPZ_TIER() : 'basic';
+    return t === 'full' || t === 'editor';
+  }
+  /* Round AD: everyone can open the classroom now, but until it is ready
+     only Admin / Editor see real lessons. Everyone else gets the real index
+     plus deliberately scrambled text and a blurred placeholder chart, under
+     a clear "in development" notice -- no lesson content is ever sent to
+     them (it still lives only on the Worker). */
+  var GLYPHS = 'ꙮᚠᚢᚦᛃᛉᛗΞΨΩλψϟϠабвгджзлфцщ๏๛ฯๆฺ꧁꧂ꕥꕤ⟁⟟⟒⏃⌰⍀⋔⏁⎍⟟⍜⊑';
+  function garble(seed, n){
+    var x = 0, out = [], i, w, k;
+    for(i = 0; i < seed.length; i++) x = (x * 31 + seed.charCodeAt(i)) >>> 0;
+    function r(){ x = (x * 1664525 + 1013904223) >>> 0; return x / 4294967296; }
+    for(w = 0; w < n; w++){
+      var len = 2 + Math.floor(r() * 7), word = '';
+      for(k = 0; k < len; k++) word += GLYPHS.charAt(Math.floor(r() * GLYPHS.length));
+      out.push(word);
+    }
+    return out.join(' ');
+  }
+  function lockedPreviewHTML(){
+    var id = currentId || 'overview';
+    return '<div class="ewv-dev-note">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg>' +
+        '<div><b>' + esc(T(UI.devT)) + '</b><span>' + esc(T(UI.devS)) + '</span></div>' +
+      '</div>' +
+      '<div class="ewv-garble">' +
+        '<p>' + esc(garble(id + 'a', 46)) + '</p>' +
+        '<div class="ewv-garble-chart"><svg viewBox="0 0 400 150" preserveAspectRatio="none"><polyline fill="none" stroke="currentColor" stroke-width="3" points="0,120 60,60 95,85 170,20 210,70 260,50 300,110 340,80 400,130"/></svg><span>' + esc(T(UI.devLock)) + '</span></div>' +
+        '<p>' + esc(garble(id + 'b', 38)) + '</p>' +
+        '<p>' + esc(garble(id + 'c', 30)) + '</p>' +
+      '</div>';
   }
   function setAdminKey(k){
     try { sessionStorage.setItem(ADMIN_KEY_STORAGE, k); } catch(e){}
@@ -78,6 +118,10 @@
             th:'แผนที่ระดับเริ่มต้นของวิธีที่นักวิเคราะห์ Elliott Wave อ่านกราฟราคา เลือกกิ่งด้านล่าง หรือใช้เมนูด้านซ้ายก็ได้ เป็นสื่อการเรียนรู้เท่านั้น นี่คือวิธีอ่านกราฟแบบหนึ่ง ไม่ใช่การพยากรณ์ว่ากราฟตัวไหนจะไปทางไหนต่อ' },
 
     adminOnly: { en:'Admins only.', th:'เฉพาะแอดมินเท่านั้น' },
+    devT: { en:'This classroom is still being built', th:'ห้องเรียนนี้อยู่ในช่วงพัฒนา' },
+    devS: { en:'The text below is scrambled on purpose until the lessons open. Admins and Editors can read the real content.',
+            th:'ข้อความด้านล่างถูกสลับให้อ่านไม่ออกโดยตั้งใจ จนกว่าบทเรียนจะเปิดให้เรียน แอดมินและ Editor อ่านเนื้อหาจริงได้' },
+    devLock: { en:'Locked during development', th:'ปิดไว้ระหว่างพัฒนา' },
     note: { en:'Educational only — not investment advice, a signal, or a recommendation. Nothing here is affiliated with any broker, exchange or issuer.',
             th:'เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน สัญญาณซื้อขาย หรือการชี้ชวน ไม่มีความเกี่ยวข้องกับโบรกเกอร์ ตลาดหลักทรัพย์ หรือผู้ออกหลักทรัพย์ใดๆ' },
 
@@ -235,16 +279,13 @@
 
   function renderShell(){
     if(!bodyEl) return;
-    if(window.__SPZ_TIER && window.__SPZ_TIER() !== 'full'){
-      bodyEl.innerHTML = '<div class="qrp-locked">' + esc(T(UI.adminOnly)) + '</div>';
-      return;
-    }
     if(!NODE_TITLE[currentId]) currentId = 'overview';
+    var reader = canRead();
     // Kick off the one-time content fetch, then bail out of this render --
     // fetchClassroomContent() calls renderShell() itself right away to paint
     // the loading state, so falling through here would just rebuild the
     // same markup twice.
-    if(getAdminKey() && !contentCache && !contentLoading && !contentErr){
+    if(reader && getAdminKey() && !contentCache && !contentLoading && !contentErr){
       fetchClassroomContent();
       return;
     }
@@ -258,7 +299,7 @@
         '<div class="gl-nav">' + navHTML + '</div>' +
         '<div class="gl-detail gl-anim">' +
           '<div class="gl-detail-head"><span class="gl-detail-name">' + esc(T(NODE_TITLE[currentId])) + '</span></div>' +
-          '<div class="gl-detail-body">' + detailBodyHTML() + '</div>' +
+          '<div class="gl-detail-body">' + (reader ? detailBodyHTML() : lockedPreviewHTML()) + '</div>' +
         '</div>' +
       '</div>' +
       '<p class="ewv-note">' + esc(T(UI.note)) + '</p>';
@@ -326,6 +367,7 @@
     var tries = 0;
     var iv = setInterval(function(){ if(build() || ++tries > 60) clearInterval(iv); }, 400);
     new MutationObserver(function(){ if(sec) paint(); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+    document.addEventListener('spz:tier', function(){ contentCache = null; contentErr = null; if(sec) paint(); });
   }
 
   if(document.readyState === 'loading'){
