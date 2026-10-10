@@ -22,7 +22,7 @@
 
   var ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   /* no I / O / 0 / 1 -- easy to read aloud */
   var REF_RE = /SPZ-[A-Z]{2}-\d{6}-\d{4}-[A-Z0-9]{4,10}/;
-  var PR_CODES = { market:'MK', gold:'GD', idea:'ID', announcement:'AN', bubble:'BB' };
+  var PR_CODES = { market:'MK', gold:'GD', idea:'ID', announcement:'AN', bubble:'BB', eval:'EV' };
   var WEB_URL = 'https://terminal.spacezblack.workers.dev/';
   var LS_KEY = 'spz.report.analyst';
   var NAME = 'Noraset Boikaw';
