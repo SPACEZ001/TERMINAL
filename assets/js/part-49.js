@@ -135,6 +135,18 @@
                   th:'เพิ่งเริ่มอ่าน? เริ่มตรงนี้ก่อน — คำอธิบายง่ายๆ ของตัวเลขที่ใช้ตลอดทั้งรายงานนี้'},
 
     /* ---- Round 11: real Gold / DXY technical charts + quant read ---- */
+    goldRelH:{en:'Gold vs. other markets — what moves it',th:'ทองคำเทียบกับตลาดอื่น — อะไรที่ทำให้ราคาขยับ'},
+    goldRelNote:{en:'Both lines are rescaled to start at 100, so you can see which one rose or fell more. "Correlation" ranges from -1 (move opposite) to +1 (move together); it is measured on daily moves over the period shown.',th:'ทุกเส้นถูกปรับให้เริ่มที่ 100 เพื่อดูว่าตัวไหนขึ้นหรือลงมากกว่ากัน ส่วน "ความสัมพันธ์" มีค่า -1 (สวนทางกัน) ถึง +1 (ไปทางเดียวกัน) คำนวณจากการเคลื่อนไหวรายวันในช่วงที่แสดง'},
+    goldRelCorr:{en:'Correlation',th:'ความสัมพันธ์'},
+    goldRelGold:{en:'Gold',th:'ทองคำ'},
+    goldRelDxy:{en:'Gold vs. US Dollar (DXY)',th:'ทองคำ vs ดอลลาร์สหรัฐ (DXY)'},
+    goldRelDxyX:{en:'Gold is priced in dollars. When the dollar gets stronger, gold becomes more expensive for people holding other currencies, so demand often cools and gold tends to fall — and the reverse when the dollar weakens.',th:'ทองคำซื้อขายเป็นดอลลาร์ เมื่อดอลลาร์แข็งค่า ทองจะแพงขึ้นสำหรับคนที่ถือสกุลเงินอื่น ความต้องการมักลดลงและราคาทองมักลง ส่วนเมื่อดอลลาร์อ่อนค่า ทองมักขึ้น'},
+    goldRelTnx:{en:'Gold vs. US 10-year yield',th:'ทองคำ vs ผลตอบแทนพันธบัตรสหรัฐ 10 ปี'},
+    goldRelTnxX:{en:'Gold pays no interest. When bond yields rise, safe bonds pay more, so holding gold looks less attractive and gold tends to fall; when yields drop, gold looks better.',th:'ทองคำไม่จ่ายดอกเบี้ย เมื่อผลตอบแทนพันธบัตรสูงขึ้น การถือพันธบัตรได้ดอกเบี้ยมากขึ้น ทองจึงน่าสนใจน้อยลงและราคามักลง แต่ถ้าผลตอบแทนลดลง ทองมักได้เปรียบ'},
+    goldRelSpx:{en:'Gold vs. S&P 500',th:'ทองคำ vs ดัชนี S&P 500'},
+    goldRelSpxX:{en:'The S&P 500 shows risk appetite. Money often flows to stocks when people are confident and to gold when they are worried, but both can rise together when markets are flooded with cash. A low correlation means gold is a useful diversifier.',th:'S&P 500 สะท้อนความกล้าเสี่ยง เงินมักไหลเข้าหุ้นเมื่อมั่นใจ และเข้าทองเมื่อกังวล แต่ทั้งคู่ก็ขึ้นพร้อมกันได้เมื่อมีเงินในระบบมาก ถ้าความสัมพันธ์ต่ำ แปลว่าทองช่วยกระจายความเสี่ยงได้ดี'},
+    goldRelTip:{en:'Gold vs. inflation-protected bonds (TIP)',th:'ทองคำ vs พันธบัตรป้องกันเงินเฟ้อ (TIP)'},
+    goldRelTipX:{en:'TIP rises when investors want protection from inflation or when real yields fall. Gold often moves with it, because both are used to protect purchasing power.',th:'TIP ขึ้นเมื่อนักลงทุนต้องการป้องกันเงินเฟ้อหรือเมื่อผลตอบแทนที่แท้จริงลดลง ทองมักเคลื่อนไหวไปทางเดียวกัน เพราะทั้งคู่ใช้รักษากำลังซื้อ'},
     goldChartGoldH:{en:'Gold (Futures, GC=F) — Price vs. Moving Averages',
                     th:'ทองคำ (ฟิวเจอร์ส GC=F) — ราคาเทียบเส้นค่าเฉลี่ยเคลื่อนที่'},
     goldChartDxyH:{en:'US Dollar Index (DXY) — Price vs. Moving Averages',
@@ -246,6 +258,8 @@
     annTopicOtherPh:{en:'Type the topic…',th:'พิมพ์หัวข้อเอง…'},
     annMsgLbl:{en:'Message',th:'ข้อความ'},
     annMsgPh:{en:'Write the announcement text…',th:'พิมพ์เนื้อหาประกาศ…'},
+    annFmtHint:{en:'Tip: a blank line starts a new paragraph. Start a line with "- " for a bullet, or "# " for a heading.',
+                th:'เคล็ดลับ: เว้นบรรทัดว่าง = ขึ้นย่อหน้าใหม่ · ขึ้นต้นบรรทัดด้วย "- " = หัวข้อย่อยแบบจุด · ขึ้นต้นด้วย "# " = หัวข้อ'},
     annImgLbl:{en:'Attach image(s) / charts (optional)',th:'แนบรูปภาพ / กราฟ (ไม่บังคับ)'},
     annImgHint:{en:'Up to 6 images. Shown full-width in the printed report, in the order added.',
                 th:'แนบได้สูงสุด 6 รูป จะแสดงเต็มความกว้างในรายงาน เรียงตามลำดับที่แนบ'},
@@ -258,6 +272,7 @@
 
     /* ---- Round F: Bubble report ---- */
     typeBubble:{en:'Bubble Report',th:'รายงานฟองสบู่'},
+    typeBrief:{en:'Institutional Outlook Brief',th:'บรีฟภาพรวมเชิงสถาบัน'},
     bubbleRepTitle:{en:'Market Bubble / Valuation Risk Report',th:'รายงานความเสี่ยงฟองสบู่ตลาด'},
     bubbleRepSub:{en:'Composite Read Across 5 Live Signals — Not a Timing Signal',th:'สรุปจาก 5 สัญญาณสดของตลาด — ไม่ใช่สัญญาณจับจังหวะซื้อขาย'},
     bubbleRepScoreH:{en:'Bubble Score',th:'คะแนนฟองสบู่'},
@@ -1327,6 +1342,70 @@
       '<div class="pr-flow-wrap" style="margin-top:12px;">' + rows + '</div>';
   }
 
+  /* ---- Round AE: Gold vs other markets (rescaled to 100 + correlation + plain explanation) ---- */
+  function relPair(symB){
+    var a = histCache['GC=F'], b = histCache[symB];
+    if(!a || !b || !a.series || !b.series) return null;
+    var mb = {}, i;
+    for(i = 0; i < b.series.dates.length; i++) mb[b.series.dates[i]] = b.series.vals[i];
+    var d = [], x = [], y = [];
+    for(i = 0; i < a.series.dates.length; i++){
+      var dt = a.series.dates[i];
+      if(isNum(mb[dt])){ d.push(dt); x.push(a.series.vals[i]); y.push(mb[dt]); }
+    }
+    if(x.length < 60) return null;
+    var rx = [], ry = [];
+    for(i = 1; i < x.length; i++){ rx.push(x[i] / x[i-1] - 1); ry.push(y[i] / y[i-1] - 1); }
+    var n = rx.length, mx = 0, my = 0;
+    for(i = 0; i < n; i++){ mx += rx[i]; my += ry[i]; }
+    mx /= n; my /= n;
+    var sxy = 0, sxx = 0, syy = 0;
+    for(i = 0; i < n; i++){ sxy += (rx[i]-mx)*(ry[i]-my); sxx += (rx[i]-mx)*(rx[i]-mx); syy += (ry[i]-my)*(ry[i]-my); }
+    var corr = (sxx > 0 && syy > 0) ? sxy / Math.sqrt(sxx * syy) : null;
+    return { dates:d, a:x, b:y, corr:corr };
+  }
+  function relChartSVG(a, b){
+    var w = 640, h = 150, pad = 4, n = a.length;
+    var na = a.map(function(v){ return v / a[0] * 100; }), nb = b.map(function(v){ return v / b[0] * 100; });
+    var all = na.concat(nb), min = Math.min.apply(null, all), max = Math.max.apply(null, all);
+    if(min === max){ min -= 1; max += 1; }
+    function path(arr){
+      return 'M' + arr.map(function(v, i){
+        return (pad + i / (n - 1) * (w - pad * 2)).toFixed(1) + ',' + (pad + (1 - (v - min) / (max - min)) * (h - pad * 2)).toFixed(1);
+      }).join(' L');
+    }
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="' + h + '" preserveAspectRatio="none" class="pr-chart-svg">' +
+      '<path d="' + path(nb) + '" fill="none" stroke="#1d5fbf" stroke-width="1.5" stroke-linejoin="round"></path>' +
+      '<path d="' + path(na) + '" fill="none" stroke="#b8860b" stroke-width="1.9" stroke-linejoin="round"></path></svg>';
+  }
+  function relBlockHTML(sym, titleKey, textKey){
+    var slot = getHistoryCached(sym);
+    var head = '<div class="pr-rel-h">' + esc(T(UI[titleKey])) + '</div>';
+    if(slot.failed) return '<div class="pr-rel">' + head + '<div class="pr-empty">' + esc(T(UI.goldChartUnavailable)) + '</div></div>';
+    var pr = relPair(sym);
+    if(!pr) return '<div class="pr-rel">' + head + '<div class="pr-empty">' + esc(T(UI.goldChartLoading)) + '</div></div>';
+    var c = pr.corr;
+    var cTxt = isNum(c) ? (c >= 0 ? '+' : '') + c.toFixed(2) : '—';
+    return '<div class="pr-rel">' + head +
+      '<div class="pr-chart-block">' + relChartSVG(pr.a, pr.b) +
+        '<div class="pr-tech-legend">' +
+          '<span class="pr-tech-i"><i style="background:#b8860b"></i>' + esc(T(UI.goldRelGold)) + '</span>' +
+          '<span class="pr-tech-i"><i style="background:#1d5fbf"></i>' + esc(T(UI[titleKey]).split(' vs')[1] ? T(UI[titleKey]).replace(/^.*?vs\.?\s*/, '') : '') + '</span>' +
+          '<span class="pr-tech-i" style="margin-left:auto;"><b>' + esc(T(UI.goldRelCorr)) + ': ' + esc(cTxt) + '</b></span>' +
+        '</div>' +
+        '<div class="pr-chart-axis"><span>' + esc(pr.dates[0]) + '</span><span>' + esc(pr.dates[pr.dates.length - 1]) + '</span></div>' +
+      '</div>' +
+      '<div class="pr-rel-x">' + esc(T(UI[textKey])) + '</div></div>';
+  }
+  var REL_SYMS = ['DX-Y.NYB', '^TNX', '^GSPC', 'TIP'];
+  function goldRelHTML(){
+    return '<div class="pr-flow-note">' + esc(T(UI.goldRelNote)) + '</div>' +
+      relBlockHTML('DX-Y.NYB', 'goldRelDxy', 'goldRelDxyX') +
+      relBlockHTML('^TNX', 'goldRelTnx', 'goldRelTnxX') +
+      relBlockHTML('^GSPC', 'goldRelSpx', 'goldRelSpxX') +
+      relBlockHTML('TIP', 'goldRelTip', 'goldRelTipX');
+  }
+
   function goldMacroHTML(){
     var snap; try { snap = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot(); } catch(e){}
     var m = snap && snap.macro, r = snap && snap.regime;
@@ -1457,6 +1536,8 @@
       goldPriceHTML() +
       '<div class="pr-sec-h">' + esc(T(UI.goldMacroH)) + '</div>' +
       goldMacroHTML() +
+      '<div class="pr-sec-h">' + esc(T(UI.goldRelH)) + '</div>' +
+      goldRelHTML() +
       '<div class="pr-sec-h">' + esc(T(UI.goldFlowH)) + '</div>' +
       goldFlowHTML() +
       '<div class="pr-sec-h">' + esc(T(UI.goldForecastH)) + '</div>' +
@@ -1739,6 +1820,22 @@
     return found ? T({en:found.en, th:found.th}) : '';
   }
 
+  /* Round AE: paragraphs / bullets / headings in the announcement body.
+     blank line = new paragraph, "- " or "* " = bullet, "# " = heading,
+     a single line break stays a line break, leading spaces are kept. */
+  function annFormat(text){
+    var blocks = String(text).replace(/\r\n?/g, '\n').split(/\n{2,}/);
+    return blocks.map(function(b){
+      var lines = b.replace(/^\n+|\n+$/g, '').split('\n');
+      if(!lines.length || (lines.length === 1 && !lines[0].trim())) return '';
+      if(lines.every(function(l){ return /^\s*[-\u2022*]\s+/.test(l); })){
+        return '<ul class="pr-ann-ul">' + lines.map(function(l){ return '<li>' + esc(l.replace(/^\s*[-\u2022*]\s+/, '')) + '</li>'; }).join('') + '</ul>';
+      }
+      if(lines.length === 1 && /^#{1,3}\s+/.test(lines[0])) return '<div class="pr-ann-h">' + esc(lines[0].replace(/^#{1,3}\s+/, '')) + '</div>';
+      return '<p class="pr-ann-p">' + lines.map(function(l){ return esc(l); }).join('<br>') + '</p>';
+    }).join('');
+  }
+
   function announcementReportHTML(){
     var now = new Date();
     var topicLabel = annTopicLabel();
@@ -1771,7 +1868,7 @@
         '</div>' +
       '</div>' +
       (topicLabel ? '<div class="pr-sec-h">' + esc(topicLabel) + '</div>' : '') +
-      (msg ? '<div class="pr-dd-narrative" style="white-space:pre-wrap;font-size:12px;">' + esc(msg) + '</div>' : '') +
+      (msg ? '<div class="pr-ann-body">' + annFormat(msg) + '</div>' : '') +
       imagesHTML +
       '<div class="pr-foot">' + esc(T(UI.disclaimer)) + '</div>' +
       qrContactPageHTML() +
@@ -1820,10 +1917,13 @@
     if(!comp || comp.composite == null){
       scoreHTML = '<div class="pr-empty">' + esc(T(UI.bubbleRepNoData)) + '</div>';
     } else {
+      var bbPct = Math.max(0, Math.min(100, comp.composite));
       scoreHTML =
-        '<div class="pr-idea-bubble">' +
-          '<span class="pr-idea-bubble-score">' + comp.composite + '%</span>' +
-          '<span class="pr-idea-bubble-tier">' + esc(T(comp.tier)) + '</span>' +
+        '<div class="pr-bb-card">' +
+          '<div class="pr-bb-top"><span class="pr-bb-score">' + comp.composite + '<small>%</small></span>' +
+          '<span class="pr-bb-tier">' + esc(T(comp.tier)) + '</span></div>' +
+          '<div class="pr-bb-gauge"><i style="left:' + bbPct + '%"></i></div>' +
+          '<div class="pr-bb-scale"><span>0</span><span>50</span><span>100</span></div>' +
         '</div>';
     }
 
@@ -1901,9 +2001,9 @@
        instead of a permanent "fetching…" placeholder. Market Summary has
        no such dependency and prints immediately as before. */
     if(reportType !== 'gold'){ reveal(); return; }
-    var syms = ['GC=F', 'DX-Y.NYB'];
+    var syms = ['GC=F', 'DX-Y.NYB'].concat(REL_SYMS);
     syms.forEach(function(s){ getHistoryCached(s); });
-    var waited = 0, step = 200, maxWait = 3500;
+    var waited = 0, step = 200, maxWait = 6000;
     (function poll(){
       if(chartHistoryReady(syms) || waited >= maxWait){
         renderReport();
@@ -1957,6 +2057,7 @@
     if(q('typeIdea')) q('typeIdea').textContent = T(UI.typeIdea);
     if(q('typeAnnouncement')) q('typeAnnouncement').textContent = T(UI.typeAnnouncement);
     if(q('typeBubble')) q('typeBubble').textContent = T(UI.typeBubble);
+    if(q('typeBrief')) q('typeBrief').textContent = T(UI.typeBrief);
     if(q('annTopicLbl')) q('annTopicLbl').textContent = T(UI.annTopicLbl);
     if(q('annMsgLbl')) q('annMsgLbl').textContent = T(UI.annMsgLbl);
     if(q('annImgLbl')) q('annImgLbl').textContent = T(UI.annImgLbl);
@@ -1968,7 +2069,12 @@
           return '<option value="' + esc(t.id) + '"' + (annTopic === t.id ? ' selected' : '') + '>' + esc(T({en:t.en, th:t.th})) + '</option>';
         }).join('');
       annTopicSel.value = annTopic;
+      var chipHost = q('annTopicChips');
+      if(chipHost) chipHost.innerHTML = ANNOUNCEMENT_TOPICS.map(function(t){
+        return '<button type="button" class="pr-ann-chip' + (annTopic === t.id ? ' on' : '') + '" data-pr-anntopic="' + esc(t.id) + '">' + esc(T({en:t.en, th:t.th})) + '</button>';
+      }).join('');
     }
+    if(q('annFmtHint')) q('annFmtHint').textContent = T(UI.annFmtHint);
     var annOtherInput = q('annTopicOtherInput');
     if(annOtherInput){
       annOtherInput.style.display = annTopic === 'other' ? '' : 'none';
@@ -2055,6 +2161,7 @@
       if(t.closest('[data-pr="typeIdea"]')){ reportType = 'idea'; paint(); return; }
       if(t.closest('[data-pr="typeAnnouncement"]')){ reportType = 'announcement'; paint(); return; }
       if(t.closest('[data-pr="typeBubble"]')){ reportType = 'bubble'; paint(); return; }
+      if(t.closest('[data-pr="typeBrief"]')){ if(window.__SPZ_BRIEFING && window.__SPZ_BRIEFING.open) window.__SPZ_BRIEFING.open(); return; }
       if(t.closest('[data-pr="modeFull"]')){ mode = 'full'; paint(); return; }
       if(t.closest('[data-pr="modeSelect"]')){ mode = 'select'; paint(); return; }
       if(t.closest('[data-pr="selAll"]')){
@@ -2103,6 +2210,14 @@
         var fKey = t.getAttribute('data-ann-field');
         if(!annFieldData[annTopic]) annFieldData[annTopic] = {};
         annFieldData[annTopic][fKey] = t.value;
+      }
+    });
+    sec.addEventListener('click', function(ev){
+      var chip = ev.target && ev.target.closest ? ev.target.closest('[data-pr-anntopic]') : null;
+      if(chip){
+        var id = chip.getAttribute('data-pr-anntopic');
+        annTopic = (annTopic === id) ? '' : id;
+        paint();
       }
     });
     sec.addEventListener('change', function(ev){
@@ -2159,11 +2274,13 @@
             '<button type="button" class="pr-modebtn" data-pr="typeIdea"></button>' +
             '<button type="button" class="pr-modebtn" data-pr="typeAnnouncement"></button>' +
             '<button type="button" class="pr-modebtn" data-pr="typeBubble"></button>' +
+            '<button type="button" class="pr-modebtn" data-pr="typeBrief"></button>' +
           '</div>' +
           '<div data-pr="annWrap" style="display:none;">' +
             '<div class="pr-row" style="display:block;">' +
               '<span class="pr-label" data-pr="annTopicLbl" style="display:block;margin-bottom:6px;"></span>' +
               '<select class="pr-search" data-pr="annTopicSel" style="margin-bottom:8px;"></select>' +
+              '<div class="pr-ann-chips" data-pr="annTopicChips"></div>' +
               '<input type="text" class="pr-search" data-pr="annTopicOtherInput" style="display:none;">' +
             '</div>' +
             '<div data-pr="annTplWrap" style="display:none;margin:4px 0 14px;padding:10px;border:1px dashed var(--border-dim);border-radius:8px;">' +
@@ -2173,7 +2290,8 @@
             '</div>' +
             '<div class="pr-row" style="display:block;">' +
               '<span class="pr-label" data-pr="annMsgLbl" style="display:block;margin-bottom:6px;"></span>' +
-              '<textarea class="pr-search" data-pr="annMsgInput" rows="6" style="resize:vertical;min-height:120px;"></textarea>' +
+              '<textarea class="pr-search" data-pr="annMsgInput" rows="10" style="resize:vertical;min-height:220px;line-height:1.7;"></textarea>' +
+              '<div class="pr-hint" data-pr="annFmtHint" style="margin-top:6px;"></div>' +
             '</div>' +
             '<div class="pr-row" style="display:block;">' +
               '<span class="pr-label" data-pr="annImgLbl" style="display:block;margin-bottom:6px;"></span>' +

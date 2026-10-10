@@ -211,7 +211,7 @@
     adminAddAnalysis:{en:'Add Analysis',th:'เพิ่มบทวิเคราะห์'},
     adminPrintReport:{en:'Print Report',th:'พิมพ์รายงาน'},
     adminCompareDownload:{en:'Compare Stocks PDF',th:'ดาวน์โหลด PDF เปรียบเทียบหุ้น'},
-    adminConnectedUsers:{en:'Connected Users',th:'ผู้ใช้ที่เชื่อมต่อ LINE'},
+    adminConnectedUsers:{en:'Connected Users',th:'ผู้ใช้ที่เชื่อมต่อ'},
     adminAnnouncements:{en:'Announcements',th:'ประกาศ'},
     /* Round Q fix: the user's own mental model of "admin terminal" is this
        gate's admin-shortcut grid -- not Cockpit/Command Center, which is
@@ -1001,8 +1001,8 @@
      grid / quiet-value content. The code a visitor types is checked against
      it and, on success, kept in sessionStorage (this tab only) so read-only
      pages can open the Editor copy of the notes vault without asking again. */
-  var EDITOR_SALT = '9wuFSe2cOM9QNfff+r+ZQw==';
-  var EDITOR_HASH = '76cb326661cc0ea81eee18d28b0f639557c00ffa8abd14f02ad64317aff6805a';
+  var EDITOR_SALT = 'nvW5Nk2WzNHZhmZ7ntVq/w==';
+  var EDITOR_HASH = 'bb2c41992b2748b99f43d468a2ff7d1852b8d446c11c3f2dfb366abce5ec5d41';
   var EDITOR_CODE_KEY = 'spz_editor_code';
   function editorCodeMatches(pw){
     try {

@@ -2,7 +2,7 @@
    SPACEZ TERMINAL -- Round AD2: report reference codes + analyst signature block
    ----------------------------------------------------------------------------
    1) Every report gets an easy-to-read reference code:
-        SPZ-<TYPE>-<YYMMDD>-<HHMM>-<2 random chars>      e.g. SPZ-GD-261010-1538-K7
+        SPZ-<TYPE>-<YYMMDD>-<HHMM>-<6 random chars>      e.g. SPZ-GD-261010-1538-K7X4P9
       It is shown in the report header, and when the reader presses Print / Save
       as PDF the browser's document.title is set to that code for the duration
       of the print, so the saved PDF is named after it automatically.
@@ -21,7 +21,7 @@
   if(window.__SPZ_REPORTREF) return;
 
   var ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   /* no I / O / 0 / 1 -- easy to read aloud */
-  var REF_RE = /SPZ-[A-Z]{2}-\d{6}-\d{4}-[A-Z0-9]{2}/;
+  var REF_RE = /SPZ-[A-Z]{2}-\d{6}-\d{4}-[A-Z0-9]{4,10}/;
   var PR_CODES = { market:'MK', gold:'GD', idea:'ID', announcement:'AN', bubble:'BB' };
   var WEB_URL = 'https://terminal.spacezblack.workers.dev/';
   var LS_KEY = 'spz.report.analyst';
@@ -45,7 +45,7 @@
   /* ---------------------------------------------------------------- codes */
   function rnd2(){
     var s = '';
-    for(var i = 0; i < 2; i++) s += ALPHA.charAt(Math.floor(Math.random() * ALPHA.length));
+    for(var i = 0; i < 6; i++) s += ALPHA.charAt(Math.floor(Math.random() * ALPHA.length));
     return s;
   }
   function make(code){
@@ -247,6 +247,37 @@
     return origPrint.apply(window, arguments);
   };
 
+  /* ------------------------------------------- keep the page on refresh */
+  /* The router runs once while the page is still loading, before most pages
+     have been added, so a reload of e.g. #/printreport used to fall back to the
+     hub. The URL the browser actually loaded is still in the navigation entry,
+     so wait for that page to exist, then go back to it. */
+  function wantedRoute(){
+    try {
+      var nav = performance.getEntriesByType('navigation')[0];
+      var u = (nav && nav.name) || '';
+      var i = u.indexOf('#/');
+      if(i >= 0){
+        var id = u.slice(i + 2).split(/[?&]/)[0];
+        if(/^[a-z0-9_-]+$/i.test(id) && id !== 'home') return id;
+      }
+    } catch(e){}
+    return '';
+  }
+  function restoreRoute(){
+    var id = wantedRoute();
+    if(!id) return;
+    var tries = 0, bounced = /^(#\/(home|now)?)?$/;
+    setTimeout(function go(){
+      /* the router parks an unknown or locked route on home/now: only then step in;
+         if the reader already went to some other page, leave it alone */
+      if(location.hash === '#/' + id) return;
+      if(!bounced.test(location.hash)) return;
+      if(document.getElementById(id)){ location.hash = '#/' + id; return; }
+      if(++tries < 50) setTimeout(go, 300);
+    }, 700);
+  }
+
   /* ------------------------------------------------------------- boot */
   var pending = false;
   function schedule(){
@@ -259,6 +290,7 @@
     new MutationObserver(schedule).observe(document.body, { childList:true, subtree:true });
     document.addEventListener('spz:tier', tierClass);
     scan();
+    restoreRoute();
   }
   boot();
 })();

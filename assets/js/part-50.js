@@ -32,6 +32,13 @@
      straight off each user's own `online` field from /api/admin/users.
      Admin-only page, so this is never shown anywhere a regular visitor
      (including that same user, viewing their own account) can see it. */
+  /* Round AE: "last online" line on each person's card -- admin page only */
+  function lastSeenHTML(u){
+    if(u.online || !u.lastSeenAt) return '';
+    var d = '';
+    try { d = new Date(u.lastSeenAt).toLocaleString(L() === 'th' ? 'th-TH' : 'en-US', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }); } catch(e){}
+    return d ? '<div class="cu-linked-since cu-lastseen">' + esc(T(UI.lastOnline).replace('{d}', d)) + '</div>' : '';
+  }
   function onlineBadgeHTML(u){
     if(!u.online) return '';
     return '<span class="cu-online" title="' + esc(T(UI.onlineNow)) + '"><span class="cu-online-dot"></span>' + esc(T(UI.onlineNow)) + '</span>';
@@ -66,6 +73,7 @@
     providerLine:{en:'LINE',th:'LINE'},
     providerTelegram:{en:'Telegram',th:'Telegram'},
     onlineNow:{en:'Online now',th:'ออนไลน์อยู่'},
+    lastOnline:{en:'Last online {d}',th:'ออนไลน์ล่าสุด {d}'},
     uidLabel:{en:'UID',th:'UID'},
     accessLabel:{en:'Access status',th:'สถานะสิทธิ์การใช้งาน'},
     rightsLabel:{en:'Membership tier (badge only, for now)',th:'ระดับสมาชิก (เป็นป้ายชื่อเฉยๆ ตอนนี้)'},
@@ -308,7 +316,7 @@
         '<div>' +
           '<div class="cu-name">' + esc(u.displayName || '—') + '</div>' +
           '<div class="cu-uid">UID: ' + esc(u.uid || '—') + '</div>' +
-          cuLinkedSinceHTML(u) +
+          cuLinkedSinceHTML(u) + lastSeenHTML(u) +
           '<div class="cu-card-top-row">' + providerBadgeHTML(u) + onlineBadgeHTML(u) + statusHTML + rightsBadgeHTML(u.rights) + '</div>' +
         '</div>' +
       '</div>' +
