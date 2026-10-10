@@ -267,15 +267,16 @@
   function restoreRoute(){
     var id = wantedRoute();
     if(!id) return;
-    var tries = 0, bounced = /^(#\/(home|now)?)?$/;
-    setTimeout(function go(){
-      /* the router parks an unknown or locked route on home/now: only then step in;
-         if the reader already went to some other page, leave it alone */
-      if(location.hash === '#/' + id) return;
-      if(!bounced.test(location.hash)) return;
-      if(document.getElementById(id)){ location.hash = '#/' + id; return; }
-      if(++tries < 50) setTimeout(go, 300);
-    }, 700);
+    var tries = 0, acted = false, t0 = Date.now();
+    ['mousedown', 'keydown', 'touchstart', 'wheel'].forEach(function(n){
+      document.addEventListener(n, function(){ acted = true; }, { once:true, capture:true, passive:true });
+    });
+    (function go(){
+      if(acted) return;                                   /* the reader took over: leave it alone */
+      var cur = (location.hash || '').replace(/^#\/?/, '').split(/[?&]/)[0];
+      if(cur !== id && document.getElementById(id) && tries < 4){ tries++; location.hash = '#/' + id; }
+      if(Date.now() - t0 < 12000) setTimeout(go, 400);
+    })();
   }
 
   /* ------------------------------------------------------------- boot */
