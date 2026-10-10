@@ -358,8 +358,8 @@ function isAdminKeyValid(request, env) {
    EDITOR_SALT / EDITOR_HASH in assets/js/part-46.js. Used ONLY by the four GET
    handlers below (classroom / control grid / quiet value / print report
    analysis). Every write/update endpoint still calls isAdminKeyValid(). */
-const EDITOR_SALT_B64 = "9wuFSe2cOM9QNfff+r+ZQw==";
-const EDITOR_HASH_HEX = "76cb326661cc0ea81eee18d28b0f639557c00ffa8abd14f02ad64317aff6805a";
+const EDITOR_SALT_B64 = "nvW5Nk2WzNHZhmZ7ntVq/w==";
+const EDITOR_HASH_HEX = "bb2c41992b2748b99f43d468a2ff7d1852b8d446c11c3f2dfb366abce5ec5d41";
 let editorKeyVerified = ""; // last code that passed, so PBKDF2 runs once per isolate, not per request
 
 async function isEditorKeyValid(request) {
@@ -704,6 +704,7 @@ async function handleAdminUsersList(request, env) {
     // handlePresencePing above) -- a plain KV existence check, cheap next to
     // the profile/watchlist reads already happening in this loop.
     const presenceKey = await env.SESSIONS.get(PRESENCE_USER_KEY_PREFIX + userId);
+    const lastSeenAt = Number(await env.SESSIONS.get(LASTSEEN_KEY_PREFIX + userId)) || null;
     users.push({
       userId,
       uid: profile.uid || null,
@@ -716,6 +717,7 @@ async function handleAdminUsersList(request, env) {
       linkedAt: profile.linkedAt || null,
       tickers: Object.keys(wl),
       online: !!presenceKey,
+      lastSeenAt: presenceKey ? Date.now() : lastSeenAt,
     });
   }
   return json({ users }, env);
@@ -875,6 +877,7 @@ async function handleJournalSettingsUpdate(request, env) {
 // admin panel does.
 const PRESENCE_KEY_PREFIX = "presence:";
 const PRESENCE_USER_KEY_PREFIX = "presenceUser:";
+const LASTSEEN_KEY_PREFIX = "lastSeen:";
 const PRESENCE_TTL_SECONDS = 180; // matches the front end's slower ping interval
                                    // (assets/js/part-59.js) -- see the note there on
                                    // why this write volume is kept low
@@ -904,6 +907,13 @@ async function handlePresencePing(request, env) {
     const sess = await getLinkedSession(code, env);
     if (sess && sess.userId) {
       await env.SESSIONS.put(PRESENCE_USER_KEY_PREFIX + sess.userId, "1", { expirationTtl: PRESENCE_TTL_SECONDS });
+      // Round AE: remember WHEN this person was last on the site (admin-only, shown on the Connected
+      // Users page). Read-then-write at most once per 10 minutes so it adds almost no KV writes.
+      const seenKey = LASTSEEN_KEY_PREFIX + sess.userId;
+      const prevSeen = Number(await env.SESSIONS.get(seenKey)) || 0;
+      if (Date.now() - prevSeen > 10 * 60 * 1000) {
+        await env.SESSIONS.put(seenKey, String(Date.now()));
+      }
     }
   }
   return json({ ok: true }, env);

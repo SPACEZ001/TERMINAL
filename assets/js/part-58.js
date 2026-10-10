@@ -140,6 +140,21 @@
         if(parsed && (Date.now() - parsed.ts) < CACHE_TTL_MS){ mem[cacheKey] = parsed; return Promise.resolve(parsed.events); }
       }
     } catch(e){}
+    /* Round AE: the calendar now comes from data/econ.json (refreshed every 3 hours by a
+       GitHub Action from a free public feed -- no API key). The Worker route below stays
+       as the fallback for date ranges that file does not cover. */
+    function fromFile(){
+      return fetch('data/econ.json', { cache:'no-cache' }).then(function(r){
+        if(!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      }).then(function(d){
+        return ((d && d.economicCalendar) || []).filter(function(ev){
+          var day = String(ev.time || '').slice(0, 10);
+          return ev && ev.impact && COUNTRY_ALLOW[ev.country] && day >= fromStr && day <= toStr;
+        });
+      });
+    }
+    function fromWorker(){
     var url = WORKER_BASE + '/api/econ-calendar?from=' + fromStr + '&to=' + toStr;
     var ctrl = ('AbortController' in window) ? new AbortController() : null;
     var t = setTimeout(function(){ if(ctrl) ctrl.abort(); }, 12000);
@@ -152,6 +167,13 @@
       var events = ((d && d.economicCalendar) || []).filter(function(ev){
         return ev && ev.impact && COUNTRY_ALLOW[ev.country];
       });
+      return events;
+    });
+    }
+    return fromFile().then(function(ev){
+      if(ev.length) return ev;
+      return fromWorker().catch(function(){ return ev; });   /* not covered by the file: try the Worker, else show "no events" */
+    }, function(){ return fromWorker(); }).then(function(events){
       var entry = { ts:Date.now(), events:events };
       mem[cacheKey] = entry;
       try { sessionStorage.setItem('spz_ecocal_' + cacheKey, JSON.stringify(entry)); } catch(e){}
