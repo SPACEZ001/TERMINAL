@@ -2128,6 +2128,252 @@ async function handleAdminQuizBankFinalize(request, env) {
 
 /* ====================== end of EXAM ARENA ====================== */
 
+/* ============================================================================
+   CLASSROOM EXAM (Round AH) -- teacher-issued logins, one attempt each.
+   The admin generates a username + password per student, writes the question
+   bank, and reads the results. A student logs in on the site's "Classroom
+   Exam" page, answers once, and sees their score. Grading is done here, so the
+   page never receives the correct answers until the student has submitted.
+   KV (SESSIONS):  cex:bank            { settings, questions[] }
+                   cex:u:<username>    one record per student
+                   cex:tok:<token>     login token -> username (6 h)
+                   cex:fail:<username> failed-login counter (15 min)
+   ========================================================================== */
+const CEX_USER_PREFIX = "cex:u:";
+const CEX_BANK_KEY = "cex:bank";
+const CEX_TOK_PREFIX = "cex:tok:";
+const CEX_FAIL_PREFIX = "cex:fail:";
+const CEX_ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const CEX_DEFAULT_SETTINGS = { title: "Elliott Wave Classroom Exam", timeLimitMin: 30, shuffle: true, passPercent: 60 };
+
+function cexRand(n) {
+  const a = new Uint8Array(n); crypto.getRandomValues(a);
+  let s = ""; for (let i = 0; i < n; i++) s += CEX_ALPHA[a[i] % CEX_ALPHA.length];
+  return s;
+}
+function cexToken() {
+  const a = new Uint8Array(24); crypto.getRandomValues(a);
+  return Array.from(a).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+function cexSafeEq(a, b) {
+  a = String(a); b = String(b);
+  let d = a.length ^ b.length;
+  const n = Math.max(a.length, b.length);
+  for (let i = 0; i < n; i++) d |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
+  return d === 0;
+}
+function cexUserName(s) { return String(s || "").trim().toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 24); }
+
+async function cexGetBank(env) {
+  const raw = await env.SESSIONS.get(CEX_BANK_KEY);
+  let bank = null;
+  try { bank = raw ? JSON.parse(raw) : null; } catch (e) { bank = null; }
+  if (!bank || !Array.isArray(bank.questions)) bank = { settings: { ...CEX_DEFAULT_SETTINGS }, questions: [] };
+  bank.settings = { ...CEX_DEFAULT_SETTINGS, ...(bank.settings || {}) };
+  return bank;
+}
+async function cexGetUser(username, env) {
+  const raw = await env.SESSIONS.get(CEX_USER_PREFIX + username);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (e) { return null; }
+}
+async function cexPutUser(u, env) { await env.SESSIONS.put(CEX_USER_PREFIX + u.username, JSON.stringify(u)); }
+async function cexAllUsers(env) {
+  const out = []; let cursor;
+  do {
+    const page = await env.SESSIONS.list({ prefix: CEX_USER_PREFIX, cursor });
+    for (const k of page.keys) {
+      const raw = await env.SESSIONS.get(k.name);
+      if (!raw) continue;
+      try { out.push(JSON.parse(raw)); } catch (e) { /* skip */ }
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+  out.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  return out;
+}
+function cexShuffle(n) {
+  const a = Array.from({ length: n }, (_, i) => i);
+  for (let i = n - 1; i > 0; i--) {
+    const r = new Uint32Array(1); crypto.getRandomValues(r);
+    const j = r[0] % (i + 1); [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function cexCleanQuestions(list) {
+  const out = [];
+  for (const q of (Array.isArray(list) ? list : []).slice(0, 300)) {
+    const text = String(q && q.q || "").trim().slice(0, 1200);
+    const choices = (Array.isArray(q && q.choices) ? q.choices : []).map((c) => String(c || "").trim().slice(0, 500)).filter((c) => c);
+    const ans = parseInt(q && q.ans, 10);
+    if (!text || choices.length < 2 || choices.length > 6 || !(ans >= 0 && ans < choices.length)) continue;
+    out.push({
+      id: String(q.id || ("q" + out.length + "-" + cexRand(4))).slice(0, 24),
+      q: text, choices, ans,
+      expl: String(q.expl || "").trim().slice(0, 1500),
+      topic: String(q.topic || "").trim().slice(0, 60),
+    });
+  }
+  return out;
+}
+function cexAdminView(u) {
+  return {
+    username: u.username, password: u.password, note: u.note || "", status: u.status,
+    createdAt: u.createdAt, startedAt: u.startedAt || null, finishedAt: u.finishedAt || null,
+    score: u.score == null ? null : u.score, total: u.total == null ? null : u.total, percent: u.percent == null ? null : u.percent,
+    late: !!u.late,
+  };
+}
+
+// ---------- admin ----------
+async function handleCexAdminCreate(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  let body; try { body = await request.json(); } catch (e) { body = {}; }
+  const count = Math.max(1, Math.min(30, parseInt(body.count, 10) || 1));
+  const note = String(body.note || "").trim().slice(0, 120);
+  const created = [];
+  for (let i = 0; i < count; i++) {
+    let username = "";
+    for (let t = 0; t < 8; t++) {
+      username = "EW-" + cexRand(5);
+      if (!(await cexGetUser(username, env))) break;
+    }
+    const u = { username, password: cexRand(8), note, status: "new", createdAt: Date.now() };
+    await cexPutUser(u, env);
+    created.push(cexAdminView(u));
+  }
+  return json({ created }, env);
+}
+async function handleCexAdminList(request, env) {
+  if (!(await isAdminOrEditorRead(request, env))) return json({ error: "unauthorized" }, env, 401);
+  const users = (await cexAllUsers(env)).map(cexAdminView);
+  return json({ users }, env);
+}
+async function handleCexAdminUpdate(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const username = cexUserName(body.username);
+  const u = username ? await cexGetUser(username, env) : null;
+  if (!u) return json({ error: "not_found" }, env, 404);
+  if (body.delete === true) { await env.SESSIONS.delete(CEX_USER_PREFIX + username); return json({ ok: true, deleted: true }, env); }
+  if (typeof body.note === "string") u.note = body.note.trim().slice(0, 120);
+  if (body.reset === true) {
+    // allow one more attempt: keep the old result in "history"
+    if (u.finishedAt) { u.history = (u.history || []).concat([{ finishedAt: u.finishedAt, score: u.score, total: u.total, percent: u.percent }]).slice(-10); }
+    u.status = "new"; delete u.startedAt; delete u.finishedAt; delete u.score; delete u.total; delete u.percent;
+    delete u.order; delete u.answers; delete u.review; delete u.late;
+  }
+  await cexPutUser(u, env);
+  return json({ ok: true, user: cexAdminView(u) }, env);
+}
+async function handleCexAdminBankGet(request, env) {
+  if (!(await isAdminOrEditorRead(request, env))) return json({ error: "unauthorized" }, env, 401);
+  return json(await cexGetBank(env), env);
+}
+async function handleCexAdminBankSet(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const st = body.settings || {};
+  const settings = {
+    title: String(st.title || CEX_DEFAULT_SETTINGS.title).trim().slice(0, 120),
+    timeLimitMin: Math.max(0, Math.min(300, parseInt(st.timeLimitMin, 10) || 0)),
+    shuffle: st.shuffle !== false,
+    passPercent: st.passPercent === undefined || st.passPercent === "" ? CEX_DEFAULT_SETTINGS.passPercent : Math.max(0, Math.min(100, parseInt(st.passPercent, 10) || 0)),
+  };
+  const questions = cexCleanQuestions(body.questions);
+  await env.SESSIONS.put(CEX_BANK_KEY, JSON.stringify({ settings, questions }));
+  return json({ ok: true, count: questions.length, settings }, env);
+}
+async function handleCexAdminResult(request, env) {
+  if (!(await isAdminOrEditorRead(request, env))) return json({ error: "unauthorized" }, env, 401);
+  const username = cexUserName(new URL(request.url).searchParams.get("username"));
+  const u = username ? await cexGetUser(username, env) : null;
+  if (!u) return json({ error: "not_found" }, env, 404);
+  return json({ user: cexAdminView(u), review: u.review || [], history: u.history || [] }, env);
+}
+
+// ---------- student ----------
+async function cexUserFromToken(body, env) {
+  const tok = String(body && body.token || "");
+  if (!/^[a-f0-9]{48}$/.test(tok)) return null;
+  const username = await env.SESSIONS.get(CEX_TOK_PREFIX + tok);
+  if (!username) return null;
+  return await cexGetUser(username, env);
+}
+function cexPublicQuestions(bank, u) {
+  const byId = {}; bank.questions.forEach((q) => { byId[q.id] = q; });
+  return (u.order || []).map((id) => byId[id]).filter(Boolean).map((q) => ({ id: q.id, q: q.q, choices: q.choices, topic: q.topic }));
+}
+function cexTiming(bank, u) {
+  const lim = bank.settings.timeLimitMin;
+  if (!lim || !u.startedAt) return { limitMin: lim || 0, remainingMs: null };
+  return { limitMin: lim, remainingMs: Math.max(0, u.startedAt + lim * 60000 - Date.now()) };
+}
+async function handleCexLogin(request, env) {
+  let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const username = cexUserName(body.username);
+  const password = String(body.password || "").trim().toUpperCase();
+  if (!username || !password) return json({ error: "bad_login" }, env, 400);
+  const failKey = CEX_FAIL_PREFIX + username;
+  const fails = parseInt(await env.SESSIONS.get(failKey), 10) || 0;
+  if (fails >= 8) return json({ error: "too_many" }, env, 429);
+  const u = await cexGetUser(username, env);
+  if (!u || !cexSafeEq(String(u.password).toUpperCase(), password)) {
+    await env.SESSIONS.put(failKey, String(fails + 1), { expirationTtl: 900 });
+    return json({ error: "bad_login" }, env, 401);
+  }
+  const bank = await cexGetBank(env);
+  const token = cexToken();
+  await env.SESSIONS.put(CEX_TOK_PREFIX + token, username, { expirationTtl: 21600 });
+  return json({
+    token, username, note: u.note || "", status: u.status,
+    title: bank.settings.title, total: bank.questions.length, limitMin: bank.settings.timeLimitMin,
+    result: u.status === "done" ? { score: u.score, total: u.total, percent: u.percent, pass: u.percent >= bank.settings.passPercent, passPercent: bank.settings.passPercent, review: u.review || [] } : null,
+  }, env);
+}
+async function handleCexStart(request, env) {
+  let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const u = await cexUserFromToken(body, env);
+  if (!u) return json({ error: "bad_token" }, env, 401);
+  if (u.status === "done") return json({ error: "already_done" }, env, 409);
+  const bank = await cexGetBank(env);
+  if (!bank.questions.length) return json({ error: "no_questions" }, env, 503);
+  if (u.status !== "started") {
+    const idx = bank.settings.shuffle ? cexShuffle(bank.questions.length) : bank.questions.map((_, i) => i);
+    u.order = idx.map((i) => bank.questions[i].id);
+    u.status = "started"; u.startedAt = Date.now();
+    await cexPutUser(u, env);
+  }
+  const t = cexTiming(bank, u);
+  return json({ title: bank.settings.title, questions: cexPublicQuestions(bank, u), limitMin: t.limitMin, remainingMs: t.remainingMs }, env);
+}
+async function handleCexSubmit(request, env) {
+  let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const u = await cexUserFromToken(body, env);
+  if (!u) return json({ error: "bad_token" }, env, 401);
+  if (u.status === "done") return json({ error: "already_done" }, env, 409);
+  if (u.status !== "started") return json({ error: "not_started" }, env, 409);
+  const bank = await cexGetBank(env);
+  const answers = (body.answers && typeof body.answers === "object") ? body.answers : {};
+  const byId = {}; bank.questions.forEach((q) => { byId[q.id] = q; });
+  const ids = (u.order || []).filter((id) => byId[id]);
+  let score = 0; const review = [];
+  for (const id of ids) {
+    const q = byId[id];
+    const a = parseInt(answers[id], 10);
+    const given = a >= 0 && a < q.choices.length ? a : -1;
+    const ok = given === q.ans; if (ok) score++;
+    review.push({ q: q.q, choices: q.choices, given, correct: q.ans, ok, expl: q.expl || "", topic: q.topic || "" });
+  }
+  const lim = bank.settings.timeLimitMin;
+  u.late = !!(lim && Date.now() > u.startedAt + lim * 60000 + 20000);
+  u.status = "done"; u.finishedAt = Date.now();
+  u.score = score; u.total = ids.length; u.percent = ids.length ? Math.round((score / ids.length) * 100) : 0;
+  u.answers = answers; u.review = review;
+  await cexPutUser(u, env);
+  return json({ score, total: u.total, percent: u.percent, pass: u.percent >= bank.settings.passPercent, passPercent: bank.settings.passPercent, late: u.late, review }, env);
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -2191,6 +2437,15 @@ export default {
       if (url.pathname === "/api/quiz/leaderboard" && request.method === "GET") return withCorsOrigin(await handleQuizLeaderboard(request, env), allowOrigin);
       if (url.pathname === "/api/admin/quiz-bank/set" && request.method === "POST") return await handleAdminQuizBankSet(request, env);
       if (url.pathname === "/api/admin/quiz-bank/finalize" && request.method === "POST") return await handleAdminQuizBankFinalize(request, env);
+      if (url.pathname === "/api/cexam/login" && request.method === "POST") return withCorsOrigin(await handleCexLogin(request, env), allowOrigin);
+      if (url.pathname === "/api/cexam/start" && request.method === "POST") return withCorsOrigin(await handleCexStart(request, env), allowOrigin);
+      if (url.pathname === "/api/cexam/submit" && request.method === "POST") return withCorsOrigin(await handleCexSubmit(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/cexam/create" && request.method === "POST") return withCorsOrigin(await handleCexAdminCreate(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/cexam/list" && request.method === "GET") return withCorsOrigin(await handleCexAdminList(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/cexam/update" && request.method === "POST") return withCorsOrigin(await handleCexAdminUpdate(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/cexam/bank" && request.method === "GET") return withCorsOrigin(await handleCexAdminBankGet(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/cexam/bank/set" && request.method === "POST") return withCorsOrigin(await handleCexAdminBankSet(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/cexam/result" && request.method === "GET") return withCorsOrigin(await handleCexAdminResult(request, env), allowOrigin);
       if (url.pathname === "/api/quietvalue/results" && request.method === "GET") return await handleQuietValueResults(request, env);
       if (url.pathname === "/api/printreport/analysis" && request.method === "GET") return await handlePrintReportAnalysis(request, env);
 
