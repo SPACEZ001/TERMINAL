@@ -351,6 +351,37 @@ function isAdminKeyValid(request, env) {
   return !!env.ADMIN_USERS_KEY && key === env.ADMIN_USERS_KEY;
 }
 
+/* ---- Editor READ-ONLY access (Round AD2) ----------------------------------
+   An "Editor" has no admin key. The Editor code the visitor types on the site
+   is sent in the same X-Admin-Key header; here it is checked against the SAME
+   PBKDF2-SHA256 (100,000 rounds) salt + hash that the site keeps as
+   EDITOR_SALT / EDITOR_HASH in assets/js/part-46.js. Used ONLY by the four GET
+   handlers below (classroom / control grid / quiet value / print report
+   analysis). Every write/update endpoint still calls isAdminKeyValid(). */
+const EDITOR_SALT_B64 = "9wuFSe2cOM9QNfff+r+ZQw==";
+const EDITOR_HASH_HEX = "76cb326661cc0ea81eee18d28b0f639557c00ffa8abd14f02ad64317aff6805a";
+let editorKeyVerified = ""; // last code that passed, so PBKDF2 runs once per isolate, not per request
+
+async function isEditorKeyValid(request) {
+  const key = request.headers.get("X-Admin-Key") || "";
+  if (!key || key.length > 128) return false;
+  if (key === editorKeyVerified) return true;
+  try {
+    const salt = Uint8Array.from(atob(EDITOR_SALT_B64), (c) => c.charCodeAt(0));
+    const baseKey = await crypto.subtle.importKey("raw", new TextEncoder().encode(key), "PBKDF2", false, ["deriveBits"]);
+    const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: 100000 }, baseKey, 256);
+    const hex = Array.from(new Uint8Array(bits)).map((b) => b.toString(16).padStart(2, "0")).join("");
+    if (hex === EDITOR_HASH_HEX) { editorKeyVerified = key; return true; }
+  } catch (e) { /* fall through: not valid */ }
+  return false;
+}
+
+// Admin key (any method) OR a valid Editor code on a GET.
+async function isAdminOrEditorRead(request, env) {
+  if (isAdminKeyValid(request, env)) return true;
+  return request.method === "GET" && (await isEditorKeyValid(request));
+}
+
 /* provider: "line" (default, unchanged behavior) or "telegram" (Round R --
    a second, independent QR login, see the TELEGRAM LOGIN section below).
    Both providers share this one session code + KV row shape ({status,
@@ -1172,7 +1203,7 @@ async function putClassroomContent(content, env) {
 }
 
 async function handleClassroomContent(request, env) {
-  if (!isAdminKeyValid(request, env)) return localToolJson({ error: "unauthorized" }, 401);
+  if (!(await isAdminOrEditorRead(request, env))) return localToolJson({ error: "unauthorized" }, 401);
   const content = await getClassroomContent(env);
   return localToolJson({ content });
 }
@@ -1209,7 +1240,7 @@ async function putControlGridContent(content, env) {
 }
 
 async function handleControlGridContent(request, env) {
-  if (!isAdminKeyValid(request, env)) return localToolJson({ error: "unauthorized" }, 401);
+  if (!(await isAdminOrEditorRead(request, env))) return localToolJson({ error: "unauthorized" }, 401);
   const content = await getControlGridContent(env);
   return localToolJson({ content });
 }
@@ -1335,7 +1366,7 @@ function computeQuietValue(stocks) {
 }
 
 async function handleQuietValueResults(request, env) {
-  if (!isAdminKeyValid(request, env)) return localToolJson({ error: "unauthorized" }, 401);
+  if (!(await isAdminOrEditorRead(request, env))) return localToolJson({ error: "unauthorized" }, 401);
   let snap;
   try {
     const r = await fetch(QUIETVALUE_SNAPSHOT_URL, { cf: { cacheTtl: 300, cacheEverything: true } });
@@ -1413,7 +1444,7 @@ function computeGoldVerdict(macro, regime, flowsAsset) {
 }
 
 async function handlePrintReportAnalysis(request, env) {
-  if (!isAdminKeyValid(request, env)) return localToolJson({ error: "unauthorized" }, 401);
+  if (!(await isAdminOrEditorRead(request, env))) return localToolJson({ error: "unauthorized" }, 401);
   let snap;
   try {
     const r = await fetch(PRINTREPORT_SNAPSHOT_URL, { cf: { cacheTtl: 300, cacheEverything: true } });

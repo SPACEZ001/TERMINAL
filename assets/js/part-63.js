@@ -34,7 +34,7 @@
   function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   var UI = {
-    eb:   { en:'ADMIN ONLY', th:'เฉพาะแอดมิน' },
+    eb:   { en:'SHARE', th:'แชร์เว็บ' },
     h:    { en:'Website QR Code', th:'QR Code เว็บ' },
     lede: { en:'A scannable link straight to the homepage -- for slides, printouts, or anywhere typing a URL is awkward.',
             th:'QR Code ที่พาตรงไปหน้าแรกของเว็บ -- ใช้ในสไลด์ สิ่งพิมพ์ หรือที่ไหนก็ตามที่พิมพ์ URL ไม่สะดวก' },
@@ -64,17 +64,15 @@
      black/white. These two hex values match --qrp-accent-adjacent
      .qrp-frame's background (--qrp-qr-bg) in part-44.css so the on-screen
      frame and the actual QR pixels read as one piece. */
-  var QR_FG = '2a1240';
-  var QR_BG = 'f3ecff';
+  /* Round AD: re-tinted from purple to the site's white / deep-blue look (she found the purple unattractive). */
+  var QR_FG = '0a2a5c';
+  var QR_BG = 'ffffff';
   function qrImgUrl(url, size){
     return 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size +
       '&margin=12&color=' + QR_FG + '&bgcolor=' + QR_BG + '&data=' + encodeURIComponent(url);
   }
 
   function bodyHTML(){
-    if(window.__SPZ_TIER && window.__SPZ_TIER() !== 'full'){
-      return '<div class="qrp-locked">' + esc(T(UI.adminOnly)) + '</div>';
-    }
     var url = siteUrl();
     return (
       '<div class="qrp-card">' +
@@ -157,8 +155,8 @@
     window.__spzAddRoute({
       id:'qrcode', feat:true, after:'quietValue',
       t: UI.h,
-      d:{ en:'One big QR code pointing straight at the homepage -- for slides, printouts, or anywhere a scan beats typing a URL. Admin-only.',
-          th:'QR Code ขนาดใหญ่หนึ่งอันที่พาตรงไปหน้าแรกของเว็บ -- ใช้ในสไลด์ สิ่งพิมพ์ หรือที่ไหนก็ตามที่สแกนง่ายกว่าพิมพ์ URL เฉพาะแอดมิน' }
+      d:{ en:'One big QR code pointing straight at the homepage -- for slides, printouts, or anywhere a scan beats typing a URL. Anyone can open or download it.',
+          th:'QR Code ขนาดใหญ่หนึ่งอันที่พาตรงไปหน้าแรกของเว็บ -- ใช้ในสไลด์ สิ่งพิมพ์ หรือที่ไหนก็ตามที่สแกนง่ายกว่าพิมพ์ URL ใครก็เปิดหรือดาวน์โหลดได้' }
     });
 
     paint();

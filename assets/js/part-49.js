@@ -321,7 +321,11 @@
   var ADMIN_KEY_STORAGE = 'spz_admin_users_key';
 
   function getAdminKey(){
-    try { return sessionStorage.getItem(ADMIN_KEY_STORAGE) || ''; } catch(e){ return ''; }
+    try {
+      var k = sessionStorage.getItem(ADMIN_KEY_STORAGE) || '';
+      if(!k && window.__SPZ_TIER && window.__SPZ_TIER() === 'editor') k = sessionStorage.getItem('spz_editor_code') || '';
+      return k;
+    } catch(e){ return ''; }
   }
   function setAdminKey(k){
     try { sessionStorage.setItem(ADMIN_KEY_STORAGE, k); } catch(e){}
@@ -843,6 +847,7 @@
   }
 
   function serial(){
+    if(window.__SPZ_REPORTREF) return window.__SPZ_REPORTREF.forPrintReport(reportType);
     var d = new Date();
     return 'SPZ-' + d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0') +
       '-' + String(d.getHours()).padStart(2,'0') + String(d.getMinutes()).padStart(2,'0');
@@ -1921,7 +1926,7 @@
     // can render. She already unlocks this same key once per session for
     // the other admin tools, so in practice this rarely shows once she's
     // used any one of them.
-    if(window.__SPZ_TIER && window.__SPZ_TIER() !== 'full'){
+    if(window.__SPZ_TIER && window.__SPZ_TIER() !== 'full' && window.__SPZ_TIER() !== 'editor'){
       host.innerHTML = '<div class="qrp-locked">' + esc(T(UI.adminOnly)) + '</div>';
       return;
     }

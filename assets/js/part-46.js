@@ -117,7 +117,7 @@
      มาใส่ตรงนี้ (สร้างด้วย ADMIN_GENERATOR.html) */
   var VAULT_FULL = {"v":4,"s1":"mkdQcgClsnvkGyoBGGivQg==","s2":"9YocjP94X+KXzaDgEjSuGg==","s3":"hy15gzrBLmYFR2+cvfPPCA==","s4":"ky5slYhVrHQoXnN7itBYcg==","gates":[{"iv":"8ua/11yPR3cWSJKJEBQVhQ==","ct":"/RpQQax3SbFjk3XfRXL5DP9gJ6rQqkNt/72nKLY8b6Q="},{"iv":"JBpkOqWqQUGoNpvaBlMZhg==","ct":"nVsIciHOqQOZeoRiBpVa2MEpCDeP3npI3gG5YjD/z0M="},{"iv":"3pbyESaKph58+1raRCifUg==","ct":"N3RWhWpuNS9II+Knxy22n4sZfy75Zvpz1KFe3QMFSlk="},{"iv":"UBs3G4dOB8mAFjSRlyDRUQ==","ct":"5q+pIWVpnm52L5GAMp/4Q1L51D7ZlV4Gvypoei8dShA="},{"iv":"jqk5KZTuminXpYENqvBGPA==","ct":"s84YTT4n78TgNAZDV8fEb4sJNGEfYXZXICBRoQzik78="}],"ctrIv":"YtBFuzHAlM73O0uKkyqL2w==","iv":"ZqvmBtUJW2peCcUC","ct":"Yw9ZQfcOwU9A9jmBxghZgtyj2k5flNijg9Cnjungi45aNULy9mmGCiDf8V7jF5MhqyhdEK490/I="};
 
-  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','controlgrid','printreport','journalNew','connectedusers','announcements','quietValue','qrcode','elliott','adminnotes'];
+  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','controlgrid','printreport','journalNew','connectedusers','announcements','quietValue','adminnotes'];
   /* 'journal' (the list) and 'journalView' (a single post) are deliberately
      NOT in this list -- anyone can open them. The paywall for those two
      lives inside the module itself instead: the list/titles always render,
@@ -232,7 +232,7 @@
        admin-only page here. */
     adminElliott:{en:'Elliott Wave Classroom',th:'ห้องเรียน Elliott Wave'},
     /* Secret Notes: admin-only encrypted notebook (part-66.js). */
-    adminNotes:{en:'Secret Notes',th:'โน้ตลับ'},
+    adminNotes:{en:'Notes',th:'โน้ต'},
     /* Round U (#218): the admin-shortcut grid grew to 9 flat buttons over
        several rounds with no structure -- grouping them under three small
        section labels (reads top-to-bottom as "what you publish" -> "what
@@ -825,7 +825,12 @@
     if(paneOut) paneOut.classList.toggle('active', loggedIn);
     if(tabsEl) tabsEl.style.display = loggedIn ? 'none' : 'flex';
     var adminLinks = gate.querySelector('#cagAdminLinks');
-    if(adminLinks) adminLinks.classList.toggle('hidden', currentTier !== 'full');
+    if(adminLinks){
+      adminLinks.classList.toggle('hidden', currentTier !== 'full' && currentTier !== 'editor');
+      ['#cagBtnAddAnalysis','#cagBtnAnnouncements','#cagBtnConnectedUsers','#cagBtnCompareDownload'].forEach(function(sel){
+        var b = adminLinks.querySelector(sel); if(b) b.classList.toggle('hidden', currentTier === 'editor');
+      });
+    }
     var adminBioEl = gate.querySelector('#cagAdminBio');
     if(adminBioEl) adminBioEl.classList.toggle('hidden', currentTier !== 'full');
     if(paneMember) paneMember.classList.toggle('active', !loggedIn && activeTab === 'member');
@@ -842,7 +847,7 @@
     // (currentTier stays 'basic'), showing it next to "Log out of LINE"
     // would be a confusing second button that does nothing.
     var siteLogoutBtn = gate.querySelector('#cagBtnLogout');
-    if(siteLogoutBtn) siteLogoutBtn.classList.toggle('hidden', currentTier !== 'full' && currentTier !== 'member');
+    if(siteLogoutBtn) siteLogoutBtn.classList.toggle('hidden', currentTier !== 'full' && currentTier !== 'member' && currentTier !== 'editor');
 
     // Per the LINE tab's own styling comment above (.cag-tier.line), it is
     // intentionally not a real tier tab and never takes the .on state that
@@ -964,7 +969,7 @@
   }
 
   function logout(){
-    try { sessionStorage.removeItem('spacez.auth'); } catch(e){}
+    try { sessionStorage.removeItem('spacez.auth'); sessionStorage.removeItem(EDITOR_CODE_KEY); } catch(e){}
     applyTier('basic');
   }
 
@@ -989,15 +994,45 @@
      this string for the real code whenever she's ready; nothing else needs
      to change. Shares the same attempts/lockUntil lockout as Admin login,
      so repeated wrong guesses here lock out both forms together. */
-  var EDITOR_ACCESS_CODE = '>51FP_hao/j+Wgg)-,dcX*FXFkj$z]ube{>z#3vmY7E,&8F34=jIGIuQj}$5&pFkdZvtnZj$v0MD6B66&Bn=^f5$m)YRv2AQSI]';
+  /* Round AD: the Editor code is no longer shipped in plain text (this repo
+     is public, so anyone could read it from the source). Only a salted
+     PBKDF2-SHA256 (100,000 rounds) fingerprint is kept here; the Worker keeps
+     the same fingerprint so it can let an Editor READ the classroom / control
+     grid / quiet-value content. The code a visitor types is checked against
+     it and, on success, kept in sessionStorage (this tab only) so read-only
+     pages can open the Editor copy of the notes vault without asking again. */
+  var EDITOR_SALT = '9wuFSe2cOM9QNfff+r+ZQw==';
+  var EDITOR_HASH = '76cb326661cc0ea81eee18d28b0f639557c00ffa8abd14f02ad64317aff6805a';
+  var EDITOR_CODE_KEY = 'spz_editor_code';
+  function editorCodeMatches(pw){
+    try {
+      var sb = atob(EDITOR_SALT), salt = new Uint8Array(sb.length);
+      for(var i = 0; i < sb.length; i++) salt[i] = sb.charCodeAt(i);
+      var c = window.crypto.subtle;
+      return c.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']).then(function(k){
+        return c.deriveBits({ name:'PBKDF2', hash:'SHA-256', salt:salt, iterations:100000 }, k, 256);
+      }).then(function(bits){
+        var h = Array.prototype.map.call(new Uint8Array(bits), function(b){ return ('0' + b.toString(16)).slice(-2); }).join('');
+        return h === EDITOR_HASH;
+      }).catch(function(){ return false; });
+    } catch(e){ return Promise.resolve(false); }
+  }
   function tryEditor(){
     if(lockedNow()){ showErr(errEditor, Tt(TXT.errLock) + Math.ceil((lockUntil - Date.now()) / 1000) + 's'); return; }
     var pw = editorInput.value.trim();
     if(!pw){ showErr(errEditor, Tt(TXT.errEmpty)); return; }
-    if(pw !== EDITOR_ACCESS_CODE){ registerFail(); showErr(errEditor, Tt(TXT.errBad)); return; }
-    clearErr(errEditor);
-    editorInput.value = '';
-    finishUnlock('editor');
+    btnEditor.disabled = true;
+    editorCodeMatches(pw).then(function(ok){
+      btnEditor.disabled = false;
+      if(!ok){ registerFail(); showErr(errEditor, Tt(TXT.errBad)); return; }
+      clearErr(errEditor);
+      editorInput.value = '';
+      try { sessionStorage.setItem(EDITOR_CODE_KEY, pw); } catch(e){}
+      finishUnlock('editor');
+      /* Round AD: an Editor lands straight on the Asset Analysis Log -- no
+         LINE / Telegram link needed to read it (see isUnlocked() in part-57). */
+      location.hash = '#/journal';
+    });
   }
 
   /* ---------------- tier gating on the live site ---------------- */
@@ -1032,7 +1067,7 @@
      `window.__SPZ_TIER() !== 'full'` check (see part-50/51/57/63) -- which
      'editor' always fails, same as 'member' or 'basic' -- so Editor lands
      on the same "Admins only." placeholder a logged-out visitor would. */
-  var ADMIN_ONLY_ROUTES = ['controlgrid','printreport','journalNew','connectedusers','announcements','quietValue','qrcode','elliott','adminnotes'];
+  var ADMIN_ONLY_ROUTES = ['journalNew','connectedusers','announcements'];
   var EDITOR_ROUTES = LOCKED_ROUTES.filter(function(id){ return ADMIN_ONLY_ROUTES.indexOf(id) === -1; });
   /* A LINE-linked visitor gets the same MEMBER_ROUTES access as a Member-code
      login, without also having to paste that code in -- a stand-in for a
