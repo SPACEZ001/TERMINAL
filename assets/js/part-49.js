@@ -23,12 +23,12 @@
     noMatch:{en:'No tickers match your search.',th:'ไม่พบหุ้นที่ตรงกับคำค้นหา'},
     selAll:{en:'Select all',th:'เลือกทั้งหมด'},
     clearAll:{en:'Clear',th:'ล้างที่เลือก'},
-    printBtn:{en:'🖶 Print Report',th:'🖶 พิมพ์รายงาน'},
+    printBtn:{en:'Print Report',th:'พิมพ์รายงาน'},
     /* Round S: reuses the same html2canvas -> Cloudinary -> LINE broadcast
        pipeline that Institutional Briefing uses (part-57.js), extracted
        there as window.__SPZ_sendReportImageToLine so it works against this
        page's own [data-pr="sheet"] preview instead of that page's overlay. */
-    lineBtn:{en:'📱 Send to LINE',th:'📱 ส่งเข้า LINE'},
+    lineBtn:{en:'Send to LINE',th:'ส่งเข้า LINE'},
     hint:{en:'Press print, then choose "Save as PDF" (or your printer) in the dialog that opens.',
           th:'กดพิมพ์ แล้วเลือก "บันทึกเป็น PDF" (หรือเครื่องพิมพ์ของคุณ) ในหน้าต่างที่เปิดขึ้นมา'},
     brand:{en:'SPACEZ TERMINAL',th:'SPACEZ TERMINAL'},
@@ -95,8 +95,8 @@
     goldTitle:{en:'Gold Market Analysis Report',th:'รายงานวิเคราะห์ตลาดทองคำ'},
     goldSub:{en:'Internal / Admin Report — Not Investment Advice',th:'รายงานภายใน / เฉพาะแอดมิน — ไม่ใช่คำแนะนำการลงทุน'},
     goldPriceH:{en:'Gold — Price & Momentum',th:'ทองคำ — ราคาและโมเมนตัม'},
-    goldPriceNote:{en:'Tracked via the SPDR Gold Shares ETF (GLD), the same live feed already used elsewhere on this site — not a separate data source.',
-                   th:'ติดตามผ่านกองทุน SPDR Gold Shares (GLD) ใช้ชุดข้อมูลสดชุดเดียวกับที่เว็บนี้ใช้อยู่แล้วในหน้าอื่น ไม่ได้ดึงจากแหล่งใหม่'},
+    goldPriceNote:{en:'The headline price is gold futures (GC=F), quoted in US dollars per troy ounce — it tracks the spot gold price you see on charts. The momentum figures below (RSI, moving averages, 52-week range) come from the SPDR Gold Shares ETF (GLD), which is priced at roughly one-tenth of an ounce per share, so its dollar price is far lower.',
+                   th:'ราคาหลักคือทองคำฟิวเจอร์ส (GC=F) หน่วยดอลลาร์ต่อทรอยออนซ์ ซึ่งใกล้เคียงราคาทองสปอตที่เห็นตามกราฟ ส่วนตัวชี้วัดโมเมนตัมด้านล่าง (RSI, เส้นค่าเฉลี่ย, กรอบ 52 สัปดาห์) มาจากกองทุน SPDR Gold Shares (GLD) ซึ่งหนึ่งหน่วยมีทองประมาณหนึ่งในสิบออนซ์ ราคาเป็นดอลลาร์จึงต่ำกว่ามาก'},
     goldMacroH:{en:'Macro Backdrop — Rates & the Dollar',th:'ภาพเศรษฐกิจมหภาค — ดอกเบี้ยและดอลลาร์'},
     goldMacroNote:{en:'Gold pays no coupon, so it competes directly with yield-bearing assets and the dollar. These four series are the ones that matter most.',
                    th:'ทองคำไม่มีดอกเบี้ยจ่าย จึงแข่งขันโดยตรงกับสินทรัพย์ที่มีผลตอบแทนและกับดอลลาร์ สี่ตัวชี้วัดนี้คือตัวที่สำคัญที่สุด'},
@@ -189,7 +189,7 @@
     ideaTitle:{en:'Alpha Selection Report',th:'รายงานคัดสรรหุ้นอัลฟ่า'},
     ideaSub:{en:'Long-Term Picks Built From This Site’s Own Live Signals — Not Investment Advice',
              th:'หุ้นสำหรับถือระยะยาว สร้างจากสัญญาณสดของเว็บนี้เอง — ไม่ใช่คำแนะนำการลงทุน'},
-    ideaTopH:{en:'Today’s Top-Ranked Long-Term Pick',th:'หุ้นเด่นอันดับ 1 สำหรับถือระยะยาววันนี้'},
+    ideaTopH:{en:'Top-Ranked Long-Term Pick',th:'หุ้นเด่นอันดับ 1 สำหรับถือระยะยาว'},
     ideaTopLede:{en:'The highest-scoring name right now from this site’s own Stock Picks ranking model — momentum, trend, RSI and sector flow, equally weighted. A rank, not a guarantee: it can change tomorrow as the inputs move, and every name here can still lose money.',
                  th:'หุ้นที่ได้คะแนนสูงสุดตอนนี้จากโมเดลจัดอันดับ Stock Picks ของเว็บนี้เอง ให้น้ำหนักเท่ากันกับโมเมนตัม เทรนด์ RSI และกระแสเงินกลุ่มอุตสาหกรรม เป็นแค่อันดับ ไม่ใช่การการันตี พรุ่งนี้อันดับเปลี่ยนได้ตามข้อมูลที่เปลี่ยนไป และหุ้นทุกตัวในรายงานนี้ยังขาดทุนได้เสมอ'},
     ideaWhyLbl:{en:'Why it ranks here',th:'เหตุผลที่ติดอันดับ'},
@@ -380,7 +380,7 @@
 
   function analysisKeyGateHTML(){
     return '<div class="ewv-keygate">' +
-      '<div class="ewv-keygate-icon">🔑</div>' +
+      '<div class="ewv-keygate-icon">' + PR_ICO.key + '</div>' +
       '<p class="ewv-keygate-lede">' + esc(T(UI.keyLede)) + '</p>' +
       '<input type="password" class="ewv-key-input" data-pr-key="input" autocomplete="off" spellcheck="false" placeholder="' + esc(T(UI.keyPh)) + '">' +
       '<button type="button" class="ewv-key-btn" data-pr-key="submit">' + esc(T(UI.keySubmit)) + '</button>' +
@@ -1163,6 +1163,16 @@
      PDF captures the real chart rather than a permanent placeholder. A
      fetch that ultimately fails renders a plain "unavailable" line --
      never a fabricated chart. ---- */
+
+  var PR_SVG = function(d){ return '<svg class="pr-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>'; };
+  var PR_ICO = {
+    print: PR_SVG('<path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="9" rx="2"/><path d="M7 14h10v7H7z"/>'),
+    line:  PR_SVG('<path d="M21 11.5c0 4.1-4 7.5-9 7.5-.9 0-1.8-.1-2.6-.3L5 21l1.2-3.6C4.2 16.1 3 13.9 3 11.5 3 7.4 7 4 12 4s9 3.4 9 7.5z"/><path d="M8.5 11.5h7"/>'),
+    key:   PR_SVG('<circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L20 3"/><path d="M16 7l3 3"/><path d="M14 9l2 2"/>'),
+    plus:  PR_SVG('<path d="M12 5v14M5 12h14"/>'),
+    minus: PR_SVG('<path d="M5 12h14"/>'),
+    fit:   PR_SVG('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>')
+  };
   var histCache = {};   /* sym -> {pending:true} | {series:{dates,vals}} | {failed:true} */
 
   function rowsToSeries(rows, lookback){
@@ -1327,7 +1337,12 @@
         '<div class="pr-flow-val ' + (v >= 0 ? 'pr-up' : 'pr-down') + '">' + fmtSigned(v, 1) + '%</div></div>';
     }).join('');
     var cells = [
-      [T({en:'Price (GLD)',th:'ราคา (GLD)'}), '$' + fmtPx(g.price)],
+      [T({en:'Gold futures (USD/oz)',th:'ทองคำฟิวเจอร์ส (ดอลลาร์/ออนซ์)'}), (function(){
+        var h = histCache['GC=F'];
+        if(h && h.series && h.series.vals.length) return '$' + fmtPx(h.series.vals[h.series.vals.length - 1]);
+        getHistoryCached('GC=F'); return '…';
+      })()],
+      [T({en:'GLD ETF (per share)',th:'กองทุน GLD (ต่อหน่วย)'}), '$' + fmtPx(g.price)],
       ['RSI', isNum(g.rsi) ? g.rsi.toFixed(0) : '—'],
       [T({en:'vs 50D MA',th:'เทียบ MA 50 วัน'}), isNum(g.vs_ma50) ? fmtSigned(g.vs_ma50, 1) + '%' : '—'],
       [T({en:'vs 200D MA',th:'เทียบ MA 200 วัน'}), isNum(g.vs_ma200) ? fmtSigned(g.vs_ma200, 1) + '%' : '—'],
@@ -2045,6 +2060,13 @@
     clear:{en:'Clear form',th:'ล้างฟอร์ม'},
     addRound:{en:'+ Add round',th:'+ เพิ่มรอบ'},
     lv:[{min:85,en:'Excellent',th:'ดีเยี่ยม'},{min:70,en:'Good',th:'ดี'},{min:50,en:'Developing',th:'กำลังพัฒนา'},{min:0,en:'Needs support',th:'ควรเสริม'}],
+    dept:{en:'Student record', th:'บันทึกผลนักเรียน'},
+    best:{en:'Best', th:'สูงสุด'}, otherShort:{en:'Other', th:'อื่นๆ'}, attend:{en:'Attendance', th:'การเข้าเรียน'}, grade:{en:'Grade', th:'เกรด'},
+    progress:{en:'Progress', th:'พัฒนาการ'}, trend:{en:'Score trend by round (%)', th:'แนวโน้มคะแนนแต่ละรอบ (%)'}, radar:{en:'Elliott Wave skill profile (numbers = items 1-8)', th:'โปรไฟล์ทักษะ Elliott Wave (เลข = ข้อ 1-8)'},
+    rubricT:{en:'Scoring guide', th:'เกณฑ์การให้คะแนน'},
+    rub:[{en:'Not yet shown',th:'ยังไม่แสดงผล'},{en:'Needs a lot of help',th:'ต้องช่วยมาก'},{en:'Partly understands',th:'เข้าใจบางส่วน'},{en:'Understands, some errors',th:'เข้าใจ มีพลาดบ้าง'},{en:'Solid, independent',th:'ทำได้ดี ทำเองได้'},{en:'Excellent, can teach others',th:'ยอดเยี่ยม สอนคนอื่นได้'}],
+    goal:{en:'Goal for next period', th:'เป้าหมายรอบหน้า'}, nextExam:{en:'Next exam date', th:'วันสอบครั้งถัดไป'}, homework:{en:'Homework / follow-up', th:'การบ้าน / สิ่งที่ต้องตามต่อ'},
+    attended:{en:'Sessions attended', th:'จำนวนครั้งที่เข้าเรียน'}, sessions:{en:'Total sessions', th:'จำนวนครั้งทั้งหมด'},
     hint:{en:'Fill in the fields on the left — the sheet updates as you type. Blank fields print as lines so you can write by hand.',th:'กรอกข้อมูลด้านซ้าย ใบประเมินด้านขวาจะเปลี่ยนตามทันที ช่องที่เว้นว่างจะพิมพ์เป็นเส้นให้เขียนด้วยปากกาได้'}
   };
   var EV_EW = [
@@ -2069,7 +2091,7 @@
     var d = new Date();
     return { name:'', cls:'', level:'', by:'Noraset Boikaw',
       date: d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'),
-      rounds:[{},{},{},{}], sc:{}, strengths:'', improve:'', covered:'', comment:'' };
+      rounds:[{},{},{},{}], sc:{}, strengths:'', improve:'', covered:'', comment:'', goal:'', homework:'', nextExam:'', attended:'', sessions:'' };
   }
   var evData = evBlank();
 
@@ -2094,6 +2116,11 @@
     });
     return n ? tot / n / 5 * 100 : null;
   }
+  function evAvgOf(list){
+    var tot = 0, n = 0;
+    list.forEach(function(it){ var v = evNum(evData.sc[it.k]); if(v !== null){ tot += Math.max(0, Math.min(5, v)); n++; } });
+    return n ? tot / n / 5 * 100 : null;
+  }
   function evBlankLine(txt, lines){
     if(txt && txt.trim()) return '<div class="pr-ev-text">' + esc(txt.trim()).replace(/\n/g, '<br>') + '</div>';
     var h = '<div class="pr-ev-lines">';
@@ -2103,54 +2130,115 @@
   function evField(lbl, val, wide){
     return '<div class="pr-ev-f' + (wide ? ' w' : '') + '"><span>' + esc(T(lbl)) + '</span><b>' + (val ? esc(val) : '&nbsp;') + '</b></div>';
   }
+  function evBar(pct){
+    return '<span class="pr-ev-bar"><i style="width:' + (pct === null ? 0 : Math.max(0, Math.min(100, pct)).toFixed(0)) + '%"></i></span>';
+  }
+  function evSkillRows(list, numbered){
+    return '<table class="pr-ev-tbl">' + list.map(function(it, ix){
+      var v = evNum(evData.sc[it.k]);
+      if(v !== null) v = Math.max(0, Math.min(5, Math.round(v)));
+      return '<tr><td>' + (numbered ? '<b class="pr-ev-no">' + (ix + 1) + '</b> ' : '') + esc(T(it)) + '</td><td class="pr-ev-sc">' + evBoxes(v) + '</td><td class="pr-ev-n">' + (v !== null ? v + '/5' : '&nbsp;&nbsp;&nbsp;/5') + '</td></tr>';
+    }).join('') + '</table>';
+  }
+  function evRadar(){
+    var n = EV_EW.length, cx = 130, cy = 120, R = 86, i, k;
+    function pt(idx, frac){ var a = -Math.PI / 2 + idx * 2 * Math.PI / n; return [cx + Math.cos(a) * R * frac, cy + Math.sin(a) * R * frac]; }
+    var svg = '<svg viewBox="0 0 260 240" class="pr-ev-radar">';
+    for(k = 1; k <= 5; k++){
+      var ring = []; for(i = 0; i < n; i++){ var q = pt(i, k / 5); ring.push(q[0].toFixed(1) + ',' + q[1].toFixed(1)); }
+      svg += '<polygon points="' + ring.join(' ') + '" fill="none" stroke="#c9ced6" stroke-width="' + (k === 5 ? 1.2 : .7) + '"/>';
+    }
+    for(i = 0; i < n; i++){ var e = pt(i, 1), l = pt(i, 1.14);
+      svg += '<line x1="' + cx + '" y1="' + cy + '" x2="' + e[0].toFixed(1) + '" y2="' + e[1].toFixed(1) + '" stroke="#c9ced6" stroke-width=".7"/>' +
+        '<text x="' + l[0].toFixed(1) + '" y="' + (l[1] + 3).toFixed(1) + '" text-anchor="middle" font-size="9" font-weight="700" fill="#555">' + (i + 1) + '</text>'; }
+    var vals = EV_EW.map(function(it){ var v = evNum(evData.sc[it.k]); return v === null ? null : Math.max(0, Math.min(5, v)); });
+    if(vals.filter(function(v){ return v !== null; }).length >= 3){
+      var poly = vals.map(function(v, idx){ var q = pt(idx, (v || 0) / 5); return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' ');
+      svg += '<polygon points="' + poly + '" fill="rgba(10,42,92,.22)" stroke="#0a2a5c" stroke-width="1.8" stroke-linejoin="round"/>';
+    }
+    return svg + '</svg>';
+  }
+  function evTrend(pcts){
+    var w = 300, h = 130, pl = 26, pb = 16, pt = 8, pr = 8, i;
+    var svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" class="pr-ev-trend">';
+    [0, 50, 100].forEach(function(g){
+      var y = pt + (1 - g / 100) * (h - pt - pb);
+      svg += '<line x1="' + pl + '" y1="' + y + '" x2="' + (w - pr) + '" y2="' + y + '" stroke="#d3d7de" stroke-width=".8"' + (g === 50 ? ' stroke-dasharray="3 3"' : '') + '/>' +
+        '<text x="' + (pl - 4) + '" y="' + (y + 3) + '" text-anchor="end" font-size="8" fill="#777">' + g + '</text>';
+    });
+    var pts = [];
+    pcts.forEach(function(v, idx){ if(v !== null){ pts.push([pl + (pcts.length > 1 ? idx / (pcts.length - 1) : .5) * (w - pl - pr), pt + (1 - Math.max(0, Math.min(100, v)) / 100) * (h - pt - pb), v]); } });
+    if(pts.length > 1) svg += '<polyline points="' + pts.map(function(q){ return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' ') + '" fill="none" stroke="#0a2a5c" stroke-width="1.8" stroke-linejoin="round"/>';
+    pts.forEach(function(q){ svg += '<circle cx="' + q[0].toFixed(1) + '" cy="' + q[1].toFixed(1) + '" r="3.4" fill="#0a2a5c"/><text x="' + q[0].toFixed(1) + '" y="' + (q[1] - 7).toFixed(1) + '" text-anchor="middle" font-size="8.5" font-weight="700" fill="#161616">' + q[2].toFixed(0) + '</text>'; });
+    pcts.forEach(function(v, idx){ svg += '<text x="' + (pl + (pcts.length > 1 ? idx / (pcts.length - 1) : .5) * (w - pl - pr)).toFixed(1) + '" y="' + (h - 3) + '" text-anchor="middle" font-size="8" fill="#777">' + (idx + 1) + '</text>'; });
+    return svg + '</svg>';
+  }
+  function evGrade(p){
+    if(p === null) return '';
+    return p >= 85 ? 'A' : p >= 78 ? 'B+' : p >= 70 ? 'B' : p >= 60 ? 'C' : p >= 50 ? 'D' : 'F';
+  }
   function evaluationReportHTML(){
-    var d = evData, pcts = [], rows = '';
+    var d = evData, pcts = [], rows = '', valid = [];
     for(var i = 0; i < d.rounds.length; i++){
       var r = d.rounds[i] || {}, sc = evNum(r.score), mx = evNum(r.max);
       var pct = (sc !== null && mx) ? sc / mx * 100 : null;
-      if(pct !== null) pcts.push(pct);
+      pcts.push(pct); if(pct !== null) valid.push(pct);
       rows += '<tr><td class="c">' + (i + 1) + '</td><td>' + (r.name ? esc(r.name) : '&nbsp;') + '</td><td class="c">' + (r.date ? esc(r.date) : '') + '</td>' +
         '<td class="c">' + (sc !== null ? sc : '') + '</td><td class="c">' + (mx !== null ? mx : '') + '</td>' +
-        '<td class="c">' + (pct !== null ? pct.toFixed(0) + '%' : '') + '</td></tr>';
+        '<td class="pr-ev-pc">' + (pct !== null ? evBar(pct) + '<b>' + pct.toFixed(0) + '%</b>' : evBar(null)) + '</td></tr>';
     }
-    var exAvg = pcts.length ? pcts.reduce(function(a, b){ return a + b; }, 0) / pcts.length : null;
-    var skAvg = evAvgSkill();
+    var exAvg = valid.length ? valid.reduce(function(a, b){ return a + b; }, 0) / valid.length : null;
+    var best = valid.length ? Math.max.apply(null, valid) : null;
+    var trendTxt = '';
+    if(valid.length >= 2){ var dl = valid[valid.length - 1] - valid[0]; trendTxt = (dl >= 0 ? '+' : '') + dl.toFixed(0) + ' pts'; }
+    var ewAvg = evAvgOf(EV_EW), otAvg = evAvgOf(EV_OTHER), skAvg = evAvgSkill();
     var both = [exAvg, skAvg].filter(function(x){ return x !== null; });
     var ov = both.length ? both.reduce(function(a, b){ return a + b; }, 0) / both.length : null;
     var lvl = ''; if(ov !== null){ for(var j = 0; j < EV_TXT.lv.length; j++){ if(ov >= EV_TXT.lv[j].min){ lvl = T(EV_TXT.lv[j]); break; } } }
+    var att = null, aA = evNum(d.attended), aT = evNum(d.sessions); if(aA !== null && aT) att = aA / aT * 100;
     var lvOpt = '';
     EV_TXT.lvOpts.forEach(function(o){ lvOpt += '<span class="pr-ev-chk"><i class="' + (d.level === o.en ? 'on' : '') + '"></i>' + esc(T(o)) + '</span>'; });
-    var now = new Date();
+    function stat(lbl, val, sub){ return '<div class="pr-ev-stat"><span>' + esc(T(lbl)) + '</span><b>' + (val === null || val === '' ? '—' : val) + '</b>' + (sub ? '<em>' + sub + '</em>' : '') + '</div>'; }
+    var rub = [0, 1, 2, 3, 4, 5].map(function(n){ return '<div><b>' + n + '</b><span>' + esc(T(EV_TXT.rub[n])) + '</span></div>'; }).join('');
+    var ewList = EV_EW.map(function(it, idx){ return '<tr><td class="pr-ev-no">' + (idx + 1) + '</td><td>' + esc(T(it)) + '</td></tr>'; }).join('');
     return '<div class="pr-sheet pr-ev" data-style="' + esc(styleId) + '">' +
-      '<div class="pr-head">' +
-        '<img class="pr-logo" src="' + PR_LOGO + '" alt="">' +
-        '<div class="pr-brand">' + esc(T(UI.brand)) + '</div>' +
-        '<div class="pr-title">' + esc(T(EV_TXT.title)) + '</div>' +
-        '<div class="pr-sub">' + esc(T(EV_TXT.sub)) + '</div>' +
-        '<div class="pr-meta"><span>' + esc(T(UI.serial)) + ': ' + esc(serial()) + '</span></div>' +
+      '<div class="pr-ev-top">' +
+        '<div class="pr-ev-brand"><img class="pr-ev-logo" src="' + PR_LOGO + '" alt=""><div><b>SPACEZ TERMINAL</b><span>' + esc(T(EV_TXT.dept)) + '</span></div></div>' +
+        '<div class="pr-ev-doc"><div class="pr-ev-doc-t">' + esc(T(EV_TXT.title)) + '</div>' +
+          '<div class="pr-meta"><span>' + esc(T(UI.serial)) + ': ' + esc(serial()) + '</span></div></div>' +
       '</div>' +
       '<div class="pr-ev-info">' +
         evField(EV_TXT.name, d.name, true) + evField(EV_TXT.cls, d.cls) + evField(EV_TXT.date, d.date) + evField(EV_TXT.by, d.by) +
         '<div class="pr-ev-f"><span>' + esc(T(EV_TXT.level)) + '</span><div class="pr-ev-lv">' + lvOpt + '</div></div>' +
       '</div>' +
-      '<div class="pr-sec-h">' + esc(T(EV_TXT.rounds)) + '</div>' +
-      '<table class="pr-ev-rounds"><thead><tr><th>#</th><th>' + esc(T(EV_TXT.rName)) + '</th><th>' + esc(T(EV_TXT.rDate)) + '</th><th>' + esc(T(EV_TXT.rScore)) + '</th><th>' + esc(T(EV_TXT.rMax)) + '</th><th>%</th></tr></thead><tbody>' + rows +
-        '</tbody><tfoot><tr><td colspan="5" style="text-align:right;">' + esc(T(EV_TXT.rAvg)) + '</td><td class="c"><b>' + (exAvg !== null ? exAvg.toFixed(0) + '%' : '') + '</b></td></tr></tfoot></table>' +
-      '<div class="pr-sec-h">' + esc(T(EV_TXT.ew)) + '</div>' +
-      '<div class="pr-hint-s">' + esc(T(EV_TXT.scale)) + '</div>' + evSkillTable(EV_EW) +
-      '<div class="pr-sec-h">' + esc(T(EV_TXT.other)) + '</div>' + evSkillTable(EV_OTHER) +
-      '<div class="pr-sec-h">' + esc(T(EV_TXT.summary)) + '</div>' +
-      '<div class="pr-regime-strip">' +
-        '<div class="pr-regime-cell"><div class="pr-regime-lbl">' + esc(T(EV_TXT.examAvg)) + '</div><div class="pr-regime-val">' + (exAvg !== null ? exAvg.toFixed(0) + '%' : '—') + '</div></div>' +
-        '<div class="pr-regime-cell"><div class="pr-regime-lbl">' + esc(T(EV_TXT.skillAvg)) + '</div><div class="pr-regime-val">' + (skAvg !== null ? skAvg.toFixed(0) + '%' : '—') + '</div></div>' +
-        '<div class="pr-regime-cell"><div class="pr-regime-lbl">' + esc(T(EV_TXT.overall)) + '</div><div class="pr-regime-val">' + (lvl ? esc(lvl) : '—') + '</div></div>' +
+      '<div class="pr-ev-stats">' +
+        stat(EV_TXT.examAvg, exAvg !== null ? exAvg.toFixed(0) + '%' : null, best !== null ? esc(T(EV_TXT.best)) + ' ' + best.toFixed(0) + '%' : '') +
+        stat(EV_TXT.skillAvg, skAvg !== null ? skAvg.toFixed(0) + '%' : null, ewAvg !== null || otAvg !== null ? 'EW ' + (ewAvg !== null ? ewAvg.toFixed(0) + '%' : '—') + ' · ' + esc(T(EV_TXT.otherShort)) + ' ' + (otAvg !== null ? otAvg.toFixed(0) + '%' : '—') : '') +
+        stat(EV_TXT.attend, att !== null ? att.toFixed(0) + '%' : null, aA !== null && aT ? aA + ' / ' + aT : '') +
+        '<div class="pr-ev-stat pr-ev-grade"><span>' + esc(T(EV_TXT.grade)) + '</span><b>' + (ov !== null ? evGrade(ov) : '—') + '</b><em>' + (lvl ? esc(lvl) : '') + '</em></div>' +
       '</div>' +
+      '<div class="pr-sec-h">' + esc(T(EV_TXT.rounds)) + (trendTxt ? ' <small class="pr-ev-trendtag">' + esc(T(EV_TXT.progress)) + ' ' + trendTxt + '</small>' : '') + '</div>' +
+      '<div class="pr-ev-split">' +
+        '<table class="pr-ev-rounds"><thead><tr><th>#</th><th>' + esc(T(EV_TXT.rName)) + '</th><th>' + esc(T(EV_TXT.rDate)) + '</th><th>' + esc(T(EV_TXT.rScore)) + '</th><th>' + esc(T(EV_TXT.rMax)) + '</th><th>%</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+        '<div class="pr-ev-chart"><div class="pr-ev-chart-t">' + esc(T(EV_TXT.trend)) + '</div>' + evTrend(pcts) + '</div>' +
+      '</div>' +
+      '<div class="pr-sec-h">' + esc(T(EV_TXT.ew)) + '</div>' +
+      '<div class="pr-hint-s">' + esc(T(EV_TXT.scale)) + '</div>' +
+      '<div class="pr-ev-split pr-ev-skills">' +
+        '<div>' + evSkillRows(EV_EW, true) + '</div>' +
+        '<div class="pr-ev-chart"><div class="pr-ev-chart-t">' + esc(T(EV_TXT.radar)) + '</div>' + evRadar() + '</div>' +
+      '</div>' +
+      '<div class="pr-sec-h">' + esc(T(EV_TXT.other)) + '</div>' + evSkillRows(EV_OTHER) +
+      '<div class="pr-ev-rubric"><div class="pr-ev-rub-t">' + esc(T(EV_TXT.rubricT)) + '</div><div class="pr-ev-rub">' + rub + '</div></div>' +
+      '<div class="pr-sec-h">' + esc(T(EV_TXT.summary)) + '</div>' +
       '<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.strengths)) + '</div>' + evBlankLine(d.strengths, 3) + '</div>' +
         '<div><div class="pr-ev-h">' + esc(T(EV_TXT.improve)) + '</div>' + evBlankLine(d.improve, 3) + '</div></div>' +
-      '<div class="pr-ev-h">' + esc(T(EV_TXT.covered)) + '</div>' + evBlankLine(d.covered, 2) +
-      '<div class="pr-ev-h">' + esc(T(EV_TXT.comment)) + '</div>' + evBlankLine(d.comment, 3) +
+      '<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.covered)) + '</div>' + evBlankLine(d.covered, 3) + '</div>' +
+        '<div><div class="pr-ev-h">' + esc(T(EV_TXT.goal)) + '</div>' + evBlankLine(d.goal, 3) + '</div></div>' +
+      '<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.nextExam)) + '</div><div class="pr-ev-f"><b>' + (d.nextExam ? esc(d.nextExam) : '&nbsp;') + '</b></div></div>' +
+        '<div><div class="pr-ev-h">' + esc(T(EV_TXT.homework)) + '</div>' + evBlankLine(d.homework, 1) + '</div></div>' +
+      '<div class="pr-ev-h">' + esc(T(EV_TXT.comment)) + '</div>' + evBlankLine(d.comment, 4) +
       '<div class="pr-ev-sign"><div></div><span>' + esc(T(EV_TXT.sign)) + '</span></div>' +
-      '<div class="pr-foot">' + esc(T(EV_TXT.sub)) + ' · ' + esc(now.toLocaleDateString(L() === 'th' ? 'th-TH' : 'en-US')) + '</div>' +
     '</div>';
   }
   function evFormHTML(){
@@ -2161,6 +2249,7 @@
     var h = inp('name', EV_TXT.name) + '<div class="pr-ev-grid2">' + inp('cls', EV_TXT.cls) + inp('date', EV_TXT.date, 'date') + '</div>' + inp('by', EV_TXT.by);
     h += '<div class="pr-ev-in"><span>' + esc(T(EV_TXT.level)) + '</span><div class="pr-ann-chips">' +
       EV_TXT.lvOpts.map(function(o){ return '<button type="button" class="pr-ann-chip' + (d.level === o.en ? ' on' : '') + '" data-ev-level="' + esc(o.en) + '">' + esc(T(o)) + '</button>'; }).join('') + '</div></div>';
+    h += '<div class="pr-ev-grid2">' + inp('attended', EV_TXT.attended, 'number') + inp('sessions', EV_TXT.sessions, 'number') + '</div>';
     h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.rounds)) + '</div><div class="pr-ev-rows">';
     d.rounds.forEach(function(r, i){
       h += '<div class="pr-ev-rrow"><b>' + (i + 1) + '</b>' +
@@ -2176,7 +2265,7 @@
     }
     h += skills(EV_EW, EV_TXT.ew) + skills(EV_OTHER, EV_TXT.other);
     function ta(k, lbl){ return '<label class="pr-ev-in"><span>' + esc(T(lbl)) + '</span><textarea rows="3" data-ev="' + k + '">' + esc(d[k] || '') + '</textarea></label>'; }
-    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.summary)) + '</div>' + ta('strengths', EV_TXT.strengths) + ta('improve', EV_TXT.improve) + ta('covered', EV_TXT.covered) + ta('comment', EV_TXT.comment);
+    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.summary)) + '</div>' + ta('strengths', EV_TXT.strengths) + ta('improve', EV_TXT.improve) + ta('covered', EV_TXT.covered) + ta('goal', EV_TXT.goal) + inp('nextExam', EV_TXT.nextExam, 'date') + ta('homework', EV_TXT.homework) + ta('comment', EV_TXT.comment);
     h += '<button type="button" class="pr-mini" data-ev-clear="1" style="margin-top:8px;">' + esc(T(EV_TXT.clear)) + '</button>';
     return h;
   }
@@ -2200,6 +2289,15 @@
     if(t.closest('[data-ev-clear]')){ evData = evBlank(); evMountForm(); renderReport(); return true; }
     return false;
   }
+
+  var prZoom = 1;
+  function applyZoom(){
+    var host = sec && sec.querySelector('[data-pr="sheet"]');
+    if(host) host.style.setProperty('--prz', String(prZoom));
+    var v = sec && sec.querySelector('[data-pr="zoomVal"]');
+    if(v) v.textContent = Math.round(prZoom * 100) + '%';
+  }
+  function setZoom(z){ prZoom = Math.max(0.4, Math.min(1.6, Math.round(z * 100) / 100)); applyZoom(); }
 
   function renderReport(){
     var host = sec && sec.querySelector('[data-pr="sheet"]');
@@ -2283,6 +2381,7 @@
         '</div>';
       }).join('');
     }
+    applyZoom();
     var annWrap = q('annWrap');
     if(annWrap) annWrap.style.display = reportType === 'announcement' ? '' : 'none';
     var evWrap = q('evWrap');
@@ -2321,8 +2420,8 @@
     if(q('pickSearch')) q('pickSearch').placeholder = T(UI.searchPh);
     if(q('selAll')) q('selAll').textContent = T(UI.selAll);
     if(q('clearAll')) q('clearAll').textContent = T(UI.clearAll);
-    if(q('printBtn')) q('printBtn').textContent = T(UI.printBtn);
-    if(q('lineBtn')) q('lineBtn').textContent = T(UI.lineBtn);
+    if(q('printBtn')) q('printBtn').innerHTML = PR_ICO.print + '<span>' + esc(T(UI.printBtn)) + '</span>';
+    if(q('lineBtn')) q('lineBtn').innerHTML = PR_ICO.line + '<span>' + esc(T(UI.lineBtn)) + '</span>';
     if(q('qrToggleLbl')) q('qrToggleLbl').textContent = T(UI.qrToggleLbl);
     if(q('qrToggle')) q('qrToggle').checked = includeQrPage;
     if(q('hint')) q('hint').textContent = T(UI.hint);
@@ -2353,6 +2452,9 @@
       if(t.closest('[data-pr="typeIdea"]')){ reportType = 'idea'; paint(); return; }
       if(t.closest('[data-pr="typeAnnouncement"]')){ reportType = 'announcement'; paint(); return; }
       if(t.closest('[data-pr="typeBubble"]')){ reportType = 'bubble'; paint(); return; }
+      if(t.closest('[data-pr="zoomIn"]')){ setZoom(prZoom + 0.1); return; }
+      if(t.closest('[data-pr="zoomOut"]')){ setZoom(prZoom - 0.1); return; }
+      if(t.closest('[data-pr="zoomFit"]')){ setZoom(1); return; }
       if(t.closest('[data-pr="typeEval"]')){ reportType = 'eval'; paint(); return; }
       if(evHandleClick(t)) return;
       if(t.closest('[data-pr="typeBrief"]')){ if(window.__SPZ_BRIEFING && window.__SPZ_BRIEFING.open) window.__SPZ_BRIEFING.open(); return; }
@@ -2526,7 +2628,15 @@
           '</div>' +
           '<div class="pr-hint" data-pr="hint"></div>' +
         '</div>' +
-        '<div class="pr-preview-wrap" data-pr="sheet"></div>' +
+        '<div class="pr-prevcol">' +
+          '<div class="pr-zoombar" data-pr="zoombar">' +
+            '<button type="button" class="pr-zoombtn" data-pr="zoomOut" aria-label="Zoom out">' + PR_ICO.minus + '</button>' +
+            '<span class="pr-zoomval" data-pr="zoomVal">100%</span>' +
+            '<button type="button" class="pr-zoombtn" data-pr="zoomIn" aria-label="Zoom in">' + PR_ICO.plus + '</button>' +
+            '<button type="button" class="pr-zoombtn" data-pr="zoomFit" aria-label="Reset zoom">' + PR_ICO.fit + '</button>' +
+          '</div>' +
+          '<div class="pr-preview-wrap" data-pr="sheet"></div>' +
+        '</div>' +
         '</div>' +
       '</div>';
     document.body.appendChild(sec);
