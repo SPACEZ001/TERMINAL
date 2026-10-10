@@ -33,7 +33,11 @@
   var ADMIN_KEY_STORAGE = 'spz_admin_users_key';
 
   function getAdminKey(){
-    try { return sessionStorage.getItem(ADMIN_KEY_STORAGE) || ''; } catch(e){ return ''; }
+    try {
+      var k = sessionStorage.getItem(ADMIN_KEY_STORAGE) || '';
+      if(!k && window.__SPZ_TIER && window.__SPZ_TIER() === 'editor') k = sessionStorage.getItem('spz_editor_code') || '';
+      return k;
+    } catch(e){ return ''; }
   }
   function setAdminKey(k){
     try { sessionStorage.setItem(ADMIN_KEY_STORAGE, k); } catch(e){}
@@ -133,7 +137,7 @@
 
   function renderBody(){
     if(!bodyEl) return;
-    if(window.__SPZ_TIER && window.__SPZ_TIER() !== 'full'){
+    if(window.__SPZ_TIER && window.__SPZ_TIER() !== 'full' && window.__SPZ_TIER() !== 'editor'){
       bodyEl.innerHTML = '<div class="qrp-locked">' + esc(tx(COPY.adminOnly)) + '</div>';
       return;
     }

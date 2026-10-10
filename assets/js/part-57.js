@@ -956,7 +956,7 @@
     catch(e){ return false; }
   }
   function isUnlocked(){
-    try { if(window.__SPZ_TIER && window.__SPZ_TIER() === 'full') return true; } catch(e){}
+    try { if(window.__SPZ_TIER){ var t = window.__SPZ_TIER(); if(t === 'full' || t === 'editor') return true; } } catch(e){}
     return lineLinked() || tgLinked();
   }
   // The shared login gate (part-46.js) has every sign-in method in one
@@ -2468,6 +2468,7 @@
       var biasHtml = showBias ? '<div class="jrp-ba-bias ' + (isDown ? 'down' : 'up') + '">' + esc(T(UI.baBias)) + ': ' + esc(biasStr) + '</div>' : '';
       return '<div class="jrp-ba-col">' +
         '<div class="jrp-ba-label">' + esc(label) + '</div>' +
+        '<div class="jrp-ba-asset">' + esc(item.asset || '—') + '</div>' +
         (item.imageUrl ? '<img class="jrp-ba-img" src="' + esc(item.imageUrl) + '" alt="">' : '<div class="jrp-ba-noimg"></div>') +
         '<div class="jrp-ba-meta">' + esc((item.asset || '—') + ' · ' + fmtDate(item.createdAt) + (item.timeframe ? ' · ' + item.timeframe : '')) + '</div>' +
         tagsHtml + biasHtml +
@@ -2487,6 +2488,7 @@
           (window.__SPZ_PR_LOGO ? '<img class="jrp-logo" src="' + window.__SPZ_PR_LOGO + '" alt="">' : '') +
           '<div class="jrp-brand">SPACEZ TERMINAL</div>' +
           '<div class="jrp-title">' + esc(T(UI.baTitle)) + '</div>' +
+          (beforeItem.asset ? '<div class="jrp-ba-headasset">' + esc(beforeItem.asset) + '</div>' : '') +
           '<div class="jrp-meta"><span>' + esc(T(UI.reportGenerated)) + ': ' + esc(fmtDate(new Date())) + '</span></div>' +
         '</div>' +
         /* Round P3: the headline numbers (days elapsed / % change / price
