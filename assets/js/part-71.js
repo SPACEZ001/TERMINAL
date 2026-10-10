@@ -61,7 +61,11 @@
     noBankQ:{en:'No questions yet.',th:'ยังไม่มีคำถาม'},
     sTitle:{en:'Exam title',th:'ชื่อชุดข้อสอบ'}, sTime:{en:'Time limit (minutes, 0 = none)',th:'เวลาสอบ (นาที, 0 = ไม่จำกัด)'}, sShuffle:{en:'Shuffle question order for each student',th:'สลับลำดับข้อสำหรับนักเรียนแต่ละคน'}, sPass:{en:'Pass mark (%)',th:'เกณฑ์ผ่าน (%)'},
     totalQ:{en:'questions in the bank',th:'ข้อในคลัง'}, saveFail:{en:'Could not save.',th:'บันทึกไม่สำเร็จ'}, loading:{en:'Loading…',th:'กำลังโหลด…'},
-    attempts:{en:'Earlier attempts',th:'ครั้งก่อนหน้า'}, close:{en:'Close',th:'ปิด'}
+    attempts:{en:'Earlier attempts',th:'ครั้งก่อนหน้า'}, close:{en:'Close',th:'ปิด'},
+    oldWorker:{en:'The Cloudflare Worker is still the old version (no classroom-exam endpoints). Paste the new line-qr-worker.js into Cloudflare and Deploy, then press Refresh.',th:'Worker บน Cloudflare ยังเป็นไฟล์เก่า (ยังไม่มีระบบข้อสอบห้องเรียน) — ให้วางไฟล์ line-qr-worker.js ตัวใหม่ใน Cloudflare แล้วกด Deploy จากนั้นกดรีเฟรชที่นี่'},
+    adminNet:{en:'Could not reach the Worker. If you have not yet pasted the new line-qr-worker.js into Cloudflare (Deploy), do that first, then press Refresh.',th:'ติดต่อ Worker ไม่ได้ — ถ้ายังไม่ได้วางไฟล์ line-qr-worker.js ตัวใหม่ใน Cloudflare (แล้วกด Deploy) ให้ทำก่อน จากนั้นกดรีเฟรชที่นี่'},
+    skillLbl:{en:'Linked skill (for Student Evaluation)',th:'ทักษะที่เชื่อมกับการประเมิน (Student Evaluation)'}, noSkill:{en:'— none —',th:'— ไม่เชื่อม —'},
+    impJson:{en:'Import JSON',th:'นำเข้า JSON'}, expJson:{en:'Export JSON',th:'ส่งออก JSON'}, impOk:{en:'Imported',th:'นำเข้าแล้ว'}, impBad:{en:'Not a valid question file.',th:'ไฟล์คำถามไม่ถูกต้อง'}, impNote:{en:'Imported questions are added to the list. Press Save to publish.',th:'คำถามที่นำเข้าจะถูกเพิ่มต่อท้าย แล้วกด “บันทึก” เพื่อใช้งานจริง'}
   };
 
   var SAMPLES = [
@@ -72,6 +76,8 @@
     { q:'เวฟ 2 มักย้อนกลับของเวฟ 1 ที่ระดับฟีโบนัชชีใดบ่อยที่สุด?', choices:['0-10%','50% ถึง 61.8%','100% ขึ้นไป','161.8% ขึ้นไป'], ans:1, expl:'แนวทาง (guideline): เวฟ 2 มักย้อนลึก โดยพบมากที่ราว 50%–61.8% ของเวฟ 1 (เป็นแนวทาง ไม่ใช่กฎตายตัว)', topic:'ฟีโบนัชชี' }
   ];
 
+  var SKILLS = [['ew1','EW1 พื้นฐานการนับเวฟ'],['ew2','EW2 กฎ 3 ข้ออิมพัลส์'],['ew3','EW3 แนวทาง (guidelines)'],['ew4','EW4 รูปแบบการแก้'],['ew5','EW5 ฟีโบนัชชี'],['ew6','EW6 ระดับเวฟ/ป้าย'],['ew7','EW7 อ่านกราฟจริง'],['ew8','EW8 จุดยกเลิก/แผนเทรด'],
+    ['ot1','OT1 เทรนด์/แนวรับต้าน'],['ot2','OT2 บริหารความเสี่ยง'],['ot3','OT3 พื้นฐาน/มหภาค'],['ot4','OT4 วินัย/จิตวิทยา'],['ot5','OT5 การมีส่วนร่วม'],['ot6','OT6 การบ้าน']];
   var sec = null, bodyEl = null;
   var isAdminTier = false;
   var mode = 'student';
@@ -79,7 +85,7 @@
   var sv = { stage:'login', err:'', busy:false, token:'', username:'', info:null, exam:null, answers:{}, deadline:0, result:null, confirm:false };
   var timerIv = null;
   // admin
-  var adm = { key:'', keyErr:false, tab:'users', users:null, bank:null, loading:false, msg:'', newCreds:null, view:null, revealed:{}, delArm:'', dirty:false };
+  var adm = { key:'', keyErr:false, tab:'users', users:null, bank:null, loading:false, msg:'', newCreds:null, view:null, revealed:{}, delArm:'', dirty:false, err:'' };
 
   function api(path, method, payload, key){
     var opt = { method: method || 'GET', headers: {} };
@@ -229,15 +235,17 @@
     api('/api/admin/cexam/list', 'GET', null, adminKey()).then(function(r){
       adm.loading = false;
       if(r.status === 401){ ss(KEY_STORE, null); adm.key = ''; adm.keyErr = true; adm.users = null; }
-      else adm.users = r.j.users || [];
+      else if(r.status === 200){ adm.users = r.j.users || []; adm.err = ''; }
+      else { adm.users = []; adm.err = (r.status === 404 || r.status === 405) ? 'old' : 'net'; }
       paint();
-    }).catch(function(){ adm.loading = false; adm.msg = T(U.netErr); paint(); });
+    }).catch(function(){ adm.loading = false; adm.err = 'net'; paint(); });
   }
   function loadBank(){
     api('/api/admin/cexam/bank', 'GET', null, adminKey()).then(function(r){
-      if(r.status === 200){ adm.bank = r.j; adm.dirty = false; }
+      if(r.status === 200){ adm.bank = r.j; adm.dirty = false; if(!adm.users || adm.err !== 'old') adm.err = adm.err === 'net' ? '' : adm.err; }
+      else { adm.bank = { settings:{ title:'', timeLimitMin:0, passPercent:60, shuffle:true }, questions:[] }; adm.err = (r.status === 404 || r.status === 405) ? 'old' : 'net'; }
       paint();
-    });
+    }).catch(function(){ adm.bank = { settings:{ title:'', timeLimitMin:0, passPercent:60, shuffle:true }, questions:[] }; adm.err = 'net'; paint(); });
   }
   function adminPanelHTML(){
     if(!adminKey()){
@@ -250,7 +258,8 @@
       return '<button class="cx2-tab' + (adm.tab === t[0] ? ' on' : '') + '" data-cx="atab" data-v="' + t[0] + '">' + esc(T(t[1])) + '</button>';
     }).join('');
     var inner = adm.tab === 'users' ? usersHTML() : adm.tab === 'bank' ? bankHTML() : settingsHTML();
-    return '<div class="cx2-tabs">' + tabs + '</div>' + inner;
+    var banner = adm.err ? '<div class="cx2-card cx2-warn">' + esc(adm.err === 'old' ? T(U.oldWorker) : T(U.adminNet)) + '</div>' : '';
+    return banner + '<div class="cx2-tabs">' + tabs + '</div>' + inner;
   }
   function usersHTML(){
     var h = '<div class="cx2-card"><div class="cx2-gen">' +
@@ -295,8 +304,8 @@
   function bankHTML(){
     if(!adm.bank) { return '<p class="cx2-note">' + esc(T(U.loading)) + '</p>'; }
     var qs = adm.bank.questions;
-    var h = '<div class="cx2-row"><button class="cx2-btn" data-cx="addq">' + esc(T(U.addQ)) + '</button> <button class="cx2-btn ghost" data-cx="samples">' + esc(T(U.samples)) + '</button> <button class="cx2-btn" data-cx="savebank">' + esc(T(U.saveBank)) + '</button> <span class="cx2-note" data-cx="bankmsg">' + esc(adm.msg || '') + '</span></div>' +
-      '<div class="cx2-note">' + qs.length + ' ' + esc(T(U.totalQ)) + '</div>';
+    var h = '<div class="cx2-row"><button class="cx2-btn" data-cx="addq">' + esc(T(U.addQ)) + '</button> <button class="cx2-btn ghost" data-cx="samples">' + esc(T(U.samples)) + '</button> <button class="cx2-btn" data-cx="savebank">' + esc(T(U.saveBank)) + '</button> <button class="cx2-btn ghost" data-cx="impjson">' + esc(T(U.impJson)) + '</button> <button class="cx2-btn ghost" data-cx="expjson">' + esc(T(U.expJson)) + '</button> <input type="file" accept=".json,application/json" data-cx="impfile" style="display:none"> <span class="cx2-note" data-cx="bankmsg">' + esc(adm.msg || '') + '</span></div>' +
+      '<div class="cx2-note">' + esc(T(U.impNote)) + '</div><div class="cx2-note">' + qs.length + ' ' + esc(T(U.totalQ)) + '</div>';
     if(!qs.length) h += '<p class="cx2-note">' + esc(T(U.noBankQ)) + '</p>';
     qs.forEach(function(q, qi){
       h += '<div class="cx2-card cx2-edq"><div class="cx2-qn">' + esc(T(U.qNo)) + ' ' + (qi + 1) + ' <button class="cx2-mini danger" data-cx="delq" data-i="' + qi + '">' + esc(T(U.del)) + '</button></div>' +
@@ -308,7 +317,9 @@
         }).join('') +
         (q.choices.length < 6 ? '<button class="cx2-mini" data-cx="addch" data-i="' + qi + '">' + esc(T(U.addChoice)) + '</button>' : '') +
         '<label class="cx2-lab">' + esc(T(U.expl)) + '</label><textarea class="cx2-in" rows="2" data-cx="qf" data-i="' + qi + '" data-f="expl">' + esc(q.expl || '') + '</textarea>' +
-        '<label class="cx2-lab">' + esc(T(U.topic)) + '</label><input class="cx2-in" data-cx="qf" data-i="' + qi + '" data-f="topic" value="' + esc(q.topic || '') + '"></div>';
+        '<label class="cx2-lab">' + esc(T(U.topic)) + '</label><input class="cx2-in" data-cx="qf" data-i="' + qi + '" data-f="topic" value="' + esc(q.topic || '') + '">' +
+        '<label class="cx2-lab">' + esc(T(U.skillLbl)) + '</label><select class="cx2-in" data-cx="qskill" data-i="' + qi + '"><option value="">' + esc(T(U.noSkill)) + '</option>' +
+        SKILLS.map(function(k){ return '<option value="' + k[0] + '"' + (q.skill === k[0] ? ' selected' : '') + '>' + esc(k[1]) + '</option>'; }).join('') + '</select></div>';
     });
     return h;
   }
@@ -326,7 +337,7 @@
     adm.msg = '…';
     var m = sec.querySelector('[data-cx="bankmsg"]'); if(m) m.textContent = '…';
     api('/api/admin/cexam/bank/set', 'POST', adm.bank, adminKey()).then(function(r){
-      adm.msg = r.status === 200 ? T(U.saved) + ' (' + r.j.count + ')' : T(U.saveFail);
+      adm.msg = r.status === 200 ? T(U.saved) + ' (' + r.j.count + ')' : (r.status === 404 ? T(U.oldWorker) : T(U.saveFail));
       if(r.status === 200){ adm.dirty = false; loadBank(); }
       var m2 = sec.querySelector('[data-cx="bankmsg"]'); if(m2) m2.textContent = adm.msg;
     }).catch(function(){ var m3 = sec.querySelector('[data-cx="bankmsg"]'); if(m3) m3.textContent = T(U.saveFail); });
@@ -340,7 +351,7 @@
       top = '<div class="cx2-toggle"><button class="cx2-mini" data-cx="mode">' + esc(T(mode === 'admin' ? U.studentBtn : U.adminBtn)) + '</button></div>';
     }
     var focusInfo = null, ae = document.activeElement;
-    bodyEl.innerHTML = '<div class="cx2-wrap">' + top + (mode === 'admin' && isAdminTier ? adminPanelHTML() : studentHTML()) + '</div>';
+    bodyEl.innerHTML = '<div class="cx2-wrap">' + top + (mode === 'admin' && isAdminTier ? adminPanelHTML() : '<div class="cx2-center">' + studentHTML() + '</div>') + '</div>';
     void focusInfo; void ae;
   }
   function repaintText(){
@@ -377,8 +388,9 @@
     else if(a === 'generate'){
       var c = parseInt(bodyEl.querySelector('[data-cx="gcount"]').value, 10) || 1, n = bodyEl.querySelector('[data-cx="gnote"]').value;
       api('/api/admin/cexam/create', 'POST', { count:c, note:n }, adminKey()).then(function(r){
-        if(r.status === 200){ adm.newCreds = r.j.created; loadUsers(); } else { adm.msg = T(U.netErr); paint(); }
-      });
+        if(r.status === 200){ adm.newCreds = r.j.created; loadUsers(); }
+        else { adm.err = (r.status === 404 || r.status === 405) ? 'old' : (r.status === 401 ? '' : 'net'); if(r.status === 401){ ss(KEY_STORE, null); adm.key = ''; adm.keyErr = true; } paint(); }
+      }).catch(function(){ adm.err = 'net'; paint(); });
     }
     else if(a === 'copy') copyText(el.getAttribute('data-t'), el);
     else if(a === 'copyall'){
@@ -400,7 +412,7 @@
     else if(a === 'closeview'){ adm.view = null; paint(); }
     else if(a === 'addq'){ adm.bank.questions.push({ id:'q' + Date.now().toString(36), q:'', choices:['', '', '', ''], ans:0, expl:'', topic:'' }); paint(); }
     else if(a === 'samples'){
-      SAMPLES.forEach(function(s, i){ adm.bank.questions.push({ id:'s' + Date.now().toString(36) + i, q:s.q, choices:s.choices.slice(), ans:s.ans, expl:s.expl, topic:s.topic }); }); paint();
+      SAMPLES.forEach(function(s, i){ adm.bank.questions.push({ id:'s' + Date.now().toString(36) + i, q:s.q, choices:s.choices.slice(), ans:s.ans, expl:s.expl, topic:s.topic, skill:s.skill || '' }); }); paint();
     }
     else if(a === 'delq'){ adm.bank.questions.splice(parseInt(el.getAttribute('data-i'), 10), 1); paint(); }
     else if(a === 'addch'){ var q1 = adm.bank.questions[parseInt(el.getAttribute('data-i'), 10)]; if(q1.choices.length < 6) q1.choices.push(''); paint(); }
@@ -409,6 +421,27 @@
       if(q2.choices.length > 2){ q2.choices.splice(ci, 1); if(q2.ans >= q2.choices.length) q2.ans = 0; else if(q2.ans > ci) q2.ans--; } paint();
     }
     else if(a === 'savebank') saveBank();
+    else if(a === 'impjson'){ var f = bodyEl.querySelector('[data-cx="impfile"]'); if(f) f.click(); }
+    else if(a === 'expjson'){
+      try {
+        var blob = new Blob([JSON.stringify(adm.bank, null, 1)], { type:'application/json' }), aEl = document.createElement('a');
+        aEl.href = URL.createObjectURL(blob); aEl.download = 'classroom-exam-bank.json'; document.body.appendChild(aEl); aEl.click();
+        setTimeout(function(){ URL.revokeObjectURL(aEl.href); document.body.removeChild(aEl); }, 500);
+      } catch(e){}
+    }
+  }
+  function importBank(text){
+    var j; try { j = JSON.parse(text); } catch(e){ adm.msg = T(U.impBad); paint(); return; }
+    var arr = Array.isArray(j) ? j : (j && j.questions);
+    if(!Array.isArray(arr) || !adm.bank){ adm.msg = T(U.impBad); paint(); return; }
+    var n = 0;
+    arr.forEach(function(x, i){
+      if(!x || typeof x.q !== 'string' || !Array.isArray(x.choices) || x.choices.length < 2) return;
+      var ans = parseInt(x.ans, 10); if(!(ans >= 0 && ans < x.choices.length)) ans = 0;
+      adm.bank.questions.push({ id:'i' + Date.now().toString(36) + i, q:x.q, choices:x.choices.map(String).slice(0, 6), ans:ans, expl:String(x.expl || ''), topic:String(x.topic || ''), skill:/^(ew[1-8]|ot[1-6])$/.test(x.skill || '') ? x.skill : '' });
+      n++;
+    });
+    adm.msg = n ? T(U.impOk) + ' ' + n : T(U.impBad); paint();
   }
   function onInput(ev){
     var el = ev.target, a = el.getAttribute && el.getAttribute('data-cx');
@@ -417,10 +450,16 @@
     else if(a === 'qch'){ adm.bank.questions[+el.getAttribute('data-i')].choices[+el.getAttribute('data-c')] = el.value; }
     else if(a === 'qans'){ adm.bank.questions[+el.getAttribute('data-i')].ans = +el.getAttribute('data-c'); }
     else if(a === 'sf'){ adm.bank.settings[el.getAttribute('data-f')] = el.getAttribute('data-f') === 'title' ? el.value : (parseInt(el.value, 10) || 0); }
+    else if(a === 'qskill'){ adm.bank.questions[+el.getAttribute('data-i')].skill = el.value; }
     else if(a === 'sshuffle'){ adm.bank.settings.shuffle = !!el.checked; }
   }
   function onChange(ev){
     var el = ev.target;
+    if(el.getAttribute && el.getAttribute('data-cx') === 'qskill'){ adm.bank.questions[+el.getAttribute('data-i')].skill = el.value; return; }
+    if(el.getAttribute && el.getAttribute('data-cx') === 'impfile'){
+      var fl = el.files && el.files[0]; if(!fl) return;
+      var rd = new FileReader(); rd.onload = function(){ importBank(String(rd.result || '')); }; rd.readAsText(fl); return;
+    }
     if(el.getAttribute && el.getAttribute('data-cx') === 'note'){
       var un = el.getAttribute('data-u');
       api('/api/admin/cexam/update', 'POST', { username:un, note:el.value }, adminKey());
