@@ -2212,6 +2212,7 @@ function cexCleanQuestions(list) {
       q: text, choices, ans,
       expl: String(q.expl || "").trim().slice(0, 1500),
       topic: String(q.topic || "").trim().slice(0, 60),
+      skill: /^(ew[1-8]|ot[1-6])$/.test(String(q.skill || "")) ? String(q.skill) : "",
     });
   }
   return out;
@@ -2363,7 +2364,7 @@ async function handleCexSubmit(request, env) {
     const a = parseInt(answers[id], 10);
     const given = a >= 0 && a < q.choices.length ? a : -1;
     const ok = given === q.ans; if (ok) score++;
-    review.push({ q: q.q, choices: q.choices, given, correct: q.ans, ok, expl: q.expl || "", topic: q.topic || "" });
+    review.push({ q: q.q, choices: q.choices, given, correct: q.ans, ok, expl: q.expl || "", topic: q.topic || "", skill: q.skill || "" });
   }
   const lim = bank.settings.timeLimitMin;
   u.late = !!(lim && Date.now() > u.startedAt + lim * 60000 + 20000);

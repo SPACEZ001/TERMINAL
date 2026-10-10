@@ -33,7 +33,7 @@
           th:'กดพิมพ์ แล้วเลือก "บันทึกเป็น PDF" (หรือเครื่องพิมพ์ของคุณ) ในหน้าต่างที่เปิดขึ้นมา'},
     brand:{en:'SPACEZ TERMINAL',th:'SPACEZ TERMINAL'},
     title:{en:'Market Summary Report',th:'รายงานสรุปภาพรวมตลาด'},
-    sub:{en:'Internal / Admin Report — Not Investment Advice',th:'รายงานภายใน / เฉพาะแอดมิน — ไม่ใช่คำแนะนำการลงทุน'},
+    sub:{en:'',th:''},
     generated:{en:'Generated',th:'สร้างเมื่อ'},
     asof:{en:'Data as of',th:'ข้อมูล ณ'},
     serial:{en:'Report ID',th:'รหัสรายงาน'},
@@ -93,7 +93,7 @@
     typeMarket:{en:'Market Summary',th:'สรุปภาพรวมตลาด'},
     typeGold:{en:'Gold Analysis',th:'วิเคราะห์ทองคำ'},
     goldTitle:{en:'Gold Market Analysis Report',th:'รายงานวิเคราะห์ตลาดทองคำ'},
-    goldSub:{en:'Internal / Admin Report — Not Investment Advice',th:'รายงานภายใน / เฉพาะแอดมิน — ไม่ใช่คำแนะนำการลงทุน'},
+    goldSub:{en:'',th:''},
     goldPriceH:{en:'Gold — Price & Momentum',th:'ทองคำ — ราคาและโมเมนตัม'},
     goldPriceNote:{en:'The headline price is gold futures (GC=F), quoted in US dollars per troy ounce — it tracks the spot gold price you see on charts. The momentum figures below (RSI, moving averages, 52-week range) come from the SPDR Gold Shares ETF (GLD), which is priced at roughly one-tenth of an ounce per share, so its dollar price is far lower.',
                    th:'ราคาหลักคือทองคำฟิวเจอร์ส (GC=F) หน่วยดอลลาร์ต่อทรอยออนซ์ ซึ่งใกล้เคียงราคาทองสปอตที่เห็นตามกราฟ ส่วนตัวชี้วัดโมเมนตัมด้านล่าง (RSI, เส้นค่าเฉลี่ย, กรอบ 52 สัปดาห์) มาจากกองทุน SPDR Gold Shares (GLD) ซึ่งหนึ่งหน่วยมีทองประมาณหนึ่งในสิบออนซ์ ราคาเป็นดอลลาร์จึงต่ำกว่ามาก'},
@@ -187,8 +187,8 @@
        market is pricing at the richest earnings multiple right now. ---- */
     typeIdea:{en:'Alpha Picks',th:'หุ้นอัลฟ่า'},
     ideaTitle:{en:'Alpha Selection Report',th:'รายงานคัดสรรหุ้นอัลฟ่า'},
-    ideaSub:{en:'Long-Term Picks Built From This Site’s Own Live Signals — Not Investment Advice',
-             th:'หุ้นสำหรับถือระยะยาว สร้างจากสัญญาณสดของเว็บนี้เอง — ไม่ใช่คำแนะนำการลงทุน'},
+    ideaSub:{en:'Long-Term Picks Built From This Site’s Own Live Signals',
+             th:'หุ้นสำหรับถือระยะยาว สร้างจากสัญญาณสดของเว็บนี้เอง'},
     ideaTopH:{en:'Top-Ranked Long-Term Pick',th:'หุ้นเด่นอันดับ 1 สำหรับถือระยะยาว'},
     ideaTopLede:{en:'The highest-scoring name right now from this site’s own Stock Picks ranking model — momentum, trend, RSI and sector flow, equally weighted. A rank, not a guarantee: it can change tomorrow as the inputs move, and every name here can still lose money.',
                  th:'หุ้นที่ได้คะแนนสูงสุดตอนนี้จากโมเดลจัดอันดับ Stock Picks ของเว็บนี้เอง ให้น้ำหนักเท่ากันกับโมเมนตัม เทรนด์ RSI และกระแสเงินกลุ่มอุตสาหกรรม เป็นแค่อันดับ ไม่ใช่การการันตี พรุ่งนี้อันดับเปลี่ยนได้ตามข้อมูลที่เปลี่ยนไป และหุ้นทุกตัวในรายงานนี้ยังขาดทุนได้เสมอ'},
@@ -2241,12 +2241,73 @@
       '<div class="pr-ev-sign"><div></div><span>' + esc(T(EV_TXT.sign)) + '</span></div>' +
     '</div>';
   }
+
+  /* ---- Student Evaluation <- Classroom Exam results ---- */
+  var evImp = { list:null, busy:false, err:'', sel:'' };
+  var EV_IMP = {
+    h:{en:'Import from Classroom Exam',th:'ดึงผลจากข้อสอบห้องเรียน'},
+    load:{en:'Load students',th:'โหลดรายชื่อ'}, go:{en:'Fill the form from this result',th:'เติมใบประเมินจากผลนี้'},
+    pick:{en:'Choose a student who finished',th:'เลือกนักเรียนที่สอบเสร็จแล้ว'}, none:{en:'No finished exams yet.',th:'ยังไม่มีคนสอบเสร็จ'},
+    workerOld:{en:'The Worker has no classroom-exam endpoints yet. Paste the new line-qr-worker.js into Cloudflare.',th:'Worker ยังไม่มีระบบข้อสอบ ต้องวางไฟล์ line-qr-worker.js ใหม่ใน Cloudflare'},
+    bad:{en:'Could not load. Check the admin key.',th:'โหลดไม่สำเร็จ ตรวจรหัสแอดมิน'}, round:{en:'Classroom exam',th:'ข้อสอบห้องเรียน'},
+    note:{en:'Skill scores come from the questions linked to each skill (accuracy × 5). You can edit everything after filling.',th:'คะแนนทักษะคำนวณจากคำถามที่ผูกกับแต่ละทักษะ (ความแม่นยำ × 5) กรอกแล้วแก้ไขได้ทุกช่อง'}
+  };
+  function evImpLoad(){
+    var key = getAdminKey();
+    if(!key){ evImp.err = T(EV_IMP.bad); evMountForm(true); return; }
+    evImp.busy = true; evImp.err = ''; evMountForm(true);
+    fetch(WORKER_BASE + '/api/admin/cexam/list', { headers:{ 'X-Admin-Key': key } }).then(function(r){
+      evImp.busy = false;
+      if(r.status === 404){ evImp.err = T(EV_IMP.workerOld); evMountForm(true); return null; }
+      if(!r.ok){ evImp.err = T(EV_IMP.bad); evMountForm(true); return null; }
+      return r.json();
+    }).then(function(j){
+      if(!j) return;
+      evImp.list = (j.users || []).filter(function(u){ return u.status === 'done'; });
+      evMountForm(true);
+    }).catch(function(){ evImp.busy = false; evImp.err = T(EV_IMP.bad); evMountForm(true); });
+  }
+  function evImpGo(){
+    var w = sec && sec.querySelector('[data-ev-impsel]');
+    var un = w ? w.value : '';
+    if(!un) return;
+    fetch(WORKER_BASE + '/api/admin/cexam/result?username=' + encodeURIComponent(un), { headers:{ 'X-Admin-Key': getAdminKey() } }).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
+      if(!j || !j.user) { evImp.err = T(EV_IMP.bad); evMountForm(true); return; }
+      var u = j.user, d = evData;
+      d.name = u.note || u.username;
+      var fin = u.finishedAt ? new Date(u.finishedAt) : new Date();
+      var iso = fin.getFullYear() + '-' + String(fin.getMonth()+1).padStart(2,'0') + '-' + String(fin.getDate()).padStart(2,'0');
+      var row = { name:T(EV_IMP.round) + ' ' + u.username, date:iso, score:String(u.score), max:String(u.total) };
+      var slot = -1;
+      for(var i = 0; i < d.rounds.length; i++){ var r0 = d.rounds[i]; if(!r0.name && !r0.score && !r0.max){ slot = i; break; } }
+      if(slot < 0){ d.rounds.push(row); } else d.rounds[slot] = row;
+      var acc = {};
+      (j.review || []).forEach(function(x){ if(x.skill){ var a = acc[x.skill] || (acc[x.skill] = { n:0, ok:0 }); a.n++; if(x.ok) a.ok++; } });
+      Object.keys(acc).forEach(function(k){ d.sc[k] = String(Math.round(acc[k].ok / acc[k].n * 5)); });
+      evImp.sel = un; evMountForm(true); renderReport();
+    }).catch(function(){ evImp.err = T(EV_IMP.bad); evMountForm(true); });
+  }
+  function evImpHTML(){
+    var h = '<div class="pr-ev-imp"><div class="pr-ev-h2" style="margin-top:0">' + esc(T(EV_IMP.h)) + '</div>';
+    if(!evImp.list){
+      h += '<button type="button" class="pr-mini" data-ev-load="1">' + esc(T(EV_IMP.load)) + (evImp.busy ? ' …' : '') + '</button>';
+    } else if(!evImp.list.length){
+      h += '<div class="pr-hint">' + esc(T(EV_IMP.none)) + '</div><button type="button" class="pr-mini" data-ev-load="1">' + esc(T(EV_IMP.load)) + '</button>';
+    } else {
+      h += '<select class="pr-search" data-ev-impsel="1">' + evImp.list.map(function(u){
+        return '<option value="' + esc(u.username) + '"' + (evImp.sel === u.username ? ' selected' : '') + '>' + esc((u.note || u.username) + ' — ' + u.percent + '%') + '</option>';
+      }).join('') + '</select> <button type="button" class="pr-mini" data-ev-impgo="1" style="margin-top:8px;">' + esc(T(EV_IMP.go)) + '</button><div class="pr-hint" style="margin-top:6px;">' + esc(T(EV_IMP.note)) + '</div>';
+    }
+    if(evImp.err) h += '<div class="pr-hint" style="color:#ff7a8c;margin-top:6px;">' + esc(evImp.err) + '</div>';
+    return h + '</div>';
+  }
+
   function evFormHTML(){
     var d = evData;
     function inp(k, lbl, type, ph){
       return '<label class="pr-ev-in"><span>' + esc(T(lbl)) + '</span><input type="' + (type || 'text') + '" data-ev="' + k + '" value="' + esc(d[k] || '') + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + '></label>';
     }
-    var h = inp('name', EV_TXT.name) + '<div class="pr-ev-grid2">' + inp('cls', EV_TXT.cls) + inp('date', EV_TXT.date, 'date') + '</div>' + inp('by', EV_TXT.by);
+    var h = evImpHTML() + inp('name', EV_TXT.name) + '<div class="pr-ev-grid2">' + inp('cls', EV_TXT.cls) + inp('date', EV_TXT.date, 'date') + '</div>' + inp('by', EV_TXT.by);
     h += '<div class="pr-ev-in"><span>' + esc(T(EV_TXT.level)) + '</span><div class="pr-ann-chips">' +
       EV_TXT.lvOpts.map(function(o){ return '<button type="button" class="pr-ann-chip' + (d.level === o.en ? ' on' : '') + '" data-ev-level="' + esc(o.en) + '">' + esc(T(o)) + '</button>'; }).join('') + '</div></div>';
     h += '<div class="pr-ev-grid2">' + inp('attended', EV_TXT.attended, 'number') + inp('sessions', EV_TXT.sessions, 'number') + '</div>';
@@ -2269,11 +2330,11 @@
     h += '<button type="button" class="pr-mini" data-ev-clear="1" style="margin-top:8px;">' + esc(T(EV_TXT.clear)) + '</button>';
     return h;
   }
-  function evMountForm(){
+  function evMountForm(force){
     var w = sec && sec.querySelector('[data-pr="evWrap"]');
     if(!w) return;
     var active = document.activeElement;
-    if(active && w.contains(active)) return;       /* never rebuild while she is typing in it */
+    if(!force && active && w.contains(active) && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return;   /* never rebuild while she is typing in it */
     w.innerHTML = '<div class="pr-hint" style="margin-bottom:10px;">' + esc(T(EV_TXT.hint)) + '</div>' + evFormHTML();
   }
   function evHandleInput(t){
@@ -2284,9 +2345,11 @@
   }
   function evHandleClick(t){
     var lv = t.closest('[data-ev-level]');
-    if(lv){ var v = lv.getAttribute('data-ev-level'); evData.level = evData.level === v ? '' : v; evMountForm(); renderReport(); return true; }
-    if(t.closest('[data-ev-add]')){ evData.rounds.push({}); evMountForm(); renderReport(); return true; }
-    if(t.closest('[data-ev-clear]')){ evData = evBlank(); evMountForm(); renderReport(); return true; }
+    if(lv){ var v = lv.getAttribute('data-ev-level'); evData.level = evData.level === v ? '' : v; evMountForm(true); renderReport(); return true; }
+    if(t.closest('[data-ev-add]')){ evData.rounds.push({}); evMountForm(true); renderReport(); return true; }
+    if(t.closest('[data-ev-clear]')){ evData = evBlank(); evMountForm(true); renderReport(); return true; }
+    if(t.closest('[data-ev-load]')){ evImpLoad(); return true; }
+    if(t.closest('[data-ev-impgo]')){ evImpGo(); return true; }
     return false;
   }
 
