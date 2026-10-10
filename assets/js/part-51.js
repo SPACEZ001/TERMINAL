@@ -278,6 +278,9 @@
         '<div class="an-field">' +
           '<label>' + esc(T(UI.durationLabel)) + '</label>' +
           '<select class="an-select" data-an="durationSelect">' + durationOptionsHTML() + '</select>' +
+          '<div class="an-dur-chips" data-an="durChips">' + DURATIONS.map(function(d){
+            return '<button type="button" class="an-dur-chip' + (draftDurationMin === d.min ? ' on' : '') + '" data-dur="' + d.min + '">' + esc(T(UI[d.key])) + '</button>';
+          }).join('') + '</div>' +
         '</div>' +
       '</div>' +
       '<label class="an-line-check"><input type="checkbox" data-an="sendLineCheck"' + (draftSendLine ? ' checked' : '') + '> ' + esc(T(UI.sendLineLabel)) + '</label>' +
@@ -367,6 +370,14 @@
 
     var durationSelect = sec.querySelector('[data-an="durationSelect"]');
     if(durationSelect) durationSelect.addEventListener('change', function(ev){ draftDurationMin = Number(ev.target.value) || 0; });
+    var durChips = sec.querySelector('[data-an="durChips"]');
+    if(durChips) durChips.addEventListener('click', function(ev){
+      var btn = ev.target && ev.target.closest ? ev.target.closest('[data-dur]') : null;
+      if(!btn) return;
+      draftDurationMin = Number(btn.getAttribute('data-dur')) || 0;
+      Array.prototype.forEach.call(durChips.children, function(c){ c.classList.toggle('on', c === btn); });
+      if(durationSelect) durationSelect.value = String(draftDurationMin);
+    });
 
     var lineCheck = sec.querySelector('[data-an="sendLineCheck"]');
     if(lineCheck) lineCheck.addEventListener('change', function(ev){ draftSendLine = ev.target.checked; });
