@@ -2015,6 +2015,192 @@
     })();
   }
 
+
+  /* ---- Round AF: Student Evaluation (internal document) ----
+     Admin types the student's name, exam rounds and skill scores on the left;
+     the sheet on the right updates live. Any field left empty prints as a blank
+     line / empty boxes so it can be filled in by pen after printing. Nothing here
+     is stored or sent anywhere. */
+  var EV_TXT = {
+    typeEval:{en:'Student Evaluation',th:'ประเมินนักเรียน'},
+    title:{en:'Student Evaluation',th:'แบบประเมินนักเรียน'},
+    sub:{en:'INTERNAL DOCUMENT — NOT FOR DISTRIBUTION',th:'เอกสารภายใน — ไม่เผยแพร่'},
+    name:{en:'Student name',th:'ชื่อนักเรียน'}, cls:{en:'Class / course',th:'คลาส / คอร์ส'},
+    date:{en:'Date',th:'วันที่'}, by:{en:'Evaluated by',th:'ผู้ประเมิน'},
+    level:{en:'Level',th:'ระดับ'},
+    lvOpts:[{en:'Beginner',th:'เริ่มต้น'},{en:'Basic',th:'พื้นฐาน'},{en:'Intermediate',th:'กลาง'},{en:'Advanced',th:'สูง'}],
+    rounds:{en:'Exam rounds',th:'ผลสอบแต่ละรอบ'},
+    rName:{en:'Exam / topic',th:'ชื่อชุดสอบ / หัวข้อ'}, rDate:{en:'Date',th:'วันที่'}, rScore:{en:'Score',th:'คะแนน'}, rMax:{en:'Full',th:'เต็ม'},
+    rPct:{en:'%',th:'%'}, rAvg:{en:'Average of rounds',th:'ค่าเฉลี่ยทุกรอบ'},
+    ew:{en:'Elliott Wave skills',th:'ทักษะ Elliott Wave'},
+    other:{en:'Other skills',th:'ทักษะอื่นๆ'},
+    scale:{en:'Score each item 0–5 (0 = not yet, 5 = excellent). Leave blank to score by pen.',th:'ให้คะแนนแต่ละข้อ 0–5 (0 = ยังไม่ได้, 5 = ดีเยี่ยม) เว้นว่างไว้เพื่อให้คะแนนด้วยปากกา'},
+    summary:{en:'Summary',th:'สรุปผล'},
+    skillAvg:{en:'Average skill score',th:'คะแนนทักษะเฉลี่ย'},
+    examAvg:{en:'Average exam score',th:'คะแนนสอบเฉลี่ย'},
+    overall:{en:'Overall level',th:'ระดับโดยรวม'},
+    strengths:{en:'Strengths',th:'จุดเด่น'}, improve:{en:'Needs improvement',th:'ควรพัฒนา'},
+    covered:{en:'Lessons covered so far',th:'เรียนไปแล้ว'}, comment:{en:'Comment / next steps',th:'ความเห็น / ขั้นต่อไป'},
+    sign:{en:'Evaluator signature',th:'ลายเซ็นผู้ประเมิน'},
+    clear:{en:'Clear form',th:'ล้างฟอร์ม'},
+    addRound:{en:'+ Add round',th:'+ เพิ่มรอบ'},
+    lv:[{min:85,en:'Excellent',th:'ดีเยี่ยม'},{min:70,en:'Good',th:'ดี'},{min:50,en:'Developing',th:'กำลังพัฒนา'},{min:0,en:'Needs support',th:'ควรเสริม'}],
+    hint:{en:'Fill in the fields on the left — the sheet updates as you type. Blank fields print as lines so you can write by hand.',th:'กรอกข้อมูลด้านซ้าย ใบประเมินด้านขวาจะเปลี่ยนตามทันที ช่องที่เว้นว่างจะพิมพ์เป็นเส้นให้เขียนด้วยปากกาได้'}
+  };
+  var EV_EW = [
+    {k:'ew1',en:'Wave counting basics (impulse vs. correction)',th:'พื้นฐานการนับเวฟ (อิมพัลส์ vs คอร์เรกทีฟ)'},
+    {k:'ew2',en:'The 3 impulse rules',th:'กฎ 3 ข้อของอิมพัลส์'},
+    {k:'ew3',en:'Guidelines (alternation, channeling, wave 3/5 traits)',th:'แนวทาง (สลับรูปแบบ, ช่องเทรนด์, ลักษณะเวฟ 3/5)'},
+    {k:'ew4',en:'Corrective patterns (zigzag, flat, triangle, combos)',th:'รูปแบบการแก้ (ซิกแซก, แฟลต, สามเหลี่ยม, คอมโบ)'},
+    {k:'ew5',en:'Fibonacci retracement & extension',th:'ฟีโบนัชชี รีเทรซเมนต์ & เอ็กซ์เทนชัน'},
+    {k:'ew6',en:'Wave degrees & labeling',th:'ระดับเวฟ และการติดป้าย'},
+    {k:'ew7',en:'Reading real charts (count on live price)',th:'อ่านกราฟจริง (นับเวฟบนราคาจริง)'},
+    {k:'ew8',en:'Invalidation & trade planning',th:'จุดยกเลิกการนับ และการวางแผนเทรด'}
+  ];
+  var EV_OTHER = [
+    {k:'ot1',en:'Trend & support / resistance',th:'เทรนด์ และแนวรับ/แนวต้าน'},
+    {k:'ot2',en:'Risk management & position sizing',th:'การบริหารความเสี่ยง และขนาดไม้'},
+    {k:'ot3',en:'Fundamentals & macro reading',th:'การอ่านปัจจัยพื้นฐาน / มหภาค'},
+    {k:'ot4',en:'Discipline & trading psychology',th:'วินัย และจิตวิทยาการเทรด'},
+    {k:'ot5',en:'Participation & attendance',th:'การมีส่วนร่วม และการเข้าเรียน'},
+    {k:'ot6',en:'Homework & self-study',th:'การบ้าน และการทบทวนด้วยตัวเอง'}
+  ];
+  function evBlank(){
+    var d = new Date();
+    return { name:'', cls:'', level:'', by:'Noraset Boikaw',
+      date: d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'),
+      rounds:[{},{},{},{}], sc:{}, strengths:'', improve:'', covered:'', comment:'' };
+  }
+  var evData = evBlank();
+
+  function evNum(v){ var n = parseFloat(v); return isFinite(n) ? n : null; }
+  function evBoxes(score){
+    var h = '<span class="pr-ev-boxes">';
+    for(var i = 1; i <= 5; i++) h += '<i class="' + (score !== null && i <= score ? 'on' : '') + '"></i>';
+    return h + '</span>';
+  }
+  function evSkillTable(list){
+    return '<table class="pr-ev-tbl">' + list.map(function(it){
+      var v = evNum(evData.sc[it.k]);
+      if(v !== null) v = Math.max(0, Math.min(5, Math.round(v)));
+      return '<tr><td>' + esc(T(it)) + '</td><td class="pr-ev-sc">' + evBoxes(v) + '</td><td class="pr-ev-n">' + (v !== null ? v + '/5' : '&nbsp;&nbsp;&nbsp;/5') + '</td></tr>';
+    }).join('') + '</table>';
+  }
+  function evAvgSkill(){
+    var tot = 0, n = 0;
+    EV_EW.concat(EV_OTHER).forEach(function(it){
+      var v = evNum(evData.sc[it.k]);
+      if(v !== null){ tot += Math.max(0, Math.min(5, v)); n++; }
+    });
+    return n ? tot / n / 5 * 100 : null;
+  }
+  function evBlankLine(txt, lines){
+    if(txt && txt.trim()) return '<div class="pr-ev-text">' + esc(txt.trim()).replace(/\n/g, '<br>') + '</div>';
+    var h = '<div class="pr-ev-lines">';
+    for(var i = 0; i < (lines || 2); i++) h += '<i></i>';
+    return h + '</div>';
+  }
+  function evField(lbl, val, wide){
+    return '<div class="pr-ev-f' + (wide ? ' w' : '') + '"><span>' + esc(T(lbl)) + '</span><b>' + (val ? esc(val) : '&nbsp;') + '</b></div>';
+  }
+  function evaluationReportHTML(){
+    var d = evData, pcts = [], rows = '';
+    for(var i = 0; i < d.rounds.length; i++){
+      var r = d.rounds[i] || {}, sc = evNum(r.score), mx = evNum(r.max);
+      var pct = (sc !== null && mx) ? sc / mx * 100 : null;
+      if(pct !== null) pcts.push(pct);
+      rows += '<tr><td class="c">' + (i + 1) + '</td><td>' + (r.name ? esc(r.name) : '&nbsp;') + '</td><td class="c">' + (r.date ? esc(r.date) : '') + '</td>' +
+        '<td class="c">' + (sc !== null ? sc : '') + '</td><td class="c">' + (mx !== null ? mx : '') + '</td>' +
+        '<td class="c">' + (pct !== null ? pct.toFixed(0) + '%' : '') + '</td></tr>';
+    }
+    var exAvg = pcts.length ? pcts.reduce(function(a, b){ return a + b; }, 0) / pcts.length : null;
+    var skAvg = evAvgSkill();
+    var both = [exAvg, skAvg].filter(function(x){ return x !== null; });
+    var ov = both.length ? both.reduce(function(a, b){ return a + b; }, 0) / both.length : null;
+    var lvl = ''; if(ov !== null){ for(var j = 0; j < EV_TXT.lv.length; j++){ if(ov >= EV_TXT.lv[j].min){ lvl = T(EV_TXT.lv[j]); break; } } }
+    var lvOpt = '';
+    EV_TXT.lvOpts.forEach(function(o){ lvOpt += '<span class="pr-ev-chk"><i class="' + (d.level === o.en ? 'on' : '') + '"></i>' + esc(T(o)) + '</span>'; });
+    var now = new Date();
+    return '<div class="pr-sheet pr-ev" data-style="' + esc(styleId) + '">' +
+      '<div class="pr-head">' +
+        '<img class="pr-logo" src="' + PR_LOGO + '" alt="">' +
+        '<div class="pr-brand">' + esc(T(UI.brand)) + '</div>' +
+        '<div class="pr-title">' + esc(T(EV_TXT.title)) + '</div>' +
+        '<div class="pr-sub">' + esc(T(EV_TXT.sub)) + '</div>' +
+        '<div class="pr-meta"><span>' + esc(T(UI.serial)) + ': ' + esc(serial()) + '</span></div>' +
+      '</div>' +
+      '<div class="pr-ev-info">' +
+        evField(EV_TXT.name, d.name, true) + evField(EV_TXT.cls, d.cls) + evField(EV_TXT.date, d.date) + evField(EV_TXT.by, d.by) +
+        '<div class="pr-ev-f"><span>' + esc(T(EV_TXT.level)) + '</span><div class="pr-ev-lv">' + lvOpt + '</div></div>' +
+      '</div>' +
+      '<div class="pr-sec-h">' + esc(T(EV_TXT.rounds)) + '</div>' +
+      '<table class="pr-ev-rounds"><thead><tr><th>#</th><th>' + esc(T(EV_TXT.rName)) + '</th><th>' + esc(T(EV_TXT.rDate)) + '</th><th>' + esc(T(EV_TXT.rScore)) + '</th><th>' + esc(T(EV_TXT.rMax)) + '</th><th>%</th></tr></thead><tbody>' + rows +
+        '</tbody><tfoot><tr><td colspan="5" style="text-align:right;">' + esc(T(EV_TXT.rAvg)) + '</td><td class="c"><b>' + (exAvg !== null ? exAvg.toFixed(0) + '%' : '') + '</b></td></tr></tfoot></table>' +
+      '<div class="pr-sec-h">' + esc(T(EV_TXT.ew)) + '</div>' +
+      '<div class="pr-hint-s">' + esc(T(EV_TXT.scale)) + '</div>' + evSkillTable(EV_EW) +
+      '<div class="pr-sec-h">' + esc(T(EV_TXT.other)) + '</div>' + evSkillTable(EV_OTHER) +
+      '<div class="pr-sec-h">' + esc(T(EV_TXT.summary)) + '</div>' +
+      '<div class="pr-regime-strip">' +
+        '<div class="pr-regime-cell"><div class="pr-regime-lbl">' + esc(T(EV_TXT.examAvg)) + '</div><div class="pr-regime-val">' + (exAvg !== null ? exAvg.toFixed(0) + '%' : '—') + '</div></div>' +
+        '<div class="pr-regime-cell"><div class="pr-regime-lbl">' + esc(T(EV_TXT.skillAvg)) + '</div><div class="pr-regime-val">' + (skAvg !== null ? skAvg.toFixed(0) + '%' : '—') + '</div></div>' +
+        '<div class="pr-regime-cell"><div class="pr-regime-lbl">' + esc(T(EV_TXT.overall)) + '</div><div class="pr-regime-val">' + (lvl ? esc(lvl) : '—') + '</div></div>' +
+      '</div>' +
+      '<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.strengths)) + '</div>' + evBlankLine(d.strengths, 3) + '</div>' +
+        '<div><div class="pr-ev-h">' + esc(T(EV_TXT.improve)) + '</div>' + evBlankLine(d.improve, 3) + '</div></div>' +
+      '<div class="pr-ev-h">' + esc(T(EV_TXT.covered)) + '</div>' + evBlankLine(d.covered, 2) +
+      '<div class="pr-ev-h">' + esc(T(EV_TXT.comment)) + '</div>' + evBlankLine(d.comment, 3) +
+      '<div class="pr-ev-sign"><div></div><span>' + esc(T(EV_TXT.sign)) + '</span></div>' +
+      '<div class="pr-foot">' + esc(T(EV_TXT.sub)) + ' · ' + esc(now.toLocaleDateString(L() === 'th' ? 'th-TH' : 'en-US')) + '</div>' +
+    '</div>';
+  }
+  function evFormHTML(){
+    var d = evData;
+    function inp(k, lbl, type, ph){
+      return '<label class="pr-ev-in"><span>' + esc(T(lbl)) + '</span><input type="' + (type || 'text') + '" data-ev="' + k + '" value="' + esc(d[k] || '') + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + '></label>';
+    }
+    var h = inp('name', EV_TXT.name) + '<div class="pr-ev-grid2">' + inp('cls', EV_TXT.cls) + inp('date', EV_TXT.date, 'date') + '</div>' + inp('by', EV_TXT.by);
+    h += '<div class="pr-ev-in"><span>' + esc(T(EV_TXT.level)) + '</span><div class="pr-ann-chips">' +
+      EV_TXT.lvOpts.map(function(o){ return '<button type="button" class="pr-ann-chip' + (d.level === o.en ? ' on' : '') + '" data-ev-level="' + esc(o.en) + '">' + esc(T(o)) + '</button>'; }).join('') + '</div></div>';
+    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.rounds)) + '</div><div class="pr-ev-rows">';
+    d.rounds.forEach(function(r, i){
+      h += '<div class="pr-ev-rrow"><b>' + (i + 1) + '</b>' +
+        '<input type="text" data-evr="name" data-i="' + i + '" value="' + esc(r.name || '') + '" placeholder="' + esc(T(EV_TXT.rName)) + '">' +
+        '<input type="number" inputmode="decimal" data-evr="score" data-i="' + i + '" value="' + esc(r.score == null ? '' : r.score) + '" placeholder="' + esc(T(EV_TXT.rScore)) + '">' +
+        '<input type="number" inputmode="decimal" data-evr="max" data-i="' + i + '" value="' + esc(r.max == null ? '' : r.max) + '" placeholder="' + esc(T(EV_TXT.rMax)) + '"></div>';
+    });
+    h += '</div><button type="button" class="pr-mini" data-ev-add="1">' + esc(T(EV_TXT.addRound)) + '</button>';
+    function skills(list, title){
+      return '<div class="pr-ev-h2">' + esc(T(title)) + '</div>' + list.map(function(it){
+        return '<label class="pr-ev-sk"><span>' + esc(T(it)) + '</span><input type="number" min="0" max="5" step="1" inputmode="numeric" data-evs="' + it.k + '" value="' + esc(d.sc[it.k] == null ? '' : d.sc[it.k]) + '" placeholder="0-5"></label>';
+      }).join('');
+    }
+    h += skills(EV_EW, EV_TXT.ew) + skills(EV_OTHER, EV_TXT.other);
+    function ta(k, lbl){ return '<label class="pr-ev-in"><span>' + esc(T(lbl)) + '</span><textarea rows="3" data-ev="' + k + '">' + esc(d[k] || '') + '</textarea></label>'; }
+    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.summary)) + '</div>' + ta('strengths', EV_TXT.strengths) + ta('improve', EV_TXT.improve) + ta('covered', EV_TXT.covered) + ta('comment', EV_TXT.comment);
+    h += '<button type="button" class="pr-mini" data-ev-clear="1" style="margin-top:8px;">' + esc(T(EV_TXT.clear)) + '</button>';
+    return h;
+  }
+  function evMountForm(){
+    var w = sec && sec.querySelector('[data-pr="evWrap"]');
+    if(!w) return;
+    var active = document.activeElement;
+    if(active && w.contains(active)) return;       /* never rebuild while she is typing in it */
+    w.innerHTML = '<div class="pr-hint" style="margin-bottom:10px;">' + esc(T(EV_TXT.hint)) + '</div>' + evFormHTML();
+  }
+  function evHandleInput(t){
+    if(t.hasAttribute('data-ev')){ evData[t.getAttribute('data-ev')] = t.value; return true; }
+    if(t.hasAttribute('data-evr')){ var i = +t.getAttribute('data-i'); evData.rounds[i] = evData.rounds[i] || {}; evData.rounds[i][t.getAttribute('data-evr')] = t.value; return true; }
+    if(t.hasAttribute('data-evs')){ evData.sc[t.getAttribute('data-evs')] = t.value; return true; }
+    return false;
+  }
+  function evHandleClick(t){
+    var lv = t.closest('[data-ev-level]');
+    if(lv){ var v = lv.getAttribute('data-ev-level'); evData.level = evData.level === v ? '' : v; evMountForm(); renderReport(); return true; }
+    if(t.closest('[data-ev-add]')){ evData.rounds.push({}); evMountForm(); renderReport(); return true; }
+    if(t.closest('[data-ev-clear]')){ evData = evBlank(); evMountForm(); renderReport(); return true; }
+    return false;
+  }
+
   function renderReport(){
     var host = sec && sec.querySelector('[data-pr="sheet"]');
     if(!host) return;
@@ -2042,6 +2228,7 @@
       : reportType === 'idea' ? ideaReportHTML()
       : reportType === 'announcement' ? announcementReportHTML()
       : reportType === 'bubble' ? bubbleReportHTML()
+      : reportType === 'eval' ? evaluationReportHTML()
       : reportHTML();
   }
 
@@ -2098,6 +2285,11 @@
     }
     var annWrap = q('annWrap');
     if(annWrap) annWrap.style.display = reportType === 'announcement' ? '' : 'none';
+    var evWrap = q('evWrap');
+    if(evWrap){ evWrap.style.display = reportType === 'eval' ? '' : 'none'; if(reportType === 'eval') evMountForm(); }
+    var lineB = q('lineBtn'); if(lineB) lineB.style.display = reportType === 'eval' ? 'none' : '';
+    var lineS = q('lineStatus'); if(lineS) lineS.style.display = reportType === 'eval' ? 'none' : '';
+    var typeEvalBtn = q('typeEval'); if(typeEvalBtn){ typeEvalBtn.textContent = T(EV_TXT.typeEval); typeEvalBtn.classList.toggle('on', reportType === 'eval'); }
     var annTplWrap = q('annTplWrap');
     var annTpl = ANNOUNCEMENT_TEMPLATES[annTopic];
     if(annTplWrap){
@@ -2143,7 +2335,7 @@
     if(typeBubbleBtn) typeBubbleBtn.classList.toggle('on', reportType === 'bubble');
     var modeWrap = q('modeWrap');
     if(modeWrap) modeWrap.style.display =
-      (reportType === 'gold' || reportType === 'idea' || reportType === 'announcement' || reportType === 'bubble') ? 'none' : '';
+      (reportType === 'gold' || reportType === 'idea' || reportType === 'announcement' || reportType === 'bubble' || reportType === 'eval') ? 'none' : '';
     var modeFullBtn = q('modeFull'), modeSelectBtn = q('modeSelect'), pickHost = q('picklist');
     if(modeFullBtn) modeFullBtn.classList.toggle('on', mode === 'full');
     if(modeSelectBtn) modeSelectBtn.classList.toggle('on', mode === 'select');
@@ -2161,6 +2353,8 @@
       if(t.closest('[data-pr="typeIdea"]')){ reportType = 'idea'; paint(); return; }
       if(t.closest('[data-pr="typeAnnouncement"]')){ reportType = 'announcement'; paint(); return; }
       if(t.closest('[data-pr="typeBubble"]')){ reportType = 'bubble'; paint(); return; }
+      if(t.closest('[data-pr="typeEval"]')){ reportType = 'eval'; paint(); return; }
+      if(evHandleClick(t)) return;
       if(t.closest('[data-pr="typeBrief"]')){ if(window.__SPZ_BRIEFING && window.__SPZ_BRIEFING.open) window.__SPZ_BRIEFING.open(); return; }
       if(t.closest('[data-pr="modeFull"]')){ mode = 'full'; paint(); return; }
       if(t.closest('[data-pr="modeSelect"]')){ mode = 'select'; paint(); return; }
@@ -2193,6 +2387,7 @@
     });
     sec.addEventListener('input', function(ev){
       var t = ev.target;
+      if(t && t.hasAttribute && evHandleInput(t)){ renderReport(); return; }
       if(t && t.getAttribute && t.getAttribute('data-pr') === 'pickSearch'){
         pickQuery = t.value;
         var pickHost = sec.querySelector('[data-pr="picklist"]');
@@ -2275,7 +2470,9 @@
             '<button type="button" class="pr-modebtn" data-pr="typeAnnouncement"></button>' +
             '<button type="button" class="pr-modebtn" data-pr="typeBubble"></button>' +
             '<button type="button" class="pr-modebtn" data-pr="typeBrief"></button>' +
+            '<button type="button" class="pr-modebtn" data-pr="typeEval"></button>' +
           '</div>' +
+          '<div data-pr="evWrap" style="display:none;"></div>' +
           '<div data-pr="annWrap" style="display:none;">' +
             '<div class="pr-row" style="display:block;">' +
               '<span class="pr-label" data-pr="annTopicLbl" style="display:block;margin-bottom:6px;"></span>' +
