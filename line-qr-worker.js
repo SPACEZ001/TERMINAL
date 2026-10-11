@@ -2245,6 +2245,115 @@ async function handleCexAdminCreate(request, env) {
   }
   return json({ created }, env);
 }
+/* =====================================================================
+   STUDENT EVALUATIONS (Print Report > Student Evaluation)
+   Admin saves an evaluation online (KV: EVAL:<id>). Each one may have a
+   READ-ONLY share link token (EVALTOK:<token> -> id), printed as a QR code
+   on the report. Anyone holding the token can read that one evaluation --
+   no login -- so the token is long and random, and the admin can switch it
+   off or replace it at any time. Editing always needs the admin key.
+   ===================================================================== */
+const EVAL_PREFIX = "EVAL:";
+const EVALTOK_PREFIX = "EVALTOK:";
+const EVAL_MAX_BYTES = 60000;
+function evalRandom(len, alphabet) {
+  const a = new Uint8Array(len); crypto.getRandomValues(a);
+  let s = ""; for (let i = 0; i < len; i++) s += alphabet[a[i] % alphabet.length];
+  return s;
+}
+const EVAL_ID_ALPHA = "abcdefghjkmnpqrstuvwxyz23456789";
+function evalNewId() { return evalRandom(12, EVAL_ID_ALPHA); }
+function evalNewToken() { return evalRandom(26, EVAL_ID_ALPHA); }
+function evalSafeId(v) { return typeof v === "string" && /^[a-z0-9]{6,32}$/.test(v) ? v : ""; }
+async function evalGet(id, env) {
+  const raw = await env.SESSIONS.get(EVAL_PREFIX + id);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (e) { return null; }
+}
+function evalSummary(r) {
+  const d = r.data || {};
+  return { id: r.id, name: String(d.name || "").slice(0, 80), cls: String(d.cls || "").slice(0, 80), date: String(d.date || ""),
+    updatedAt: r.updatedAt || 0, shared: !!r.token };
+}
+async function handleEvalSave(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  if (!body || typeof body.data !== "object" || body.data === null || Array.isArray(body.data)) return json({ error: "bad_request" }, env, 400);
+  const dataStr = JSON.stringify(body.data);
+  if (dataStr.length > EVAL_MAX_BYTES) return json({ error: "too_large" }, env, 413);
+  const now = Date.now();
+  let rec = null;
+  const id = evalSafeId(body.id);
+  if (id) rec = await evalGet(id, env);
+  if (!rec) rec = { id: evalNewId(), token: null, createdAt: now };
+  rec.data = body.data; rec.updatedAt = now;
+  if (body.share === true && !rec.token) {
+    rec.token = evalNewToken();
+    await env.SESSIONS.put(EVALTOK_PREFIX + rec.token, rec.id);
+  }
+  await env.SESSIONS.put(EVAL_PREFIX + rec.id, JSON.stringify(rec));
+  return json({ ok: true, id: rec.id, token: rec.token, updatedAt: rec.updatedAt }, env);
+}
+async function handleEvalList(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  const out = []; let cursor;
+  do {
+    const page = await env.SESSIONS.list({ prefix: EVAL_PREFIX, cursor });
+    for (const k of page.keys) {
+      const raw = await env.SESSIONS.get(k.name);
+      if (!raw) continue;
+      try { out.push(evalSummary(JSON.parse(raw))); } catch (e) { /* skip */ }
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+  out.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  return json({ evals: out }, env);
+}
+async function handleEvalGet(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  const id = evalSafeId(new URL(request.url).searchParams.get("id") || "");
+  const rec = id ? await evalGet(id, env) : null;
+  if (!rec) return json({ error: "not_found" }, env, 404);
+  return json({ id: rec.id, token: rec.token || null, data: rec.data, updatedAt: rec.updatedAt }, env);
+}
+// action: "share" (create link if none), "rotate" (new link, old one stops), "revoke" (switch link off), "delete"
+async function handleEvalLink(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const id = evalSafeId(body && body.id);
+  const rec = id ? await evalGet(id, env) : null;
+  if (!rec) return json({ error: "not_found" }, env, 404);
+  const act = body.action;
+  if (act === "delete") {
+    if (rec.token) await env.SESSIONS.delete(EVALTOK_PREFIX + rec.token);
+    await env.SESSIONS.delete(EVAL_PREFIX + rec.id);
+    return json({ ok: true, deleted: true }, env);
+  }
+  if (act === "revoke" || act === "rotate") {
+    if (rec.token) await env.SESSIONS.delete(EVALTOK_PREFIX + rec.token);
+    rec.token = null;
+  }
+  if ((act === "share" || act === "rotate") && !rec.token) {
+    rec.token = evalNewToken();
+    await env.SESSIONS.put(EVALTOK_PREFIX + rec.token, rec.id);
+  }
+  if (["share", "rotate", "revoke"].indexOf(act) === -1) return json({ error: "bad_request" }, env, 400);
+  await env.SESSIONS.put(EVAL_PREFIX + rec.id, JSON.stringify(rec));
+  return json({ ok: true, id: rec.id, token: rec.token }, env);
+}
+// PUBLIC read-only: whoever has the long random token can read exactly that one evaluation.
+async function handleEvalView(request, env) {
+  const t = (new URL(request.url).searchParams.get("t") || "").toLowerCase();
+  if (!/^[a-z0-9]{20,40}$/.test(t)) return json({ error: "not_found" }, env, 404);
+  const id = await env.SESSIONS.get(EVALTOK_PREFIX + t);
+  const rec = id ? await evalGet(id, env) : null;
+  if (!rec || rec.token !== t) return json({ error: "not_found" }, env, 404);
+  const res = json({ data: rec.data, updatedAt: rec.updatedAt }, env);
+  res.headers.set("Cache-Control", "no-store");
+  res.headers.set("X-Robots-Tag", "noindex");
+  return res;
+}
+
 async function handleCexAdminList(request, env) {
   if (!(await isAdminOrEditorRead(request, env))) return json({ error: "unauthorized" }, env, 401);
   const users = (await cexAllUsers(env)).map(cexAdminView);
@@ -2441,6 +2550,11 @@ export default {
       if (url.pathname === "/api/cexam/login" && request.method === "POST") return withCorsOrigin(await handleCexLogin(request, env), allowOrigin);
       if (url.pathname === "/api/cexam/start" && request.method === "POST") return withCorsOrigin(await handleCexStart(request, env), allowOrigin);
       if (url.pathname === "/api/cexam/submit" && request.method === "POST") return withCorsOrigin(await handleCexSubmit(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/evals/save" && request.method === "POST") return withCorsOrigin(await handleEvalSave(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/evals/list" && request.method === "GET") return withCorsOrigin(await handleEvalList(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/evals/get" && request.method === "GET") return withCorsOrigin(await handleEvalGet(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/evals/link" && request.method === "POST") return withCorsOrigin(await handleEvalLink(request, env), allowOrigin);
+      if (url.pathname === "/api/eval/view" && request.method === "GET") return withCorsOrigin(await handleEvalView(request, env), allowOrigin);
       if (url.pathname === "/api/admin/cexam/create" && request.method === "POST") return withCorsOrigin(await handleCexAdminCreate(request, env), allowOrigin);
       if (url.pathname === "/api/admin/cexam/list" && request.method === "GET") return withCorsOrigin(await handleCexAdminList(request, env), allowOrigin);
       if (url.pathname === "/api/admin/cexam/update" && request.method === "POST") return withCorsOrigin(await handleCexAdminUpdate(request, env), allowOrigin);
