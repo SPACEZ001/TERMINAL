@@ -2332,8 +2332,9 @@
   var EV_IMP = {
     h:{en:'Import from Classroom Exam',th:'ดึงผลจากข้อสอบห้องเรียน'},
     load:{en:'Load students',th:'โหลดรายชื่อ'}, go:{en:'Fill the form from this result',th:'เติมใบประเมินจากผลนี้'},
-    pick:{en:'Choose a student who finished',th:'เลือกนักเรียนที่สอบเสร็จแล้ว'}, none:{en:'No finished exams yet.',th:'ยังไม่มีคนสอบเสร็จ'},
+    pick:{en:'Pick a student. Tap a finished set to bring its score into the report — works with any number of sets.',th:'เลือกนักเรียน แตะชุดที่สอบเสร็จเพื่อดึงคะแนนเข้าใบประเมิน (จะมีกี่ชุดก็พิมพ์ได้)'}, none:{en:'No students yet.',th:'ยังไม่มีนักเรียนในห้องสอบ'},
     workerOld:{en:'The Worker has no classroom-exam endpoints yet. Paste the new line-qr-worker.js into Cloudflare.',th:'Worker ยังไม่มีระบบข้อสอบ ต้องวางไฟล์ line-qr-worker.js ใหม่ใน Cloudflare'},
+    use:{en:'import', th:'นำเข้า'}, doing:{en:'in progress', th:'กำลังสอบ'}, notyet:{en:'not taken', th:'ยังไม่สอบ'}, nameOnly:{en:'Pick this student (name only)', th:'เลือกนักเรียนคนนี้ (เอาแค่ชื่อ)'}, all:{en:'Import every finished set', th:'นำเข้าทุกชุดที่สอบเสร็จ'}, reload:{en:'Reload list', th:'โหลดรายชื่อใหม่'},
     bad:{en:'Could not load. Check the admin key.',th:'โหลดไม่สำเร็จ ตรวจรหัสแอดมิน'}, round:{en:'Classroom exam',th:'ข้อสอบห้องเรียน'},
     note:{en:'Skill scores come from the questions linked to each skill (accuracy × 5). You can edit everything after filling.',th:'คะแนนทักษะคำนวณจากคำถามที่ผูกกับแต่ละทักษะ (ความแม่นยำ × 5) กรอกแล้วแก้ไขได้ทุกช่อง'}
   };
@@ -2342,34 +2343,45 @@
     if(!key){ evImp.err = T(EV_IMP.bad); evMountForm(true); return; }
     evImp.busy = true; evImp.err = ''; evMountForm(true);
     fetch(WORKER_BASE + '/api/admin/cexam/list', { headers:{ 'X-Admin-Key': key } }).then(function(r){
-      evImp.busy = false;
-      if(r.status === 404){ evImp.err = T(EV_IMP.workerOld); evMountForm(true); return null; }
-      if(!r.ok){ evImp.err = T(EV_IMP.bad); evMountForm(true); return null; }
+      if(r.status === 404){ evImp.err = T(EV_IMP.workerOld); return null; }
+      if(!r.ok){ evImp.err = T(EV_IMP.bad); return null; }
       return r.json();
     }).then(function(j){
-      if(!j) return;
-      evImp.list = (j.users || []).filter(function(u){ return u.status === 'done'; });
-      evMountForm(true);
-    }).catch(function(){ evImp.busy = false; evImp.err = T(EV_IMP.bad); evMountForm(true); });
+      if(j) evImp.list = j.users || [];
+      return fetch(WORKER_BASE + '/api/admin/cexam/sets', { headers:{ 'X-Admin-Key': key } }).then(function(r){ return r.ok ? r.json() : null; }).then(function(x){ if(x && x.sets) evExSets = x.sets; }).catch(function(){});
+    }).catch(function(){ evImp.err = T(EV_IMP.bad); })
+      .then(function(){ evImp.busy = false; evMountForm(true); });
   }
-  function evImpGo(){
-    var w = sec && sec.querySelector('[data-ev-impsel]');
-    var un = w ? w.value : '';
-    if(!un) return;
-    fetch(WORKER_BASE + '/api/admin/cexam/result?username=' + encodeURIComponent(un), { headers:{ 'X-Admin-Key': getAdminKey() } }).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
-      if(!j || !j.user) { evImp.err = T(EV_IMP.bad); evMountForm(true); return; }
-      var u = j.user, d = evData;
-      d.name = u.note || u.username;
-      var fin = u.finishedAt ? new Date(u.finishedAt) : new Date();
-      var iso = fin.getFullYear() + '-' + String(fin.getMonth()+1).padStart(2,'0') + '-' + String(fin.getDate()).padStart(2,'0');
-      var row = { name:T(EV_IMP.round) + ' ' + u.username, date:iso, score:String(u.score), max:String(u.total) };
-      var slot = -1;
-      for(var i = 0; i < d.rounds.length; i++){ var r0 = d.rounds[i]; if(!r0.name && !r0.score && !r0.max){ slot = i; break; } }
-      if(slot < 0){ d.rounds.push(row); } else d.rounds[slot] = row;
+  function evImpName(u){ return u.displayName || u.note || u.username; }
+  function evImpGo(el){
+    var un = el.getAttribute('data-u'), which = el.getAttribute('data-ev-impgo'), key = getAdminKey();
+    var u = null; (evImp.list || []).forEach(function(x){ if(x.username === un) u = x; });
+    if(!u) return;
+    var d = evData;
+    d.name = evImpName(u);
+    evImp.sel = un;
+    if(which === 'name'){ evMountForm(true); renderReport(); return; }
+    var targets = (u.results || []).filter(function(x){ return x.status === 'done' && (which === 'all' || x.setId === which); })
+      .sort(function(a, b){ return (a.finishedAt || 0) - (b.finishedAt || 0); });
+    if(!targets.length){ evMountForm(true); renderReport(); return; }
+    Promise.all(targets.map(function(t){
+      return fetch(WORKER_BASE + '/api/admin/cexam/result?username=' + encodeURIComponent(un) + '&set=' + encodeURIComponent(t.setId), { headers:{ 'X-Admin-Key': key } })
+        .then(function(r){ return r.ok ? r.json() : null; }).then(function(j){ return { t:t, j:j }; });
+    })).then(function(rs){
       var acc = {};
-      (j.review || []).forEach(function(x){ if(x.skill){ var a = acc[x.skill] || (acc[x.skill] = { n:0, ok:0 }); a.n++; if(x.ok) a.ok++; } });
+      rs.forEach(function(x){
+        if(!x.j) return;
+        var t = x.t, fin = t.finishedAt ? new Date(t.finishedAt) : new Date();
+        var iso = fin.getFullYear() + '-' + String(fin.getMonth()+1).padStart(2,'0') + '-' + String(fin.getDate()).padStart(2,'0');
+        var row = { name:evSetTitle(t.setId) || T(EV_IMP.round), date:iso, score:String(t.score), max:String(t.total) };
+        var slot = -1, k;
+        for(k = 0; k < d.rounds.length; k++){ if(d.rounds[k].name === row.name){ slot = k; break; } }
+        if(slot < 0){ for(k = 0; k < d.rounds.length; k++){ var r0 = d.rounds[k]; if(!r0.name && !r0.score && !r0.max){ slot = k; break; } } }
+        if(slot < 0) d.rounds.push(row); else d.rounds[slot] = row;
+        (x.j.review || []).forEach(function(q){ if(q.skill){ var a = acc[q.skill] || (acc[q.skill] = { n:0, ok:0 }); a.n++; if(q.ok) a.ok++; } });
+      });
       Object.keys(acc).forEach(function(k){ d.sc[k] = String(Math.round(acc[k].ok / acc[k].n * 5)); });
-      evImp.sel = un; evMountForm(true); renderReport();
+      evMountForm(true); renderReport();
     }).catch(function(){ evImp.err = T(EV_IMP.bad); evMountForm(true); });
   }
   function evImpHTML(){
@@ -2379,9 +2391,18 @@
     } else if(!evImp.list.length){
       h += '<div class="pr-hint">' + esc(T(EV_IMP.none)) + '</div><button type="button" class="pr-mini" data-ev-load="1">' + esc(T(EV_IMP.load)) + '</button>';
     } else {
-      h += '<select class="pr-search" data-ev-impsel="1">' + evImp.list.map(function(u){
-        return '<option value="' + esc(u.username) + '"' + (evImp.sel === u.username ? ' selected' : '') + '>' + esc((u.note || u.username) + ' — ' + u.percent + '%') + '</option>';
-      }).join('') + '</select> <button type="button" class="pr-mini" data-ev-impgo="1" style="margin-top:8px;">' + esc(T(EV_IMP.go)) + '</button><div class="pr-hint" style="margin-top:6px;">' + esc(T(EV_IMP.note)) + '</div>';
+      h += '<div class="pr-hint" style="margin-bottom:8px;">' + esc(T(EV_IMP.pick)) + '</div><div class="pr-ev-stus">' + evImp.list.map(function(u){
+        var done = (u.results || []).filter(function(x){ return x.status === 'done'; });
+        var res = (u.results || []).map(function(x){
+          var ttl = esc(evSetTitle(x.setId) || x.setId);
+          if(x.status === 'done') return '<button type="button" class="pr-ev-rchip done" data-ev-impgo="' + esc(x.setId) + '" data-u="' + esc(u.username) + '">' + ttl + ' · ' + esc(x.percent) + '% <i>' + esc(T(EV_IMP.use)) + '</i></button>';
+          if(x.status === 'started') return '<span class="pr-ev-rchip busy">' + ttl + ' · ' + esc(T(EV_IMP.doing)) + '</span>';
+          return '<span class="pr-ev-rchip">' + ttl + ' · ' + esc(T(EV_IMP.notyet)) + '</span>';
+        }).join('');
+        return '<div class="pr-ev-stu' + (evImp.sel === u.username ? ' on' : '') + '"><div class="pr-ev-stu-h"><b>' + esc(evImpName(u)) + '</b><span>' + esc(u.username) + '</span></div><div class="pr-ev-stu-r">' + res + '</div>' +
+          '<div class="pr-ev-stu-a"><button type="button" class="pr-mini" data-ev-impgo="name" data-u="' + esc(u.username) + '">' + esc(T(EV_IMP.nameOnly)) + '</button>' +
+          (done.length > 1 ? ' <button type="button" class="pr-mini" data-ev-impgo="all" data-u="' + esc(u.username) + '">' + esc(T(EV_IMP.all)) + '</button>' : '') + '</div></div>';
+      }).join('') + '</div><button type="button" class="pr-mini" data-ev-load="1" style="margin-top:8px;">' + esc(T(EV_IMP.reload)) + '</button><div class="pr-hint" style="margin-top:6px;">' + esc(T(EV_IMP.note)) + '</div>';
     }
     if(evImp.err) h += '<div class="pr-hint" style="color:#ff7a8c;margin-top:6px;">' + esc(evImp.err) + '</div>';
     return h + '</div>';
@@ -2484,7 +2505,8 @@
     if(t.closest('[data-ev-add]')){ evData.rounds.push({}); evMountForm(true); renderReport(); return true; }
     if(t.closest('[data-ev-clear]')){ evData = evBlank(); evOnline.id = ''; evOnline.token = ''; evOnline.msg = ''; evOnline.err = ''; evMountForm(true); renderReport(); return true; }
     if(t.closest('[data-ev-load]')){ evImpLoad(); return true; }
-    if(t.closest('[data-ev-impgo]')){ evImpGo(); return true; }
+    var impgo = t.closest('[data-ev-impgo]');
+    if(impgo){ evImpGo(impgo); return true; }
     return false;
   }
 
