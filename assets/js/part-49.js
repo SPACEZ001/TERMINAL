@@ -2067,6 +2067,20 @@
     rub:[{en:'Not yet shown',th:'ยังไม่แสดงผล'},{en:'Needs a lot of help',th:'ต้องช่วยมาก'},{en:'Partly understands',th:'เข้าใจบางส่วน'},{en:'Understands, some errors',th:'เข้าใจ มีพลาดบ้าง'},{en:'Solid, independent',th:'ทำได้ดี ทำเองได้'},{en:'Excellent, can teach others',th:'ยอดเยี่ยม สอนคนอื่นได้'}],
     goal:{en:'Goal for next period', th:'เป้าหมายรอบหน้า'}, nextExam:{en:'Next exam date', th:'วันสอบครั้งถัดไป'}, homework:{en:'Homework / follow-up', th:'การบ้าน / สิ่งที่ต้องตามต่อ'},
     attended:{en:'Sessions attended', th:'จำนวนครั้งที่เข้าเรียน'}, sessions:{en:'Total sessions', th:'จำนวนครั้งทั้งหมด'},
+    onH:{en:'Save & share online', th:'บันทึก / แชร์ออนไลน์'},
+    onSave:{en:'Save online', th:'บันทึกออนไลน์'}, onSaved:{en:'Saved online', th:'บันทึกออนไลน์แล้ว'},
+    onShare:{en:'Make a QR link for the student', th:'สร้างลิงก์ QR ให้นักเรียนดู'},
+    onWarn:{en:'Anyone who scans this QR or opens the link can see this whole evaluation, without logging in. Do not post it publicly.', th:'ใครสแกน QR หรือเปิดลิงก์นี้จะเห็นใบประเมินทั้งหมดโดยไม่ต้องล็อกอิน ห้ามเผยแพร่ต่อสาธารณะ'},
+    onLink:{en:'Student link', th:'ลิงก์สำหรับนักเรียน'}, onCopy:{en:'Copy link', th:'คัดลอกลิงก์'}, onCopied:{en:'Copied', th:'คัดลอกแล้ว'},
+    onRevoke:{en:'Turn link off', th:'ปิดลิงก์'}, onRotate:{en:'New link (old one stops)', th:'สร้างลิงก์ใหม่ (ลิงก์เดิมใช้ไม่ได้)'}, onMake:{en:'Create link', th:'สร้างลิงก์'},
+    onDel:{en:'Delete this saved copy', th:'ลบที่บันทึกออนไลน์'}, onDelAsk:{en:'Delete the online copy? This cannot be undone.', th:'ลบข้อมูลที่บันทึกออนไลน์ใช่ไหม? ย้อนกลับไม่ได้'},
+    onList:{en:'Saved evaluations', th:'รายการที่บันทึกไว้'}, onLoadList:{en:'Load list', th:'โหลดรายการ'}, onOpen:{en:'Open to edit', th:'เปิดมาแก้ไข'}, onNone:{en:'Nothing saved yet.', th:'ยังไม่มีที่บันทึกไว้'},
+    onExport:{en:'Download data file', th:'โหลดไฟล์ข้อมูล'}, onImport:{en:'Import data file', th:'นำเข้าไฟล์ข้อมูล'},
+    onBad:{en:'Could not reach the server. Check the admin key.', th:'เชื่อมต่อไม่สำเร็จ ตรวจรหัสแอดมิน'},
+    onOld:{en:'The Worker has no evaluation endpoints yet. Paste the new line-qr-worker.js into Cloudflare and Deploy.', th:'Worker ยังไม่มีระบบนี้ ต้องวางไฟล์ line-qr-worker.js ใหม่ใน Cloudflare แล้วกด Deploy'},
+    onBadFile:{en:'This file is not a student evaluation data file.', th:'ไฟล์นี้ไม่ใช่ไฟล์ข้อมูลใบประเมินนักเรียน'},
+    onImported:{en:'File imported. Press Save online to update the online copy.', th:'นำเข้าไฟล์แล้ว กด "บันทึกออนไลน์" ถ้าต้องการอัปเดตข้อมูลออนไลน์'},
+    qrView:{en:'View this evaluation online', th:'ดูใบประเมินนี้ออนไลน์'},
     cmpT:{en:'Compare with previous round', th:'เทียบกับรอบก่อน'}, prevL:{en:'Before', th:'รอบก่อน'}, nowL:{en:'Now', th:'ตอนนี้'},
     readyT:{en:'CEWA exam readiness', th:'ความพร้อมสอบ CEWA'},
     ready:[{k:'no',en:'Not ready',th:'ยังไม่พร้อม',c:'#d8473d'},{k:'near',en:'Almost ready',th:'ใกล้พร้อม',c:'#e8a417'},{k:'yes',en:'Ready',th:'พร้อม',c:'#2fa66a'}],
@@ -2102,9 +2116,11 @@
     var d = new Date();
     return { name:'', cls:'', level:'', by:'Noraset Boikaw',
       date: d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'),
-      rounds:[{},{},{},{}], sc:{}, prev:{}, cmp:false, ready:'', pracDone:'', pracOk:'', repeat:'', plan:[{},{},{}], resources:'', stuGoal:'', strengths:'', improve:'', covered:'', comment:'', goal:'', homework:'', nextExam:'', attended:'', sessions:'' };
+      ref:'', rounds:[{},{},{},{}], sc:{}, prev:{}, cmp:false, ready:'', pracDone:'', pracOk:'', repeat:'', plan:[{},{},{}], resources:'', stuGoal:'', strengths:'', improve:'', covered:'', comment:'', goal:'', homework:'', nextExam:'', attended:'', sessions:'' };
   }
   var evData = evBlank();
+  var evOnline = { id:'', token:'', savedAt:0, busy:false, msg:'', err:'', share:true, list:null, sel:'' };
+  var evViewMode = false;
 
   function evNum(v){ var n = parseFloat(v); return isFinite(n) ? n : null; }
   function evBoxes(score){
@@ -2251,7 +2267,7 @@
       '<div class="pr-ev-top">' +
         '<div class="pr-ev-brand"><img class="pr-ev-logo" src="' + PR_LOGO + '" alt=""><div><b>SPACEZ TERMINAL</b><span>' + esc(T(EV_TXT.dept)) + '</span></div></div>' +
         '<div class="pr-ev-doc"><div class="pr-ev-doc-t">' + esc(T(EV_TXT.title)) + '</div>' +
-          '<div class="pr-meta"><span>' + esc(T(UI.serial)) + ': ' + esc(serial()) + '</span></div></div>' +
+          '<div class="pr-meta"><span>' + esc(T(UI.serial)) + ': ' + esc(d.ref || serial()) + '</span></div></div>' +
       '</div>' +
       '<div class="pr-ev-info">' +
         evField(EV_TXT.name, d.name, true) + evField(EV_TXT.cls, d.cls) + evField(EV_TXT.date, d.date) + evField(EV_TXT.by, d.by) +
@@ -2293,6 +2309,7 @@
         '<div><div class="pr-ev-h">' + esc(T(EV_TXT.stuGoal)) + '</div>' + evBlankLine(d.stuGoal, 2) + '</div></div>') +
       evBlk('<div class="pr-ev-h">' + esc(T(EV_TXT.comment)) + '</div>' + evBlankLine(d.comment, 4) +
       '<div class="pr-ev-sign"><div></div><span>' + esc(T(EV_TXT.sign)) + '</span></div>') +
+      evShareHTML() +
     '</div>';
   }
 
@@ -2361,7 +2378,7 @@
     function inp(k, lbl, type, ph){
       return '<label class="pr-ev-in"><span>' + esc(T(lbl)) + '</span><input type="' + (type || 'text') + '" data-ev="' + k + '" value="' + esc(d[k] || '') + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + '></label>';
     }
-    var h = evImpHTML() + inp('name', EV_TXT.name) + '<div class="pr-ev-grid2">' + inp('cls', EV_TXT.cls) + inp('date', EV_TXT.date, 'date') + '</div>' + inp('by', EV_TXT.by);
+    var h = evImpHTML() + evOnlineHTML() + inp('name', EV_TXT.name) + '<div class="pr-ev-grid2">' + inp('cls', EV_TXT.cls) + inp('date', EV_TXT.date, 'date') + '</div>' + inp('by', EV_TXT.by);
     h += '<div class="pr-ev-in"><span>' + esc(T(EV_TXT.level)) + '</span><div class="pr-ann-chips">' +
       EV_TXT.lvOpts.map(function(o){ return '<button type="button" class="pr-ann-chip' + (d.level === o.en ? ' on' : '') + '" data-ev-level="' + esc(o.en) + '">' + esc(T(o)) + '</button>'; }).join('') + '</div></div>';
     h += '<div class="pr-ev-grid2">' + inp('attended', EV_TXT.attended, 'number') + inp('sessions', EV_TXT.sessions, 'number') + '</div>';
@@ -2418,6 +2435,19 @@
   function evHandleClick(t){
     var lv = t.closest('[data-ev-level]');
     if(lv){ var v = lv.getAttribute('data-ev-level'); evData.level = evData.level === v ? '' : v; evMountForm(true); renderReport(); return true; }
+    if(t.closest('[data-ev-save]')){ evSave(); return true; }
+    if(t.closest('[data-ev-export]')){ evExport(); return true; }
+    if(t.closest('[data-ev-importbtn]')){ var fi = sec && sec.querySelector('[data-ev-importfile]'); if(fi) fi.click(); return true; }
+    if(t.closest('[data-ev-loadlist]')){ evListLoad(); return true; }
+    if(t.closest('[data-ev-open]')){ evOpen(); return true; }
+    var la = t.closest('[data-ev-linkact]');
+    if(la){ evLink(la.getAttribute('data-ev-linkact')); return true; }
+    if(t.closest('[data-ev-shareon]')){ evOnline.share = !evOnline.share; evMountForm(true); return true; }
+    if(t.closest('[data-ev-copy]')){
+      var lb = sec && sec.querySelector('[data-ev-linkbox]');
+      if(lb){ lb.select(); try { navigator.clipboard.writeText(lb.value); } catch(e){ try { document.execCommand('copy'); } catch(e2){} } evOnline.msg = T(EV_TXT.onCopied); evOnline.err = ''; evMountForm(true); }
+      return true;
+    }
     var sk = t.closest('[data-ev-sc]');
     if(sk){ var kk = sk.getAttribute('data-ev-sc'), vv = sk.getAttribute('data-v'); evData.sc[kk] = String(evData.sc[kk]) === vv ? '' : vv; evMountForm(true); renderReport(); return true; }
     var pvb = t.closest('[data-ev-pv]');
@@ -2426,10 +2456,144 @@
     if(rdb){ var rv = rdb.getAttribute('data-ev-ready'); evData.ready = evData.ready === rv ? '' : rv; evMountForm(true); renderReport(); return true; }
     if(t.closest('[data-ev-cmp]')){ evData.cmp = !evData.cmp; evMountForm(true); renderReport(); return true; }
     if(t.closest('[data-ev-add]')){ evData.rounds.push({}); evMountForm(true); renderReport(); return true; }
-    if(t.closest('[data-ev-clear]')){ evData = evBlank(); evMountForm(true); renderReport(); return true; }
+    if(t.closest('[data-ev-clear]')){ evData = evBlank(); evOnline.id = ''; evOnline.token = ''; evOnline.msg = ''; evOnline.err = ''; evMountForm(true); renderReport(); return true; }
     if(t.closest('[data-ev-load]')){ evImpLoad(); return true; }
     if(t.closest('[data-ev-impgo]')){ evImpGo(); return true; }
     return false;
+  }
+
+
+  /* ---- Student Evaluation: save online, share QR (read-only), data file in/out ---- */
+  function evViewURL(tok){ return PR_SITE_URL + '#/eval/' + tok; }
+  function evQrSvg(url){
+    try { if(typeof qrcode !== 'function') return ''; var q = qrcode(0, 'M'); q.addData(url); q.make(); return q.createSvgTag({ cellSize:4, margin:0, scalable:true }); }
+    catch(e){ return ''; }
+  }
+  function evShareHTML(){
+    if(evViewMode || !evOnline.token) return '';
+    var url = evViewURL(evOnline.token);
+    return '<div class="pr-ev-share"><div class="pr-ev-share-qr">' + evQrSvg(url) + '</div><div class="pr-ev-share-t">' +
+      '<b>' + esc(T(EV_TXT.qrView)) + '</b><span>' + esc(url) + '</span><em>' + esc(T(EV_TXT.onWarn)) + '</em></div></div>';
+  }
+  function evStr(v, n){ return typeof v === 'string' ? v.slice(0, n || 4000) : ''; }
+  function evMerge(o){
+    var b = evBlank();
+    if(!o || typeof o !== 'object') return b;
+    Object.keys(b).forEach(function(k){
+      var bv = b[k], ov = o[k];
+      if(typeof bv === 'string') b[k] = evStr(ov);
+      else if(typeof bv === 'boolean') b[k] = ov === true;
+      else if(k === 'sc' || k === 'prev'){
+        if(ov && typeof ov === 'object'){ Object.keys(ov).slice(0, 60).forEach(function(kk){ if(/^[a-z0-9]{1,8}$/.test(kk) && (typeof ov[kk] === 'string' || typeof ov[kk] === 'number')) b[k][kk] = String(ov[kk]).slice(0, 4); }); }
+      }
+      else if(k === 'rounds'){
+        if(Array.isArray(ov) && ov.length){ b.rounds = ov.slice(0, 30).map(function(r){ r = r || {}; return { name:evStr(r.name, 200), date:evStr(r.date, 20), score:r.score == null ? '' : String(r.score).slice(0, 10), max:r.max == null ? '' : String(r.max).slice(0, 10) }; }); }
+      }
+      else if(k === 'plan'){
+        if(Array.isArray(ov)){ b.plan = [0, 1, 2].map(function(i){ var r = ov[i] || {}; return { task:evStr(r.task, 300), due:evStr(r.due, 20) }; }); }
+      }
+    });
+    if(['', 'no', 'near', 'yes'].indexOf(b.ready) === -1) b.ready = '';
+    return b;
+  }
+  window.__SPZ_EVAL_RENDER = function(data){
+    var keepD = evData, keepV = evViewMode;
+    try { evData = evMerge(data); evViewMode = true; return evaluationReportHTML(); }
+    finally { evData = keepD; evViewMode = keepV; }
+  };
+  function evApi(path, method, body){
+    var key = getAdminKey();
+    if(!key){ evOnline.err = T(EV_TXT.onBad); evMountForm(true); return Promise.resolve(null); }
+    evOnline.busy = true; evOnline.err = ''; evOnline.msg = '';
+    return fetch(WORKER_BASE + path, { method:method, headers:{ 'X-Admin-Key':key, 'Content-Type':'application/json' }, body: body ? JSON.stringify(body) : undefined })
+      .then(function(r){
+        evOnline.busy = false;
+        if(r.status === 404){ evOnline.err = T(EV_TXT.onOld); return null; }
+        if(!r.ok){ evOnline.err = T(EV_TXT.onBad); return null; }
+        return r.json();
+      })
+      .catch(function(){ evOnline.busy = false; evOnline.err = T(EV_TXT.onBad); return null; });
+  }
+  function evDone(){ evMountForm(true); renderReport(); }
+  function evSave(){
+    if(!evData.ref) evData.ref = serial();
+    evApi('/api/admin/evals/save', 'POST', { id:evOnline.id, data:evData, share:evOnline.share }).then(function(j){
+      if(j && j.ok){ evOnline.id = j.id; evOnline.token = j.token || ''; evOnline.savedAt = j.updatedAt || Date.now(); evOnline.msg = T(EV_TXT.onSaved); evOnline.list = null; }
+      evDone();
+    });
+  }
+  function evListLoad(){
+    evMountForm(true);
+    evApi('/api/admin/evals/list', 'GET').then(function(j){ if(j) evOnline.list = j.evals || []; evMountForm(true); });
+  }
+  function evOpen(){
+    var w = sec && sec.querySelector('[data-ev-sel]'); var id = w ? w.value : '';
+    if(!id) return;
+    evApi('/api/admin/evals/get?id=' + encodeURIComponent(id), 'GET').then(function(j){
+      if(j && j.data){ evData = evMerge(j.data); evOnline.id = j.id; evOnline.token = j.token || ''; evOnline.sel = j.id; evOnline.savedAt = j.updatedAt || 0; evOnline.msg = ''; }
+      evDone();
+    });
+  }
+  function evLink(act){
+    if(!evOnline.id) return;
+    if(act === 'delete' && !window.confirm(T(EV_TXT.onDelAsk))) return;
+    evApi('/api/admin/evals/link', 'POST', { id:evOnline.id, action:act }).then(function(j){
+      if(j && j.ok){
+        if(act === 'delete'){ evOnline.id = ''; evOnline.token = ''; evOnline.list = null; evOnline.sel = ''; }
+        else evOnline.token = j.token || '';
+        if(evOnline.list) evOnline.list = null;
+      }
+      evDone();
+    });
+  }
+  function evExport(){
+    var d = evData, nm = (d.name || 'student').replace(/[\\\/:*?"<>|\s]+/g, '_').slice(0, 40) || 'student';
+    var blob = new Blob([JSON.stringify({ format:'spacez-student-eval', v:1, onlineId:evOnline.id || '', data:d }, null, 1)], { type:'application/json' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'SPZ-EVAL_' + nm + '_' + (d.date || '') + '.json';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+  function evImportFile(f){
+    if(!f) return;
+    var rd = new FileReader();
+    rd.onload = function(){
+      var o = null; try { o = JSON.parse(String(rd.result)); } catch(e){}
+      if(!o || o.format !== 'spacez-student-eval' || !o.data){ evOnline.err = T(EV_TXT.onBadFile); evOnline.msg = ''; evMountForm(true); return; }
+      evData = evMerge(o.data); evOnline.id = /^[a-z0-9]{6,32}$/.test(o.onlineId || '') ? o.onlineId : ''; evOnline.token = ''; evOnline.err = ''; evOnline.msg = T(EV_TXT.onImported);
+      evDone();
+    };
+    rd.readAsText(f);
+  }
+  function evOnlineHTML(){
+    var o = evOnline, h = '<div class="pr-ev-online"><div class="pr-ev-h2" style="margin-top:0">' + esc(T(EV_TXT.onH)) + '</div>';
+    h += '<button type="button" class="pr-ann-chip' + (o.share ? ' on' : '') + '" data-ev-shareon="1">' + (o.share ? '✓ ' : '') + esc(T(EV_TXT.onShare)) + '</button>';
+    h += '<div class="pr-ev-warn">' + esc(T(EV_TXT.onWarn)) + '</div>';
+    h += '<div class="pr-ev-btns"><button type="button" class="pr-mini pr-ev-primary" data-ev-save="1">' + esc(T(EV_TXT.onSave)) + (o.busy ? ' …' : '') + '</button>' +
+      '<button type="button" class="pr-mini" data-ev-export="1">' + esc(T(EV_TXT.onExport)) + '</button>' +
+      '<button type="button" class="pr-mini" data-ev-importbtn="1">' + esc(T(EV_TXT.onImport)) + '</button>' +
+      '<input type="file" accept=".json,application/json" data-ev-importfile="1" hidden></div>';
+    if(o.msg) h += '<div class="pr-ev-ok">✓ ' + esc(o.msg) + (o.savedAt ? ' · ' + esc(new Date(o.savedAt).toLocaleString(L() === 'th' ? 'th-TH' : 'en-US')) : '') + '</div>';
+    if(o.err) h += '<div class="pr-ev-err">' + esc(o.err) + '</div>';
+    if(o.id){
+      h += '<div class="pr-ev-h" style="margin-top:12px">' + esc(T(EV_TXT.onLink)) + '</div>';
+      if(o.token){
+        h += '<input type="text" readonly class="pr-ev-linkbox" data-ev-linkbox="1" value="' + esc(evViewURL(o.token)) + '">' +
+          '<div class="pr-ev-btns"><button type="button" class="pr-mini" data-ev-copy="1">' + esc(T(EV_TXT.onCopy)) + '</button>' +
+          '<button type="button" class="pr-mini" data-ev-linkact="rotate">' + esc(T(EV_TXT.onRotate)) + '</button>' +
+          '<button type="button" class="pr-mini" data-ev-linkact="revoke">' + esc(T(EV_TXT.onRevoke)) + '</button></div>';
+      } else {
+        h += '<div class="pr-ev-btns"><button type="button" class="pr-mini" data-ev-linkact="share">' + esc(T(EV_TXT.onMake)) + '</button></div>';
+      }
+      h += '<div class="pr-ev-btns"><button type="button" class="pr-mini pr-ev-danger" data-ev-linkact="delete">' + esc(T(EV_TXT.onDel)) + '</button></div>';
+    }
+    h += '<div class="pr-ev-h" style="margin-top:14px">' + esc(T(EV_TXT.onList)) + '</div>';
+    if(!o.list) h += '<button type="button" class="pr-mini" data-ev-loadlist="1">' + esc(T(EV_TXT.onLoadList)) + '</button>';
+    else if(!o.list.length) h += '<div class="pr-hint">' + esc(T(EV_TXT.onNone)) + '</div>';
+    else h += '<select class="pr-search" data-ev-sel="1">' + o.list.map(function(r){
+      return '<option value="' + esc(r.id) + '"' + (o.sel === r.id ? ' selected' : '') + '>' + esc((r.name || '—') + (r.cls ? ' · ' + r.cls : '') + ' · ' + (r.date || '') + (r.shared ? ' · QR' : '')) + '</option>';
+    }).join('') + '</select><div class="pr-ev-btns"><button type="button" class="pr-mini" data-ev-open="1">' + esc(T(EV_TXT.onOpen)) + '</button></div>';
+    return h + '</div>';
   }
 
   var prZoom = 1;
@@ -2662,6 +2826,7 @@
     });
     sec.addEventListener('change', function(ev){
       var t = ev.target;
+      if(t && t.hasAttribute && t.hasAttribute('data-ev-importfile')){ evImportFile(t.files && t.files[0]); t.value = ''; return; }
       if(t && t.getAttribute && t.getAttribute('data-pr') === 'qrToggle'){
         includeQrPage = !!t.checked;
         renderReport();
