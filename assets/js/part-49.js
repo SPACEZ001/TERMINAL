@@ -1952,7 +1952,7 @@
       '</tr>';
     }).join('');
     var indTableHTML = indicators.length
-      ? '<table class="pr-table"><thead><tr>' +
+      ? '<table class="pr-table pr-ind-table"><thead><tr>' +
           '<th>' + esc(T(UI.colIndicator)) + '</th><th>' + esc(T(UI.colIndValue)) + '</th>' +
           '<th>' + esc(T(UI.colIndRisk)) + '</th><th>' + esc(T(UI.colIndMeans)) + '</th>' +
         '</tr></thead><tbody>' + indRows + '</tbody></table>'
