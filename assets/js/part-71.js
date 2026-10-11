@@ -47,6 +47,9 @@
     nameWarn:{en:'You can set this only once. After you confirm, you cannot change it. Check the spelling first.', th:'ตั้งชื่อได้ครั้งเดียว ยืนยันแล้วจะแก้ไม่ได้ ตรวจตัวสะกดก่อนนะ'},
     namePh:{en:'Your name', th:'ชื่อของคุณ'}, nameBtn:{en:'Confirm name', th:'ยืนยันชื่อ'}, nameSure:{en:'Press again to lock this name', th:'กดอีกครั้งเพื่อล็อกชื่อนี้'}, nameBad:{en:'Please type at least 2 characters.', th:'พิมพ์อย่างน้อย 2 ตัวอักษร'},
     colName:{en:'Student name', th:'ชื่อนักเรียน'}, clearName:{en:'Unlock name', th:'ปลดล็อกชื่อ'},
+    colSet:{en:'Exam set', th:'ชุดข้อสอบ'}, setsH:{en:'Exam sets', th:'ชุดข้อสอบ'}, newSet:{en:'+ New set', th:'+ ชุดใหม่'}, newSetPh:{en:'Set name (e.g. Mock 2)', th:'ชื่อชุด (เช่น ชุดที่ 2)'},
+    delSet:{en:'Delete this set', th:'ลบชุดนี้'}, delSetSure:{en:'Confirm delete set', th:'ยืนยันลบชุด'}, setNote:{en:'Changing a student\'s set keeps the old result in their history and gives one fresh attempt.', th:'เปลี่ยนชุดของนักเรียน ผลเก่าจะเก็บไว้ในประวัติ และให้สอบชุดใหม่ 1 ครั้ง'},
+    taken:{en:'Already taken', th:'สอบไปแล้ว'}, qsShort:{en:'q', th:'ข้อ'},
     logout:{en:'Log out',th:'ออกจากระบบ'}, already:{en:'This login has already been used.',th:'รหัสนี้สอบไปแล้ว'},
     /* admin */
     adminBtn:{en:'Teacher panel',th:'หน้าครู (แอดมิน)'}, studentBtn:{en:'Student view',th:'หน้านักเรียน'},
@@ -90,7 +93,7 @@
   var sv = { stage:'login', err:'', busy:false, token:'', username:'', info:null, exam:null, answers:{}, deadline:0, result:null, confirm:false };
   var timerIv = null;
   // admin
-  var adm = { key:'', keyErr:false, tab:'users', users:null, bank:null, loading:false, msg:'', newCreds:null, view:null, revealed:{}, delArm:'', dirty:false, err:'' };
+  var adm = { key:'', keyErr:false, tab:'users', users:null, bank:null, loading:false, msg:'', newCreds:null, view:null, revealed:{}, delArm:'', dirty:false, err:'', sets:null, set:'main', setDel:'' };
 
   function api(path, method, payload, key){
     var opt = { method: method || 'GET', headers: {} };
@@ -209,6 +212,7 @@
       return '<div class="cx2-card cx2-narrow">' +
         '<div class="cx2-hi">' + esc(T(U.hello)) + ', <b>' + esc(i.displayName || i.note || sv.username) + '</b></div>' +
         '<div class="cx2-title">' + esc(i.title || '') + '</div>' +
+        ((i.taken || []).length ? '<p class="cx2-note">' + esc(T(U.taken)) + ': ' + i.taken.map(function(x){ return esc(x.title || '') + ' ' + esc(x.percent) + '%'; }).join(' · ') + '</p>' : '') +
         '<div class="cx2-chips"><span>' + esc(i.total) + ' ' + esc(T(U.qs)) + '</span><span>' + (i.limitMin ? esc(i.limitMin) + ' ' + esc(T(U.minutes)) : esc(T(U.noLimit))) + '</span></div>' +
         (isClosed(i) ? '<div class="cx2-err" style="border-color:#e8a417;color:#f1d08a">' + esc(T(U.notOpenYet)) + ' ' + esc(T(U.opensOn)) + ' <b>' + esc(fmtDay(i.openAt)) + '</b></div>' : '<p class="cx2-note">' + esc(T(U.rules)) + '</p>') +
         (sv.err ? '<div class="cx2-err">' + esc(sv.err) + '</div>' : '') +
@@ -261,7 +265,12 @@
 
   /* ------------------------------------------------------------------ admin */
   function adminKey(){ return adm.key || ss(KEY_STORE) || (tier() === 'editor' ? ss('spz_editor_code') : '') || ''; }
+  function loadSets(){
+    api('/api/admin/cexam/sets', 'GET', null, adminKey()).then(function(r){ if(r.status === 200){ adm.sets = r.j.sets || []; paint(); } }).catch(function(){});
+  }
+  function setTitle(id){ var t = ''; (adm.sets || []).forEach(function(x){ if(x.id === (id || 'main')) t = x.title; }); return t || (id || 'main'); }
   function loadUsers(){
+    if(!adm.sets) loadSets();
     adm.loading = true; paint();
     api('/api/admin/cexam/list', 'GET', null, adminKey()).then(function(r){
       adm.loading = false;
@@ -272,7 +281,8 @@
     }).catch(function(){ adm.loading = false; adm.err = 'net'; paint(); });
   }
   function loadBank(){
-    api('/api/admin/cexam/bank', 'GET', null, adminKey()).then(function(r){
+    if(!adm.sets) loadSets();
+    api('/api/admin/cexam/bank?set=' + encodeURIComponent(adm.set || 'main'), 'GET', null, adminKey()).then(function(r){
       if(r.status === 200){ adm.bank = r.j; adm.dirty = false; if(!adm.users || adm.err !== 'old') adm.err = adm.err === 'net' ? '' : adm.err; }
       else { adm.bank = { settings:{ title:'', timeLimitMin:0, passPercent:60, shuffle:true }, questions:[] }; adm.err = (r.status === 404 || r.status === 405) ? 'old' : 'net'; }
       paint();
@@ -310,7 +320,7 @@
     h += '<div class="cx2-row"><button class="cx2-mini" data-cx="refresh">' + esc(T(U.refresh)) + '</button></div>';
     if(adm.loading && !adm.users) return h + '<p class="cx2-note">' + esc(T(U.loading)) + '</p>';
     if(!adm.users || !adm.users.length) return h + '<p class="cx2-note">' + esc(T(U.noUsers)) + '</p>';
-    h += '<div class="cx2-tblwrap"><table class="cx2-tbl"><thead><tr><th>' + esc(T(U.colUser)) + '</th><th>' + esc(T(U.colPass)) + '</th><th>' + esc(T(U.colName)) + '</th><th>' + esc(T(U.colNote)) + '</th><th>' + esc(T(U.colStatus)) + '</th><th>' + esc(T(U.colScore)) + '</th><th>' + esc(T(U.colOpen)) + '</th><th></th></tr></thead><tbody>';
+    h += '<div class="cx2-tblwrap"><table class="cx2-tbl"><thead><tr><th>' + esc(T(U.colUser)) + '</th><th>' + esc(T(U.colPass)) + '</th><th>' + esc(T(U.colName)) + '</th><th>' + esc(T(U.colNote)) + '</th><th>' + esc(T(U.colSet)) + '</th><th>' + esc(T(U.colStatus)) + '</th><th>' + esc(T(U.colScore)) + '</th><th>' + esc(T(U.colOpen)) + '</th><th></th></tr></thead><tbody>';
     adm.users.forEach(function(u){
       var st = u.status === 'done' ? U.sDone : u.status === 'started' ? U.sStarted : U.sNew;
       var shown = !!adm.revealed[u.username];
@@ -318,6 +328,8 @@
         '<td><code>' + (shown ? esc(u.password) : '••••••••') + '</code> <button class="cx2-mini" data-cx="reveal" data-u="' + esc(u.username) + '">' + esc(T(shown ? U.hide : U.show)) + '</button> <button class="cx2-mini" data-cx="copy" data-t="' + esc(u.username + '\n' + u.password) + '">' + esc(T(U.copy)) + '</button></td>' +
         '<td>' + (u.displayName ? '<b>' + esc(u.displayName) + '</b> <button class="cx2-mini" data-cx="clearname" data-u="' + esc(u.username) + '">' + esc(T(U.clearName)) + '</button>' : '<small>—</small>') + '</td>' +
         '<td><input class="cx2-in sm wide" data-cx="note" data-u="' + esc(u.username) + '" value="' + esc(u.note) + '" maxlength="120"></td>' +
+        '<td><select class="cx2-in sm" data-cx="uset" data-u="' + esc(u.username) + '">' + (adm.sets || [{ id:'main', title:'Main' }]).map(function(x){ return '<option value="' + esc(x.id) + '"' + (x.id === (u.setId || 'main') ? ' selected' : '') + '>' + esc(x.title) + '</option>'; }).join('') + '</select>' +
+          ((u.history || []).length ? '<div class="cx2-note" style="margin:4px 0 0">' + esc(T(U.taken)) + ': ' + (u.history || []).map(function(h){ return esc(setTitle(h.setId)) + ' ' + esc(h.percent) + '%'; }).join(' · ') + '</div>' : '') + '</td>' +
         '<td><span class="cx2-st ' + esc(u.status) + '">' + esc(T(st)) + '</span></td>' +
         '<td>' + (u.status === 'done' ? '<b>' + esc(u.percent) + '%</b> <small>(' + esc(u.score) + '/' + esc(u.total) + ')</small>' + (u.late ? ' <small>⏱</small>' : '') : '—') + '</td>' +
         '<td><input class="cx2-in sm" type="date" data-cx="openat" data-u="' + esc(u.username) + '" value="' + esc(dayVal(u.openAt)) + '">' + (u.openAt && u.openAt > Date.now() ? '<div class="cx2-note" style="margin:4px 0 0">' + esc(T(U.openAuto)) + '</div>' : '') + '</td>' +
@@ -337,7 +349,13 @@
   function bankHTML(){
     if(!adm.bank) { return '<p class="cx2-note">' + esc(T(U.loading)) + '</p>'; }
     var qs = adm.bank.questions;
-    var h = '<div class="cx2-row"><button class="cx2-btn" data-cx="addq">' + esc(T(U.addQ)) + '</button> <button class="cx2-btn ghost" data-cx="samples">' + esc(T(U.samples)) + '</button> <button class="cx2-btn" data-cx="savebank">' + esc(T(U.saveBank)) + '</button> <button class="cx2-btn ghost" data-cx="impjson">' + esc(T(U.impJson)) + '</button> <button class="cx2-btn ghost" data-cx="expjson">' + esc(T(U.expJson)) + '</button> <input type="file" accept=".json,application/json" data-cx="impfile" style="display:none"> <span class="cx2-note" data-cx="bankmsg">' + esc(adm.msg || '') + '</span></div>' +
+    var sh = '<div class="cx2-card" style="margin-bottom:12px"><div class="cx2-lab">' + esc(T(U.setsH)) + '</div><div class="cx2-chips" style="flex-wrap:wrap;gap:6px">' +
+      (adm.sets || [{ id:'main', title:'Main', count:0 }]).map(function(x){
+        return '<button class="cx2-mini' + (x.id === adm.set ? ' on' : '') + '" style="' + (x.id === adm.set ? 'border-color:#4fb3ff;color:#4fb3ff;' : '') + '" data-cx="setpick" data-v="' + esc(x.id) + '">' + esc(x.title) + ' (' + esc(x.count) + ')</button>';
+      }).join('') + '</div>' +
+      '<div class="cx2-row" style="margin-top:10px"><input class="cx2-in sm" data-cx="newsettitle" maxlength="120" placeholder="' + esc(T(U.newSetPh)) + '"> <button class="cx2-btn ghost" data-cx="newset">' + esc(T(U.newSet)) + '</button>' +
+      (adm.set !== 'main' ? ' <button class="cx2-mini danger" data-cx="delset">' + esc(T(adm.setDel === adm.set ? U.delSetSure : U.delSet)) + '</button>' : '') + '</div></div>';
+    var h = sh + '<div class="cx2-row"><button class="cx2-btn" data-cx="addq">' + esc(T(U.addQ)) + '</button> <button class="cx2-btn ghost" data-cx="samples">' + esc(T(U.samples)) + '</button> <button class="cx2-btn" data-cx="savebank">' + esc(T(U.saveBank)) + '</button> <button class="cx2-btn ghost" data-cx="impjson">' + esc(T(U.impJson)) + '</button> <button class="cx2-btn ghost" data-cx="expjson">' + esc(T(U.expJson)) + '</button> <input type="file" accept=".json,application/json" data-cx="impfile" style="display:none"> <span class="cx2-note" data-cx="bankmsg">' + esc(adm.msg || '') + '</span></div>' +
       '<div class="cx2-note">' + esc(T(U.impNote)) + '</div><div class="cx2-note">' + qs.length + ' ' + esc(T(U.totalQ)) + '</div>';
     if(!qs.length) h += '<p class="cx2-note">' + esc(T(U.noBankQ)) + '</p>';
     qs.forEach(function(q, qi){
@@ -369,9 +387,9 @@
   function saveBank(){
     adm.msg = '…';
     var m = sec.querySelector('[data-cx="bankmsg"]'); if(m) m.textContent = '…';
-    api('/api/admin/cexam/bank/set', 'POST', adm.bank, adminKey()).then(function(r){
+    api('/api/admin/cexam/bank/set', 'POST', { set:adm.set || 'main', settings:adm.bank.settings, questions:adm.bank.questions }, adminKey()).then(function(r){
       adm.msg = r.status === 200 ? T(U.saved) + ' (' + r.j.count + ')' : (r.status === 404 ? T(U.oldWorker) : T(U.saveFail));
-      if(r.status === 200){ adm.dirty = false; loadBank(); }
+      if(r.status === 200){ adm.dirty = false; adm.sets = null; loadBank(); }
       var m2 = sec.querySelector('[data-cx="bankmsg"]'); if(m2) m2.textContent = adm.msg;
     }).catch(function(){ var m3 = sec.querySelector('[data-cx="bankmsg"]'); if(m3) m3.textContent = T(U.saveFail); });
   }
@@ -431,6 +449,19 @@
       copyText((adm.newCreds || []).map(function(c){ return c.username + '  ' + c.password + (c.note ? '  ' + c.note : ''); }).join('\n'), el);
     }
     else if(a === 'refresh') loadUsers();
+    else if(a === 'setpick'){ adm.set = el.getAttribute('data-v'); adm.bank = null; adm.setDel = ''; loadBank(); paint(); }
+    else if(a === 'newset'){
+      var nt = bodyEl.querySelector('[data-cx="newsettitle"]');
+      api('/api/admin/cexam/sets/create', 'POST', { title:nt ? nt.value : '' }, adminKey()).then(function(r){
+        if(r.status === 200){ adm.sets = r.j.sets; adm.set = r.j.id; adm.bank = null; loadBank(); }
+      });
+    }
+    else if(a === 'delset'){
+      if(adm.setDel !== adm.set){ adm.setDel = adm.set; paint(); }
+      else api('/api/admin/cexam/sets/delete', 'POST', { id:adm.set }, adminKey()).then(function(r){
+        adm.setDel = ''; if(r.status === 200){ adm.sets = r.j.sets; adm.set = 'main'; adm.bank = null; adm.users = null; loadBank(); loadUsers(); }
+      });
+    }
     else if(a === 'reveal'){ var un = el.getAttribute('data-u'); adm.revealed[un] = !adm.revealed[un]; paint(); }
     else if(a === 'clearname'){
       api('/api/admin/cexam/update', 'POST', { username:el.getAttribute('data-u'), clearName:true }, adminKey()).then(function(){ loadUsers(); });
@@ -496,6 +527,10 @@
     if(el.getAttribute && el.getAttribute('data-cx') === 'impfile'){
       var fl = el.files && el.files[0]; if(!fl) return;
       var rd = new FileReader(); rd.onload = function(){ importBank(String(rd.result || '')); }; rd.readAsText(fl); return;
+    }
+    if(el.getAttribute && el.getAttribute('data-cx') === 'uset'){
+      api('/api/admin/cexam/update', 'POST', { username:el.getAttribute('data-u'), setId:el.value }, adminKey()).then(function(){ adm.view = null; loadUsers(); });
+      return;
     }
     if(el.getAttribute && el.getAttribute('data-cx') === 'openat'){
       var un2 = el.getAttribute('data-u'), ms = null;
