@@ -2254,7 +2254,8 @@
       var r = d.rounds[i] || {}, sc = evNum(r.score), mx = evNum(r.max);
       var pct = (sc !== null && mx) ? sc / mx * 100 : null;
       pcts.push(pct); if(pct !== null) valid.push(pct);
-      rows += '<tr><td class="c">' + (i + 1) + '</td><td>' + (r.name ? esc(r.name) : '&nbsp;') + '</td><td class="c">' + (r.date ? esc(r.date) : '') + '</td>' +
+      var stTxt = (sc === null && r.st) ? '<em class="pr-ev-absent">' + esc(T(r.st === 'started' ? EV_IMP.doing : EV_IMP.absent)) + '</em>' : '';
+      rows += '<tr><td class="c">' + (i + 1) + '</td><td>' + (r.name ? esc(r.name) : '&nbsp;') + '</td><td class="c">' + (r.date ? esc(r.date) : stTxt) + '</td>' +
         '<td class="c">' + (sc !== null ? sc : '') + '</td><td class="c">' + (mx !== null ? mx : '') + '</td>' +
         '<td class="pr-ev-pc">' + (pct !== null ? evBar(pct) + '<b>' + pct.toFixed(0) + '%</b>' : evBar(null)) + '</td></tr>';
     }
@@ -2328,12 +2329,13 @@
   }
 
   /* ---- Student Evaluation <- Classroom Exam results ---- */
-  var evImp = { list:null, busy:false, err:'', sel:'' };
+  var evImp = { list:null, busy:false, err:'', sel:'', skills:[] };
   var EV_IMP = {
     h:{en:'Import from Classroom Exam',th:'ดึงผลจากข้อสอบห้องเรียน'},
     load:{en:'Load students',th:'โหลดรายชื่อ'}, go:{en:'Fill the form from this result',th:'เติมใบประเมินจากผลนี้'},
-    pick:{en:'Pick a student. Tap a finished set to bring its score into the report — works with any number of sets.',th:'เลือกนักเรียน แตะชุดที่สอบเสร็จเพื่อดึงคะแนนเข้าใบประเมิน (จะมีกี่ชุดก็พิมพ์ได้)'}, none:{en:'No students yet.',th:'ยังไม่มีนักเรียนในห้องสอบ'},
+    pick:{en:'Tap a student — name, exam account and every allowed exam set fill in automatically (finished = score, not finished = “not taken yet”). Then just add your ratings and comments.',th:'แตะชื่อนักเรียน — ชื่อ บัญชีสอบ และข้อสอบทุกชุดที่อนุญาตจะเติมให้อัตโนมัติ (สอบแล้ว = คะแนน, ยังไม่สอบ = “ยังไม่เข้าสอบ”) จากนั้นแค่ให้คะแนนและเขียนความเห็น'}, none:{en:'No students yet.',th:'ยังไม่มีนักเรียนในห้องสอบ'},
     workerOld:{en:'The Worker has no classroom-exam endpoints yet. Paste the new line-qr-worker.js into Cloudflare.',th:'Worker ยังไม่มีระบบข้อสอบ ต้องวางไฟล์ line-qr-worker.js ใหม่ใน Cloudflare'},
+    loading:{en:'Loading students…', th:'กำลังโหลดรายชื่อ…'}, noSets:{en:'No exam allowed yet', th:'ยังไม่ได้อนุญาตข้อสอบ'}, pickBtn:{en:'Use this student', th:'เลือกคนนี้'}, picked:{en:'✓ In the report', th:'✓ อยู่ในใบประเมินแล้ว'}, absent:{en:'Not taken yet', th:'ยังไม่เข้าสอบ'},
     use:{en:'import', th:'นำเข้า'}, doing:{en:'in progress', th:'กำลังสอบ'}, notyet:{en:'not taken', th:'ยังไม่สอบ'}, nameOnly:{en:'Pick this student (name only)', th:'เลือกนักเรียนคนนี้ (เอาแค่ชื่อ)'}, all:{en:'Import every finished set', th:'นำเข้าทุกชุดที่สอบเสร็จ'}, reload:{en:'Reload list', th:'โหลดรายชื่อใหม่'},
     bad:{en:'Could not load. Check the admin key.',th:'โหลดไม่สำเร็จ ตรวจรหัสแอดมิน'}, round:{en:'Classroom exam',th:'ข้อสอบห้องเรียน'},
     note:{en:'Skill scores come from the questions linked to each skill (accuracy × 5). You can edit everything after filling.',th:'คะแนนทักษะคำนวณจากคำถามที่ผูกกับแต่ละทักษะ (ความแม่นยำ × 5) กรอกแล้วแก้ไขได้ทุกช่อง'}
@@ -2353,56 +2355,68 @@
       .then(function(){ evImp.busy = false; evMountForm(true); });
   }
   function evImpName(u){ return u.displayName || u.note || u.username; }
-  function evImpGo(el){
-    var un = el.getAttribute('data-u'), which = el.getAttribute('data-ev-impgo'), key = getAdminKey();
+  function evDay(t){ var f = new Date(t); return f.getFullYear() + '-' + String(f.getMonth()+1).padStart(2,'0') + '-' + String(f.getDate()).padStart(2,'0'); }
+  function evImpExams(u){
+    var order = {}; evExSets.forEach(function(x, i){ order[x.id] = i; });
+    return (u.exams || u.results || []).filter(function(x){ return x.status === 'done' || x.allow; })
+      .sort(function(a, b){ return (order[a.setId] == null ? 99 : order[a.setId]) - (order[b.setId] == null ? 99 : order[b.setId]); });
+  }
+  /* Pick a student: fills the name, the exam account, and one row per exam set (finished = score, otherwise "not taken yet"). */
+  function evImpPick(un){
+    var key = getAdminKey();
     var u = null; (evImp.list || []).forEach(function(x){ if(x.username === un) u = x; });
     if(!u) return;
     var d = evData;
+    d.rounds = d.rounds.filter(function(r){ return r && !r.imp && (r.name || r.score || r.max || r.date); });
+    (evImp.skills || []).forEach(function(k){ delete d.sc[k]; }); evImp.skills = [];
     d.name = evImpName(u);
+    d.examUser = u.username; d.examPass = u.password || '';
+    var exs = evImpExams(u);
+    var pend = null; exs.forEach(function(x){ if(!pend && x.allow && x.status !== 'done') pend = x; });
+    d.examSetId = pend ? pend.setId : ''; d.examSet = pend ? evSetTitle(pend.setId) : '';
+    d.nextExam = pend && pend.openAt ? evDay(pend.openAt) : '';
     evImp.sel = un;
-    if(which === 'name'){ evMountForm(true); renderReport(); return; }
-    var targets = (u.results || []).filter(function(x){ return x.status === 'done' && (which === 'all' || x.setId === which); })
-      .sort(function(a, b){ return (a.finishedAt || 0) - (b.finishedAt || 0); });
-    if(!targets.length){ evMountForm(true); renderReport(); return; }
-    Promise.all(targets.map(function(t){
+    var rows = exs.map(function(x){
+      var title = evSetTitle(x.setId) || x.setId;
+      if(x.status === 'done') return { name:title, date:x.finishedAt ? evDay(x.finishedAt) : '', score:String(x.score), max:String(x.total), imp:1 };
+      return { name:title, date:'', score:'', max:'', st:x.status === 'started' ? 'started' : 'absent', imp:1 };
+    });
+    d.rounds = rows.concat(d.rounds);
+    while(d.rounds.length < 4) d.rounds.push({});
+    evMountForm(true); renderReport();
+    var done = exs.filter(function(x){ return x.status === 'done'; });
+    if(!done.length || !key) return;
+    Promise.all(done.map(function(t){
       return fetch(WORKER_BASE + '/api/admin/cexam/result?username=' + encodeURIComponent(un) + '&set=' + encodeURIComponent(t.setId), { headers:{ 'X-Admin-Key': key } })
-        .then(function(r){ return r.ok ? r.json() : null; }).then(function(j){ return { t:t, j:j }; });
+        .then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
     })).then(function(rs){
+      if(evImp.sel !== un) return;
       var acc = {};
-      rs.forEach(function(x){
-        if(!x.j) return;
-        var t = x.t, fin = t.finishedAt ? new Date(t.finishedAt) : new Date();
-        var iso = fin.getFullYear() + '-' + String(fin.getMonth()+1).padStart(2,'0') + '-' + String(fin.getDate()).padStart(2,'0');
-        var row = { name:evSetTitle(t.setId) || T(EV_IMP.round), date:iso, score:String(t.score), max:String(t.total) };
-        var slot = -1, k;
-        for(k = 0; k < d.rounds.length; k++){ if(d.rounds[k].name === row.name){ slot = k; break; } }
-        if(slot < 0){ for(k = 0; k < d.rounds.length; k++){ var r0 = d.rounds[k]; if(!r0.name && !r0.score && !r0.max){ slot = k; break; } } }
-        if(slot < 0) d.rounds.push(row); else d.rounds[slot] = row;
-        (x.j.review || []).forEach(function(q){ if(q.skill){ var a = acc[q.skill] || (acc[q.skill] = { n:0, ok:0 }); a.n++; if(q.ok) a.ok++; } });
-      });
-      Object.keys(acc).forEach(function(k){ d.sc[k] = String(Math.round(acc[k].ok / acc[k].n * 5)); });
+      rs.forEach(function(j){ (j && j.review || []).forEach(function(q){ if(q.skill){ var a = acc[q.skill] || (acc[q.skill] = { n:0, ok:0 }); a.n++; if(q.ok) a.ok++; } }); });
+      Object.keys(acc).forEach(function(k){ d.sc[k] = String(Math.round(acc[k].ok / acc[k].n * 5)); evImp.skills.push(k); });
       evMountForm(true); renderReport();
-    }).catch(function(){ evImp.err = T(EV_IMP.bad); evMountForm(true); });
+    });
   }
   function evImpHTML(){
     var h = '<div class="pr-ev-imp"><div class="pr-ev-h2" style="margin-top:0">' + esc(T(EV_IMP.h)) + '</div>';
     if(!evImp.list){
-      h += '<button type="button" class="pr-mini" data-ev-load="1">' + esc(T(EV_IMP.load)) + (evImp.busy ? ' …' : '') + '</button>';
+      if(!evImp.busy && !evImp.err && getAdminKey()) setTimeout(evImpLoad, 0);
+      h += '<button type="button" class="pr-ev-bigbtn" data-ev-load="1">' + esc(T(evImp.busy ? EV_IMP.loading : EV_IMP.load)) + '</button>';
     } else if(!evImp.list.length){
-      h += '<div class="pr-hint">' + esc(T(EV_IMP.none)) + '</div><button type="button" class="pr-mini" data-ev-load="1">' + esc(T(EV_IMP.load)) + '</button>';
+      h += '<div class="pr-hint">' + esc(T(EV_IMP.none)) + '</div><button type="button" class="pr-ev-bigbtn ghost" data-ev-load="1">' + esc(T(EV_IMP.reload)) + '</button>';
     } else {
-      h += '<div class="pr-hint" style="margin-bottom:8px;">' + esc(T(EV_IMP.pick)) + '</div><div class="pr-ev-stus">' + evImp.list.map(function(u){
-        var done = (u.results || []).filter(function(x){ return x.status === 'done'; });
-        var res = (u.results || []).map(function(x){
+      h += '<div class="pr-hint" style="margin-bottom:10px;">' + esc(T(EV_IMP.pick)) + '</div><div class="pr-ev-stus">' + evImp.list.map(function(u){
+        var res = evImpExams(u).map(function(x){
           var ttl = esc(evSetTitle(x.setId) || x.setId);
-          if(x.status === 'done') return '<button type="button" class="pr-ev-rchip done" data-ev-impgo="' + esc(x.setId) + '" data-u="' + esc(u.username) + '">' + ttl + ' · ' + esc(x.percent) + '% <i>' + esc(T(EV_IMP.use)) + '</i></button>';
+          if(x.status === 'done') return '<span class="pr-ev-rchip done">' + ttl + ' · ' + esc(x.percent) + '%</span>';
           if(x.status === 'started') return '<span class="pr-ev-rchip busy">' + ttl + ' · ' + esc(T(EV_IMP.doing)) + '</span>';
           return '<span class="pr-ev-rchip">' + ttl + ' · ' + esc(T(EV_IMP.notyet)) + '</span>';
         }).join('');
-        return '<div class="pr-ev-stu' + (evImp.sel === u.username ? ' on' : '') + '"><div class="pr-ev-stu-h"><b>' + esc(evImpName(u)) + '</b><span>' + esc(u.username) + '</span></div><div class="pr-ev-stu-r">' + res + '</div>' +
-          '<div class="pr-ev-stu-a"><button type="button" class="pr-mini" data-ev-impgo="name" data-u="' + esc(u.username) + '">' + esc(T(EV_IMP.nameOnly)) + '</button>' +
-          (done.length > 1 ? ' <button type="button" class="pr-mini" data-ev-impgo="all" data-u="' + esc(u.username) + '">' + esc(T(EV_IMP.all)) + '</button>' : '') + '</div></div>';
-      }).join('') + '</div><button type="button" class="pr-mini" data-ev-load="1" style="margin-top:8px;">' + esc(T(EV_IMP.reload)) + '</button><div class="pr-hint" style="margin-top:6px;">' + esc(T(EV_IMP.note)) + '</div>';
+        var on = evImp.sel === u.username;
+        return '<button type="button" class="pr-ev-stu' + (on ? ' on' : '') + '" data-ev-imppick="' + esc(u.username) + '"><span class="pr-ev-stu-h"><b>' + esc(evImpName(u)) + '</b><span>' + esc(u.username) + '</span></span>' +
+          '<span class="pr-ev-stu-r">' + (res || '<span class="pr-ev-rchip">' + esc(T(EV_IMP.noSets)) + '</span>') + '</span>' +
+          '<span class="pr-ev-stu-go">' + esc(T(on ? EV_IMP.picked : EV_IMP.pickBtn)) + '</span></button>';
+      }).join('') + '</div><button type="button" class="pr-ev-bigbtn ghost" data-ev-load="1">' + esc(T(evImp.busy ? EV_IMP.loading : EV_IMP.reload)) + '</button><div class="pr-hint" style="margin-top:8px;">' + esc(T(EV_IMP.note)) + '</div>';
     }
     if(evImp.err) h += '<div class="pr-hint" style="color:#ff7a8c;margin-top:6px;">' + esc(evImp.err) + '</div>';
     return h + '</div>';
@@ -2505,8 +2519,8 @@
     if(t.closest('[data-ev-add]')){ evData.rounds.push({}); evMountForm(true); renderReport(); return true; }
     if(t.closest('[data-ev-clear]')){ evData = evBlank(); evOnline.id = ''; evOnline.token = ''; evOnline.msg = ''; evOnline.err = ''; evMountForm(true); renderReport(); return true; }
     if(t.closest('[data-ev-load]')){ evImpLoad(); return true; }
-    var impgo = t.closest('[data-ev-impgo]');
-    if(impgo){ evImpGo(impgo); return true; }
+    var imppick = t.closest('[data-ev-imppick]');
+    if(imppick){ evImpPick(imppick.getAttribute('data-ev-imppick')); return true; }
     return false;
   }
 
@@ -2579,7 +2593,7 @@
         if(ov && typeof ov === 'object'){ Object.keys(ov).slice(0, 60).forEach(function(kk){ if(/^[a-z0-9]{1,8}$/.test(kk) && (typeof ov[kk] === 'string' || typeof ov[kk] === 'number')) b[k][kk] = String(ov[kk]).slice(0, 4); }); }
       }
       else if(k === 'rounds'){
-        if(Array.isArray(ov) && ov.length){ b.rounds = ov.slice(0, 30).map(function(r){ r = r || {}; return { name:evStr(r.name, 200), date:evStr(r.date, 20), score:r.score == null ? '' : String(r.score).slice(0, 10), max:r.max == null ? '' : String(r.max).slice(0, 10) }; }); }
+        if(Array.isArray(ov) && ov.length){ b.rounds = ov.slice(0, 30).map(function(r){ r = r || {}; return { name:evStr(r.name, 200), date:evStr(r.date, 20), score:r.score == null ? '' : String(r.score).slice(0, 10), max:r.max == null ? '' : String(r.max).slice(0, 10), st:(r.st === 'absent' || r.st === 'started') ? r.st : undefined, imp:r.imp ? 1 : undefined }; }); }
       }
       else if(k === 'plan'){
         if(Array.isArray(ov)){ var np = Math.max(3, Math.min(10, ov.length)); b.plan = []; for(var pq = 0; pq < np; pq++){ var r = ov[pq] || {}; b.plan.push({ task:evStr(r.task, 300), due:evStr(r.due, 20) }); } }
