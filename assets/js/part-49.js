@@ -2076,6 +2076,7 @@
     onDel:{en:'Delete this saved copy', th:'ลบที่บันทึกออนไลน์'}, onDelAsk:{en:'Delete the online copy? This cannot be undone.', th:'ลบข้อมูลที่บันทึกออนไลน์ใช่ไหม? ย้อนกลับไม่ได้'},
     onList:{en:'Saved evaluations', th:'รายการที่บันทึกไว้'}, onLoadList:{en:'Load list', th:'โหลดรายการ'}, onOpen:{en:'Open to edit', th:'เปิดมาแก้ไข'}, onNone:{en:'Nothing saved yet.', th:'ยังไม่มีที่บันทึกไว้'},
     onExport:{en:'Download data file', th:'โหลดไฟล์ข้อมูล'}, onImport:{en:'Import data file', th:'นำเข้าไฟล์ข้อมูล'},
+    onFileHint:{en:'Data file = a backup copy of this evaluation (.json). Download it to keep on your Mac; import it later to open and edit this evaluation again. Data file and online copy hold the same data.', th:'ไฟล์ข้อมูล = ไฟล์สำรองของใบประเมินนี้ (.json) กด "โหลดไฟล์ข้อมูล" เพื่อเก็บไว้ในเครื่อง Mac ภายหลังกด "นำเข้าไฟล์ข้อมูล" เพื่อเปิดมาแก้ไขต่อ ไฟล์กับที่บันทึกออนไลน์เป็นข้อมูลชุดเดียวกัน'},
     onBad:{en:'Could not reach the server. Check the admin key.', th:'เชื่อมต่อไม่สำเร็จ ตรวจรหัสแอดมิน'},
     onOld:{en:'The Worker has no evaluation endpoints yet. Paste the new line-qr-worker.js into Cloudflare and Deploy.', th:'Worker ยังไม่มีระบบนี้ ต้องวางไฟล์ line-qr-worker.js ใหม่ใน Cloudflare แล้วกด Deploy'},
     onBadFile:{en:'This file is not a student evaluation data file.', th:'ไฟล์นี้ไม่ใช่ไฟล์ข้อมูลใบประเมินนักเรียน'},
@@ -2464,7 +2465,9 @@
 
 
   /* ---- Student Evaluation: save online, share QR (read-only), data file in/out ---- */
-  function evViewURL(tok){ return PR_SITE_URL + '#/eval/' + tok; }
+  /* NOTE: PR_SITE_URL (workers.dev root) opens the portal index, which drops the #/eval/ part -- so the student link must point straight at the app page */
+  var EV_VIEW_BASE = 'https://spacez001.github.io/TERMINAL/SPACEZ_TERMINAL.html';
+  function evViewURL(tok){ return EV_VIEW_BASE + '#/eval/' + tok; }
   function evQrSvg(url){
     try { if(typeof qrcode !== 'function') return ''; var q = qrcode(0, 'M'); q.addData(url); q.make(); return q.createSvgTag({ cellSize:4, margin:0, scalable:true }); }
     catch(e){ return ''; }
@@ -2573,6 +2576,7 @@
       '<button type="button" class="pr-mini" data-ev-export="1">' + esc(T(EV_TXT.onExport)) + '</button>' +
       '<button type="button" class="pr-mini" data-ev-importbtn="1">' + esc(T(EV_TXT.onImport)) + '</button>' +
       '<input type="file" accept=".json,application/json" data-ev-importfile="1" hidden></div>';
+    h += '<div class="pr-ev-hint2">' + esc(T(EV_TXT.onFileHint)) + '</div>';
     if(o.msg) h += '<div class="pr-ev-ok">✓ ' + esc(o.msg) + (o.savedAt ? ' · ' + esc(new Date(o.savedAt).toLocaleString(L() === 'th' ? 'th-TH' : 'en-US')) : '') + '</div>';
     if(o.err) h += '<div class="pr-ev-err">' + esc(o.err) + '</div>';
     if(o.id){
