@@ -2076,7 +2076,7 @@
     onDel:{en:'Delete this saved copy', th:'ลบที่บันทึกออนไลน์'}, onDelAsk:{en:'Delete the online copy? This cannot be undone.', th:'ลบข้อมูลที่บันทึกออนไลน์ใช่ไหม? ย้อนกลับไม่ได้'},
     onByStu:{en:'link turned off by student', th:'นักเรียนปิดลิงก์เอง'}, onNoQr:{en:'no QR link', th:'ไม่มีลิงก์ QR'}, onDelShort:{en:'Delete', th:'ลบ'},
     exUser:{en:'Classroom exam username', th:'รหัสผู้ใช้ห้องสอบ'}, exSet:{en:'Set exam open date in Classroom Exam', th:'ตั้งวันเปิดสอบในห้องสอบ'},
-    exAuto:{en:'The exam opens automatically on this date (one attempt).', th:'ระบบจะเปิดให้สอบอัตโนมัติในวันนี้ (สอบได้ครั้งเดียว)'},
+    exPass:{en:'Password', th:'รหัสผ่าน'}, exPick:{en:'Pick a student account from Classroom Exam (name and password are filled in automatically)', th:'เลือกบัญชีนักเรียนจากห้องสอบ (ชื่อผู้ใช้และรหัสผ่านจะใส่ให้เอง)'}, exReload:{en:'Reload list', th:'โหลดรายชื่อใหม่'}, exEmpty:{en:'No accounts yet. Create them in Classroom Exam first.', th:'ยังไม่มีบัญชี ไปสร้างในห้องสอบก่อนนะคะ'}, exLoading:{en:'Loading accounts…', th:'กำลังโหลดบัญชี…'}, exTitle:{en:'Next exam', th:'การสอบครั้งถัดไป'}, exDate:{en:'Exam date', th:'วันที่สอบ'}, exAuto:{en:'The exam opens automatically on this date (one attempt).', th:'ระบบจะเปิดให้สอบอัตโนมัติในวันนี้ (สอบได้ครั้งเดียว)'},
     exDone:{en:'Set. This student can start the exam from that date.', th:'ตั้งแล้ว นักเรียนคนนี้จะเริ่มสอบได้ตั้งแต่วันที่กำหนด'},
     exNoUser:{en:'Type the username and pick a date first.', th:'กรอกรหัสผู้ใช้และเลือกวันที่ก่อน'}, exNf:{en:'Username not found in Classroom Exam.', th:'ไม่พบรหัสผู้ใช้นี้ในห้องสอบ'},
     onList:{en:'Saved evaluations', th:'รายการที่บันทึกไว้'}, onLoadList:{en:'Load list', th:'โหลดรายการ'}, onOpen:{en:'Open to edit', th:'เปิดมาแก้ไข'}, onNone:{en:'Nothing saved yet.', th:'ยังไม่มีที่บันทึกไว้'},
@@ -2124,7 +2124,7 @@
     var d = new Date();
     return { name:'', cls:'', level:'', by:'Noraset Boikaw',
       date: d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'),
-      ref:'', examUser:'', rounds:[{},{},{},{}], sc:{}, prev:{}, cmp:false, ready:'', pracDone:'', pracOk:'', repeat:'', plan:[{},{},{}], resources:'', stuGoal:'', strengths:'', improve:'', covered:'', comment:'', goal:'', homework:'', nextExam:'', attended:'', sessions:'' };
+      ref:'', examUser:'', examPass:'', rounds:[{},{},{},{}], sc:{}, prev:{}, cmp:false, ready:'', pracDone:'', pracOk:'', repeat:'', plan:[{},{},{}], resources:'', stuGoal:'', strengths:'', improve:'', covered:'', comment:'', goal:'', homework:'', nextExam:'', attended:'', sessions:'' };
   }
   var evData = evBlank();
   var evOnline = { id:'', token:'', savedAt:0, busy:false, msg:'', err:'', share:true, list:null, listTried:false, sel:'' };
@@ -2312,8 +2312,12 @@
       evBlk('<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.covered)) + '</div>' + evBlankLine(d.covered, 3) + '</div>' +
         '<div><div class="pr-ev-h">' + esc(T(EV_TXT.goal)) + '</div>' + evBlankLine(d.goal, 3) + '</div></div>') +
       evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.planT)) + '</div>' + evPlanHTML()) +
-      evBlk('<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.nextExam)) + '</div><div class="pr-ev-f"><b>' + (d.nextExam ? esc(d.nextExam) : '&nbsp;') + '</b>' + (d.examUser ? '<small class="pr-ev-exu">' + esc(T(EV_TXT.exUser)) + ': <b>' + esc(d.examUser) + '</b><br>' + esc(T(EV_TXT.exAuto)) + '</small>' : '') + '</div></div>' +
-        '<div><div class="pr-ev-h">' + esc(T(EV_TXT.homework)) + '</div>' + evBlankLine(d.homework, 1) + '</div></div>') +
+      evBlk('<div class="pr-ev-exam"><div class="pr-ev-exam-h">' + esc(T(EV_TXT.exTitle)) + '</div><div class="pr-ev-exam-g">' +
+        '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exDate)) + '</span><b>' + (d.nextExam ? esc(d.nextExam) : '&nbsp;') + '</b></div>' +
+        '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exUser)) + '</span><b>' + (d.examUser ? esc(d.examUser) : '&nbsp;') + '</b></div>' +
+        '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exPass)) + '</span><b>' + (d.examPass ? esc(d.examPass) : '&nbsp;') + '</b></div></div>' +
+        (d.examUser && d.nextExam ? '<div class="pr-ev-exn">' + esc(T(EV_TXT.exAuto)) + '</div>' : '') + '</div>') +
+      evBlk('<div class="pr-ev-h">' + esc(T(EV_TXT.homework)) + '</div>' + evBlankLine(d.homework, 2)) +
       evBlk('<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.resources)) + '</div>' + evBlankLine(d.resources, 2) + '</div>' +
         '<div><div class="pr-ev-h">' + esc(T(EV_TXT.stuGoal)) + '</div>' + evBlankLine(d.stuGoal, 2) + '</div></div>') +
       evBlk('<div class="pr-ev-h">' + esc(T(EV_TXT.comment)) + '</div>' + evBlankLine(d.comment, 4) +
@@ -2424,7 +2428,7 @@
     }
     h += '<button type="button" class="pr-mini" data-ev-planadd="1">' + esc(T(EV_TXT.planAdd)) + '</button>';
     function ta(k, lbl){ return '<label class="pr-ev-in"><span>' + esc(T(lbl)) + '</span><textarea rows="3" data-ev="' + k + '">' + esc(d[k] || '') + '</textarea></label>'; }
-    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.summary)) + '</div>' + ta('strengths', EV_TXT.strengths) + ta('improve', EV_TXT.improve) + ta('covered', EV_TXT.covered) + ta('repeat', EV_TXT.repeat) + ta('goal', EV_TXT.goal) + ta('resources', EV_TXT.resources) + ta('stuGoal', EV_TXT.stuGoal) + inp('nextExam', EV_TXT.nextExam, 'date') + inp('examUser', EV_TXT.exUser) + '<button type="button" class="pr-mini" data-ev-exset="1">' + esc(T(EV_TXT.exSet)) + '</button>' + (evOnline.exMsg ? '<div class="pr-ev-' + (evOnline.exOk ? 'ok' : 'err') + '">' + esc(evOnline.exMsg) + '</div>' : '') + ta('homework', EV_TXT.homework) + ta('comment', EV_TXT.comment);
+    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.summary)) + '</div>' + ta('strengths', EV_TXT.strengths) + ta('improve', EV_TXT.improve) + ta('covered', EV_TXT.covered) + ta('repeat', EV_TXT.repeat) + ta('goal', EV_TXT.goal) + ta('resources', EV_TXT.resources) + ta('stuGoal', EV_TXT.stuGoal) + inp('nextExam', EV_TXT.nextExam, 'date') + evExChips() + '<button type="button" class="pr-mini" data-ev-exset="1">' + esc(T(EV_TXT.exSet)) + '</button>' + (evOnline.exMsg ? '<div class="pr-ev-' + (evOnline.exOk ? 'ok' : 'err') + '">' + esc(evOnline.exMsg) + '</div>' : '') + ta('homework', EV_TXT.homework) + ta('comment', EV_TXT.comment);
     h += '<button type="button" class="pr-mini" data-ev-clear="1" style="margin-top:8px;">' + esc(T(EV_TXT.clear)) + '</button>';
     return h;
   }
@@ -2445,6 +2449,9 @@
   function evHandleClick(t){
     var lv = t.closest('[data-ev-level]');
     if(lv){ var v = lv.getAttribute('data-ev-level'); evData.level = evData.level === v ? '' : v; evMountForm(true); renderReport(); return true; }
+    var exu = t.closest('[data-ev-exu]');
+    if(exu){ var un = exu.getAttribute('data-ev-exu'); if(evData.examUser === un){ evData.examUser = ''; evData.examPass = ''; } else { evData.examUser = un; evData.examPass = exu.getAttribute('data-pw') || ''; } evMountForm(true); renderReport(); if(evData.examUser && evData.nextExam) evExSet(); return true; }
+    if(t.closest('[data-ev-exload]')){ evExUsers = null; evMountForm(true); return true; }
     if(t.closest('[data-ev-exset]')){ evExSet(); return true; }
     if(t.closest('[data-ev-save]')){ evSave(); return true; }
     if(t.closest('[data-ev-export]')){ evExport(); return true; }
@@ -2492,6 +2499,25 @@
     var url = evViewURL(evOnline.token);
     return '<div class="pr-ev-share"><div class="pr-ev-share-qr">' + evQrSvg(url) + '</div><div class="pr-ev-share-t">' +
       '<b>' + esc(T(EV_TXT.qrScanFull)) + '</b><span class="u">' + esc(url) + '</span><em>' + esc(T(EV_TXT.onWarn)) + '</em></div></div>';
+  }
+  var evExUsers = null, evExBusy = false;
+  function evExLoad(){
+    if(evExBusy) return; var key = getAdminKey(); if(!key) return;
+    evExBusy = true;
+    fetch(WORKER_BASE + '/api/admin/cexam/list', { headers:{ 'X-Admin-Key':key } })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){ evExUsers = (j && j.users) ? j.users : []; })
+      .catch(function(){ evExUsers = []; })
+      .then(function(){ evExBusy = false; evMountForm(true); });
+  }
+  function evExChips(){
+    if(evExUsers === null){ if(getAdminKey()) setTimeout(evExLoad, 0); return '<div class="pr-ev-in"><span>' + esc(T(EV_TXT.exUser)) + '</span><div class="pr-hint">' + esc(T(EV_TXT.exLoading)) + '</div></div>'; }
+    var h = '<div class="pr-ev-in"><span>' + esc(T(EV_TXT.exUser)) + '</span><div class="pr-hint" style="margin:2px 0 6px;">' + esc(T(EV_TXT.exPick)) + '</div><div class="pr-ann-chips">';
+    if(!evExUsers.length) h += '<span class="pr-hint">' + esc(T(EV_TXT.exEmpty)) + '</span>';
+    evExUsers.forEach(function(u){
+      h += '<button type="button" class="pr-ann-chip' + (evData.examUser === u.username ? ' on' : '') + '" data-ev-exu="' + esc(u.username) + '" data-pw="' + esc(u.password || '') + '">' + esc(u.username) + (u.note ? ' · ' + esc(u.note) : '') + '</button>';
+    });
+    return h + '</div><button type="button" class="pr-mini" data-ev-exload="1" style="margin-top:6px;">' + esc(T(EV_TXT.exReload)) + '</button></div>';
   }
   function evExSet(){
     var u = (evData.examUser || '').trim().toUpperCase(), dv = evData.nextExam;
