@@ -163,6 +163,9 @@
     navHowto: { en:'How to count, step by step', th:'วิธีนับคลื่นทีละขั้น' },
     navW3c: { en:'Wave 3 or wave C? (advanced)', th:'Wave 3 หรือ Wave C? (ขั้นสูง)' },
     navMarkets: { en:'Where Elliott Wave works', th:'ใช้ Elliott Wave กับตลาดไหนได้บ้าง' },
+    navBasics: { en:'The basic pattern: 5 & 3', th:'พื้นฐาน: 5 กับ 3 คืออะไร' },
+    navGlossary: { en:'Glossary', th:'คำศัพท์ (Glossary)' },
+    navExample: { en:'Worked example', th:'ตัวอย่างการนับทั้งรอบ' },
 
     /* ---- Round AB: admin-key gate + content-loading states, mirroring
        Connected Users (part-50.js) exactly in wording style/tone. ---- */
@@ -188,12 +191,13 @@
     degree:UI.navDegree, fib:UI.navGroupFib, 'fib-retrace':UI.navFibRetrace, 'fib-proj':UI.navFibProj,
     'fib-proj3':UI.navFibProj3, 'fib-ao':UI.navFibAo,
     guide:UI.navGuide, 'gd-alternation':UI.navGdAlt, 'gd-channel':UI.navGdChannel, 'gd-extension':UI.navGdExt, 'gd-truncation':UI.navGdTrunc, 'gd-depth':UI.navGdDepth,
-    volume:UI.navVolume, personality:UI.navPersonality, howto:UI.navHowto, w3c:UI.navW3c, markets:UI.navMarkets,
+    volume:UI.navVolume, personality:UI.navPersonality, howto:UI.navHowto, w3c:UI.navW3c, markets:UI.navMarkets, basics:UI.navBasics, glossary:UI.navGlossary, example:UI.navExample,
     mistakes:UI.navMistakes, further:UI.navFurther
   };
   // Ordered from the basics a beginner needs first down to the advanced material.
   var TREE = [
     { id:'overview' },
+    { id:'basics' },
     { id:'degree' },
     { id:'motive', children:['impulse', 'diag-lead', 'diag-end'] },
     { id:'corrective', children:[
@@ -206,8 +210,10 @@
     { id:'guide', children:['gd-alternation', 'gd-channel', 'gd-extension', 'gd-truncation', 'gd-depth'] },
     { id:'fib', children:['fib-retrace', 'fib-proj', 'fib-proj3', 'fib-ao', 'volume'] },
     { id:'howto' },
+    { id:'example' },
     { id:'w3c' },
     { id:'markets' },
+    { id:'glossary' },
     { id:'mistakes' },
     { id:'further' }
   ];
