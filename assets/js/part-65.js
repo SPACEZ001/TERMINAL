@@ -131,7 +131,7 @@
     navOverview: { en:'Overview', th:'ภาพรวม' },
     navGroupMotive: { en:'Motive waves', th:'Motive waves' },
     navGroupCorrective: { en:'Corrective waves', th:'Corrective waves' },
-    navGroupFib: { en:'Fibonacci tools', th:'เครื่องมือฟีโบนัชชี' },
+    navGroupFib: { en:'Fibonacci & momentum', th:'ฟีโบนัชชีและโมเมนตัม' },
     navImpulse: { en:'Impulse', th:'Impulse' },
     navDiagLead: { en:'Diagonal — Leading', th:'Diagonal — Leading' },
     navDiagEnd: { en:'Diagonal — Ending', th:'Diagonal — Ending' },
@@ -152,6 +152,15 @@
     navTriRunning: { en:'Running', th:'Running' },
     navFibProj3: { en:'Wave 3 projection', th:'คาดคะเนคลื่น 3' },
     navFibAo: { en:'Momentum check (AO)', th:'เช็กโมเมนตัม (AO)' },
+    navGuide: { en:'Guidelines', th:'แนวทาง (Guidelines)' },
+    navGdAlt: { en:'Alternation', th:'Alternation (สลับรูปแบบ)' },
+    navGdChannel: { en:'Channeling', th:'Channeling (ช่องราคา)' },
+    navGdExt: { en:'Extension & equality', th:'Extension และ Equality' },
+    navGdTrunc: { en:'Truncation', th:'Truncation (wave 5 สั้น)' },
+    navGdDepth: { en:'Depth of corrections', th:'ความลึกของการปรับฐาน' },
+    navVolume: { en:'Volume & momentum', th:'Volume และ Momentum' },
+    navPersonality: { en:'Wave personality', th:'บุคลิกของแต่ละคลื่น' },
+    navHowto: { en:'How to count, step by step', th:'วิธีนับคลื่นทีละขั้น' },
 
     /* ---- Round AB: admin-key gate + content-loading states, mirroring
        Connected Users (part-50.js) exactly in wording style/tone. ---- */
@@ -176,6 +185,8 @@
     combination:UI.navCombination,
     degree:UI.navDegree, fib:UI.navGroupFib, 'fib-retrace':UI.navFibRetrace, 'fib-proj':UI.navFibProj,
     'fib-proj3':UI.navFibProj3, 'fib-ao':UI.navFibAo,
+    guide:UI.navGuide, 'gd-alternation':UI.navGdAlt, 'gd-channel':UI.navGdChannel, 'gd-extension':UI.navGdExt, 'gd-truncation':UI.navGdTrunc, 'gd-depth':UI.navGdDepth,
+    volume:UI.navVolume, personality:UI.navPersonality, howto:UI.navHowto,
     mistakes:UI.navMistakes, further:UI.navFurther
   };
   var TREE = [
@@ -187,8 +198,11 @@
       'triangle', 'tri-contracting', 'tri-expanding', 'tri-running',
       'combination'
     ] },
+    { id:'guide', children:['gd-alternation', 'gd-channel', 'gd-extension', 'gd-truncation', 'gd-depth'] },
     { id:'degree' },
-    { id:'fib', children:['fib-retrace', 'fib-proj', 'fib-proj3', 'fib-ao'] },
+    { id:'fib', children:['fib-retrace', 'fib-proj', 'fib-proj3', 'fib-ao', 'volume'] },
+    { id:'personality' },
+    { id:'howto' },
     { id:'mistakes' },
     { id:'further' }
   ];
