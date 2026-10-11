@@ -60,6 +60,8 @@
     examsOf:{en:'Exam sets for this student', th:'ชุดข้อสอบของนักเรียนคนนี้'}, examsHint:{en:'Tick “Allowed” to let this student take a set. A date makes it open automatically on that day. Each set can be taken once — “Allow retake” gives one more attempt (the old score is kept in the history).', th:'ติ๊ก “อนุญาตสอบ” เพื่อให้นักเรียนสอบชุดนั้นได้ ถ้าใส่วันที่ ระบบจะเปิดให้สอบเองในวันนั้น แต่ละชุดสอบได้ครั้งเดียว — กด “ให้สอบใหม่” เพื่อให้สอบอีกครั้ง (คะแนนเก่าเก็บไว้ในประวัติ)'},
     newStudent:{en:'Create logins', th:'สร้างบัญชีนักเรียน'}, studentsList:{en:'Students', th:'รายชื่อนักเรียน'}, filtersMore:{en:'More filters', th:'ตัวกรองเพิ่มเติม'},
     earlier:{en:'Earlier', th:'ครั้งก่อน'}, saving:{en:'Saving…', th:'กำลังบันทึก…'}, savedOk:{en:'Saved', th:'บันทึกแล้ว'}, passwordL:{en:'Password', th:'รหัสผ่าน'}, usernameL:{en:'Username', th:'ชื่อผู้ใช้'},
+    learnedH:{en:'Lessons learned', th:'บทเรียนที่เรียนแล้ว'}, learnedHint:{en:'Tick the Elliott Wave Classroom lessons this student has completed. They appear on the student page and in the Student Evaluation report.', th:'ติ๊กบทเรียนในห้องเรียน Elliott Wave ที่นักเรียนเรียนแล้ว จะแสดงในหน้านักเรียนและดึงไปใส่ใบประเมินนักเรียนอัตโนมัติ'},
+    allLessons:{en:'Tick all', th:'ติ๊กทั้งหมด'}, myLessons:{en:'Lessons you have completed', th:'บทเรียนที่คุณเรียนแล้ว'},
     logout:{en:'Log out',th:'ออกจากระบบ'}, already:{en:'This login has already been used.',th:'รหัสนี้สอบไปแล้ว'},
     /* admin */
     adminBtn:{en:'Teacher panel',th:'หน้าครู (แอดมิน)'}, studentBtn:{en:'Student view',th:'หน้านักเรียน'},
@@ -94,8 +96,21 @@
     { q:'เวฟ 2 มักย้อนกลับของเวฟ 1 ที่ระดับฟีโบนัชชีใดบ่อยที่สุด?', choices:['0-10%','50% ถึง 61.8%','100% ขึ้นไป','161.8% ขึ้นไป'], ans:1, expl:'แนวทาง (guideline): เวฟ 2 มักย้อนลึก โดยพบมากที่ราว 50%–61.8% ของเวฟ 1 (เป็นแนวทาง ไม่ใช่กฎตายตัว)', topic:'ฟีโบนัชชี' }
   ];
 
-  var SKILLS = [['ew1','EW1 พื้นฐานการนับเวฟ'],['ew2','EW2 กฎ 3 ข้ออิมพัลส์'],['ew3','EW3 แนวทาง (guidelines)'],['ew4','EW4 รูปแบบการแก้'],['ew5','EW5 ฟีโบนัชชี'],['ew6','EW6 ระดับเวฟ/ป้าย'],['ew7','EW7 อ่านกราฟจริง'],['ew8','EW8 จุดยกเลิก/แผนเทรด'],
-    ['ot1','OT1 เทรนด์/แนวรับต้าน'],['ot2','OT2 บริหารความเสี่ยง'],['ot3','OT3 พื้นฐาน/มหภาค'],['ot4','OT4 วินัย/จิตวิทยา'],['ot5','OT5 การมีส่วนร่วม'],['ot6','OT6 การบ้าน']];
+  var SKILLS = [['ew1','EW1 พื้นฐานการนับเวฟ'],['ew2','EW2 กฎ 3 ข้ออิมพัลส์'],['ew3','EW3 แนวทาง (guidelines)'],['ew4','EW4 รูปแบบการแก้'],['ew5','EW5 ฟีโบนัชชี'],['ew6','EW6 ระดับเวฟ/ป้าย'],['ew7','EW7 อ่านกราฟจริง'],['ew8','EW8 จุดยกเลิก/แผนเทรด'],['ew9','EW9 Diagonal'],['ew10','EW10 Combination (W-X-Y)'],['ew11','EW11 Momentum/Volume'],['ew12','EW12 บุคลิกคลื่น/จิตวิทยา'],['ew13','EW13 Wave 3 หรือ C / การนับสำรอง'],['ew14','EW14 Extension/Truncation'],
+    ['ot1','OT1 เทรนด์/แนวรับต้าน'],['ot2','OT2 บริหารความเสี่ยง'],['ot3','OT3 พื้นฐาน/มหภาค'],['ot4','OT4 วินัย/จิตวิทยา'],['ot5','OT5 การมีส่วนร่วม'],['ot6','OT6 การบ้าน'],['ot7','OT7 ตรงเวลา'],['ot8','OT8 ความตั้งใจ']];
+  /* Lessons of the Elliott Wave Classroom -- ticked per student ("learned"), shown on the student page and pulled into the Student Evaluation report. */
+  var CURRICULUM = window.__SPZ_CURRICULUM || [
+    ['basics','The basic pattern: 5 & 3','พื้นฐาน: 5 กับ 3 คืออะไร'],['degree','Wave degree & labeling','ระดับคลื่นและการติดป้าย'],
+    ['impulse','Impulse & the 3 rules','Impulse และกฎ 3 ข้อ'],['diagonal','Diagonals (leading / ending)','Diagonal (Leading / Ending)'],
+    ['zigzag','Zigzag & double zigzag','Zigzag และ Double Zigzag'],['flat','Flats (regular / expanded / running)','Flat (Regular / Expanded / Running)'],
+    ['triangle','Triangles','Triangle'],['combination','Combinations (W-X-Y)','Combination (W-X-Y)'],
+    ['personality','Wave personality','บุคลิกของแต่ละคลื่น'],['guide','Guidelines (alternation, channeling, extension)','แนวทาง (Alternation, Channeling, Extension)'],
+    ['fib','Fibonacci retracement & projection','Fibonacci Retracement และ Projection'],['momentum','Momentum & volume (AO, divergence)','Momentum และ Volume (AO, Divergence)'],
+    ['howto','Counting step by step & invalidation','การนับทีละขั้นและจุดยกเลิก'],['w3c','Wave 3 or wave C? Alternate counts','Wave 3 หรือ C? และการนับสำรอง'],
+    ['risk','Applying EW: markets, risk & trade plan','การนำไปใช้: ตลาด ความเสี่ยง แผนเทรด']
+  ];
+  window.__SPZ_CURRICULUM = CURRICULUM;
+  function lessonName(c){ return L() === 'th' ? c[2] : c[1]; }
   var sec = null, bodyEl = null;
   var isAdminTier = false;
   var mode = 'student';
@@ -217,10 +232,12 @@
   }
   function stopTimer(){ if(timerIv){ clearInterval(timerIv); timerIv = null; } }
 
+  /* QR codes on the Student Evaluation report open ?cx=<username>#/classexam -- fill the username in for them */
+  function prefillUser(){ try { var m = /[?&]cx=([A-Za-z0-9-]{1,24})/.exec(location.search); return m ? m[1].toUpperCase() : ''; } catch(e){ return ''; } }
   function studentHTML(){
     if(sv.stage === 'login'){
       return '<div class="cx2-card cx2-narrow">' +
-        '<label class="cx2-lab">' + esc(T(U.user)) + '</label><input class="cx2-in" data-cx="user" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="EW-XXXXX">' +
+        '<label class="cx2-lab">' + esc(T(U.user)) + '</label><input class="cx2-in" data-cx="user" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="EW-XXXXX" value="' + esc(prefillUser()) + '">' +
         '<label class="cx2-lab">' + esc(T(U.pass)) + '</label><input class="cx2-in" type="password" data-cx="pass" autocomplete="off" spellcheck="false">' +
         (sv.err ? '<div class="cx2-err">' + esc(sv.err) + '</div>' : '') +
         '<button class="cx2-btn" data-cx="login"' + (sv.busy ? ' disabled' : '') + '>' + esc(T(U.login)) + '</button></div>';
@@ -251,6 +268,11 @@
             : '<button class="cx2-btn" data-cx="start" data-set="' + esc(e.setId) + '"' + (sv.busy || !e.total || closed ? ' disabled' : '') + '>' + esc(T(e.status === 'started' ? U.resume : U.start)) + '</button>') +
           '</div></div>';
       });
+      var lrn = (i.learned || []);
+      if(lrn.length){
+        hh += '<div class="cx2-h3" style="margin-top:16px">' + esc(T(U.myLessons)) + ' <span class="cx2-lcount">' + lrn.length + ' / ' + CURRICULUM.length + '</span></div><div class="cx2-lessons ro">' +
+          CURRICULUM.map(function(c, k){ var on = lrn.indexOf(c[0]) !== -1; return '<span class="cx2-lesson' + (on ? ' on' : '') + '"><span class="n">' + (on ? '✓' : (k + 1)) + '</span><span>' + esc(lessonName(c)) + '</span></span>'; }).join('') + '</div>';
+      }
       return hh + (ex.some(function(e){ return e.status !== 'done'; }) ? '<p class="cx2-note">' + esc(T(U.rules)) + '</p>' : '') +
         '<button class="cx2-btn ghost" data-cx="logout">' + esc(T(U.logout)) + '</button></div>';
     }
@@ -376,6 +398,7 @@
         '<div><span>' + esc(T(U.passwordL)) + '</span><code>' + (shown ? esc(u.password) : '••••••••') + '</code> <button class="cx2-mini" data-cx="reveal" data-u="' + esc(u.username) + '">' + esc(T(shown ? U.hide : U.show)) + '</button> <button class="cx2-mini" data-cx="copy" data-t="' + esc(u.username + '\n' + u.password) + '">' + esc(T(U.copy)) + '</button></div>' +
         '<div class="wide"><span>' + esc(T(U.colNote)) + '</span><input class="cx2-in" data-cx="note" data-u="' + esc(u.username) + '" value="' + esc(u.note) + '" maxlength="120"></div>' +
       '</div>' +
+      learnedHTML(u) +
       '<div class="cx2-h3" style="margin-top:18px">' + esc(T(U.examsOf)) + '</div><p class="cx2-note">' + esc(T(U.examsHint)) + '</p>' +
       (adm.saveMsg ? '<div class="cx2-note cx2-savemsg">' + esc(adm.saveMsg) + '</div>' : '') +
       '<div class="cx2-tblwrap"><table class="cx2-tbl cx2-extbl"><thead><tr><th>' + esc(T(U.allowCol)) + '</th><th>' + esc(T(U.colSet)) + '</th><th>' + esc(T(U.openCol)) + '</th><th>' + esc(T(U.statusCol)) + '</th><th>' + esc(T(U.scoreCol)) + '</th><th></th></tr></thead><tbody>';
@@ -399,6 +422,15 @@
         reviewHTML(v.review || []) + '<button class="cx2-mini" data-cx="closeview">' + esc(T(U.close)) + '</button></div>';
     }
     return h;
+  }
+  function learnedHTML(u){
+    var lr = u.learned || {}, n = 0;
+    var chips = CURRICULUM.map(function(c, i){
+      var on = !!lr[c[0]]; if(on) n++;
+      return '<label class="cx2-lesson' + (on ? ' on' : '') + '"><input type="checkbox" data-cx="xlearn" data-u="' + esc(u.username) + '" data-l="' + c[0] + '"' + (on ? ' checked' : '') + '><span class="n">' + (i + 1) + '</span><span>' + esc(lessonName(c)) + '</span></label>';
+    }).join('');
+    return '<div class="cx2-h3" style="margin-top:18px">' + esc(T(U.learnedH)) + ' <span class="cx2-lcount">' + n + ' / ' + CURRICULUM.length + '</span> <button class="cx2-mini" data-cx="xlearnall" data-u="' + esc(u.username) + '">' + esc(T(U.allLessons)) + '</button></div>' +
+      '<p class="cx2-note">' + esc(T(U.learnedHint)) + '</p><div class="cx2-lessons">' + chips + '</div>';
   }
   function usersHTML(){
     var f = adm.f;
@@ -563,6 +595,7 @@
         adm.setDel = ''; if(r.status === 200){ adm.sets = r.j.sets; adm.set = 'main'; adm.bank = null; adm.users = null; loadBank(); loadUsers(); }
       });
     }
+    else if(a === 'xlearnall'){ var la = {}; CURRICULUM.forEach(function(c){ la[c[0]] = true; }); updUser({ username:el.getAttribute('data-u'), learned:la }); }
     else if(a === 'pick'){ adm.sel = el.getAttribute('data-u'); adm.view = null; adm.saveMsg = ''; paint(); }
     else if(a === 'fclear'){ adm.f = { q:'', status:'', set:'', taken:'', min:'', max:'' }; paint(); }
     else if(a === 'reveal'){ var un = el.getAttribute('data-u'); adm.revealed[un] = !adm.revealed[un]; paint(); }
@@ -609,7 +642,7 @@
     arr.forEach(function(x, i){
       if(!x || typeof x.q !== 'string' || !Array.isArray(x.choices) || x.choices.length < 2) return;
       var ans = parseInt(x.ans, 10); if(!(ans >= 0 && ans < x.choices.length)) ans = 0;
-      adm.bank.questions.push({ id:'i' + Date.now().toString(36) + i, q:x.q, choices:x.choices.map(String).slice(0, 6), ans:ans, expl:String(x.expl || ''), topic:String(x.topic || ''), skill:/^(ew[1-8]|ot[1-6])$/.test(x.skill || '') ? x.skill : '' });
+      adm.bank.questions.push({ id:'i' + Date.now().toString(36) + i, q:x.q, choices:x.choices.map(String).slice(0, 6), ans:ans, expl:String(x.expl || ''), topic:String(x.topic || ''), skill:/^(ew([1-9]|1[0-4])|ot[1-8])$/.test(x.skill || '') ? x.skill : '' });
       n++;
     });
     adm.msg = n ? T(U.impOk) + ' ' + n : T(U.impBad); paint();
@@ -637,6 +670,7 @@
     }
     var fk = el.getAttribute && el.getAttribute('data-cx');
     if(fk === 'fstatus' || fk === 'fset' || fk === 'ftaken'){ adm.f[fk === 'fstatus' ? 'status' : fk === 'fset' ? 'set' : 'taken'] = el.value; paint(); return; }
+    if(fk === 'xlearn'){ var lo = {}; lo[el.getAttribute('data-l')] = !!el.checked; updUser({ username:el.getAttribute('data-u'), learned:lo }); return; }
     if(fk === 'xallow'){ updUser({ username:el.getAttribute('data-u'), set:el.getAttribute('data-set'), allow:!!el.checked }); return; }
     if(fk === 'xopen'){
       var ms = 0;
