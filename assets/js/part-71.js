@@ -50,6 +50,9 @@
     colSet:{en:'Exam set', th:'ชุดข้อสอบ'}, setsH:{en:'Exam sets', th:'ชุดข้อสอบ'}, newSet:{en:'+ New set', th:'+ ชุดใหม่'}, newSetPh:{en:'Set name (e.g. Mock 2)', th:'ชื่อชุด (เช่น ชุดที่ 2)'},
     delSet:{en:'Delete this set', th:'ลบชุดนี้'}, delSetSure:{en:'Confirm delete set', th:'ยืนยันลบชุด'}, setNote:{en:'Changing a student\'s set keeps the old result in their history and gives one fresh attempt.', th:'เปลี่ยนชุดของนักเรียน ผลเก่าจะเก็บไว้ในประวัติ และให้สอบชุดใหม่ 1 ครั้ง'},
     taken:{en:'Already taken', th:'สอบไปแล้ว'}, qsShort:{en:'q', th:'ข้อ'},
+    fSearch:{en:'Search name / username / note', th:'ค้นหาชื่อ / รหัสผู้ใช้ / โน้ต'}, fStatus:{en:'Any status', th:'ทุกสถานะ'}, fSet:{en:'Any set', th:'ทุกชุด'},
+    fTakenAny:{en:'Taken / not taken (pick a set)', th:'สอบแล้ว / ยังไม่สอบ (เลือกชุดก่อน)'}, fTaken:{en:'Took this set', th:'สอบชุดนี้แล้ว'}, fNotTaken:{en:'Not taken this set yet', th:'ยังไม่สอบชุดนี้'},
+    fMin:{en:'Score ≥ %', th:'คะแนน ≥ %'}, fMax:{en:'Score ≤ %', th:'คะแนน ≤ %'}, fClear:{en:'Clear filters', th:'ล้างตัวกรอง'}, fCount:{en:'shown', th:'แสดง'}, fNone:{en:'No students match.', th:'ไม่พบนักเรียนที่ตรงเงื่อนไข'},
     logout:{en:'Log out',th:'ออกจากระบบ'}, already:{en:'This login has already been used.',th:'รหัสนี้สอบไปแล้ว'},
     /* admin */
     adminBtn:{en:'Teacher panel',th:'หน้าครู (แอดมิน)'}, studentBtn:{en:'Student view',th:'หน้านักเรียน'},
@@ -93,7 +96,7 @@
   var sv = { stage:'login', err:'', busy:false, token:'', username:'', info:null, exam:null, answers:{}, deadline:0, result:null, confirm:false };
   var timerIv = null;
   // admin
-  var adm = { key:'', keyErr:false, tab:'users', users:null, bank:null, loading:false, msg:'', newCreds:null, view:null, revealed:{}, delArm:'', dirty:false, err:'', sets:null, set:'main', setDel:'' };
+  var adm = { key:'', keyErr:false, tab:'users', users:null, bank:null, loading:false, msg:'', newCreds:null, view:null, revealed:{}, delArm:'', dirty:false, err:'', sets:null, set:'main', setDel:'', f:{ q:'', status:'', set:'', taken:'', min:'', max:'' } };
 
   function api(path, method, payload, key){
     var opt = { method: method || 'GET', headers: {} };
@@ -302,6 +305,44 @@
     var banner = adm.err ? '<div class="cx2-card cx2-warn">' + esc(adm.err === 'old' ? T(U.oldWorker) : T(U.adminNet)) + '</div>' : '';
     return banner + '<div class="cx2-tabs">' + tabs + '</div>' + inner;
   }
+  function filteredUsers(){
+    var f = adm.f, q = (f.q || '').trim().toLowerCase();
+    return (adm.users || []).filter(function(u){
+      if(q && ((u.username || '') + ' ' + (u.displayName || '') + ' ' + (u.note || '')).toLowerCase().indexOf(q) === -1) return false;
+      if(f.status && u.status !== f.status) return false;
+      if(f.set && f.taken){
+        var took = (u.status === 'done' && (u.setId || 'main') === f.set) || (u.history || []).some(function(x){ return (x.setId || 'main') === f.set; });
+        if(f.taken === 'yes' && !took) return false;
+        if(f.taken === 'no' && took) return false;
+      } else if(f.set && (u.setId || 'main') !== f.set) return false;
+      if(f.min !== '' && !(u.status === 'done' && u.percent >= +f.min)) return false;
+      if(f.max !== '' && !(u.status === 'done' && u.percent <= +f.max)) return false;
+      return true;
+    });
+  }
+  function usersTableHTML(){
+    var list = filteredUsers();
+    if(!list.length) return '<p class="cx2-note">' + esc(T(U.fNone)) + '</p>';
+    var h = '<div class="cx2-count">' + list.length + ' / ' + adm.users.length + ' ' + esc(T(U.fCount)) + '</div><div class="cx2-tblwrap"><table class="cx2-tbl"><thead><tr><th>' + esc(T(U.colUser)) + '</th><th>' + esc(T(U.colPass)) + '</th><th>' + esc(T(U.colName)) + '</th><th>' + esc(T(U.colNote)) + '</th><th>' + esc(T(U.colSet)) + '</th><th>' + esc(T(U.colStatus)) + '</th><th>' + esc(T(U.colScore)) + '</th><th>' + esc(T(U.colOpen)) + '</th><th></th></tr></thead><tbody>';
+    list.forEach(function(u){
+      var st = u.status === 'done' ? U.sDone : u.status === 'started' ? U.sStarted : U.sNew;
+      var shown = !!adm.revealed[u.username];
+      h += '<tr><td><code>' + esc(u.username) + '</code></td>' +
+        '<td><code>' + (shown ? esc(u.password) : '••••••••') + '</code> <button class="cx2-mini" data-cx="reveal" data-u="' + esc(u.username) + '">' + esc(T(shown ? U.hide : U.show)) + '</button> <button class="cx2-mini" data-cx="copy" data-t="' + esc(u.username + '\n' + u.password) + '">' + esc(T(U.copy)) + '</button></td>' +
+        '<td>' + (u.displayName ? '<b>' + esc(u.displayName) + '</b> <button class="cx2-mini" data-cx="clearname" data-u="' + esc(u.username) + '">' + esc(T(U.clearName)) + '</button>' : '<small>—</small>') + '</td>' +
+        '<td><input class="cx2-in sm wide" data-cx="note" data-u="' + esc(u.username) + '" value="' + esc(u.note) + '" maxlength="120"></td>' +
+        '<td><select class="cx2-in sm" data-cx="uset" data-u="' + esc(u.username) + '">' + (adm.sets || [{ id:'main', title:'Main' }]).map(function(x){ return '<option value="' + esc(x.id) + '"' + (x.id === (u.setId || 'main') ? ' selected' : '') + '>' + esc(x.title) + '</option>'; }).join('') + '</select>' +
+          ((u.history || []).length ? '<div class="cx2-note" style="margin:4px 0 0">' + esc(T(U.taken)) + ': ' + (u.history || []).map(function(h){ return esc(setTitle(h.setId)) + ' ' + esc(h.percent) + '%'; }).join(' · ') + '</div>' : '') + '</td>' +
+        '<td><span class="cx2-st ' + esc(u.status) + '">' + esc(T(st)) + '</span></td>' +
+        '<td>' + (u.status === 'done' ? '<b>' + esc(u.percent) + '%</b> <small>(' + esc(u.score) + '/' + esc(u.total) + ')</small>' + (u.late ? ' <small>⏱</small>' : '') : '—') + '</td>' +
+        '<td><input class="cx2-in sm" type="date" data-cx="openat" data-u="' + esc(u.username) + '" value="' + esc(dayVal(u.openAt)) + '">' + (u.openAt && u.openAt > Date.now() ? '<div class="cx2-note" style="margin:4px 0 0">' + esc(T(U.openAuto)) + '</div>' : '') + '</td>' +
+        '<td class="cx2-act">' + (u.status === 'done' ? '<button class="cx2-mini" data-cx="result" data-u="' + esc(u.username) + '">' + esc(T(U.view)) + '</button>' : '') +
+        (u.status !== 'new' ? '<button class="cx2-mini" data-cx="reset" data-u="' + esc(u.username) + '">' + esc(T(U.reset)) + '</button>' : '') +
+        '<button class="cx2-mini danger" data-cx="del" data-u="' + esc(u.username) + '">' + esc(T(adm.delArm === u.username ? U.delSure : U.del)) + '</button></td></tr>';
+    });
+    h += '</tbody></table></div>';
+    return h;
+  }
   function usersHTML(){
     var h = '<div class="cx2-card"><div class="cx2-gen">' +
       '<label><span>' + esc(T(U.genCount)) + '</span><input class="cx2-in sm" type="number" min="1" max="30" value="1" data-cx="gcount"></label>' +
@@ -320,24 +361,15 @@
     h += '<div class="cx2-row"><button class="cx2-mini" data-cx="refresh">' + esc(T(U.refresh)) + '</button></div>';
     if(adm.loading && !adm.users) return h + '<p class="cx2-note">' + esc(T(U.loading)) + '</p>';
     if(!adm.users || !adm.users.length) return h + '<p class="cx2-note">' + esc(T(U.noUsers)) + '</p>';
-    h += '<div class="cx2-tblwrap"><table class="cx2-tbl"><thead><tr><th>' + esc(T(U.colUser)) + '</th><th>' + esc(T(U.colPass)) + '</th><th>' + esc(T(U.colName)) + '</th><th>' + esc(T(U.colNote)) + '</th><th>' + esc(T(U.colSet)) + '</th><th>' + esc(T(U.colStatus)) + '</th><th>' + esc(T(U.colScore)) + '</th><th>' + esc(T(U.colOpen)) + '</th><th></th></tr></thead><tbody>';
-    adm.users.forEach(function(u){
-      var st = u.status === 'done' ? U.sDone : u.status === 'started' ? U.sStarted : U.sNew;
-      var shown = !!adm.revealed[u.username];
-      h += '<tr><td><code>' + esc(u.username) + '</code></td>' +
-        '<td><code>' + (shown ? esc(u.password) : '••••••••') + '</code> <button class="cx2-mini" data-cx="reveal" data-u="' + esc(u.username) + '">' + esc(T(shown ? U.hide : U.show)) + '</button> <button class="cx2-mini" data-cx="copy" data-t="' + esc(u.username + '\n' + u.password) + '">' + esc(T(U.copy)) + '</button></td>' +
-        '<td>' + (u.displayName ? '<b>' + esc(u.displayName) + '</b> <button class="cx2-mini" data-cx="clearname" data-u="' + esc(u.username) + '">' + esc(T(U.clearName)) + '</button>' : '<small>—</small>') + '</td>' +
-        '<td><input class="cx2-in sm wide" data-cx="note" data-u="' + esc(u.username) + '" value="' + esc(u.note) + '" maxlength="120"></td>' +
-        '<td><select class="cx2-in sm" data-cx="uset" data-u="' + esc(u.username) + '">' + (adm.sets || [{ id:'main', title:'Main' }]).map(function(x){ return '<option value="' + esc(x.id) + '"' + (x.id === (u.setId || 'main') ? ' selected' : '') + '>' + esc(x.title) + '</option>'; }).join('') + '</select>' +
-          ((u.history || []).length ? '<div class="cx2-note" style="margin:4px 0 0">' + esc(T(U.taken)) + ': ' + (u.history || []).map(function(h){ return esc(setTitle(h.setId)) + ' ' + esc(h.percent) + '%'; }).join(' · ') + '</div>' : '') + '</td>' +
-        '<td><span class="cx2-st ' + esc(u.status) + '">' + esc(T(st)) + '</span></td>' +
-        '<td>' + (u.status === 'done' ? '<b>' + esc(u.percent) + '%</b> <small>(' + esc(u.score) + '/' + esc(u.total) + ')</small>' + (u.late ? ' <small>⏱</small>' : '') : '—') + '</td>' +
-        '<td><input class="cx2-in sm" type="date" data-cx="openat" data-u="' + esc(u.username) + '" value="' + esc(dayVal(u.openAt)) + '">' + (u.openAt && u.openAt > Date.now() ? '<div class="cx2-note" style="margin:4px 0 0">' + esc(T(U.openAuto)) + '</div>' : '') + '</td>' +
-        '<td class="cx2-act">' + (u.status === 'done' ? '<button class="cx2-mini" data-cx="result" data-u="' + esc(u.username) + '">' + esc(T(U.view)) + '</button>' : '') +
-        (u.status !== 'new' ? '<button class="cx2-mini" data-cx="reset" data-u="' + esc(u.username) + '">' + esc(T(U.reset)) + '</button>' : '') +
-        '<button class="cx2-mini danger" data-cx="del" data-u="' + esc(u.username) + '">' + esc(T(adm.delArm === u.username ? U.delSure : U.del)) + '</button></td></tr>';
-    });
-    h += '</tbody></table></div>';
+    var f = adm.f;
+    h += '<div class="cx2-filters"><input class="cx2-in sm" data-cx="fq" value="' + esc(f.q) + '" placeholder="' + esc(T(U.fSearch)) + '">' +
+      '<select class="cx2-in sm" data-cx="fstatus"><option value="">' + esc(T(U.fStatus)) + '</option><option value="new"' + (f.status === 'new' ? ' selected' : '') + '>' + esc(T(U.sNew)) + '</option><option value="started"' + (f.status === 'started' ? ' selected' : '') + '>' + esc(T(U.sStarted)) + '</option><option value="done"' + (f.status === 'done' ? ' selected' : '') + '>' + esc(T(U.sDone)) + '</option></select>' +
+      '<select class="cx2-in sm" data-cx="fset"><option value="">' + esc(T(U.fSet)) + '</option>' + (adm.sets || []).map(function(x){ return '<option value="' + esc(x.id) + '"' + (f.set === x.id ? ' selected' : '') + '>' + esc(x.title) + '</option>'; }).join('') + '</select>' +
+      '<select class="cx2-in sm" data-cx="ftaken"><option value="">' + esc(T(U.fTakenAny)) + '</option><option value="yes"' + (f.taken === 'yes' ? ' selected' : '') + '>' + esc(T(U.fTaken)) + '</option><option value="no"' + (f.taken === 'no' ? ' selected' : '') + '>' + esc(T(U.fNotTaken)) + '</option></select>' +
+      '<input class="cx2-in sm" type="number" min="0" max="100" data-cx="fmin" value="' + esc(f.min) + '" placeholder="' + esc(T(U.fMin)) + '">' +
+      '<input class="cx2-in sm" type="number" min="0" max="100" data-cx="fmax" value="' + esc(f.max) + '" placeholder="' + esc(T(U.fMax)) + '">' +
+      '<button class="cx2-mini" data-cx="fclear">' + esc(T(U.fClear)) + '</button></div>';
+    h += '<div data-cx="utable">' + usersTableHTML() + '</div>';
     if(adm.view){
       var v = adm.view;
       h += '<div class="cx2-card"><div class="cx2-h3">' + esc(v.user.username) + (v.user.note ? ' — ' + esc(v.user.note) : '') + ' · ' + esc(v.user.percent) + '% (' + esc(v.user.score) + '/' + esc(v.user.total) + ') · ' + esc(fmtDate(v.user.finishedAt)) + '</div>' +
@@ -462,6 +494,7 @@
         adm.setDel = ''; if(r.status === 200){ adm.sets = r.j.sets; adm.set = 'main'; adm.bank = null; adm.users = null; loadBank(); loadUsers(); }
       });
     }
+    else if(a === 'fclear'){ adm.f = { q:'', status:'', set:'', taken:'', min:'', max:'' }; paint(); }
     else if(a === 'reveal'){ var un = el.getAttribute('data-u'); adm.revealed[un] = !adm.revealed[un]; paint(); }
     else if(a === 'clearname'){
       api('/api/admin/cexam/update', 'POST', { username:el.getAttribute('data-u'), clearName:true }, adminKey()).then(function(){ loadUsers(); });
@@ -514,6 +547,10 @@
   function onInput(ev){
     var el = ev.target, a = el.getAttribute && el.getAttribute('data-cx');
     if(!a) return;
+    if(a === 'fq' || a === 'fmin' || a === 'fmax'){
+      adm.f[a === 'fq' ? 'q' : a === 'fmin' ? 'min' : 'max'] = el.value;
+      var tb = bodyEl.querySelector('[data-cx="utable"]'); if(tb) tb.innerHTML = usersTableHTML(); return;
+    }
     if(a === 'qf'){ adm.bank.questions[+el.getAttribute('data-i')][el.getAttribute('data-f')] = el.value; }
     else if(a === 'qch'){ adm.bank.questions[+el.getAttribute('data-i')].choices[+el.getAttribute('data-c')] = el.value; }
     else if(a === 'qans'){ adm.bank.questions[+el.getAttribute('data-i')].ans = +el.getAttribute('data-c'); }
@@ -528,6 +565,8 @@
       var fl = el.files && el.files[0]; if(!fl) return;
       var rd = new FileReader(); rd.onload = function(){ importBank(String(rd.result || '')); }; rd.readAsText(fl); return;
     }
+    var fk = el.getAttribute && el.getAttribute('data-cx');
+    if(fk === 'fstatus' || fk === 'fset' || fk === 'ftaken'){ adm.f[fk === 'fstatus' ? 'status' : fk === 'fset' ? 'set' : 'taken'] = el.value; paint(); return; }
     if(el.getAttribute && el.getAttribute('data-cx') === 'uset'){
       api('/api/admin/cexam/update', 'POST', { username:el.getAttribute('data-u'), setId:el.value }, adminKey()).then(function(){ adm.view = null; loadUsers(); });
       return;
