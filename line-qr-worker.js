@@ -2222,7 +2222,7 @@ function cexAdminView(u) {
     username: u.username, password: u.password, note: u.note || "", status: u.status,
     createdAt: u.createdAt, startedAt: u.startedAt || null, finishedAt: u.finishedAt || null,
     score: u.score == null ? null : u.score, total: u.total == null ? null : u.total, percent: u.percent == null ? null : u.percent,
-    late: !!u.late,
+    late: !!u.late, openAt: u.openAt || null,
   };
 }
 
@@ -2380,6 +2380,8 @@ async function handleCexAdminUpdate(request, env) {
   if (!u) return json({ error: "not_found" }, env, 404);
   if (body.delete === true) { await env.SESSIONS.delete(CEX_USER_PREFIX + username); return json({ ok: true, deleted: true }, env); }
   if (typeof body.note === "string") u.note = body.note.trim().slice(0, 120);
+  if (body.openAt === null || body.openAt === 0) delete u.openAt;
+  else if (typeof body.openAt === "number" && isFinite(body.openAt) && body.openAt > 946684800000 && body.openAt < Date.now() + 5 * 365 * 86400000) u.openAt = Math.floor(body.openAt);
   if (body.reset === true) {
     // allow one more attempt: keep the old result in "history"
     if (u.finishedAt) { u.history = (u.history || []).concat([{ finishedAt: u.finishedAt, score: u.score, total: u.total, percent: u.percent }]).slice(-10); }
@@ -2432,6 +2434,17 @@ function cexTiming(bank, u) {
   if (!lim || !u.startedAt) return { limitMin: lim || 0, remainingMs: null };
   return { limitMin: lim, remainingMs: Math.max(0, u.startedAt + lim * 60000 - Date.now()) };
 }
+// A student finished before the teacher's "next exam opens at" time, and that time has now come:
+// keep the old result in history and give exactly one fresh attempt. (Teacher can still reset by hand.)
+async function cexAutoRearm(u, env) {
+  if (u && u.status === "done" && u.openAt && Date.now() >= u.openAt && u.finishedAt && u.finishedAt < u.openAt) {
+    u.history = (u.history || []).concat([{ finishedAt: u.finishedAt, score: u.score, total: u.total, percent: u.percent }]).slice(-10);
+    u.status = "new"; delete u.startedAt; delete u.finishedAt; delete u.score; delete u.total; delete u.percent;
+    delete u.order; delete u.answers; delete u.review; delete u.late;
+    await cexPutUser(u, env);
+  }
+  return u;
+}
 async function handleCexLogin(request, env) {
   let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const username = cexUserName(body.username);
@@ -2445,11 +2458,12 @@ async function handleCexLogin(request, env) {
     await env.SESSIONS.put(failKey, String(fails + 1), { expirationTtl: 900 });
     return json({ error: "bad_login" }, env, 401);
   }
+  await cexAutoRearm(u, env);
   const bank = await cexGetBank(env);
   const token = cexToken();
   await env.SESSIONS.put(CEX_TOK_PREFIX + token, username, { expirationTtl: 21600 });
   return json({
-    token, username, note: u.note || "", status: u.status,
+    token, username, note: u.note || "", status: u.status, openAt: u.openAt || 0,
     title: bank.settings.title, total: bank.questions.length, limitMin: bank.settings.timeLimitMin,
     result: u.status === "done" ? { score: u.score, total: u.total, percent: u.percent, pass: u.percent >= bank.settings.passPercent, passPercent: bank.settings.passPercent, review: u.review || [] } : null,
   }, env);
@@ -2458,7 +2472,9 @@ async function handleCexStart(request, env) {
   let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const u = await cexUserFromToken(body, env);
   if (!u) return json({ error: "bad_token" }, env, 401);
+  await cexAutoRearm(u, env);
   if (u.status === "done") return json({ error: "already_done" }, env, 409);
+  if (u.status !== "started" && u.openAt && Date.now() < u.openAt) return json({ error: "not_open", openAt: u.openAt }, env, 403);
   const bank = await cexGetBank(env);
   if (!bank.questions.length) return json({ error: "no_questions" }, env, 503);
   if (u.status !== "started") {

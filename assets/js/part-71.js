@@ -42,6 +42,7 @@
     done:{en:'Exam finished',th:'สอบเสร็จแล้ว'}, score:{en:'Score',th:'คะแนน'}, passed:{en:'Passed',th:'ผ่าน'}, notPassed:{en:'Not passed yet',th:'ยังไม่ผ่านเกณฑ์'},
     passAt:{en:'Pass mark',th:'เกณฑ์ผ่าน'}, late:{en:'Submitted after the time limit.',th:'ส่งหลังหมดเวลา'},
     review:{en:'Review',th:'ทบทวนข้อสอบ'}, yours:{en:'Your answer',th:'คำตอบของคุณ'}, correct:{en:'Correct answer',th:'คำตอบที่ถูก'}, none:{en:'No answer',th:'ไม่ได้ตอบ'},
+    opensOn:{en:'Next exam opens on', th:'ข้อสอบครั้งถัดไปจะเปิดวันที่'}, notOpenYet:{en:'This exam is not open yet.', th:'ข้อสอบยังไม่เปิด ยังเริ่มทำไม่ได้'}, colOpen:{en:'Opens on', th:'เปิดสอบวันที่'}, openAuto:{en:'opens automatically', th:'เปิดเองอัตโนมัติ'},
     logout:{en:'Log out',th:'ออกจากระบบ'}, already:{en:'This login has already been used.',th:'รหัสนี้สอบไปแล้ว'},
     /* admin */
     adminBtn:{en:'Teacher panel',th:'หน้าครู (แอดมิน)'}, studentBtn:{en:'Student view',th:'หน้านักเรียน'},
@@ -109,6 +110,9 @@
   function tier(){ try { return window.__SPZ_TIER ? window.__SPZ_TIER() : ''; } catch(e){ return ''; } }
   function pad2(n){ return n < 10 ? '0' + n : '' + n; }
   function fmtMs(ms){ var s = Math.max(0, Math.round(ms / 1000)); return pad2(Math.floor(s / 60)) + ':' + pad2(s % 60); }
+  function fmtDay(t){ var d = new Date(t); return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear(); }
+  function dayVal(t){ if(!t) return ''; var d = new Date(t); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+  function isClosed(i){ return !!(i && i.openAt && i.openAt > Date.now()); }
   function fmtDate(t){ if(!t) return '—'; var d = new Date(t); return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
 
   /* ---------------------------------------------------------------- student */
@@ -135,6 +139,7 @@
         startTimer();
       } else if(r.status === 409){ sv.err = T(U.already); }
       else if(r.status === 503){ sv.err = T(U.noQ); }
+      else if(r.status === 403 && r.j && r.j.error === 'not_open'){ if(sv.info) sv.info.openAt = r.j.openAt; sv.err = ''; }
       else if(r.status === 401){ logoutStudent(); return; }
       else sv.err = T(U.netErr);
       paint();
@@ -180,9 +185,9 @@
         '<div class="cx2-hi">' + esc(T(U.hello)) + ', <b>' + esc(i.note || sv.username) + '</b></div>' +
         '<div class="cx2-title">' + esc(i.title || '') + '</div>' +
         '<div class="cx2-chips"><span>' + esc(i.total) + ' ' + esc(T(U.qs)) + '</span><span>' + (i.limitMin ? esc(i.limitMin) + ' ' + esc(T(U.minutes)) : esc(T(U.noLimit))) + '</span></div>' +
-        '<p class="cx2-note">' + esc(T(U.rules)) + '</p>' +
+        (isClosed(i) ? '<div class="cx2-err" style="border-color:#e8a417;color:#f1d08a">' + esc(T(U.notOpenYet)) + ' ' + esc(T(U.opensOn)) + ' <b>' + esc(fmtDay(i.openAt)) + '</b></div>' : '<p class="cx2-note">' + esc(T(U.rules)) + '</p>') +
         (sv.err ? '<div class="cx2-err">' + esc(sv.err) + '</div>' : '') +
-        '<button class="cx2-btn" data-cx="start"' + (sv.busy || !i.total ? ' disabled' : '') + '>' + esc(T(i.status === 'started' ? U.resume : U.start)) + '</button> ' +
+        '<button class="cx2-btn" data-cx="start"' + (sv.busy || !i.total || isClosed(i) ? ' disabled' : '') + '>' + esc(T(i.status === 'started' ? U.resume : U.start)) + '</button> ' +
         '<button class="cx2-btn ghost" data-cx="logout">' + esc(T(U.logout)) + '</button></div>';
     }
     if(sv.stage === 'exam' && sv.exam){
@@ -208,6 +213,7 @@
         '<div class="cx2-big ' + (pass ? 'ok' : 'no') + '">' + esc(r.percent) + '%</div>' +
         '<div class="cx2-chips"><span>' + esc(T(U.score)) + ' ' + esc(r.score) + ' / ' + esc(r.total) + '</span><span class="' + (pass ? 'ok' : 'no') + '">' + esc(T(pass ? U.passed : U.notPassed)) + '</span><span>' + esc(T(U.passAt)) + ' ' + esc(r.passPercent) + '%</span></div>' +
         (r.late ? '<p class="cx2-note">' + esc(T(U.late)) + '</p>' : '') +
+        (isClosed(sv.info) ? '<p class="cx2-note">' + esc(T(U.opensOn)) + ' <b>' + esc(fmtDay(sv.info.openAt)) + '</b></p>' : '') +
         '<button class="cx2-btn ghost" data-cx="logout">' + esc(T(U.logout)) + '</button></div>';
       h2 += '<div class="cx2-h2">' + esc(T(U.review)) + '</div>' + reviewHTML(r.review || []);
       return h2;
@@ -279,7 +285,7 @@
     h += '<div class="cx2-row"><button class="cx2-mini" data-cx="refresh">' + esc(T(U.refresh)) + '</button></div>';
     if(adm.loading && !adm.users) return h + '<p class="cx2-note">' + esc(T(U.loading)) + '</p>';
     if(!adm.users || !adm.users.length) return h + '<p class="cx2-note">' + esc(T(U.noUsers)) + '</p>';
-    h += '<div class="cx2-tblwrap"><table class="cx2-tbl"><thead><tr><th>' + esc(T(U.colUser)) + '</th><th>' + esc(T(U.colPass)) + '</th><th>' + esc(T(U.colNote)) + '</th><th>' + esc(T(U.colStatus)) + '</th><th>' + esc(T(U.colScore)) + '</th><th></th></tr></thead><tbody>';
+    h += '<div class="cx2-tblwrap"><table class="cx2-tbl"><thead><tr><th>' + esc(T(U.colUser)) + '</th><th>' + esc(T(U.colPass)) + '</th><th>' + esc(T(U.colNote)) + '</th><th>' + esc(T(U.colStatus)) + '</th><th>' + esc(T(U.colScore)) + '</th><th>' + esc(T(U.colOpen)) + '</th><th></th></tr></thead><tbody>';
     adm.users.forEach(function(u){
       var st = u.status === 'done' ? U.sDone : u.status === 'started' ? U.sStarted : U.sNew;
       var shown = !!adm.revealed[u.username];
@@ -288,6 +294,7 @@
         '<td><input class="cx2-in sm wide" data-cx="note" data-u="' + esc(u.username) + '" value="' + esc(u.note) + '" maxlength="120"></td>' +
         '<td><span class="cx2-st ' + esc(u.status) + '">' + esc(T(st)) + '</span></td>' +
         '<td>' + (u.status === 'done' ? '<b>' + esc(u.percent) + '%</b> <small>(' + esc(u.score) + '/' + esc(u.total) + ')</small>' + (u.late ? ' <small>⏱</small>' : '') : '—') + '</td>' +
+        '<td><input class="cx2-in sm" type="date" data-cx="openat" data-u="' + esc(u.username) + '" value="' + esc(dayVal(u.openAt)) + '">' + (u.openAt && u.openAt > Date.now() ? '<div class="cx2-note" style="margin:4px 0 0">' + esc(T(U.openAuto)) + '</div>' : '') + '</td>' +
         '<td class="cx2-act">' + (u.status === 'done' ? '<button class="cx2-mini" data-cx="result" data-u="' + esc(u.username) + '">' + esc(T(U.view)) + '</button>' : '') +
         (u.status !== 'new' ? '<button class="cx2-mini" data-cx="reset" data-u="' + esc(u.username) + '">' + esc(T(U.reset)) + '</button>' : '') +
         '<button class="cx2-mini danger" data-cx="del" data-u="' + esc(u.username) + '">' + esc(T(adm.delArm === u.username ? U.delSure : U.del)) + '</button></td></tr>';
@@ -459,6 +466,12 @@
     if(el.getAttribute && el.getAttribute('data-cx') === 'impfile'){
       var fl = el.files && el.files[0]; if(!fl) return;
       var rd = new FileReader(); rd.onload = function(){ importBank(String(rd.result || '')); }; rd.readAsText(fl); return;
+    }
+    if(el.getAttribute && el.getAttribute('data-cx') === 'openat'){
+      var un2 = el.getAttribute('data-u'), ms = null;
+      if(el.value){ var pp = el.value.split('-'); ms = new Date(+pp[0], +pp[1] - 1, +pp[2], 0, 0, 0).getTime(); }
+      api('/api/admin/cexam/update', 'POST', { username:un2, openAt:ms }, adminKey()).then(function(){ loadUsers(); });
+      return;
     }
     if(el.getAttribute && el.getAttribute('data-cx') === 'note'){
       var un = el.getAttribute('data-u');

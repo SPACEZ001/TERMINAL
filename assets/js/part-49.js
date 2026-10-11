@@ -2042,7 +2042,7 @@
     sub:{en:'INTERNAL DOCUMENT — NOT FOR DISTRIBUTION',th:'เอกสารภายใน — ไม่เผยแพร่'},
     name:{en:'Student name',th:'ชื่อนักเรียน'}, cls:{en:'Class / course',th:'คลาส / คอร์ส'},
     date:{en:'Date',th:'วันที่'}, by:{en:'Evaluated by',th:'ผู้ประเมิน'},
-    level:{en:'Level',th:'ระดับ'},
+    level:{en:"Student's level",th:'ระดับของนักเรียน'},
     lvOpts:[{en:'Beginner',th:'เริ่มต้น'},{en:'Basic',th:'พื้นฐาน'},{en:'Intermediate',th:'กลาง'},{en:'Advanced',th:'สูง'}],
     rounds:{en:'Exam rounds',th:'ผลสอบแต่ละรอบ'},
     rName:{en:'Exam / topic',th:'ชื่อชุดสอบ / หัวข้อ'}, rDate:{en:'Date',th:'วันที่'}, rScore:{en:'Score',th:'คะแนน'}, rMax:{en:'Full',th:'เต็ม'},
@@ -2075,6 +2075,10 @@
     onRevoke:{en:'Turn link off', th:'ปิดลิงก์'}, onRotate:{en:'New link (old one stops)', th:'สร้างลิงก์ใหม่ (ลิงก์เดิมใช้ไม่ได้)'}, onMake:{en:'Create link', th:'สร้างลิงก์'},
     onDel:{en:'Delete this saved copy', th:'ลบที่บันทึกออนไลน์'}, onDelAsk:{en:'Delete the online copy? This cannot be undone.', th:'ลบข้อมูลที่บันทึกออนไลน์ใช่ไหม? ย้อนกลับไม่ได้'},
     onByStu:{en:'link turned off by student', th:'นักเรียนปิดลิงก์เอง'}, onNoQr:{en:'no QR link', th:'ไม่มีลิงก์ QR'}, onDelShort:{en:'Delete', th:'ลบ'},
+    exUser:{en:'Classroom exam username', th:'รหัสผู้ใช้ห้องสอบ'}, exSet:{en:'Set exam open date in Classroom Exam', th:'ตั้งวันเปิดสอบในห้องสอบ'},
+    exAuto:{en:'The exam opens automatically on this date (one attempt).', th:'ระบบจะเปิดให้สอบอัตโนมัติในวันนี้ (สอบได้ครั้งเดียว)'},
+    exDone:{en:'Set. This student can start the exam from that date.', th:'ตั้งแล้ว นักเรียนคนนี้จะเริ่มสอบได้ตั้งแต่วันที่กำหนด'},
+    exNoUser:{en:'Type the username and pick a date first.', th:'กรอกรหัสผู้ใช้และเลือกวันที่ก่อน'}, exNf:{en:'Username not found in Classroom Exam.', th:'ไม่พบรหัสผู้ใช้นี้ในห้องสอบ'},
     onList:{en:'Saved evaluations', th:'รายการที่บันทึกไว้'}, onLoadList:{en:'Load list', th:'โหลดรายการ'}, onOpen:{en:'Open to edit', th:'เปิดมาแก้ไข'}, onNone:{en:'Nothing saved yet.', th:'ยังไม่มีที่บันทึกไว้'},
     onExport:{en:'Download data file', th:'โหลดไฟล์ข้อมูล'}, onImport:{en:'Import data file', th:'นำเข้าไฟล์ข้อมูล'},
     onFileHint:{en:'Data file = a backup copy of this evaluation (.json). Download it to keep on your Mac; import it later to open and edit this evaluation again. Data file and online copy hold the same data.', th:'ไฟล์ข้อมูล = ไฟล์สำรองของใบประเมินนี้ (.json) กด "โหลดไฟล์ข้อมูล" เพื่อเก็บไว้ในเครื่อง Mac ภายหลังกด "นำเข้าไฟล์ข้อมูล" เพื่อเปิดมาแก้ไขต่อ ไฟล์กับที่บันทึกออนไลน์เป็นข้อมูลชุดเดียวกัน'},
@@ -2082,7 +2086,7 @@
     onOld:{en:'The Worker has no evaluation endpoints yet. Paste the new line-qr-worker.js into Cloudflare and Deploy.', th:'Worker ยังไม่มีระบบนี้ ต้องวางไฟล์ line-qr-worker.js ใหม่ใน Cloudflare แล้วกด Deploy'},
     onBadFile:{en:'This file is not a student evaluation data file.', th:'ไฟล์นี้ไม่ใช่ไฟล์ข้อมูลใบประเมินนักเรียน'},
     onImported:{en:'File imported. Press Save online to update the online copy.', th:'นำเข้าไฟล์แล้ว กด "บันทึกออนไลน์" ถ้าต้องการอัปเดตข้อมูลออนไลน์'},
-    qrScan:{en:'Scan to view online', th:'สแกนเพื่อดูออนไลน์'},
+    qrScanFull:{en:'Scan the QR code to view this evaluation online', th:'สแกน QR Code เพื่อดูใบประเมินนี้ออนไลน์'},
     qrView:{en:'View this evaluation online', th:'ดูใบประเมินนี้ออนไลน์'},
     cmpT:{en:'Compare with previous round', th:'เทียบกับรอบก่อน'}, prevL:{en:'Before', th:'รอบก่อน'}, nowL:{en:'Now', th:'ตอนนี้'},
     readyT:{en:'CEWA exam readiness', th:'ความพร้อมสอบ CEWA'},
@@ -2090,6 +2094,7 @@
     reviewL:{en:'Needs review', th:'ควรทบทวน'},
     pracT:{en:'Live-chart practice', th:'ผลฝึกอ่านกราฟจริง'}, pracDone:{en:'Charts practised', th:'จำนวนกราฟที่ฝึก'}, pracOk:{en:'Counted correctly', th:'นับถูก'},
     repeat:{en:'Mistakes repeated', th:'ข้อผิดที่พลาดซ้ำ'},
+    planAdd:{en:'+ Add item', th:'+ เพิ่มรายการ'}, planDel:{en:'Remove', th:'ลบรายการนี้'},
     planT:{en:'30-day plan: 3 things to get right', th:'แผนพัฒนา 30 วัน: 3 ข้อที่ต้องทำให้ได้'}, planTask:{en:'Task', th:'สิ่งที่ต้องทำ'}, planDue:{en:'Due', th:'กำหนด'},
     resources:{en:'Recommended next reading / resources', th:'หนังสือ / แหล่งเรียนที่แนะนำต่อ'},
     stuGoal:{en:"Student's own goal", th:'เป้าหมายของนักเรียนเอง'},
@@ -2119,7 +2124,7 @@
     var d = new Date();
     return { name:'', cls:'', level:'', by:'Noraset Boikaw',
       date: d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'),
-      ref:'', rounds:[{},{},{},{}], sc:{}, prev:{}, cmp:false, ready:'', pracDone:'', pracOk:'', repeat:'', plan:[{},{},{}], resources:'', stuGoal:'', strengths:'', improve:'', covered:'', comment:'', goal:'', homework:'', nextExam:'', attended:'', sessions:'' };
+      ref:'', examUser:'', rounds:[{},{},{},{}], sc:{}, prev:{}, cmp:false, ready:'', pracDone:'', pracOk:'', repeat:'', plan:[{},{},{}], resources:'', stuGoal:'', strengths:'', improve:'', covered:'', comment:'', goal:'', homework:'', nextExam:'', attended:'', sessions:'' };
   }
   var evData = evBlank();
   var evOnline = { id:'', token:'', savedAt:0, busy:false, msg:'', err:'', share:true, list:null, listTried:false, sel:'' };
@@ -2198,7 +2203,8 @@
   }
   function evPlanHTML(){
     var rows = '';
-    for(var i = 0; i < 3; i++){
+    var nPlan = Math.max(3, evData.plan.length);
+    for(var i = 0; i < nPlan; i++){
       var r = evData.plan[i] || {};
       rows += '<tr><td class="c">' + (i + 1) + '</td><td>' + (r.task ? esc(r.task) : '&nbsp;') + '</td><td class="c">' + (r.due ? esc(r.due) : '') + '</td></tr>';
     }
@@ -2271,11 +2277,10 @@
         '<div class="pr-ev-brand"><img class="pr-ev-logo" src="' + PR_LOGO + '" alt=""><div><b>SPACEZ TERMINAL</b><span>' + esc(T(EV_TXT.dept)) + '</span></div></div>' +
         '<div class="pr-ev-doc"><div class="pr-ev-doc-t">' + esc(T(EV_TXT.title)) + '</div>' +
           '<div class="pr-meta"><span>' + esc(T(UI.serial)) + ': ' + esc(d.ref || serial()) + '</span></div></div>' +
-        evQrTop() +
       '</div>' +
       '<div class="pr-ev-info">' +
-        evField(EV_TXT.name, d.name, true) + evField(EV_TXT.cls, d.cls) + evField(EV_TXT.date, d.date) + evField(EV_TXT.by, d.by) +
-        '<div class="pr-ev-f"><span>' + esc(T(EV_TXT.level)) + '</span><div class="pr-ev-lv">' + lvOpt + '</div></div>' +
+        evField(EV_TXT.name, d.name, true) + evField(EV_TXT.cls, d.cls) + evField(EV_TXT.date, d.date) +
+        '<div class="pr-ev-f w"><span>' + esc(T(EV_TXT.level)) + '</span><div class="pr-ev-lv">' + lvOpt + '</div></div>' + evField(EV_TXT.by, d.by, true) +
       '</div>' +
       '<div class="pr-ev-stats">' +
         stat(EV_TXT.examAvg, exAvg !== null ? exAvg.toFixed(0) + '%' : null, best !== null ? esc(T(EV_TXT.best)) + ' ' + best.toFixed(0) + '%' : '') +
@@ -2307,13 +2312,13 @@
       evBlk('<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.covered)) + '</div>' + evBlankLine(d.covered, 3) + '</div>' +
         '<div><div class="pr-ev-h">' + esc(T(EV_TXT.goal)) + '</div>' + evBlankLine(d.goal, 3) + '</div></div>') +
       evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.planT)) + '</div>' + evPlanHTML()) +
-      evBlk('<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.nextExam)) + '</div><div class="pr-ev-f"><b>' + (d.nextExam ? esc(d.nextExam) : '&nbsp;') + '</b></div></div>' +
+      evBlk('<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.nextExam)) + '</div><div class="pr-ev-f"><b>' + (d.nextExam ? esc(d.nextExam) : '&nbsp;') + '</b>' + (d.examUser ? '<small class="pr-ev-exu">' + esc(T(EV_TXT.exUser)) + ': <b>' + esc(d.examUser) + '</b><br>' + esc(T(EV_TXT.exAuto)) + '</small>' : '') + '</div></div>' +
         '<div><div class="pr-ev-h">' + esc(T(EV_TXT.homework)) + '</div>' + evBlankLine(d.homework, 1) + '</div></div>') +
       evBlk('<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.resources)) + '</div>' + evBlankLine(d.resources, 2) + '</div>' +
         '<div><div class="pr-ev-h">' + esc(T(EV_TXT.stuGoal)) + '</div>' + evBlankLine(d.stuGoal, 2) + '</div></div>') +
       evBlk('<div class="pr-ev-h">' + esc(T(EV_TXT.comment)) + '</div>' + evBlankLine(d.comment, 4) +
       '<div class="pr-ev-sign"><div></div><span>' + esc(T(EV_TXT.sign)) + '</span></div>') +
-      evWarnBottom() +
+      evShareBlock() +
     '</div>';
   }
 
@@ -2413,12 +2418,13 @@
     h += skills(EV_EW, EV_TXT.ew) + skills(EV_OTHER, EV_TXT.other);
     h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.pracT)) + '</div><div class="pr-ev-grid2">' + inp('pracDone', EV_TXT.pracDone, 'number') + inp('pracOk', EV_TXT.pracOk, 'number') + '</div>';
     h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.planT)) + '</div>';
-    for(var pi = 0; pi < 3; pi++){
+    for(var pi = 0; pi < Math.max(3, d.plan.length); pi++){
       var pr0 = d.plan[pi] || {};
-      h += '<div class="pr-ev-prow"><b>' + (pi + 1) + '</b><input type="text" data-evp="task" data-i="' + pi + '" value="' + esc(pr0.task || '') + '" placeholder="' + esc(T(EV_TXT.planTask)) + '"><input type="date" data-evp="due" data-i="' + pi + '" value="' + esc(pr0.due || '') + '"></div>';
+      h += '<div class="pr-ev-prow"><b>' + (pi + 1) + '</b><input type="text" data-evp="task" data-i="' + pi + '" value="' + esc(pr0.task || '') + '" placeholder="' + esc(T(EV_TXT.planTask)) + '"><input type="date" data-evp="due" data-i="' + pi + '" value="' + esc(pr0.due || '') + '"><button type="button" class="pr-ev-x" data-ev-plandel="' + pi + '" title="' + esc(T(EV_TXT.planDel)) + '">×</button></div>';
     }
+    h += '<button type="button" class="pr-mini" data-ev-planadd="1">' + esc(T(EV_TXT.planAdd)) + '</button>';
     function ta(k, lbl){ return '<label class="pr-ev-in"><span>' + esc(T(lbl)) + '</span><textarea rows="3" data-ev="' + k + '">' + esc(d[k] || '') + '</textarea></label>'; }
-    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.summary)) + '</div>' + ta('strengths', EV_TXT.strengths) + ta('improve', EV_TXT.improve) + ta('covered', EV_TXT.covered) + ta('repeat', EV_TXT.repeat) + ta('goal', EV_TXT.goal) + ta('resources', EV_TXT.resources) + ta('stuGoal', EV_TXT.stuGoal) + inp('nextExam', EV_TXT.nextExam, 'date') + ta('homework', EV_TXT.homework) + ta('comment', EV_TXT.comment);
+    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.summary)) + '</div>' + ta('strengths', EV_TXT.strengths) + ta('improve', EV_TXT.improve) + ta('covered', EV_TXT.covered) + ta('repeat', EV_TXT.repeat) + ta('goal', EV_TXT.goal) + ta('resources', EV_TXT.resources) + ta('stuGoal', EV_TXT.stuGoal) + inp('nextExam', EV_TXT.nextExam, 'date') + inp('examUser', EV_TXT.exUser) + '<button type="button" class="pr-mini" data-ev-exset="1">' + esc(T(EV_TXT.exSet)) + '</button>' + (evOnline.exMsg ? '<div class="pr-ev-' + (evOnline.exOk ? 'ok' : 'err') + '">' + esc(evOnline.exMsg) + '</div>' : '') + ta('homework', EV_TXT.homework) + ta('comment', EV_TXT.comment);
     h += '<button type="button" class="pr-mini" data-ev-clear="1" style="margin-top:8px;">' + esc(T(EV_TXT.clear)) + '</button>';
     return h;
   }
@@ -2439,6 +2445,7 @@
   function evHandleClick(t){
     var lv = t.closest('[data-ev-level]');
     if(lv){ var v = lv.getAttribute('data-ev-level'); evData.level = evData.level === v ? '' : v; evMountForm(true); renderReport(); return true; }
+    if(t.closest('[data-ev-exset]')){ evExSet(); return true; }
     if(t.closest('[data-ev-save]')){ evSave(); return true; }
     if(t.closest('[data-ev-export]')){ evExport(); return true; }
     if(t.closest('[data-ev-importbtn]')){ var fi = sec && sec.querySelector('[data-ev-importfile]'); if(fi) fi.click(); return true; }
@@ -2461,6 +2468,9 @@
     var rdb = t.closest('[data-ev-ready]');
     if(rdb){ var rv = rdb.getAttribute('data-ev-ready'); evData.ready = evData.ready === rv ? '' : rv; evMountForm(true); renderReport(); return true; }
     if(t.closest('[data-ev-cmp]')){ evData.cmp = !evData.cmp; evMountForm(true); renderReport(); return true; }
+    if(t.closest('[data-ev-planadd]')){ if(evData.plan.length < 10) evData.plan.push({}); evMountForm(true); renderReport(); return true; }
+    var pdl = t.closest('[data-ev-plandel]');
+    if(pdl){ var pi2 = +pdl.getAttribute('data-ev-plandel'); if(evData.plan.length > 3) evData.plan.splice(pi2, 1); else evData.plan[pi2] = {}; evMountForm(true); renderReport(); return true; }
     if(t.closest('[data-ev-add]')){ evData.rounds.push({}); evMountForm(true); renderReport(); return true; }
     if(t.closest('[data-ev-clear]')){ evData = evBlank(); evOnline.id = ''; evOnline.token = ''; evOnline.msg = ''; evOnline.err = ''; evMountForm(true); renderReport(); return true; }
     if(t.closest('[data-ev-load]')){ evImpLoad(); return true; }
@@ -2477,13 +2487,26 @@
     try { if(typeof qrcode !== 'function') return ''; var q = qrcode(0, 'M'); q.addData(url); q.make(); return q.createSvgTag({ cellSize:4, margin:0, scalable:true }); }
     catch(e){ return ''; }
   }
-  function evQrTop(){
+  function evShareBlock(){
     if(evViewMode || !evOnline.token) return '';
-    return '<div class="pr-ev-qrtop"><div class="pr-ev-qrbox">' + evQrSvg(evViewURL(evOnline.token)) + '</div><span>' + esc(T(EV_TXT.qrScan)) + '</span></div>';
+    var url = evViewURL(evOnline.token);
+    return '<div class="pr-ev-share"><div class="pr-ev-share-qr">' + evQrSvg(url) + '</div><div class="pr-ev-share-t">' +
+      '<b>' + esc(T(EV_TXT.qrScanFull)) + '</b><span class="u">' + esc(url) + '</span><em>' + esc(T(EV_TXT.onWarn)) + '</em></div></div>';
   }
-  function evWarnBottom(){
-    if(evViewMode || !evOnline.token) return '';
-    return '<div class="pr-ev-qrwarn">' + esc(T(EV_TXT.qrView)) + ': ' + esc(evViewURL(evOnline.token)) + '<br>' + esc(T(EV_TXT.onWarn)) + '</div>';
+  function evExSet(){
+    var u = (evData.examUser || '').trim().toUpperCase(), dv = evData.nextExam;
+    evOnline.exMsg = ''; evOnline.exOk = false;
+    if(!u || !dv){ evOnline.exMsg = T(EV_TXT.exNoUser); evMountForm(true); return; }
+    var pp = dv.split('-'), ms = new Date(+pp[0], +pp[1] - 1, +pp[2], 0, 0, 0).getTime();
+    var key = getAdminKey();
+    if(!key){ evOnline.exMsg = T(EV_TXT.onBad); evMountForm(true); return; }
+    fetch(WORKER_BASE + '/api/admin/cexam/update', { method:'POST', headers:{ 'X-Admin-Key':key, 'Content-Type':'application/json' }, body:JSON.stringify({ username:u, openAt:ms }) })
+      .then(function(r){
+        if(r.status === 404){ evOnline.exMsg = T(EV_TXT.exNf); return; }
+        if(!r.ok){ evOnline.exMsg = T(EV_TXT.onBad); return; }
+        evOnline.exMsg = T(EV_TXT.exDone); evOnline.exOk = true;
+      }).catch(function(){ evOnline.exMsg = T(EV_TXT.onBad); })
+      .then(function(){ evMountForm(true); });
   }
   function evStr(v, n){ return typeof v === 'string' ? v.slice(0, n || 4000) : ''; }
   function evMerge(o){
@@ -2500,7 +2523,7 @@
         if(Array.isArray(ov) && ov.length){ b.rounds = ov.slice(0, 30).map(function(r){ r = r || {}; return { name:evStr(r.name, 200), date:evStr(r.date, 20), score:r.score == null ? '' : String(r.score).slice(0, 10), max:r.max == null ? '' : String(r.max).slice(0, 10) }; }); }
       }
       else if(k === 'plan'){
-        if(Array.isArray(ov)){ b.plan = [0, 1, 2].map(function(i){ var r = ov[i] || {}; return { task:evStr(r.task, 300), due:evStr(r.due, 20) }; }); }
+        if(Array.isArray(ov)){ var np = Math.max(3, Math.min(10, ov.length)); b.plan = []; for(var pq = 0; pq < np; pq++){ var r = ov[pq] || {}; b.plan.push({ task:evStr(r.task, 300), due:evStr(r.due, 20) }); } }
       }
     });
     if(['', 'no', 'near', 'yes'].indexOf(b.ready) === -1) b.ready = '';
