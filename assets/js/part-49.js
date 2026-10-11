@@ -2449,6 +2449,7 @@
     if(annWrap) annWrap.style.display = reportType === 'announcement' ? '' : 'none';
     var evWrap = q('evWrap');
     if(evWrap){ evWrap.style.display = reportType === 'eval' ? '' : 'none'; if(reportType === 'eval') evMountForm(); }
+    if(evWrap && evWrap.closest){ var evCtl = evWrap.closest('.pr-controls'); if(evCtl) evCtl.classList.toggle('pr-ev-on', reportType === 'eval'); }
     var lineB = q('lineBtn'); if(lineB) lineB.style.display = reportType === 'eval' ? 'none' : '';
     var lineS = q('lineStatus'); if(lineS) lineS.style.display = reportType === 'eval' ? 'none' : '';
     var typeEvalBtn = q('typeEval'); if(typeEvalBtn){ typeEvalBtn.textContent = T(EV_TXT.typeEval); typeEvalBtn.classList.toggle('on', reportType === 'eval'); }
