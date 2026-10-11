@@ -129,27 +129,27 @@
        reveals no lesson content, and the left-hand index has to render
        before (and even without) a successful content fetch. ---- */
     navOverview: { en:'Overview', th:'ภาพรวม' },
-    navGroupMotive: { en:'Motive waves', th:'คลื่นโมทีฟ' },
-    navGroupCorrective: { en:'Corrective waves', th:'คลื่นคอเรคทีฟ' },
+    navGroupMotive: { en:'Motive waves', th:'Motive waves' },
+    navGroupCorrective: { en:'Corrective waves', th:'Corrective waves' },
     navGroupFib: { en:'Fibonacci tools', th:'เครื่องมือฟีโบนัชชี' },
-    navImpulse: { en:'Impulse', th:'อิมพัลส์' },
-    navDiagLead: { en:'Diagonal — Leading', th:'ไดแอกอนัล — ลีดดิ้ง' },
-    navDiagEnd: { en:'Diagonal — Ending', th:'ไดแอกอนัล — เอนดิ้ง' },
-    navZigzag: { en:'Zigzag (5-3-5)', th:'ซิกแซก (5-3-5)' },
-    navFlat: { en:'Flat (3-3-5)', th:'แฟลต (3-3-5)' },
-    navTriangle: { en:'Triangle (3-3-3-3-3)', th:'แทรงเกิล (3-3-3-3-3)' },
-    navCombination: { en:'Combination', th:'คอมบิเนชัน' },
+    navImpulse: { en:'Impulse', th:'Impulse' },
+    navDiagLead: { en:'Diagonal — Leading', th:'Diagonal — Leading' },
+    navDiagEnd: { en:'Diagonal — Ending', th:'Diagonal — Ending' },
+    navZigzag: { en:'Zigzag (5-3-5)', th:'Zigzag (5-3-5)' },
+    navFlat: { en:'Flat (3-3-5)', th:'Flat (3-3-5)' },
+    navTriangle: { en:'Triangle (3-3-3-3-3)', th:'Triangle (3-3-3-3-3)' },
+    navCombination: { en:'Combination', th:'Combination' },
     navDegree: { en:'Wave degree', th:'ระดับขนาดคลื่น' },
     navFibRetrace: { en:'Retracement & guidelines', th:'การย่อกลับและแนวทาง' },
     navFibProj: { en:'Wave 5 projection', th:'คาดคะเนคลื่น 5' },
     navMistakes: { en:'Common mistakes', th:'ข้อผิดพลาดที่พบบ่อย' },
     navFurther: { en:'Further reading', th:'อ่านเพิ่มเติม' },
-    navFlatRegular: { en:'Regular', th:'รีกูลาร์' },
-    navFlatExpanded: { en:'Expanded', th:'เอ็กซ์แพนเดด' },
-    navFlatRunning: { en:'Running', th:'รันนิ่ง' },
-    navTriContracting: { en:'Contracting (incl. Barrier)', th:'คอนแทร็กติ้ง (รวมแบริเออร์)' },
-    navTriExpanding: { en:'Expanding', th:'เอ็กซ์แพนดิ้ง' },
-    navTriRunning: { en:'Running', th:'รันนิ่ง' },
+    navFlatRegular: { en:'Regular', th:'Regular' },
+    navFlatExpanded: { en:'Expanded', th:'Expanded' },
+    navFlatRunning: { en:'Running', th:'Running' },
+    navTriContracting: { en:'Contracting (incl. Barrier)', th:'Contracting (incl. Barrier)' },
+    navTriExpanding: { en:'Expanding', th:'Expanding' },
+    navTriRunning: { en:'Running', th:'Running' },
     navFibProj3: { en:'Wave 3 projection', th:'คาดคะเนคลื่น 3' },
     navFibAo: { en:'Momentum check (AO)', th:'เช็กโมเมนตัม (AO)' },
 
@@ -272,7 +272,7 @@
 
   function navItemHTML(id, isSub){
     var active = id === currentId ? ' active' : '';
-    var subCls = isSub ? ' ewv-gl-sub' : '';
+    var subCls = isSub ? (/^(flat|tri)-/.test(id) ? ' ewv-gl-sub ewv-gl-sub2' : ' ewv-gl-sub') : '';
     return '<button type="button" class="gl-nav-item' + active + subCls + '" data-node="' + id + '">' +
       '<span class="gl-nav-name">' + esc(T(NODE_TITLE[id])) + '</span></button>';
   }

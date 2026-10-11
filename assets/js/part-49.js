@@ -2515,7 +2515,7 @@
     var h = '<div class="pr-ev-in"><span>' + esc(T(EV_TXT.exUser)) + '</span><div class="pr-hint" style="margin:2px 0 6px;">' + esc(T(EV_TXT.exPick)) + '</div><div class="pr-ann-chips">';
     if(!evExUsers.length) h += '<span class="pr-hint">' + esc(T(EV_TXT.exEmpty)) + '</span>';
     evExUsers.forEach(function(u){
-      h += '<button type="button" class="pr-ann-chip' + (evData.examUser === u.username ? ' on' : '') + '" data-ev-exu="' + esc(u.username) + '" data-pw="' + esc(u.password || '') + '">' + esc(u.username) + (u.note ? ' · ' + esc(u.note) : '') + '</button>';
+      h += '<button type="button" class="pr-ann-chip' + (evData.examUser === u.username ? ' on' : '') + '" data-ev-exu="' + esc(u.username) + '" data-pw="' + esc(u.password || '') + '">' + esc(u.username) + ((u.displayName || u.note) ? ' · ' + esc(u.displayName || u.note) : '') + '</button>';
     });
     return h + '</div><button type="button" class="pr-mini" data-ev-exload="1" style="margin-top:6px;">' + esc(T(EV_TXT.exReload)) + '</button></div>';
   }
