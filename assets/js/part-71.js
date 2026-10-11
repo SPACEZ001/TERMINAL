@@ -311,7 +311,7 @@
       if(q && ((u.username || '') + ' ' + (u.displayName || '') + ' ' + (u.note || '')).toLowerCase().indexOf(q) === -1) return false;
       if(f.status && u.status !== f.status) return false;
       if(f.set && f.taken){
-        var took = (u.status === 'done' && (u.setId || 'main') === f.set) || (u.history || []).some(function(x){ return (x.setId || 'main') === f.set; });
+        var took = (u.results || []).some(function(x){ return x.setId === f.set && x.status === 'done'; }) || (u.history || []).some(function(x){ return (x.setId || 'main') === f.set; });
         if(f.taken === 'yes' && !took) return false;
         if(f.taken === 'no' && took) return false;
       } else if(f.set && (u.setId || 'main') !== f.set) return false;
@@ -332,7 +332,9 @@
         '<td>' + (u.displayName ? '<b>' + esc(u.displayName) + '</b> <button class="cx2-mini" data-cx="clearname" data-u="' + esc(u.username) + '">' + esc(T(U.clearName)) + '</button>' : '<small>—</small>') + '</td>' +
         '<td><input class="cx2-in sm wide" data-cx="note" data-u="' + esc(u.username) + '" value="' + esc(u.note) + '" maxlength="120"></td>' +
         '<td><select class="cx2-in sm" data-cx="uset" data-u="' + esc(u.username) + '">' + (adm.sets || [{ id:'main', title:'Main' }]).map(function(x){ return '<option value="' + esc(x.id) + '"' + (x.id === (u.setId || 'main') ? ' selected' : '') + '>' + esc(x.title) + '</option>'; }).join('') + '</select>' +
-          ((u.history || []).length ? '<div class="cx2-note" style="margin:4px 0 0">' + esc(T(U.taken)) + ': ' + (u.history || []).map(function(h){ return esc(setTitle(h.setId)) + ' ' + esc(h.percent) + '%'; }).join(' · ') + '</div>' : '') + '</td>' +
+          '<div class="cx2-rs">' + (u.results || []).filter(function(x){ return x.status !== 'new'; }).map(function(x){
+            return '<button class="cx2-rchip ' + esc(x.status) + '" data-cx="result" data-u="' + esc(u.username) + '" data-set="' + esc(x.setId) + '">' + esc(setTitle(x.setId)) + ' · ' + (x.status === 'done' ? esc(x.percent) + '%' : esc(T(U.sStarted))) + '</button>';
+          }).join('') + '</div></td>' +
         '<td><span class="cx2-st ' + esc(u.status) + '">' + esc(T(st)) + '</span></td>' +
         '<td>' + (u.status === 'done' ? '<b>' + esc(u.percent) + '%</b> <small>(' + esc(u.score) + '/' + esc(u.total) + ')</small>' + (u.late ? ' <small>⏱</small>' : '') : '—') + '</td>' +
         '<td><input class="cx2-in sm" type="date" data-cx="openat" data-u="' + esc(u.username) + '" value="' + esc(dayVal(u.openAt)) + '">' + (u.openAt && u.openAt > Date.now() ? '<div class="cx2-note" style="margin:4px 0 0">' + esc(T(U.openAuto)) + '</div>' : '') + '</td>' +
@@ -372,7 +374,7 @@
     h += '<div data-cx="utable">' + usersTableHTML() + '</div>';
     if(adm.view){
       var v = adm.view;
-      h += '<div class="cx2-card"><div class="cx2-h3">' + esc(v.user.username) + (v.user.note ? ' — ' + esc(v.user.note) : '') + ' · ' + esc(v.user.percent) + '% (' + esc(v.user.score) + '/' + esc(v.user.total) + ') · ' + esc(fmtDate(v.user.finishedAt)) + '</div>' +
+      h += '<div class="cx2-card"><div class="cx2-h3">' + esc(v.user.username) + (v.user.displayName || v.user.note ? ' — ' + esc(v.user.displayName || v.user.note) : '') + ' · ' + esc(setTitle(v.setId)) + ' · ' + esc((v.result || v.user).percent) + '% (' + esc((v.result || v.user).score) + '/' + esc((v.result || v.user).total) + ') · ' + esc(fmtDate((v.result || v.user).finishedAt)) + '</div>' +
         (v.history && v.history.length ? '<div class="cx2-note">' + esc(T(U.attempts)) + ': ' + v.history.map(function(x){ return esc(x.percent) + '% (' + esc(fmtDate(x.finishedAt)) + ')'; }).join(' · ') + '</div>' : '') +
         reviewHTML(v.review || []) + '<button class="cx2-mini" data-cx="closeview">' + esc(T(U.close)) + '</button></div>';
     }
@@ -508,7 +510,7 @@
       else { adm.delArm = ''; api('/api/admin/cexam/update', 'POST', { username:du, delete:true }, adminKey()).then(function(){ loadUsers(); }); }
     }
     else if(a === 'result'){
-      api('/api/admin/cexam/result?username=' + encodeURIComponent(el.getAttribute('data-u')), 'GET', null, adminKey()).then(function(r){ if(r.status === 200){ adm.view = r.j; paint(); } });
+      api('/api/admin/cexam/result?username=' + encodeURIComponent(el.getAttribute('data-u')) + (el.getAttribute('data-set') ? '&set=' + encodeURIComponent(el.getAttribute('data-set')) : ''), 'GET', null, adminKey()).then(function(r){ if(r.status === 200){ adm.view = r.j; paint(); } });
     }
     else if(a === 'closeview'){ adm.view = null; paint(); }
     else if(a === 'addq'){ adm.bank.questions.push({ id:'q' + Date.now().toString(36), q:'', choices:['', '', '', ''], ans:0, expl:'', topic:'' }); paint(); }
