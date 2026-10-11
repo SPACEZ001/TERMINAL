@@ -161,6 +161,8 @@
     navVolume: { en:'Volume & momentum', th:'Volume และ Momentum' },
     navPersonality: { en:'Wave personality', th:'บุคลิกของแต่ละคลื่น' },
     navHowto: { en:'How to count, step by step', th:'วิธีนับคลื่นทีละขั้น' },
+    navW3c: { en:'Wave 3 or wave C? (advanced)', th:'Wave 3 หรือ Wave C? (ขั้นสูง)' },
+    navMarkets: { en:'Where Elliott Wave works', th:'ใช้ Elliott Wave กับตลาดไหนได้บ้าง' },
 
     /* ---- Round AB: admin-key gate + content-loading states, mirroring
        Connected Users (part-50.js) exactly in wording style/tone. ---- */
@@ -186,11 +188,13 @@
     degree:UI.navDegree, fib:UI.navGroupFib, 'fib-retrace':UI.navFibRetrace, 'fib-proj':UI.navFibProj,
     'fib-proj3':UI.navFibProj3, 'fib-ao':UI.navFibAo,
     guide:UI.navGuide, 'gd-alternation':UI.navGdAlt, 'gd-channel':UI.navGdChannel, 'gd-extension':UI.navGdExt, 'gd-truncation':UI.navGdTrunc, 'gd-depth':UI.navGdDepth,
-    volume:UI.navVolume, personality:UI.navPersonality, howto:UI.navHowto,
+    volume:UI.navVolume, personality:UI.navPersonality, howto:UI.navHowto, w3c:UI.navW3c, markets:UI.navMarkets,
     mistakes:UI.navMistakes, further:UI.navFurther
   };
+  // Ordered from the basics a beginner needs first down to the advanced material.
   var TREE = [
     { id:'overview' },
+    { id:'degree' },
     { id:'motive', children:['impulse', 'diag-lead', 'diag-end'] },
     { id:'corrective', children:[
       'zigzag',
@@ -198,11 +202,12 @@
       'triangle', 'tri-contracting', 'tri-expanding', 'tri-running',
       'combination'
     ] },
-    { id:'guide', children:['gd-alternation', 'gd-channel', 'gd-extension', 'gd-truncation', 'gd-depth'] },
-    { id:'degree' },
-    { id:'fib', children:['fib-retrace', 'fib-proj', 'fib-proj3', 'fib-ao', 'volume'] },
     { id:'personality' },
+    { id:'guide', children:['gd-alternation', 'gd-channel', 'gd-extension', 'gd-truncation', 'gd-depth'] },
+    { id:'fib', children:['fib-retrace', 'fib-proj', 'fib-proj3', 'fib-ao', 'volume'] },
     { id:'howto' },
+    { id:'w3c' },
+    { id:'markets' },
     { id:'mistakes' },
     { id:'further' }
   ];
@@ -362,7 +367,17 @@
       var el = ev.target.closest('[data-node]');
       if(!el || !NODE_TITLE[el.getAttribute('data-node')]) return;
       currentId = el.getAttribute('data-node');
+      // Keep the reader where they are: the nav list keeps its own scroll position and the page does not
+      // jump to the top; if the lesson header ended up above the screen, bring just the header into view.
+      var nav0 = bodyEl.querySelector('.gl-nav'), navTop = nav0 ? nav0.scrollTop : 0, y0 = window.pageYOffset;
       renderShell();
+      var nav1 = bodyEl.querySelector('.gl-nav'); if(nav1) nav1.scrollTop = navTop;
+      window.scrollTo(0, y0);
+      var head = bodyEl.querySelector('.gl-detail');
+      if(head){
+        var top = head.getBoundingClientRect().top, topH = (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--spz-topH'), 10) || 90) + 16;
+        if(top < topH) window.scrollTo({ top: window.pageYOffset + top - topH, behavior: 'smooth' });
+      }
     });
 
     window.__spzAddRoute({
