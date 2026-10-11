@@ -2067,6 +2067,15 @@
     rub:[{en:'Not yet shown',th:'ยังไม่แสดงผล'},{en:'Needs a lot of help',th:'ต้องช่วยมาก'},{en:'Partly understands',th:'เข้าใจบางส่วน'},{en:'Understands, some errors',th:'เข้าใจ มีพลาดบ้าง'},{en:'Solid, independent',th:'ทำได้ดี ทำเองได้'},{en:'Excellent, can teach others',th:'ยอดเยี่ยม สอนคนอื่นได้'}],
     goal:{en:'Goal for next period', th:'เป้าหมายรอบหน้า'}, nextExam:{en:'Next exam date', th:'วันสอบครั้งถัดไป'}, homework:{en:'Homework / follow-up', th:'การบ้าน / สิ่งที่ต้องตามต่อ'},
     attended:{en:'Sessions attended', th:'จำนวนครั้งที่เข้าเรียน'}, sessions:{en:'Total sessions', th:'จำนวนครั้งทั้งหมด'},
+    cmpT:{en:'Compare with previous round', th:'เทียบกับรอบก่อน'}, prevL:{en:'Before', th:'รอบก่อน'}, nowL:{en:'Now', th:'ตอนนี้'},
+    readyT:{en:'CEWA exam readiness', th:'ความพร้อมสอบ CEWA'},
+    ready:[{k:'no',en:'Not ready',th:'ยังไม่พร้อม',c:'#d8473d'},{k:'near',en:'Almost ready',th:'ใกล้พร้อม',c:'#e8a417'},{k:'yes',en:'Ready',th:'พร้อม',c:'#2fa66a'}],
+    reviewL:{en:'Needs review', th:'ควรทบทวน'},
+    pracT:{en:'Live-chart practice', th:'ผลฝึกอ่านกราฟจริง'}, pracDone:{en:'Charts practised', th:'จำนวนกราฟที่ฝึก'}, pracOk:{en:'Counted correctly', th:'นับถูก'},
+    repeat:{en:'Mistakes repeated', th:'ข้อผิดที่พลาดซ้ำ'},
+    planT:{en:'30-day plan: 3 things to get right', th:'แผนพัฒนา 30 วัน: 3 ข้อที่ต้องทำให้ได้'}, planTask:{en:'Task', th:'สิ่งที่ต้องทำ'}, planDue:{en:'Due', th:'กำหนด'},
+    resources:{en:'Recommended next reading / resources', th:'หนังสือ / แหล่งเรียนที่แนะนำต่อ'},
+    stuGoal:{en:"Student's own goal", th:'เป้าหมายของนักเรียนเอง'},
     hint:{en:'Fill in the fields on the left — the sheet updates as you type. Blank fields print as lines so you can write by hand.',th:'กรอกข้อมูลด้านซ้าย ใบประเมินด้านขวาจะเปลี่ยนตามทันที ช่องที่เว้นว่างจะพิมพ์เป็นเส้นให้เขียนด้วยปากกาได้'}
   };
   var EV_EW = [
@@ -2085,13 +2094,15 @@
     {k:'ot3',en:'Fundamentals & macro reading',th:'การอ่านปัจจัยพื้นฐาน / มหภาค'},
     {k:'ot4',en:'Discipline & trading psychology',th:'วินัย และจิตวิทยาการเทรด'},
     {k:'ot5',en:'Participation & attendance',th:'การมีส่วนร่วม และการเข้าเรียน'},
-    {k:'ot6',en:'Homework & self-study',th:'การบ้าน และการทบทวนด้วยตัวเอง'}
+    {k:'ot6',en:'Homework & self-study',th:'การบ้าน และการทบทวนด้วยตัวเอง'},
+    {k:'ot7',en:'Punctuality & handing in work on time',th:'ความตรงเวลา และส่งงานตามกำหนด'},
+    {k:'ot8',en:'Asks questions & curiosity',th:'ความตั้งใจ ถามคำถาม'}
   ];
   function evBlank(){
     var d = new Date();
     return { name:'', cls:'', level:'', by:'Noraset Boikaw',
       date: d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'),
-      rounds:[{},{},{},{}], sc:{}, strengths:'', improve:'', covered:'', comment:'', goal:'', homework:'', nextExam:'', attended:'', sessions:'' };
+      rounds:[{},{},{},{}], sc:{}, prev:{}, cmp:false, ready:'', pracDone:'', pracOk:'', repeat:'', plan:[{},{},{}], resources:'', stuGoal:'', strengths:'', improve:'', covered:'', comment:'', goal:'', homework:'', nextExam:'', attended:'', sessions:'' };
   }
   var evData = evBlank();
 
@@ -2134,12 +2145,47 @@
     return '<span class="pr-ev-bar"><i style="width:' + (pct === null ? 0 : Math.max(0, Math.min(100, pct)).toFixed(0)) + '%"></i></span>';
   }
   function evSkillRows(list, numbered){
+    var cmp = !!evData.cmp;
     return '<table class="pr-ev-tbl">' + list.map(function(it, ix){
       var v = evNum(evData.sc[it.k]);
       if(v !== null) v = Math.max(0, Math.min(5, Math.round(v)));
-      return '<tr><td>' + (numbered ? '<b class="pr-ev-no">' + (ix + 1) + '</b> ' : '') + esc(T(it)) + '</td><td class="pr-ev-sc">' + evBoxes(v) + '</td><td class="pr-ev-n">' + (v !== null ? v + '/5' : '&nbsp;&nbsp;&nbsp;/5') + '</td></tr>';
+      var dTd = '';
+      if(cmp){
+        var pv = evNum(evData.prev[it.k]); if(pv !== null) pv = Math.max(0, Math.min(5, Math.round(pv)));
+        var dd = (v !== null && pv !== null) ? v - pv : null;
+        dTd = '<td class="pr-ev-d' + (dd === null ? '' : dd > 0 ? ' up' : dd < 0 ? ' dn' : '') + '">' +
+          (pv !== null ? esc(T(EV_TXT.prevL)) + ' ' + pv + (dd === null ? '' : ' ' + (dd > 0 ? '▲ +' + dd : dd < 0 ? '▼ ' + dd : '＝')) : '&nbsp;') + '</td>';
+      }
+      return '<tr><td>' + (numbered ? '<b class="pr-ev-no">' + (ix + 1) + '</b> ' : '') + esc(T(it)) + '</td><td class="pr-ev-sc">' + evBoxes(v) + '</td><td class="pr-ev-n">' + (v !== null ? v + '/5' : '&nbsp;&nbsp;&nbsp;/5') + '</td>' + dTd + '</tr>';
     }).join('') + '</table>';
   }
+  function evShort(it){ return T(it).replace(/\s*[\(（].*$/, ''); }
+  function evWeak(){
+    var arr = [];
+    EV_EW.concat(EV_OTHER).forEach(function(it){ var v = evNum(evData.sc[it.k]); if(v !== null && v <= 3) arr.push([v, it]); });
+    arr.sort(function(a, b){ return a[0] - b[0]; });
+    return arr.slice(0, 3).map(function(x){ return evShort(x[1]); });
+  }
+  function evReadyHTML(){
+    var d = evData;
+    var lamps = EV_TXT.ready.map(function(o){
+      return '<span class="pr-ev-lamp' + (d.ready === o.k ? ' on' : '') + '"><i style="' + (d.ready === o.k ? 'background:' + o.c + ';border-color:' + o.c : '') + '"></i>' + esc(T(o)) + '</span>';
+    }).join('');
+    var rd = null; EV_TXT.ready.forEach(function(o){ if(o.k === d.ready) rd = o; });
+    var weak = evWeak();
+    var line = '';
+    if(rd || weak.length) line = '<div class="pr-ev-headline">' + (rd ? '<b style="color:' + rd.c + '">' + esc(T(rd)) + '</b>' : '') + (rd && weak.length ? ' · ' : '') + (weak.length ? esc(T(EV_TXT.reviewL)) + ': ' + esc(weak.join(', ')) : '') + '</div>';
+    return '<div class="pr-ev-ready"><div class="pr-ev-ready-h">' + esc(T(EV_TXT.readyT)) + '</div><div class="pr-ev-lamps">' + lamps + '</div>' + line + '</div>';
+  }
+  function evPlanHTML(){
+    var rows = '';
+    for(var i = 0; i < 3; i++){
+      var r = evData.plan[i] || {};
+      rows += '<tr><td class="c">' + (i + 1) + '</td><td>' + (r.task ? esc(r.task) : '&nbsp;') + '</td><td class="c">' + (r.due ? esc(r.due) : '') + '</td></tr>';
+    }
+    return '<table class="pr-ev-rounds pr-ev-plan"><thead><tr><th>#</th><th>' + esc(T(EV_TXT.planTask)) + '</th><th>' + esc(T(EV_TXT.planDue)) + '</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+  function evBlk(h){ return '<div class="pr-ev-blk">' + h + '</div>'; }
   function evRadar(){
     var n = EV_EW.length, cx = 130, cy = 120, R = 86, i, k;
     function pt(idx, frac){ var a = -Math.PI / 2 + idx * 2 * Math.PI / n; return [cx + Math.cos(a) * R * frac, cy + Math.sin(a) * R * frac]; }
@@ -2217,28 +2263,36 @@
         stat(EV_TXT.attend, att !== null ? att.toFixed(0) + '%' : null, aA !== null && aT ? aA + ' / ' + aT : '') +
         '<div class="pr-ev-stat pr-ev-grade"><span>' + esc(T(EV_TXT.grade)) + '</span><b>' + (ov !== null ? evGrade(ov) : '—') + '</b><em>' + (lvl ? esc(lvl) : '') + '</em></div>' +
       '</div>' +
-      '<div class="pr-sec-h">' + esc(T(EV_TXT.rounds)) + (trendTxt ? ' <small class="pr-ev-trendtag">' + esc(T(EV_TXT.progress)) + ' ' + trendTxt + '</small>' : '') + '</div>' +
+      evReadyHTML() +
+      evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.rounds)) + (trendTxt ? ' <small class="pr-ev-trendtag">' + esc(T(EV_TXT.progress)) + ' ' + trendTxt + '</small>' : '') + '</div>' +
       '<div class="pr-ev-split">' +
         '<table class="pr-ev-rounds"><thead><tr><th>#</th><th>' + esc(T(EV_TXT.rName)) + '</th><th>' + esc(T(EV_TXT.rDate)) + '</th><th>' + esc(T(EV_TXT.rScore)) + '</th><th>' + esc(T(EV_TXT.rMax)) + '</th><th>%</th></tr></thead><tbody>' + rows + '</tbody></table>' +
         '<div class="pr-ev-chart"><div class="pr-ev-chart-t">' + esc(T(EV_TXT.trend)) + '</div>' + evTrend(pcts) + '</div>' +
-      '</div>' +
-      '<div class="pr-sec-h">' + esc(T(EV_TXT.ew)) + '</div>' +
+      '</div>') +
+      evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.pracT)) + '</div>' +
+        '<div class="pr-ev-two"><div class="pr-ev-prac"><div class="pr-ev-h">' + esc(T(EV_TXT.pracDone)) + ' / ' + esc(T(EV_TXT.pracOk)) + '</div>' +
+          '<div class="pr-ev-f"><b>' + (d.pracDone || d.pracOk ? esc(d.pracOk || '…') + ' / ' + esc(d.pracDone || '…') + (evNum(d.pracDone) && evNum(d.pracOk) !== null ? ' &nbsp;(' + Math.round(evNum(d.pracOk) / evNum(d.pracDone) * 100) + '%)' : '') : '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/') + '</b></div></div>' +
+          '<div><div class="pr-ev-h">' + esc(T(EV_TXT.repeat)) + '</div>' + evBlankLine(d.repeat, 2) + '</div></div>') +
+      evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.ew)) + '</div>' +
       '<div class="pr-hint-s">' + esc(T(EV_TXT.scale)) + '</div>' +
       '<div class="pr-ev-split pr-ev-skills">' +
         '<div>' + evSkillRows(EV_EW, true) + '</div>' +
         '<div class="pr-ev-chart"><div class="pr-ev-chart-t">' + esc(T(EV_TXT.radar)) + '</div>' + evRadar() + '</div>' +
-      '</div>' +
-      '<div class="pr-sec-h">' + esc(T(EV_TXT.other)) + '</div>' + evSkillRows(EV_OTHER) +
-      '<div class="pr-ev-rubric"><div class="pr-ev-rub-t">' + esc(T(EV_TXT.rubricT)) + '</div><div class="pr-ev-rub">' + rub + '</div></div>' +
-      '<div class="pr-sec-h">' + esc(T(EV_TXT.summary)) + '</div>' +
+      '</div>') +
+      evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.other)) + '</div>' + evSkillRows(EV_OTHER)) +
+      evBlk('<div class="pr-ev-rubric"><div class="pr-ev-rub-t">' + esc(T(EV_TXT.rubricT)) + '</div><div class="pr-ev-rub">' + rub + '</div></div>') +
+      evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.summary)) + '</div>' +
       '<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.strengths)) + '</div>' + evBlankLine(d.strengths, 3) + '</div>' +
-        '<div><div class="pr-ev-h">' + esc(T(EV_TXT.improve)) + '</div>' + evBlankLine(d.improve, 3) + '</div></div>' +
-      '<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.covered)) + '</div>' + evBlankLine(d.covered, 3) + '</div>' +
-        '<div><div class="pr-ev-h">' + esc(T(EV_TXT.goal)) + '</div>' + evBlankLine(d.goal, 3) + '</div></div>' +
-      '<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.nextExam)) + '</div><div class="pr-ev-f"><b>' + (d.nextExam ? esc(d.nextExam) : '&nbsp;') + '</b></div></div>' +
-        '<div><div class="pr-ev-h">' + esc(T(EV_TXT.homework)) + '</div>' + evBlankLine(d.homework, 1) + '</div></div>' +
-      '<div class="pr-ev-h">' + esc(T(EV_TXT.comment)) + '</div>' + evBlankLine(d.comment, 4) +
-      '<div class="pr-ev-sign"><div></div><span>' + esc(T(EV_TXT.sign)) + '</span></div>' +
+        '<div><div class="pr-ev-h">' + esc(T(EV_TXT.improve)) + '</div>' + evBlankLine(d.improve, 3) + '</div></div>') +
+      evBlk('<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.covered)) + '</div>' + evBlankLine(d.covered, 3) + '</div>' +
+        '<div><div class="pr-ev-h">' + esc(T(EV_TXT.goal)) + '</div>' + evBlankLine(d.goal, 3) + '</div></div>') +
+      evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.planT)) + '</div>' + evPlanHTML()) +
+      evBlk('<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.nextExam)) + '</div><div class="pr-ev-f"><b>' + (d.nextExam ? esc(d.nextExam) : '&nbsp;') + '</b></div></div>' +
+        '<div><div class="pr-ev-h">' + esc(T(EV_TXT.homework)) + '</div>' + evBlankLine(d.homework, 1) + '</div></div>') +
+      evBlk('<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.resources)) + '</div>' + evBlankLine(d.resources, 2) + '</div>' +
+        '<div><div class="pr-ev-h">' + esc(T(EV_TXT.stuGoal)) + '</div>' + evBlankLine(d.stuGoal, 2) + '</div></div>') +
+      evBlk('<div class="pr-ev-h">' + esc(T(EV_TXT.comment)) + '</div>' + evBlankLine(d.comment, 4) +
+      '<div class="pr-ev-sign"><div></div><span>' + esc(T(EV_TXT.sign)) + '</span></div>') +
     '</div>';
   }
 
@@ -2319,14 +2373,31 @@
         '<input type="number" inputmode="decimal" data-evr="max" data-i="' + i + '" value="' + esc(r.max == null ? '' : r.max) + '" placeholder="' + esc(T(EV_TXT.rMax)) + '"></div>';
     });
     h += '</div><button type="button" class="pr-mini" data-ev-add="1">' + esc(T(EV_TXT.addRound)) + '</button>';
+    function chips(attr, key, cur, cls){
+      var o = '<div class="pr-ev-chips' + (cls ? ' ' + cls : '') + '">';
+      for(var n = 0; n <= 5; n++) o += '<button type="button" class="pr-ev-chip' + (cur !== null && cur === n ? ' on' : '') + '" ' + attr + '="' + key + '" data-v="' + n + '">' + n + '</button>';
+      return o + '</div>';
+    }
     function skills(list, title){
       return '<div class="pr-ev-h2">' + esc(T(title)) + '</div>' + list.map(function(it){
-        return '<label class="pr-ev-sk"><span>' + esc(T(it)) + '</span><input type="number" min="0" max="5" step="1" inputmode="numeric" data-evs="' + it.k + '" value="' + esc(d.sc[it.k] == null ? '' : d.sc[it.k]) + '" placeholder="0-5"></label>';
+        var v = evNum(d.sc[it.k]), pv = evNum(d.prev[it.k]);
+        return '<div class="pr-ev-sk2"><span>' + esc(T(it)) + '</span>' +
+          (d.cmp ? '<div class="pr-ev-sk2r"><em>' + esc(T(EV_TXT.prevL)) + '</em>' + chips('data-ev-pv', it.k, pv, 'mute') + '</div><div class="pr-ev-sk2r"><em>' + esc(T(EV_TXT.nowL)) + '</em>' + chips('data-ev-sc', it.k, v) + '</div>'
+                 : chips('data-ev-sc', it.k, v)) + '</div>';
       }).join('');
     }
+    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.readyT)) + '</div><div class="pr-ann-chips">' +
+      EV_TXT.ready.map(function(o){ return '<button type="button" class="pr-ann-chip pr-ev-rd' + (d.ready === o.k ? ' on' : '') + '" data-ev-ready="' + o.k + '" style="' + (d.ready === o.k ? 'border-color:' + o.c + ';color:' + o.c : '') + '">' + esc(T(o)) + '</button>'; }).join('') + '</div>';
+    h += '<button type="button" class="pr-ann-chip' + (d.cmp ? ' on' : '') + '" data-ev-cmp="1" style="margin-top:10px;">' + (d.cmp ? '✓ ' : '') + esc(T(EV_TXT.cmpT)) + '</button>';
     h += skills(EV_EW, EV_TXT.ew) + skills(EV_OTHER, EV_TXT.other);
+    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.pracT)) + '</div><div class="pr-ev-grid2">' + inp('pracDone', EV_TXT.pracDone, 'number') + inp('pracOk', EV_TXT.pracOk, 'number') + '</div>';
+    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.planT)) + '</div>';
+    for(var pi = 0; pi < 3; pi++){
+      var pr0 = d.plan[pi] || {};
+      h += '<div class="pr-ev-prow"><b>' + (pi + 1) + '</b><input type="text" data-evp="task" data-i="' + pi + '" value="' + esc(pr0.task || '') + '" placeholder="' + esc(T(EV_TXT.planTask)) + '"><input type="date" data-evp="due" data-i="' + pi + '" value="' + esc(pr0.due || '') + '"></div>';
+    }
     function ta(k, lbl){ return '<label class="pr-ev-in"><span>' + esc(T(lbl)) + '</span><textarea rows="3" data-ev="' + k + '">' + esc(d[k] || '') + '</textarea></label>'; }
-    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.summary)) + '</div>' + ta('strengths', EV_TXT.strengths) + ta('improve', EV_TXT.improve) + ta('covered', EV_TXT.covered) + ta('goal', EV_TXT.goal) + inp('nextExam', EV_TXT.nextExam, 'date') + ta('homework', EV_TXT.homework) + ta('comment', EV_TXT.comment);
+    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.summary)) + '</div>' + ta('strengths', EV_TXT.strengths) + ta('improve', EV_TXT.improve) + ta('covered', EV_TXT.covered) + ta('repeat', EV_TXT.repeat) + ta('goal', EV_TXT.goal) + ta('resources', EV_TXT.resources) + ta('stuGoal', EV_TXT.stuGoal) + inp('nextExam', EV_TXT.nextExam, 'date') + ta('homework', EV_TXT.homework) + ta('comment', EV_TXT.comment);
     h += '<button type="button" class="pr-mini" data-ev-clear="1" style="margin-top:8px;">' + esc(T(EV_TXT.clear)) + '</button>';
     return h;
   }
@@ -2341,11 +2412,19 @@
     if(t.hasAttribute('data-ev')){ evData[t.getAttribute('data-ev')] = t.value; return true; }
     if(t.hasAttribute('data-evr')){ var i = +t.getAttribute('data-i'); evData.rounds[i] = evData.rounds[i] || {}; evData.rounds[i][t.getAttribute('data-evr')] = t.value; return true; }
     if(t.hasAttribute('data-evs')){ evData.sc[t.getAttribute('data-evs')] = t.value; return true; }
+    if(t.hasAttribute('data-evp')){ var pi = +t.getAttribute('data-i'); evData.plan[pi] = evData.plan[pi] || {}; evData.plan[pi][t.getAttribute('data-evp')] = t.value; return true; }
     return false;
   }
   function evHandleClick(t){
     var lv = t.closest('[data-ev-level]');
     if(lv){ var v = lv.getAttribute('data-ev-level'); evData.level = evData.level === v ? '' : v; evMountForm(true); renderReport(); return true; }
+    var sk = t.closest('[data-ev-sc]');
+    if(sk){ var kk = sk.getAttribute('data-ev-sc'), vv = sk.getAttribute('data-v'); evData.sc[kk] = String(evData.sc[kk]) === vv ? '' : vv; evMountForm(true); renderReport(); return true; }
+    var pvb = t.closest('[data-ev-pv]');
+    if(pvb){ var k2 = pvb.getAttribute('data-ev-pv'), v2 = pvb.getAttribute('data-v'); evData.prev[k2] = String(evData.prev[k2]) === v2 ? '' : v2; evMountForm(true); renderReport(); return true; }
+    var rdb = t.closest('[data-ev-ready]');
+    if(rdb){ var rv = rdb.getAttribute('data-ev-ready'); evData.ready = evData.ready === rv ? '' : rv; evMountForm(true); renderReport(); return true; }
+    if(t.closest('[data-ev-cmp]')){ evData.cmp = !evData.cmp; evMountForm(true); renderReport(); return true; }
     if(t.closest('[data-ev-add]')){ evData.rounds.push({}); evMountForm(true); renderReport(); return true; }
     if(t.closest('[data-ev-clear]')){ evData = evBlank(); evMountForm(true); renderReport(); return true; }
     if(t.closest('[data-ev-load]')){ evImpLoad(); return true; }
