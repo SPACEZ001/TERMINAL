@@ -43,6 +43,10 @@
     passAt:{en:'Pass mark',th:'เกณฑ์ผ่าน'}, late:{en:'Submitted after the time limit.',th:'ส่งหลังหมดเวลา'},
     review:{en:'Review',th:'ทบทวนข้อสอบ'}, yours:{en:'Your answer',th:'คำตอบของคุณ'}, correct:{en:'Correct answer',th:'คำตอบที่ถูก'}, none:{en:'No answer',th:'ไม่ได้ตอบ'},
     opensOn:{en:'Next exam opens on', th:'ข้อสอบครั้งถัดไปจะเปิดวันที่'}, notOpenYet:{en:'This exam is not open yet.', th:'ข้อสอบยังไม่เปิด ยังเริ่มทำไม่ได้'}, colOpen:{en:'Opens on', th:'เปิดสอบวันที่'}, openAuto:{en:'opens automatically', th:'เปิดเองอัตโนมัติ'},
+    nameH:{en:'Choose your name', th:'ตั้งชื่อของคุณ'}, nameLede:{en:'This is the name your teacher will see on your results.', th:'ชื่อนี้ครูจะเห็นในผลสอบของคุณ'},
+    nameWarn:{en:'You can set this only once. After you confirm, you cannot change it. Check the spelling first.', th:'ตั้งชื่อได้ครั้งเดียว ยืนยันแล้วจะแก้ไม่ได้ ตรวจตัวสะกดก่อนนะ'},
+    namePh:{en:'Your name', th:'ชื่อของคุณ'}, nameBtn:{en:'Confirm name', th:'ยืนยันชื่อ'}, nameSure:{en:'Press again to lock this name', th:'กดอีกครั้งเพื่อล็อกชื่อนี้'}, nameBad:{en:'Please type at least 2 characters.', th:'พิมพ์อย่างน้อย 2 ตัวอักษร'},
+    colName:{en:'Student name', th:'ชื่อนักเรียน'}, clearName:{en:'Unlock name', th:'ปลดล็อกชื่อ'},
     logout:{en:'Log out',th:'ออกจากระบบ'}, already:{en:'This login has already been used.',th:'รหัสนี้สอบไปแล้ว'},
     /* admin */
     adminBtn:{en:'Teacher panel',th:'หน้าครู (แอดมิน)'}, studentBtn:{en:'Student view',th:'หน้านักเรียน'},
@@ -123,8 +127,21 @@
       if(r.status === 200){
         sv.token = r.j.token; sv.username = r.j.username; sv.info = r.j;
         if(r.j.status === 'done'){ sv.result = r.j.result; sv.stage = 'result'; }
-        else sv.stage = 'ready';
+        else sv.stage = r.j.displayName ? 'ready' : 'name';
       } else sv.err = r.status === 429 ? T(U.tooMany) : (r.status === 401 ? T(U.badLogin) : T(U.netErr));
+      paint();
+    }).catch(function(){ sv.busy = false; sv.err = T(U.netErr); paint(); });
+  }
+  function setName(){
+    var el = bodyEl.querySelector('[data-cx="dname"]'), v = el ? el.value.replace(/\s+/g, ' ').trim() : '';
+    sv.nameVal = v;
+    if(v.length < 2){ sv.err = T(U.nameBad); sv.nameConfirm = false; paint(); return; }
+    if(!sv.nameConfirm){ sv.nameConfirm = true; sv.err = ''; paint(); return; }
+    sv.busy = true; sv.err = ''; paint();
+    api('/api/cexam/setname', 'POST', { token:sv.token, name:v }).then(function(r){
+      sv.busy = false; sv.nameConfirm = false;
+      if(r.status === 200 || r.status === 409){ sv.info.displayName = r.j.displayName || v; sv.stage = 'ready'; }
+      else sv.err = r.status === 400 ? T(U.nameBad) : T(U.netErr);
       paint();
     }).catch(function(){ sv.busy = false; sv.err = T(U.netErr); paint(); });
   }
@@ -132,7 +149,8 @@
     sv.busy = true; sv.err = ''; paint();
     api('/api/cexam/start', 'POST', { token:sv.token }).then(function(r){
       sv.busy = false;
-      if(r.status === 200){
+      if(r.status === 403 && r.j.error === 'need_name'){ sv.stage = 'name'; }
+      else       if(r.status === 200){
         sv.exam = r.j; sv.stage = 'exam'; sv.confirm = false;
         try { sv.answers = JSON.parse(ss(ANS_STORE) || '{}') || {}; } catch(e){ sv.answers = {}; }
         sv.deadline = r.j.remainingMs == null ? 0 : Date.now() + r.j.remainingMs;
@@ -179,10 +197,17 @@
         (sv.err ? '<div class="cx2-err">' + esc(sv.err) + '</div>' : '') +
         '<button class="cx2-btn" data-cx="login"' + (sv.busy ? ' disabled' : '') + '>' + esc(T(U.login)) + '</button></div>';
     }
+    if(sv.stage === 'name'){
+      return '<div class="cx2-card cx2-narrow"><div class="cx2-title">' + esc(T(U.nameH)) + '</div><p class="cx2-note">' + esc(T(U.nameLede)) + '</p>' +
+        '<div class="cx2-err" style="border-color:#e8a417;color:#f1d08a">' + esc(T(U.nameWarn)) + '</div>' +
+        '<input class="cx2-in" data-cx="dname" maxlength="40" autocomplete="off" placeholder="' + esc(T(U.namePh)) + '" value="' + esc(sv.nameVal || '') + '">' +
+        (sv.err ? '<div class="cx2-err">' + esc(sv.err) + '</div>' : '') +
+        '<button class="cx2-btn' + (sv.nameConfirm ? ' warn' : '') + '" data-cx="setname"' + (sv.busy ? ' disabled' : '') + '>' + esc(T(sv.nameConfirm ? U.nameSure : U.nameBtn)) + '</button></div>';
+    }
     if(sv.stage === 'ready'){
       var i = sv.info || {};
       return '<div class="cx2-card cx2-narrow">' +
-        '<div class="cx2-hi">' + esc(T(U.hello)) + ', <b>' + esc(i.note || sv.username) + '</b></div>' +
+        '<div class="cx2-hi">' + esc(T(U.hello)) + ', <b>' + esc(i.displayName || i.note || sv.username) + '</b></div>' +
         '<div class="cx2-title">' + esc(i.title || '') + '</div>' +
         '<div class="cx2-chips"><span>' + esc(i.total) + ' ' + esc(T(U.qs)) + '</span><span>' + (i.limitMin ? esc(i.limitMin) + ' ' + esc(T(U.minutes)) : esc(T(U.noLimit))) + '</span></div>' +
         (isClosed(i) ? '<div class="cx2-err" style="border-color:#e8a417;color:#f1d08a">' + esc(T(U.notOpenYet)) + ' ' + esc(T(U.opensOn)) + ' <b>' + esc(fmtDay(i.openAt)) + '</b></div>' : '<p class="cx2-note">' + esc(T(U.rules)) + '</p>') +
@@ -285,12 +310,13 @@
     h += '<div class="cx2-row"><button class="cx2-mini" data-cx="refresh">' + esc(T(U.refresh)) + '</button></div>';
     if(adm.loading && !adm.users) return h + '<p class="cx2-note">' + esc(T(U.loading)) + '</p>';
     if(!adm.users || !adm.users.length) return h + '<p class="cx2-note">' + esc(T(U.noUsers)) + '</p>';
-    h += '<div class="cx2-tblwrap"><table class="cx2-tbl"><thead><tr><th>' + esc(T(U.colUser)) + '</th><th>' + esc(T(U.colPass)) + '</th><th>' + esc(T(U.colNote)) + '</th><th>' + esc(T(U.colStatus)) + '</th><th>' + esc(T(U.colScore)) + '</th><th>' + esc(T(U.colOpen)) + '</th><th></th></tr></thead><tbody>';
+    h += '<div class="cx2-tblwrap"><table class="cx2-tbl"><thead><tr><th>' + esc(T(U.colUser)) + '</th><th>' + esc(T(U.colPass)) + '</th><th>' + esc(T(U.colName)) + '</th><th>' + esc(T(U.colNote)) + '</th><th>' + esc(T(U.colStatus)) + '</th><th>' + esc(T(U.colScore)) + '</th><th>' + esc(T(U.colOpen)) + '</th><th></th></tr></thead><tbody>';
     adm.users.forEach(function(u){
       var st = u.status === 'done' ? U.sDone : u.status === 'started' ? U.sStarted : U.sNew;
       var shown = !!adm.revealed[u.username];
       h += '<tr><td><code>' + esc(u.username) + '</code></td>' +
         '<td><code>' + (shown ? esc(u.password) : '••••••••') + '</code> <button class="cx2-mini" data-cx="reveal" data-u="' + esc(u.username) + '">' + esc(T(shown ? U.hide : U.show)) + '</button> <button class="cx2-mini" data-cx="copy" data-t="' + esc(u.username + '\n' + u.password) + '">' + esc(T(U.copy)) + '</button></td>' +
+        '<td>' + (u.displayName ? '<b>' + esc(u.displayName) + '</b> <button class="cx2-mini" data-cx="clearname" data-u="' + esc(u.username) + '">' + esc(T(U.clearName)) + '</button>' : '<small>—</small>') + '</td>' +
         '<td><input class="cx2-in sm wide" data-cx="note" data-u="' + esc(u.username) + '" value="' + esc(u.note) + '" maxlength="120"></td>' +
         '<td><span class="cx2-st ' + esc(u.status) + '">' + esc(T(st)) + '</span></td>' +
         '<td>' + (u.status === 'done' ? '<b>' + esc(u.percent) + '%</b> <small>(' + esc(u.score) + '/' + esc(u.total) + ')</small>' + (u.late ? ' <small>⏱</small>' : '') : '—') + '</td>' +
@@ -379,6 +405,7 @@
       if(u && p && u.value.trim() && p.value.trim()) doLogin(u.value, p.value);
     }
     else if(a === 'start') startExam();
+    else if(a === 'setname') setName();
     else if(a === 'logout') logoutStudent();
     else if(a === 'opt'){
       sv.answers[el.getAttribute('data-q')] = parseInt(el.getAttribute('data-i'), 10);
@@ -405,6 +432,9 @@
     }
     else if(a === 'refresh') loadUsers();
     else if(a === 'reveal'){ var un = el.getAttribute('data-u'); adm.revealed[un] = !adm.revealed[un]; paint(); }
+    else if(a === 'clearname'){
+      api('/api/admin/cexam/update', 'POST', { username:el.getAttribute('data-u'), clearName:true }, adminKey()).then(function(){ loadUsers(); });
+    }
     else if(a === 'reset'){
       api('/api/admin/cexam/update', 'POST', { username:el.getAttribute('data-u'), reset:true }, adminKey()).then(function(){ adm.view = null; loadUsers(); });
     }
@@ -482,7 +512,8 @@
   function onKey(ev){
     if(ev.key !== 'Enter') return;
     var a = ev.target.getAttribute && ev.target.getAttribute('data-cx');
-    if(a === 'user' || a === 'pass'){ var b = bodyEl.querySelector('[data-cx="login"]'); if(b) b.click(); }
+    if(a === 'dname'){ var nb = bodyEl.querySelector('[data-cx="setname"]'); if(nb) nb.click(); }
+    else if(a === 'user' || a === 'pass'){ var b = bodyEl.querySelector('[data-cx="login"]'); if(b) b.click(); }
     else if(a === 'akey'){ var c = bodyEl.querySelector('[data-cx="unlock"]'); if(c) c.click(); }
   }
 

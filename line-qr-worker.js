@@ -2222,7 +2222,7 @@ function cexAdminView(u) {
     username: u.username, password: u.password, note: u.note || "", status: u.status,
     createdAt: u.createdAt, startedAt: u.startedAt || null, finishedAt: u.finishedAt || null,
     score: u.score == null ? null : u.score, total: u.total == null ? null : u.total, percent: u.percent == null ? null : u.percent,
-    late: !!u.late, openAt: u.openAt || null,
+    late: !!u.late, openAt: u.openAt || null, displayName: u.displayName || "",
   };
 }
 
@@ -2380,6 +2380,7 @@ async function handleCexAdminUpdate(request, env) {
   if (!u) return json({ error: "not_found" }, env, 404);
   if (body.delete === true) { await env.SESSIONS.delete(CEX_USER_PREFIX + username); return json({ ok: true, deleted: true }, env); }
   if (typeof body.note === "string") u.note = body.note.trim().slice(0, 120);
+  if (body.clearName === true) delete u.displayName;
   if (body.openAt === null || body.openAt === 0) delete u.openAt;
   else if (typeof body.openAt === "number" && isFinite(body.openAt) && body.openAt > 946684800000 && body.openAt < Date.now() + 5 * 365 * 86400000) u.openAt = Math.floor(body.openAt);
   if (body.reset === true) {
@@ -2463,16 +2464,29 @@ async function handleCexLogin(request, env) {
   const token = cexToken();
   await env.SESSIONS.put(CEX_TOK_PREFIX + token, username, { expirationTtl: 21600 });
   return json({
-    token, username, note: u.note || "", status: u.status, openAt: u.openAt || 0,
+    token, username, note: u.note || "", displayName: u.displayName || "", status: u.status, openAt: u.openAt || 0,
     title: bank.settings.title, total: bank.questions.length, limitMin: bank.settings.timeLimitMin,
     result: u.status === "done" ? { score: u.score, total: u.total, percent: u.percent, pass: u.percent >= bank.settings.passPercent, passPercent: bank.settings.passPercent, review: u.review || [] } : null,
   }, env);
+}
+// Student sets their own display name ONCE (locked afterwards; only the teacher can clear it).
+async function handleCexSetName(request, env) {
+  let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const u = await cexUserFromToken(body, env);
+  if (!u) return json({ error: "bad_token" }, env, 401);
+  if (u.displayName) return json({ error: "name_locked", displayName: u.displayName }, env, 409);
+  const name = String(body.name || "").replace(/[\u0000-\u001f<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 40);
+  if (name.length < 2) return json({ error: "bad_name" }, env, 400);
+  u.displayName = name; u.nameSetAt = Date.now();
+  await cexPutUser(u, env);
+  return json({ ok: true, displayName: name }, env);
 }
 async function handleCexStart(request, env) {
   let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const u = await cexUserFromToken(body, env);
   if (!u) return json({ error: "bad_token" }, env, 401);
   await cexAutoRearm(u, env);
+  if (!u.displayName) return json({ error: "need_name" }, env, 403);
   if (u.status === "done") return json({ error: "already_done" }, env, 409);
   if (u.status !== "started" && u.openAt && Date.now() < u.openAt) return json({ error: "not_open", openAt: u.openAt }, env, 403);
   const bank = await cexGetBank(env);
@@ -2577,6 +2591,7 @@ export default {
       if (url.pathname === "/api/admin/quiz-bank/set" && request.method === "POST") return await handleAdminQuizBankSet(request, env);
       if (url.pathname === "/api/admin/quiz-bank/finalize" && request.method === "POST") return await handleAdminQuizBankFinalize(request, env);
       if (url.pathname === "/api/cexam/login" && request.method === "POST") return withCorsOrigin(await handleCexLogin(request, env), allowOrigin);
+      if (url.pathname === "/api/cexam/setname" && request.method === "POST") return withCorsOrigin(await handleCexSetName(request, env), allowOrigin);
       if (url.pathname === "/api/cexam/start" && request.method === "POST") return withCorsOrigin(await handleCexStart(request, env), allowOrigin);
       if (url.pathname === "/api/cexam/submit" && request.method === "POST") return withCorsOrigin(await handleCexSubmit(request, env), allowOrigin);
       if (url.pathname === "/api/admin/evals/save" && request.method === "POST") return withCorsOrigin(await handleEvalSave(request, env), allowOrigin);
