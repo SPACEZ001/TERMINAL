@@ -2175,11 +2175,6 @@ async function cexSetIds(env) {
   return ids.filter((v, i) => ids.indexOf(v) === i);
 }
 async function cexPutSetIds(ids, env) { await env.SESSIONS.put(CEX_SETS_KEY, JSON.stringify({ ids })); }
-async function cexBankForUser(u, env) {
-  const ids = await cexSetIds(env);
-  const id = ids.indexOf(cexSetId(u && u.setId)) !== -1 ? cexSetId(u.setId) : "main";
-  return await cexGetBank(env, id);
-}
 async function cexSetsInfo(env) {
   const ids = await cexSetIds(env), out = [];
   for (const id of ids) { const b = await cexGetBank(env, id); out.push({ id, title: b.settings.title, count: b.questions.length, timeLimitMin: b.settings.timeLimitMin }); }
@@ -2239,24 +2234,65 @@ function cexCleanQuestions(list) {
   return out;
 }
 // Per-set results: the ACTIVE set's state lives on the user itself; results of the other sets are parked in u.sets[<id>].
+// ---- Per-set state (v3): u.sx[<setId>] = { allow, openAt, status, startedAt, finishedAt, score, total, percent,
+//      late, order, answers, review, history[] }. Older records (one active set on the user itself, u.sets archive,
+//      u.openAt) are converted the first time they are read.
 const CEX_STATE_FIELDS = ["status", "startedAt", "finishedAt", "score", "total", "percent", "late", "order", "answers", "review"];
-function cexSnap(u) { const o = {}; CEX_STATE_FIELDS.forEach((k) => { if (u[k] !== undefined) o[k] = u[k]; }); return o; }
-function cexClearState(u) { CEX_STATE_FIELDS.forEach((k) => { delete u[k]; }); u.status = "new"; }
-function cexResultsOf(u, ids) {
-  const act = cexSetId(u.setId), out = [];
-  (ids || [act]).forEach((id) => {
-    const st = id === act ? u : ((u.sets && u.sets[id]) || null);
-    if (st && st.status && st.status !== "new") out.push({ setId: id, status: st.status, percent: st.percent == null ? null : st.percent, score: st.score == null ? null : st.score, total: st.total == null ? null : st.total, finishedAt: st.finishedAt || null, late: !!st.late });
-    else out.push({ setId: id, status: "new" });
+function cexNorm(u) {
+  if (!u || u.sx) return u;
+  const sx = {};
+  const act = cexSetId(u.setId);
+  const top = {}; CEX_STATE_FIELDS.forEach((k) => { if (u[k] !== undefined) top[k] = u[k]; delete u[k]; });
+  sx[act] = Object.assign({ allow: true, status: "new" }, top);
+  if (u.openAt) sx[act].openAt = u.openAt;
+  Object.keys(u.sets || {}).forEach((id) => { sx[cexSetId(id)] = Object.assign({ allow: true, status: "new" }, u.sets[id]); });
+  (u.history || []).forEach((h) => {
+    const id = cexSetId(h.setId), e = sx[id] || (sx[id] = { allow: true, status: "new" });
+    const rec = { finishedAt: h.finishedAt, score: h.score, total: h.total, percent: h.percent };
+    if (!h.retake && e.status === "new" && h.finishedAt) Object.assign(e, { status: "done" }, rec);
+    else e.history = (e.history || []).concat([rec]).slice(-10);
   });
-  return out;
+  delete u.sets; delete u.openAt; delete u.setId; delete u.history;
+  u.sx = sx;
+  return u;
+}
+function cexEntry(u, id) { cexNorm(u); return u.sx[id] || null; }
+function cexEntryOrNew(u, id) { cexNorm(u); return u.sx[id] || (u.sx[id] = { allow: false, status: "new" }); }
+function cexClear(e) { CEX_STATE_FIELDS.forEach((k) => { delete e[k]; }); e.status = "new"; }
+function cexRetake(e) {
+  if (e.finishedAt) e.history = (e.history || []).concat([{ finishedAt: e.finishedAt, score: e.score, total: e.total, percent: e.percent }]).slice(-10);
+  cexClear(e);
+}
+// A set the student already finished before its (new) open date: when that date arrives, give one fresh attempt.
+function cexRearmAll(u) {
+  let changed = false;
+  Object.keys(u.sx || {}).forEach((id) => {
+    const e = u.sx[id];
+    if (e.status === "done" && e.openAt && Date.now() >= e.openAt && e.finishedAt && e.finishedAt < e.openAt) { cexRetake(e); changed = true; }
+  });
+  return changed;
+}
+function cexExamView(u, ids, withHistory) {
+  cexNorm(u);
+  return ids.map((id) => {
+    const e = u.sx[id] || { allow: false, status: "new" };
+    const o = { setId: id, allow: !!e.allow, openAt: e.openAt || null, status: e.status || "new",
+      percent: e.percent == null ? null : e.percent, score: e.score == null ? null : e.score, total: e.total == null ? null : e.total,
+      finishedAt: e.finishedAt || null, startedAt: e.startedAt || null, late: !!e.late };
+    if (withHistory) o.history = (e.history || []).map((h) => ({ percent: h.percent, score: h.score, total: h.total, finishedAt: h.finishedAt }));
+    return o;
+  });
 }
 function cexAdminView(u, ids) {
+  cexNorm(u);
+  ids = ids || Object.keys(u.sx);
+  const exams = cexExamView(u, ids, true);
+  const cur = exams.find((x) => x.allow && x.status !== "done") || exams.find((x) => x.allow) || exams[0] || { setId: "main", status: "new" };
   return {
-    username: u.username, password: u.password, note: u.note || "", status: u.status,
-    createdAt: u.createdAt, startedAt: u.startedAt || null, finishedAt: u.finishedAt || null,
-    score: u.score == null ? null : u.score, total: u.total == null ? null : u.total, percent: u.percent == null ? null : u.percent,
-    late: !!u.late, openAt: u.openAt || null, displayName: u.displayName || "", setId: cexSetId(u.setId), results: cexResultsOf(u, ids), history: (u.history || []).map((h) => ({ setId: cexSetId(h.setId), percent: h.percent, score: h.score, total: h.total, finishedAt: h.finishedAt })),
+    username: u.username, password: u.password, note: u.note || "", displayName: u.displayName || "", createdAt: u.createdAt,
+    exams, results: exams,
+    // summary of the "current" set, kept for older screens
+    setId: cur.setId, status: cur.status, percent: cur.percent, score: cur.score, total: cur.total, finishedAt: cur.finishedAt, openAt: cur.openAt,
   };
 }
 
@@ -2266,6 +2302,8 @@ async function handleCexAdminCreate(request, env) {
   let body; try { body = await request.json(); } catch (e) { body = {}; }
   const count = Math.max(1, Math.min(30, parseInt(body.count, 10) || 1));
   const note = String(body.note || "").trim().slice(0, 120);
+  const ids = await cexSetIds(env);
+  const allowSet = cexSetId(body.set || "main");
   const created = [];
   for (let i = 0; i < count; i++) {
     let username = "";
@@ -2273,9 +2311,10 @@ async function handleCexAdminCreate(request, env) {
       username = "EW-" + cexRand(5);
       if (!(await cexGetUser(username, env))) break;
     }
-    const u = { username, password: cexRand(8), note, status: "new", createdAt: Date.now() };
+    const u = { username, password: cexRand(8), note, createdAt: Date.now(), sx: {} };
+    if (ids.indexOf(allowSet) !== -1) u.sx[allowSet] = { allow: true, status: "new" };
     await cexPutUser(u, env);
-    created.push(cexAdminView(u, await cexSetIds(env)));
+    created.push(cexAdminView(u, ids));
   }
   return json({ created }, env);
 }
@@ -2407,6 +2446,11 @@ async function handleCexAdminList(request, env) {
   const users = (await cexAllUsers(env)).map((x) => cexAdminView(x, ids));
   return json({ users }, env);
 }
+function cexOpenAtVal(v) {
+  if (v === null || v === 0) return 0;
+  if (typeof v === "number" && isFinite(v) && v > 946684800000 && v < Date.now() + 5 * 365 * 86400000) return Math.floor(v);
+  return undefined;
+}
 async function handleCexAdminUpdate(request, env) {
   if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
   let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
@@ -2414,36 +2458,27 @@ async function handleCexAdminUpdate(request, env) {
   const u = username ? await cexGetUser(username, env) : null;
   if (!u) return json({ error: "not_found" }, env, 404);
   if (body.delete === true) { await env.SESSIONS.delete(CEX_USER_PREFIX + username); return json({ ok: true, deleted: true }, env); }
+  cexNorm(u);
+  const ids = await cexSetIds(env);
   if (typeof body.note === "string") u.note = body.note.trim().slice(0, 120);
   if (body.clearName === true) delete u.displayName;
-  if (typeof body.setId === "string") {
-    const sid = cexSetId(body.setId);
-    if ((await cexSetIds(env)).indexOf(sid) === -1) return json({ error: "no_set" }, env, 404);
-    const old = cexSetId(u.setId);
-    if (sid !== old) {
-      u.sets = u.sets || {};
-      if (u.status && u.status !== "new") u.sets[old] = cexSnap(u); else delete u.sets[old];
-      cexClearState(u);
-      if (u.sets[sid]) { Object.assign(u, u.sets[sid]); delete u.sets[sid]; }
-      else {
-        // older data: a finished result of that set may still sit in history -> bring it back
-        const hist = u.history || []; let hi = -1;
-        hist.forEach((h, k) => { if (cexSetId(h.setId) === sid && h.finishedAt && !h.retake) hi = k; });
-        if (hi >= 0) { const h = hist[hi]; u.status = "done"; u.finishedAt = h.finishedAt; u.score = h.score; u.total = h.total; u.percent = h.percent; u.history = hist.filter((_, k) => k !== hi); }
-      }
-      u.setId = sid;
-    }
+  // which set? "set" (new screens) or "setId" (older Print Report button = also allow it)
+  let sid = null;
+  if (typeof body.set === "string") sid = cexSetId(body.set);
+  else if (typeof body.setId === "string") { sid = cexSetId(body.setId); if (body.allow === undefined) body.allow = true; }
+  else if (body.openAt !== undefined || body.reset === true) {
+    sid = (ids.find((id) => u.sx[id] && u.sx[id].allow && u.sx[id].status !== "done") || ids.find((id) => u.sx[id] && u.sx[id].allow) || "main");
   }
-  if (body.openAt === null || body.openAt === 0) delete u.openAt;
-  else if (typeof body.openAt === "number" && isFinite(body.openAt) && body.openAt > 946684800000 && body.openAt < Date.now() + 5 * 365 * 86400000) u.openAt = Math.floor(body.openAt);
-  if (body.reset === true) {
-    // allow one more attempt: keep the old result in "history"
-    if (u.finishedAt) { u.history = (u.history || []).concat([{ finishedAt: u.finishedAt, score: u.score, total: u.total, percent: u.percent, setId: cexSetId(u.setId), retake: true }]).slice(-10); }
-    u.status = "new"; delete u.startedAt; delete u.finishedAt; delete u.score; delete u.total; delete u.percent;
-    delete u.order; delete u.answers; delete u.review; delete u.late;
+  if (sid) {
+    if (ids.indexOf(sid) === -1) return json({ error: "no_set" }, env, 404);
+    const e = cexEntryOrNew(u, sid);
+    if (typeof body.allow === "boolean") e.allow = body.allow;
+    const oa = cexOpenAtVal(body.openAt);
+    if (oa === 0) delete e.openAt; else if (oa) e.openAt = oa;
+    if (body.reset === true) cexRetake(e);
   }
   await cexPutUser(u, env);
-  return json({ ok: true, user: cexAdminView(u, await cexSetIds(env)) }, env);
+  return json({ ok: true, user: cexAdminView(u, ids) }, env);
 }
 async function handleCexAdminBankGet(request, env) {
   if (!(await isAdminOrEditorRead(request, env))) return json({ error: "unauthorized" }, env, 401);
@@ -2491,13 +2526,15 @@ async function handleCexAdminSetDelete(request, env) {
 }
 async function handleCexAdminResult(request, env) {
   if (!(await isAdminOrEditorRead(request, env))) return json({ error: "unauthorized" }, env, 401);
-  const username = cexUserName(new URL(request.url).searchParams.get("username"));
+  const q = new URL(request.url).searchParams;
+  const username = cexUserName(q.get("username"));
   const u = username ? await cexGetUser(username, env) : null;
   if (!u) return json({ error: "not_found" }, env, 404);
   const ids = await cexSetIds(env);
-  const want = cexSetId(new URL(request.url).searchParams.get("set") || u.setId);
-  const st = want === cexSetId(u.setId) ? u : ((u.sets && u.sets[want]) || {});
-  return json({ user: cexAdminView(u, ids), setId: want, result: { status: st.status || "new", percent: st.percent == null ? null : st.percent, score: st.score == null ? null : st.score, total: st.total == null ? null : st.total, finishedAt: st.finishedAt || null }, review: st.review || [], history: u.history || [] }, env);
+  const view = cexAdminView(u, ids);
+  const want = cexSetId(q.get("set") || view.setId);
+  const e = u.sx[want] || {};
+  return json({ user: view, setId: want, result: { status: e.status || "new", percent: e.percent == null ? null : e.percent, score: e.score == null ? null : e.score, total: e.total == null ? null : e.total, finishedAt: e.finishedAt || null }, review: e.review || [], history: e.history || [] }, env);
 }
 
 // ---------- student ----------
@@ -2506,27 +2543,33 @@ async function cexUserFromToken(body, env) {
   if (!/^[a-f0-9]{48}$/.test(tok)) return null;
   const username = await env.SESSIONS.get(CEX_TOK_PREFIX + tok);
   if (!username) return null;
-  return await cexGetUser(username, env);
+  return cexNorm(await cexGetUser(username, env));
 }
-function cexPublicQuestions(bank, u) {
+function cexPublicQuestions(bank, e) {
   const byId = {}; bank.questions.forEach((q) => { byId[q.id] = q; });
-  return (u.order || []).map((id) => byId[id]).filter(Boolean).map((q) => ({ id: q.id, q: q.q, choices: q.choices, topic: q.topic }));
+  return (e.order || []).map((id) => byId[id]).filter(Boolean).map((q) => ({ id: q.id, q: q.q, choices: q.choices, topic: q.topic }));
 }
-function cexTiming(bank, u) {
+function cexTiming(bank, e) {
   const lim = bank.settings.timeLimitMin;
-  if (!lim || !u.startedAt) return { limitMin: lim || 0, remainingMs: null };
-  return { limitMin: lim, remainingMs: Math.max(0, u.startedAt + lim * 60000 - Date.now()) };
+  if (!lim || !e.startedAt) return { limitMin: lim || 0, remainingMs: null };
+  return { limitMin: lim, remainingMs: Math.max(0, e.startedAt + lim * 60000 - Date.now()) };
 }
-// A student finished before the teacher's "next exam opens at" time, and that time has now come:
-// keep the old result in history and give exactly one fresh attempt. (Teacher can still reset by hand.)
-async function cexAutoRearm(u, env) {
-  if (u && u.status === "done" && u.openAt && Date.now() >= u.openAt && u.finishedAt && u.finishedAt < u.openAt) {
-    u.history = (u.history || []).concat([{ finishedAt: u.finishedAt, score: u.score, total: u.total, percent: u.percent, setId: cexSetId(u.setId), retake: true }]).slice(-10);
-    u.status = "new"; delete u.startedAt; delete u.finishedAt; delete u.score; delete u.total; delete u.percent;
-    delete u.order; delete u.answers; delete u.review; delete u.late;
-    await cexPutUser(u, env);
+// Everything the student page needs: only the sets the teacher allowed.
+async function cexStudentExams(u, env) {
+  const ids = await cexSetIds(env), out = [];
+  for (const id of ids) {
+    const e = u.sx[id];
+    if (!e || !e.allow) continue;
+    const b = await cexGetBank(env, id);
+    out.push({ setId: id, title: b.settings.title, total: b.questions.length, limitMin: b.settings.timeLimitMin, passPercent: b.settings.passPercent,
+      status: e.status || "new", openAt: e.openAt || 0, percent: e.percent == null ? null : e.percent, score: e.score == null ? null : e.score,
+      pass: e.status === "done" ? e.percent >= b.settings.passPercent : null });
   }
-  return u;
+  return out;
+}
+function cexPickSet(u, ids, want, statusPick) {
+  if (want) return cexSetId(want);
+  return ids.find((id) => u.sx[id] && u.sx[id].allow && u.sx[id].status === statusPick) || null;
 }
 async function handleCexLogin(request, env) {
   let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
@@ -2541,17 +2584,12 @@ async function handleCexLogin(request, env) {
     await env.SESSIONS.put(failKey, String(fails + 1), { expirationTtl: 900 });
     return json({ error: "bad_login" }, env, 401);
   }
-  await cexAutoRearm(u, env);
-  const bank = await cexBankForUser(u, env);
-  const titles = {}; (await cexSetsInfo(env)).forEach((x) => { titles[x.id] = x.title; });
-  const taken = cexResultsOf(u, await cexSetIds(env)).filter((r) => r.status === "done").map((r) => ({ title: titles[r.setId] || "", percent: r.percent, finishedAt: r.finishedAt }));
+  const hadSx = !!u.sx;
+  cexNorm(u);
+  if (cexRearmAll(u) || !hadSx) await cexPutUser(u, env);
   const token = cexToken();
   await env.SESSIONS.put(CEX_TOK_PREFIX + token, username, { expirationTtl: 21600 });
-  return json({
-    token, username, taken, setId: cexSetId(u.setId), note: u.note || "", displayName: u.displayName || "", status: u.status, openAt: u.openAt || 0,
-    title: bank.settings.title, total: bank.questions.length, limitMin: bank.settings.timeLimitMin,
-    result: u.status === "done" ? { score: u.score, total: u.total, percent: u.percent, pass: u.percent >= bank.settings.passPercent, passPercent: bank.settings.passPercent, review: u.review || [] } : null,
-  }, env);
+  return json({ token, username, note: u.note || "", displayName: u.displayName || "", exams: await cexStudentExams(u, env) }, env);
 }
 // Student sets their own display name ONCE (locked afterwards; only the teacher can clear it).
 async function handleCexSetName(request, env) {
@@ -2565,37 +2603,55 @@ async function handleCexSetName(request, env) {
   await cexPutUser(u, env);
   return json({ ok: true, displayName: name }, env);
 }
+async function handleCexMyResult(request, env) {
+  let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const u = await cexUserFromToken(body, env);
+  if (!u) return json({ error: "bad_token" }, env, 401);
+  const sid = cexSetId(body.set);
+  const e = u.sx[sid];
+  if (!e || !e.allow || e.status !== "done") return json({ error: "not_found" }, env, 404);
+  const bank = await cexGetBank(env, sid);
+  return json({ setId: sid, title: bank.settings.title, score: e.score, total: e.total, percent: e.percent, pass: e.percent >= bank.settings.passPercent, passPercent: bank.settings.passPercent, late: !!e.late, review: e.review || [] }, env);
+}
 async function handleCexStart(request, env) {
   let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const u = await cexUserFromToken(body, env);
   if (!u) return json({ error: "bad_token" }, env, 401);
-  await cexAutoRearm(u, env);
   if (!u.displayName) return json({ error: "need_name" }, env, 403);
-  if (u.status === "done") return json({ error: "already_done" }, env, 409);
-  if (u.status !== "started" && u.openAt && Date.now() < u.openAt) return json({ error: "not_open", openAt: u.openAt }, env, 403);
-  const bank = await cexBankForUser(u, env);
+  if (cexRearmAll(u)) await cexPutUser(u, env);
+  const ids = await cexSetIds(env);
+  const sid = cexPickSet(u, ids, body.set, "started") || cexPickSet(u, ids, null, "new");
+  const e = sid && u.sx[sid];
+  if (!e || !e.allow || ids.indexOf(sid) === -1) return json({ error: "not_allowed" }, env, 403);
+  if (e.status === "done") return json({ error: "already_done" }, env, 409);
+  if (e.status !== "started" && e.openAt && Date.now() < e.openAt) return json({ error: "not_open", openAt: e.openAt }, env, 403);
+  const bank = await cexGetBank(env, sid);
   if (!bank.questions.length) return json({ error: "no_questions" }, env, 503);
-  if (u.status !== "started") {
+  if (e.status !== "started") {
     const idx = bank.settings.shuffle ? cexShuffle(bank.questions.length) : bank.questions.map((_, i) => i);
-    u.order = idx.map((i) => bank.questions[i].id);
-    u.status = "started"; u.startedAt = Date.now();
+    e.order = idx.map((i) => bank.questions[i].id);
+    e.status = "started"; e.startedAt = Date.now();
     await cexPutUser(u, env);
   }
-  const t = cexTiming(bank, u);
-  return json({ title: bank.settings.title, questions: cexPublicQuestions(bank, u), limitMin: t.limitMin, remainingMs: t.remainingMs }, env);
+  const t = cexTiming(bank, e);
+  return json({ setId: sid, title: bank.settings.title, questions: cexPublicQuestions(bank, e), limitMin: t.limitMin, remainingMs: t.remainingMs }, env);
 }
 async function handleCexSubmit(request, env) {
   let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const u = await cexUserFromToken(body, env);
   if (!u) return json({ error: "bad_token" }, env, 401);
-  if (u.status === "done") return json({ error: "already_done" }, env, 409);
-  if (u.status !== "started") return json({ error: "not_started" }, env, 409);
-  const bank = await cexBankForUser(u, env);
+  const ids = await cexSetIds(env);
+  const sid = cexPickSet(u, ids, body.set, "started");
+  const e = sid && u.sx[sid];
+  if (!e) return json({ error: "not_started" }, env, 409);
+  if (e.status === "done") return json({ error: "already_done" }, env, 409);
+  if (e.status !== "started") return json({ error: "not_started" }, env, 409);
+  const bank = await cexGetBank(env, sid);
   const answers = (body.answers && typeof body.answers === "object") ? body.answers : {};
   const byId = {}; bank.questions.forEach((q) => { byId[q.id] = q; });
-  const ids = (u.order || []).filter((id) => byId[id]);
+  const qids = (e.order || []).filter((id) => byId[id]);
   let score = 0; const review = [];
-  for (const id of ids) {
+  for (const id of qids) {
     const q = byId[id];
     const a = parseInt(answers[id], 10);
     const given = a >= 0 && a < q.choices.length ? a : -1;
@@ -2603,12 +2659,12 @@ async function handleCexSubmit(request, env) {
     review.push({ q: q.q, choices: q.choices, given, correct: q.ans, ok, expl: q.expl || "", topic: q.topic || "", skill: q.skill || "" });
   }
   const lim = bank.settings.timeLimitMin;
-  u.late = !!(lim && Date.now() > u.startedAt + lim * 60000 + 20000);
-  u.status = "done"; u.finishedAt = Date.now();
-  u.score = score; u.total = ids.length; u.percent = ids.length ? Math.round((score / ids.length) * 100) : 0;
-  u.answers = answers; u.review = review;
+  e.late = !!(lim && Date.now() > e.startedAt + lim * 60000 + 20000);
+  e.status = "done"; e.finishedAt = Date.now();
+  e.score = score; e.total = qids.length; e.percent = qids.length ? Math.round((score / qids.length) * 100) : 0;
+  e.answers = answers; e.review = review;
   await cexPutUser(u, env);
-  return json({ score, total: u.total, percent: u.percent, pass: u.percent >= bank.settings.passPercent, passPercent: bank.settings.passPercent, late: u.late, review }, env);
+  return json({ setId: sid, title: bank.settings.title, score, total: e.total, percent: e.percent, pass: e.percent >= bank.settings.passPercent, passPercent: bank.settings.passPercent, late: e.late, review }, env);
 }
 
 export default {
@@ -2675,6 +2731,7 @@ export default {
       if (url.pathname === "/api/admin/quiz-bank/set" && request.method === "POST") return await handleAdminQuizBankSet(request, env);
       if (url.pathname === "/api/admin/quiz-bank/finalize" && request.method === "POST") return await handleAdminQuizBankFinalize(request, env);
       if (url.pathname === "/api/cexam/login" && request.method === "POST") return withCorsOrigin(await handleCexLogin(request, env), allowOrigin);
+      if (url.pathname === "/api/cexam/myresult" && request.method === "POST") return withCorsOrigin(await handleCexMyResult(request, env), allowOrigin);
       if (url.pathname === "/api/cexam/setname" && request.method === "POST") return withCorsOrigin(await handleCexSetName(request, env), allowOrigin);
       if (url.pathname === "/api/cexam/start" && request.method === "POST") return withCorsOrigin(await handleCexStart(request, env), allowOrigin);
       if (url.pathname === "/api/cexam/submit" && request.method === "POST") return withCorsOrigin(await handleCexSubmit(request, env), allowOrigin);

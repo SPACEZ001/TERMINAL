@@ -53,6 +53,13 @@
     fSearch:{en:'Search name / username / note', th:'ค้นหาชื่อ / รหัสผู้ใช้ / โน้ต'}, fStatus:{en:'Any status', th:'ทุกสถานะ'}, fSet:{en:'Any set', th:'ทุกชุด'},
     fTakenAny:{en:'Taken / not taken (pick a set)', th:'สอบแล้ว / ยังไม่สอบ (เลือกชุดก่อน)'}, fTaken:{en:'Took this set', th:'สอบชุดนี้แล้ว'}, fNotTaken:{en:'Not taken this set yet', th:'ยังไม่สอบชุดนี้'},
     fMin:{en:'Score ≥ %', th:'คะแนน ≥ %'}, fMax:{en:'Score ≤ %', th:'คะแนน ≤ %'}, fClear:{en:'Clear filters', th:'ล้างตัวกรอง'}, fCount:{en:'shown', th:'แสดง'}, fNone:{en:'No students match.', th:'ไม่พบนักเรียนที่ตรงเงื่อนไข'},
+    myExams:{en:'Your exams', th:'ข้อสอบของคุณ'}, noExams:{en:'Your teacher has not opened an exam for you yet.', th:'ครูยังไม่ได้เปิดข้อสอบให้คุณ'},
+    seeResult:{en:'See result', th:'ดูผลสอบ'}, back:{en:'Back to my exams', th:'กลับไปหน้าข้อสอบของฉัน'},
+    allowCol:{en:'Allowed', th:'อนุญาตสอบ'}, openCol:{en:'Opens on', th:'วันเปิดสอบ'}, statusCol:{en:'Status', th:'สถานะ'}, scoreCol:{en:'Score', th:'คะแนน'},
+    notAllowed:{en:'Not allowed', th:'ไม่ได้อนุญาต'}, pickStudent:{en:'Pick a student on the left.', th:'เลือกนักเรียนจากรายชื่อทางซ้าย'},
+    examsOf:{en:'Exam sets for this student', th:'ชุดข้อสอบของนักเรียนคนนี้'}, examsHint:{en:'Tick “Allowed” to let this student take a set. A date makes it open automatically on that day. Each set can be taken once — “Allow retake” gives one more attempt (the old score is kept in the history).', th:'ติ๊ก “อนุญาตสอบ” เพื่อให้นักเรียนสอบชุดนั้นได้ ถ้าใส่วันที่ ระบบจะเปิดให้สอบเองในวันนั้น แต่ละชุดสอบได้ครั้งเดียว — กด “ให้สอบใหม่” เพื่อให้สอบอีกครั้ง (คะแนนเก่าเก็บไว้ในประวัติ)'},
+    newStudent:{en:'Create logins', th:'สร้างบัญชีนักเรียน'}, studentsList:{en:'Students', th:'รายชื่อนักเรียน'}, filtersMore:{en:'More filters', th:'ตัวกรองเพิ่มเติม'},
+    earlier:{en:'Earlier', th:'ครั้งก่อน'}, saving:{en:'Saving…', th:'กำลังบันทึก…'}, savedOk:{en:'Saved', th:'บันทึกแล้ว'}, passwordL:{en:'Password', th:'รหัสผ่าน'}, usernameL:{en:'Username', th:'ชื่อผู้ใช้'},
     logout:{en:'Log out',th:'ออกจากระบบ'}, already:{en:'This login has already been used.',th:'รหัสนี้สอบไปแล้ว'},
     /* admin */
     adminBtn:{en:'Teacher panel',th:'หน้าครู (แอดมิน)'}, studentBtn:{en:'Student view',th:'หน้านักเรียน'},
@@ -93,10 +100,10 @@
   var isAdminTier = false;
   var mode = 'student';
   // student
-  var sv = { stage:'login', err:'', busy:false, token:'', username:'', info:null, exam:null, answers:{}, deadline:0, result:null, confirm:false };
+  var sv = { stage:'login', err:'', busy:false, token:'', username:'', info:null, exam:null, answers:{}, deadline:0, result:null, confirm:false, cur:'' };
   var timerIv = null;
   // admin
-  var adm = { key:'', keyErr:false, tab:'users', users:null, bank:null, loading:false, msg:'', newCreds:null, view:null, revealed:{}, delArm:'', dirty:false, err:'', sets:null, set:'main', setDel:'', f:{ q:'', status:'', set:'', taken:'', min:'', max:'' } };
+  var adm = { key:'', keyErr:false, tab:'users', users:null, bank:null, loading:false, msg:'', newCreds:null, view:null, revealed:{}, delArm:'', dirty:false, err:'', sets:null, set:'main', setDel:'', sel:'', saveMsg:'', f:{ q:'', status:'', set:'', taken:'', min:'', max:'' } };
 
   function api(path, method, payload, key){
     var opt = { method: method || 'GET', headers: {} };
@@ -132,12 +139,13 @@
       sv.busy = false;
       if(r.status === 200){
         sv.token = r.j.token; sv.username = r.j.username; sv.info = r.j;
-        if(r.j.status === 'done'){ sv.result = r.j.result; sv.stage = 'result'; }
-        else sv.stage = r.j.displayName ? 'ready' : 'name';
+        sv.stage = r.j.displayName ? 'home' : 'name';
       } else sv.err = r.status === 429 ? T(U.tooMany) : (r.status === 401 ? T(U.badLogin) : T(U.netErr));
       paint();
     }).catch(function(){ sv.busy = false; sv.err = T(U.netErr); paint(); });
   }
+  function exOf(id){ var e = null; ((sv.info && sv.info.exams) || []).forEach(function(x){ if(x.setId === id) e = x; }); return e; }
+  function ansKey(){ return ANS_STORE + ':' + (sv.cur || ''); }
   function setName(){
     var el = bodyEl.querySelector('[data-cx="dname"]'), v = el ? el.value.replace(/\s+/g, ' ').trim() : '';
     sv.nameVal = v;
@@ -146,24 +154,25 @@
     sv.busy = true; sv.err = ''; paint();
     api('/api/cexam/setname', 'POST', { token:sv.token, name:v }).then(function(r){
       sv.busy = false; sv.nameConfirm = false;
-      if(r.status === 200 || r.status === 409){ sv.info.displayName = r.j.displayName || v; sv.stage = 'ready'; }
+      if(r.status === 200 || r.status === 409){ sv.info.displayName = r.j.displayName || v; sv.stage = 'home'; }
       else sv.err = r.status === 400 ? T(U.nameBad) : T(U.netErr);
       paint();
     }).catch(function(){ sv.busy = false; sv.err = T(U.netErr); paint(); });
   }
-  function startExam(){
-    sv.busy = true; sv.err = ''; paint();
-    api('/api/cexam/start', 'POST', { token:sv.token }).then(function(r){
+  function startExam(setId){
+    sv.busy = true; sv.err = ''; sv.cur = setId; paint();
+    api('/api/cexam/start', 'POST', { token:sv.token, set:setId }).then(function(r){
       sv.busy = false;
+      var e = exOf(setId);
       if(r.status === 403 && r.j.error === 'need_name'){ sv.stage = 'name'; }
-      else       if(r.status === 200){
-        sv.exam = r.j; sv.stage = 'exam'; sv.confirm = false;
-        try { sv.answers = JSON.parse(ss(ANS_STORE) || '{}') || {}; } catch(e){ sv.answers = {}; }
+      else if(r.status === 200){
+        sv.exam = r.j; sv.stage = 'exam'; sv.confirm = false; if(e) e.status = 'started';
+        try { sv.answers = JSON.parse(ss(ansKey()) || '{}') || {}; } catch(x){ sv.answers = {}; }
         sv.deadline = r.j.remainingMs == null ? 0 : Date.now() + r.j.remainingMs;
         startTimer();
-      } else if(r.status === 409){ sv.err = T(U.already); }
+      } else if(r.status === 409){ sv.err = T(U.already); if(e) e.status = 'done'; }
       else if(r.status === 503){ sv.err = T(U.noQ); }
-      else if(r.status === 403 && r.j && r.j.error === 'not_open'){ if(sv.info) sv.info.openAt = r.j.openAt; sv.err = ''; }
+      else if(r.status === 403 && r.j && r.j.error === 'not_open'){ if(e) e.openAt = r.j.openAt; sv.err = ''; }
       else if(r.status === 401){ logoutStudent(); return; }
       else sv.err = T(U.netErr);
       paint();
@@ -171,17 +180,30 @@
   }
   function submitExam(){
     stopTimer(); sv.busy = true; paint();
-    api('/api/cexam/submit', 'POST', { token:sv.token, answers:sv.answers }).then(function(r){
+    api('/api/cexam/submit', 'POST', { token:sv.token, set:sv.cur, answers:sv.answers }).then(function(r){
       sv.busy = false;
-      if(r.status === 200){ sv.result = r.j; sv.stage = 'result'; ss(ANS_STORE, null); }
-      else if(r.status === 409){ sv.err = T(U.already); sv.stage = 'login'; }
+      if(r.status === 200){
+        sv.result = r.j; sv.stage = 'result'; ss(ansKey(), null);
+        var e = exOf(sv.cur); if(e){ e.status = 'done'; e.percent = r.j.percent; e.score = r.j.score; e.pass = r.j.pass; }
+      }
+      else if(r.status === 409){ sv.err = T(U.already); sv.stage = 'home'; }
       else { sv.err = T(U.netErr); if(sv.deadline) startTimer(); }
       paint();
     }).catch(function(){ sv.busy = false; sv.err = T(U.netErr); startTimer(); paint(); });
   }
+  function openResult(setId){
+    sv.busy = true; sv.err = ''; sv.cur = setId; paint();
+    api('/api/cexam/myresult', 'POST', { token:sv.token, set:setId }).then(function(r){
+      sv.busy = false;
+      if(r.status === 200){ sv.result = r.j; sv.stage = 'result'; }
+      else if(r.status === 401){ logoutStudent(); return; }
+      else sv.err = T(U.netErr);
+      paint();
+    }).catch(function(){ sv.busy = false; sv.err = T(U.netErr); paint(); });
+  }
   function logoutStudent(){
-    stopTimer(); sv = { stage:'login', err:'', busy:false, token:'', username:'', info:null, exam:null, answers:{}, deadline:0, result:null, confirm:false };
-    ss(ANS_STORE, null); paint();
+    stopTimer(); sv = { stage:'login', err:'', busy:false, token:'', username:'', info:null, exam:null, answers:{}, deadline:0, result:null, confirm:false, cur:'' };
+    paint();
   }
   function startTimer(){
     stopTimer();
@@ -210,16 +232,26 @@
         (sv.err ? '<div class="cx2-err">' + esc(sv.err) + '</div>' : '') +
         '<button class="cx2-btn' + (sv.nameConfirm ? ' warn' : '') + '" data-cx="setname"' + (sv.busy ? ' disabled' : '') + '>' + esc(T(sv.nameConfirm ? U.nameSure : U.nameBtn)) + '</button></div>';
     }
-    if(sv.stage === 'ready'){
-      var i = sv.info || {};
-      return '<div class="cx2-card cx2-narrow">' +
-        '<div class="cx2-hi">' + esc(T(U.hello)) + ', <b>' + esc(i.displayName || i.note || sv.username) + '</b></div>' +
-        '<div class="cx2-title">' + esc(i.title || '') + '</div>' +
-        ((i.taken || []).length ? '<p class="cx2-note">' + esc(T(U.taken)) + ': ' + i.taken.map(function(x){ return esc(x.title || '') + ' ' + esc(x.percent) + '%'; }).join(' · ') + '</p>' : '') +
-        '<div class="cx2-chips"><span>' + esc(i.total) + ' ' + esc(T(U.qs)) + '</span><span>' + (i.limitMin ? esc(i.limitMin) + ' ' + esc(T(U.minutes)) : esc(T(U.noLimit))) + '</span></div>' +
-        (isClosed(i) ? '<div class="cx2-err" style="border-color:#e8a417;color:#f1d08a">' + esc(T(U.notOpenYet)) + ' ' + esc(T(U.opensOn)) + ' <b>' + esc(fmtDay(i.openAt)) + '</b></div>' : '<p class="cx2-note">' + esc(T(U.rules)) + '</p>') +
-        (sv.err ? '<div class="cx2-err">' + esc(sv.err) + '</div>' : '') +
-        '<button class="cx2-btn" data-cx="start"' + (sv.busy || !i.total || isClosed(i) ? ' disabled' : '') + '>' + esc(T(i.status === 'started' ? U.resume : U.start)) + '</button> ' +
+    if(sv.stage === 'home'){
+      var i = sv.info || {}, ex = i.exams || [];
+      var hh = '<div class="cx2-card cx2-narrow"><div class="cx2-hi">' + esc(T(U.hello)) + ', <b>' + esc(i.displayName || i.note || sv.username) + '</b></div>' +
+        '<div class="cx2-title">' + esc(T(U.myExams)) + '</div>' +
+        (sv.err ? '<div class="cx2-err">' + esc(sv.err) + '</div>' : '');
+      if(!ex.length) hh += '<p class="cx2-note">' + esc(T(U.noExams)) + '</p>';
+      ex.forEach(function(e){
+        var closed = e.status !== 'started' && isClosed(e);
+        var st = e.status === 'done' ? U.sDone : e.status === 'started' ? U.sStarted : U.sNew;
+        hh += '<div class="cx2-excard ' + esc(e.status) + '"><div class="cx2-excard-h"><b>' + esc(e.title) + '</b><span class="cx2-st ' + esc(e.status) + '">' + esc(T(st)) + '</span></div>' +
+          '<div class="cx2-chips"><span>' + esc(e.total) + ' ' + esc(T(U.qs)) + '</span><span>' + (e.limitMin ? esc(e.limitMin) + ' ' + esc(T(U.minutes)) : esc(T(U.noLimit))) + '</span>' +
+          (e.status === 'done' ? '<span class="' + (e.pass ? 'ok' : 'no') + '">' + esc(e.percent) + '%</span>' : '') + '</div>' +
+          (closed ? '<div class="cx2-note cx2-closed">' + esc(T(U.notOpenYet)) + ' ' + esc(T(U.opensOn)) + ' <b>' + esc(fmtDay(e.openAt)) + '</b></div>' : '') +
+          '<div class="cx2-excard-a">' +
+          (e.status === 'done'
+            ? '<button class="cx2-btn ghost" data-cx="seeres" data-set="' + esc(e.setId) + '"' + (sv.busy ? ' disabled' : '') + '>' + esc(T(U.seeResult)) + '</button>'
+            : '<button class="cx2-btn" data-cx="start" data-set="' + esc(e.setId) + '"' + (sv.busy || !e.total || closed ? ' disabled' : '') + '>' + esc(T(e.status === 'started' ? U.resume : U.start)) + '</button>') +
+          '</div></div>';
+      });
+      return hh + (ex.some(function(e){ return e.status !== 'done'; }) ? '<p class="cx2-note">' + esc(T(U.rules)) + '</p>' : '') +
         '<button class="cx2-btn ghost" data-cx="logout">' + esc(T(U.logout)) + '</button></div>';
     }
     if(sv.stage === 'exam' && sv.exam){
@@ -241,12 +273,11 @@
     }
     if(sv.stage === 'result' && sv.result){
       var r = sv.result, pass = r.pass;
-      var h2 = '<div class="cx2-card cx2-narrow cx2-resultcard"><div class="cx2-done">' + esc(T(U.done)) + '</div>' +
+      var h2 = '<div class="cx2-card cx2-narrow cx2-resultcard"><div class="cx2-done">' + esc(T(U.done)) + (r.title ? ' · ' + esc(r.title) : '') + '</div>' +
         '<div class="cx2-big ' + (pass ? 'ok' : 'no') + '">' + esc(r.percent) + '%</div>' +
         '<div class="cx2-chips"><span>' + esc(T(U.score)) + ' ' + esc(r.score) + ' / ' + esc(r.total) + '</span><span class="' + (pass ? 'ok' : 'no') + '">' + esc(T(pass ? U.passed : U.notPassed)) + '</span><span>' + esc(T(U.passAt)) + ' ' + esc(r.passPercent) + '%</span></div>' +
         (r.late ? '<p class="cx2-note">' + esc(T(U.late)) + '</p>' : '') +
-        (isClosed(sv.info) ? '<p class="cx2-note">' + esc(T(U.opensOn)) + ' <b>' + esc(fmtDay(sv.info.openAt)) + '</b></p>' : '') +
-        '<button class="cx2-btn ghost" data-cx="logout">' + esc(T(U.logout)) + '</button></div>';
+        '<button class="cx2-btn" data-cx="home">' + esc(T(U.back)) + '</button> <button class="cx2-btn ghost" data-cx="logout">' + esc(T(U.logout)) + '</button></div>';
       h2 += '<div class="cx2-h2">' + esc(T(U.review)) + '</div>' + reviewHTML(r.review || []);
       return h2;
     }
@@ -305,80 +336,114 @@
     var banner = adm.err ? '<div class="cx2-card cx2-warn">' + esc(adm.err === 'old' ? T(U.oldWorker) : T(U.adminNet)) + '</div>' : '';
     return banner + '<div class="cx2-tabs">' + tabs + '</div>' + inner;
   }
+  function exOfU(u, id){ var e = null; (u.exams || u.results || []).forEach(function(x){ if(x.setId === id) e = x; }); return e || { setId:id, allow:false, status:'new' }; }
   function filteredUsers(){
     var f = adm.f, q = (f.q || '').trim().toLowerCase();
     return (adm.users || []).filter(function(u){
+      var ex = u.exams || [];
       if(q && ((u.username || '') + ' ' + (u.displayName || '') + ' ' + (u.note || '')).toLowerCase().indexOf(q) === -1) return false;
-      if(f.status && u.status !== f.status) return false;
-      if(f.set && f.taken){
-        var took = (u.results || []).some(function(x){ return x.setId === f.set && x.status === 'done'; }) || (u.history || []).some(function(x){ return (x.setId || 'main') === f.set; });
-        if(f.taken === 'yes' && !took) return false;
-        if(f.taken === 'no' && took) return false;
-      } else if(f.set && (u.setId || 'main') !== f.set) return false;
-      if(f.min !== '' && !(u.status === 'done' && u.percent >= +f.min)) return false;
-      if(f.max !== '' && !(u.status === 'done' && u.percent <= +f.max)) return false;
+      if(f.status && !ex.some(function(x){ return x.allow && x.status === f.status; })) return false;
+      var pool = f.set ? [exOfU(u, f.set)] : ex;
+      if(f.set && f.taken === 'yes' && pool[0].status !== 'done') return false;
+      if(f.set && f.taken === 'no' && pool[0].status === 'done') return false;
+      if(f.set && !f.taken && !pool[0].allow) return false;
+      if(f.min !== '' && !pool.some(function(x){ return x.status === 'done' && x.percent >= +f.min; })) return false;
+      if(f.max !== '' && !pool.some(function(x){ return x.status === 'done' && x.percent <= +f.max; })) return false;
       return true;
     });
   }
-  function usersTableHTML(){
+  function userListHTML(){
     var list = filteredUsers();
     if(!list.length) return '<p class="cx2-note">' + esc(T(U.fNone)) + '</p>';
-    var h = '<div class="cx2-count">' + list.length + ' / ' + adm.users.length + ' ' + esc(T(U.fCount)) + '</div><div class="cx2-tblwrap"><table class="cx2-tbl"><thead><tr><th>' + esc(T(U.colUser)) + '</th><th>' + esc(T(U.colPass)) + '</th><th>' + esc(T(U.colName)) + '</th><th>' + esc(T(U.colNote)) + '</th><th>' + esc(T(U.colSet)) + '</th><th>' + esc(T(U.colStatus)) + '</th><th>' + esc(T(U.colScore)) + '</th><th>' + esc(T(U.colOpen)) + '</th><th></th></tr></thead><tbody>';
-    list.forEach(function(u){
-      var st = u.status === 'done' ? U.sDone : u.status === 'started' ? U.sStarted : U.sNew;
-      var shown = !!adm.revealed[u.username];
-      h += '<tr><td><code>' + esc(u.username) + '</code></td>' +
-        '<td><code>' + (shown ? esc(u.password) : '••••••••') + '</code> <button class="cx2-mini" data-cx="reveal" data-u="' + esc(u.username) + '">' + esc(T(shown ? U.hide : U.show)) + '</button> <button class="cx2-mini" data-cx="copy" data-t="' + esc(u.username + '\n' + u.password) + '">' + esc(T(U.copy)) + '</button></td>' +
-        '<td>' + (u.displayName ? '<b>' + esc(u.displayName) + '</b> <button class="cx2-mini" data-cx="clearname" data-u="' + esc(u.username) + '">' + esc(T(U.clearName)) + '</button>' : '<small>—</small>') + '</td>' +
-        '<td><input class="cx2-in sm wide" data-cx="note" data-u="' + esc(u.username) + '" value="' + esc(u.note) + '" maxlength="120"></td>' +
-        '<td><select class="cx2-in sm" data-cx="uset" data-u="' + esc(u.username) + '">' + (adm.sets || [{ id:'main', title:'Main' }]).map(function(x){ return '<option value="' + esc(x.id) + '"' + (x.id === (u.setId || 'main') ? ' selected' : '') + '>' + esc(x.title) + '</option>'; }).join('') + '</select>' +
-          '<div class="cx2-rs">' + (u.results || []).filter(function(x){ return x.status !== 'new'; }).map(function(x){
-            return '<button class="cx2-rchip ' + esc(x.status) + '" data-cx="result" data-u="' + esc(u.username) + '" data-set="' + esc(x.setId) + '">' + esc(setTitle(x.setId)) + ' · ' + (x.status === 'done' ? esc(x.percent) + '%' : esc(T(U.sStarted))) + '</button>';
-          }).join('') + '</div></td>' +
-        '<td><span class="cx2-st ' + esc(u.status) + '">' + esc(T(st)) + '</span></td>' +
-        '<td>' + (u.status === 'done' ? '<b>' + esc(u.percent) + '%</b> <small>(' + esc(u.score) + '/' + esc(u.total) + ')</small>' + (u.late ? ' <small>⏱</small>' : '') : '—') + '</td>' +
-        '<td><input class="cx2-in sm" type="date" data-cx="openat" data-u="' + esc(u.username) + '" value="' + esc(dayVal(u.openAt)) + '">' + (u.openAt && u.openAt > Date.now() ? '<div class="cx2-note" style="margin:4px 0 0">' + esc(T(U.openAuto)) + '</div>' : '') + '</td>' +
-        '<td class="cx2-act">' + (u.status === 'done' ? '<button class="cx2-mini" data-cx="result" data-u="' + esc(u.username) + '">' + esc(T(U.view)) + '</button>' : '') +
-        (u.status !== 'new' ? '<button class="cx2-mini" data-cx="reset" data-u="' + esc(u.username) + '">' + esc(T(U.reset)) + '</button>' : '') +
-        '<button class="cx2-mini danger" data-cx="del" data-u="' + esc(u.username) + '">' + esc(T(adm.delArm === u.username ? U.delSure : U.del)) + '</button></td></tr>';
+    if(!adm.sel || !list.some(function(u){ return u.username === adm.sel; })) adm.sel = list[0].username;
+    return '<div class="cx2-count">' + list.length + ' / ' + adm.users.length + ' ' + esc(T(U.fCount)) + '</div><div class="cx2-ulist">' + list.map(function(u){
+      var ex = (u.exams || []).filter(function(x){ return x.allow || x.status !== 'new'; });
+      var done = ex.filter(function(x){ return x.status === 'done'; }).length;
+      return '<button class="cx2-uitem' + (u.username === adm.sel ? ' on' : '') + '" data-cx="pick" data-u="' + esc(u.username) + '">' +
+        '<span class="cx2-uitem-n">' + esc(u.displayName || u.note || '—') + '</span><code>' + esc(u.username) + '</code>' +
+        '<span class="cx2-uitem-s">' + ex.map(function(x){ return '<i class="' + esc(x.status) + '" title="' + esc(setTitle(x.setId)) + '"></i>'; }).join('') + ' ' + done + '/' + ex.length + '</span></button>';
+    }).join('') + '</div>';
+  }
+  function userDetailHTML(){
+    var u = null; (adm.users || []).forEach(function(x){ if(x.username === adm.sel) u = x; });
+    if(!u) return '<div class="cx2-card"><p class="cx2-note">' + esc(T(U.pickStudent)) + '</p></div>';
+    var shown = !!adm.revealed[u.username];
+    var h = '<div class="cx2-card cx2-detail"><div class="cx2-detail-h"><div><div class="cx2-detail-name">' + esc(u.displayName || '—') + '</div>' +
+      (u.displayName ? '<button class="cx2-mini" data-cx="clearname" data-u="' + esc(u.username) + '">' + esc(T(U.clearName)) + '</button>' : '') + '</div>' +
+      '<button class="cx2-mini danger" data-cx="del" data-u="' + esc(u.username) + '">' + esc(T(adm.delArm === u.username ? U.delSure : U.del)) + '</button></div>' +
+      '<div class="cx2-detail-g">' +
+        '<div><span>' + esc(T(U.usernameL)) + '</span><code>' + esc(u.username) + '</code></div>' +
+        '<div><span>' + esc(T(U.passwordL)) + '</span><code>' + (shown ? esc(u.password) : '••••••••') + '</code> <button class="cx2-mini" data-cx="reveal" data-u="' + esc(u.username) + '">' + esc(T(shown ? U.hide : U.show)) + '</button> <button class="cx2-mini" data-cx="copy" data-t="' + esc(u.username + '\n' + u.password) + '">' + esc(T(U.copy)) + '</button></div>' +
+        '<div class="wide"><span>' + esc(T(U.colNote)) + '</span><input class="cx2-in" data-cx="note" data-u="' + esc(u.username) + '" value="' + esc(u.note) + '" maxlength="120"></div>' +
+      '</div>' +
+      '<div class="cx2-h3" style="margin-top:18px">' + esc(T(U.examsOf)) + '</div><p class="cx2-note">' + esc(T(U.examsHint)) + '</p>' +
+      (adm.saveMsg ? '<div class="cx2-note cx2-savemsg">' + esc(adm.saveMsg) + '</div>' : '') +
+      '<div class="cx2-tblwrap"><table class="cx2-tbl cx2-extbl"><thead><tr><th>' + esc(T(U.allowCol)) + '</th><th>' + esc(T(U.colSet)) + '</th><th>' + esc(T(U.openCol)) + '</th><th>' + esc(T(U.statusCol)) + '</th><th>' + esc(T(U.scoreCol)) + '</th><th></th></tr></thead><tbody>';
+    (adm.sets || [{ id:'main', title:'Main' }]).forEach(function(s){
+      var e = exOfU(u, s.id);
+      var st = !e.allow && e.status === 'new' ? U.notAllowed : e.status === 'done' ? U.sDone : e.status === 'started' ? U.sStarted : U.sNew;
+      h += '<tr class="' + (e.allow ? 'on' : 'off') + '"><td><label class="cx2-switch"><input type="checkbox" data-cx="xallow" data-u="' + esc(u.username) + '" data-set="' + esc(s.id) + '"' + (e.allow ? ' checked' : '') + '><span></span></label></td>' +
+        '<td><b>' + esc(s.title) + '</b><div class="cx2-note" style="margin:2px 0 0">' + esc(s.count == null ? '' : s.count + ' ' + T(U.qs)) + '</div></td>' +
+        '<td><input class="cx2-in sm" type="date" data-cx="xopen" data-u="' + esc(u.username) + '" data-set="' + esc(s.id) + '" value="' + esc(dayVal(e.openAt)) + '"' + (e.allow ? '' : ' disabled') + '>' +
+          (e.allow && e.openAt && e.openAt > Date.now() ? '<div class="cx2-note" style="margin:4px 0 0">' + esc(T(U.openAuto)) + '</div>' : '') + '</td>' +
+        '<td><span class="cx2-st ' + esc(e.allow || e.status !== 'new' ? e.status : 'off') + '">' + esc(T(st)) + '</span></td>' +
+        '<td>' + (e.status === 'done' ? '<b>' + esc(e.percent) + '%</b> <small>(' + esc(e.score) + '/' + esc(e.total) + ')</small>' + (e.late ? ' <small>⏱</small>' : '') + '<div class="cx2-note" style="margin:2px 0 0">' + esc(fmtDate(e.finishedAt)) + '</div>' : '—') +
+          ((e.history || []).length ? '<div class="cx2-note" style="margin:2px 0 0">' + esc(T(U.earlier)) + ': ' + e.history.map(function(x){ return esc(x.percent) + '%'; }).join(' · ') + '</div>' : '') + '</td>' +
+        '<td class="cx2-act">' + (e.status === 'done' ? '<button class="cx2-mini" data-cx="result" data-u="' + esc(u.username) + '" data-set="' + esc(s.id) + '">' + esc(T(U.view)) + '</button>' : '') +
+          (e.status !== 'new' ? '<button class="cx2-mini" data-cx="reset" data-u="' + esc(u.username) + '" data-set="' + esc(s.id) + '">' + esc(T(U.reset)) + '</button>' : '') + '</td></tr>';
     });
-    h += '</tbody></table></div>';
+    h += '</tbody></table></div></div>';
+    if(adm.view && adm.view.user && adm.view.user.username === u.username){
+      var v = adm.view, rr = v.result || {};
+      h += '<div class="cx2-card"><div class="cx2-h3">' + esc(setTitle(v.setId)) + ' · ' + esc(rr.percent) + '% (' + esc(rr.score) + '/' + esc(rr.total) + ') · ' + esc(fmtDate(rr.finishedAt)) + '</div>' +
+        reviewHTML(v.review || []) + '<button class="cx2-mini" data-cx="closeview">' + esc(T(U.close)) + '</button></div>';
+    }
     return h;
   }
   function usersHTML(){
-    var h = '<div class="cx2-card"><div class="cx2-gen">' +
+    var f = adm.f;
+    var left = '<div class="cx2-card"><div class="cx2-h3">' + esc(T(U.newStudent)) + '</div><div class="cx2-gen cx2-gen-v">' +
       '<label><span>' + esc(T(U.genCount)) + '</span><input class="cx2-in sm" type="number" min="1" max="30" value="1" data-cx="gcount"></label>' +
       '<label class="grow"><span>' + esc(T(U.genNote)) + '</span><input class="cx2-in" data-cx="gnote" maxlength="120"></label>' +
       '<button class="cx2-btn" data-cx="generate">' + esc(T(U.gen)) + '</button></div></div>';
     if(adm.newCreds && adm.newCreds.length){
-      h += '<div class="cx2-card cx2-newcreds"><div class="cx2-h3">' + esc(T(U.newCreds)) + '</div>' +
+      left += '<div class="cx2-card cx2-newcreds"><div class="cx2-h3">' + esc(T(U.newCreds)) + '</div>' +
         adm.newCreds.map(function(c){
           return '<div class="cx2-cred"><div><span>' + esc(T(U.colUser)) + '</span><code>' + esc(c.username) + '</code></div>' +
             '<div><span>' + esc(T(U.colPass)) + '</span><code>' + esc(c.password) + '</code></div>' +
-            (c.note ? '<div><span>' + esc(T(U.colNote)) + '</span><b>' + esc(c.note) + '</b></div>' : '') +
             '<button class="cx2-mini" data-cx="copy" data-t="' + esc(c.username + '\n' + c.password) + '">' + esc(T(U.copy)) + '</button></div>';
-        }).join('') +
-        '<button class="cx2-mini" data-cx="copyall">' + esc(T(U.copyAll)) + '</button></div>';
+        }).join('') + '<button class="cx2-mini" data-cx="copyall">' + esc(T(U.copyAll)) + '</button></div>';
     }
-    h += '<div class="cx2-row"><button class="cx2-mini" data-cx="refresh">' + esc(T(U.refresh)) + '</button></div>';
-    if(adm.loading && !adm.users) return h + '<p class="cx2-note">' + esc(T(U.loading)) + '</p>';
-    if(!adm.users || !adm.users.length) return h + '<p class="cx2-note">' + esc(T(U.noUsers)) + '</p>';
-    var f = adm.f;
-    h += '<div class="cx2-filters"><input class="cx2-in sm" data-cx="fq" value="' + esc(f.q) + '" placeholder="' + esc(T(U.fSearch)) + '">' +
-      '<select class="cx2-in sm" data-cx="fstatus"><option value="">' + esc(T(U.fStatus)) + '</option><option value="new"' + (f.status === 'new' ? ' selected' : '') + '>' + esc(T(U.sNew)) + '</option><option value="started"' + (f.status === 'started' ? ' selected' : '') + '>' + esc(T(U.sStarted)) + '</option><option value="done"' + (f.status === 'done' ? ' selected' : '') + '>' + esc(T(U.sDone)) + '</option></select>' +
-      '<select class="cx2-in sm" data-cx="fset"><option value="">' + esc(T(U.fSet)) + '</option>' + (adm.sets || []).map(function(x){ return '<option value="' + esc(x.id) + '"' + (f.set === x.id ? ' selected' : '') + '>' + esc(x.title) + '</option>'; }).join('') + '</select>' +
-      '<select class="cx2-in sm" data-cx="ftaken"><option value="">' + esc(T(U.fTakenAny)) + '</option><option value="yes"' + (f.taken === 'yes' ? ' selected' : '') + '>' + esc(T(U.fTaken)) + '</option><option value="no"' + (f.taken === 'no' ? ' selected' : '') + '>' + esc(T(U.fNotTaken)) + '</option></select>' +
-      '<input class="cx2-in sm" type="number" min="0" max="100" data-cx="fmin" value="' + esc(f.min) + '" placeholder="' + esc(T(U.fMin)) + '">' +
-      '<input class="cx2-in sm" type="number" min="0" max="100" data-cx="fmax" value="' + esc(f.max) + '" placeholder="' + esc(T(U.fMax)) + '">' +
-      '<button class="cx2-mini" data-cx="fclear">' + esc(T(U.fClear)) + '</button></div>';
-    h += '<div data-cx="utable">' + usersTableHTML() + '</div>';
-    if(adm.view){
-      var v = adm.view;
-      h += '<div class="cx2-card"><div class="cx2-h3">' + esc(v.user.username) + (v.user.displayName || v.user.note ? ' — ' + esc(v.user.displayName || v.user.note) : '') + ' · ' + esc(setTitle(v.setId)) + ' · ' + esc((v.result || v.user).percent) + '% (' + esc((v.result || v.user).score) + '/' + esc((v.result || v.user).total) + ') · ' + esc(fmtDate((v.result || v.user).finishedAt)) + '</div>' +
-        (v.history && v.history.length ? '<div class="cx2-note">' + esc(T(U.attempts)) + ': ' + v.history.map(function(x){ return esc(x.percent) + '% (' + esc(fmtDate(x.finishedAt)) + ')'; }).join(' · ') + '</div>' : '') +
-        reviewHTML(v.review || []) + '<button class="cx2-mini" data-cx="closeview">' + esc(T(U.close)) + '</button></div>';
+    left += '<div class="cx2-card"><div class="cx2-detail-h"><div class="cx2-h3" style="margin:0">' + esc(T(U.studentsList)) + '</div><button class="cx2-mini" data-cx="refresh">' + esc(T(U.refresh)) + '</button></div>';
+    if(adm.loading && !adm.users) left += '<p class="cx2-note">' + esc(T(U.loading)) + '</p>';
+    else if(!adm.users || !adm.users.length) left += '<p class="cx2-note">' + esc(T(U.noUsers)) + '</p>';
+    else {
+      left += '<input class="cx2-in" data-cx="fq" value="' + esc(f.q) + '" placeholder="' + esc(T(U.fSearch)) + '" style="margin:10px 0 8px">' +
+        '<details class="cx2-more"' + (f.status || f.set || f.taken || f.min !== '' || f.max !== '' ? ' open' : '') + '><summary>' + esc(T(U.filtersMore)) + '</summary><div class="cx2-filters cx2-filters-v">' +
+        '<select class="cx2-in sm" data-cx="fstatus"><option value="">' + esc(T(U.fStatus)) + '</option><option value="new"' + (f.status === 'new' ? ' selected' : '') + '>' + esc(T(U.sNew)) + '</option><option value="started"' + (f.status === 'started' ? ' selected' : '') + '>' + esc(T(U.sStarted)) + '</option><option value="done"' + (f.status === 'done' ? ' selected' : '') + '>' + esc(T(U.sDone)) + '</option></select>' +
+        '<select class="cx2-in sm" data-cx="fset"><option value="">' + esc(T(U.fSet)) + '</option>' + (adm.sets || []).map(function(x){ return '<option value="' + esc(x.id) + '"' + (f.set === x.id ? ' selected' : '') + '>' + esc(x.title) + '</option>'; }).join('') + '</select>' +
+        '<select class="cx2-in sm" data-cx="ftaken"><option value="">' + esc(T(U.fTakenAny)) + '</option><option value="yes"' + (f.taken === 'yes' ? ' selected' : '') + '>' + esc(T(U.fTaken)) + '</option><option value="no"' + (f.taken === 'no' ? ' selected' : '') + '>' + esc(T(U.fNotTaken)) + '</option></select>' +
+        '<div class="cx2-row2"><input class="cx2-in sm" type="number" min="0" max="100" data-cx="fmin" value="' + esc(f.min) + '" placeholder="' + esc(T(U.fMin)) + '"><input class="cx2-in sm" type="number" min="0" max="100" data-cx="fmax" value="' + esc(f.max) + '" placeholder="' + esc(T(U.fMax)) + '"></div>' +
+        '<button class="cx2-mini" data-cx="fclear">' + esc(T(U.fClear)) + '</button></div></details>' +
+        '<div data-cx="ulist">' + userListHTML() + '</div>';
     }
-    return h;
+    left += '</div>';
+    return '<div class="cx2-md"><div class="cx2-md-l">' + left + '</div><div class="cx2-md-r" data-cx="udetail">' + userDetailHTML() + '</div></div>';
+  }
+  function applyUser(nu){
+    if(!nu || !adm.users) return;
+    for(var i = 0; i < adm.users.length; i++) if(adm.users[i].username === nu.username) adm.users[i] = nu;
+  }
+  function updUser(payload){
+    adm.saveMsg = T(U.saving); paintDetail();
+    api('/api/admin/cexam/update', 'POST', payload, adminKey()).then(function(r){
+      if(r.status === 200 && r.j.user){ applyUser(r.j.user); adm.saveMsg = T(U.savedOk); }
+      else adm.saveMsg = r.status === 404 && r.j.error === 'not_found' ? '' : T(U.saveFail);
+      paint(); setTimeout(function(){ if(adm.saveMsg === T(U.savedOk)){ adm.saveMsg = ''; paintDetail(); } }, 1800);
+    }).catch(function(){ adm.saveMsg = T(U.saveFail); paint(); });
+  }
+  function paintDetail(){
+    var d = bodyEl && bodyEl.querySelector('[data-cx="udetail"]'); if(d) d.innerHTML = userDetailHTML();
   }
   function bankHTML(){
     if(!adm.bank) { return '<p class="cx2-note">' + esc(T(U.loading)) + '</p>'; }
@@ -456,12 +521,14 @@
       var u = bodyEl.querySelector('[data-cx="user"]'), p = bodyEl.querySelector('[data-cx="pass"]');
       if(u && p && u.value.trim() && p.value.trim()) doLogin(u.value, p.value);
     }
-    else if(a === 'start') startExam();
+    else if(a === 'start') startExam(el.getAttribute('data-set'));
+    else if(a === 'seeres') openResult(el.getAttribute('data-set'));
+    else if(a === 'home'){ sv.stage = 'home'; sv.result = null; sv.err = ''; paint(); }
     else if(a === 'setname') setName();
     else if(a === 'logout') logoutStudent();
     else if(a === 'opt'){
       sv.answers[el.getAttribute('data-q')] = parseInt(el.getAttribute('data-i'), 10);
-      sv.confirm = false; ss(ANS_STORE, JSON.stringify(sv.answers));
+      sv.confirm = false; ss(ansKey(), JSON.stringify(sv.answers));
       var y = window.pageYOffset; paint(); window.scrollTo(0, y);
     }
     else if(a === 'submit'){ if(!sv.confirm){ sv.confirm = true; var y2 = window.pageYOffset; paint(); window.scrollTo(0, y2); } else submitExam(); }
@@ -474,7 +541,7 @@
     else if(a === 'generate'){
       var c = parseInt(bodyEl.querySelector('[data-cx="gcount"]').value, 10) || 1, n = bodyEl.querySelector('[data-cx="gnote"]').value;
       api('/api/admin/cexam/create', 'POST', { count:c, note:n }, adminKey()).then(function(r){
-        if(r.status === 200){ adm.newCreds = r.j.created; loadUsers(); }
+        if(r.status === 200){ adm.newCreds = r.j.created; if(r.j.created && r.j.created[0]) adm.sel = r.j.created[0].username; adm.f.q = ''; loadUsers(); }
         else { adm.err = (r.status === 404 || r.status === 405) ? 'old' : (r.status === 401 ? '' : 'net'); if(r.status === 401){ ss(KEY_STORE, null); adm.key = ''; adm.keyErr = true; } paint(); }
       }).catch(function(){ adm.err = 'net'; paint(); });
     }
@@ -496,18 +563,19 @@
         adm.setDel = ''; if(r.status === 200){ adm.sets = r.j.sets; adm.set = 'main'; adm.bank = null; adm.users = null; loadBank(); loadUsers(); }
       });
     }
+    else if(a === 'pick'){ adm.sel = el.getAttribute('data-u'); adm.view = null; adm.saveMsg = ''; paint(); }
     else if(a === 'fclear'){ adm.f = { q:'', status:'', set:'', taken:'', min:'', max:'' }; paint(); }
     else if(a === 'reveal'){ var un = el.getAttribute('data-u'); adm.revealed[un] = !adm.revealed[un]; paint(); }
     else if(a === 'clearname'){
-      api('/api/admin/cexam/update', 'POST', { username:el.getAttribute('data-u'), clearName:true }, adminKey()).then(function(){ loadUsers(); });
+      updUser({ username:el.getAttribute('data-u'), clearName:true });
     }
     else if(a === 'reset'){
-      api('/api/admin/cexam/update', 'POST', { username:el.getAttribute('data-u'), reset:true }, adminKey()).then(function(){ adm.view = null; loadUsers(); });
+      adm.view = null; updUser({ username:el.getAttribute('data-u'), set:el.getAttribute('data-set') || undefined, reset:true });
     }
     else if(a === 'del'){
       var du = el.getAttribute('data-u');
       if(adm.delArm !== du){ adm.delArm = du; paint(); setTimeout(function(){ if(adm.delArm === du){ adm.delArm = ''; paint(); } }, 4000); }
-      else { adm.delArm = ''; api('/api/admin/cexam/update', 'POST', { username:du, delete:true }, adminKey()).then(function(){ loadUsers(); }); }
+      else { adm.delArm = ''; adm.sel = ''; api('/api/admin/cexam/update', 'POST', { username:du, delete:true }, adminKey()).then(function(){ loadUsers(); }); }
     }
     else if(a === 'result'){
       api('/api/admin/cexam/result?username=' + encodeURIComponent(el.getAttribute('data-u')) + (el.getAttribute('data-set') ? '&set=' + encodeURIComponent(el.getAttribute('data-set')) : ''), 'GET', null, adminKey()).then(function(r){ if(r.status === 200){ adm.view = r.j; paint(); } });
@@ -551,7 +619,7 @@
     if(!a) return;
     if(a === 'fq' || a === 'fmin' || a === 'fmax'){
       adm.f[a === 'fq' ? 'q' : a === 'fmin' ? 'min' : 'max'] = el.value;
-      var tb = bodyEl.querySelector('[data-cx="utable"]'); if(tb) tb.innerHTML = usersTableHTML(); return;
+      var tb = bodyEl.querySelector('[data-cx="ulist"]'); if(tb) tb.innerHTML = userListHTML(); paintDetail(); return;
     }
     if(a === 'qf'){ adm.bank.questions[+el.getAttribute('data-i')][el.getAttribute('data-f')] = el.value; }
     else if(a === 'qch'){ adm.bank.questions[+el.getAttribute('data-i')].choices[+el.getAttribute('data-c')] = el.value; }
@@ -569,14 +637,11 @@
     }
     var fk = el.getAttribute && el.getAttribute('data-cx');
     if(fk === 'fstatus' || fk === 'fset' || fk === 'ftaken'){ adm.f[fk === 'fstatus' ? 'status' : fk === 'fset' ? 'set' : 'taken'] = el.value; paint(); return; }
-    if(el.getAttribute && el.getAttribute('data-cx') === 'uset'){
-      api('/api/admin/cexam/update', 'POST', { username:el.getAttribute('data-u'), setId:el.value }, adminKey()).then(function(){ adm.view = null; loadUsers(); });
-      return;
-    }
-    if(el.getAttribute && el.getAttribute('data-cx') === 'openat'){
-      var un2 = el.getAttribute('data-u'), ms = null;
+    if(fk === 'xallow'){ updUser({ username:el.getAttribute('data-u'), set:el.getAttribute('data-set'), allow:!!el.checked }); return; }
+    if(fk === 'xopen'){
+      var ms = 0;
       if(el.value){ var pp = el.value.split('-'); ms = new Date(+pp[0], +pp[1] - 1, +pp[2], 0, 0, 0).getTime(); }
-      api('/api/admin/cexam/update', 'POST', { username:un2, openAt:ms }, adminKey()).then(function(){ loadUsers(); });
+      updUser({ username:el.getAttribute('data-u'), set:el.getAttribute('data-set'), openAt:ms });
       return;
     }
     if(el.getAttribute && el.getAttribute('data-cx') === 'note'){
