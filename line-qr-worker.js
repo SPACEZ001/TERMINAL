@@ -2238,12 +2238,25 @@ function cexCleanQuestions(list) {
   }
   return out;
 }
-function cexAdminView(u) {
+// Per-set results: the ACTIVE set's state lives on the user itself; results of the other sets are parked in u.sets[<id>].
+const CEX_STATE_FIELDS = ["status", "startedAt", "finishedAt", "score", "total", "percent", "late", "order", "answers", "review"];
+function cexSnap(u) { const o = {}; CEX_STATE_FIELDS.forEach((k) => { if (u[k] !== undefined) o[k] = u[k]; }); return o; }
+function cexClearState(u) { CEX_STATE_FIELDS.forEach((k) => { delete u[k]; }); u.status = "new"; }
+function cexResultsOf(u, ids) {
+  const act = cexSetId(u.setId), out = [];
+  (ids || [act]).forEach((id) => {
+    const st = id === act ? u : ((u.sets && u.sets[id]) || null);
+    if (st && st.status && st.status !== "new") out.push({ setId: id, status: st.status, percent: st.percent == null ? null : st.percent, score: st.score == null ? null : st.score, total: st.total == null ? null : st.total, finishedAt: st.finishedAt || null, late: !!st.late });
+    else out.push({ setId: id, status: "new" });
+  });
+  return out;
+}
+function cexAdminView(u, ids) {
   return {
     username: u.username, password: u.password, note: u.note || "", status: u.status,
     createdAt: u.createdAt, startedAt: u.startedAt || null, finishedAt: u.finishedAt || null,
     score: u.score == null ? null : u.score, total: u.total == null ? null : u.total, percent: u.percent == null ? null : u.percent,
-    late: !!u.late, openAt: u.openAt || null, displayName: u.displayName || "", setId: cexSetId(u.setId), history: (u.history || []).map((h) => ({ setId: cexSetId(h.setId), percent: h.percent, score: h.score, total: h.total, finishedAt: h.finishedAt })),
+    late: !!u.late, openAt: u.openAt || null, displayName: u.displayName || "", setId: cexSetId(u.setId), results: cexResultsOf(u, ids), history: (u.history || []).map((h) => ({ setId: cexSetId(h.setId), percent: h.percent, score: h.score, total: h.total, finishedAt: h.finishedAt })),
   };
 }
 
@@ -2262,7 +2275,7 @@ async function handleCexAdminCreate(request, env) {
     }
     const u = { username, password: cexRand(8), note, status: "new", createdAt: Date.now() };
     await cexPutUser(u, env);
-    created.push(cexAdminView(u));
+    created.push(cexAdminView(u, await cexSetIds(env)));
   }
   return json({ created }, env);
 }
@@ -2390,7 +2403,8 @@ async function handleEvalView(request, env) {
 
 async function handleCexAdminList(request, env) {
   if (!(await isAdminOrEditorRead(request, env))) return json({ error: "unauthorized" }, env, 401);
-  const users = (await cexAllUsers(env)).map(cexAdminView);
+  const ids = await cexSetIds(env);
+  const users = (await cexAllUsers(env)).map((x) => cexAdminView(x, ids));
   return json({ users }, env);
 }
 async function handleCexAdminUpdate(request, env) {
@@ -2405,10 +2419,18 @@ async function handleCexAdminUpdate(request, env) {
   if (typeof body.setId === "string") {
     const sid = cexSetId(body.setId);
     if ((await cexSetIds(env)).indexOf(sid) === -1) return json({ error: "no_set" }, env, 404);
-    if (sid !== cexSetId(u.setId)) {
-      if (u.finishedAt) { u.history = (u.history || []).concat([{ finishedAt: u.finishedAt, score: u.score, total: u.total, percent: u.percent, setId: cexSetId(u.setId) }]).slice(-10); }
-      u.status = "new"; delete u.startedAt; delete u.finishedAt; delete u.score; delete u.total; delete u.percent;
-      delete u.order; delete u.answers; delete u.review; delete u.late;
+    const old = cexSetId(u.setId);
+    if (sid !== old) {
+      u.sets = u.sets || {};
+      if (u.status && u.status !== "new") u.sets[old] = cexSnap(u); else delete u.sets[old];
+      cexClearState(u);
+      if (u.sets[sid]) { Object.assign(u, u.sets[sid]); delete u.sets[sid]; }
+      else {
+        // older data: a finished result of that set may still sit in history -> bring it back
+        const hist = u.history || []; let hi = -1;
+        hist.forEach((h, k) => { if (cexSetId(h.setId) === sid && h.finishedAt && !h.retake) hi = k; });
+        if (hi >= 0) { const h = hist[hi]; u.status = "done"; u.finishedAt = h.finishedAt; u.score = h.score; u.total = h.total; u.percent = h.percent; u.history = hist.filter((_, k) => k !== hi); }
+      }
       u.setId = sid;
     }
   }
@@ -2416,12 +2438,12 @@ async function handleCexAdminUpdate(request, env) {
   else if (typeof body.openAt === "number" && isFinite(body.openAt) && body.openAt > 946684800000 && body.openAt < Date.now() + 5 * 365 * 86400000) u.openAt = Math.floor(body.openAt);
   if (body.reset === true) {
     // allow one more attempt: keep the old result in "history"
-    if (u.finishedAt) { u.history = (u.history || []).concat([{ finishedAt: u.finishedAt, score: u.score, total: u.total, percent: u.percent, setId: cexSetId(u.setId) }]).slice(-10); }
+    if (u.finishedAt) { u.history = (u.history || []).concat([{ finishedAt: u.finishedAt, score: u.score, total: u.total, percent: u.percent, setId: cexSetId(u.setId), retake: true }]).slice(-10); }
     u.status = "new"; delete u.startedAt; delete u.finishedAt; delete u.score; delete u.total; delete u.percent;
     delete u.order; delete u.answers; delete u.review; delete u.late;
   }
   await cexPutUser(u, env);
-  return json({ ok: true, user: cexAdminView(u) }, env);
+  return json({ ok: true, user: cexAdminView(u, await cexSetIds(env)) }, env);
 }
 async function handleCexAdminBankGet(request, env) {
   if (!(await isAdminOrEditorRead(request, env))) return json({ error: "unauthorized" }, env, 401);
@@ -2472,7 +2494,10 @@ async function handleCexAdminResult(request, env) {
   const username = cexUserName(new URL(request.url).searchParams.get("username"));
   const u = username ? await cexGetUser(username, env) : null;
   if (!u) return json({ error: "not_found" }, env, 404);
-  return json({ user: cexAdminView(u), review: u.review || [], history: u.history || [] }, env);
+  const ids = await cexSetIds(env);
+  const want = cexSetId(new URL(request.url).searchParams.get("set") || u.setId);
+  const st = want === cexSetId(u.setId) ? u : ((u.sets && u.sets[want]) || {});
+  return json({ user: cexAdminView(u, ids), setId: want, result: { status: st.status || "new", percent: st.percent == null ? null : st.percent, score: st.score == null ? null : st.score, total: st.total == null ? null : st.total, finishedAt: st.finishedAt || null }, review: st.review || [], history: u.history || [] }, env);
 }
 
 // ---------- student ----------
@@ -2496,7 +2521,7 @@ function cexTiming(bank, u) {
 // keep the old result in history and give exactly one fresh attempt. (Teacher can still reset by hand.)
 async function cexAutoRearm(u, env) {
   if (u && u.status === "done" && u.openAt && Date.now() >= u.openAt && u.finishedAt && u.finishedAt < u.openAt) {
-    u.history = (u.history || []).concat([{ finishedAt: u.finishedAt, score: u.score, total: u.total, percent: u.percent, setId: cexSetId(u.setId) }]).slice(-10);
+    u.history = (u.history || []).concat([{ finishedAt: u.finishedAt, score: u.score, total: u.total, percent: u.percent, setId: cexSetId(u.setId), retake: true }]).slice(-10);
     u.status = "new"; delete u.startedAt; delete u.finishedAt; delete u.score; delete u.total; delete u.percent;
     delete u.order; delete u.answers; delete u.review; delete u.late;
     await cexPutUser(u, env);
@@ -2519,7 +2544,7 @@ async function handleCexLogin(request, env) {
   await cexAutoRearm(u, env);
   const bank = await cexBankForUser(u, env);
   const titles = {}; (await cexSetsInfo(env)).forEach((x) => { titles[x.id] = x.title; });
-  const taken = (u.history || []).map((h) => ({ title: titles[h.setId || "main"] || "", percent: h.percent, finishedAt: h.finishedAt }));
+  const taken = cexResultsOf(u, await cexSetIds(env)).filter((r) => r.status === "done").map((r) => ({ title: titles[r.setId] || "", percent: r.percent, finishedAt: r.finishedAt }));
   const token = cexToken();
   await env.SESSIONS.put(CEX_TOK_PREFIX + token, username, { expirationTtl: 21600 });
   return json({
