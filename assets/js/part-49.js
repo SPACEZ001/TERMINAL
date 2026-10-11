@@ -2076,7 +2076,7 @@
     onDel:{en:'Delete this saved copy', th:'ลบที่บันทึกออนไลน์'}, onDelAsk:{en:'Delete the online copy? This cannot be undone.', th:'ลบข้อมูลที่บันทึกออนไลน์ใช่ไหม? ย้อนกลับไม่ได้'},
     onByStu:{en:'link turned off by student', th:'นักเรียนปิดลิงก์เอง'}, onNoQr:{en:'no QR link', th:'ไม่มีลิงก์ QR'}, onDelShort:{en:'Delete', th:'ลบ'},
     exUser:{en:'Classroom exam username', th:'รหัสผู้ใช้ห้องสอบ'}, exSet:{en:'Set exam open date in Classroom Exam', th:'ตั้งวันเปิดสอบในห้องสอบ'},
-    exPass:{en:'Password', th:'รหัสผ่าน'}, exPick:{en:'Pick a student account from Classroom Exam (name and password are filled in automatically)', th:'เลือกบัญชีนักเรียนจากห้องสอบ (ชื่อผู้ใช้และรหัสผ่านจะใส่ให้เอง)'}, exReload:{en:'Reload list', th:'โหลดรายชื่อใหม่'}, exEmpty:{en:'No accounts yet. Create them in Classroom Exam first.', th:'ยังไม่มีบัญชี ไปสร้างในห้องสอบก่อนนะคะ'}, exLoading:{en:'Loading accounts…', th:'กำลังโหลดบัญชี…'}, exTitle:{en:'Next exam', th:'การสอบครั้งถัดไป'}, exDate:{en:'Exam date', th:'วันที่สอบ'}, exAuto:{en:'The exam opens automatically on this date (one attempt).', th:'ระบบจะเปิดให้สอบอัตโนมัติในวันนี้ (สอบได้ครั้งเดียว)'},
+    exSetL:{en:'Exam set', th:'ชุดข้อสอบ'}, exPickSet:{en:'Which exam set should this student take?', th:'นักเรียนคนนี้ต้องสอบชุดไหน'}, exPass:{en:'Password', th:'รหัสผ่าน'}, exPick:{en:'Pick a student account from Classroom Exam (name and password are filled in automatically)', th:'เลือกบัญชีนักเรียนจากห้องสอบ (ชื่อผู้ใช้และรหัสผ่านจะใส่ให้เอง)'}, exReload:{en:'Reload list', th:'โหลดรายชื่อใหม่'}, exEmpty:{en:'No accounts yet. Create them in Classroom Exam first.', th:'ยังไม่มีบัญชี ไปสร้างในห้องสอบก่อนนะคะ'}, exLoading:{en:'Loading accounts…', th:'กำลังโหลดบัญชี…'}, exTitle:{en:'Next exam', th:'การสอบครั้งถัดไป'}, exDate:{en:'Exam date', th:'วันที่สอบ'}, exAuto:{en:'The exam opens automatically on this date (one attempt).', th:'ระบบจะเปิดให้สอบอัตโนมัติในวันนี้ (สอบได้ครั้งเดียว)'},
     exDone:{en:'Set. This student can start the exam from that date.', th:'ตั้งแล้ว นักเรียนคนนี้จะเริ่มสอบได้ตั้งแต่วันที่กำหนด'},
     exNoUser:{en:'Type the username and pick a date first.', th:'กรอกรหัสผู้ใช้และเลือกวันที่ก่อน'}, exNf:{en:'Username not found in Classroom Exam.', th:'ไม่พบรหัสผู้ใช้นี้ในห้องสอบ'},
     onList:{en:'Saved evaluations', th:'รายการที่บันทึกไว้'}, onLoadList:{en:'Load list', th:'โหลดรายการ'}, onOpen:{en:'Open to edit', th:'เปิดมาแก้ไข'}, onNone:{en:'Nothing saved yet.', th:'ยังไม่มีที่บันทึกไว้'},
@@ -2124,7 +2124,7 @@
     var d = new Date();
     return { name:'', cls:'', level:'', by:'Noraset Boikaw',
       date: d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'),
-      ref:'', examUser:'', examPass:'', rounds:[{},{},{},{}], sc:{}, prev:{}, cmp:false, ready:'', pracDone:'', pracOk:'', repeat:'', plan:[{},{},{}], resources:'', stuGoal:'', strengths:'', improve:'', covered:'', comment:'', goal:'', homework:'', nextExam:'', attended:'', sessions:'' };
+      ref:'', examUser:'', examPass:'', examSet:'', examSetId:'', rounds:[{},{},{},{}], sc:{}, prev:{}, cmp:false, ready:'', pracDone:'', pracOk:'', repeat:'', plan:[{},{},{}], resources:'', stuGoal:'', strengths:'', improve:'', covered:'', comment:'', goal:'', homework:'', nextExam:'', attended:'', sessions:'' };
   }
   var evData = evBlank();
   var evOnline = { id:'', token:'', savedAt:0, busy:false, msg:'', err:'', share:true, list:null, listTried:false, sel:'' };
@@ -2314,6 +2314,7 @@
       evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.planT)) + '</div>' + evPlanHTML()) +
       evBlk('<div class="pr-ev-exam"><div class="pr-ev-exam-h">' + esc(T(EV_TXT.exTitle)) + '</div><div class="pr-ev-exam-g">' +
         '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exDate)) + '</span><b>' + (d.nextExam ? esc(d.nextExam) : '&nbsp;') + '</b></div>' +
+        (d.examSet ? '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exSetL)) + '</span><b>' + esc(d.examSet) + '</b></div>' : '') +
         '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exUser)) + '</span><b>' + (d.examUser ? esc(d.examUser) : '&nbsp;') + '</b></div>' +
         '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exPass)) + '</span><b>' + (d.examPass ? esc(d.examPass) : '&nbsp;') + '</b></div></div>' +
         (d.examUser && d.nextExam ? '<div class="pr-ev-exn">' + esc(T(EV_TXT.exAuto)) + '</div>' : '') + '</div>') +
@@ -2449,8 +2450,10 @@
   function evHandleClick(t){
     var lv = t.closest('[data-ev-level]');
     if(lv){ var v = lv.getAttribute('data-ev-level'); evData.level = evData.level === v ? '' : v; evMountForm(true); renderReport(); return true; }
+    var exs = t.closest('[data-ev-exset2]');
+    if(exs){ var sid = exs.getAttribute('data-ev-exset2'); evData.examSetId = evData.examSetId === sid ? '' : sid; evData.examSet = evData.examSetId ? evSetTitle(sid) : ''; evMountForm(true); renderReport(); if(evData.examUser && evData.examSetId) evExSet(); return true; }
     var exu = t.closest('[data-ev-exu]');
-    if(exu){ var un = exu.getAttribute('data-ev-exu'); if(evData.examUser === un){ evData.examUser = ''; evData.examPass = ''; } else { evData.examUser = un; evData.examPass = exu.getAttribute('data-pw') || ''; } evMountForm(true); renderReport(); if(evData.examUser && evData.nextExam) evExSet(); return true; }
+    if(exu){ var un = exu.getAttribute('data-ev-exu'); if(evData.examUser === un){ evData.examUser = ''; evData.examPass = ''; } else { evData.examUser = un; evData.examPass = exu.getAttribute('data-pw') || ''; var cu = null; (evExUsers || []).forEach(function(x){ if(x.username === un) cu = x; }); evData.examSetId = cu ? (cu.setId || 'main') : ''; evData.examSet = evSetTitle(evData.examSetId); } evMountForm(true); renderReport(); if(evData.examUser && evData.nextExam) evExSet(); return true; }
     if(t.closest('[data-ev-exload]')){ evExUsers = null; evMountForm(true); return true; }
     if(t.closest('[data-ev-exset]')){ evExSet(); return true; }
     if(t.closest('[data-ev-save]')){ evSave(); return true; }
@@ -2500,7 +2503,8 @@
     return '<div class="pr-ev-share"><div class="pr-ev-share-qr">' + evQrSvg(url) + '</div><div class="pr-ev-share-t">' +
       '<b>' + esc(T(EV_TXT.qrScanFull)) + '</b><span class="u">' + esc(url) + '</span><em>' + esc(T(EV_TXT.onWarn)) + '</em></div></div>';
   }
-  var evExUsers = null, evExBusy = false;
+  var evExUsers = null, evExBusy = false, evExSets = [];
+  function evSetTitle(id){ var t = ''; evExSets.forEach(function(x){ if(x.id === (id || 'main')) t = x.title; }); return t; }
   function evExLoad(){
     if(evExBusy) return; var key = getAdminKey(); if(!key) return;
     evExBusy = true;
@@ -2508,6 +2512,7 @@
       .then(function(r){ return r.ok ? r.json() : null; })
       .then(function(j){ evExUsers = (j && j.users) ? j.users : []; })
       .catch(function(){ evExUsers = []; })
+      .then(function(){ return fetch(WORKER_BASE + '/api/admin/cexam/sets', { headers:{ 'X-Admin-Key':key } }).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){ evExSets = (j && j.sets) ? j.sets : []; }).catch(function(){ evExSets = []; }); })
       .then(function(){ evExBusy = false; evMountForm(true); });
   }
   function evExChips(){
@@ -2517,7 +2522,13 @@
     evExUsers.forEach(function(u){
       h += '<button type="button" class="pr-ann-chip' + (evData.examUser === u.username ? ' on' : '') + '" data-ev-exu="' + esc(u.username) + '" data-pw="' + esc(u.password || '') + '">' + esc(u.username) + ((u.displayName || u.note) ? ' · ' + esc(u.displayName || u.note) : '') + '</button>';
     });
-    return h + '</div><button type="button" class="pr-mini" data-ev-exload="1" style="margin-top:6px;">' + esc(T(EV_TXT.exReload)) + '</button></div>';
+    h += '</div>';
+    if(evExSets.length > 1){
+      h += '<div class="pr-hint" style="margin:10px 0 6px;">' + esc(T(EV_TXT.exPickSet)) + '</div><div class="pr-ann-chips">' + evExSets.map(function(x){
+        return '<button type="button" class="pr-ann-chip' + (evData.examSetId === x.id ? ' on' : '') + '" data-ev-exset2="' + esc(x.id) + '">' + esc(x.title) + '</button>';
+      }).join('') + '</div>';
+    }
+    return h + '<button type="button" class="pr-mini" data-ev-exload="1" style="margin-top:6px;">' + esc(T(EV_TXT.exReload)) + '</button></div>';
   }
   function evExSet(){
     var u = (evData.examUser || '').trim().toUpperCase(), dv = evData.nextExam;
@@ -2526,11 +2537,11 @@
     var pp = dv.split('-'), ms = new Date(+pp[0], +pp[1] - 1, +pp[2], 0, 0, 0).getTime();
     var key = getAdminKey();
     if(!key){ evOnline.exMsg = T(EV_TXT.onBad); evMountForm(true); return; }
-    fetch(WORKER_BASE + '/api/admin/cexam/update', { method:'POST', headers:{ 'X-Admin-Key':key, 'Content-Type':'application/json' }, body:JSON.stringify({ username:u, openAt:ms }) })
+    fetch(WORKER_BASE + '/api/admin/cexam/update', { method:'POST', headers:{ 'X-Admin-Key':key, 'Content-Type':'application/json' }, body:JSON.stringify({ username:u, openAt:ms, setId:evData.examSetId || undefined }) })
       .then(function(r){
         if(r.status === 404){ evOnline.exMsg = T(EV_TXT.exNf); return; }
         if(!r.ok){ evOnline.exMsg = T(EV_TXT.onBad); return; }
-        evOnline.exMsg = T(EV_TXT.exDone); evOnline.exOk = true;
+        evOnline.exMsg = T(EV_TXT.exDone); evOnline.exOk = true; evExUsers = null;
       }).catch(function(){ evOnline.exMsg = T(EV_TXT.onBad); })
       .then(function(){ evMountForm(true); });
   }
