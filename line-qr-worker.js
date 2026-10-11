@@ -2228,7 +2228,7 @@ function cexCleanQuestions(list) {
       q: text, choices, ans,
       expl: String(q.expl || "").trim().slice(0, 1500),
       topic: String(q.topic || "").trim().slice(0, 60),
-      skill: /^(ew[1-8]|ot[1-6])$/.test(String(q.skill || "")) ? String(q.skill) : "",
+      skill: /^(ew([1-9]|1[0-4])|ot[1-8])$/.test(String(q.skill || "")) ? String(q.skill) : "",
     });
   }
   return out;
@@ -2289,7 +2289,7 @@ function cexAdminView(u, ids) {
   const exams = cexExamView(u, ids, true);
   const cur = exams.find((x) => x.allow && x.status !== "done") || exams.find((x) => x.allow) || exams[0] || { setId: "main", status: "new" };
   return {
-    username: u.username, password: u.password, note: u.note || "", displayName: u.displayName || "", createdAt: u.createdAt,
+    username: u.username, password: u.password, note: u.note || "", displayName: u.displayName || "", createdAt: u.createdAt, learned: u.learned || {},
     exams, results: exams,
     // summary of the "current" set, kept for older screens
     setId: cur.setId, status: cur.status, percent: cur.percent, score: cur.score, total: cur.total, finishedAt: cur.finishedAt, openAt: cur.openAt,
@@ -2318,6 +2318,67 @@ async function handleCexAdminCreate(request, env) {
   }
   return json({ created }, env);
 }
+/* =====================================================================
+   CERTIFICATES (Round AK) -- Print Report > Certificate.
+   Each issued certificate is stored as CERT:<id>. The printed certificate
+   carries the id and a QR code to #/cert/<id> on the site, which calls the
+   public /api/cert/verify -- so anyone can check the real name, course and
+   date. Editing a screenshot cannot change what the verification page shows.
+   ===================================================================== */
+const CERT_PREFIX = "CERT:";
+function certId(s) { return String(s || "").toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 24); }
+function certClean(b) {
+  const t = (v, n) => String(v == null ? "" : v).replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, n);
+  return { name: t(b.name, 80), nameEn: t(b.nameEn, 80), course: t(b.course, 120), level: t(b.level, 60), date: t(b.date, 20), score: t(b.score, 20), issuedBy: t(b.issuedBy, 80) || "Noraset Boikaw", note: t(b.note, 200) };
+}
+async function handleCertSave(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const c = certClean(body || {});
+  if (!c.name) return json({ error: "need_name" }, env, 400);
+  let id = certId(body.id);
+  let rec = id ? JSON.parse((await env.SESSIONS.get(CERT_PREFIX + id)) || "null") : null;
+  if (!rec) {
+    for (let t = 0; t < 6; t++) {
+      id = "SPZ-" + cexRand(4) + "-" + cexRand(4);
+      if (!(await env.SESSIONS.get(CERT_PREFIX + id))) break;
+    }
+    rec = { id, createdAt: Date.now() };
+  }
+  Object.assign(rec, c, { updatedAt: Date.now() });
+  await env.SESSIONS.put(CERT_PREFIX + id, JSON.stringify(rec));
+  return json({ ok: true, id, cert: rec }, env);
+}
+async function handleCertList(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  const out = []; let cursor;
+  do {
+    const page = await env.SESSIONS.list({ prefix: CERT_PREFIX, cursor });
+    for (const k of page.keys) { try { const r = JSON.parse(await env.SESSIONS.get(k.name)); if (r) out.push(r); } catch (e) { /* skip */ } }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+  out.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  return json({ certs: out.slice(0, 300) }, env);
+}
+async function handleCertRevoke(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const id = certId(body.id);
+  const raw = id && await env.SESSIONS.get(CERT_PREFIX + id);
+  if (!raw) return json({ error: "not_found" }, env, 404);
+  if (body.delete === true) { await env.SESSIONS.delete(CERT_PREFIX + id); return json({ ok: true, deleted: true }, env); }
+  const rec = JSON.parse(raw); rec.revoked = body.revoke !== false; rec.updatedAt = Date.now();
+  await env.SESSIONS.put(CERT_PREFIX + id, JSON.stringify(rec));
+  return json({ ok: true, cert: rec }, env);
+}
+async function handleCertVerify(request, env) {
+  const id = certId(new URL(request.url).searchParams.get("id"));
+  const raw = id && await env.SESSIONS.get(CERT_PREFIX + id);
+  if (!raw) return json({ valid: false, error: "not_found" }, env, 404);
+  const r = JSON.parse(raw);
+  return json({ valid: !r.revoked, revoked: !!r.revoked, id: r.id, name: r.name, nameEn: r.nameEn || "", course: r.course, level: r.level, date: r.date, score: r.score || "", issuedBy: r.issuedBy }, env);
+}
+
 /* =====================================================================
    STUDENT EVALUATIONS (Print Report > Student Evaluation)
    Admin saves an evaluation online (KV: EVAL:<id>). Each one may have a
@@ -2462,6 +2523,13 @@ async function handleCexAdminUpdate(request, env) {
   const ids = await cexSetIds(env);
   if (typeof body.note === "string") u.note = body.note.trim().slice(0, 120);
   if (body.clearName === true) delete u.displayName;
+  if (body.learned && typeof body.learned === "object") {
+    u.learned = u.learned || {};
+    Object.keys(body.learned).slice(0, 60).forEach((k) => {
+      if (!/^[a-z0-9]{2,12}$/.test(k)) return;
+      if (body.learned[k]) u.learned[k] = u.learned[k] || Date.now(); else delete u.learned[k];
+    });
+  }
   // which set? "set" (new screens) or "setId" (older Print Report button = also allow it)
   let sid = null;
   if (typeof body.set === "string") sid = cexSetId(body.set);
@@ -2589,7 +2657,7 @@ async function handleCexLogin(request, env) {
   if (cexRearmAll(u) || !hadSx) await cexPutUser(u, env);
   const token = cexToken();
   await env.SESSIONS.put(CEX_TOK_PREFIX + token, username, { expirationTtl: 21600 });
-  return json({ token, username, note: u.note || "", displayName: u.displayName || "", exams: await cexStudentExams(u, env) }, env);
+  return json({ token, username, note: u.note || "", displayName: u.displayName || "", learned: Object.keys(u.learned || {}), exams: await cexStudentExams(u, env) }, env);
 }
 // Student sets their own display name ONCE (locked afterwards; only the teacher can clear it).
 async function handleCexSetName(request, env) {
@@ -2744,6 +2812,10 @@ const SPZ_ROUTES = {
       if (url.pathname === "/api/admin/cexam/create" && request.method === "POST") return withCorsOrigin(await handleCexAdminCreate(request, env), allowOrigin);
       if (url.pathname === "/api/admin/cexam/list" && request.method === "GET") return withCorsOrigin(await handleCexAdminList(request, env), allowOrigin);
       if (url.pathname === "/api/admin/cexam/update" && request.method === "POST") return withCorsOrigin(await handleCexAdminUpdate(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/certs/save" && request.method === "POST") return withCorsOrigin(await handleCertSave(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/certs/list" && request.method === "GET") return withCorsOrigin(await handleCertList(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/certs/revoke" && request.method === "POST") return withCorsOrigin(await handleCertRevoke(request, env), allowOrigin);
+      if (url.pathname === "/api/cert/verify" && request.method === "GET") return withCorsOrigin(await handleCertVerify(request, env), allowOrigin);
       if (url.pathname === "/api/admin/cexam/sets" && request.method === "GET") return withCorsOrigin(await handleCexAdminSets(request, env), allowOrigin);
       if (url.pathname === "/api/admin/cexam/sets/create" && request.method === "POST") return withCorsOrigin(await handleCexAdminSetCreate(request, env), allowOrigin);
       if (url.pathname === "/api/admin/cexam/sets/delete" && request.method === "POST") return withCorsOrigin(await handleCexAdminSetDelete(request, env), allowOrigin);

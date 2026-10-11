@@ -2062,7 +2062,7 @@
     lv:[{min:85,en:'Excellent',th:'ดีเยี่ยม'},{min:70,en:'Good',th:'ดี'},{min:50,en:'Developing',th:'กำลังพัฒนา'},{min:0,en:'Needs support',th:'ควรเสริม'}],
     dept:{en:'Student record', th:'บันทึกผลนักเรียน'},
     best:{en:'Best', th:'สูงสุด'}, otherShort:{en:'Other', th:'อื่นๆ'}, attend:{en:'Attendance', th:'การเข้าเรียน'}, grade:{en:'Grade', th:'เกรด'},
-    progress:{en:'Progress', th:'พัฒนาการ'}, trend:{en:'Score trend by round (%)', th:'แนวโน้มคะแนนแต่ละรอบ (%)'}, radar:{en:'Elliott Wave skill profile (numbers = items 1-8)', th:'โปรไฟล์ทักษะ Elliott Wave (เลข = ข้อ 1-8)'},
+    progress:{en:'Progress', th:'พัฒนาการ'}, trend:{en:'Score trend by round (%)', th:'แนวโน้มคะแนนแต่ละรอบ (%)'}, radar:{en:'Elliott Wave skill profile (numbers = item no.)', th:'โปรไฟล์ทักษะ Elliott Wave (เลข = ลำดับข้อ)'},
     rubricT:{en:'Scoring guide', th:'เกณฑ์การให้คะแนน'},
     rub:[{en:'Not yet shown',th:'ยังไม่แสดงผล'},{en:'Needs a lot of help',th:'ต้องช่วยมาก'},{en:'Partly understands',th:'เข้าใจบางส่วน'},{en:'Understands, some errors',th:'เข้าใจ มีพลาดบ้าง'},{en:'Solid, independent',th:'ทำได้ดี ทำเองได้'},{en:'Excellent, can teach others',th:'ยอดเยี่ยม สอนคนอื่นได้'}],
     goal:{en:'Goal for next period', th:'เป้าหมายรอบหน้า'}, nextExam:{en:'Next exam date', th:'วันสอบครั้งถัดไป'}, homework:{en:'Homework / follow-up', th:'การบ้าน / สิ่งที่ต้องตามต่อ'},
@@ -2095,7 +2095,17 @@
     pracT:{en:'Live-chart practice', th:'ผลฝึกอ่านกราฟจริง'}, pracDone:{en:'Charts practised', th:'จำนวนกราฟที่ฝึก'}, pracOk:{en:'Counted correctly', th:'นับถูก'},
     repeat:{en:'Mistakes repeated', th:'ข้อผิดที่พลาดซ้ำ'},
     planAdd:{en:'+ Add item', th:'+ เพิ่มรายการ'}, planDel:{en:'Remove', th:'ลบรายการนี้'},
-    planT:{en:'30-day plan: 3 things to get right', th:'แผนพัฒนา 30 วัน: 3 ข้อที่ต้องทำให้ได้'}, planTask:{en:'Task', th:'สิ่งที่ต้องทำ'}, planDue:{en:'Due', th:'กำหนด'},
+    planT:{en:'{N}-day improvement plan', th:'แผนพัฒนา {N} วัน'}, planDaysL:{en:'Plan length', th:'ระยะเวลาแผน'}, planFrom:{en:'Start', th:'เริ่ม'}, daysU:{en:'days', th:'วัน'},
+    lessonsT:{en:'Curriculum progress — lessons completed', th:'ความก้าวหน้าตามหลักสูตร — บทเรียนที่เรียนแล้ว'}, lessonsF:{en:'Lessons completed (Elliott Wave Classroom)', th:'บทเรียนที่เรียนแล้ว (ห้องเรียน Elliott Wave)'},
+    lessonsHint:{en:'Picked from the student account automatically; tap to change. Changes are saved back to the account.', th:'ดึงจากบัญชีนักเรียนอัตโนมัติ แตะเพื่อแก้ได้ และจะบันทึกกลับไปที่บัญชีนักเรียนด้วย'},
+    lessonsAll:{en:'Tick all', th:'ติ๊กทั้งหมด'}, lessonsNone:{en:'Clear', th:'ล้าง'}, lessonsDone:{en:'completed', th:'เรียนแล้ว'},
+    schedT:{en:'Study schedule — what comes next', th:'ตารางเรียนต่อ — เรียนอะไร เมื่อไหร่'}, schedFrom:{en:'From', th:'ตั้งแต่'}, schedTo:{en:'To', th:'ถึง'}, schedTopic:{en:'Lesson / topic', th:'บทเรียน / หัวข้อ'}, schedAdd:{en:'+ Add week', th:'+ เพิ่มช่วงเวลา'},
+    showExam:{en:'Include the next-exam section', th:'แสดงส่วนการสอบครั้งถัดไป'}, exWin:{en:'Self-study exam window', th:'ช่วงเวลาสอบด้วยตนเอง'}, exFrom:{en:'Window opens', th:'เปิดให้สอบตั้งแต่'}, exTo:{en:'Window closes', th:'ปิดสอบวันที่'},
+    exQr:{en:'Scan to open the exam page', th:'สแกนเพื่อเปิดหน้าสอบ'}, exQrNote:{en:'Log in with the username and password below.', th:'ล็อกอินด้วยชื่อผู้ใช้และรหัสผ่านด้านล่าง'},
+    stuSign:{en:'Student acknowledgement', th:'ลงชื่อนักเรียน (รับทราบผล)'}, docT:{en:'Student Progress & Evaluation Report', th:'รายงานผลการเรียนและการประเมิน'},
+    issued:{en:'Issued', th:'ออกเมื่อ'}, confidential:{en:'Prepared individually for the student named below', th:'จัดทำเฉพาะสำหรับนักเรียนที่ระบุชื่อด้านล่าง'},
+    sealTop:{en:'SPACEZ TERMINAL', th:'SPACEZ TERMINAL'}, sealBot:{en:'ELLIOTT WAVE CLASSROOM', th:'ELLIOTT WAVE CLASSROOM'},
+    coveredNote:{en:'Notes on lessons covered', th:'บันทึกเพิ่มเติมเรื่องที่เรียน'}, planTask:{en:'Task', th:'สิ่งที่ต้องทำ'}, planDue:{en:'Due', th:'กำหนด'},
     resources:{en:'Recommended next reading / resources', th:'หนังสือ / แหล่งเรียนที่แนะนำต่อ'},
     stuGoal:{en:"Student's own goal", th:'เป้าหมายของนักเรียนเอง'},
     hint:{en:'Fill in the fields on the left — the sheet updates as you type. Blank fields print as lines so you can write by hand.',th:'กรอกข้อมูลด้านซ้าย ใบประเมินด้านขวาจะเปลี่ยนตามทันที ช่องที่เว้นว่างจะพิมพ์เป็นเส้นให้เขียนด้วยปากกาได้'}
@@ -2108,8 +2118,27 @@
     {k:'ew5',en:'Fibonacci retracement & extension',th:'ฟีโบนัชชี รีเทรซเมนต์ & เอ็กซ์เทนชัน'},
     {k:'ew6',en:'Wave degrees & labeling',th:'ระดับเวฟ และการติดป้าย'},
     {k:'ew7',en:'Reading real charts (count on live price)',th:'อ่านกราฟจริง (นับเวฟบนราคาจริง)'},
-    {k:'ew8',en:'Invalidation & trade planning',th:'จุดยกเลิกการนับ และการวางแผนเทรด'}
+    {k:'ew8',en:'Invalidation & trade planning',th:'จุดยกเลิกการนับ และการวางแผนเทรด'},
+    {k:'ew9',en:'Diagonals (leading / ending)',th:'Diagonal (Leading / Ending)'},
+    {k:'ew10',en:'Combinations & complex corrections (W-X-Y)',th:'Combination และการปรับฐานซับซ้อน (W-X-Y)'},
+    {k:'ew11',en:'Momentum & volume confirmation (AO, divergence)',th:'ยืนยันด้วย Momentum และ Volume (AO, Divergence)'},
+    {k:'ew12',en:'Wave personality & market psychology',th:'บุคลิกคลื่นและจิตวิทยาตลาด'},
+    {k:'ew13',en:'Alternate counts (wave 3 or C?)',th:'การนับสำรอง (wave 3 หรือ C?)'},
+    {k:'ew14',en:'Extension, truncation & channeling targets',th:'Extension, Truncation และเป้าหมายจาก Channeling'}
   ];
+  /* Elliott Wave Classroom lessons (same ids as Classroom Exam > student > lessons learned) */
+  var EV_LESSONS = [
+    ['basics','The basic pattern: 5 & 3','พื้นฐาน: 5 กับ 3 คืออะไร'],['degree','Wave degree & labeling','ระดับคลื่นและการติดป้าย'],
+    ['impulse','Impulse & the 3 rules','Impulse และกฎ 3 ข้อ'],['diagonal','Diagonals (leading / ending)','Diagonal (Leading / Ending)'],
+    ['zigzag','Zigzag & double zigzag','Zigzag และ Double Zigzag'],['flat','Flats (regular / expanded / running)','Flat (Regular / Expanded / Running)'],
+    ['triangle','Triangles','Triangle'],['combination','Combinations (W-X-Y)','Combination (W-X-Y)'],
+    ['personality','Wave personality','บุคลิกของแต่ละคลื่น'],['guide','Guidelines (alternation, channeling, extension)','แนวทาง (Alternation, Channeling, Extension)'],
+    ['fib','Fibonacci retracement & projection','Fibonacci Retracement และ Projection'],['momentum','Momentum & volume (AO, divergence)','Momentum และ Volume (AO, Divergence)'],
+    ['howto','Counting step by step & invalidation','การนับทีละขั้นและจุดยกเลิก'],['w3c','Wave 3 or wave C? Alternate counts','Wave 3 หรือ C? และการนับสำรอง'],
+    ['risk','Applying EW: markets, risk & trade plan','การนำไปใช้: ตลาด ความเสี่ยง แผนเทรด']
+  ];
+  if(!window.__SPZ_CURRICULUM) window.__SPZ_CURRICULUM = EV_LESSONS;
+  function evLessonName(c){ return document.documentElement.getAttribute('lang') === 'th' ? c[2] : c[1]; }
   var EV_OTHER = [
     {k:'ot1',en:'Trend & support / resistance',th:'เทรนด์ และแนวรับ/แนวต้าน'},
     {k:'ot2',en:'Risk management & position sizing',th:'การบริหารความเสี่ยง และขนาดไม้'},
@@ -2124,7 +2153,7 @@
     var d = new Date();
     return { name:'', cls:'', level:'', by:'Noraset Boikaw',
       date: d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'),
-      ref:'', examUser:'', examPass:'', examSet:'', examSetId:'', rounds:[{},{},{},{}], sc:{}, prev:{}, cmp:false, ready:'', pracDone:'', pracOk:'', repeat:'', plan:[{},{},{}], resources:'', stuGoal:'', strengths:'', improve:'', covered:'', comment:'', goal:'', homework:'', nextExam:'', attended:'', sessions:'' };
+      ref:'', examUser:'', examPass:'', examSet:'', examSetId:'', rounds:[{},{},{},{}], sc:{}, prev:{}, cmp:false, ready:'', pracDone:'', pracOk:'', repeat:'', plan:[{},{},{}], planDays:'10', topics:{}, sched:[{},{},{}], showExam:false, exFrom:'', exTo:'', resources:'', stuGoal:'', strengths:'', improve:'', covered:'', comment:'', goal:'', homework:'', nextExam:'', attended:'', sessions:'' };
   }
   var evData = evBlank();
   var evOnline = { id:'', token:'', savedAt:0, busy:false, msg:'', err:'', share:true, list:null, listTried:false, sel:'' };
@@ -2206,9 +2235,48 @@
     var nPlan = Math.max(3, evData.plan.length);
     for(var i = 0; i < nPlan; i++){
       var r = evData.plan[i] || {};
-      rows += '<tr><td class="c">' + (i + 1) + '</td><td>' + (r.task ? esc(r.task) : '&nbsp;') + '</td><td class="c">' + (r.due ? esc(r.due) : '') + '</td></tr>';
+      rows += '<tr><td class="c">' + (i + 1) + '</td><td>' + (r.task ? esc(r.task) : '&nbsp;') + '</td><td class="c">' + (r.from ? esc(r.from) : '') + '</td><td class="c">' + (r.due ? esc(r.due) : '') + '</td></tr>';
     }
-    return '<table class="pr-ev-rounds pr-ev-plan"><thead><tr><th>#</th><th>' + esc(T(EV_TXT.planTask)) + '</th><th>' + esc(T(EV_TXT.planDue)) + '</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    return '<table class="pr-ev-rounds pr-ev-plan pr-ev-plan4"><thead><tr><th>#</th><th>' + esc(T(EV_TXT.planTask)) + '</th><th>' + esc(T(EV_TXT.planFrom)) + '</th><th>' + esc(T(EV_TXT.planDue)) + '</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+  function evSchedHTML(){
+    var rows = '', d = evData, n = Math.max(3, d.sched.length);
+    for(var i = 0; i < n; i++){
+      var r = d.sched[i] || {};
+      rows += '<tr><td class="c">' + (i + 1) + '</td><td class="c">' + (r.from ? esc(r.from) : '') + (r.from || r.to ? ' – ' : '') + (r.to ? esc(r.to) : '') + '</td><td>' + (r.topic ? esc(r.topic) : '&nbsp;') + '</td></tr>';
+    }
+    return '<table class="pr-ev-rounds pr-ev-plan pr-ev-sched"><thead><tr><th>#</th><th>' + esc(T(EV_TXT.schedFrom)) + ' – ' + esc(T(EV_TXT.schedTo)) + '</th><th>' + esc(T(EV_TXT.schedTopic)) + '</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+  function evLessonsHTML(){
+    var d = evData, n = 0;
+    var items = EV_LESSONS.map(function(c, i){
+      var on = !!d.topics[c[0]]; if(on) n++;
+      return '<div class="pr-ev-les' + (on ? ' on' : '') + '"><i>' + (on ? '✓' : (i + 1)) + '</i><span>' + esc(evLessonName(c)) + '</span></div>';
+    }).join('');
+    var pct = Math.round(n / EV_LESSONS.length * 100);
+    return evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.lessonsT)) + ' <small class="pr-ev-trendtag">' + n + ' / ' + EV_LESSONS.length + ' · ' + pct + '%</small></div>' +
+      '<div class="pr-ev-lesbar"><i style="width:' + pct + '%"></i></div><div class="pr-ev-lessons">' + items + '</div>');
+  }
+  function evExamURL(u){ return EV_VIEW_BASE.replace(/#.*$/, '').replace(/\?.*$/, '') + '?cx=' + encodeURIComponent(u || '') + '#/classexam'; }
+  function evExamHTML(){
+    var d = evData;
+    var win = (d.exFrom || d.exTo) ? (esc(d.exFrom || '…') + ' – ' + esc(d.exTo || '…')) : '&nbsp;';
+    var qr = d.examUser ? '<div class="pr-ev-exqr">' + evQrSvg(evExamURL(d.examUser)) + '<span>' + esc(T(EV_TXT.exQr)) + '</span></div>' : '';
+    return evBlk('<div class="pr-ev-exam' + (qr ? ' has-qr' : '') + '"><div class="pr-ev-exam-h">' + esc(T(EV_TXT.exTitle)) + '</div><div class="pr-ev-exam-body">' + qr +
+      '<div class="pr-ev-exam-g">' +
+        '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exDate)) + '</span><b>' + (d.nextExam ? esc(d.nextExam) : '&nbsp;') + '</b></div>' +
+        '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exWin)) + '</span><b>' + win + '</b></div>' +
+        (d.examSet ? '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exSetL)) + '</span><b>' + esc(d.examSet) + '</b></div>' : '') +
+        '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exUser)) + '</span><b>' + (d.examUser ? esc(d.examUser) : '&nbsp;') + '</b></div>' +
+        '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exPass)) + '</span><b>' + (d.examPass ? esc(d.examPass) : '&nbsp;') + '</b></div>' +
+      '</div></div>' +
+      (qr ? '<div class="pr-ev-exn">' + esc(T(EV_TXT.exQrNote)) + (d.nextExam ? ' ' + esc(T(EV_TXT.exAuto)) : '') + '</div>' : '') + '</div>');
+  }
+  function evSealSVG(){
+    return '<svg class="pr-ev-seal" viewBox="0 0 120 120" aria-hidden="true"><defs><path id="evSealC" d="M60 60 m-44 0 a44 44 0 1 1 88 0 a44 44 0 1 1 -88 0"></path></defs>' +
+      '<circle cx="60" cy="60" r="56" class="o"></circle><circle cx="60" cy="60" r="50" class="i"></circle><circle cx="60" cy="60" r="34" class="i"></circle>' +
+      '<text class="t"><textPath href="#evSealC" startOffset="0">' + esc(T(EV_TXT.sealTop)) + ' ★ ' + esc(T(EV_TXT.sealBot)) + ' ★</textPath></text>' +
+      '<image href="' + PR_LOGO + '" x="42" y="38" width="36" height="36"></image></svg>';
   }
   function evBlk(h){ return '<div class="pr-ev-blk">' + h + '</div>'; }
   function evRadar(){
@@ -2276,9 +2344,10 @@
     return '<div class="pr-sheet pr-ev" data-style="' + esc(styleId) + '">' +
       '<div class="pr-ev-top">' +
         '<div class="pr-ev-brand"><img class="pr-ev-logo" src="' + PR_LOGO + '" alt=""><div><b>SPACEZ TERMINAL</b><span>' + esc(T(EV_TXT.dept)) + '</span></div></div>' +
-        '<div class="pr-ev-doc"><div class="pr-ev-doc-t">' + esc(T(EV_TXT.title)) + '</div>' +
-          '<div class="pr-meta"><span>' + esc(T(UI.serial)) + ': ' + esc(d.ref || serial()) + '</span></div></div>' +
+        '<div class="pr-ev-doc"><div class="pr-ev-doc-t">' + esc(T(EV_TXT.docT)) + '</div>' +
+          '<div class="pr-meta"><span>' + esc(T(UI.serial)) + ': ' + esc(d.ref || serial()) + '</span> · <span>' + esc(T(EV_TXT.issued)) + ' ' + esc(d.date || '') + '</span></div></div>' +
       '</div>' +
+      '<div class="pr-ev-ribbon">' + esc(T(EV_TXT.confidential)) + '</div>' +
       '<div class="pr-ev-info">' +
         evField(EV_TXT.name, d.name, true) + evField(EV_TXT.cls, d.cls) + evField(EV_TXT.date, d.date) +
         '<div class="pr-ev-f w"><span>' + esc(T(EV_TXT.level)) + '</span><div class="pr-ev-lv">' + lvOpt + '</div></div>' + evField(EV_TXT.by, d.by, true) +
@@ -2290,6 +2359,7 @@
         '<div class="pr-ev-stat pr-ev-grade"><span>' + esc(T(EV_TXT.grade)) + '</span><b>' + (ov !== null ? evGrade(ov) : '—') + '</b><em>' + (lvl ? esc(lvl) : '') + '</em></div>' +
       '</div>' +
       evReadyHTML() +
+      evLessonsHTML() +
       evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.rounds)) + (trendTxt ? ' <small class="pr-ev-trendtag">' + esc(T(EV_TXT.progress)) + ' ' + trendTxt + '</small>' : '') + '</div>' +
       '<div class="pr-ev-split">' +
         '<table class="pr-ev-rounds"><thead><tr><th>#</th><th>' + esc(T(EV_TXT.rName)) + '</th><th>' + esc(T(EV_TXT.rDate)) + '</th><th>' + esc(T(EV_TXT.rScore)) + '</th><th>' + esc(T(EV_TXT.rMax)) + '</th><th>%</th></tr></thead><tbody>' + rows + '</tbody></table>' +
@@ -2310,22 +2380,189 @@
       evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.summary)) + '</div>' +
       '<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.strengths)) + '</div>' + evBlankLine(d.strengths, 3) + '</div>' +
         '<div><div class="pr-ev-h">' + esc(T(EV_TXT.improve)) + '</div>' + evBlankLine(d.improve, 3) + '</div></div>') +
-      evBlk('<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.covered)) + '</div>' + evBlankLine(d.covered, 3) + '</div>' +
+      evBlk('<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.coveredNote)) + '</div>' + evBlankLine(d.covered, 3) + '</div>' +
         '<div><div class="pr-ev-h">' + esc(T(EV_TXT.goal)) + '</div>' + evBlankLine(d.goal, 3) + '</div></div>') +
-      evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.planT)) + '</div>' + evPlanHTML()) +
-      evBlk('<div class="pr-ev-exam"><div class="pr-ev-exam-h">' + esc(T(EV_TXT.exTitle)) + '</div><div class="pr-ev-exam-g">' +
+      evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.planT).replace('{N}', d.planDays || '10')) + '</div>' + evPlanHTML()) +
+      evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.schedT)) + '</div>' + evSchedHTML()) +
+      (d.showExam ? evExamHTML() : '') +
+      (false ? evBlk('<div class="pr-ev-exam"><div class="pr-ev-exam-h">' + esc(T(EV_TXT.exTitle)) + '</div><div class="pr-ev-exam-g">' +
         '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exDate)) + '</span><b>' + (d.nextExam ? esc(d.nextExam) : '&nbsp;') + '</b></div>' +
         (d.examSet ? '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exSetL)) + '</span><b>' + esc(d.examSet) + '</b></div>' : '') +
         '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exUser)) + '</span><b>' + (d.examUser ? esc(d.examUser) : '&nbsp;') + '</b></div>' +
         '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exPass)) + '</span><b>' + (d.examPass ? esc(d.examPass) : '&nbsp;') + '</b></div></div>' +
-        (d.examUser && d.nextExam ? '<div class="pr-ev-exn">' + esc(T(EV_TXT.exAuto)) + '</div>' : '') + '</div>') +
+        (d.examUser && d.nextExam ? '<div class="pr-ev-exn">' + esc(T(EV_TXT.exAuto)) + '</div>' : '') + '</div>') : '') +
       evBlk('<div class="pr-ev-h">' + esc(T(EV_TXT.homework)) + '</div>' + evBlankLine(d.homework, 2)) +
       evBlk('<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.resources)) + '</div>' + evBlankLine(d.resources, 2) + '</div>' +
         '<div><div class="pr-ev-h">' + esc(T(EV_TXT.stuGoal)) + '</div>' + evBlankLine(d.stuGoal, 2) + '</div></div>') +
       evBlk('<div class="pr-ev-h">' + esc(T(EV_TXT.comment)) + '</div>' + evBlankLine(d.comment, 4) +
-      '<div class="pr-ev-sign"><div></div><span>' + esc(T(EV_TXT.sign)) + '</span></div>') +
+      '<div class="pr-ev-signs"><div class="pr-ev-sign2"><div></div><span>' + esc(T(EV_TXT.stuSign)) + '</span></div>' + evSealSVG() +
+      '<div class="pr-ev-sign2"><div></div><b>' + esc(d.by || '') + '</b><span>' + esc(T(EV_TXT.sign)) + '</span></div></div>') +
       evShareBlock() +
     '</div>';
+  }
+
+  /* =================================================================
+     CERTIFICATE (Round AK) -- Print Report > Certificate.
+     The teacher types the name, presses "Issue", and the Worker stores the
+     record (CERT:<id>). The printed certificate carries the id, a check code
+     and a QR to #/cert/<id>, where anyone can confirm the real name online.
+     Anti-copy layers: guilloche rosettes, wave bands, micro-text border,
+     faint logo watermark, the id repeated in the micro-text, and a
+     "SPECIMEN" overlay until the certificate is actually issued.
+     ================================================================= */
+  var CT = {
+    type:{en:'Certificate',th:'เกียรติบัตร'},
+    h:{en:'Certificate', th:'เกียรติบัตร'},
+    hint:{en:'Type the student name and press "Issue certificate". Until it is issued, the certificate shows SPECIMEN and has no verification QR.', th:'พิมพ์ชื่อนักเรียนแล้วกด "ออกเกียรติบัตร" ก่อนออกเลขจะมีคำว่า SPECIMEN และยังไม่มี QR ตรวจสอบ'},
+    nameTh:{en:'Name (as printed)', th:'ชื่อ-นามสกุล (ที่จะพิมพ์)'}, nameEn:{en:'Name in English (optional)', th:'ชื่อภาษาอังกฤษ (ไม่บังคับ)'},
+    course:{en:'Course', th:'หลักสูตร'}, level:{en:'Level', th:'ระดับ'}, score:{en:'Final score (optional)', th:'คะแนนสอบ (ไม่บังคับ)'},
+    date:{en:'Date of issue', th:'วันที่ออก'}, issuer:{en:'Certified by', th:'ผู้รับรอง'}, issuerRole:{en:'Elliott Wave Analyst · Instructor', th:'Elliott Wave Analyst · ผู้สอน'},
+    lvls:[{en:'Foundation',th:'Foundation (พื้นฐาน)'},{en:'Intermediate',th:'Intermediate (กลาง)'},{en:'Advanced',th:'Advanced (สูง)'},{en:'Professional',th:'Professional (มืออาชีพ)'}],
+    issue:{en:'Issue certificate (save + number)', th:'ออกเกียรติบัตร (บันทึก + ออกเลข)'}, update:{en:'Save changes', th:'บันทึกการแก้ไข'}, newOne:{en:'Start a new certificate', th:'เริ่มเกียรติบัตรใบใหม่'},
+    issued:{en:'Issued', th:'ออกแล้ว'}, saving:{en:'Saving…', th:'กำลังบันทึก…'}, bad:{en:'Could not save. Check the admin key / Worker.', th:'บันทึกไม่สำเร็จ ตรวจรหัสแอดมิน / Worker'},
+    needName:{en:'Type the name first.', th:'พิมพ์ชื่อก่อนค่ะ'}, list:{en:'Issued certificates', th:'เกียรติบัตรที่ออกแล้ว'}, load:{en:'Load list', th:'โหลดรายการ'},
+    open:{en:'Open', th:'เปิด'}, revoke:{en:'Revoke', th:'ยกเลิก'}, unrevoke:{en:'Restore', th:'คืนสถานะ'}, revoked:{en:'revoked', th:'ถูกยกเลิก'},
+    fromStu:{en:'Fill from a Classroom Exam student', th:'ดึงชื่อจากนักเรียนในห้องสอบ'},
+    big:{en:'CERTIFICATE', th:'เกียรติบัตร'}, bigSub:{en:'of Achievement in Elliott Wave Analysis', th:'รับรองความรู้การวิเคราะห์ Elliott Wave'},
+    certify:{en:'This is to certify that', th:'ขอมอบเกียรติบัตรฉบับนี้เพื่อแสดงว่า'},
+    body:{en:'has successfully completed the course <b>{c}</b> and passed the assessment at the <b>{l}</b> level.', th:'ได้สำเร็จการเรียนหลักสูตร <b>{c}</b> และผ่านการประเมินความรู้ในระดับ <b>{l}</b>'},
+    scoreL:{en:'Final assessment score', th:'คะแนนการประเมิน'}, idL:{en:'Certificate No.', th:'เลขที่เกียรติบัตร'}, codeL:{en:'Check code', th:'รหัสตรวจสอบ'},
+    givenL:{en:'Given on', th:'ให้ไว้ ณ วันที่'}, verify:{en:'Scan to verify this certificate', th:'สแกนเพื่อตรวจสอบความถูกต้อง'},
+    specimen:{en:'SPECIMEN — NOT ISSUED', th:'SPECIMEN — ยังไม่ได้ออกเลข'}, org:{en:'SPACEZ TERMINAL · Elliott Wave Classroom', th:'SPACEZ TERMINAL · ห้องเรียน Elliott Wave'}
+  };
+  function certBlank(){ var d = new Date(); return { id:'', name:'', nameEn:'', course:'Elliott Wave Analysis', level:'Foundation', score:'', date:d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'), issuedBy:'Noraset Boikaw', note:'' }; }
+  var certData = certBlank(), certUi = { busy:false, msg:'', ok:false, list:null };
+  function certHash(s){ var h = 2166136261; for(var i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return ('00000000' + h.toString(16).toUpperCase()).slice(-8); }
+  function certCode(){ return certData.id ? certHash(certData.id + '|' + certData.name + '|' + certData.date).replace(/(.{4})/, '$1-') : '————-————'; }
+  function certLevel(){ var l = certData.level; for(var i = 0; i < CT.lvls.length; i++) if(CT.lvls[i].en === l) return T(CT.lvls[i]); return l; }
+  function certFmtDate(s){
+    if(!s) return '';
+    var p = s.split('-'); if(p.length !== 3) return s;
+    var th = document.documentElement.getAttribute('lang') === 'th';
+    var mTh = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+    var mEn = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    return th ? (+p[2]) + ' ' + mTh[+p[1] - 1] + ' ' + (+p[0] + 543) : mEn[+p[1] - 1] + ' ' + (+p[2]) + ', ' + p[0];
+  }
+  function certRosette(cx, cy, R, r, d, turns, cls){
+    var pts = [], n = 720;
+    for(var i = 0; i <= n; i++){
+      var t = i / n * Math.PI * 2 * turns;
+      var x = cx + (R - r) * Math.cos(t) + d * Math.cos((R - r) / r * t);
+      var y = cy + (R - r) * Math.sin(t) - d * Math.sin((R - r) / r * t);
+      pts.push((i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1));
+    }
+    return '<path d="' + pts.join(' ') + '" class="' + cls + '"></path>';
+  }
+  function certWaves(y0, w, n, amp, cls){
+    var out = '';
+    for(var k = 0; k < n; k++){
+      var pts = [];
+      for(var x = 0; x <= w; x += 6){ var y = y0 + k * 2.2 + amp * Math.sin(x / 26 + k * 0.42) * Math.cos(x / 140 + k * 0.1); pts.push((x ? 'L' : 'M') + x + ' ' + y.toFixed(1)); }
+      out += '<path d="' + pts.join(' ') + '" class="' + cls + '"></path>';
+    }
+    return out;
+  }
+  function certSecurityBg(){
+    var W = 794, H = 1123, micro = ('SPACEZ TERMINAL · ELLIOTT WAVE CLASSROOM · CERTIFIED · ' + (certData.id || 'SPECIMEN') + ' · ' + certCode() + ' · ').repeat(14);
+    return '<svg class="pr-cert-bg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
+      '<defs><path id="certMicro" d="M44 44 H750 V1079 H44 Z"></path><path id="certMicro2" d="M58 58 H736 V1065 H58 Z"></path></defs>' +
+      certWaves(70, W, 9, 6, 'gw') + certWaves(1022, W, 9, 6, 'gw') +
+      certRosette(397, 560, 230, 37, 120, 37, 'gr1') + certRosette(397, 560, 160, 23, 74, 23, 'gr2') +
+      certRosette(84, 118, 48, 9, 25, 9, 'gr3') + certRosette(710, 118, 48, 9, 25, 9, 'gr3') + certRosette(84, 1005, 48, 9, 25, 9, 'gr3') + certRosette(710, 1005, 48, 9, 25, 9, 'gr3') +
+      '<text class="mt"><textPath href="#certMicro">' + esc(micro) + '</textPath></text>' +
+      '<text class="mt"><textPath href="#certMicro2">' + esc(micro) + '</textPath></text>' +
+      '<image href="' + PR_LOGO + '" x="297" y="440" width="200" height="240" class="wm"></image>' +
+      '</svg>';
+  }
+  function certURL(){ return EV_VIEW_BASE + '#/cert/' + encodeURIComponent(certData.id); }
+  function certificateHTML(){
+    var d = certData, issued = !!d.id;
+    var body = T(CT.body).replace('{c}', esc(d.course || '')).replace('{l}', esc(certLevel()));
+    return '<div class="pr-sheet pr-cert">' + certSecurityBg() +
+      '<div class="pr-cert-frame"><div class="pr-cert-inner">' +
+        '<div class="pr-cert-brand"><img src="' + PR_LOGO + '" alt=""><div><b>SPACEZ TERMINAL</b><span>' + esc(T(CT.org)) + '</span></div></div>' +
+        '<div class="pr-cert-big">' + esc(T(CT.big)) + '</div>' +
+        '<div class="pr-cert-sub">' + esc(T(CT.bigSub)) + '</div>' +
+        '<div class="pr-cert-orn"><i></i><b>◆</b><i></i></div>' +
+        '<div class="pr-cert-cert">' + esc(T(CT.certify)) + '</div>' +
+        '<div class="pr-cert-name">' + (d.name ? esc(d.name) : '&nbsp;') + '</div>' +
+        (d.nameEn ? '<div class="pr-cert-name2">' + esc(d.nameEn) + '</div>' : '') +
+        '<div class="pr-cert-body">' + body + '</div>' +
+        (d.score ? '<div class="pr-cert-score"><span>' + esc(T(CT.scoreL)) + '</span><b>' + esc(d.score) + '</b></div>' : '') +
+        '<div class="pr-cert-given">' + esc(T(CT.givenL)) + ' ' + esc(certFmtDate(d.date)) + '</div>' +
+        '<div class="pr-cert-foot">' +
+          '<div class="pr-cert-qr">' + (issued ? evQrSvg(certURL()) : '<div class="pr-cert-noqr">QR</div>') + '<span>' + esc(T(CT.verify)) + '</span></div>' +
+          '<div class="pr-cert-seal">' + evSealSVG() + '</div>' +
+          '<div class="pr-cert-sign"><div class="ln"></div><b>' + esc(d.issuedBy || '') + '</b><span>' + esc(T(CT.issuerRole)) + '</span></div>' +
+        '</div>' +
+        '<div class="pr-cert-ids"><span>' + esc(T(CT.idL)) + ': <b>' + esc(d.id || '—') + '</b></span><span>' + esc(T(CT.codeL)) + ': <b>' + esc(certCode()) + '</b></span>' + (issued ? '<span class="u">' + esc(certURL()) + '</span>' : '') + '</div>' +
+      '</div></div>' +
+      (issued ? '' : '<div class="pr-cert-specimen">' + esc(T(CT.specimen)) + '</div>') +
+    '</div>';
+  }
+  function certFormHTML(){
+    var d = certData;
+    function inp(k, lbl, type){ return '<label class="pr-ev-in"><span>' + esc(T(lbl)) + '</span><input type="' + (type || 'text') + '" data-ct="' + k + '" value="' + esc(d[k] || '') + '"></label>'; }
+    var h = '<div class="pr-hint" style="margin-bottom:10px;">' + esc(T(CT.hint)) + '</div>';
+    var stus = (evImp.list || []);
+    if(stus.length){
+      h += '<div class="pr-ev-h2" style="margin-top:0">' + esc(T(CT.fromStu)) + '</div><div class="pr-ann-chips" style="margin-bottom:10px;">' +
+        stus.map(function(u){ return '<button type="button" class="pr-ann-chip" data-ct-stu="' + esc(u.username) + '">' + esc(evImpName(u)) + '</button>'; }).join('') + '</div>';
+    } else if(getAdminKey() && !evImp.busy && !evImp.err){ setTimeout(function(){ evImpLoad(); }, 0); }
+    h += inp('name', CT.nameTh) + inp('nameEn', CT.nameEn) + inp('course', CT.course) +
+      '<div class="pr-ev-in"><span>' + esc(T(CT.level)) + '</span><div class="pr-ann-chips">' + CT.lvls.map(function(o){ return '<button type="button" class="pr-ann-chip' + (d.level === o.en ? ' on' : '') + '" data-ct-level="' + esc(o.en) + '">' + esc(T(o)) + '</button>'; }).join('') + '</div></div>' +
+      '<div class="pr-ev-grid2">' + inp('score', CT.score) + inp('date', CT.date, 'date') + '</div>' + inp('issuedBy', CT.issuer);
+    h += '<button type="button" class="pr-ev-bigbtn" data-ct-issue="1"' + (certUi.busy ? ' disabled' : '') + '>' + esc(T(d.id ? CT.update : CT.issue)) + '</button>';
+    if(certUi.msg) h += '<div class="pr-ev-' + (certUi.ok ? 'ok' : 'err') + '" style="margin-top:8px;">' + esc(certUi.msg) + '</div>';
+    if(d.id) h += '<button type="button" class="pr-ev-bigbtn ghost" data-ct-new="1">' + esc(T(CT.newOne)) + '</button>';
+    h += '<div class="pr-ev-h2">' + esc(T(CT.list)) + '</div>';
+    if(!certUi.list) h += '<button type="button" class="pr-ev-bigbtn ghost" data-ct-list="1">' + esc(T(CT.load)) + '</button>';
+    else h += '<div class="pr-cert-list">' + (certUi.list.length ? certUi.list.map(function(c){
+      return '<div class="pr-cert-li' + (c.revoked ? ' off' : '') + '"><div><b>' + esc(c.name) + '</b><span>' + esc(c.id) + ' · ' + esc(c.date || '') + (c.revoked ? ' · ' + esc(T(CT.revoked)) : '') + '</span></div>' +
+        '<button type="button" class="pr-mini" data-ct-open="' + esc(c.id) + '">' + esc(T(CT.open)) + '</button><button type="button" class="pr-mini" data-ct-rev="' + esc(c.id) + '" data-on="' + (c.revoked ? '0' : '1') + '">' + esc(T(c.revoked ? CT.unrevoke : CT.revoke)) + '</button></div>';
+    }).join('') : '<div class="pr-hint">—</div>') + '</div>';
+    return h;
+  }
+  function certMount(force){
+    var w = sec && sec.querySelector('[data-pr="certWrap"]');
+    if(!w) return;
+    var a = document.activeElement;
+    if(!force && a && w.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+    w.innerHTML = certFormHTML();
+  }
+  function certApi(path, method, body){
+    var key = getAdminKey();
+    if(!key) return Promise.resolve(null);
+    return fetch(WORKER_BASE + path, { method:method, headers:{ 'X-Admin-Key':key, 'Content-Type':'application/json' }, body: body ? JSON.stringify(body) : undefined })
+      .then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
+  }
+  function certIssue(){
+    if(!certData.name.trim()){ certUi.msg = T(CT.needName); certUi.ok = false; certMount(true); return; }
+    certUi.busy = true; certUi.msg = T(CT.saving); certUi.ok = true; certMount(true);
+    certApi('/api/admin/certs/save', 'POST', certData).then(function(j){
+      certUi.busy = false;
+      if(j && j.id){ certData.id = j.id; certUi.msg = T(CT.issued) + ' · ' + j.id; certUi.ok = true; certUi.list = null; }
+      else { certUi.msg = T(CT.bad); certUi.ok = false; }
+      certMount(true); renderReport();
+    });
+  }
+  function certHandleInput(t){
+    if(!t.hasAttribute || !t.hasAttribute('data-ct')) return false;
+    certData[t.getAttribute('data-ct')] = t.value; return true;
+  }
+  function certHandleClick(t){
+    var lv = t.closest('[data-ct-level]');
+    if(lv){ certData.level = lv.getAttribute('data-ct-level'); certMount(true); renderReport(); return true; }
+    var st = t.closest('[data-ct-stu]');
+    if(st){ var un = st.getAttribute('data-ct-stu'); (evImp.list || []).forEach(function(u){ if(u.username === un){ certData = certBlank(); certData.name = evImpName(u); } }); certUi.msg = ''; certMount(true); renderReport(); return true; }
+    if(t.closest('[data-ct-issue]')){ certIssue(); return true; }
+    if(t.closest('[data-ct-new]')){ certData = certBlank(); certUi.msg = ''; certMount(true); renderReport(); return true; }
+    if(t.closest('[data-ct-list]')){ certApi('/api/admin/certs/list', 'GET').then(function(j){ certUi.list = (j && j.certs) || []; certMount(true); }); return true; }
+    var op = t.closest('[data-ct-open]');
+    if(op){ var id = op.getAttribute('data-ct-open'); (certUi.list || []).forEach(function(c){ if(c.id === id){ certData = certBlank(); Object.keys(certData).forEach(function(k){ if(c[k] != null) certData[k] = String(c[k]); }); certData.id = c.id; } }); certUi.msg = ''; certMount(true); renderReport(); return true; }
+    var rv = t.closest('[data-ct-rev]');
+    if(rv){ certApi('/api/admin/certs/revoke', 'POST', { id:rv.getAttribute('data-ct-rev'), revoke:rv.getAttribute('data-on') === '1' }).then(function(){ certUi.list = null; certApi('/api/admin/certs/list', 'GET').then(function(j){ certUi.list = (j && j.certs) || []; certMount(true); }); }); return true; }
+    return false;
   }
 
   /* ---- Student Evaluation <- Classroom Exam results ---- */
@@ -2371,6 +2608,7 @@
     (evImp.skills || []).forEach(function(k){ delete d.sc[k]; }); evImp.skills = [];
     d.name = evImpName(u);
     d.examUser = u.username; d.examPass = u.password || '';
+    d.topics = {}; Object.keys(u.learned || {}).forEach(function(k){ d.topics[k] = 1; });
     var exs = evImpExams(u);
     var pend = null; exs.forEach(function(x){ if(!pend && x.allow && x.status !== 'done') pend = x; });
     d.examSetId = pend ? pend.setId : ''; d.examSet = pend ? evSetTitle(pend.setId) : '';
@@ -2431,6 +2669,9 @@
     h += '<div class="pr-ev-in"><span>' + esc(T(EV_TXT.level)) + '</span><div class="pr-ann-chips">' +
       EV_TXT.lvOpts.map(function(o){ return '<button type="button" class="pr-ann-chip' + (d.level === o.en ? ' on' : '') + '" data-ev-level="' + esc(o.en) + '">' + esc(T(o)) + '</button>'; }).join('') + '</div></div>';
     h += '<div class="pr-ev-grid2">' + inp('attended', EV_TXT.attended, 'number') + inp('sessions', EV_TXT.sessions, 'number') + '</div>';
+    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.lessonsF)) + '</div><div class="pr-hint" style="margin:0 0 8px;">' + esc(T(EV_TXT.lessonsHint)) + '</div><div class="pr-ev-lesf">' +
+      EV_LESSONS.map(function(c, i){ var on = !!d.topics[c[0]]; return '<button type="button" class="pr-ev-lesb' + (on ? ' on' : '') + '" data-ev-topic="' + c[0] + '"><i>' + (on ? '✓' : (i + 1)) + '</i>' + esc(evLessonName(c)) + '</button>'; }).join('') +
+      '</div><div class="pr-ev-btnrow"><button type="button" class="pr-mini" data-ev-topicall="1">' + esc(T(EV_TXT.lessonsAll)) + '</button><button type="button" class="pr-mini" data-ev-topicnone="1">' + esc(T(EV_TXT.lessonsNone)) + '</button></div>';
     h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.rounds)) + '</div><div class="pr-ev-rows">';
     d.rounds.forEach(function(r, i){
       h += '<div class="pr-ev-rrow"><b>' + (i + 1) + '</b>' +
@@ -2457,14 +2698,25 @@
     h += '<button type="button" class="pr-ann-chip' + (d.cmp ? ' on' : '') + '" data-ev-cmp="1" style="margin-top:10px;">' + (d.cmp ? '✓ ' : '') + esc(T(EV_TXT.cmpT)) + '</button>';
     h += skills(EV_EW, EV_TXT.ew) + skills(EV_OTHER, EV_TXT.other);
     h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.pracT)) + '</div><div class="pr-ev-grid2">' + inp('pracDone', EV_TXT.pracDone, 'number') + inp('pracOk', EV_TXT.pracOk, 'number') + '</div>';
-    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.planT)) + '</div>';
+    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.planT).replace('{N}', d.planDays || '10')) + '</div><div class="pr-ann-chips" style="margin-bottom:10px;">' +
+      ['7', '10', '14', '30'].map(function(n){ return '<button type="button" class="pr-ann-chip' + (d.planDays === n ? ' on' : '') + '" data-ev-pdays="' + n + '">' + n + ' ' + esc(T(EV_TXT.daysU)) + '</button>'; }).join('') + '</div>';
     for(var pi = 0; pi < Math.max(3, d.plan.length); pi++){
       var pr0 = d.plan[pi] || {};
-      h += '<div class="pr-ev-prow"><b>' + (pi + 1) + '</b><input type="text" data-evp="task" data-i="' + pi + '" value="' + esc(pr0.task || '') + '" placeholder="' + esc(T(EV_TXT.planTask)) + '"><input type="date" data-evp="due" data-i="' + pi + '" value="' + esc(pr0.due || '') + '"><button type="button" class="pr-ev-x" data-ev-plandel="' + pi + '" title="' + esc(T(EV_TXT.planDel)) + '">×</button></div>';
+      h += '<div class="pr-ev-prow"><b>' + (pi + 1) + '</b><input type="text" data-evp="task" data-i="' + pi + '" value="' + esc(pr0.task || '') + '" placeholder="' + esc(T(EV_TXT.planTask)) + '"><input type="date" data-evp="from" data-i="' + pi + '" value="' + esc(pr0.from || '') + '" title="' + esc(T(EV_TXT.planFrom)) + '"><input type="date" data-evp="due" data-i="' + pi + '" value="' + esc(pr0.due || '') + '" title="' + esc(T(EV_TXT.planDue)) + '"><button type="button" class="pr-ev-x" data-ev-plandel="' + pi + '" title="' + esc(T(EV_TXT.planDel)) + '">×</button></div>';
     }
     h += '<button type="button" class="pr-mini" data-ev-planadd="1">' + esc(T(EV_TXT.planAdd)) + '</button>';
+    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.schedT)) + '</div><datalist id="evLessonList">' + EV_LESSONS.map(function(c){ return '<option value="' + esc(evLessonName(c)) + '">'; }).join('') + '</datalist>';
+    for(var si = 0; si < Math.max(3, d.sched.length); si++){
+      var sr = d.sched[si] || {};
+      h += '<div class="pr-ev-srow"><b>' + (si + 1) + '</b><input type="date" data-evq="from" data-i="' + si + '" value="' + esc(sr.from || '') + '" title="' + esc(T(EV_TXT.schedFrom)) + '"><input type="date" data-evq="to" data-i="' + si + '" value="' + esc(sr.to || '') + '" title="' + esc(T(EV_TXT.schedTo)) + '">' +
+        '<input type="text" list="evLessonList" data-evq="topic" data-i="' + si + '" value="' + esc(sr.topic || '') + '" placeholder="' + esc(T(EV_TXT.schedTopic)) + '"><button type="button" class="pr-ev-x" data-ev-scheddel="' + si + '">×</button></div>';
+    }
+    h += '<button type="button" class="pr-mini" data-ev-schedadd="1">' + esc(T(EV_TXT.schedAdd)) + '</button>';
     function ta(k, lbl){ return '<label class="pr-ev-in"><span>' + esc(T(lbl)) + '</span><textarea rows="3" data-ev="' + k + '">' + esc(d[k] || '') + '</textarea></label>'; }
-    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.summary)) + '</div>' + ta('strengths', EV_TXT.strengths) + ta('improve', EV_TXT.improve) + ta('covered', EV_TXT.covered) + ta('repeat', EV_TXT.repeat) + ta('goal', EV_TXT.goal) + ta('resources', EV_TXT.resources) + ta('stuGoal', EV_TXT.stuGoal) + inp('nextExam', EV_TXT.nextExam, 'date') + evExChips() + '<button type="button" class="pr-mini" data-ev-exset="1">' + esc(T(EV_TXT.exSet)) + '</button>' + (evOnline.exMsg ? '<div class="pr-ev-' + (evOnline.exOk ? 'ok' : 'err') + '">' + esc(evOnline.exMsg) + '</div>' : '') + ta('homework', EV_TXT.homework) + ta('comment', EV_TXT.comment);
+    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.summary)) + '</div>' + ta('strengths', EV_TXT.strengths) + ta('improve', EV_TXT.improve) + ta('covered', EV_TXT.coveredNote) + ta('repeat', EV_TXT.repeat) + ta('goal', EV_TXT.goal) + ta('resources', EV_TXT.resources) + ta('stuGoal', EV_TXT.stuGoal) +
+      '<div class="pr-ev-h2">' + esc(T(EV_TXT.exTitle)) + '</div><button type="button" class="pr-ann-chip' + (d.showExam ? ' on' : '') + '" data-ev-showexam="1">' + (d.showExam ? '✓ ' : '') + esc(T(EV_TXT.showExam)) + '</button>' +
+      (d.showExam ? '<div class="pr-ev-exbox">' + inp('nextExam', EV_TXT.nextExam, 'date') + '<div class="pr-ev-grid2">' + inp('exFrom', EV_TXT.exFrom, 'date') + inp('exTo', EV_TXT.exTo, 'date') + '</div>' + evExChips() + '<button type="button" class="pr-mini" data-ev-exset="1">' + esc(T(EV_TXT.exSet)) + '</button>' + (evOnline.exMsg ? '<div class="pr-ev-' + (evOnline.exOk ? 'ok' : 'err') + '">' + esc(evOnline.exMsg) + '</div>' : '') + '</div>' : '') +
+      ta('homework', EV_TXT.homework) + ta('comment', EV_TXT.comment);
     h += '<button type="button" class="pr-mini" data-ev-clear="1" style="margin-top:8px;">' + esc(T(EV_TXT.clear)) + '</button>';
     return h;
   }
@@ -2479,6 +2731,7 @@
     if(t.hasAttribute('data-ev')){ evData[t.getAttribute('data-ev')] = t.value; return true; }
     if(t.hasAttribute('data-evr')){ var i = +t.getAttribute('data-i'); evData.rounds[i] = evData.rounds[i] || {}; evData.rounds[i][t.getAttribute('data-evr')] = t.value; return true; }
     if(t.hasAttribute('data-evs')){ evData.sc[t.getAttribute('data-evs')] = t.value; return true; }
+    if(t.hasAttribute('data-evq')){ var qi = +t.getAttribute('data-i'); evData.sched[qi] = evData.sched[qi] || {}; evData.sched[qi][t.getAttribute('data-evq')] = t.value; return true; }
     if(t.hasAttribute('data-evp')){ var pi = +t.getAttribute('data-i'); evData.plan[pi] = evData.plan[pi] || {}; evData.plan[pi][t.getAttribute('data-evp')] = t.value; return true; }
     return false;
   }
@@ -2513,6 +2766,16 @@
     var rdb = t.closest('[data-ev-ready]');
     if(rdb){ var rv = rdb.getAttribute('data-ev-ready'); evData.ready = evData.ready === rv ? '' : rv; evMountForm(true); renderReport(); return true; }
     if(t.closest('[data-ev-cmp]')){ evData.cmp = !evData.cmp; evMountForm(true); renderReport(); return true; }
+    var tp = t.closest('[data-ev-topic]');
+    if(tp){ var tk = tp.getAttribute('data-ev-topic'); var nv = !evData.topics[tk]; if(nv) evData.topics[tk] = 1; else delete evData.topics[tk]; var lo = {}; lo[tk] = nv; evSyncLearned(lo); evMountForm(true); renderReport(); return true; }
+    if(t.closest('[data-ev-topicall]')){ var la = {}; EV_LESSONS.forEach(function(c){ evData.topics[c[0]] = 1; la[c[0]] = true; }); evSyncLearned(la); evMountForm(true); renderReport(); return true; }
+    if(t.closest('[data-ev-topicnone]')){ var ln = {}; EV_LESSONS.forEach(function(c){ ln[c[0]] = false; }); evData.topics = {}; evSyncLearned(ln); evMountForm(true); renderReport(); return true; }
+    var pdy = t.closest('[data-ev-pdays]');
+    if(pdy){ evData.planDays = pdy.getAttribute('data-ev-pdays'); evMountForm(true); renderReport(); return true; }
+    if(t.closest('[data-ev-showexam]')){ evData.showExam = !evData.showExam; evMountForm(true); renderReport(); return true; }
+    if(t.closest('[data-ev-schedadd]')){ if(evData.sched.length < 12) evData.sched.push({}); evMountForm(true); renderReport(); return true; }
+    var sdl = t.closest('[data-ev-scheddel]');
+    if(sdl){ var si2 = +sdl.getAttribute('data-ev-scheddel'); if(evData.sched.length > 3) evData.sched.splice(si2, 1); else evData.sched[si2] = {}; evMountForm(true); renderReport(); return true; }
     if(t.closest('[data-ev-planadd]')){ if(evData.plan.length < 10) evData.plan.push({}); evMountForm(true); renderReport(); return true; }
     var pdl = t.closest('[data-ev-plandel]');
     if(pdl){ var pi2 = +pdl.getAttribute('data-ev-plandel'); if(evData.plan.length > 3) evData.plan.splice(pi2, 1); else evData.plan[pi2] = {}; evMountForm(true); renderReport(); return true; }
@@ -2566,6 +2829,15 @@
     }
     return h + '<button type="button" class="pr-mini" data-ev-exload="1" style="margin-top:6px;">' + esc(T(EV_TXT.exReload)) + '</button></div>';
   }
+  /* lessons ticked here are written back to the linked Classroom Exam account */
+  function evSyncLearned(obj){
+    var u = (evData.examUser || '').trim().toUpperCase(), key = getAdminKey();
+    if(!u || !key) return;
+    fetch(WORKER_BASE + '/api/admin/cexam/update', { method:'POST', headers:{ 'X-Admin-Key':key, 'Content-Type':'application/json' }, body:JSON.stringify({ username:u, learned:obj }) })
+      .then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
+        if(j && j.user && evImp.list) evImp.list.forEach(function(x, i){ if(x.username === j.user.username) evImp.list[i] = j.user; });
+      }).catch(function(){});
+  }
   function evExSet(){
     var u = (evData.examUser || '').trim().toUpperCase(), dv = evData.nextExam;
     evOnline.exMsg = ''; evOnline.exOk = false;
@@ -2596,10 +2868,18 @@
         if(Array.isArray(ov) && ov.length){ b.rounds = ov.slice(0, 30).map(function(r){ r = r || {}; return { name:evStr(r.name, 200), date:evStr(r.date, 20), score:r.score == null ? '' : String(r.score).slice(0, 10), max:r.max == null ? '' : String(r.max).slice(0, 10), st:(r.st === 'absent' || r.st === 'started') ? r.st : undefined, imp:r.imp ? 1 : undefined }; }); }
       }
       else if(k === 'plan'){
-        if(Array.isArray(ov)){ var np = Math.max(3, Math.min(10, ov.length)); b.plan = []; for(var pq = 0; pq < np; pq++){ var r = ov[pq] || {}; b.plan.push({ task:evStr(r.task, 300), due:evStr(r.due, 20) }); } }
+        if(Array.isArray(ov)){ var np = Math.max(3, Math.min(10, ov.length)); b.plan = []; for(var pq = 0; pq < np; pq++){ var r = ov[pq] || {}; b.plan.push({ task:evStr(r.task, 300), from:evStr(r.from, 20), due:evStr(r.due, 20) }); } }
+      }
+      else if(k === 'sched'){
+        if(Array.isArray(ov)){ var ns = Math.max(3, Math.min(12, ov.length)); b.sched = []; for(var sq = 0; sq < ns; sq++){ var rs = ov[sq] || {}; b.sched.push({ from:evStr(rs.from, 20), to:evStr(rs.to, 20), topic:evStr(rs.topic, 200) }); } }
+      }
+      else if(k === 'topics'){
+        if(ov && typeof ov === 'object'){ Object.keys(ov).slice(0, 60).forEach(function(kk){ if(/^[a-z0-9]{2,12}$/.test(kk) && ov[kk]) b.topics[kk] = 1; }); }
       }
     });
     if(['', 'no', 'near', 'yes'].indexOf(b.ready) === -1) b.ready = '';
+    if(['7', '10', '14', '30'].indexOf(b.planDays) === -1) b.planDays = (o.planDays === undefined ? '30' : '10');
+    if(o.showExam === undefined && (o.nextExam || o.examUser)) b.showExam = true;
     return b;
   }
   window.__SPZ_EVAL_RENDER = function(data){
@@ -2747,6 +3027,7 @@
       : reportType === 'announcement' ? announcementReportHTML()
       : reportType === 'bubble' ? bubbleReportHTML()
       : reportType === 'eval' ? evaluationReportHTML()
+      : reportType === 'cert' ? certificateHTML()
       : reportHTML();
   }
 
@@ -2806,9 +3087,12 @@
     if(annWrap) annWrap.style.display = reportType === 'announcement' ? '' : 'none';
     var evWrap = q('evWrap');
     if(evWrap){ evWrap.style.display = reportType === 'eval' ? '' : 'none'; if(reportType === 'eval') evMountForm(); }
-    if(evWrap && evWrap.closest){ var evCtl = evWrap.closest('.pr-controls'); if(evCtl) evCtl.classList.toggle('pr-ev-on', reportType === 'eval'); }
-    var lineB = q('lineBtn'); if(lineB) lineB.style.display = reportType === 'eval' ? 'none' : '';
-    var lineS = q('lineStatus'); if(lineS) lineS.style.display = reportType === 'eval' ? 'none' : '';
+    var certWrap = q('certWrap');
+    if(certWrap){ certWrap.style.display = reportType === 'cert' ? '' : 'none'; if(reportType === 'cert') certMount(); }
+    if(evWrap && evWrap.closest){ var evCtl = evWrap.closest('.pr-controls'); if(evCtl) evCtl.classList.toggle('pr-ev-on', reportType === 'eval' || reportType === 'cert'); }
+    var typeCertBtn = q('typeCert'); if(typeCertBtn){ typeCertBtn.textContent = T(CT.type); typeCertBtn.classList.toggle('on', reportType === 'cert'); }
+    var lineB = q('lineBtn'); if(lineB) lineB.style.display = (reportType === 'eval' || reportType === 'cert') ? 'none' : '';
+    var lineS = q('lineStatus'); if(lineS) lineS.style.display = (reportType === 'eval' || reportType === 'cert') ? 'none' : '';
     var typeEvalBtn = q('typeEval'); if(typeEvalBtn){ typeEvalBtn.textContent = T(EV_TXT.typeEval); typeEvalBtn.classList.toggle('on', reportType === 'eval'); }
     var annTplWrap = q('annTplWrap');
     var annTpl = ANNOUNCEMENT_TEMPLATES[annTopic];
@@ -2855,7 +3139,7 @@
     if(typeBubbleBtn) typeBubbleBtn.classList.toggle('on', reportType === 'bubble');
     var modeWrap = q('modeWrap');
     if(modeWrap) modeWrap.style.display =
-      (reportType === 'gold' || reportType === 'idea' || reportType === 'announcement' || reportType === 'bubble' || reportType === 'eval') ? 'none' : '';
+      (reportType === 'gold' || reportType === 'idea' || reportType === 'announcement' || reportType === 'bubble' || reportType === 'eval' || reportType === 'cert') ? 'none' : '';
     var modeFullBtn = q('modeFull'), modeSelectBtn = q('modeSelect'), pickHost = q('picklist');
     if(modeFullBtn) modeFullBtn.classList.toggle('on', mode === 'full');
     if(modeSelectBtn) modeSelectBtn.classList.toggle('on', mode === 'select');
@@ -2877,7 +3161,9 @@
       if(t.closest('[data-pr="zoomOut"]')){ setZoom(prZoom - 0.1); return; }
       if(t.closest('[data-pr="zoomFit"]')){ setZoom(1); return; }
       if(t.closest('[data-pr="typeEval"]')){ reportType = 'eval'; paint(); return; }
+      if(t.closest('[data-pr="typeCert"]')){ reportType = 'cert'; paint(); return; }
       if(evHandleClick(t)) return;
+      if(certHandleClick(t)) return;
       if(t.closest('[data-pr="typeBrief"]')){ if(window.__SPZ_BRIEFING && window.__SPZ_BRIEFING.open) window.__SPZ_BRIEFING.open(); return; }
       if(t.closest('[data-pr="modeFull"]')){ mode = 'full'; paint(); return; }
       if(t.closest('[data-pr="modeSelect"]')){ mode = 'select'; paint(); return; }
@@ -2911,6 +3197,7 @@
     sec.addEventListener('input', function(ev){
       var t = ev.target;
       if(t && t.hasAttribute && evHandleInput(t)){ renderReport(); return; }
+      if(t && certHandleInput(t)){ renderReport(); return; }
       if(t && t.getAttribute && t.getAttribute('data-pr') === 'pickSearch'){
         pickQuery = t.value;
         var pickHost = sec.querySelector('[data-pr="picklist"]');
@@ -2995,8 +3282,10 @@
             '<button type="button" class="pr-modebtn" data-pr="typeBubble"></button>' +
             '<button type="button" class="pr-modebtn" data-pr="typeBrief"></button>' +
             '<button type="button" class="pr-modebtn" data-pr="typeEval"></button>' +
+            '<button type="button" class="pr-modebtn" data-pr="typeCert"></button>' +
           '</div>' +
           '<div data-pr="evWrap" style="display:none;"></div>' +
+          '<div data-pr="certWrap" style="display:none;"></div>' +
           '<div data-pr="annWrap" style="display:none;">' +
             '<div class="pr-row" style="display:block;">' +
               '<span class="pr-label" data-pr="annTopicLbl" style="display:block;margin-bottom:6px;"></span>' +
