@@ -2667,7 +2667,7 @@ async function handleCexSubmit(request, env) {
   return json({ setId: sid, title: bank.settings.title, score, total: e.total, percent: e.percent, pass: e.percent >= bank.settings.passPercent, passPercent: bank.settings.passPercent, late: e.late, review }, env);
 }
 
-export default {
+const SPZ_ROUTES = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const allowOrigin = pickAllowedOrigin(request, env);
@@ -2771,5 +2771,35 @@ export default {
       }
       return withCorsOrigin(json(body, env, status), allowOrigin);
     }
+  },
+};
+
+/* ---- Brute-force guard for the admin / editor key (Round AJ) ----------------
+   Every admin or editor screen sends its key in X-Admin-Key. Without a limit,
+   someone could try thousands of guesses. After 20 wrong keys from the same IP
+   within 15 minutes, that IP gets "too_many" (429) on every keyed request until
+   the window expires. Correct keys are never slowed down, and requests without
+   a key (normal visitors) are not affected at all. */
+const ADM_FAIL_PREFIX = "adm:fail:";
+const ADM_FAIL_MAX = 20;
+export default {
+  async fetch(request, env, ctx) {
+    const keyed = request.method !== "OPTIONS" && !!request.headers.get("X-Admin-Key");
+    const ip = request.headers.get("CF-Connecting-IP") || "";
+    let fails = 0;
+    if (keyed && ip) {
+      try { fails = parseInt(await env.SESSIONS.get(ADM_FAIL_PREFIX + ip), 10) || 0; } catch (e) { fails = 0; }
+      if (fails >= ADM_FAIL_MAX) {
+        const origin = pickAllowedOrigin(request, env);
+        const r = new Response(JSON.stringify({ error: "too_many" }), { status: 429, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": origin || "*", "Retry-After": "900" } });
+        return r;
+      }
+    }
+    const resp = await SPZ_ROUTES.fetch(request, env, ctx);
+    if (keyed && ip && resp.status === 401) {
+      const p = env.SESSIONS.put(ADM_FAIL_PREFIX + ip, String(fails + 1), { expirationTtl: 900 }).catch(() => {});
+      if (ctx && ctx.waitUntil) ctx.waitUntil(p); else await p;
+    }
+    return resp;
   },
 };
