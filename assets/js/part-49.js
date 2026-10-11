@@ -2074,6 +2074,7 @@
     onLink:{en:'Student link', th:'ลิงก์สำหรับนักเรียน'}, onCopy:{en:'Copy link', th:'คัดลอกลิงก์'}, onCopied:{en:'Copied', th:'คัดลอกแล้ว'},
     onRevoke:{en:'Turn link off', th:'ปิดลิงก์'}, onRotate:{en:'New link (old one stops)', th:'สร้างลิงก์ใหม่ (ลิงก์เดิมใช้ไม่ได้)'}, onMake:{en:'Create link', th:'สร้างลิงก์'},
     onDel:{en:'Delete this saved copy', th:'ลบที่บันทึกออนไลน์'}, onDelAsk:{en:'Delete the online copy? This cannot be undone.', th:'ลบข้อมูลที่บันทึกออนไลน์ใช่ไหม? ย้อนกลับไม่ได้'},
+    onByStu:{en:'link turned off by student', th:'นักเรียนปิดลิงก์เอง'}, onNoQr:{en:'no QR link', th:'ไม่มีลิงก์ QR'}, onDelShort:{en:'Delete', th:'ลบ'},
     onList:{en:'Saved evaluations', th:'รายการที่บันทึกไว้'}, onLoadList:{en:'Load list', th:'โหลดรายการ'}, onOpen:{en:'Open to edit', th:'เปิดมาแก้ไข'}, onNone:{en:'Nothing saved yet.', th:'ยังไม่มีที่บันทึกไว้'},
     onExport:{en:'Download data file', th:'โหลดไฟล์ข้อมูล'}, onImport:{en:'Import data file', th:'นำเข้าไฟล์ข้อมูล'},
     onFileHint:{en:'Data file = a backup copy of this evaluation (.json). Download it to keep on your Mac; import it later to open and edit this evaluation again. Data file and online copy hold the same data.', th:'ไฟล์ข้อมูล = ไฟล์สำรองของใบประเมินนี้ (.json) กด "โหลดไฟล์ข้อมูล" เพื่อเก็บไว้ในเครื่อง Mac ภายหลังกด "นำเข้าไฟล์ข้อมูล" เพื่อเปิดมาแก้ไขต่อ ไฟล์กับที่บันทึกออนไลน์เป็นข้อมูลชุดเดียวกัน'},
@@ -2081,6 +2082,7 @@
     onOld:{en:'The Worker has no evaluation endpoints yet. Paste the new line-qr-worker.js into Cloudflare and Deploy.', th:'Worker ยังไม่มีระบบนี้ ต้องวางไฟล์ line-qr-worker.js ใหม่ใน Cloudflare แล้วกด Deploy'},
     onBadFile:{en:'This file is not a student evaluation data file.', th:'ไฟล์นี้ไม่ใช่ไฟล์ข้อมูลใบประเมินนักเรียน'},
     onImported:{en:'File imported. Press Save online to update the online copy.', th:'นำเข้าไฟล์แล้ว กด "บันทึกออนไลน์" ถ้าต้องการอัปเดตข้อมูลออนไลน์'},
+    qrScan:{en:'Scan to view online', th:'สแกนเพื่อดูออนไลน์'},
     qrView:{en:'View this evaluation online', th:'ดูใบประเมินนี้ออนไลน์'},
     cmpT:{en:'Compare with previous round', th:'เทียบกับรอบก่อน'}, prevL:{en:'Before', th:'รอบก่อน'}, nowL:{en:'Now', th:'ตอนนี้'},
     readyT:{en:'CEWA exam readiness', th:'ความพร้อมสอบ CEWA'},
@@ -2120,7 +2122,7 @@
       ref:'', rounds:[{},{},{},{}], sc:{}, prev:{}, cmp:false, ready:'', pracDone:'', pracOk:'', repeat:'', plan:[{},{},{}], resources:'', stuGoal:'', strengths:'', improve:'', covered:'', comment:'', goal:'', homework:'', nextExam:'', attended:'', sessions:'' };
   }
   var evData = evBlank();
-  var evOnline = { id:'', token:'', savedAt:0, busy:false, msg:'', err:'', share:true, list:null, sel:'' };
+  var evOnline = { id:'', token:'', savedAt:0, busy:false, msg:'', err:'', share:true, list:null, listTried:false, sel:'' };
   var evViewMode = false;
 
   function evNum(v){ var n = parseFloat(v); return isFinite(n) ? n : null; }
@@ -2269,6 +2271,7 @@
         '<div class="pr-ev-brand"><img class="pr-ev-logo" src="' + PR_LOGO + '" alt=""><div><b>SPACEZ TERMINAL</b><span>' + esc(T(EV_TXT.dept)) + '</span></div></div>' +
         '<div class="pr-ev-doc"><div class="pr-ev-doc-t">' + esc(T(EV_TXT.title)) + '</div>' +
           '<div class="pr-meta"><span>' + esc(T(UI.serial)) + ': ' + esc(d.ref || serial()) + '</span></div></div>' +
+        evQrTop() +
       '</div>' +
       '<div class="pr-ev-info">' +
         evField(EV_TXT.name, d.name, true) + evField(EV_TXT.cls, d.cls) + evField(EV_TXT.date, d.date) + evField(EV_TXT.by, d.by) +
@@ -2310,7 +2313,7 @@
         '<div><div class="pr-ev-h">' + esc(T(EV_TXT.stuGoal)) + '</div>' + evBlankLine(d.stuGoal, 2) + '</div></div>') +
       evBlk('<div class="pr-ev-h">' + esc(T(EV_TXT.comment)) + '</div>' + evBlankLine(d.comment, 4) +
       '<div class="pr-ev-sign"><div></div><span>' + esc(T(EV_TXT.sign)) + '</span></div>') +
-      evShareHTML() +
+      evWarnBottom() +
     '</div>';
   }
 
@@ -2440,7 +2443,9 @@
     if(t.closest('[data-ev-export]')){ evExport(); return true; }
     if(t.closest('[data-ev-importbtn]')){ var fi = sec && sec.querySelector('[data-ev-importfile]'); if(fi) fi.click(); return true; }
     if(t.closest('[data-ev-loadlist]')){ evListLoad(); return true; }
-    if(t.closest('[data-ev-open]')){ evOpen(); return true; }
+    var ro = t.closest('[data-ev-rowopen]'); if(ro){ evOpen(ro.getAttribute('data-ev-rowopen')); return true; }
+    var rr = t.closest('[data-ev-rowrev]'); if(rr){ evLink('revoke', rr.getAttribute('data-ev-rowrev')); return true; }
+    var rd2 = t.closest('[data-ev-rowdel]'); if(rd2){ evLink('delete', rd2.getAttribute('data-ev-rowdel')); return true; }
     var la = t.closest('[data-ev-linkact]');
     if(la){ evLink(la.getAttribute('data-ev-linkact')); return true; }
     if(t.closest('[data-ev-shareon]')){ evOnline.share = !evOnline.share; evMountForm(true); return true; }
@@ -2472,11 +2477,13 @@
     try { if(typeof qrcode !== 'function') return ''; var q = qrcode(0, 'M'); q.addData(url); q.make(); return q.createSvgTag({ cellSize:4, margin:0, scalable:true }); }
     catch(e){ return ''; }
   }
-  function evShareHTML(){
+  function evQrTop(){
     if(evViewMode || !evOnline.token) return '';
-    var url = evViewURL(evOnline.token);
-    return '<div class="pr-ev-share"><div class="pr-ev-share-qr">' + evQrSvg(url) + '</div><div class="pr-ev-share-t">' +
-      '<b>' + esc(T(EV_TXT.qrView)) + '</b><span>' + esc(url) + '</span><em>' + esc(T(EV_TXT.onWarn)) + '</em></div></div>';
+    return '<div class="pr-ev-qrtop"><div class="pr-ev-qrbox">' + evQrSvg(evViewURL(evOnline.token)) + '</div><span>' + esc(T(EV_TXT.qrScan)) + '</span></div>';
+  }
+  function evWarnBottom(){
+    if(evViewMode || !evOnline.token) return '';
+    return '<div class="pr-ev-qrwarn">' + esc(T(EV_TXT.qrView)) + ': ' + esc(evViewURL(evOnline.token)) + '<br>' + esc(T(EV_TXT.onWarn)) + '</div>';
   }
   function evStr(v, n){ return typeof v === 'string' ? v.slice(0, n || 4000) : ''; }
   function evMerge(o){
@@ -2521,30 +2528,32 @@
   function evSave(){
     if(!evData.ref) evData.ref = serial();
     evApi('/api/admin/evals/save', 'POST', { id:evOnline.id, data:evData, share:evOnline.share }).then(function(j){
-      if(j && j.ok){ evOnline.id = j.id; evOnline.token = j.token || ''; evOnline.savedAt = j.updatedAt || Date.now(); evOnline.msg = T(EV_TXT.onSaved); evOnline.list = null; }
+      if(j && j.ok){ evOnline.id = j.id; evOnline.token = j.token || ''; evOnline.savedAt = j.updatedAt || Date.now(); evOnline.msg = T(EV_TXT.onSaved); evOnline.list = null; evOnline.listTried = false; }
       evDone();
     });
   }
   function evListLoad(){
+    var keepMsg = evOnline.msg, keepAt = evOnline.savedAt;
     evMountForm(true);
-    evApi('/api/admin/evals/list', 'GET').then(function(j){ if(j) evOnline.list = j.evals || []; evMountForm(true); });
+    evApi('/api/admin/evals/list', 'GET').then(function(j){ if(j) evOnline.list = j.evals || []; if(!evOnline.err) evOnline.msg = keepMsg; evOnline.savedAt = keepAt; evMountForm(true); });
   }
-  function evOpen(){
-    var w = sec && sec.querySelector('[data-ev-sel]'); var id = w ? w.value : '';
+  function evOpen(id){
     if(!id) return;
     evApi('/api/admin/evals/get?id=' + encodeURIComponent(id), 'GET').then(function(j){
       if(j && j.data){ evData = evMerge(j.data); evOnline.id = j.id; evOnline.token = j.token || ''; evOnline.sel = j.id; evOnline.savedAt = j.updatedAt || 0; evOnline.msg = ''; }
       evDone();
     });
   }
-  function evLink(act){
-    if(!evOnline.id) return;
+  function evLink(act, id){
+    id = id || evOnline.id;
+    if(!id) return;
     if(act === 'delete' && !window.confirm(T(EV_TXT.onDelAsk))) return;
-    evApi('/api/admin/evals/link', 'POST', { id:evOnline.id, action:act }).then(function(j){
+    evApi('/api/admin/evals/link', 'POST', { id:id, action:act }).then(function(j){
       if(j && j.ok){
-        if(act === 'delete'){ evOnline.id = ''; evOnline.token = ''; evOnline.list = null; evOnline.sel = ''; }
-        else evOnline.token = j.token || '';
-        if(evOnline.list) evOnline.list = null;
+        var cur = (id === evOnline.id);
+        if(act === 'delete'){ if(cur){ evOnline.id = ''; evOnline.token = ''; evOnline.sel = ''; } }
+        else if(cur) evOnline.token = j.token || '';
+        evOnline.list = null; evOnline.listTried = false;
       }
       evDone();
     });
@@ -2591,12 +2600,17 @@
       }
       h += '<div class="pr-ev-btns"><button type="button" class="pr-mini pr-ev-danger" data-ev-linkact="delete">' + esc(T(EV_TXT.onDel)) + '</button></div>';
     }
-    h += '<div class="pr-ev-h" style="margin-top:14px">' + esc(T(EV_TXT.onList)) + '</div>';
-    if(!o.list) h += '<button type="button" class="pr-mini" data-ev-loadlist="1">' + esc(T(EV_TXT.onLoadList)) + '</button>';
+    if(!o.list && !o.listTried && getAdminKey()){ o.listTried = true; setTimeout(evListLoad, 0); }
+    h += '<div class="pr-ev-h" style="margin-top:16px">' + esc(T(EV_TXT.onList)) + (o.list ? ' (' + o.list.length + ')' : '') + ' <button type="button" class="pr-ev-refresh" data-ev-loadlist="1" title="refresh">↻</button></div>';
+    if(!o.list) h += '<div class="pr-hint">' + (o.listTried ? '…' : '') + '</div>';
     else if(!o.list.length) h += '<div class="pr-hint">' + esc(T(EV_TXT.onNone)) + '</div>';
-    else h += '<select class="pr-search" data-ev-sel="1">' + o.list.map(function(r){
-      return '<option value="' + esc(r.id) + '"' + (o.sel === r.id ? ' selected' : '') + '>' + esc((r.name || '—') + (r.cls ? ' · ' + r.cls : '') + ' · ' + (r.date || '') + (r.shared ? ' · QR' : '')) + '</option>';
-    }).join('') + '</select><div class="pr-ev-btns"><button type="button" class="pr-mini" data-ev-open="1">' + esc(T(EV_TXT.onOpen)) + '</button></div>';
+    else h += '<div class="pr-ev-list">' + o.list.map(function(r){
+      var st = r.shared ? '<em class="on">QR ✓</em>' : (r.revokedBy === 'student' ? '<em class="off">' + esc(T(EV_TXT.onByStu)) + '</em>' : '<em class="off">' + esc(T(EV_TXT.onNoQr)) + '</em>');
+      return '<div class="pr-ev-li' + (o.id === r.id ? ' cur' : '') + '"><div class="pr-ev-li-t"><b>' + esc(r.name || '—') + '</b><small>' + esc([r.cls, r.date].filter(Boolean).join(' · ')) + '</small>' + st + '</div>' +
+        '<div class="pr-ev-li-b"><button type="button" class="pr-mini" data-ev-rowopen="' + esc(r.id) + '">' + esc(T(EV_TXT.onOpen)) + '</button>' +
+        (r.shared ? '<button type="button" class="pr-mini" data-ev-rowrev="' + esc(r.id) + '">' + esc(T(EV_TXT.onRevoke)) + '</button>' : '') +
+        '<button type="button" class="pr-mini pr-ev-danger" data-ev-rowdel="' + esc(r.id) + '">' + esc(T(EV_TXT.onDelShort)) + '</button></div></div>';
+    }).join('') + '</div>';
     return h + '</div>';
   }
 

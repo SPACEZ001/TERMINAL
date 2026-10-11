@@ -2273,7 +2273,7 @@ async function evalGet(id, env) {
 function evalSummary(r) {
   const d = r.data || {};
   return { id: r.id, name: String(d.name || "").slice(0, 80), cls: String(d.cls || "").slice(0, 80), date: String(d.date || ""),
-    updatedAt: r.updatedAt || 0, shared: !!r.token };
+    updatedAt: r.updatedAt || 0, shared: !!r.token, revokedBy: r.revokedBy || "" };
 }
 async function handleEvalSave(request, env) {
   if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
@@ -2331,7 +2331,7 @@ async function handleEvalLink(request, env) {
   }
   if (act === "revoke" || act === "rotate") {
     if (rec.token) await env.SESSIONS.delete(EVALTOK_PREFIX + rec.token);
-    rec.token = null;
+    rec.token = null; rec.revokedBy = "";
   }
   if ((act === "share" || act === "rotate") && !rec.token) {
     rec.token = evalNewToken();
@@ -2340,6 +2340,19 @@ async function handleEvalLink(request, env) {
   if (["share", "rotate", "revoke"].indexOf(act) === -1) return json({ error: "bad_request" }, env, 400);
   await env.SESSIONS.put(EVAL_PREFIX + rec.id, JSON.stringify(rec));
   return json({ ok: true, id: rec.id, token: rec.token }, env);
+}
+// PUBLIC: the student (token holder) can switch THEIR OWN link off for privacy. Data stays with the teacher.
+async function handleEvalSelfRevoke(request, env) {
+  let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const t = String((body && body.t) || "").toLowerCase();
+  if (!/^[a-z0-9]{20,40}$/.test(t)) return json({ error: "not_found" }, env, 404);
+  const id = await env.SESSIONS.get(EVALTOK_PREFIX + t);
+  const rec = id ? await evalGet(id, env) : null;
+  if (!rec || rec.token !== t) return json({ error: "not_found" }, env, 404);
+  await env.SESSIONS.delete(EVALTOK_PREFIX + t);
+  rec.token = null; rec.revokedBy = "student"; rec.revokedAt = Date.now();
+  await env.SESSIONS.put(EVAL_PREFIX + rec.id, JSON.stringify(rec));
+  return json({ ok: true }, env);
 }
 // PUBLIC read-only: whoever has the long random token can read exactly that one evaluation.
 async function handleEvalView(request, env) {
@@ -2554,6 +2567,7 @@ export default {
       if (url.pathname === "/api/admin/evals/list" && request.method === "GET") return withCorsOrigin(await handleEvalList(request, env), allowOrigin);
       if (url.pathname === "/api/admin/evals/get" && request.method === "GET") return withCorsOrigin(await handleEvalGet(request, env), allowOrigin);
       if (url.pathname === "/api/admin/evals/link" && request.method === "POST") return withCorsOrigin(await handleEvalLink(request, env), allowOrigin);
+      if (url.pathname === "/api/eval/revoke" && request.method === "POST") return withCorsOrigin(await handleEvalSelfRevoke(request, env), allowOrigin);
       if (url.pathname === "/api/eval/view" && request.method === "GET") return withCorsOrigin(await handleEvalView(request, env), allowOrigin);
       if (url.pathname === "/api/admin/cexam/create" && request.method === "POST") return withCorsOrigin(await handleCexAdminCreate(request, env), allowOrigin);
       if (url.pathname === "/api/admin/cexam/list" && request.method === "GET") return withCorsOrigin(await handleCexAdminList(request, env), allowOrigin);
