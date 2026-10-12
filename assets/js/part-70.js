@@ -156,6 +156,7 @@
     var meta = q1('.pr-meta', sheet);
     var m = meta ? meta.textContent.match(REF_RE) : null;
     mark(sheet, m ? m[0] : '');
+    if(sheet.classList.contains('pr-cert')) return;   /* the certificate carries its own signature + QR */
     putBlock(sheet, '.pr-foot', false);
   }
   function prepCompare(sheet){

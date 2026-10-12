@@ -2000,9 +2000,19 @@
   function doPrint(){
     function reveal(){
       document.body.classList.add('spz-printing-report');
+      /* Round AM: the certificate prints on A4 landscape with no margin (thick card stock) */
+      var pageCss = null;
+      if(reportType === 'cert'){
+        pageCss = document.createElement('style');
+        pageCss.textContent = '@media print{@page{size:A4 landscape;margin:0;}}';
+        document.body.appendChild(pageCss);   /* last in document order, so it beats the A4-portrait @page rules in the stylesheets */
+        document.body.classList.add('spz-print-cert');
+      }
       var done = false;
       function cleanup(){
         if(done) return; done = true;
+        if(pageCss && pageCss.parentNode) pageCss.parentNode.removeChild(pageCss);
+        document.body.classList.remove('spz-print-cert');
         document.body.classList.remove('spz-printing-report');
         window.removeEventListener('afterprint', cleanup);
       }
@@ -2090,7 +2100,11 @@
     qrView:{en:'View this evaluation online', th:'ดูใบประเมินนี้ออนไลน์'},
     cmpT:{en:'Compare with previous round', th:'เทียบกับรอบก่อน'}, prevL:{en:'Before', th:'รอบก่อน'}, nowL:{en:'Now', th:'ตอนนี้'},
     readyT:{en:'CEWA exam readiness', th:'ความพร้อมสอบ CEWA'},
-    ready:[{k:'no',en:'Not ready',th:'ยังไม่พร้อม',c:'#d8473d'},{k:'near',en:'Almost ready',th:'ใกล้พร้อม',c:'#e8a417'},{k:'yes',en:'Ready',th:'พร้อม',c:'#2fa66a'}],
+    ready:[{k:'no',en:'Not ready',th:'ยังไม่พร้อม',c:'#d8473d'},{k:'near',en:'Almost ready',th:'ใกล้พร้อม',c:'#e8a417'},{k:'yes',en:'Ready',th:'พร้อม',c:'#2fa66a'},{k:'na',en:'Learning to analyse only — not taking the CEWA exam',th:'เรียนเพื่อวิเคราะห์เป็น — ไม่สอบ CEWA',c:'#3b6fd8'}],
+    optT:{en:'Sections to include', th:'ส่วนที่จะแสดงในใบประเมิน'}, optHint:{en:'Ticked sections appear on the sheet and get their fields here. Unticked sections are left out completely.', th:'ติ๊กส่วนไหน ส่วนนั้นจะขึ้นในใบประเมินและมีช่องให้กรอกด้านล่าง ถ้าไม่ติ๊กจะไม่แสดงเลย'},
+    optSecs:[{k:'prac',en:'Live-chart practice',th:'ผลฝึกอ่านกราฟจริง'},{k:'plan',en:'Improvement plan',th:'แผนพัฒนา'},{k:'sched',en:'Study schedule',th:'ตารางเรียนต่อ'},{k:'homework',en:'Homework',th:'การบ้าน'},{k:'resources',en:'Recommended resources',th:'แหล่งเรียนแนะนำ'},{k:'next',en:'Recommendation for next step',th:'ข้อแนะนำขั้นต่อไป'},{k:'stuSign',en:'Student signature line',th:'ช่องลงชื่อนักเรียน'}],
+    nextT:{en:'Recommendation for the next step', th:'ข้อแนะนำขั้นต่อไป'},
+    nextOpts:[{k:'repeat',en:'Review the current level again',th:'ทบทวนระดับเดิมอีกรอบ'},{k:'cont',en:'Continue at the current level',th:'เรียนต่อในระดับเดิม'},{k:'up',en:'Move up to the next level',th:'ขึ้นระดับถัดไป'},{k:'cert',en:'Eligible for the certificate',th:'พร้อมรับเกียรติบัตร'}],
     reviewL:{en:'Needs review', th:'ควรทบทวน'},
     pracT:{en:'Live-chart practice', th:'ผลฝึกอ่านกราฟจริง'}, pracDone:{en:'Charts practised', th:'จำนวนกราฟที่ฝึก'}, pracOk:{en:'Counted correctly', th:'นับถูก'},
     repeat:{en:'Mistakes repeated', th:'ข้อผิดที่พลาดซ้ำ'},
@@ -2153,7 +2167,7 @@
     var d = new Date();
     return { name:'', cls:'', level:'', by:'Noraset Boikaw',
       date: d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'),
-      ref:'', examUser:'', examPass:'', examSet:'', examSetId:'', rounds:[{},{},{},{}], sc:{}, prev:{}, cmp:false, ready:'', pracDone:'', pracOk:'', repeat:'', plan:[{},{},{}], planDays:'10', topics:{}, sched:[{},{},{}], showExam:false, exFrom:'', exTo:'', resources:'', stuGoal:'', strengths:'', improve:'', covered:'', comment:'', goal:'', homework:'', nextExam:'', attended:'', sessions:'' };
+      ref:'', examUser:'', examPass:'', examSet:'', examSetId:'', rounds:[{},{},{},{}], sc:{}, prev:{}, cmp:false, ready:'', pracDone:'', pracOk:'', repeat:'', plan:[{},{},{}], planDays:'10', topics:{}, sched:[{},{},{}], showExam:false, exFrom:'', exTo:'', opt:{ plan:1, sched:1, homework:1, resources:1, next:1 }, nextStep:'', resources:'', stuGoal:'', strengths:'', improve:'', covered:'', comment:'', goal:'', homework:'', nextExam:'', attended:'', sessions:'' };
   }
   var evData = evBlank();
   var evOnline = { id:'', token:'', savedAt:0, busy:false, msg:'', err:'', share:true, list:null, listTried:false, sel:'' };
@@ -2266,9 +2280,9 @@
       '<div class="pr-ev-exam-g">' +
         '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exDate)) + '</span><b>' + (d.nextExam ? esc(d.nextExam) : '&nbsp;') + '</b></div>' +
         '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exWin)) + '</span><b>' + win + '</b></div>' +
-        (d.examSet ? '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exSetL)) + '</span><b>' + esc(d.examSet) + '</b></div>' : '') +
-        '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exUser)) + '</span><b>' + (d.examUser ? esc(d.examUser) : '&nbsp;') + '</b></div>' +
-        '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exPass)) + '</span><b>' + (d.examPass ? esc(d.examPass) : '&nbsp;') + '</b></div>' +
+        '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exUser)) + '</span><b class="mono">' + (d.examUser ? esc(d.examUser) : '&nbsp;') + '</b></div>' +
+        '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exPass)) + '</span><b class="mono">' + (d.examPass ? esc(d.examPass) : '&nbsp;') + '</b></div>' +
+        (d.examSet ? '<div class="pr-ev-exc wide"><span>' + esc(T(EV_TXT.exSetL)) + '</span><b>' + esc(d.examSet) + '</b></div>' : '') +
       '</div></div>' +
       (qr ? '<div class="pr-ev-exn">' + esc(T(EV_TXT.exQrNote)) + (d.nextExam ? ' ' + esc(T(EV_TXT.exAuto)) : '') + '</div>' : '') + '</div>');
   }
@@ -2279,6 +2293,12 @@
       '<image href="' + PR_LOGO + '" x="42" y="38" width="36" height="36"></image></svg>';
   }
   function evBlk(h){ return '<div class="pr-ev-blk">' + h + '</div>'; }
+  function evOpt(k){ var o = evData.opt; if(!o) o = evData.opt = { plan:1, sched:1, homework:1, resources:1, next:1 }; return !!o[k]; }
+  function evNextHTML(){
+    var d = evData;
+    var chips = EV_TXT.nextOpts.map(function(o){ return '<span class="pr-ev-nx' + (d.nextStep === o.k ? ' on' : '') + '"><i></i>' + esc(T(o)) + '</span>'; }).join('');
+    return evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.nextT)) + '</div><div class="pr-ev-nxs">' + chips + '</div>');
+  }
   function evRadar(){
     var n = EV_EW.length, cx = 130, cy = 120, R = 86, i, k;
     function pt(idx, frac){ var a = -Math.PI / 2 + idx * 2 * Math.PI / n; return [cx + Math.cos(a) * R * frac, cy + Math.sin(a) * R * frac]; }
@@ -2365,10 +2385,10 @@
         '<table class="pr-ev-rounds"><thead><tr><th>#</th><th>' + esc(T(EV_TXT.rName)) + '</th><th>' + esc(T(EV_TXT.rDate)) + '</th><th>' + esc(T(EV_TXT.rScore)) + '</th><th>' + esc(T(EV_TXT.rMax)) + '</th><th>%</th></tr></thead><tbody>' + rows + '</tbody></table>' +
         '<div class="pr-ev-chart"><div class="pr-ev-chart-t">' + esc(T(EV_TXT.trend)) + '</div>' + evTrend(pcts) + '</div>' +
       '</div>') +
-      evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.pracT)) + '</div>' +
+      (evOpt('prac') ? evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.pracT)) + '</div>' +
         '<div class="pr-ev-two"><div class="pr-ev-prac"><div class="pr-ev-h">' + esc(T(EV_TXT.pracDone)) + ' / ' + esc(T(EV_TXT.pracOk)) + '</div>' +
           '<div class="pr-ev-f"><b>' + (d.pracDone || d.pracOk ? esc(d.pracOk || '…') + ' / ' + esc(d.pracDone || '…') + (evNum(d.pracDone) && evNum(d.pracOk) !== null ? ' &nbsp;(' + Math.round(evNum(d.pracOk) / evNum(d.pracDone) * 100) + '%)' : '') : '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/') + '</b></div></div>' +
-          '<div><div class="pr-ev-h">' + esc(T(EV_TXT.repeat)) + '</div>' + evBlankLine(d.repeat, 2) + '</div></div>') +
+          '<div><div class="pr-ev-h">' + esc(T(EV_TXT.repeat)) + '</div>' + evBlankLine(d.repeat, 2) + '</div></div>') : '') +
       evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.ew)) + '</div>' +
       '<div class="pr-hint-s">' + esc(T(EV_TXT.scale)) + '</div>' +
       '<div class="pr-ev-split pr-ev-skills">' +
@@ -2382,8 +2402,9 @@
         '<div><div class="pr-ev-h">' + esc(T(EV_TXT.improve)) + '</div>' + evBlankLine(d.improve, 3) + '</div></div>') +
       evBlk('<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.coveredNote)) + '</div>' + evBlankLine(d.covered, 3) + '</div>' +
         '<div><div class="pr-ev-h">' + esc(T(EV_TXT.goal)) + '</div>' + evBlankLine(d.goal, 3) + '</div></div>') +
-      evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.planT).replace('{N}', d.planDays || '10')) + '</div>' + evPlanHTML()) +
-      evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.schedT)) + '</div>' + evSchedHTML()) +
+      (evOpt('next') ? evNextHTML() : '') +
+      (evOpt('plan') ? evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.planT).replace('{N}', d.planDays || '10')) + '</div>' + evPlanHTML()) : '') +
+      (evOpt('sched') ? evBlk('<div class="pr-sec-h">' + esc(T(EV_TXT.schedT)) + '</div>' + evSchedHTML()) : '') +
       (d.showExam ? evExamHTML() : '') +
       (false ? evBlk('<div class="pr-ev-exam"><div class="pr-ev-exam-h">' + esc(T(EV_TXT.exTitle)) + '</div><div class="pr-ev-exam-g">' +
         '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exDate)) + '</span><b>' + (d.nextExam ? esc(d.nextExam) : '&nbsp;') + '</b></div>' +
@@ -2391,11 +2412,10 @@
         '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exUser)) + '</span><b>' + (d.examUser ? esc(d.examUser) : '&nbsp;') + '</b></div>' +
         '<div class="pr-ev-exc"><span>' + esc(T(EV_TXT.exPass)) + '</span><b>' + (d.examPass ? esc(d.examPass) : '&nbsp;') + '</b></div></div>' +
         (d.examUser && d.nextExam ? '<div class="pr-ev-exn">' + esc(T(EV_TXT.exAuto)) + '</div>' : '') + '</div>') : '') +
-      evBlk('<div class="pr-ev-h">' + esc(T(EV_TXT.homework)) + '</div>' + evBlankLine(d.homework, 2)) +
-      evBlk('<div class="pr-ev-two"><div><div class="pr-ev-h">' + esc(T(EV_TXT.resources)) + '</div>' + evBlankLine(d.resources, 2) + '</div>' +
-        '<div><div class="pr-ev-h">' + esc(T(EV_TXT.stuGoal)) + '</div>' + evBlankLine(d.stuGoal, 2) + '</div></div>') +
+      (evOpt('homework') ? evBlk('<div class="pr-ev-h">' + esc(T(EV_TXT.homework)) + '</div>' + evBlankLine(d.homework, 2)) : '') +
+      (evOpt('resources') ? evBlk('<div class="pr-ev-h">' + esc(T(EV_TXT.resources)) + '</div>' + evBlankLine(d.resources, 2)) : '') +
       evBlk('<div class="pr-ev-h">' + esc(T(EV_TXT.comment)) + '</div>' + evBlankLine(d.comment, 4) +
-      '<div class="pr-ev-signs"><div class="pr-ev-sign2"><div></div><span>' + esc(T(EV_TXT.stuSign)) + '</span></div>' + evSealSVG() +
+      '<div class="pr-ev-signs' + (evOpt('stuSign') ? '' : ' one') + '">' + (evOpt('stuSign') ? '<div class="pr-ev-sign2"><div></div><b>' + esc(d.name || '') + '&nbsp;</b><span>' + esc(T(EV_TXT.stuSign)) + '</span></div>' : '') +
       '<div class="pr-ev-sign2"><div></div><b>' + esc(d.by || '') + '</b><span>' + esc(T(EV_TXT.sign)) + '</span></div></div>') +
       evShareBlock() +
     '</div>';
@@ -2428,7 +2448,9 @@
     body:{en:'has successfully completed the course <b>{c}</b> and passed the assessment at the <b>{l}</b> level.', th:'ได้สำเร็จการเรียนหลักสูตร <b>{c}</b> และผ่านการประเมินความรู้ในระดับ <b>{l}</b>'},
     scoreL:{en:'Final assessment score', th:'คะแนนการประเมิน'}, idL:{en:'Certificate No.', th:'เลขที่เกียรติบัตร'}, codeL:{en:'Check code', th:'รหัสตรวจสอบ'},
     givenL:{en:'Given on', th:'ให้ไว้ ณ วันที่'}, verify:{en:'Scan to verify this certificate', th:'สแกนเพื่อตรวจสอบความถูกต้อง'},
-    specimen:{en:'SPECIMEN — NOT ISSUED', th:'SPECIMEN — ยังไม่ได้ออกเลข'}, org:{en:'SPACEZ TERMINAL · Elliott Wave Classroom', th:'SPACEZ TERMINAL · ห้องเรียน Elliott Wave'}
+    specimen:{en:'SPECIMEN — NOT ISSUED', th:'SPECIMEN — ยังไม่ได้ออกเลข'},
+    eyebrow:{en:'Certificate of Achievement', th:'Certificate of Achievement'}, tag:{en:'Verified credential', th:'เอกสารรับรองที่ตรวจสอบได้'},
+    orgShort:{en:'Elliott Wave Classroom', th:'ห้องเรียน Elliott Wave'}, verifyAt:{en:'Verify online:', th:'ตรวจสอบออนไลน์:'}, org:{en:'SPACEZ TERMINAL · Elliott Wave Classroom', th:'SPACEZ TERMINAL · ห้องเรียน Elliott Wave'}
   };
   function certBlank(){ var d = new Date(); return { id:'', name:'', nameEn:'', course:'Elliott Wave Analysis', level:'Foundation', score:'', date:d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'), issuedBy:'Noraset Boikaw', note:'' }; }
   var certData = certBlank(), certUi = { busy:false, msg:'', ok:false, list:null };
@@ -2443,60 +2465,88 @@
     var mEn = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     return th ? (+p[2]) + ' ' + mTh[+p[1] - 1] + ' ' + (+p[0] + 543) : mEn[+p[1] - 1] + ' ' + (+p[2]) + ', ' + p[0];
   }
-  function certRosette(cx, cy, R, r, d, turns, cls){
-    var pts = [], n = 720;
-    for(var i = 0; i <= n; i++){
-      var t = i / n * Math.PI * 2 * turns;
-      var x = cx + (R - r) * Math.cos(t) + d * Math.cos((R - r) / r * t);
-      var y = cy + (R - r) * Math.sin(t) - d * Math.sin((R - r) / r * t);
-      pts.push((i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1));
-    }
-    return '<path d="' + pts.join(' ') + '" class="' + cls + '"></path>';
-  }
-  function certWaves(y0, w, n, amp, cls){
-    var out = '';
-    for(var k = 0; k < n; k++){
-      var pts = [];
-      for(var x = 0; x <= w; x += 6){ var y = y0 + k * 2.2 + amp * Math.sin(x / 26 + k * 0.42) * Math.cos(x / 140 + k * 0.1); pts.push((x ? 'L' : 'M') + x + ' ' + y.toFixed(1)); }
-      out += '<path d="' + pts.join(' ') + '" class="' + cls + '"></path>';
-    }
-    return out;
-  }
+  /* Round AM: landscape A4, modern "trading terminal / space" credential.
+     Dark side panel (brand, ID, check code, verification QR) + clean white
+     main panel. Anti-copy layers stay, but quiet: micro-text ID strip in the
+     side panel, micro-text hairline around the main panel, faint dot grid,
+     a faint Elliott-wave line watermark, star field + orbit arcs, the ID
+     repeated in the micro-text, and SPECIMEN until issued. */
+  function certRand(seed){ var x = seed >>> 0; return function(){ x = (x * 1664525 + 1013904223) >>> 0; return x / 4294967296; }; }
   function certSecurityBg(){
-    var W = 794, H = 1123, micro = ('SPACEZ TERMINAL · ELLIOTT WAVE CLASSROOM · CERTIFIED · ' + (certData.id || 'SPECIMEN') + ' · ' + certCode() + ' · ').repeat(14);
+    var W = 1123, H = 794, SW = 330, id = certData.id || 'SPECIMEN', code = certCode();
+    var micro = ('SPACEZ TERMINAL · VERIFIED CREDENTIAL · ' + id + ' · ' + code + ' · ').repeat(16);
+    var strip = ('SPZ ' + id + ' ' + code + ' ').repeat(40);
+    var rnd = certRand(parseInt(certHash(id), 16)), stars = '';
+    for(var i = 0; i < 70; i++){ var x = (rnd() * (SW - 20) + 10).toFixed(1), y = (rnd() * (H - 20) + 10).toFixed(1), r = (rnd() * 1.1 + .3).toFixed(2); stars += '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" class="st" style="opacity:' + (rnd() * .6 + .2).toFixed(2) + '"></circle>'; }
+    // a stylised Elliott impulse + ABC as the main-panel watermark
+    var wv = [[0,0],[.13,.32],[.2,.2],[.43,.78],[.52,.6],[.68,1],[.77,.72],[.84,.84],[1,.5]], x0 = SW + 40, x1 = W - 40, yb = H - 110, yt = H - 330;
+    var wp = wv.map(function(p, k){ return (k ? 'L' : 'M') + (x0 + (x1 - x0) * p[0]).toFixed(1) + ' ' + (yb - (yb - yt) * p[1]).toFixed(1); }).join(' ');
+    var cdl = '';
+    for(var c = 0; c < 46; c++){
+      var t = c / 45, seg = 0; while(seg < wv.length - 2 && wv[seg + 1][0] < t) seg++;
+      var A = wv[seg], B = wv[seg + 1], f = (t - A[0]) / (B[0] - A[0]), v = A[1] + (B[1] - A[1]) * f, up = B[1] >= A[1];
+      var cx = x0 + (x1 - x0) * t, cy = yb - (yb - yt) * v, hh = 10 + rnd() * 14;
+      cdl += '<path d="M' + cx.toFixed(1) + ' ' + (cy - hh).toFixed(1) + ' V' + (cy + hh).toFixed(1) + '" class="ck"></path><rect x="' + (cx - 3).toFixed(1) + '" y="' + (cy - hh * .55).toFixed(1) + '" width="6" height="' + (hh * 1.1).toFixed(1) + '" class="' + (up ? 'cu' : 'cd') + '"></rect>';
+    }
     return '<svg class="pr-cert-bg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
-      '<defs><path id="certMicro" d="M44 44 H750 V1079 H44 Z"></path><path id="certMicro2" d="M58 58 H736 V1065 H58 Z"></path></defs>' +
-      certWaves(70, W, 9, 6, 'gw') + certWaves(1022, W, 9, 6, 'gw') +
-      certRosette(397, 560, 230, 37, 120, 37, 'gr1') + certRosette(397, 560, 160, 23, 74, 23, 'gr2') +
-      certRosette(84, 118, 48, 9, 25, 9, 'gr3') + certRosette(710, 118, 48, 9, 25, 9, 'gr3') + certRosette(84, 1005, 48, 9, 25, 9, 'gr3') + certRosette(710, 1005, 48, 9, 25, 9, 'gr3') +
-      '<text class="mt"><textPath href="#certMicro">' + esc(micro) + '</textPath></text>' +
-      '<text class="mt"><textPath href="#certMicro2">' + esc(micro) + '</textPath></text>' +
-      '<image href="' + PR_LOGO + '" x="297" y="440" width="200" height="240" class="wm"></image>' +
+      '<defs>' +
+        '<linearGradient id="ctSide" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a1428"></stop><stop offset=".55" stop-color="#0c1a36"></stop><stop offset="1" stop-color="#050b18"></stop></linearGradient>' +
+        '<linearGradient id="ctNeon" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#19d3ff"></stop><stop offset=".5" stop-color="#5b7cff"></stop><stop offset="1" stop-color="#a6f000"></stop></linearGradient>' +
+        '<linearGradient id="ctNeonH" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#19d3ff"></stop><stop offset="1" stop-color="#a6f000"></stop></linearGradient>' +
+        '<linearGradient id="ctArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#19d3ff" stop-opacity=".07"></stop><stop offset="1" stop-color="#19d3ff" stop-opacity="0"></stop></linearGradient>' +
+        '<pattern id="ctDots" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".75" class="dg"></circle></pattern>' +
+        '<path id="ctMicro" d="M' + (SW + 18) + ' 18 H' + (W - 18) + ' V' + (H - 18) + ' H' + (SW + 18) + ' Z"></path>' +
+        '<path id="ctStrip" d="M' + (SW - 22) + ' ' + (H - 20) + ' V20"></path>' +
+      '</defs>' +
+      '<rect x="' + SW + '" y="0" width="' + (W - SW) + '" height="' + H + '" fill="url(#ctDots)"></rect>' +
+      '<path d="' + wp + ' L' + x1 + ' ' + yb + ' L' + x0 + ' ' + yb + ' Z" fill="url(#ctArea)"></path>' +
+      '<g class="wmk">' + cdl + '<path d="' + wp + '" class="wl"></path></g>' +
+      '<image href="' + PR_LOGO + '" x="' + (SW + (W - SW) / 2 - 90) + '" y="' + (H / 2 - 120) + '" width="180" height="216" class="wm"></image>' +
+      '<rect x="' + (SW + 18) + '" y="18" width="' + (W - SW - 36) + '" height="' + (H - 36) + '" class="fr"></rect>' +
+      '<text class="mt"><textPath href="#ctMicro">' + esc(micro) + '</textPath></text>' +
+      '<rect x="0" y="0" width="' + SW + '" height="' + H + '" fill="url(#ctSide)"></rect>' +
+      stars +
+      '<ellipse cx="' + (SW * .5) + '" cy="' + (H * .5) + '" rx="' + (SW * .95) + '" ry="' + (H * .2) + '" class="ob" transform="rotate(-28 ' + (SW * .5) + ' ' + (H * .5) + ')"></ellipse>' +
+      '<ellipse cx="' + (SW * .5) + '" cy="' + (H * .5) + '" rx="' + (SW * .7) + '" ry="' + (H * .32) + '" class="ob2" transform="rotate(22 ' + (SW * .5) + ' ' + (H * .5) + ')"></ellipse>' +
+      '<text class="sm"><textPath href="#ctStrip">' + esc(strip) + '</textPath></text>' +
+      '<rect x="' + (SW - 3) + '" y="0" width="3" height="' + H + '" fill="url(#ctNeon)"></rect>' +
+      '<rect x="' + (SW + 18) + '" y="' + (H - 18) + '" width="220" height="3" fill="url(#ctNeonH)"></rect>' +
+      '<rect x="' + (W - 238) + '" y="15" width="220" height="3" fill="url(#ctNeonH)"></rect>' +
       '</svg>';
   }
   function certURL(){ return EV_VIEW_BASE + '#/cert/' + encodeURIComponent(certData.id); }
   function certificateHTML(){
     var d = certData, issued = !!d.id;
     var body = T(CT.body).replace('{c}', esc(d.course || '')).replace('{l}', esc(certLevel()));
+    function row(lbl, val){ return '<div class="pr-cert-kv"><span>' + esc(lbl) + '</span><b>' + val + '</b></div>'; }
     return '<div class="pr-sheet pr-cert">' + certSecurityBg() +
-      '<div class="pr-cert-frame"><div class="pr-cert-inner">' +
-        '<div class="pr-cert-brand"><img src="' + PR_LOGO + '" alt=""><div><b>SPACEZ TERMINAL</b><span>' + esc(T(CT.org)) + '</span></div></div>' +
+      '<div class="pr-cert-side">' +
+        '<div class="pr-cert-brand"><img src="' + PR_LOGO + '" alt=""><div><b>SPACEZ<br>TERMINAL</b><span>' + esc(T(CT.orgShort)) + '</span></div></div>' +
+        '<div class="pr-cert-tag">' + esc(T(CT.tag)) + '</div>' +
+        '<div class="pr-cert-kvs">' +
+          row(T(CT.idL), esc(d.id || '—')) +
+          row(T(CT.codeL), esc(certCode())) +
+          row(T(CT.level), esc(certLevel())) +
+          row(T(CT.date), esc(certFmtDate(d.date))) +
+        '</div>' +
+        '<div class="pr-cert-qr">' + (issued ? '<div class="qb">' + evQrSvg(certURL()) + '</div>' : '<div class="pr-cert-noqr">QR</div>') + '<span>' + esc(T(CT.verify)) + '</span></div>' +
+      '</div>' +
+      '<div class="pr-cert-main">' +
+        '<div class="pr-cert-eyebrow"><i></i>' + esc(T(CT.eyebrow)) + '</div>' +
         '<div class="pr-cert-big">' + esc(T(CT.big)) + '</div>' +
         '<div class="pr-cert-sub">' + esc(T(CT.bigSub)) + '</div>' +
-        '<div class="pr-cert-orn"><i></i><b>◆</b><i></i></div>' +
         '<div class="pr-cert-cert">' + esc(T(CT.certify)) + '</div>' +
         '<div class="pr-cert-name">' + (d.name ? esc(d.name) : '&nbsp;') + '</div>' +
+        '<div class="pr-cert-line"></div>' +
         (d.nameEn ? '<div class="pr-cert-name2">' + esc(d.nameEn) + '</div>' : '') +
         '<div class="pr-cert-body">' + body + '</div>' +
         (d.score ? '<div class="pr-cert-score"><span>' + esc(T(CT.scoreL)) + '</span><b>' + esc(d.score) + '</b></div>' : '') +
-        '<div class="pr-cert-given">' + esc(T(CT.givenL)) + ' ' + esc(certFmtDate(d.date)) + '</div>' +
         '<div class="pr-cert-foot">' +
-          '<div class="pr-cert-qr">' + (issued ? evQrSvg(certURL()) : '<div class="pr-cert-noqr">QR</div>') + '<span>' + esc(T(CT.verify)) + '</span></div>' +
-          '<div class="pr-cert-seal">' + evSealSVG() + '</div>' +
           '<div class="pr-cert-sign"><div class="ln"></div><b>' + esc(d.issuedBy || '') + '</b><span>' + esc(T(CT.issuerRole)) + '</span></div>' +
+          '<div class="pr-cert-sign"><div class="ln dt">' + esc(certFmtDate(d.date)) + '</div><b>' + esc(T(CT.givenL)) + '</b><span>' + esc(T(CT.org)) + '</span></div>' +
         '</div>' +
-        '<div class="pr-cert-ids"><span>' + esc(T(CT.idL)) + ': <b>' + esc(d.id || '—') + '</b></span><span>' + esc(T(CT.codeL)) + ': <b>' + esc(certCode()) + '</b></span>' + (issued ? '<span class="u">' + esc(certURL()) + '</span>' : '') + '</div>' +
-      '</div></div>' +
+        (issued ? '<div class="pr-cert-u">' + esc(T(CT.verifyAt)) + ' ' + esc(certURL()) + '</div>' : '') +
+      '</div>' +
       (issued ? '' : '<div class="pr-cert-specimen">' + esc(T(CT.specimen)) + '</div>') +
     '</div>';
   }
@@ -2697,7 +2747,11 @@
       EV_TXT.ready.map(function(o){ return '<button type="button" class="pr-ann-chip pr-ev-rd' + (d.ready === o.k ? ' on' : '') + '" data-ev-ready="' + o.k + '" style="' + (d.ready === o.k ? 'border-color:' + o.c + ';color:' + o.c : '') + '">' + esc(T(o)) + '</button>'; }).join('') + '</div>';
     h += '<button type="button" class="pr-ann-chip' + (d.cmp ? ' on' : '') + '" data-ev-cmp="1" style="margin-top:10px;">' + (d.cmp ? '✓ ' : '') + esc(T(EV_TXT.cmpT)) + '</button>';
     h += skills(EV_EW, EV_TXT.ew) + skills(EV_OTHER, EV_TXT.other);
-    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.pracT)) + '</div><div class="pr-ev-grid2">' + inp('pracDone', EV_TXT.pracDone, 'number') + inp('pracOk', EV_TXT.pracOk, 'number') + '</div>';
+    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.optT)) + '</div><div class="pr-hint" style="margin:0 0 8px;">' + esc(T(EV_TXT.optHint)) + '</div><div class="pr-ev-opts">' +
+      EV_TXT.optSecs.map(function(o){ var on = evOpt(o.k); return '<button type="button" class="pr-ev-opt' + (on ? ' on' : '') + '" data-ev-opt="' + o.k + '"><i>' + (on ? '✓' : '') + '</i>' + esc(T(o)) + '</button>'; }).join('') + '</div>';
+    if(evOpt('prac')) h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.pracT)) + '</div><div class="pr-ev-grid2">' + inp('pracDone', EV_TXT.pracDone, 'number') + inp('pracOk', EV_TXT.pracOk, 'number') + '</div>';
+    if(evOpt('next')) h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.nextT)) + '</div><div class="pr-ann-chips">' + EV_TXT.nextOpts.map(function(o){ return '<button type="button" class="pr-ann-chip' + (d.nextStep === o.k ? ' on' : '') + '" data-ev-next="' + o.k + '">' + esc(T(o)) + '</button>'; }).join('') + '</div>';
+    if(evOpt('plan')){
     h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.planT).replace('{N}', d.planDays || '10')) + '</div><div class="pr-ann-chips" style="margin-bottom:10px;">' +
       ['7', '10', '14', '30'].map(function(n){ return '<button type="button" class="pr-ann-chip' + (d.planDays === n ? ' on' : '') + '" data-ev-pdays="' + n + '">' + n + ' ' + esc(T(EV_TXT.daysU)) + '</button>'; }).join('') + '</div>';
     for(var pi = 0; pi < Math.max(3, d.plan.length); pi++){
@@ -2705,6 +2759,8 @@
       h += '<div class="pr-ev-prow"><b>' + (pi + 1) + '</b><input type="text" data-evp="task" data-i="' + pi + '" value="' + esc(pr0.task || '') + '" placeholder="' + esc(T(EV_TXT.planTask)) + '"><input type="date" data-evp="from" data-i="' + pi + '" value="' + esc(pr0.from || '') + '" title="' + esc(T(EV_TXT.planFrom)) + '"><input type="date" data-evp="due" data-i="' + pi + '" value="' + esc(pr0.due || '') + '" title="' + esc(T(EV_TXT.planDue)) + '"><button type="button" class="pr-ev-x" data-ev-plandel="' + pi + '" title="' + esc(T(EV_TXT.planDel)) + '">×</button></div>';
     }
     h += '<button type="button" class="pr-mini" data-ev-planadd="1">' + esc(T(EV_TXT.planAdd)) + '</button>';
+    }
+    if(evOpt('sched')){
     h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.schedT)) + '</div><datalist id="evLessonList">' + EV_LESSONS.map(function(c){ return '<option value="' + esc(evLessonName(c)) + '">'; }).join('') + '</datalist>';
     for(var si = 0; si < Math.max(3, d.sched.length); si++){
       var sr = d.sched[si] || {};
@@ -2712,11 +2768,12 @@
         '<input type="text" list="evLessonList" data-evq="topic" data-i="' + si + '" value="' + esc(sr.topic || '') + '" placeholder="' + esc(T(EV_TXT.schedTopic)) + '"><button type="button" class="pr-ev-x" data-ev-scheddel="' + si + '">×</button></div>';
     }
     h += '<button type="button" class="pr-mini" data-ev-schedadd="1">' + esc(T(EV_TXT.schedAdd)) + '</button>';
+    }
     function ta(k, lbl){ return '<label class="pr-ev-in"><span>' + esc(T(lbl)) + '</span><textarea rows="3" data-ev="' + k + '">' + esc(d[k] || '') + '</textarea></label>'; }
-    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.summary)) + '</div>' + ta('strengths', EV_TXT.strengths) + ta('improve', EV_TXT.improve) + ta('covered', EV_TXT.coveredNote) + ta('repeat', EV_TXT.repeat) + ta('goal', EV_TXT.goal) + ta('resources', EV_TXT.resources) + ta('stuGoal', EV_TXT.stuGoal) +
+    h += '<div class="pr-ev-h2">' + esc(T(EV_TXT.summary)) + '</div>' + ta('strengths', EV_TXT.strengths) + ta('improve', EV_TXT.improve) + ta('covered', EV_TXT.coveredNote) + (evOpt('prac') ? ta('repeat', EV_TXT.repeat) : '') + ta('goal', EV_TXT.goal) + (evOpt('resources') ? ta('resources', EV_TXT.resources) : '') +
       '<div class="pr-ev-h2">' + esc(T(EV_TXT.exTitle)) + '</div><button type="button" class="pr-ann-chip' + (d.showExam ? ' on' : '') + '" data-ev-showexam="1">' + (d.showExam ? '✓ ' : '') + esc(T(EV_TXT.showExam)) + '</button>' +
       (d.showExam ? '<div class="pr-ev-exbox">' + inp('nextExam', EV_TXT.nextExam, 'date') + '<div class="pr-ev-grid2">' + inp('exFrom', EV_TXT.exFrom, 'date') + inp('exTo', EV_TXT.exTo, 'date') + '</div>' + evExChips() + '<button type="button" class="pr-mini" data-ev-exset="1">' + esc(T(EV_TXT.exSet)) + '</button>' + (evOnline.exMsg ? '<div class="pr-ev-' + (evOnline.exOk ? 'ok' : 'err') + '">' + esc(evOnline.exMsg) + '</div>' : '') + '</div>' : '') +
-      ta('homework', EV_TXT.homework) + ta('comment', EV_TXT.comment);
+      (evOpt('homework') ? ta('homework', EV_TXT.homework) : '') + ta('comment', EV_TXT.comment);
     h += '<button type="button" class="pr-mini" data-ev-clear="1" style="margin-top:8px;">' + esc(T(EV_TXT.clear)) + '</button>';
     return h;
   }
@@ -2765,6 +2822,10 @@
     if(pvb){ var k2 = pvb.getAttribute('data-ev-pv'), v2 = pvb.getAttribute('data-v'); evData.prev[k2] = String(evData.prev[k2]) === v2 ? '' : v2; evMountForm(true); renderReport(); return true; }
     var rdb = t.closest('[data-ev-ready]');
     if(rdb){ var rv = rdb.getAttribute('data-ev-ready'); evData.ready = evData.ready === rv ? '' : rv; evMountForm(true); renderReport(); return true; }
+    var opb = t.closest('[data-ev-opt]');
+    if(opb){ var ok = opb.getAttribute('data-ev-opt'); evOpt(ok); evData.opt[ok] = evData.opt[ok] ? 0 : 1; evMountForm(true); renderReport(); return true; }
+    var nxb = t.closest('[data-ev-next]');
+    if(nxb){ var nk = nxb.getAttribute('data-ev-next'); evData.nextStep = evData.nextStep === nk ? '' : nk; evMountForm(true); renderReport(); return true; }
     if(t.closest('[data-ev-cmp]')){ evData.cmp = !evData.cmp; evMountForm(true); renderReport(); return true; }
     var tp = t.closest('[data-ev-topic]');
     if(tp){ var tk = tp.getAttribute('data-ev-topic'); var nv = !evData.topics[tk]; if(nv) evData.topics[tk] = 1; else delete evData.topics[tk]; var lo = {}; lo[tk] = nv; evSyncLearned(lo); evMountForm(true); renderReport(); return true; }
@@ -2876,8 +2937,13 @@
       else if(k === 'topics'){
         if(ov && typeof ov === 'object'){ Object.keys(ov).slice(0, 60).forEach(function(kk){ if(/^[a-z0-9]{2,12}$/.test(kk) && ov[kk]) b.topics[kk] = 1; }); }
       }
+      else if(k === 'opt'){
+        if(ov && typeof ov === 'object'){ var no = {}; EV_TXT.optSecs.forEach(function(x){ if(ov[x.k]) no[x.k] = 1; }); b.opt = no; }
+        else { b.opt.prac = (o.pracDone || o.pracOk || o.repeat) ? 1 : 0; b.opt.stuSign = 1; }   /* older saves: keep what they used to show */
+      }
     });
-    if(['', 'no', 'near', 'yes'].indexOf(b.ready) === -1) b.ready = '';
+    if(['', 'no', 'near', 'yes', 'na'].indexOf(b.ready) === -1) b.ready = '';
+    if(['', 'repeat', 'cont', 'up', 'cert'].indexOf(b.nextStep) === -1) b.nextStep = '';
     if(['7', '10', '14', '30'].indexOf(b.planDays) === -1) b.planDays = (o.planDays === undefined ? '30' : '10');
     if(o.showExam === undefined && (o.nextExam || o.examUser)) b.showExam = true;
     return b;
