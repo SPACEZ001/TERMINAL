@@ -1083,7 +1083,7 @@ var CL_UI = {
      login gate's own panel button. */
   /* Round AM: the CEWA Exam Arena is listed only for the tiers the admin allows
      (Terminal Admin > Exam Arena > "Who can see it"); default = admin only. */
-  function navHid(id){ return !!NAV_HIDDEN[id] || (id === 'arena' && !(window.__SPZ_ARENA_OK && window.__SPZ_ARENA_OK())); }
+  function navHid(id){ return !!NAV_HIDDEN[id] || id === 'arena'; }   /* Round AN: Exam Arena never in the top menu -- Terminal Admin panel only */
   var NAV_HIDDEN = { connectedusers:1, printreport:1, announcements:1, pro:1, quietValue:1, adminnotes:1 }; /* Round Q: Institutional Pro Desk moved into Cockpit, see part-47.js; Round W (#223): Quiet Value Scanner + Website QR Code are admin-only, reached only via the Terminal Admin panel, never listed in public nav/hub. Round X (#234) briefly added Elliott Wave Classroom here too, but Round Y (#241) reversed that: she wants it listed in the Learn group like any other page, just shown locked (paintLockVeils' spz-locked-item badge, same as a member-only page) rather than invisible -- the actual protection (LOCKED_ROUTES/ADMIN_ONLY_ROUTES in part-46.js + the content-level window.__SPZ_TIER() check in part-65.js, both behind the same PBKDF2/SHA-256-hashed admin password as everything else here) is unchanged. */
 
   function buildHub(){
