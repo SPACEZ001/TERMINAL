@@ -181,6 +181,9 @@
     navFibTime: { en:'Time relationships', th:'ฟีโบนัชชีด้านเวลา' },
     navAltCount: { en:'Primary & alternate counts', th:'การนับหลักและการนับสำรอง' },
     navMtf: { en:'Multi-timeframe counting', th:'นับคลื่นหลายไทม์เฟรม' },
+    navGallery: { en:'Pattern gallery (all patterns)', th:'รวมตัวอย่างทุกรูปแบบ' },
+    navComboVs: { en:'Double zigzag vs double three', th:'Double Zigzag ต่างกับ Double Three ยังไง' },
+    navPractice: { en:'Practice: name the waves', th:'ฝึกนับ: เลือกรูปแบบของแต่ละคลื่น' },
 
     /* ---- Round AB: admin-key gate + content-loading states, mirroring
        Connected Users (part-50.js) exactly in wording style/tone. ---- */
@@ -209,6 +212,7 @@
     'fib-c':UI.navFibC, 'fib-cluster':UI.navFibCluster, 'rules-sheet':UI.navRulesSheet,
     'gd-start':UI.navGdStart, 'gd-nest':UI.navGdNest, 'gd-thrust':UI.navGdThrust, 'gd-corrdone':UI.navGdCorrDone,
     'fib-time':UI.navFibTime, 'alt-count':UI.navAltCount, mtf:UI.navMtf,
+    gallery:UI.navGallery, 'combo-vs':UI.navComboVs, practice:UI.navPractice,
     guide:UI.navGuide, 'gd-alternation':UI.navGdAlt, 'gd-channel':UI.navGdChannel, 'gd-extension':UI.navGdExt, 'gd-truncation':UI.navGdTrunc, 'gd-depth':UI.navGdDepth,
     volume:UI.navVolume, personality:UI.navPersonality, howto:UI.navHowto, w3c:UI.navW3c, markets:UI.navMarkets, basics:UI.navBasics, glossary:UI.navGlossary, example:UI.navExample,
     mistakes:UI.navMistakes, further:UI.navFurther
@@ -223,8 +227,9 @@
       'zigzag',
       'flat', 'flat-regular', 'flat-expanded', 'flat-running',
       'triangle', 'tri-contracting', 'tri-expanding', 'tri-running',
-      'combination'
+      'combination', 'combo-vs'
     ] },
+    { id:'gallery' },
     { id:'personality' },
     { id:'guide', children:['gd-start', 'gd-alternation', 'gd-channel', 'gd-extension', 'gd-nest', 'gd-truncation', 'gd-depth', 'gd-thrust', 'gd-corrdone'] },
     { id:'fib', children:[
@@ -235,6 +240,7 @@
     ] },
     { id:'howto' },
     { id:'rules-sheet' },
+    { id:'practice' },
     { id:'alt-count' },
     { id:'mtf' },
     { id:'example' },
@@ -301,6 +307,7 @@
     if(!contentCache) return keyGateHTML(); // defensive fallback; renderShell() normally triggers a fetch before this is reached
     var node = contentCache[currentId];
     var out = node ? T(node) : '';
+    if(currentId === 'practice' && out.indexOf('data-ewv-practice') === -1) out += '<div data-ewv-practice="1"></div>';
     return out || ('<div class="ewv-content-err"><p>' + esc(T(UI.contentMissing)) + '</p></div>');
   }
 
@@ -356,6 +363,146 @@
       '</div>' +
       '<p class="ewv-note">' + esc(T(UI.note)) + '</p>';
     wireContentGate();
+    var pm = bodyEl.querySelector('[data-ewv-practice]');
+    if(pm) mountPractice(pm);
+  }
+
+  /* ================= Round AN: practice -- pick the pattern of every wave =================
+     Each structure lists its waves; each wave has the set of patterns that are allowed.
+     The chart redraws every leg with the chosen pattern's real shape. */
+  var PT = {
+    impulse:{ en:'Impulse', th:'Impulse' }, lead:{ en:'Leading diagonal', th:'Leading Diagonal' }, end:{ en:'Ending diagonal', th:'Ending Diagonal' },
+    zigzag:{ en:'Zigzag', th:'Zigzag' }, flat:{ en:'Flat', th:'Flat' }, triangle:{ en:'Triangle', th:'Triangle' },
+    dzz:{ en:'Double zigzag', th:'Double Zigzag' }, combo:{ en:'Double three (combination)', th:'Double Three (Combination)' }
+  };
+  var PT_ORDER = ['impulse', 'lead', 'end', 'zigzag', 'flat', 'triangle', 'dzz', 'combo'];
+  var MOTIVE = { impulse:1, lead:1, end:1 };
+  var SHAPE = {
+    none:[[0,0],[1,1]],
+    impulse:[[0,0],[.2,.38],[.32,.22],[.66,.78],[.78,.62],[1,1]],
+    lead:[[0,0],[.22,.55],[.34,.3],[.6,.85],[.72,.62],[1,1]],
+    end:[[0,0],[.22,.55],[.34,.3],[.6,.85],[.72,.62],[1,1]],
+    zigzag:[[0,0],[.42,.64],[.62,.38],[1,1]],
+    flat:[[0,0],[.3,.6],[.62,.04],[1,1]],
+    triangle:[[0,0],[.2,1.2],[.4,.28],[.6,1.02],[.78,.5],[1,1]],
+    dzz:[[0,0],[.18,.42],[.28,.28],[.46,.64],[.56,.5],[.74,.8],[.84,.7],[1,1]],
+    combo:[[0,0],[.22,.72],[.44,.12],[.6,.86],[.8,.36],[1,1]]
+  };
+  var CORR = ['zigzag', 'flat', 'triangle', 'dzz', 'combo'], CORR_NT = ['zigzag', 'flat', 'dzz', 'combo'];
+  var STRUCTS = {
+    impulse:{ t:{en:'Impulse (1-2-3-4-5)',th:'Impulse (1-2-3-4-5)'}, legs:['1','2','3','4','5'],
+      pts:[[0,.05],[.18,.42],[.27,.25],[.6,.85],[.72,.66],[1,.98]],
+      ok:[['impulse','lead'], CORR_NT, ['impulse'], CORR, ['impulse','end']],
+      why:[{en:'Wave 1 moves with the trend: impulse or leading diagonal.',th:'Wave 1 ไปตามเทรนด์: ต้องเป็น Impulse หรือ Leading Diagonal'},
+           {en:'Wave 2 is a correction — any three except a triangle (a triangle is never wave 2).',th:'Wave 2 เป็นการปรับฐาน — เป็น 3 คลื่นแบบไหนก็ได้ ยกเว้น Triangle (Triangle ไม่เป็น wave 2)'},
+           {en:'Wave 3 is always an impulse — never a diagonal, never a correction.',th:'Wave 3 เป็น Impulse เสมอ — ไม่เป็น Diagonal และไม่เป็นการปรับฐาน'},
+           {en:'Wave 4 is a correction — any three, triangles included.',th:'Wave 4 เป็นการปรับฐาน — เป็น 3 คลื่นแบบไหนก็ได้ รวมถึง Triangle'},
+           {en:'Wave 5 moves with the trend: impulse or ending diagonal.',th:'Wave 5 ไปตามเทรนด์: ต้องเป็น Impulse หรือ Ending Diagonal'}] },
+    zigzag:{ t:{en:'Zigzag (A-B-C)',th:'Zigzag (A-B-C)'}, legs:['A','B','C'],
+      pts:[[0,.95],[.42,.45],[.62,.68],[1,.08]],
+      ok:[['impulse','lead'], CORR, ['impulse','end']],
+      why:[{en:'Wave A of a zigzag is a five: impulse or leading diagonal.',th:'Wave A ของ Zigzag เป็น 5 คลื่น: Impulse หรือ Leading Diagonal'},
+           {en:'Wave B is a correction — any three.',th:'Wave B เป็นการปรับฐาน — เป็น 3 คลื่นแบบไหนก็ได้'},
+           {en:'Wave C is a five: impulse or ending diagonal.',th:'Wave C เป็น 5 คลื่น: Impulse หรือ Ending Diagonal'}] },
+    flat:{ t:{en:'Flat (A-B-C)',th:'Flat (A-B-C)'}, legs:['A','B','C'],
+      pts:[[0,.9],[.33,.42],[.66,.9],[1,.36]],
+      ok:[CORR_NT, CORR, ['impulse','end']],
+      why:[{en:'Wave A of a flat is a three (not a five, and not a triangle).',th:'Wave A ของ Flat เป็น 3 คลื่น (ไม่ใช่ 5 คลื่น และไม่ใช่ Triangle)'},
+           {en:'Wave B is a three that returns to about the start of A.',th:'Wave B เป็น 3 คลื่นที่ย้อนกลับไปราวจุดเริ่ม A'},
+           {en:'Wave C is a five: impulse or ending diagonal.',th:'Wave C เป็น 5 คลื่น: Impulse หรือ Ending Diagonal'}] },
+    triangle:{ t:{en:'Triangle (A-B-C-D-E)',th:'Triangle (A-B-C-D-E)'}, legs:['A','B','C','D','E'],
+      pts:[[0,.95],[.22,.2],[.44,.8],[.62,.34],[.8,.66],[1,.48]],
+      ok:[CORR_NT, CORR_NT, CORR_NT, CORR_NT, CORR],
+      why:[{en:'Every triangle leg is a three.',th:'ทุกขาของ Triangle เป็น 3 คลื่น'},{en:'Every triangle leg is a three.',th:'ทุกขาของ Triangle เป็น 3 คลื่น'},{en:'Every triangle leg is a three.',th:'ทุกขาของ Triangle เป็น 3 คลื่น'},{en:'Every triangle leg is a three.',th:'ทุกขาของ Triangle เป็น 3 คลื่น'},
+           {en:'Wave E is a three — it may itself be a small triangle.',th:'Wave E เป็น 3 คลื่น — อาจเป็น Triangle ย่อยได้'}] },
+    enddiag:{ t:{en:'Ending diagonal (1-2-3-4-5)',th:'Ending Diagonal (1-2-3-4-5)'}, legs:['1','2','3','4','5'],
+      pts:[[0,.05],[.26,.6],[.38,.38],[.64,.86],[.76,.66],[1,.98]],
+      ok:[['zigzag','dzz'], ['zigzag','dzz'], ['zigzag','dzz'], ['zigzag','dzz'], ['zigzag','dzz']],
+      why:[{en:'Every leg of an ending diagonal is a three (usually a zigzag).',th:'ทุกขาของ Ending Diagonal เป็น 3 คลื่น (ส่วนใหญ่เป็น Zigzag)'},{en:'Every leg of an ending diagonal is a three (usually a zigzag).',th:'ทุกขาของ Ending Diagonal เป็น 3 คลื่น (ส่วนใหญ่เป็น Zigzag)'},{en:'Every leg of an ending diagonal is a three (usually a zigzag).',th:'ทุกขาของ Ending Diagonal เป็น 3 คลื่น (ส่วนใหญ่เป็น Zigzag)'},{en:'Every leg of an ending diagonal is a three (usually a zigzag).',th:'ทุกขาของ Ending Diagonal เป็น 3 คลื่น (ส่วนใหญ่เป็น Zigzag)'},{en:'Every leg of an ending diagonal is a three (usually a zigzag).',th:'ทุกขาของ Ending Diagonal เป็น 3 คลื่น (ส่วนใหญ่เป็น Zigzag)'}] },
+    dzz:{ t:{en:'Double zigzag (W-X-Y)',th:'Double Zigzag (W-X-Y)'}, legs:['W','X','Y'],
+      pts:[[0,.95],[.38,.5],[.55,.66],[1,.06]],
+      ok:[['zigzag'], CORR, ['zigzag']],
+      why:[{en:'In a double zigzag, W is a zigzag.',th:'ใน Double Zigzag ส่วน W เป็น Zigzag'},{en:'X is any correction.',th:'X เป็นการปรับฐานแบบไหนก็ได้'},{en:'Y is a zigzag too — otherwise it would be a double three.',th:'Y ต้องเป็น Zigzag ด้วย — ถ้าไม่ใช่จะกลายเป็น Double Three'}] },
+    combo:{ t:{en:'Double three (W-X-Y)',th:'Double Three (W-X-Y)'}, legs:['W','X','Y'],
+      pts:[[0,.86],[.38,.4],[.55,.78],[1,.36]],
+      ok:[['zigzag','flat'], CORR, ['zigzag','flat','triangle']],
+      why:[{en:'W is a simple correction (zigzag or flat).',th:'W เป็นการปรับฐานแบบเดี่ยว (Zigzag หรือ Flat)'},{en:'X is any correction.',th:'X เป็นการปรับฐานแบบไหนก็ได้'},{en:'Y is a zigzag, flat or triangle (a triangle only as the last part). W and Y cannot both be zigzags.',th:'Y เป็น Zigzag, Flat หรือ Triangle (Triangle อยู่ได้แค่ส่วนสุดท้าย) และ W กับ Y เป็น Zigzag ทั้งคู่ไม่ได้'}] }
+  };
+  var PU = {
+    pick:{ en:'Structure', th:'โครงสร้าง' }, chk:{ en:'Check answers', th:'ตรวจคำตอบ' }, rnd:{ en:'Random', th:'สุ่มโจทย์' }, ans:{ en:'Show an answer', th:'ดูเฉลย' }, clr:{ en:'Clear', th:'ล้าง' },
+    choose:{ en:'— choose —', th:'— เลือก —' }, wave:{ en:'Wave', th:'คลื่น' },
+    allOk:{ en:'All correct! Every wave fits the rules of this pattern.', th:'ถูกทั้งหมด! ทุกคลื่นเข้ากฎของรูปแบบนี้' },
+    some:{ en:'{n} of {t} correct — read the notes on the red waves.', th:'ถูก {n} จาก {t} ข้อ — อ่านคำอธิบายในช่องสีแดง' },
+    bothZZ:{ en:'W and Y are both zigzags — that is a double zigzag, not a double three.', th:'W และ Y เป็น Zigzag ทั้งคู่ — นั่นคือ Double Zigzag ไม่ใช่ Double Three' },
+    okPick:{ en:'Allowed here.', th:'ใช้ได้ในตำแหน่งนี้' },
+    allowed:{ en:'Allowed:', th:'ที่ใช้ได้:' }
+  };
+  var pr = { s:'impulse', pick:{}, checked:false };
+  function prDraw(){
+    var S = STRUCTS[pr.s], W = 640, H = 240, pad = 22, d = '', i, k;
+    function X(t){ return pad + (W - 2 * pad) * t; }
+    function Y(v){ return pad + (H - 2 * pad) * (1 - v); }
+    var labels = '';
+    for(i = 0; i < S.legs.length; i++){
+      var a = S.pts[i], b = S.pts[i + 1], sh = SHAPE[pr.pick[i] || 'none'];
+      for(k = 0; k < sh.length; k++){
+        var tx = X(a[0] + (b[0] - a[0]) * sh[k][0]), ty = Y(a[1] + (b[1] - a[1]) * sh[k][1]);
+        d += (d ? ' L' : 'M') + tx.toFixed(1) + ' ' + ty.toFixed(1);
+      }
+      var up = b[1] > a[1];
+      labels += '<circle cx="' + X(b[0]).toFixed(1) + '" cy="' + Y(b[1]).toFixed(1) + '" r="3" class="ewv-dot"></circle><text x="' + X(b[0]).toFixed(1) + '" y="' + (Y(b[1]) + (up ? -9 : 18)).toFixed(1) + '" class="ewv-lab">' + S.legs[i] + '</text>';
+    }
+    var skel = 'M' + S.pts.map(function(p){ return X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1); }).join(' L');
+    return '<svg class="ewv-svg" viewBox="0 0 ' + W + ' ' + H + '"><path d="' + skel + '" class="ewv-skel" fill="none"></path><path d="' + d + '" class="ewv-sub" fill="none"></path>' + labels + '</svg>';
+  }
+  function prCheck(i){
+    var S = STRUCTS[pr.s], v = pr.pick[i];
+    if(!v) return null;
+    var ok = S.ok[i].indexOf(v) !== -1;
+    if(ok && pr.s === 'combo' && i === 2 && pr.pick[0] === 'zigzag' && v === 'zigzag') return 'zz';
+    return ok;
+  }
+  function prHTML(){
+    var S = STRUCTS[pr.s];
+    var h = '<div class="ewv-pr"><div class="ewv-pr-top"><span>' + esc(T(PU.pick)) + '</span><select data-pr-s="1">' +
+      Object.keys(STRUCTS).map(function(k){ return '<option value="' + k + '"' + (k === pr.s ? ' selected' : '') + '>' + esc(T(STRUCTS[k].t)) + '</option>'; }).join('') + '</select>' +
+      '<button type="button" class="go" data-pr-act="check">' + esc(T(PU.chk)) + '</button><button type="button" data-pr-act="rnd">' + esc(T(PU.rnd)) + '</button><button type="button" data-pr-act="ans">' + esc(T(PU.ans)) + '</button><button type="button" data-pr-act="clr">' + esc(T(PU.clr)) + '</button></div>';
+    h += '<div class="ewv-diagram">' + prDraw() + '</div><div class="ewv-pr-legs">';
+    var nOk = 0;
+    S.legs.forEach(function(lg, i){
+      var r = pr.checked ? prCheck(i) : null, cls = '';
+      if(pr.checked){ cls = r === true ? ' ok' : ' bad'; if(r === true) nOk++; }
+      var note = '';
+      if(pr.checked){
+        if(r === true) note = T(PU.okPick);
+        else if(r === 'zz') note = T(PU.bothZZ);
+        else note = T(S.why[i]) + ' ' + T(PU.allowed) + ' ' + S.ok[i].map(function(k){ return T(PT[k]); }).join(', ');
+      }
+      h += '<div class="ewv-pr-leg' + cls + '"><b>' + esc(T(PU.wave)) + ' ' + lg + '</b><select data-pr-leg="' + i + '"><option value="">' + esc(T(PU.choose)) + '</option>' +
+        PT_ORDER.map(function(k){ return '<option value="' + k + '"' + (pr.pick[i] === k ? ' selected' : '') + '>' + esc(T(PT[k])) + (MOTIVE[k] ? ' (5)' : ' (3)') + '</option>'; }).join('') + '</select>' + (note ? '<em>' + esc(note) + '</em>' : '') + '</div>';
+    });
+    h += '</div>';
+    if(pr.checked) h += '<div class="ewv-pr-sum ' + (nOk === S.legs.length ? 'ok' : 'bad') + '">' + esc(nOk === S.legs.length ? T(PU.allOk) : T(PU.some).replace('{n}', nOk).replace('{t}', S.legs.length)) + '</div>';
+    return h + '</div>';
+  }
+  function mountPractice(host){
+    host.innerHTML = prHTML();
+    if(host.__wired) return;
+    host.__wired = true;
+    host.addEventListener('change', function(ev){
+      var t = ev.target;
+      if(t.hasAttribute('data-pr-s')){ pr.s = t.value; pr.pick = {}; pr.checked = false; host.innerHTML = prHTML(); return; }
+      if(t.hasAttribute('data-pr-leg')){ pr.pick[+t.getAttribute('data-pr-leg')] = t.value; pr.checked = false; host.innerHTML = prHTML(); }
+    });
+    host.addEventListener('click', function(ev){
+      var b = ev.target.closest('[data-pr-act]'); if(!b) return;
+      var a = b.getAttribute('data-pr-act'), S = STRUCTS[pr.s];
+      if(a === 'check') pr.checked = true;
+      else if(a === 'clr'){ pr.pick = {}; pr.checked = false; }
+      else if(a === 'ans'){ pr.pick = {}; S.ok.forEach(function(arr, i){ pr.pick[i] = arr[0]; }); if(pr.s === 'combo') pr.pick[2] = 'flat'; pr.checked = true; }
+      else if(a === 'rnd'){ var ks = Object.keys(STRUCTS); pr.s = ks[Math.floor(Math.random() * ks.length)]; pr.pick = {}; pr.checked = false; }
+      host.innerHTML = prHTML();
+    });
   }
 
   function paint(){
