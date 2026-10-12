@@ -264,7 +264,7 @@
     if(j && VIS_RANK[j.arenaVis] !== undefined && j.arenaVis !== arenaVis){ setVis(j.arenaVis); if(sec) paint(); }
   }).catch(function(){});
   var VIS_TXT = {
-    h:{ en:'Who can see Exam Arena in the menu', th:'ใครเห็นเมนูสนามสอบ CEWA ได้บ้าง' },
+    h:{ en:'Who can open Exam Arena (it is never listed in the top menu)', th:'ใครเปิดหน้าสนามสอบ CEWA ได้บ้าง (ไม่แสดงในเมนูด้านบน)' },
     o:{ admin:{en:'Admin only',th:'แอดมินเท่านั้น'}, editor:{en:'Editor and up',th:'Editor ขึ้นไป'}, member:{en:'Members and up',th:'สมาชิกขึ้นไป'}, all:{en:'Everyone',th:'ทุกคน'} },
     saved:{ en:'Saved', th:'บันทึกแล้ว' }, bad:{ en:'Could not save — deploy the new Worker first.', th:'บันทึกไม่สำเร็จ — ต้องอัป Worker ใหม่ก่อน' },
     closed:{ en:'Exam Arena is closed for now.', th:'สนามสอบ CEWA ปิดอยู่ในขณะนี้' }

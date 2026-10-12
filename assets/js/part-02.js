@@ -123,6 +123,40 @@
     }
     box.__paint = paint;
     paint();
+
+    /* Round AN: the pill slowly fades between the cycle reading, the time and
+       the date. Hovering (or focusing) it shows the cycle again and opens the
+       chooser; leaving resumes the rotation. */
+    var lblEl = box.querySelector('[data-c="lbl"]');
+    var slide = 0, hover = false, closeT = null;
+    function p2(n){ return (n < 10 ? '0' : '') + n; }
+    function slideText(k){
+      var d = new Date(), th = L() === 'th';
+      if(k === 1) return p2(d.getHours()) + ':' + p2(d.getMinutes()) + (th ? ' น.' : '');
+      if(k === 2){
+        var dTh = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'], mTh = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+        var dEn = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], mEn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        return th ? dTh[d.getDay()] + ' ' + d.getDate() + ' ' + mTh[d.getMonth()] + ' ' + (d.getFullYear() + 543 - 2500)
+                  : dEn[d.getDay()] + ' ' + d.getDate() + ' ' + mEn[d.getMonth()];
+      }
+      return T(CFG.label());
+    }
+    function show(k){
+      lblEl.classList.add('cyc-fade');
+      setTimeout(function(){ lblEl.textContent = slideText(k); box.classList.toggle('cyc-clock', k !== 0); lblEl.classList.remove('cyc-fade'); }, 260);
+    }
+    var reduce = false; try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){}
+    if(!reduce) setInterval(function(){
+      if(hover || box.classList.contains('open')) return;
+      slide = (slide + 1) % 3; show(slide);
+    }, 4200);
+    var origPaint = paint;
+    box.__paint = function(){ origPaint(); if(slide !== 0 && !hover){ lblEl.textContent = slideText(slide); } };
+    function enter(){ hover = true; clearTimeout(closeT); if(slide !== 0){ slide = 0; show(0); } if(window.matchMedia && window.matchMedia('(hover:hover)').matches) box.classList.add('open'); }
+    function leave(){ hover = false; closeT = setTimeout(function(){ box.classList.remove('open'); }, 450); }
+    box.addEventListener('mouseenter', enter);
+    box.addEventListener('mouseleave', leave);
+    trig.addEventListener('focus', function(){ if(slide !== 0){ slide = 0; show(0); } });
   }
 
   /* ---------------- banners injected into every data page ---------------- */
