@@ -231,6 +231,7 @@
        page to admin-only -- same shortcut-grid treatment as every other
        admin-only page here. */
     adminElliott:{en:'Elliott Wave Classroom',th:'ห้องเรียน Elliott Wave'},
+    adminArena:{en:'CEWA Exam Arena',th:'สนามสอบ CEWA'},
     /* Secret Notes: admin-only encrypted notebook (part-66.js). */
     adminNotes:{en:'Notes',th:'โน้ต'},
     /* Round U (#218): the admin-shortcut grid grew to 9 flat buttons over
@@ -431,6 +432,10 @@
                   '<button class="cag-admin-link" type="button" id="cagBtnElliott">' +
                     '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19 7 11 11 14 15 6 18 10 22 5"/><circle cx="7" cy="11" r="1.3" fill="currentColor" stroke="none"/><circle cx="11" cy="14" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="6" r="1.3" fill="currentColor" stroke="none"/></svg>' +
                     '<span data-x="adminElliott"></span>' +
+                  '</button>' +
+                  '<button class="cag-admin-link" type="button" id="cagBtnArena">' +
+                    '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 01-10 0V4z"/><path d="M17 5h3v2a3 3 0 01-3 3"/><path d="M7 5H4v2a3 3 0 003 3"/></svg>' +
+                    '<span data-x="adminArena"></span>' +
                   '</button>' +
                   '<button class="cag-admin-link" type="button" id="cagBtnNotes">' +
                     '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/><circle cx="12" cy="15.5" r="1.2" fill="currentColor" stroke="none"/></svg>' +
@@ -638,6 +643,7 @@
     }
     gate.querySelector('#cagBtnAddAnalysis').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/journalNew'; });
     gate.querySelector('#cagBtnPrintReport').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/printreport'; });
+    gate.querySelector('#cagBtnArena').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/arena'; });
     // Compare Stocks PDF is admin-only (see cmpIsAdmin()/cmpPaintDownloadGate()
     // in the comparator module) -- this shortcut just gets an already-logged-in
     // admin to the picker; the actual download still needs stocks selected there.
@@ -929,7 +935,7 @@
         adminCompareDownload: TXT.adminCompareDownload, adminConnectedUsers: TXT.adminConnectedUsers,
         adminAnnouncements: TXT.adminAnnouncements,
         adminPro: TXT.adminPro, adminBriefing: TXT.adminBriefing, adminQuietValue: TXT.adminQuietValue,
-        adminQrCode: TXT.adminQrCode, adminElliott: TXT.adminElliott, adminNotes: TXT.adminNotes,
+        adminQrCode: TXT.adminQrCode, adminElliott: TXT.adminElliott, adminArena: TXT.adminArena, adminNotes: TXT.adminNotes,
         adminGroupPublish: TXT.adminGroupPublish, adminGroupReports: TXT.adminGroupReports, adminGroupTools: TXT.adminGroupTools,
         tabMember: TXT.tabMember, tabFull: TXT.tabFull, tabLine: TXT.tabLine, tabTg: TXT.tabTg, tabEditor: TXT.tabEditor,
         editorT: TXT.editorT, editorS: TXT.editorS, editorNote: TXT.editorNote, editorSubmit: TXT.editorSubmit,
