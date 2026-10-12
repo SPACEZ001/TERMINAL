@@ -140,7 +140,7 @@
     navTriangle: { en:'Triangle (3-3-3-3-3)', th:'Triangle (3-3-3-3-3)' },
     navCombination: { en:'Combination', th:'Combination' },
     navDegree: { en:'Wave degree', th:'ระดับขนาดคลื่น' },
-    navFibRetrace: { en:'Retracement & guidelines', th:'การย่อกลับและแนวทาง' },
+    navFibRetrace: { en:'Retracement summary', th:'สรุปการย่อกลับ' },
     navFibProj: { en:'Wave 5 projection', th:'คาดคะเนคลื่น 5' },
     navMistakes: { en:'Common mistakes', th:'ข้อผิดพลาดที่พบบ่อย' },
     navFurther: { en:'Further reading', th:'อ่านเพิ่มเติม' },
@@ -166,6 +166,14 @@
     navBasics: { en:'The basic pattern: 5 & 3', th:'พื้นฐาน: 5 กับ 3 คืออะไร' },
     navGlossary: { en:'Glossary', th:'คำศัพท์ (Glossary)' },
     navExample: { en:'Worked example', th:'ตัวอย่างการนับทั้งรอบ' },
+    navFibIntro: { en:'Fibonacci basics: how to draw', th:'พื้นฐานฟีโบนัชชี: วิธีลากเส้น' },
+    navFrW2: { en:'Wave 2 retracement', th:'การย่อกลับของ Wave 2' },
+    navFrW4: { en:'Wave 4 retracement', th:'การย่อกลับของ Wave 4' },
+    navFrB: { en:'Wave B retracement', th:'การย่อกลับของ Wave B' },
+    navFrX: { en:'Wave X retracement', th:'การย่อกลับของ Wave X' },
+    navFibC: { en:'Wave C targets', th:'เป้าหมายของ Wave C' },
+    navFibCluster: { en:'Fibonacci clusters', th:'โซนซ้อนของฟีโบนัชชี (Cluster)' },
+    navRulesSheet: { en:'Rules cheat sheet', th:'สรุปกฎทั้งหมด (Cheat sheet)' },
 
     /* ---- Round AB: admin-key gate + content-loading states, mirroring
        Connected Users (part-50.js) exactly in wording style/tone. ---- */
@@ -190,6 +198,8 @@
     combination:UI.navCombination,
     degree:UI.navDegree, fib:UI.navGroupFib, 'fib-retrace':UI.navFibRetrace, 'fib-proj':UI.navFibProj,
     'fib-proj3':UI.navFibProj3, 'fib-ao':UI.navFibAo,
+    'fib-intro':UI.navFibIntro, 'fr-w2':UI.navFrW2, 'fr-w4':UI.navFrW4, 'fr-b':UI.navFrB, 'fr-x':UI.navFrX,
+    'fib-c':UI.navFibC, 'fib-cluster':UI.navFibCluster, 'rules-sheet':UI.navRulesSheet,
     guide:UI.navGuide, 'gd-alternation':UI.navGdAlt, 'gd-channel':UI.navGdChannel, 'gd-extension':UI.navGdExt, 'gd-truncation':UI.navGdTrunc, 'gd-depth':UI.navGdDepth,
     volume:UI.navVolume, personality:UI.navPersonality, howto:UI.navHowto, w3c:UI.navW3c, markets:UI.navMarkets, basics:UI.navBasics, glossary:UI.navGlossary, example:UI.navExample,
     mistakes:UI.navMistakes, further:UI.navFurther
@@ -208,8 +218,14 @@
     ] },
     { id:'personality' },
     { id:'guide', children:['gd-alternation', 'gd-channel', 'gd-extension', 'gd-truncation', 'gd-depth'] },
-    { id:'fib', children:['fib-retrace', 'fib-proj', 'fib-proj3', 'fib-ao', 'volume'] },
+    { id:'fib', children:[
+      'fib-intro',
+      'fib-retrace', 'fr-w2', 'fr-w4', 'fr-b', 'fr-x',
+      'fib-proj3', 'fib-proj', 'fib-c', 'fib-cluster',
+      'fib-ao', 'volume'
+    ] },
     { id:'howto' },
+    { id:'rules-sheet' },
     { id:'example' },
     { id:'w3c' },
     { id:'markets' },
@@ -297,7 +313,7 @@
 
   function navItemHTML(id, isSub){
     var active = id === currentId ? ' active' : '';
-    var subCls = isSub ? (/^(flat|tri)-/.test(id) ? ' ewv-gl-sub ewv-gl-sub2' : ' ewv-gl-sub') : '';
+    var subCls = isSub ? (/^(flat|tri|fr)-/.test(id) ? ' ewv-gl-sub ewv-gl-sub2' : ' ewv-gl-sub') : '';
     return '<button type="button" class="gl-nav-item' + active + subCls + '" data-node="' + id + '">' +
       '<span class="gl-nav-name">' + esc(T(NODE_TITLE[id])) + '</span></button>';
   }
