@@ -174,6 +174,13 @@
     navFibC: { en:'Wave C targets', th:'เป้าหมายของ Wave C' },
     navFibCluster: { en:'Fibonacci clusters', th:'โซนซ้อนของฟีโบนัชชี (Cluster)' },
     navRulesSheet: { en:'Rules cheat sheet', th:'สรุปกฎทั้งหมด (Cheat sheet)' },
+    navGdStart: { en:'Spotting a new wave 1', th:'สังเกตจุดเริ่ม wave 1' },
+    navGdNest: { en:'Nested 1-2s (before wave 3)', th:'1-2 ซ้อนกัน (ก่อน wave 3 พุ่ง)' },
+    navGdThrust: { en:'Triangle thrust & diagonal reversal', th:'แรงพุ่งหลัง Triangle / กลับตัวหลัง Diagonal' },
+    navGdCorrDone: { en:'Is the correction over?', th:'การปรับฐานจบหรือยัง?' },
+    navFibTime: { en:'Time relationships', th:'ฟีโบนัชชีด้านเวลา' },
+    navAltCount: { en:'Primary & alternate counts', th:'การนับหลักและการนับสำรอง' },
+    navMtf: { en:'Multi-timeframe counting', th:'นับคลื่นหลายไทม์เฟรม' },
 
     /* ---- Round AB: admin-key gate + content-loading states, mirroring
        Connected Users (part-50.js) exactly in wording style/tone. ---- */
@@ -200,6 +207,8 @@
     'fib-proj3':UI.navFibProj3, 'fib-ao':UI.navFibAo,
     'fib-intro':UI.navFibIntro, 'fr-w2':UI.navFrW2, 'fr-w4':UI.navFrW4, 'fr-b':UI.navFrB, 'fr-x':UI.navFrX,
     'fib-c':UI.navFibC, 'fib-cluster':UI.navFibCluster, 'rules-sheet':UI.navRulesSheet,
+    'gd-start':UI.navGdStart, 'gd-nest':UI.navGdNest, 'gd-thrust':UI.navGdThrust, 'gd-corrdone':UI.navGdCorrDone,
+    'fib-time':UI.navFibTime, 'alt-count':UI.navAltCount, mtf:UI.navMtf,
     guide:UI.navGuide, 'gd-alternation':UI.navGdAlt, 'gd-channel':UI.navGdChannel, 'gd-extension':UI.navGdExt, 'gd-truncation':UI.navGdTrunc, 'gd-depth':UI.navGdDepth,
     volume:UI.navVolume, personality:UI.navPersonality, howto:UI.navHowto, w3c:UI.navW3c, markets:UI.navMarkets, basics:UI.navBasics, glossary:UI.navGlossary, example:UI.navExample,
     mistakes:UI.navMistakes, further:UI.navFurther
@@ -217,15 +226,17 @@
       'combination'
     ] },
     { id:'personality' },
-    { id:'guide', children:['gd-alternation', 'gd-channel', 'gd-extension', 'gd-truncation', 'gd-depth'] },
+    { id:'guide', children:['gd-start', 'gd-alternation', 'gd-channel', 'gd-extension', 'gd-nest', 'gd-truncation', 'gd-depth', 'gd-thrust', 'gd-corrdone'] },
     { id:'fib', children:[
       'fib-intro',
       'fib-retrace', 'fr-w2', 'fr-w4', 'fr-b', 'fr-x',
-      'fib-proj3', 'fib-proj', 'fib-c', 'fib-cluster',
+      'fib-proj3', 'fib-proj', 'fib-c', 'fib-cluster', 'fib-time',
       'fib-ao', 'volume'
     ] },
     { id:'howto' },
     { id:'rules-sheet' },
+    { id:'alt-count' },
+    { id:'mtf' },
     { id:'example' },
     { id:'w3c' },
     { id:'markets' },
