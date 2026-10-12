@@ -985,9 +985,15 @@
       for(var j = 0; j < navButtons.length; j++){ navButtons[j].classList.toggle('active', j === i); }
       row.open = true;
       activeI = i;
-      detail.classList.remove('gl-anim');
-      void detail.offsetWidth; // restart the CSS animation on repeat selections
-      detail.classList.add('gl-anim');
+      if(mode === 'replace'){
+        /* Round AM (speed): the initial pick at page load must not force a
+           layout of the whole page (offsetWidth) -- that alone cost ~0.2 s. */
+        detail.classList.add('gl-anim');
+      } else {
+        detail.classList.remove('gl-anim');
+        void detail.offsetWidth; // restart the CSS animation on repeat selections
+        detail.classList.add('gl-anim');
+      }
       // 'pop' = we're here because of a history traversal -- the entry
       // already exists, don't touch it. 'replace' = a corrective jump (the
       // initial term, or the filter rail hiding the active one) that

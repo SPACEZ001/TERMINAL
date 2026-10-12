@@ -217,7 +217,18 @@
   /* The CSS height is locked into data-h on first sight. Reading it back from
      the height attribute would compound by devicePixelRatio on every repaint,
      which is what made these canvases grow taller each frame. */
+  /* Round AM (speed): while Pro Desk is not the open screen, skip sizing the
+     canvas (reading clientWidth forces a full layout of the whole page each
+     time) and draw into a tiny scratch canvas instead. The IntersectionObserver
+     / tab switch below repaints the real canvas as soon as it is visible. */
+  var scratchG = null;
+  function proHidden(){ return !!(root && !root.classList.contains('route-on')); }
   function fit(cv){
+    if(proHidden()){
+      if(!scratchG){ var sc = document.createElement('canvas'); sc.width = 4; sc.height = 4; scratchG = sc.getContext('2d'); }
+      var bh0 = parseInt(cv.getAttribute('data-h'), 10) || parseInt(cv.getAttribute('height'), 10) || 220;
+      return { g:scratchG, w:520, h:bh0 };
+    }
     var dpr = window.devicePixelRatio || 1;
     var base = parseInt(cv.getAttribute('data-h'), 10);
     if(!base){
