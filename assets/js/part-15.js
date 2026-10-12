@@ -2241,9 +2241,18 @@ var CL_UI = {
       sec.querySelector('[data-c="lede"]').textContent = tx(CL_UI.lede);
     }
 
-    sec.__render = function(){ paintHead(); render(); };
+    /* Round AM (speed): the chart is drawn only while Chart Lab is on screen.
+       Drawing it at page load for a hidden screen cost ~0.6 s of main-thread
+       time (getComputedStyle on a 35k-node page + canvas work) on every visit. */
+    var chartDirty = true;
+    function renderIfShown(){ if(sec.classList.contains('route-on')){ chartDirty = false; render(); } else chartDirty = true; }
+    sec.__render = function(){ paintHead(); renderIfShown(); };
     repaints.push(sec.__render);
-    paintHead(); setTimeout(render, 0);
+    paintHead(); setTimeout(renderIfShown, 0);
+    try {
+      new MutationObserver(function(){ if(chartDirty && sec.classList.contains('route-on')) setTimeout(renderIfShown, 0); })
+        .observe(sec, { attributes:true, attributeFilter:['class'] });
+    } catch(e){}
 
     var rt;
     window.addEventListener('resize', function(){
