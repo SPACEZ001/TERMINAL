@@ -2356,7 +2356,7 @@ const CERT_PREFIX = "CERT:";
 function certId(s) { return String(s || "").toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 24); }
 function certClean(b) {
   const t = (v, n) => String(v == null ? "" : v).replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, n);
-  return { name: t(b.name, 80), nameEn: t(b.nameEn, 80), course: t(b.course, 120), level: t(b.level, 60), date: t(b.date, 20), score: t(b.score, 20), issuedBy: t(b.issuedBy, 80) || "Noraset Boikaw", note: t(b.note, 200) };
+  return { name: t(b.name, 80), nameEn: t(b.nameEn, 80), course: t(b.course, 120), level: t(b.level, 60), date: t(b.date, 20), score: t(b.score, 20), issuedBy: t(b.issuedBy, 80) || "Noraset Boikaw", note: t(b.note, 200), layout: b.layout === "port" ? "port" : "land" };
 }
 async function handleCertSave(request, env) {
   if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
@@ -2394,7 +2394,9 @@ async function handleCertRevoke(request, env) {
   const raw = id && await env.SESSIONS.get(CERT_PREFIX + id);
   if (!raw) return json({ error: "not_found" }, env, 404);
   if (body.delete === true) { await env.SESSIONS.delete(CERT_PREFIX + id); return json({ ok: true, deleted: true }, env); }
-  const rec = JSON.parse(raw); rec.revoked = body.revoke !== false; rec.updatedAt = Date.now();
+  const rec = JSON.parse(raw); rec.updatedAt = Date.now();
+  if (typeof body.archive === "boolean") rec.archived = body.archive;   /* Round AN: move into / out of the archive folder */
+  else rec.revoked = body.revoke !== false;
   await env.SESSIONS.put(CERT_PREFIX + id, JSON.stringify(rec));
   return json({ ok: true, cert: rec }, env);
 }
