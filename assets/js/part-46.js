@@ -185,6 +185,16 @@
        Facebook/Google rows until clicked -- see cagConnectToggle above. */
     connectMoreToggle:{en:'Connect more accounts',th:'เชื่อมต่อช่องทางเพิ่มเติม'},
     memberLoggedT:{en:'MEMBER',th:'MEMBER'},
+    accLoggedT:{en:'ACCOUNT',th:'บัญชีผู้ใช้'},
+    accLoggedS:{en:'Signed in with your SPACEZ account.',th:'เข้าสู่ระบบด้วยบัญชี SPACEZ แล้ว'},
+    accH:{en:'Sign in with a username',th:'เข้าสู่ระบบด้วยชื่อผู้ใช้'},
+    accUser:{en:'Username (e.g. SPZ-AB12C)',th:'ชื่อผู้ใช้ (เช่น SPZ-AB12C)'},
+    accPass:{en:'Password',th:'รหัสผ่าน'},
+    accGo:{en:'Sign in',th:'เข้าสู่ระบบ'},
+    accBad:{en:'Wrong username or password.',th:'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'},
+    accLocked:{en:'Too many tries — wait 15 minutes.',th:'ลองผิดหลายครั้งเกินไป รอ 15 นาที'},
+    accOff:{en:'This account is turned off.',th:'บัญชีนี้ถูกปิดใช้งาน'},
+    accOr:{en:'or connect an app',th:'หรือเชื่อมต่อผ่านแอป'},
     memberLoggedS:{en:'You have member access.',th:'คุณเข้าสู่ระบบระดับ MEMBER แล้ว'},
     lineLoggedT:{en:'LINE',th:'LINE'},
     lineLoggedS:{en:'Signed in via LINE — you have the same access as a member.',th:'เข้าสู่ระบบผ่าน LINE — คุณมีสิทธิ์เข้าถึงเทียบเท่าเมมเบอร์'},
@@ -496,6 +506,14 @@
 
           '<div class="cag-pane" id="cagPaneMember">' +
             '<div class="cag-head"><div><b data-x="memberT"></b><span data-x="memberS"></span></div></div>' +
+            '<div class="cag-acc">' +
+              '<div class="cag-acc-h" data-x="accH"></div>' +
+              '<input class="cag-pw cag-acc-in" type="text" id="cagAccUser" autocomplete="username" spellcheck="false" autocapitalize="characters">' +
+              '<input class="cag-pw cag-acc-in" type="password" id="cagAccPass" autocomplete="current-password" spellcheck="false">' +
+              '<div class="cag-err hidden" id="cagErrAcc"></div>' +
+              '<button class="cag-btn" type="button" id="cagAccGo" data-x="accGo"></button>' +
+              '<div class="cag-acc-or" data-x="accOr"></div>' +
+            '</div>' +
             '<div class="cag-member-linenote" data-x="memberLineNote"></div>' +
             '<button class="cag-btn" type="button" id="cagMemberLineBtn">' +
               '<svg class="cag-btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 20l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>' +
@@ -801,6 +819,23 @@
     document.addEventListener('spz:fb', function(){ paint(); });
     document.addEventListener('spz:google', function(){ paint(); });
 
+    /* Round AM: username + password accounts (window.__SPZ_ACC, part-74.js) */
+    var accU = gate.querySelector('#cagAccUser'), accP = gate.querySelector('#cagAccPass'), accBtn = gate.querySelector('#cagAccGo'), accErr = gate.querySelector('#cagErrAcc');
+    function accTry(){
+      if(!window.__SPZ_ACC) return;
+      var u = accU.value.trim(), pw = accP.value.trim();
+      if(!u || !pw){ showErr(accErr, Tt(TXT.errEmpty)); return; }
+      accBtn.disabled = true; clearErr(accErr);
+      window.__SPZ_ACC.login(u, pw).then(function(r){
+        accBtn.disabled = false;
+        if(r && r.ok){ accP.value = ''; accU.value = ''; gate.hidden = true; return; }
+        showErr(accErr, Tt(r && r.error === 'locked' ? TXT.accLocked : r && r.error === 'disabled' ? TXT.accOff : TXT.accBad));
+      });
+    }
+    if(accBtn) accBtn.addEventListener('click', accTry);
+    [accU, accP].forEach(function(x){ if(x) x.addEventListener('keydown', function(ev){ if(ev.key === 'Enter') accTry(); }); });
+    document.addEventListener('spz:acc', function(){ paint(); });
+
     paint();
   }
 
@@ -827,7 +862,9 @@
     var googleSt = window.__SPZ_GOOGLE ? window.__SPZ_GOOGLE.state() : { status:'idle', displayName:null, pictureUrl:null };
     var googleLinked = googleSt.status === 'linked';
 
-    var loggedIn = currentTier === 'full' || currentTier === 'member' || currentTier === 'editor' || lineLinked || tgLinked || fbLinked || googleLinked;
+    var accLinked = accIsLinkedNow();
+    var loggedIn = currentTier === 'full' || currentTier === 'member' || currentTier === 'editor' || lineLinked || tgLinked || fbLinked || googleLinked || accLinked;
+    var accUi = gate.querySelector('#cagAccUser'); if(accUi){ accUi.placeholder = Tt(TXT.accUser); gate.querySelector('#cagAccPass').placeholder = Tt(TXT.accPass); }
     if(paneOut) paneOut.classList.toggle('active', loggedIn);
     if(tabsEl) tabsEl.style.display = loggedIn ? 'none' : 'flex';
     var adminLinks = gate.querySelector('#cagAdminLinks');
@@ -853,7 +890,7 @@
     // (currentTier stays 'basic'), showing it next to "Log out of LINE"
     // would be a confusing second button that does nothing.
     var siteLogoutBtn = gate.querySelector('#cagBtnLogout');
-    if(siteLogoutBtn) siteLogoutBtn.classList.toggle('hidden', currentTier !== 'full' && currentTier !== 'member' && currentTier !== 'editor');
+    if(siteLogoutBtn) siteLogoutBtn.classList.toggle('hidden', currentTier !== 'full' && currentTier !== 'member' && currentTier !== 'editor' && !accLinked);
 
     // Per the LINE tab's own styling comment above (.cag-tier.line), it is
     // intentionally not a real tier tab and never takes the .on state that
@@ -928,8 +965,9 @@
         // Priority when more than one is true at once (rare -- e.g. someone
         // linked both LINE and Telegram): real tier first, then LINE (it
         // alone also carries a personal watchlist), then Telegram.
-        loggedT: currentTier === 'full' ? TXT.loggedT : currentTier === 'editor' ? TXT.editorLoggedT : currentTier === 'member' ? TXT.memberLoggedT : lineLinked ? TXT.lineLoggedT : TXT.tgLoggedT,
-        loggedS: currentTier === 'full' ? TXT.loggedS : currentTier === 'editor' ? TXT.editorLoggedS : currentTier === 'member' ? TXT.memberLoggedS : lineLinked ? TXT.lineLoggedS : TXT.tgLoggedS,
+        loggedT: currentTier === 'full' ? TXT.loggedT : currentTier === 'editor' ? TXT.editorLoggedT : currentTier === 'member' ? TXT.memberLoggedT : accLinked ? TXT.accLoggedT : lineLinked ? TXT.lineLoggedT : TXT.tgLoggedT,
+        loggedS: currentTier === 'full' ? TXT.loggedS : currentTier === 'editor' ? TXT.editorLoggedS : currentTier === 'member' ? TXT.memberLoggedS : accLinked ? TXT.accLoggedS : lineLinked ? TXT.lineLoggedS : TXT.tgLoggedS,
+        accH: TXT.accH, accGo: TXT.accGo, accOr: TXT.accOr,
         logoutBtn: TXT.logoutBtn, upgradeBtn: TXT.upgradeBtn,
         adminAddAnalysis: TXT.adminAddAnalysis, adminPrintReport: TXT.adminPrintReport,
         adminCompareDownload: TXT.adminCompareDownload, adminConnectedUsers: TXT.adminConnectedUsers,
@@ -976,6 +1014,7 @@
 
   function logout(){
     try { sessionStorage.removeItem('spacez.auth'); sessionStorage.removeItem(EDITOR_CODE_KEY); } catch(e){}
+    try { if(window.__SPZ_ACC) window.__SPZ_ACC.logout(); } catch(e){}
     applyTier('basic');
   }
 
@@ -1082,6 +1121,14 @@
      already used elsewhere), never touches sessionStorage.spacez.auth or
      currentTier itself, and Admin ('full' tier) is untouched either way --
      only the real admin password ever clears that check. */
+  function accIsLinkedNow(){
+    try { return !!(window.__SPZ_ACC && window.__SPZ_ACC.state().status === 'linked'); }
+    catch(e){ return false; }
+  }
+  /* an Editor-role account becomes an Editor here once part-74 has verified it with the Worker */
+  window.__spzAccEditor = function(){
+    try { var st = window.__SPZ_ACC && window.__SPZ_ACC.state(); if(st && st.status === 'linked' && st.role === 'editor' && currentTier !== 'full') finishUnlock('editor'); } catch(e){}
+  };
   function lineIsLinkedNow(){
     try { return !!(window.__SPZ_LINE && window.__SPZ_LINE.state && window.__SPZ_LINE.state().status === 'linked'); }
     catch(e){ return false; }
@@ -1113,7 +1160,7 @@
        accepted-tier list above). MEMBER_ROUTES access now rests entirely
        on the real, server-verified LINE/Telegram/Facebook/Google link
        state below, which a forged flag cannot fake. */
-    if(MEMBER_ROUTES.indexOf(id) !== -1 && (lineIsLinkedNow() || tgIsLinkedNow() || fbIsLinkedNow() || googleIsLinkedNow())) return false;
+    if(MEMBER_ROUTES.indexOf(id) !== -1 && (lineIsLinkedNow() || tgIsLinkedNow() || fbIsLinkedNow() || googleIsLinkedNow() || accIsLinkedNow())) return false;
     return true;
   }
   var LOCK_SEL = '[data-route-to], [data-hvgo], [data-hub-go], a[href^="#/"]';
@@ -1274,6 +1321,7 @@
   document.addEventListener('spz:tg', function(){ paintLockVeils(); });
   document.addEventListener('spz:fb', function(){ paintLockVeils(); });
   document.addEventListener('spz:google', function(){ paintLockVeils(); });
+  document.addEventListener('spz:acc', function(){ paintLockVeils(); });
 
   document.addEventListener('keydown', function(ev){
     if(ev.key === 'Escape' && gate && !gate.hidden) gate.hidden = true;

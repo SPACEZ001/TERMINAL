@@ -379,7 +379,9 @@ async function isEditorKeyValid(request) {
 // Admin key (any method) OR a valid Editor code on a GET.
 async function isAdminOrEditorRead(request, env) {
   if (isAdminKeyValid(request, env)) return true;
-  return request.method === "GET" && (await isEditorKeyValid(request));
+  if (request.method !== "GET") return false;
+  if (await isEditorKeyValid(request)) return true;
+  return await isEditorAccountKey(request, env);
 }
 
 /* provider: "line" (default, unchanged behavior) or "telegram" (Round R --
@@ -2760,6 +2762,153 @@ async function handleCexSubmit(request, env) {
   return json({ setId: sid, title: bank.settings.title, score, total: e.total, percent: e.percent, pass: e.percent >= bank.settings.passPercent, passPercent: bank.settings.passPercent, late: e.late, review }, env);
 }
 
+/* =====================================================================
+   SITE ACCOUNTS (Round AM)
+   The admin creates username + password accounts from Connected Users.
+   Each account has a role: "member" (member pages), "editor" (member pages
+   + read-only Editor content) or "student" (member pages; for classroom
+   students). Passwords are never stored: only a salted PBKDF2-SHA256
+   (100,000 rounds) hash. The admin sees a password once, at creation or
+   on "reset password". On first login the user must set a display name.
+   KV: ACC:<username> = account, acc:index = [usernames],
+       ACCTOK:<token> = username (30-day TTL), acc:fail:<ip> = fail count.
+   ===================================================================== */
+const ACC_PREFIX = "ACC:", ACC_INDEX = "acc:index", ACCTOK_PREFIX = "ACCTOK:";
+const ACC_ROLES = ["member", "editor", "student"];
+const ACC_TTL = 60 * 60 * 24 * 30;
+const ACC_PW_ALPHA = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+function accRand(n, alpha) {
+  const a = new Uint8Array(n); crypto.getRandomValues(a);
+  let s = ""; for (let i = 0; i < n; i++) s += alpha[a[i] % alpha.length];
+  return s;
+}
+function accB64(u8) { let b = ""; for (let i = 0; i < u8.length; i++) b += String.fromCharCode(u8[i]); return btoa(b); }
+async function accHash(pw, saltB64) {
+  const salt = Uint8Array.from(atob(saltB64), (c) => c.charCodeAt(0));
+  const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: 100000 }, k, 256);
+  return accB64(new Uint8Array(bits));
+}
+async function accSetPassword(acc) {
+  const pw = accRand(10, ACC_PW_ALPHA);
+  const salt = new Uint8Array(16); crypto.getRandomValues(salt);
+  acc.salt = accB64(salt);
+  acc.hash = await accHash(pw, acc.salt);
+  acc.pwSetAt = Date.now();
+  return pw;
+}
+async function accGet(env, u) { try { const r = await env.SESSIONS.get(ACC_PREFIX + u); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
+async function accPut(env, a) { await env.SESSIONS.put(ACC_PREFIX + a.username, JSON.stringify(a)); }
+async function accIndex(env) { try { const r = await env.SESSIONS.get(ACC_INDEX); const a = r ? JSON.parse(r) : []; return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function accPublic(a) {
+  return { username: a.username, displayName: a.displayName || "", role: a.role, note: a.note || "", disabled: !!a.disabled,
+    needName: !a.displayName, createdAt: a.createdAt, lastLoginAt: a.lastLoginAt || 0, pwSetAt: a.pwSetAt || 0, links: a.links || {} };
+}
+function accCleanName(s) { return String(s || "").replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, 60); }
+async function accFromToken(env, token) {
+  if (!token || typeof token !== "string" || token.length > 80) return null;
+  const v = await env.SESSIONS.get(ACCTOK_PREFIX + token);
+  if (!v) return null;
+  const parts = v.split("|");
+  const a = await accGet(env, parts[0]);
+  if (!a || a.disabled) return null;
+  if ((parseInt(parts[1], 10) || 0) !== (a.tokVer || 0)) return null;   /* password was reset -> old logins end */
+  return a;
+}
+async function handleAccCreate(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  let b; try { b = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const count = Math.max(1, Math.min(30, parseInt(b.count, 10) || 1));
+  const role = ACC_ROLES.indexOf(b.role) !== -1 ? b.role : "member";
+  const note = accCleanName(b.note);
+  const idx = await accIndex(env), created = [];
+  for (let i = 0; i < count; i++) {
+    let username = "";
+    for (let t = 0; t < 8; t++) { const c = "SPZ-" + accRand(5, ACC_PW_ALPHA); if (idx.indexOf(c) === -1 && !(await accGet(env, c))) { username = c; break; } }
+    if (!username) continue;
+    const a = { username, role, note, displayName: "", createdAt: Date.now(), disabled: false };
+    const password = await accSetPassword(a);
+    await accPut(env, a); idx.push(username);
+    created.push({ username, password, role });
+  }
+  await env.SESSIONS.put(ACC_INDEX, JSON.stringify(idx));
+  return json({ ok: true, created }, env);
+}
+async function handleAccList(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  const idx = await accIndex(env), out = [];
+  for (const u of idx) { const a = await accGet(env, u); if (a) out.push(accPublic(a)); }
+  return json({ accounts: out }, env);
+}
+async function handleAccUpdate(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  let b; try { b = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const a = await accGet(env, String(b.username || ""));
+  if (!a) return json({ error: "not_found" }, env, 404);
+  if (b.delete === true) {
+    await env.SESSIONS.delete(ACC_PREFIX + a.username);
+    const idx = (await accIndex(env)).filter((x) => x !== a.username);
+    await env.SESSIONS.put(ACC_INDEX, JSON.stringify(idx));
+    return json({ ok: true, deleted: a.username }, env);
+  }
+  let password;
+  if (ACC_ROLES.indexOf(b.role) !== -1) a.role = b.role;
+  if (typeof b.disabled === "boolean") a.disabled = b.disabled;
+  if (typeof b.note === "string") a.note = accCleanName(b.note);
+  if (typeof b.displayName === "string") a.displayName = accCleanName(b.displayName);
+  if (b.clearName === true) a.displayName = "";
+  if (b.resetPassword === true) { password = await accSetPassword(a); a.tokVer = (a.tokVer || 0) + 1; }
+  await accPut(env, a);
+  return json({ ok: true, account: accPublic(a), password }, env);
+}
+function accIp(request) { return request.headers.get("CF-Connecting-IP") || "0"; }
+async function handleAccLogin(request, env) {
+  let b; try { b = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const ip = accIp(request), fk = "acc:fail:" + ip;
+  const fails = parseInt((await env.SESSIONS.get(fk)) || "0", 10) || 0;
+  if (fails >= 10) return json({ error: "locked" }, env, 429);
+  const username = String(b.username || "").trim().toUpperCase().slice(0, 20);
+  const password = String(b.password || "").trim().toUpperCase().slice(0, 40);
+  const a = username ? await accGet(env, username) : null;
+  let ok = false;
+  if (a && a.salt && password) ok = cexSafeEq(await accHash(password, a.salt), a.hash);
+  if (!ok || a.disabled) {
+    await env.SESSIONS.put(fk, String(fails + 1), { expirationTtl: 900 });
+    return json({ error: a && a.disabled && ok ? "disabled" : "bad_login" }, env, 401);
+  }
+  const token = accRand(32, "abcdefghijkmnpqrstuvwxyz23456789");
+  await env.SESSIONS.put(ACCTOK_PREFIX + token, a.username + "|" + (a.tokVer || 0), { expirationTtl: ACC_TTL });
+  a.lastLoginAt = Date.now(); await accPut(env, a);
+  return json({ ok: true, token, account: accPublic(a) }, env);
+}
+async function handleAccMe(request, env) {
+  let b; try { b = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const a = await accFromToken(env, b.token);
+  if (!a) return json({ error: "no_session" }, env, 401);
+  return json({ ok: true, account: accPublic(a) }, env);
+}
+async function handleAccSetName(request, env) {
+  let b; try { b = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const a = await accFromToken(env, b.token);
+  if (!a) return json({ error: "no_session" }, env, 401);
+  const name = accCleanName(b.name);
+  if (name.length < 2) return json({ error: "bad_name" }, env, 400);
+  a.displayName = name; await accPut(env, a);
+  return json({ ok: true, account: accPublic(a) }, env);
+}
+async function handleAccLogout(request, env) {
+  let b; try { b = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  if (b && typeof b.token === "string" && b.token.length <= 80) await env.SESSIONS.delete(ACCTOK_PREFIX + b.token);
+  return json({ ok: true }, env);
+}
+/* An Editor-role account reads Editor content by sending "acc.<token>" as its key. */
+async function isEditorAccountKey(request, env) {
+  const key = request.headers.get("X-Admin-Key") || "";
+  if (key.indexOf("acc.") !== 0) return false;
+  const a = await accFromToken(env, key.slice(4));
+  return !!(a && a.role === "editor");
+}
+
 const SPZ_ROUTES = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -2805,6 +2954,13 @@ const SPZ_ROUTES = {
       if (url.pathname === "/api/admin/broadcast" && request.method === "POST") return withCorsOrigin(await handleAdminBroadcast(request, env), allowOrigin);
       if (url.pathname === "/api/presence/ping" && request.method === "POST") return withCorsOrigin(await handlePresencePing(request, env), allowOrigin);
       if (url.pathname === "/api/admin/presence-count" && request.method === "GET") return withCorsOrigin(await handleAdminPresenceCount(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/accounts/create" && request.method === "POST") return withCorsOrigin(await handleAccCreate(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/accounts/list" && request.method === "GET") return withCorsOrigin(await handleAccList(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/accounts/update" && request.method === "POST") return withCorsOrigin(await handleAccUpdate(request, env), allowOrigin);
+      if (url.pathname === "/api/acc/login" && request.method === "POST") return withCorsOrigin(await handleAccLogin(request, env), allowOrigin);
+      if (url.pathname === "/api/acc/me" && request.method === "POST") return withCorsOrigin(await handleAccMe(request, env), allowOrigin);
+      if (url.pathname === "/api/acc/setname" && request.method === "POST") return withCorsOrigin(await handleAccSetName(request, env), allowOrigin);
+      if (url.pathname === "/api/acc/logout" && request.method === "POST") return withCorsOrigin(await handleAccLogout(request, env), allowOrigin);
       if (url.pathname === "/api/site-settings" && request.method === "GET") return withCorsOrigin(await handleSiteSettingsGet(request, env), allowOrigin);
       if (url.pathname === "/api/admin/site-settings" && request.method === "POST") return withCorsOrigin(await handleSiteSettingsUpdate(request, env), allowOrigin);
       if (url.pathname === "/api/journal-settings" && request.method === "GET") return withCorsOrigin(await handleJournalSettingsGet(request, env), allowOrigin);
