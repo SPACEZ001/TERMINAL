@@ -282,7 +282,23 @@
 
   /* ------------------------------------------------------------- boot */
   var pending = false;
-  function schedule(){
+  /* Round AM (speed): live tickers rewrite parts of the page every second;
+     only rescan when something that could be a report sheet was added. */
+  var WATCH_SEL = '.pr-sheet, .compare-pdf-row, .jrp-overlay, .cmp-sheet, .wlshare-card, .pr-actions, .jrp-actions, .cmp-actions, .wlshare-actions, [data-pr]';
+  function relevant(records){
+    if(!records) return true;
+    for(var i = 0; i < records.length; i++){
+      var add = records[i].addedNodes;
+      for(var j = 0; j < add.length; j++){
+        var n = add[j];
+        if(n.nodeType !== 1) continue;
+        if((n.matches && n.matches(WATCH_SEL)) || (n.querySelector && n.querySelector(WATCH_SEL))) return true;
+      }
+    }
+    return false;
+  }
+  function schedule(records){
+    if(!relevant(records)) return;
     if(pending) return;
     pending = true;
     setTimeout(function(){ pending = false; try { scan(); } catch(e){} }, 120);

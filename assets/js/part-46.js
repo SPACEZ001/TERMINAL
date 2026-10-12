@@ -1279,16 +1279,30 @@
     if(ev.key === 'Escape' && gate && !gate.hidden) gate.hidden = true;
   });
 
-  var mo = new MutationObserver(function(){
+  function veilRelevant(records){
+    for(var i = 0; i < records.length; i++){
+      var add = records[i].addedNodes;
+      for(var j = 0; j < add.length; j++){
+        var n = add[j];
+        if(n.nodeType !== 1 || n.classList.contains('spz-lock-badge')) continue;
+        if((n.matches && n.matches(LOCK_SEL)) || (n.querySelector && n.querySelector(LOCK_SEL))) return true;
+      }
+    }
+    return false;
+  }
+  var mo = new MutationObserver(function(records){
+    if(records && !veilRelevant(records)) return;   /* ticker text updates etc. never add links */
     // guard: paintLockVeils() itself mutates the DOM (badge insert/remove),
     // so without this, observing document.body/subtree would re-trigger the
     // observer on its own writes -> infinite loop. Matches the debounce
     // idiom already used elsewhere in this file (see the `decorate` grid
     // observer) plus the idempotent writes above, belt-and-suspenders.
+    /* Round AM (speed): coalesce bursts. During page load dozens of modules
+       write into the DOM one after another; scanning the whole 35k-node page
+       after each tick cost ~0.35 s. Now it runs once per quiet 150 ms. */
     if(mo.__busy) return;
     mo.__busy = true;
-    setTimeout(function(){ mo.__busy = false; }, 0);
-    if(currentTier) paintLockVeils();
+    setTimeout(function(){ mo.__busy = false; if(currentTier) paintLockVeils(); }, 150);
   });
   mo.observe(document.body, { childList:true, subtree:true });
 
