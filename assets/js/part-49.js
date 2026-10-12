@@ -2004,7 +2004,7 @@
       var pageCss = null;
       if(reportType === 'cert'){
         pageCss = document.createElement('style');
-        pageCss.textContent = '@media print{@page{size:A4 landscape;margin:0;}}';
+        pageCss.textContent = '@media print{@page{size:A4 ' + (certData.layout === 'port' ? 'portrait' : 'landscape') + ';margin:0;}}';
         document.body.appendChild(pageCss);   /* last in document order, so it beats the A4-portrait @page rules in the stylesheets */
         document.body.classList.add('spz-print-cert');
       }
@@ -2450,10 +2450,15 @@
     givenL:{en:'Given on', th:'ให้ไว้ ณ วันที่'}, verify:{en:'Scan to verify this certificate', th:'สแกนเพื่อตรวจสอบความถูกต้อง'},
     specimen:{en:'SPECIMEN — NOT ISSUED', th:'SPECIMEN — ยังไม่ได้ออกเลข'},
     eyebrow:{en:'Certificate of Achievement', th:'Certificate of Achievement'}, tag:{en:'Verified credential', th:'เอกสารรับรองที่ตรวจสอบได้'},
-    orgShort:{en:'Elliott Wave Classroom', th:'ห้องเรียน Elliott Wave'}, verifyAt:{en:'Verify online:', th:'ตรวจสอบออนไลน์:'}, org:{en:'SPACEZ TERMINAL · Elliott Wave Classroom', th:'SPACEZ TERMINAL · ห้องเรียน Elliott Wave'}
+    orgShort:{en:'Elliott Wave Classroom', th:'ห้องเรียน Elliott Wave'}, verifyAt:{en:'Verify online:', th:'ตรวจสอบออนไลน์:'},
+    layoutL:{en:'Paper', th:'กระดาษ'}, land:{en:'A4 landscape', th:'A4 แนวนอน'}, port:{en:'A4 portrait', th:'A4 แนวตั้ง'},
+    tabActive:{en:'Issued', th:'ออกแล้ว'}, tabArch:{en:'Archive folder', th:'แฟ้มจัดเก็บ'},
+    arch:{en:'Move to archive', th:'ย้ายเข้าแฟ้ม'}, unarch:{en:'Move out', th:'ย้ายออก'}, del:{en:'Delete', th:'ลบ'}, delSure:{en:'Tap again to delete', th:'แตะอีกครั้งเพื่อลบ'},
+    delNote:{en:'Deleted certificates show "not found" on the verification page.', th:'เกียรติบัตรที่ลบแล้ว หน้าตรวจสอบจะขึ้นว่า "ไม่พบในระบบ"'},
+    editing:{en:'Editing', th:'กำลังแก้ไข'}, org:{en:'SPACEZ TERMINAL · Elliott Wave Classroom', th:'SPACEZ TERMINAL · ห้องเรียน Elliott Wave'}
   };
-  function certBlank(){ var d = new Date(); return { id:'', name:'', nameEn:'', course:'Elliott Wave Analysis', level:'Foundation', score:'', date:d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'), issuedBy:'Noraset Boikaw', note:'' }; }
-  var certData = certBlank(), certUi = { busy:false, msg:'', ok:false, list:null };
+  function certBlank(){ var d = new Date(); return { id:'', name:'', nameEn:'', course:'Elliott Wave Analysis', level:'Foundation', score:'', date:d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'), issuedBy:'Noraset Boikaw', note:'', layout:'land' }; }
+  var certData = certBlank(), certUi = { busy:false, msg:'', ok:false, list:null, tab:'act', delArm:'' };
   function certHash(s){ var h = 2166136261; for(var i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return ('00000000' + h.toString(16).toUpperCase()).slice(-8); }
   function certCode(){ return certData.id ? certHash(certData.id + '|' + certData.name + '|' + certData.date).replace(/(.{4})/, '$1-') : '————-————'; }
   function certLevel(){ var l = certData.level; for(var i = 0; i < CT.lvls.length; i++) if(CT.lvls[i].en === l) return T(CT.lvls[i]); return l; }
@@ -2465,74 +2470,56 @@
     var mEn = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     return th ? (+p[2]) + ' ' + mTh[+p[1] - 1] + ' ' + (+p[0] + 543) : mEn[+p[1] - 1] + ' ' + (+p[2]) + ', ' + p[0];
   }
-  /* Round AM: landscape A4, modern "trading terminal / space" credential.
-     Dark side panel (brand, ID, check code, verification QR) + clean white
-     main panel. Anti-copy layers stay, but quiet: micro-text ID strip in the
-     side panel, micro-text hairline around the main panel, faint dot grid,
-     a faint Elliott-wave line watermark, star field + orbit arcs, the ID
-     repeated in the micro-text, and SPECIMEN until issued. */
+  /* Round AN: certificate v3 -- official layout with a quiet tech accent.
+     White card stock, navy double frame, HUD corner brackets in the brand
+     cyan->lime gradient, micro-text frame (carries the id + check code),
+     faint Elliott-wave/candle watermark and dot grid. A4 landscape (default)
+     or portrait -- certData.layout = 'land' | 'port'. */
   function certRand(seed){ var x = seed >>> 0; return function(){ x = (x * 1664525 + 1013904223) >>> 0; return x / 4294967296; }; }
+  function certIsPort(){ return certData.layout === 'port'; }
   function certSecurityBg(){
-    var W = 1123, H = 794, SW = 330, id = certData.id || 'SPECIMEN', code = certCode();
-    var micro = ('SPACEZ TERMINAL · VERIFIED CREDENTIAL · ' + id + ' · ' + code + ' · ').repeat(16);
-    var strip = ('SPZ ' + id + ' ' + code + ' ').repeat(40);
-    var rnd = certRand(parseInt(certHash(id), 16)), stars = '';
-    for(var i = 0; i < 70; i++){ var x = (rnd() * (SW - 20) + 10).toFixed(1), y = (rnd() * (H - 20) + 10).toFixed(1), r = (rnd() * 1.1 + .3).toFixed(2); stars += '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" class="st" style="opacity:' + (rnd() * .6 + .2).toFixed(2) + '"></circle>'; }
-    // a stylised Elliott impulse + ABC as the main-panel watermark
-    var wv = [[0,0],[.13,.32],[.2,.2],[.43,.78],[.52,.6],[.68,1],[.77,.72],[.84,.84],[1,.5]], x0 = SW + 40, x1 = W - 40, yb = H - 110, yt = H - 330;
+    var port = certIsPort(), W = port ? 794 : 1123, H = port ? 1123 : 794, id = certData.id || 'SPECIMEN', code = certCode();
+    var micro = ('SPACEZ TERMINAL · ELLIOTT WAVE CLASSROOM · VERIFIED CREDENTIAL · ' + id + ' · ' + code + ' · ').repeat(port ? 14 : 16);
+    var rnd = certRand(parseInt(certHash(id), 16));
+    var wv = [[0,0],[.13,.32],[.2,.2],[.43,.78],[.52,.6],[.68,1],[.77,.72],[.84,.84],[1,.5]];
+    var x0 = 70, x1 = W - 70, yb = H - (port ? 150 : 120), yt = yb - (port ? 300 : 230);
     var wp = wv.map(function(p, k){ return (k ? 'L' : 'M') + (x0 + (x1 - x0) * p[0]).toFixed(1) + ' ' + (yb - (yb - yt) * p[1]).toFixed(1); }).join(' ');
     var cdl = '';
-    for(var c = 0; c < 46; c++){
-      var t = c / 45, seg = 0; while(seg < wv.length - 2 && wv[seg + 1][0] < t) seg++;
+    for(var c = 0; c < 52; c++){
+      var t = c / 51, seg = 0; while(seg < wv.length - 2 && wv[seg + 1][0] < t) seg++;
       var A = wv[seg], B = wv[seg + 1], f = (t - A[0]) / (B[0] - A[0]), v = A[1] + (B[1] - A[1]) * f, up = B[1] >= A[1];
-      var cx = x0 + (x1 - x0) * t, cy = yb - (yb - yt) * v, hh = 10 + rnd() * 14;
-      cdl += '<path d="M' + cx.toFixed(1) + ' ' + (cy - hh).toFixed(1) + ' V' + (cy + hh).toFixed(1) + '" class="ck"></path><rect x="' + (cx - 3).toFixed(1) + '" y="' + (cy - hh * .55).toFixed(1) + '" width="6" height="' + (hh * 1.1).toFixed(1) + '" class="' + (up ? 'cu' : 'cd') + '"></rect>';
+      var cx = x0 + (x1 - x0) * t, cy = yb - (yb - yt) * v, hh = 8 + rnd() * 12;
+      cdl += '<path d="M' + cx.toFixed(1) + ' ' + (cy - hh).toFixed(1) + ' V' + (cy + hh).toFixed(1) + '" class="ck"></path><rect x="' + (cx - 2.6).toFixed(1) + '" y="' + (cy - hh * .55).toFixed(1) + '" width="5.2" height="' + (hh * 1.1).toFixed(1) + '" class="' + (up ? 'cu' : 'cd') + '"></rect>';
     }
+    function hud(x, y, sx, sy){ var L = 54; return '<path d="M' + x + ' ' + (y + sy * L) + ' V' + y + ' H' + (x + sx * L) + '" class="hud"></path><circle cx="' + (x + sx * 10) + '" cy="' + (y + sy * 10) + '" r="2.4" class="hudd"></circle>'; }
+    var i1 = 22, i2 = 32, i3 = 40;
     return '<svg class="pr-cert-bg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
       '<defs>' +
-        '<linearGradient id="ctSide" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a1428"></stop><stop offset=".55" stop-color="#0c1a36"></stop><stop offset="1" stop-color="#050b18"></stop></linearGradient>' +
-        '<linearGradient id="ctNeon" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#19d3ff"></stop><stop offset=".5" stop-color="#5b7cff"></stop><stop offset="1" stop-color="#a6f000"></stop></linearGradient>' +
-        '<linearGradient id="ctNeonH" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#19d3ff"></stop><stop offset="1" stop-color="#a6f000"></stop></linearGradient>' +
-        '<linearGradient id="ctArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#19d3ff" stop-opacity=".07"></stop><stop offset="1" stop-color="#19d3ff" stop-opacity="0"></stop></linearGradient>' +
-        '<pattern id="ctDots" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".75" class="dg"></circle></pattern>' +
-        '<path id="ctMicro" d="M' + (SW + 18) + ' 18 H' + (W - 18) + ' V' + (H - 18) + ' H' + (SW + 18) + ' Z"></path>' +
-        '<path id="ctStrip" d="M' + (SW - 22) + ' ' + (H - 20) + ' V20"></path>' +
+        '<linearGradient id="ctNeon" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#11b8e8"></stop><stop offset=".55" stop-color="#4f6bff"></stop><stop offset="1" stop-color="#7fc400"></stop></linearGradient>' +
+        '<linearGradient id="ctArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#11b8e8" stop-opacity=".07"></stop><stop offset="1" stop-color="#11b8e8" stop-opacity="0"></stop></linearGradient>' +
+        '<radialGradient id="ctGlow" cx=".5" cy=".38" r=".6"><stop offset="0" stop-color="#eaf4ff"></stop><stop offset="1" stop-color="#ffffff" stop-opacity="0"></stop></radialGradient>' +
+        '<pattern id="ctDots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".7" class="dg"></circle></pattern>' +
+        '<path id="ctMicro" d="M' + i3 + ' ' + i3 + ' H' + (W - i3) + ' V' + (H - i3) + ' H' + i3 + ' Z"></path>' +
       '</defs>' +
-      '<rect x="' + SW + '" y="0" width="' + (W - SW) + '" height="' + H + '" fill="url(#ctDots)"></rect>' +
+      '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="url(#ctGlow)"></rect>' +
+      '<rect x="' + i2 + '" y="' + i2 + '" width="' + (W - 2 * i2) + '" height="' + (H - 2 * i2) + '" fill="url(#ctDots)"></rect>' +
       '<path d="' + wp + ' L' + x1 + ' ' + yb + ' L' + x0 + ' ' + yb + ' Z" fill="url(#ctArea)"></path>' +
       '<g class="wmk">' + cdl + '<path d="' + wp + '" class="wl"></path></g>' +
-      '<image href="' + PR_LOGO + '" x="' + (SW + (W - SW) / 2 - 90) + '" y="' + (H / 2 - 120) + '" width="180" height="216" class="wm"></image>' +
-      '<rect x="' + (SW + 18) + '" y="18" width="' + (W - SW - 36) + '" height="' + (H - 36) + '" class="fr"></rect>' +
+      '<image href="' + PR_LOGO + '" x="' + (W / 2 - 110) + '" y="' + (H / 2 - 130) + '" width="220" height="264" class="wm"></image>' +
+      '<rect x="' + i1 + '" y="' + i1 + '" width="' + (W - 2 * i1) + '" height="' + (H - 2 * i1) + '" class="f1"></rect>' +
+      '<rect x="' + i2 + '" y="' + i2 + '" width="' + (W - 2 * i2) + '" height="' + (H - 2 * i2) + '" class="f2"></rect>' +
       '<text class="mt"><textPath href="#ctMicro">' + esc(micro) + '</textPath></text>' +
-      '<rect x="0" y="0" width="' + SW + '" height="' + H + '" fill="url(#ctSide)"></rect>' +
-      stars +
-      '<ellipse cx="' + (SW * .5) + '" cy="' + (H * .5) + '" rx="' + (SW * .95) + '" ry="' + (H * .2) + '" class="ob" transform="rotate(-28 ' + (SW * .5) + ' ' + (H * .5) + ')"></ellipse>' +
-      '<ellipse cx="' + (SW * .5) + '" cy="' + (H * .5) + '" rx="' + (SW * .7) + '" ry="' + (H * .32) + '" class="ob2" transform="rotate(22 ' + (SW * .5) + ' ' + (H * .5) + ')"></ellipse>' +
-      '<text class="sm"><textPath href="#ctStrip">' + esc(strip) + '</textPath></text>' +
-      '<rect x="' + (SW - 3) + '" y="0" width="3" height="' + H + '" fill="url(#ctNeon)"></rect>' +
-      '<rect x="' + (SW + 18) + '" y="' + (H - 18) + '" width="220" height="3" fill="url(#ctNeonH)"></rect>' +
-      '<rect x="' + (W - 238) + '" y="15" width="220" height="3" fill="url(#ctNeonH)"></rect>' +
+      hud(i1 + 8, i1 + 8, 1, 1) + hud(W - i1 - 8, i1 + 8, -1, 1) + hud(i1 + 8, H - i1 - 8, 1, -1) + hud(W - i1 - 8, H - i1 - 8, -1, -1) +
       '</svg>';
   }
   function certURL(){ return EV_VIEW_BASE + '#/cert/' + encodeURIComponent(certData.id); }
   function certificateHTML(){
     var d = certData, issued = !!d.id;
     var body = T(CT.body).replace('{c}', esc(d.course || '')).replace('{l}', esc(certLevel()));
-    function row(lbl, val){ return '<div class="pr-cert-kv"><span>' + esc(lbl) + '</span><b>' + val + '</b></div>'; }
-    return '<div class="pr-sheet pr-cert">' + certSecurityBg() +
-      '<div class="pr-cert-side">' +
-        '<div class="pr-cert-brand"><img src="' + PR_LOGO + '" alt=""><div><b>SPACEZ<br>TERMINAL</b><span>' + esc(T(CT.orgShort)) + '</span></div></div>' +
-        '<div class="pr-cert-tag">' + esc(T(CT.tag)) + '</div>' +
-        '<div class="pr-cert-kvs">' +
-          row(T(CT.idL), esc(d.id || '—')) +
-          row(T(CT.codeL), esc(certCode())) +
-          row(T(CT.level), esc(certLevel())) +
-          row(T(CT.date), esc(certFmtDate(d.date))) +
-        '</div>' +
-        '<div class="pr-cert-qr">' + (issued ? '<div class="qb">' + evQrSvg(certURL()) + '</div>' : '<div class="pr-cert-noqr">QR</div>') + '<span>' + esc(T(CT.verify)) + '</span></div>' +
-      '</div>' +
-      '<div class="pr-cert-main">' +
-        '<div class="pr-cert-eyebrow"><i></i>' + esc(T(CT.eyebrow)) + '</div>' +
+    return '<div class="pr-sheet pr-cert' + (certIsPort() ? ' port' : '') + '">' + certSecurityBg() +
+      '<div class="pr-cert-in">' +
+        '<div class="pr-cert-brand"><img src="' + PR_LOGO + '" alt=""><div><b>SPACEZ TERMINAL</b><span>' + esc(T(CT.orgShort)) + '</span></div></div>' +
+        '<div class="pr-cert-eyebrow"><i></i>' + esc(T(CT.eyebrow)) + '<i></i></div>' +
         '<div class="pr-cert-big">' + esc(T(CT.big)) + '</div>' +
         '<div class="pr-cert-sub">' + esc(T(CT.bigSub)) + '</div>' +
         '<div class="pr-cert-cert">' + esc(T(CT.certify)) + '</div>' +
@@ -2542,10 +2529,11 @@
         '<div class="pr-cert-body">' + body + '</div>' +
         (d.score ? '<div class="pr-cert-score"><span>' + esc(T(CT.scoreL)) + '</span><b>' + esc(d.score) + '</b></div>' : '') +
         '<div class="pr-cert-foot">' +
+          '<div class="pr-cert-qr">' + (issued ? '<div class="qb">' + evQrSvg(certURL()) + '</div>' : '<div class="pr-cert-noqr">QR</div>') +
+            '<div class="ids"><span>' + esc(T(CT.idL)) + '</span><b>' + esc(d.id || '—') + '</b><span>' + esc(T(CT.codeL)) + '</span><b>' + esc(certCode()) + '</b><em>' + esc(T(CT.verify)) + '</em></div></div>' +
           '<div class="pr-cert-sign"><div class="ln"></div><b>' + esc(d.issuedBy || '') + '</b><span>' + esc(T(CT.issuerRole)) + '</span></div>' +
           '<div class="pr-cert-sign"><div class="ln dt">' + esc(certFmtDate(d.date)) + '</div><b>' + esc(T(CT.givenL)) + '</b><span>' + esc(T(CT.org)) + '</span></div>' +
         '</div>' +
-        (issued ? '<div class="pr-cert-u">' + esc(T(CT.verifyAt)) + ' ' + esc(certURL()) + '</div>' : '') +
       '</div>' +
       (issued ? '' : '<div class="pr-cert-specimen">' + esc(T(CT.specimen)) + '</div>') +
     '</div>';
@@ -2561,16 +2549,27 @@
     } else if(getAdminKey() && !evImp.busy && !evImp.err){ setTimeout(function(){ evImpLoad(); }, 0); }
     h += inp('name', CT.nameTh) + inp('nameEn', CT.nameEn) + inp('course', CT.course) +
       '<div class="pr-ev-in"><span>' + esc(T(CT.level)) + '</span><div class="pr-ann-chips">' + CT.lvls.map(function(o){ return '<button type="button" class="pr-ann-chip' + (d.level === o.en ? ' on' : '') + '" data-ct-level="' + esc(o.en) + '">' + esc(T(o)) + '</button>'; }).join('') + '</div></div>' +
-      '<div class="pr-ev-grid2">' + inp('score', CT.score) + inp('date', CT.date, 'date') + '</div>' + inp('issuedBy', CT.issuer);
+      '<div class="pr-ev-grid2">' + inp('score', CT.score) + inp('date', CT.date, 'date') + '</div>' + inp('issuedBy', CT.issuer) +
+      '<div class="pr-ev-in"><span>' + esc(T(CT.layoutL)) + '</span><div class="pr-ann-chips">' + ['land', 'port'].map(function(o){ return '<button type="button" class="pr-ann-chip' + ((d.layout || 'land') === o ? ' on' : '') + '" data-ct-layout="' + o + '">' + esc(T(CT[o])) + '</button>'; }).join('') + '</div></div>';
+    if(d.id) h = '<div class="pr-ct-editing">' + esc(T(CT.editing)) + ' · <b>' + esc(d.id) + '</b></div>' + h;
     h += '<button type="button" class="pr-ev-bigbtn" data-ct-issue="1"' + (certUi.busy ? ' disabled' : '') + '>' + esc(T(d.id ? CT.update : CT.issue)) + '</button>';
     if(certUi.msg) h += '<div class="pr-ev-' + (certUi.ok ? 'ok' : 'err') + '" style="margin-top:8px;">' + esc(certUi.msg) + '</div>';
     if(d.id) h += '<button type="button" class="pr-ev-bigbtn ghost" data-ct-new="1">' + esc(T(CT.newOne)) + '</button>';
     h += '<div class="pr-ev-h2">' + esc(T(CT.list)) + '</div>';
     if(!certUi.list) h += '<button type="button" class="pr-ev-bigbtn ghost" data-ct-list="1">' + esc(T(CT.load)) + '</button>';
-    else h += '<div class="pr-cert-list">' + (certUi.list.length ? certUi.list.map(function(c){
-      return '<div class="pr-cert-li' + (c.revoked ? ' off' : '') + '"><div><b>' + esc(c.name) + '</b><span>' + esc(c.id) + ' · ' + esc(c.date || '') + (c.revoked ? ' · ' + esc(T(CT.revoked)) : '') + '</span></div>' +
-        '<button type="button" class="pr-mini" data-ct-open="' + esc(c.id) + '">' + esc(T(CT.open)) + '</button><button type="button" class="pr-mini" data-ct-rev="' + esc(c.id) + '" data-on="' + (c.revoked ? '0' : '1') + '">' + esc(T(c.revoked ? CT.unrevoke : CT.revoke)) + '</button></div>';
-    }).join('') : '<div class="pr-hint">—</div>') + '</div>';
+    else {
+      var nAct = certUi.list.filter(function(c){ return !c.archived; }).length, nArc = certUi.list.length - nAct;
+      h += '<div class="pr-ct-tabs"><button type="button" class="pr-ct-tab' + (certUi.tab === 'act' ? ' on' : '') + '" data-ct-tab="act">' + esc(T(CT.tabActive)) + ' <i>' + nAct + '</i></button>' +
+        '<button type="button" class="pr-ct-tab' + (certUi.tab === 'arc' ? ' on' : '') + '" data-ct-tab="arc">📁 ' + esc(T(CT.tabArch)) + ' <i>' + nArc + '</i></button></div>';
+      var rows = certUi.list.filter(function(c){ return certUi.tab === 'arc' ? !!c.archived : !c.archived; });
+      h += '<div class="pr-cert-list">' + (rows.length ? rows.map(function(c){
+        return '<div class="pr-cert-li' + (c.revoked ? ' off' : '') + (c.id === d.id ? ' cur' : '') + '"><div class="t"><b>' + esc(c.name) + '</b><span>' + esc(c.id) + ' · ' + esc(c.date || '') + (c.revoked ? ' · ' + esc(T(CT.revoked)) : '') + '</span></div>' +
+          '<div class="a"><button type="button" class="pr-mini" data-ct-open="' + esc(c.id) + '">' + esc(T(CT.open)) + '</button>' +
+          '<button type="button" class="pr-mini" data-ct-arc="' + esc(c.id) + '" data-on="' + (c.archived ? '0' : '1') + '">' + esc(T(c.archived ? CT.unarch : CT.arch)) + '</button>' +
+          '<button type="button" class="pr-mini" data-ct-rev="' + esc(c.id) + '" data-on="' + (c.revoked ? '0' : '1') + '">' + esc(T(c.revoked ? CT.unrevoke : CT.revoke)) + '</button>' +
+          '<button type="button" class="pr-mini danger" data-ct-del="' + esc(c.id) + '">' + esc(T(certUi.delArm === c.id ? CT.delSure : CT.del)) + '</button></div></div>';
+      }).join('') : '<div class="pr-hint">—</div>') + '</div><div class="pr-hint" style="margin-top:6px;">' + esc(T(CT.delNote)) + '</div>';
+    }
     return h;
   }
   function certMount(force){
@@ -2608,6 +2607,21 @@
     if(t.closest('[data-ct-issue]')){ certIssue(); return true; }
     if(t.closest('[data-ct-new]')){ certData = certBlank(); certUi.msg = ''; certMount(true); renderReport(); return true; }
     if(t.closest('[data-ct-list]')){ certApi('/api/admin/certs/list', 'GET').then(function(j){ certUi.list = (j && j.certs) || []; certMount(true); }); return true; }
+    function reload(){ certApi('/api/admin/certs/list', 'GET').then(function(j){ certUi.list = (j && j.certs) || []; certMount(true); }); }
+    var lay = t.closest('[data-ct-layout]');
+    if(lay){ certData.layout = lay.getAttribute('data-ct-layout'); certMount(true); renderReport(); return true; }
+    var tb = t.closest('[data-ct-tab]');
+    if(tb){ certUi.tab = tb.getAttribute('data-ct-tab'); certMount(true); return true; }
+    var ar = t.closest('[data-ct-arc]');
+    if(ar){ certApi('/api/admin/certs/revoke', 'POST', { id:ar.getAttribute('data-ct-arc'), archive:ar.getAttribute('data-on') === '1' }).then(reload); return true; }
+    var dl = t.closest('[data-ct-del]');
+    if(dl){
+      var did = dl.getAttribute('data-ct-del');
+      if(certUi.delArm !== did){ certUi.delArm = did; certMount(true); setTimeout(function(){ if(certUi.delArm === did){ certUi.delArm = ''; certMount(true); } }, 4000); return true; }
+      certUi.delArm = '';
+      certApi('/api/admin/certs/revoke', 'POST', { id:did, delete:true }).then(function(){ if(certData.id === did){ certData = certBlank(); renderReport(); } reload(); });
+      return true;
+    }
     var op = t.closest('[data-ct-open]');
     if(op){ var id = op.getAttribute('data-ct-open'); (certUi.list || []).forEach(function(c){ if(c.id === id){ certData = certBlank(); Object.keys(certData).forEach(function(k){ if(c[k] != null) certData[k] = String(c[k]); }); certData.id = c.id; } }); certUi.msg = ''; certMount(true); renderReport(); return true; }
     var rv = t.closest('[data-ct-rev]');
