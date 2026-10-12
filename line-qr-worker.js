@@ -865,6 +865,31 @@ async function handleJournalSettingsUpdate(request, env) {
   return json({ ok: true, data }, env);
 }
 
+// Round AM: small site-wide settings that every visitor's page reads.
+// arenaVis = which tier sees the CEWA Exam Arena in the menu
+// ("admin" | "editor" | "member" | "all"); default admin only.
+const SITE_SETTINGS_KV_KEY = "site:settings";
+const SITE_VIS = ["admin", "editor", "member", "all"];
+function normalizeSiteSettings(o) {
+  o = o && typeof o === "object" ? o : {};
+  return { arenaVis: SITE_VIS.indexOf(o.arenaVis) !== -1 ? o.arenaVis : "admin" };
+}
+async function handleSiteSettingsGet(request, env) {
+  let data = normalizeSiteSettings(null);
+  try { const raw = await env.SESSIONS.get(SITE_SETTINGS_KV_KEY); if (raw) data = normalizeSiteSettings(JSON.parse(raw)); } catch (e) {}
+  return json(data, env);
+}
+async function handleSiteSettingsUpdate(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  let cur = {};
+  try { const raw = await env.SESSIONS.get(SITE_SETTINGS_KV_KEY); if (raw) cur = JSON.parse(raw) || {}; } catch (e) {}
+  const data = normalizeSiteSettings(Object.assign({}, cur, body || {}));
+  await env.SESSIONS.put(SITE_SETTINGS_KV_KEY, JSON.stringify(data));
+  return json({ ok: true, data }, env);
+}
+
 // Round K8: "how many people are on the site right now" gauge for the
 // admin panel. Every page load pings this with a random per-tab id (see
 // the site-wide presence-beacon script near the end of the HTML file);
@@ -2780,6 +2805,8 @@ const SPZ_ROUTES = {
       if (url.pathname === "/api/admin/broadcast" && request.method === "POST") return withCorsOrigin(await handleAdminBroadcast(request, env), allowOrigin);
       if (url.pathname === "/api/presence/ping" && request.method === "POST") return withCorsOrigin(await handlePresencePing(request, env), allowOrigin);
       if (url.pathname === "/api/admin/presence-count" && request.method === "GET") return withCorsOrigin(await handleAdminPresenceCount(request, env), allowOrigin);
+      if (url.pathname === "/api/site-settings" && request.method === "GET") return withCorsOrigin(await handleSiteSettingsGet(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/site-settings" && request.method === "POST") return withCorsOrigin(await handleSiteSettingsUpdate(request, env), allowOrigin);
       if (url.pathname === "/api/journal-settings" && request.method === "GET") return withCorsOrigin(await handleJournalSettingsGet(request, env), allowOrigin);
       if (url.pathname === "/api/admin/journal-settings" && request.method === "POST") return withCorsOrigin(await handleJournalSettingsUpdate(request, env), allowOrigin);
       if (url.pathname === "/api/econ-calendar" && request.method === "GET") return withCorsOrigin(await handleEconCalendar(request, env), allowOrigin);

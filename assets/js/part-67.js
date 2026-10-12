@@ -104,6 +104,11 @@
   var CSS = '' +
   '.az-wrap{max-width:none;margin:0;}' +
   '.az-tabs{display:flex;gap:8px;margin:0 0 22px;flex-wrap:wrap;}' +
+  '.az-vis{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 16px;padding:10px 12px;border:1px dashed rgba(204,255,0,.35);border-radius:12px;font-size:12.5px;color:var(--grey,#9aa3ad);}' +
+  '.az-vis-o{display:flex;flex-wrap:wrap;gap:6px;}' +
+  '.az-vis-b{all:unset;cursor:pointer;padding:6px 11px;border-radius:999px;border:1px solid var(--border-dim,rgba(255,255,255,.18));font-size:12px;color:var(--grey,#9aa3ad);}' +
+  '.az-vis-b.on{border-color:var(--neon,#ccff00);color:var(--neon,#ccff00);background:rgba(204,255,0,.08);}' +
+  '.az-vis em{font-style:normal;color:var(--neon,#ccff00);}' +
   '.az-tab{font-family:var(--mono);font-size:12.5px;letter-spacing:1px;text-transform:uppercase;padding:10px 18px;border-radius:12px;border:1px solid var(--border-dim);background:var(--glass);color:var(--grey);cursor:pointer;}' +
   '.az-tab.on{border-color:var(--neon);color:var(--neon);background:rgba(204,255,0,.06);}' +
   '.az-card{border:1px solid var(--border-dim);background:rgba(10,11,18,.74);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:var(--radius);padding:22px;margin-bottom:16px;}' +
@@ -236,6 +241,49 @@
   '@media (max-width:560px){.az-podium{gap:6px;} .az-troph{width:58px;} .az-slot.s1 .az-troph{width:78px;} .az-ped b{font-size:30px;} .az-slot.s1 .az-ped{height:88px;} .az-slot.s2 .az-ped{height:62px;} .az-slot.s3 .az-ped{height:42px;} .az-pod .nm{font-size:12px;} .az-pod .sc{font-size:15px;} .az-slot.s1 .az-pod .sc{font-size:18px;} .az-ava{width:36px;height:36px;} .az-slot.s1 .az-ava{width:44px;height:44px;} .az-sky svg{display:none;}}';
 
   var sec = null, bodyEl = null;
+  /* ---- Round AM: who may see the Arena (set by the admin, stored in the Worker) ---- */
+  var VIS_RANK = { admin:3, editor:2, member:1, all:0 };
+  var arenaVis = 'admin';
+  try { var lv0 = localStorage.getItem('spz.arenaVis'); if(VIS_RANK[lv0] !== undefined) arenaVis = lv0; } catch(e){}
+  var visBusy = false, visMsg = '';
+  function myRank(){
+    var t = '';
+    try { t = window.__SPZ_TIER ? window.__SPZ_TIER() : ''; } catch(e){}
+    if(t === 'full') return 3;
+    if(t === 'editor') return 2;
+    if(t === 'member' || sessionCode()) return 1;
+    return 0;
+  }
+  function arenaOk(){ return myRank() >= (VIS_RANK[arenaVis] || 0); }
+  window.__SPZ_ARENA_OK = arenaOk;
+  function setVis(v){
+    arenaVis = v;
+    try { localStorage.setItem('spz.arenaVis', v); } catch(e){}
+  }
+  fetch(WORKER_BASE + '/api/site-settings').then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
+    if(j && VIS_RANK[j.arenaVis] !== undefined && j.arenaVis !== arenaVis){ setVis(j.arenaVis); if(sec) paint(); }
+  }).catch(function(){});
+  var VIS_TXT = {
+    h:{ en:'Who can see Exam Arena in the menu', th:'ใครเห็นเมนูสนามสอบ CEWA ได้บ้าง' },
+    o:{ admin:{en:'Admin only',th:'แอดมินเท่านั้น'}, editor:{en:'Editor and up',th:'Editor ขึ้นไป'}, member:{en:'Members and up',th:'สมาชิกขึ้นไป'}, all:{en:'Everyone',th:'ทุกคน'} },
+    saved:{ en:'Saved', th:'บันทึกแล้ว' }, bad:{ en:'Could not save — deploy the new Worker first.', th:'บันทึกไม่สำเร็จ — ต้องอัป Worker ใหม่ก่อน' },
+    closed:{ en:'Exam Arena is closed for now.', th:'สนามสอบ CEWA ปิดอยู่ในขณะนี้' }
+  };
+  function visBarHTML(){
+    if(myRank() < 3) return '';
+    return '<div class="az-vis"><span>' + esc(T(VIS_TXT.h)) + '</span><div class="az-vis-o">' +
+      ['admin', 'editor', 'member', 'all'].map(function(k){ return '<button type="button" class="az-vis-b' + (arenaVis === k ? ' on' : '') + '" data-az-vis="' + k + '"' + (visBusy ? ' disabled' : '') + '>' + esc(T(VIS_TXT.o[k])) + '</button>'; }).join('') +
+      '</div>' + (visMsg ? '<em>' + esc(visMsg) + '</em>' : '') + '</div>';
+  }
+  function saveVis(v){
+    var key = ''; try { key = sessionStorage.getItem('spz_admin_users_key') || ''; } catch(e){}
+    var prev = arenaVis; setVis(v); visBusy = true; visMsg = ''; paint();
+    fetch(WORKER_BASE + '/api/admin/site-settings', { method:'POST', headers:{ 'Content-Type':'application/json', 'X-Admin-Key':key }, body:JSON.stringify({ arenaVis:v }) })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){ visBusy = false; if(j && j.ok){ visMsg = T(VIS_TXT.saved); } else { setVis(prev); visMsg = T(VIS_TXT.bad); } paint(); })
+      .catch(function(){ visBusy = false; setVis(prev); visMsg = T(VIS_TXT.bad); paint(); });
+  }
+
   var meta = null, metaErr = false, metaLoading = false;
   var tab = 'play';              // play | board
   var view = 'menu';             // menu | loading | quiz | result
@@ -638,7 +686,8 @@
     else inner = menuHTML();
     // keep the quiz free of the tab strip so nobody leaves a timed round by accident
     var showTabs = !(tab === 'play' && (view === 'quiz' || view === 'loading'));
-    bodyEl.innerHTML = '<div class="az-wrap">' + (showTabs ? tabs : '') + inner + '</div>';
+    if(!arenaOk()){ bodyEl.innerHTML = '<div class="az-wrap"><p class="az-note">' + esc(T(VIS_TXT.closed)) + '</p></div>'; stopWatch(); return; }
+    bodyEl.innerHTML = '<div class="az-wrap">' + (showTabs ? visBarHTML() + tabs : '') + inner + '</div>';
     if(tab === 'play' && view === 'menu' && !sessionCode()) watchLogin(); else stopWatch();
     if(view === 'quiz' && run && run.q.tpq && !run.sent && !run.reveal) tick();
     countUp();
@@ -661,6 +710,8 @@
   function stopWatch(){ if(loginPoll){ clearInterval(loginPoll); loginPoll = null; } }
 
   function onClick(ev){
+    var vb = ev.target.closest('[data-az-vis]');
+    if(vb && bodyEl.contains(vb)){ if(!visBusy) saveVis(vb.getAttribute('data-az-vis')); return; }
     var el = ev.target.closest('[data-az]');
     if(!el || !bodyEl.contains(el)) return;
     var a = el.getAttribute('data-az');

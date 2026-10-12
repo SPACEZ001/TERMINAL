@@ -1081,6 +1081,9 @@ var CL_UI = {
      of both the Home hub grid (buildHub) and the top nav menu (buildNav) --
      currently just Connected Users, which is reachable only via the admin
      login gate's own panel button. */
+  /* Round AM: the CEWA Exam Arena is listed only for the tiers the admin allows
+     (Terminal Admin > Exam Arena > "Who can see it"); default = admin only. */
+  function navHid(id){ return !!NAV_HIDDEN[id] || (id === 'arena' && !(window.__SPZ_ARENA_OK && window.__SPZ_ARENA_OK())); }
   var NAV_HIDDEN = { connectedusers:1, printreport:1, announcements:1, pro:1, quietValue:1, adminnotes:1 }; /* Round Q: Institutional Pro Desk moved into Cockpit, see part-47.js; Round W (#223): Quiet Value Scanner + Website QR Code are admin-only, reached only via the Terminal Admin panel, never listed in public nav/hub. Round X (#234) briefly added Elliott Wave Classroom here too, but Round Y (#241) reversed that: she wants it listed in the Learn group like any other page, just shown locked (paintLockVeils' spz-locked-item badge, same as a member-only page) rather than invisible -- the actual protection (LOCKED_ROUTES/ADMIN_ONLY_ROUTES in part-46.js + the content-level window.__SPZ_TIER() check in part-65.js, both behind the same PBKDF2/SHA-256-hashed admin password as everything else here) is unchanged. */
 
   function buildHub(){
@@ -1110,7 +1113,7 @@ var CL_UI = {
       g.innerHTML = '';
       for(var i = 0; i < ROUTES.length; i++){
         (function(r, n){
-          if(!document.getElementById(r.id) || NAV_HIDDEN[r.id]) return;
+          if(!document.getElementById(r.id) || navHid(r.id)) return;
           var hue = HUB_HUES[(n - 1) % HUB_HUES.length];
           var num = n < 10 ? '0' + n : String(n);
           var c = el('button', 'hub-card' + (r.feat ? ' feat' : ''),
@@ -1626,7 +1629,7 @@ var CL_UI = {
         var rows = [];
         for(i = 0; i < GROUPS[g].ids.length; i++){
           for(var j = 0; j < ROUTES.length; j++){
-            if(ROUTES[j].id === GROUPS[g].ids[i] && document.getElementById(ROUTES[j].id)){
+            if(ROUTES[j].id === GROUPS[g].ids[i] && document.getElementById(ROUTES[j].id) && !navHid(ROUTES[j].id)){
               rows.push(ROUTES[j]); used[ROUTES[j].id] = 1;
             }
           }
@@ -1645,7 +1648,7 @@ var CL_UI = {
       var rest = [];
       for(i = 0; i < ROUTES.length; i++){
         r = ROUTES[i];
-        if(!used[r.id] && !NAV_HIDDEN[r.id] && document.getElementById(r.id)) rest.push(r);
+        if(!used[r.id] && !navHid(r.id) && document.getElementById(r.id)) rest.push(r);
       }
       if(rest.length){
         pop.appendChild(el('div', 'np-sep', L() === 'th' ? 'อื่นๆ' : 'More'));
