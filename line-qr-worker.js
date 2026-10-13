@@ -346,9 +346,111 @@ function sanitizeRights(v) {
   return RIGHTS_LEVELS.indexOf(v) !== -1 ? v : undefined;
 }
 
-function isAdminKeyValid(request, env) {
+/* ---- Admin key (Round AO: hardened + rotatable) ---------------------------
+   1. The admin can set a NEW admin key from the site (Security map page):
+      POST /api/admin/key/rotate { newKey } with the current key. Only a salted
+      PBKDF2-SHA256 (210,000 rounds) hash is stored in KV ("admin:keyhash");
+      from then on the old key (the Cloudflare secret) stops working.
+   2. Recovery: the hash record remembers a fingerprint of the Cloudflare
+      secret at the time of rotation. Changing ADMIN_USERS_KEY in the Cloudflare
+      dashboard makes that record stale, so the new secret works again.
+   3. Different wrong keys are counted per IP (admin:fail:<ip>); 30 different
+      wrong keys in 15 minutes locks admin checks for that IP for 15 minutes.
+      (An old tab repeating the same stale key counts once.)
+   4. Comparisons are constant-time. A verified key is cached per isolate so
+      the slow hash runs once, not on every request. */
+const ADMIN_HASH_KEY = "admin:keyhash";
+const ADMIN_FAIL_PREFIX = "admin:fail:";
+const ADMIN_PBKDF2_ITER = 210000;
+let adminCache = { rec: null, recAt: 0, okKey: "", okVer: "" };
+function ctEqual(a, b) {
+  a = String(a); b = String(b);
+  let d = a.length ^ b.length;
+  const n = Math.max(a.length, b.length);
+  for (let i = 0; i < n; i++) d |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
+  return d === 0;
+}
+async function sha256Hex(str) {
+  const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(h)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+async function adminPbkdf2(key, saltB64, iter) {
+  const salt = Uint8Array.from(atob(saltB64), (c) => c.charCodeAt(0));
+  const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(key), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: iter }, k, 256);
+  return Array.from(new Uint8Array(bits)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+async function adminRecord(env) {
+  const now = Date.now();
+  if (adminCache.recAt && now - adminCache.recAt < 30000) return adminCache.rec;
+  let rec = null;
+  try { rec = JSON.parse((await env.SESSIONS.get(ADMIN_HASH_KEY)) || "null"); } catch (e) { rec = null; }
+  if (rec && env.ADMIN_USERS_KEY) {
+    // the Cloudflare secret was changed after this rotation -> the secret wins again (recovery path)
+    const fp = await sha256Hex("spz-admin-fp|" + env.ADMIN_USERS_KEY);
+    if (!ctEqual(fp, rec.envFp || "")) rec = null;
+  }
+  adminCache.rec = rec; adminCache.recAt = now;
+  return rec;
+}
+function adminIp(request) { return request.headers.get("CF-Connecting-IP") || "0"; }
+async function isAdminKeyValid(request, env, noCount) {
   const key = request.headers.get("X-Admin-Key") || "";
-  return !!env.ADMIN_USERS_KEY && key === env.ADMIN_USERS_KEY;
+  if (!key || key.length > 256 || !env.ADMIN_USERS_KEY) return false;
+  if (key.indexOf("acc.") === 0 || (editorKeyVerified && key === editorKeyVerified)) return false; // editor credentials are never admin
+  const failKey = ADMIN_FAIL_PREFIX + adminIp(request);
+  let fails = 0;
+  try { fails = (JSON.parse((await env.SESSIONS.get(failKey)) || "{}").n) || 0; } catch (e) {}
+  if (fails >= 30) return false;
+  const rec = await adminRecord(env);
+  let ok = false;
+  if (rec && rec.hash) {
+    const ver = rec.salt + rec.hash;
+    if (adminCache.okKey && adminCache.okVer === ver && ctEqual(key, adminCache.okKey)) ok = true;
+    else {
+      ok = ctEqual(await adminPbkdf2(key, rec.salt, rec.iter || ADMIN_PBKDF2_ITER), rec.hash);
+      if (ok) { adminCache.okKey = key; adminCache.okVer = ver; }
+    }
+  } else {
+    ok = ctEqual(key, env.ADMIN_USERS_KEY);
+  }
+  if (!ok && !noCount) await adminCountFail(request, env);
+  return ok;
+}
+async function adminCountFail(request, env) {
+  const key = request.headers.get("X-Admin-Key") || "";
+  if (!key) return;
+  const failKey = ADMIN_FAIL_PREFIX + adminIp(request);
+  try {
+    // count DIFFERENT wrong keys only: an old tab that keeps polling with a stale key counts once,
+    // a guessing attack (a new key every try) is counted every time
+    const fp = (await sha256Hex("spz-fail|" + key)).slice(0, 16);
+    let r = {}; try { r = JSON.parse((await env.SESSIONS.get(failKey)) || "{}") || {}; } catch (e) { r = {}; }
+    const seen = Array.isArray(r.s) ? r.s : [];
+    if (seen.indexOf(fp) !== -1) return;
+    seen.push(fp);
+    await env.SESSIONS.put(failKey, JSON.stringify({ n: (r.n || 0) + 1, s: seen.slice(-40) }), { expirationTtl: 900 });
+  } catch (e) {}
+}
+async function handleAdminKeyRotate(request, env) {
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
+  let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const nk = String(body.newKey || "");
+  if (nk.length < 16 || nk.length > 128 || !/[A-Za-z]/.test(nk) || !/[0-9]/.test(nk)) return json({ error: "weak_key" }, env, 400);
+  if (nk.indexOf("acc.") === 0) return json({ error: "weak_key" }, env, 400);
+  const saltU8 = new Uint8Array(16); crypto.getRandomValues(saltU8);
+  let sb = ""; for (let i = 0; i < saltU8.length; i++) sb += String.fromCharCode(saltU8[i]);
+  const salt = btoa(sb);
+  const rec = { v: 1, salt, iter: ADMIN_PBKDF2_ITER, hash: await adminPbkdf2(nk, salt, ADMIN_PBKDF2_ITER),
+    envFp: await sha256Hex("spz-admin-fp|" + env.ADMIN_USERS_KEY), at: Date.now() };
+  await env.SESSIONS.put(ADMIN_HASH_KEY, JSON.stringify(rec));
+  adminCache = { rec, recAt: Date.now(), okKey: nk, okVer: rec.salt + rec.hash };
+  return json({ ok: true, at: rec.at }, env);
+}
+async function handleAdminKeyStatus(request, env) {
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
+  const rec = await adminRecord(env);
+  return json({ rotated: !!rec, at: rec ? rec.at : null, iter: rec ? rec.iter : null }, env);
 }
 
 /* ---- Editor READ-ONLY access (Round AD2) ----------------------------------
@@ -378,10 +480,13 @@ async function isEditorKeyValid(request) {
 
 // Admin key (any method) OR a valid Editor code on a GET.
 async function isAdminOrEditorRead(request, env) {
-  if (isAdminKeyValid(request, env)) return true;
-  if (request.method !== "GET") return false;
-  if (await isEditorKeyValid(request)) return true;
-  return await isEditorAccountKey(request, env);
+  if (await isAdminKeyValid(request, env, true)) return true;
+  if (request.method === "GET") {
+    if (await isEditorKeyValid(request)) return true;
+    if (await isEditorAccountKey(request, env)) return true;
+  }
+  await adminCountFail(request, env);
+  return false;
 }
 
 /* provider: "line" (default, unchanged behavior) or "telegram" (Round R --
@@ -695,7 +800,7 @@ async function handleProfileUpdate(request, env) {
 /* ------------------------- admin: Connected Users page ------------------------- */
 
 async function handleAdminUsersList(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   const ids = await getUserIndex(env);
   const users = [];
   for (const userId of ids) {
@@ -726,7 +831,7 @@ async function handleAdminUsersList(request, env) {
 }
 
 async function handleAdminUsersUpdate(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   let body;
   try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const userId = (body.userId || "").trim();
@@ -776,7 +881,7 @@ async function handleAdminUsersUpdate(request, env) {
    per-recipient targeting needed. Gated by the same X-Admin-Key header as the
    other /api/admin/* endpoints. */
 async function handleAdminBroadcast(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   if (!env.LINE_MESSAGING_CHANNEL_ACCESS_TOKEN) {
     return json({ error: "messaging_not_configured" }, env, 400);
   }
@@ -859,7 +964,7 @@ async function handleJournalSettingsGet(request, env) {
 }
 
 async function handleJournalSettingsUpdate(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   let body;
   try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const data = normalizeJournalSettings(body);
@@ -882,7 +987,7 @@ async function handleSiteSettingsGet(request, env) {
   return json(data, env);
 }
 async function handleSiteSettingsUpdate(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   let body;
   try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   let cur = {};
@@ -947,7 +1052,7 @@ async function handlePresencePing(request, env) {
 }
 
 async function handleAdminPresenceCount(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   let count = 0;
   let cursor;
   // A KV list() page tops out at 1000 keys; loop a few pages just in case
@@ -1118,13 +1223,13 @@ async function handleAnnouncementsPublic(request, env) {
 }
 
 async function handleAdminAnnouncementsList(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   const list = await getAnnouncementsList(env);
   return json({ items: list }, env);
 }
 
 async function handleAdminAnnouncementsCreate(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   let body;
   try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const text = String(body.text || "").trim().slice(0, ANNOUNCEMENT_TEXT_MAX);
@@ -1146,7 +1251,7 @@ async function handleAdminAnnouncementsCreate(request, env) {
 }
 
 async function handleAdminAnnouncementsUpdate(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   let body;
   try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const id = String(body.id || "");
@@ -1174,7 +1279,7 @@ async function handleAdminAnnouncementsUpdate(request, env) {
 }
 
 async function handleAdminAnnouncementsDelete(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   let body;
   try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const id = String(body.id || "");
@@ -1246,7 +1351,7 @@ async function handleClassroomContent(request, env) {
 }
 
 async function handleAdminClassroomContentUpdate(request, env) {
-  if (!isAdminKeyValid(request, env)) return localToolJson({ error: "unauthorized" }, 401);
+  if (!(await isAdminKeyValid(request, env))) return localToolJson({ error: "unauthorized" }, 401);
   let body;
   try { body = await request.json(); } catch (e) { return localToolJson({ error: "bad_request" }, 400); }
   const content = body && typeof body.content === "object" && body.content ? body.content : null;
@@ -1283,7 +1388,7 @@ async function handleControlGridContent(request, env) {
 }
 
 async function handleAdminControlGridContentUpdate(request, env) {
-  if (!isAdminKeyValid(request, env)) return localToolJson({ error: "unauthorized" }, 401);
+  if (!(await isAdminKeyValid(request, env))) return localToolJson({ error: "unauthorized" }, 401);
   let body;
   try { body = await request.json(); } catch (e) { return localToolJson({ error: "bad_request" }, 400); }
   const content = body && typeof body.content === "object" && body.content ? body.content : null;
@@ -2128,7 +2233,7 @@ function qzValidSet(arr) {
 }
 
 async function handleAdminQuizBankSet(request, env) {
-  if (!isAdminKeyValid(request, env)) return localToolJson({ error: "unauthorized" }, 401);
+  if (!(await isAdminKeyValid(request, env))) return localToolJson({ error: "unauthorized" }, 401);
   let body;
   try { body = await request.json(); } catch (e) { return localToolJson({ error: "bad_request" }, 400); }
   const n = parseInt(body && body.n, 10);
@@ -2139,7 +2244,7 @@ async function handleAdminQuizBankSet(request, env) {
 }
 
 async function handleAdminQuizBankFinalize(request, env) {
-  if (!isAdminKeyValid(request, env)) return localToolJson({ error: "unauthorized" }, 401);
+  if (!(await isAdminKeyValid(request, env))) return localToolJson({ error: "unauthorized" }, 401);
   let body;
   try { body = await request.json(); } catch (e) { return localToolJson({ error: "bad_request" }, 400); }
   const sets = body && body.sets && typeof body.sets === "object" ? body.sets : null;
@@ -2325,7 +2430,7 @@ function cexAdminView(u, ids) {
 
 // ---------- admin ----------
 async function handleCexAdminCreate(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   let body; try { body = await request.json(); } catch (e) { body = {}; }
   const count = Math.max(1, Math.min(30, parseInt(body.count, 10) || 1));
   const note = String(body.note || "").trim().slice(0, 120);
@@ -2359,7 +2464,7 @@ function certClean(b) {
   return { name: t(b.name, 80), nameEn: t(b.nameEn, 80), course: t(b.course, 120), level: t(b.level, 60), date: t(b.date, 20), score: t(b.score, 20), issuedBy: t(b.issuedBy, 80) || "Noraset Boikaw", note: t(b.note, 200), layout: b.layout === "port" ? "port" : "land" };
 }
 async function handleCertSave(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const c = certClean(body || {});
   if (!c.name) return json({ error: "need_name" }, env, 400);
@@ -2377,7 +2482,7 @@ async function handleCertSave(request, env) {
   return json({ ok: true, id, cert: rec }, env);
 }
 async function handleCertList(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   const out = []; let cursor;
   do {
     const page = await env.SESSIONS.list({ prefix: CERT_PREFIX, cursor });
@@ -2388,7 +2493,7 @@ async function handleCertList(request, env) {
   return json({ certs: out.slice(0, 300) }, env);
 }
 async function handleCertRevoke(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const id = certId(body.id);
   const raw = id && await env.SESSIONS.get(CERT_PREFIX + id);
@@ -2439,7 +2544,7 @@ function evalSummary(r) {
     updatedAt: r.updatedAt || 0, shared: !!r.token, revokedBy: r.revokedBy || "" };
 }
 async function handleEvalSave(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   if (!body || typeof body.data !== "object" || body.data === null || Array.isArray(body.data)) return json({ error: "bad_request" }, env, 400);
   const dataStr = JSON.stringify(body.data);
@@ -2458,7 +2563,7 @@ async function handleEvalSave(request, env) {
   return json({ ok: true, id: rec.id, token: rec.token, updatedAt: rec.updatedAt }, env);
 }
 async function handleEvalList(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   const out = []; let cursor;
   do {
     const page = await env.SESSIONS.list({ prefix: EVAL_PREFIX, cursor });
@@ -2473,7 +2578,7 @@ async function handleEvalList(request, env) {
   return json({ evals: out }, env);
 }
 async function handleEvalGet(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   const id = evalSafeId(new URL(request.url).searchParams.get("id") || "");
   const rec = id ? await evalGet(id, env) : null;
   if (!rec) return json({ error: "not_found" }, env, 404);
@@ -2481,7 +2586,7 @@ async function handleEvalGet(request, env) {
 }
 // action: "share" (create link if none), "rotate" (new link, old one stops), "revoke" (switch link off), "delete"
 async function handleEvalLink(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const id = evalSafeId(body && body.id);
   const rec = id ? await evalGet(id, env) : null;
@@ -2542,7 +2647,7 @@ function cexOpenAtVal(v) {
   return undefined;
 }
 async function handleCexAdminUpdate(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const username = cexUserName(body.username);
   const u = username ? await cexGetUser(username, env) : null;
@@ -2582,7 +2687,7 @@ async function handleCexAdminBankGet(request, env) {
   return json(await cexGetBank(env, new URL(request.url).searchParams.get("set")), env);
 }
 async function handleCexAdminBankSet(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const st = body.settings || {};
   const settings = {
@@ -2612,7 +2717,7 @@ function gbClean(e) {
   };
 }
 async function handleCexAdminGrades(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const username = cexUserName(body.username);
   const u = username ? await cexGetUser(username, env) : null;
@@ -2645,11 +2750,11 @@ async function handleCexAdminGrades(request, env) {
 }
 
 async function handleCexAdminSets(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   return json({ sets: await cexSetsInfo(env) }, env);
 }
 async function handleCexAdminSetCreate(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   let body; try { body = await request.json(); } catch (e) { body = {}; }
   const ids = await cexSetIds(env);
   if (ids.length >= 20) return json({ error: "too_many_sets" }, env, 400);
@@ -2660,7 +2765,7 @@ async function handleCexAdminSetCreate(request, env) {
   return json({ ok: true, id, sets: await cexSetsInfo(env) }, env);
 }
 async function handleCexAdminSetDelete(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   let body; try { body = await request.json(); } catch (e) { body = {}; }
   const id = cexSetId(body.id);
   if (id === "main") return json({ error: "cannot_delete_main" }, env, 400);
@@ -2865,7 +2970,7 @@ async function accFromToken(env, token) {
   return a;
 }
 async function handleAccCreate(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   let b; try { b = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const count = Math.max(1, Math.min(30, parseInt(b.count, 10) || 1));
   const role = ACC_ROLES.indexOf(b.role) !== -1 ? b.role : "member";
@@ -2884,13 +2989,13 @@ async function handleAccCreate(request, env) {
   return json({ ok: true, created }, env);
 }
 async function handleAccList(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   const idx = await accIndex(env), out = [];
   for (const u of idx) { const a = await accGet(env, u); if (a) out.push(accPublic(a)); }
   return json({ accounts: out }, env);
 }
 async function handleAccUpdate(request, env) {
-  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
   let b; try { b = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const a = await accGet(env, String(b.username || ""));
   if (!a) return json({ error: "not_found" }, env, 404);
@@ -3053,6 +3158,8 @@ const SPZ_ROUTES = {
       if (url.pathname === "/api/admin/cexam/sets/delete" && request.method === "POST") return withCorsOrigin(await handleCexAdminSetDelete(request, env), allowOrigin);
       if (url.pathname === "/api/admin/cexam/bank" && request.method === "GET") return withCorsOrigin(await handleCexAdminBankGet(request, env), allowOrigin);
       if (url.pathname === "/api/admin/cexam/bank/set" && request.method === "POST") return withCorsOrigin(await handleCexAdminBankSet(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/key/rotate" && request.method === "POST") return withCorsOrigin(await handleAdminKeyRotate(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/key/status" && request.method === "GET") return withCorsOrigin(await handleAdminKeyStatus(request, env), allowOrigin);
       if (url.pathname === "/api/admin/cexam/grades" && request.method === "POST") return withCorsOrigin(await handleCexAdminGrades(request, env), allowOrigin);
       if (url.pathname === "/api/admin/cexam/result" && request.method === "GET") return withCorsOrigin(await handleCexAdminResult(request, env), allowOrigin);
       if (url.pathname === "/api/quietvalue/results" && request.method === "GET") return await handleQuietValueResults(request, env);
