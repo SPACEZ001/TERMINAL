@@ -259,113 +259,217 @@
   }
   function setGrades(un, grades){ (gb.users || []).forEach(function(u){ if(u.username === un) u.grades = grades || []; }); }
 
-  /* =========================================================== SECURITY MAP */
+  /* =========================================================== SECURITY MAP (Round AO v2: motion graphic) */
   var S = {
     eb:{ en:'Admin · Security', th:'แอดมิน · ความปลอดภัย' },
     h:{ en:'Security map', th:'แผนผังความปลอดภัย' },
-    lede:{ en:'How the site protects every door — follow the moving dots from left to right. Tap any box for details. Scroll or pinch to zoom, drag to move.', th:'เว็บป้องกันทุกประตูอย่างไร — ดูจุดที่วิ่งจากซ้ายไปขวา แตะกล่องไหนก็ได้เพื่อดูรายละเอียด เลื่อนลูกกลิ้งหรือถ่างนิ้วเพื่อซูม ลากเพื่อเลื่อน' },
-    full:{ en:'Full screen', th:'เต็มจอ' }, exit:{ en:'Exit full screen', th:'ออกจากเต็มจอ' }, reset:{ en:'Reset view', th:'รีเซ็ตมุมมอง' },
-    tip:{ en:'Tap a box', th:'แตะกล่องเพื่อดูรายละเอียด' },
-    legend:{ en:'Blue = in your browser · Green = on the Cloudflare Worker (server) · Amber = the secret never leaves this step', th:'ฟ้า = ทำในเบราว์เซอร์ · เขียว = ทำบนเซิร์ฟเวอร์ Cloudflare Worker · ส้ม = ความลับไม่หลุดออกจากขั้นนี้' }
+    lede:{ en:'A moving picture of how the site protects every door. It plays like a short film — press pause to explore on your own: drag to move, scroll or pinch to zoom, tap any step for details.', th:'ภาพเคลื่อนไหวแสดงว่าเว็บป้องกันทุกประตูอย่างไร เล่นเองเหมือนวิดีโอสั้น กดหยุดแล้วสำรวจเองได้: ลากเพื่อเลื่อน เลื่อนลูกกลิ้งหรือถ่างนิ้วเพื่อซูม แตะขั้นไหนก็ได้เพื่อดูรายละเอียด' },
+    full:{ en:'Full screen', th:'เต็มจอ' }, exit:{ en:'Exit', th:'ออก' }, all:{ en:'Overview', th:'ภาพรวม' },
+    play:{ en:'Play', th:'เล่น' }, pause:{ en:'Pause', th:'หยุด' },
+    lgB:{ en:'In the browser', th:'ทำในเบราว์เซอร์' }, lgS:{ en:'On the server (Cloudflare Worker)', th:'ทำบนเซิร์ฟเวอร์ (Cloudflare Worker)' }, lgK:{ en:'The secret is locked here', th:'ความลับถูกล็อกไว้ที่ขั้นนี้' },
+    ovT:{ en:'Six doors, one rule', th:'หกประตู กฎเดียว' },
+    ovS:{ en:'Nothing secret is ever stored in plain text — only slow hashes and encrypted vaults.', th:'ไม่มีความลับใดถูกเก็บเป็นข้อความธรรมดา — มีแค่ค่าแฮชที่คำนวณช้าและ vault ที่เข้ารหัสแล้ว' },
+    order:{ en:'This vault’s round order', th:'ลำดับการทำงานของ vault นี้' }
   };
-  // lanes: [title, color, steps[[label_en,label_th, where('b'|'s'|'k'), detail_en, detail_th]]]
+  /* steps: [en, th, where b|s|k, icon, detail en, detail th] */
   var LANES = [
-    [{ en:'Login gate (member / full access)', th:'ประตูล็อกอิน (สมาชิก / สิทธิ์เต็ม)' }, [
-      ['Password typed', 'พิมพ์รหัสผ่าน', 'b', 'The password is typed in the browser and never sent anywhere.', 'รหัสผ่านพิมพ์ในเบราว์เซอร์ และไม่ถูกส่งไปที่ไหนเลย'],
-      ['PBKDF2-SHA512 ×200,000', 'PBKDF2-SHA512 ×200,000', 'b', 'Stretches the password into a key. 200,000 rounds make every single guess slow for an attacker.', 'ยืดรหัสผ่านเป็นกุญแจ ทำซ้ำ 200,000 รอบ ทำให้การเดารหัสแต่ละครั้งช้ามากสำหรับผู้โจมตี'],
-      ['7 rounds · random hash order', '7 รอบ · ลำดับแฮชสุ่ม', 'b', 'Each vault has its own random schedule choosing SHA-256 / 384 / 512 for every HKDF, PBKDF2 and HMAC step, with 40k–80k iterations per round.', 'แต่ละ vault มีตารางสุ่มของตัวเอง เลือก SHA-256 / 384 / 512 ให้ทุกขั้น HKDF, PBKDF2 และ HMAC และทำซ้ำ 40,000–80,000 รอบต่อรอบ'],
-      ['HMAC-SHA384 seal', 'ตรา HMAC-SHA384', 'k', 'All fields of the vault are sealed together. Change a single byte and the seal fails — tampering is detected before anything is decrypted.', 'ทุกช่องของ vault ถูกปิดผนึกรวมกัน แก้แม้แต่ 1 ไบต์ ตราจะไม่ผ่าน — ตรวจจับการดัดแปลงได้ก่อนถอดรหัส'],
-      ['HKDF-SHA512 → AES-CTR + AES-GCM', 'HKDF-SHA512 → AES-CTR + AES-GCM', 'b', 'Two layers of AES-256. GCM also checks integrity.', 'เข้ารหัส AES-256 สองชั้น ชั้น GCM ตรวจความถูกต้องของข้อมูลด้วย'],
-      ['Access for this tab only', 'เปิดสิทธิ์เฉพาะแท็บนี้', 'b', 'The unlocked level lives in sessionStorage and disappears when the tab is closed.', 'สิทธิ์ที่ปลดล็อกเก็บใน sessionStorage และหายไปเมื่อปิดแท็บ']
-    ]],
-    [{ en:'Site accounts (username + password)', th:'บัญชีผู้ใช้ (ชื่อผู้ใช้ + รหัสผ่าน)' }, [
-      ['Username + password', 'ชื่อผู้ใช้ + รหัสผ่าน', 'b', 'Typed on the login screen.', 'พิมพ์ในหน้าล็อกอิน'],
-      ['HTTPS to the Worker', 'HTTPS ไปที่ Worker', 'b', 'Sent only over an encrypted HTTPS connection.', 'ส่งผ่านการเชื่อมต่อ HTTPS ที่เข้ารหัสเท่านั้น'],
-      ['10 wrong tries → 15-min lock', 'ผิด 10 ครั้ง → ล็อก 15 นาที', 's', 'Wrong attempts are counted per network address to stop password guessing.', 'นับจำนวนครั้งที่ผิดต่อที่อยู่เครือข่าย เพื่อกันการสุ่มเดารหัส'],
-      ['Salted PBKDF2-SHA256 ×100,000', 'PBKDF2-SHA256 ×100,000 + salt', 'k', 'Passwords are never stored — only a salted hash. Even the admin cannot read a password later.', 'ไม่เก็บรหัสผ่านจริง เก็บแค่ค่าแฮชที่ผสม salt แม้แต่แอดมินก็อ่านรหัสย้อนหลังไม่ได้'],
-      ['Random token · 30 days', 'โทเคนสุ่ม · 30 วัน', 's', 'A random token replaces the password for later visits and expires automatically. Reset / turn off revokes it.', 'โทเคนสุ่มใช้แทนรหัสผ่านในการเข้าครั้งถัดไป และหมดอายุเอง การรีเซ็ตหรือปิดบัญชีจะยกเลิกทันที'],
-      ['Role: member / editor / student', 'สิทธิ์: สมาชิก / Editor / นักเรียน', 's', 'The Worker decides what each role may read.', 'Worker เป็นผู้ตัดสินว่าแต่ละสิทธิ์อ่านอะไรได้']
-    ]],
-    [{ en:'Classroom & exams', th:'ห้องเรียนและการสอบ' }, [
-      ['Student exam account', 'บัญชีสอบของนักเรียน', 'b', 'EW-xxxxx accounts created by the admin.', 'บัญชี EW-xxxxx ที่แอดมินสร้างให้'],
-      ['Lessons kept on the server', 'บทเรียนเก็บบนเซิร์ฟเวอร์', 's', 'Lesson content is not in the public code — it is served only to signed-in readers.', 'เนื้อหาบทเรียนไม่อยู่ในโค้ดสาธารณะ ส่งให้เฉพาะผู้ที่ล็อกอินแล้ว'],
-      ['Answers sealed with AES-GCM', 'เฉลยถูกปิดผนึกด้วย AES-GCM', 'k', 'Exam questions reach the browser without readable answers; the answer data is encrypted with a server-only key.', 'ข้อสอบส่งถึงเบราว์เซอร์โดยไม่มีเฉลยที่อ่านได้ ข้อมูลเฉลยเข้ารหัสด้วยกุญแจที่อยู่บนเซิร์ฟเวอร์เท่านั้น'],
-      ['Graded on the server', 'ตรวจคะแนนบนเซิร์ฟเวอร์', 's', 'Scores are calculated by the Worker, so they cannot be edited in the browser.', 'Worker เป็นผู้คิดคะแนน จึงแก้คะแนนในเบราว์เซอร์ไม่ได้'],
-      ['Results → admin only', 'ผลสอบ → แอดมินเท่านั้น', 's', 'Results and the gradebook are readable only with the admin key.', 'ผลสอบและสมุดคะแนนอ่านได้เฉพาะเมื่อมีรหัสแอดมิน']
-    ]],
-    [{ en:'Admin notes', th:'บันทึกของแอดมิน' }, [
-      ['Notes written', 'เขียนบันทึก', 'b', 'Notes are edited in the browser.', 'แก้ไขบันทึกในเบราว์เซอร์'],
-      ['PBKDF2-SHA512 ×400,000', 'PBKDF2-SHA512 ×400,000', 'b', 'An even slower key stretch than the login gate.', 'ยืดกุญแจช้ากว่าประตูล็อกอินอีก'],
-      ['5 cascade gates', 'Cascade 5 ชั้น', 'b', 'HKDF-SHA384 → AES-CTR → PBKDF2-SHA256 ×120,000 → HMAC-SHA512, five times.', 'HKDF-SHA384 → AES-CTR → PBKDF2-SHA256 ×120,000 → HMAC-SHA512 ทำ 5 ชั้น'],
-      ['AES-CTR + AES-GCM', 'AES-CTR + AES-GCM', 'k', 'Double AES-256; GCM detects any tampering.', 'AES-256 สองชั้น GCM ตรวจจับการดัดแปลง'],
-      ['Only ciphertext is stored', 'เก็บแค่ข้อมูลที่เข้ารหัสแล้ว', 'b', 'The public repository only ever holds the encrypted vault.', 'ใน repository สาธารณะมีแค่ vault ที่เข้ารหัสแล้ว']
-    ]],
-    [{ en:'Editor code (read-only)', th:'รหัส Editor (อ่านอย่างเดียว)' }, [
-      ['Editor code typed', 'พิมพ์รหัส Editor', 'b', 'Or an editor account signs in.', 'หรือบัญชีที่มีสิทธิ์ Editor ล็อกอิน'],
-      ['Sent in a header', 'ส่งใน header', 'b', 'Sent with each request over HTTPS.', 'ส่งไปกับทุกคำขอผ่าน HTTPS'],
-      ['PBKDF2-SHA256 ×100,000 check', 'ตรวจด้วย PBKDF2-SHA256 ×100,000', 'k', 'Compared against a stored salted hash — the code itself is not stored.', 'เทียบกับค่าแฮชที่ผสม salt — ไม่เก็บตัวรหัสจริง'],
-      ['Read-only endpoints', 'อ่านได้อย่างเดียว', 's', 'Only four read (GET) endpoints accept it.', 'ใช้ได้กับคำขอแบบอ่าน (GET) 4 ตัวเท่านั้น'],
-      ['Every write refused', 'ห้ามเขียนทุกกรณี', 's', 'All add / edit / delete actions still need the admin key.', 'การเพิ่ม / แก้ / ลบ ทุกอย่างยังต้องใช้รหัสแอดมิน']
-    ]],
-    [{ en:'Admin key', th:'รหัสแอดมิน' }, [
-      ['Typed once per session', 'พิมพ์ครั้งเดียวต่อเซสชัน', 'b', 'Kept in sessionStorage — gone when the tab closes.', 'เก็บใน sessionStorage — หายเมื่อปิดแท็บ'],
-      ['HTTPS header', 'ส่งใน header ผ่าน HTTPS', 'b', 'Sent only to the site’s own Worker.', 'ส่งไปเฉพาะ Worker ของเว็บเท่านั้น'],
-      ['Cloudflare secret', 'ความลับใน Cloudflare', 'k', 'Compared with a secret stored in Cloudflare — it is never in the code or the public repository.', 'เทียบกับค่าลับที่เก็บใน Cloudflare — ไม่เคยอยู่ในโค้ดหรือ repository สาธารณะ'],
-      ['Write access', 'สิทธิ์แก้ไขข้อมูล', 's', 'Only this key can create accounts, change lessons, edit grades or revoke certificates.', 'มีแค่รหัสนี้ที่สร้างบัญชี แก้บทเรียน แก้คะแนน หรือยกเลิกเกียรติบัตรได้']
-    ]]
+    { t:{ en:'Login gate', th:'ประตูล็อกอิน' }, s:{ en:'The member / full-access password opens an encrypted vault in the browser.', th:'รหัสสมาชิก / สิทธิ์เต็ม ใช้เปิด vault ที่เข้ารหัสไว้ในเบราว์เซอร์' }, perm:true, steps:[
+      ['Password typed', 'พิมพ์รหัสผ่าน', 'b', 'user', 'Typed in the browser. It is never sent anywhere.', 'พิมพ์ในเบราว์เซอร์ และไม่ถูกส่งไปที่ไหนเลย'],
+      ['PBKDF2-SHA512 ×200k', 'PBKDF2-SHA512 ×200k', 'b', 'hash', 'Stretches the password into a key. 200,000 rounds make every guess slow.', 'ยืดรหัสผ่านเป็นกุญแจ ทำซ้ำ 200,000 รอบ ทำให้การเดาแต่ละครั้งช้ามาก'],
+      ['12 shuffled rounds', 'สลับลำดับ 12 รอบ', 'b', 'shuffle', 'Four operations — A stretch (PBKDF2), B mix (HMAC), C gate (HKDF → AES-CTR seed), D expand (HKDF) — run in a different order every round (ABCD, ACBD, BDAC …), each with its own randomly chosen SHA-256 / 384 / 512. The order is unique to every vault.', 'สี่ขั้นตอน — A ยืดกุญแจ (PBKDF2), B ผสม (HMAC), C ประตู (HKDF → AES-CTR), D ขยาย (HKDF) — สลับลำดับใหม่ทุกรอบ (ABCD, ACBD, BDAC …) และสุ่มชนิดแฮช SHA-256 / 384 / 512 ให้แต่ละขั้น ลำดับนี้ไม่ซ้ำกันเลยในแต่ละ vault'],
+      ['HMAC-SHA384 seal', 'ตรา HMAC-SHA384', 'k', 'shield', 'Every field of the vault is sealed together. Change one byte and the seal fails before anything is decrypted.', 'ทุกช่องของ vault ถูกปิดผนึกรวมกัน แก้แม้ 1 ไบต์ ตราจะไม่ผ่านตั้งแต่ก่อนถอดรหัส'],
+      ['AES-CTR + CBC + GCM', 'AES-CTR + CBC + GCM', 'k', 'layers', 'Three layers of AES-256. The GCM layer checks integrity a second time.', 'เข้ารหัส AES-256 สามชั้น ชั้น GCM ตรวจความถูกต้องซ้ำอีกรอบ'],
+      ['Unlocked for this tab', 'ปลดล็อกเฉพาะแท็บนี้', 'b', 'check', 'The access level lives in sessionStorage and disappears when the tab closes.', 'สิทธิ์ที่ปลดล็อกเก็บใน sessionStorage และหายไปเมื่อปิดแท็บ']
+    ] },
+    { t:{ en:'Site accounts', th:'บัญชีผู้ใช้' }, s:{ en:'Username + password accounts created by the admin.', th:'บัญชีชื่อผู้ใช้ + รหัสผ่านที่แอดมินสร้างให้' }, steps:[
+      ['Username + password', 'ชื่อผู้ใช้ + รหัสผ่าน', 'b', 'user', 'Typed on the sign-in form.', 'พิมพ์ในหน้าล็อกอิน'],
+      ['HTTPS to the Worker', 'ส่งผ่าน HTTPS', 'b', 'globe', 'Sent only over an encrypted connection.', 'ส่งผ่านการเชื่อมต่อที่เข้ารหัสเท่านั้น'],
+      ['10 wrong → 15-min lock', 'ผิด 10 ครั้ง ล็อก 15 นาที', 's', 'clock', 'Wrong attempts are counted per network address.', 'นับครั้งที่ผิดต่อที่อยู่เครือข่าย กันการสุ่มเดา'],
+      ['Salted PBKDF2 ×100k', 'PBKDF2 ×100k + salt', 'k', 'hash', 'Only a salted hash is stored. Nobody can read a password back.', 'เก็บแค่ค่าแฮชผสม salt ไม่มีใครอ่านรหัสย้อนกลับได้'],
+      ['Random 30-day token', 'โทเคนสุ่ม 30 วัน', 's', 'key', 'Replaces the password on later visits; reset or turn-off revokes it.', 'ใช้แทนรหัสผ่านครั้งต่อไป รีเซ็ตหรือปิดบัญชีแล้วยกเลิกทันที'],
+      ['Role decides access', 'สิทธิ์กำหนดการเข้าถึง', 's', 'server', 'The Worker decides what member, editor and student may read.', 'Worker ตัดสินว่าสมาชิก Editor และนักเรียนอ่านอะไรได้']
+    ] },
+    { t:{ en:'Classroom & exams', th:'ห้องเรียนและการสอบ' }, s:{ en:'Lessons and answers never sit in the public code.', th:'บทเรียนและเฉลยไม่อยู่ในโค้ดสาธารณะ' }, steps:[
+      ['Student account', 'บัญชีนักเรียน', 'b', 'user', 'EW-xxxxx exam accounts made by the admin.', 'บัญชีสอบ EW-xxxxx ที่แอดมินสร้าง'],
+      ['Lessons on the server', 'บทเรียนอยู่บนเซิร์ฟเวอร์', 's', 'server', 'Served only to signed-in readers.', 'ส่งให้เฉพาะผู้ที่ล็อกอินแล้ว'],
+      ['Answers sealed AES-GCM', 'เฉลยปิดผนึก AES-GCM', 'k', 'lock', 'Answer data is encrypted with a key that exists only on the server.', 'ข้อมูลเฉลยเข้ารหัสด้วยกุญแจที่มีแค่บนเซิร์ฟเวอร์'],
+      ['Graded on the server', 'ตรวจคะแนนบนเซิร์ฟเวอร์', 's', 'check', 'Scores cannot be edited in the browser.', 'แก้คะแนนในเบราว์เซอร์ไม่ได้'],
+      ['Results: admin only', 'ผลสอบ: แอดมินเท่านั้น', 's', 'shield', 'Results and the gradebook need the admin key.', 'ผลสอบและสมุดคะแนนต้องใช้รหัสแอดมิน']
+    ] },
+    { t:{ en:'Admin notes', th:'บันทึกแอดมิน' }, s:{ en:'Private notes live only as ciphertext.', th:'บันทึกส่วนตัวเก็บแบบเข้ารหัสเท่านั้น' }, steps:[
+      ['Notes written', 'เขียนบันทึก', 'b', 'doc', 'Edited in the browser.', 'แก้ไขในเบราว์เซอร์'],
+      ['PBKDF2-SHA512 ×400k', 'PBKDF2-SHA512 ×400k', 'b', 'hash', 'An even slower stretch than the login gate.', 'ยืดกุญแจช้ากว่าประตูล็อกอินอีก'],
+      ['5 cascade gates', 'Cascade 5 ชั้น', 'b', 'layers', 'HKDF-SHA384 → AES-CTR → PBKDF2 ×120k → HMAC-SHA512, five times.', 'HKDF-SHA384 → AES-CTR → PBKDF2 ×120k → HMAC-SHA512 ห้าชั้น'],
+      ['AES-CTR + AES-GCM', 'AES-CTR + AES-GCM', 'k', 'lock', 'Double AES-256 with tamper detection.', 'AES-256 สองชั้น ตรวจจับการดัดแปลง'],
+      ['Only ciphertext stored', 'เก็บแค่ข้อมูลเข้ารหัส', 'b', 'shield', 'The public repository only ever holds the encrypted vault.', 'repository สาธารณะมีแค่ vault ที่เข้ารหัสแล้ว']
+    ] },
+    { t:{ en:'Editor access', th:'สิทธิ์ Editor' }, s:{ en:'Read-only access for helpers.', th:'สิทธิ์อ่านอย่างเดียวสำหรับผู้ช่วย' }, steps:[
+      ['Editor code or account', 'รหัสหรือบัญชี Editor', 'b', 'user', 'An editor code, or an account with the editor role.', 'รหัส Editor หรือบัญชีที่มีสิทธิ์ Editor'],
+      ['Sent over HTTPS', 'ส่งผ่าน HTTPS', 'b', 'globe', 'Sent with each request.', 'ส่งไปกับทุกคำขอ'],
+      ['PBKDF2 ×100k check', 'ตรวจ PBKDF2 ×100k', 'k', 'hash', 'Compared with a stored salted hash.', 'เทียบกับค่าแฮชผสม salt ที่เก็บไว้'],
+      ['Read-only', 'อ่านได้อย่างเดียว', 's', 'eye', 'Only read requests are accepted.', 'รับเฉพาะคำขอแบบอ่าน'],
+      ['Writes refused', 'ห้ามเขียนทุกกรณี', 's', 'block', 'Every add / edit / delete still needs the admin key.', 'เพิ่ม / แก้ / ลบ ทุกอย่างต้องใช้รหัสแอดมิน']
+    ] },
+    { t:{ en:'Admin key', th:'รหัสแอดมิน' }, s:{ en:'The master key for every change — hashed, rate-limited and replaceable.', th:'กุญแจหลักของทุกการแก้ไข — เก็บแบบแฮช จำกัดการเดา และเปลี่ยนได้' }, steps:[
+      ['Typed once per tab', 'พิมพ์ครั้งเดียวต่อแท็บ', 'b', 'key', 'Kept in sessionStorage; gone when the tab closes.', 'เก็บใน sessionStorage หายเมื่อปิดแท็บ'],
+      ['Distinct-guess lockout', 'ล็อกเมื่อเดาผิดหลายแบบ', 's', 'clock', '30 different wrong keys in 15 minutes locks that network address for 15 minutes.', 'เดาผิด 30 แบบใน 15 นาที ล็อกที่อยู่เครือข่ายนั้น 15 นาที'],
+      ['PBKDF2 ×210k hash', 'แฮช PBKDF2 ×210k', 'k', 'hash', 'After you set a new key, only its salted hash is stored — compared in constant time.', 'เมื่อเปลี่ยนรหัสใหม่ จะเก็บแค่ค่าแฮชผสม salt และเปรียบเทียบแบบเวลาคงที่'],
+      ['Old key retired', 'รหัสเก่าใช้ไม่ได้', 's', 'block', 'The moment a new key is set, the old one stops working.', 'ทันทีที่ตั้งรหัสใหม่ รหัสเก่าใช้ไม่ได้อีก'],
+      ['Write access', 'สิทธิ์แก้ไขข้อมูล', 's', 'check', 'Only this key can create accounts, change lessons, edit grades or revoke certificates.', 'มีแค่รหัสนี้ที่สร้างบัญชี แก้บทเรียน แก้คะแนน หรือยกเลิกเกียรติบัตรได้']
+    ] }
   ];
-  var sm = { k:1, x:0, y:0, sel:null };
+  var ICON = {
+    user:'<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.2-4 4-6 7.5-6s6.3 2 7.5 6"/>',
+    hash:'<path d="M9 3 7 21M17 3l-2 18M4 9h16M3 15h16"/>',
+    shuffle:'<path d="M3 7h4l10 10h4"/><path d="M3 17h4l3-3"/><path d="M14 10l3-3h4"/><path d="M18 4l3 3-3 3"/><path d="M18 14l3 3-3 3"/>',
+    shield:'<path d="M12 3l8 3v6c0 4.6-3.4 8.2-8 9.5C7.4 20.2 4 16.6 4 12V6l8-3z"/><path d="M8.5 12l2.4 2.4 4.6-4.8"/>',
+    layers:'<path d="M12 3 2.5 8 12 13l9.5-5L12 3z"/><path d="M2.5 12.5 12 17.5l9.5-5"/><path d="M2.5 17 12 22l9.5-5"/>',
+    check:'<circle cx="12" cy="12" r="9"/><path d="M7.5 12.3l3 3 6-6.3"/>',
+    globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/>',
+    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+    key:'<circle cx="7.5" cy="14.5" r="4"/><path d="M10.5 11.5 20 2M16 6l3 3M14 8l2 2"/>',
+    server:'<rect x="4" y="3.5" width="16" height="7" rx="2"/><rect x="4" y="13.5" width="16" height="7" rx="2"/><path d="M8 7h.01M8 17h.01"/>',
+    lock:'<rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+    doc:'<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
+    eye:'<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    block:'<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>'
+  };
+  var VW = 1680, LH = 168, TOP = 40, X0 = 300, NW = 196, NH = 70;
+  var sm = { k:0.86, x:117.6, y:126, sel:null, ch:0, playing:true, timer:null, anim:null, permTimer:null };
   var ssec = null;
-  var VW = 1640, LH = 150, TOP = 70;
+  function laneY(i){ return TOP + i * LH; }
+  function nodePos(li, i){ var n = LANES[li].steps.length, gap = (VW - X0 - 40) / n; return { x:X0 + i * gap + (gap - NW) / 2, y:laneY(li) + (LH - NH) / 2 - 8 }; }
   function smSVG(){
-    var h = TOP + LANES.length * LH + 20, out = '';
-    out += '<defs><filter id="smGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
-      '<marker id="smArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="sm-arrh"/></marker></defs>';
-    LANES.forEach(function(lane, li){
-      var y = TOP + li * LH, steps = lane[1], n = steps.length;
-      var x0 = 290, gap = (VW - x0 - 40) / n, bw = Math.min(200, gap - 40), bh = 74;
-      out += '<rect x="20" y="' + (y + 6) + '" width="' + (VW - 40) + '" height="' + (LH - 12) + '" rx="18" class="sm-lane"></rect>';
-      out += '<text x="44" y="' + (y + LH / 2 - 4) + '" class="sm-lt">' + esc(T(lane[0])).replace(/ \(/, '</text><text x="44" y="' + (y + LH / 2 + 18) + '" class="sm-lt2">(') + '</text>';
+    var H = TOP + LANES.length * LH + 30, out = '', dur = 6;
+    out += '<defs>' +
+      '<pattern id="smGrid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" class="sm-gridl"/></pattern>' +
+      '<linearGradient id="smSweep" x1="0" x2="1"><stop offset="0" stop-color="#11b8e8" stop-opacity="0"/><stop offset=".5" stop-color="#11b8e8" stop-opacity=".07"/><stop offset="1" stop-color="#11b8e8" stop-opacity="0"/></linearGradient>' +
+      '<radialGradient id="smDot"><stop offset="0" stop-color="#fff"/><stop offset=".35" stop-color="#7fe3ff"/><stop offset="1" stop-color="#11b8e8" stop-opacity="0"/></radialGradient>' +
+      '<filter id="smGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
+      '</defs>';
+    out += '<rect x="0" y="0" width="' + VW + '" height="' + H + '" fill="url(#smGrid)"/>';
+    out += '<rect class="sm-sweep" x="-400" y="0" width="400" height="' + H + '" fill="url(#smSweep)"/>';
+    LANES.forEach(function(L, li){
+      var y = laneY(li), n = L.steps.length, cy = y + LH / 2 - 8;
+      out += '<g class="sm-lane-g" data-lane="' + li + '">';
+      out += '<rect x="16" y="' + (y + 8) + '" width="' + (VW - 32) + '" height="' + (LH - 16) + '" rx="20" class="sm-lane"/>';
+      out += '<text x="44" y="' + (y + 52) + '" class="sm-ln">' + ('0' + (li + 1)).slice(-2) + '</text>';
+      out += '<text x="44" y="' + (y + 82) + '" class="sm-lt">' + esc(T(L.t)) + '</text>';
+      out += wrapText(T(L.s), 44, y + 104, 230, 'sm-ls', 3, 6.6);
+      var p0 = nodePos(li, 0), pN = nodePos(li, n - 1);
+      var d = 'M' + (p0.x + NW / 2) + ' ' + cy + ' L' + (pN.x + NW / 2) + ' ' + cy;
+      out += '<path d="' + d + '" class="sm-rail"/>';
+      out += '<path d="' + d + '" class="sm-beam" style="animation-duration:' + dur + 's;animation-delay:' + (li * 0.45) + 's"/>';
+      out += '<circle r="9" fill="url(#smDot)" class="sm-pkt"><animateMotion dur="' + dur + 's" begin="' + (li * 0.45) + 's" repeatCount="indefinite" path="' + d + '"/></circle>';
       for(var i = 0; i < n; i++){
-        var s = steps[i], bx = x0 + i * gap + (gap - bw) / 2, by = y + (LH - bh) / 2;
-        if(i < n - 1){
-          var ax = bx + bw, nx = x0 + (i + 1) * gap + (gap - bw) / 2, cy = y + LH / 2;
-          out += '<path d="M' + (ax + 4) + ' ' + cy + ' L' + (nx - 6) + ' ' + cy + '" class="sm-edge" marker-end="url(#smArr)"></path>';
-          out += '<path d="M' + (ax + 4) + ' ' + cy + ' L' + (nx - 6) + ' ' + cy + '" class="sm-flow" style="animation-delay:' + ((li * 0.35 + i * 0.5) % 3).toFixed(2) + 's"></path>';
-        }
-        var id = li + '-' + i;
+        var s = L.steps[i], p = nodePos(li, i), id = li + '-' + i;
+        var delay = (li * 0.45 + dur * i / Math.max(1, n - 1)).toFixed(2);
         out += '<g class="sm-node sm-' + s[2] + (sm.sel === id ? ' on' : '') + '" data-sm="' + id + '" tabindex="0">' +
-          '<rect x="' + bx + '" y="' + by + '" width="' + bw + '" height="' + bh + '" rx="14"></rect>' +
-          '<text x="' + (bx + bw / 2) + '" y="' + (by + 22) + '" class="sm-i">' + (s[2] === 'k' ? '🔒' : s[2] === 's' ? '☁' : '◉') + '</text>' +
-          wrapText(L() === 'th' ? s[1] : s[0], bx + bw / 2, by + 44, bw - 20) + '</g>';
+          '<rect x="' + p.x + '" y="' + p.y + '" width="' + NW + '" height="' + NH + '" rx="14" class="sm-card"/>' +
+          '<rect x="' + p.x + '" y="' + p.y + '" width="' + NW + '" height="' + NH + '" rx="14" class="sm-flash" style="animation-duration:' + dur + 's;animation-delay:' + delay + 's"/>' +
+          '<circle cx="' + (p.x + 30) + '" cy="' + (p.y + NH / 2) + '" r="17" class="sm-ib"/>' +
+          '<g transform="translate(' + (p.x + 19) + ' ' + (p.y + NH / 2 - 11) + ') scale(.92)" class="sm-ic">' + (ICON[s[3]] || ICON.check) + '</g>' +
+          wrapText((L_() === 'th' ? s[1] : s[0]), p.x + 56, p.y + NH / 2 - 3, NW - 64, 'sm-t', 2, 7.2, true) +
+          '<text x="' + (p.x + NW - 10) + '" y="' + (p.y + 14) + '" class="sm-step">' + (i + 1) + '</text>' +
+          '</g>';
       }
+      if(L.perm) out += '<g class="sm-perm" data-sm-perm transform="translate(' + (nodePos(li, 2).x - 8) + ' ' + (y + LH - 38) + ')"></g>';
+      out += '</g>';
     });
-    return '<svg class="sm-svg" viewBox="0 0 ' + VW + ' ' + h + '" preserveAspectRatio="xMidYMid meet"><g data-sm-view transform="translate(' + sm.x + ' ' + sm.y + ') scale(' + sm.k + ')">' + out + '</g></svg>';
+    return '<svg class="sm-svg" viewBox="0 0 ' + VW + ' ' + H + '" preserveAspectRatio="xMidYMid meet"><g data-sm-view transform="translate(' + sm.x + ' ' + sm.y + ') scale(' + sm.k + ')">' + out + '</g></svg>';
   }
-  function wrapText(t, cx, y, w){
-    var max = Math.max(10, Math.floor(w / 8.4)), words = String(t).split(' '), lines = [], cur = '';
+  function L_(){ return L(); }
+  function wrapText(t, x, y, w, cls, maxLines, cw, left){
+    var max = Math.max(8, Math.floor(w / (cw || 8))), words = String(t).split(' '), lines = [], cur = '';
     words.forEach(function(wd){ if((cur + ' ' + wd).trim().length > max && cur){ lines.push(cur); cur = wd; } else cur = (cur + ' ' + wd).trim(); });
     if(cur) lines.push(cur);
-    lines = lines.slice(0, 2);
-    return lines.map(function(l, i){ return '<text x="' + cx + '" y="' + (y + i * 17) + '" class="sm-t">' + esc(l) + '</text>'; }).join('');
+    lines = lines.slice(0, maxLines || 2);
+    var off = left ? -(lines.length - 1) * 8 : 0;
+    return lines.map(function(l, i){ return '<text x="' + x + '" y="' + (y + off + i * 16 + 5) + '" class="' + cls + '">' + esc(l) + '</text>'; }).join('');
+  }
+  /* the shuffled-order strip under the login lane: re-rolls every second to show that every vault runs its own order */
+  var PERM24 = (function(){ var out = []; function go(p, r){ if(!r.length){ out.push(p); return; } for(var i = 0; i < r.length; i++) go(p + r[i], r.slice(0, i) + r.slice(i + 1)); } go('', 'ABCD'); return out; })();
+  function rollPerm(){
+    var g = ssec && ssec.querySelector('[data-sm-perm]'); if(!g) return;
+    var h = '<text x="0" y="-8" class="sm-pl">' + esc(T(S.order)) + '</text>';
+    for(var r = 0; r < 12; r++){
+      var o = PERM24[Math.floor(Math.random() * 24)];
+      h += '<g transform="translate(' + (r * 72) + ' 0)"><rect width="64" height="22" rx="6" class="sm-pb"/>' +
+        o.split('').map(function(c, j){ return '<text x="' + (10 + j * 14) + '" y="15.5" class="sm-pc sm-pc-' + c + '">' + c + '</text>'; }).join('') + '</g>';
+    }
+    g.innerHTML = h;
   }
   function smDetail(){
-    if(!sm.sel) return '<div class="sm-detail sm-hint">' + esc(T(S.tip)) + '</div>';
-    var p = sm.sel.split('-'), lane = LANES[+p[0]], s = lane[1][+p[1]];
-    return '<div class="sm-detail"><span class="sm-dl">' + esc(T(lane[0])) + ' · ' + (+p[1] + 1) + '/' + lane[1].length + '</span><b>' + esc(L() === 'th' ? s[1] : s[0]) + '</b><p>' + esc(L() === 'th' ? s[4] : s[3]) + '</p></div>';
+    if(!sm.sel){
+      var L0 = sm.ch > 0 ? LANES[sm.ch - 1] : null;
+      return '<div class="sm-cap"><span class="sm-cap-n">' + (L0 ? ('0' + sm.ch).slice(-2) + ' / 06' : '00 / 06') + '</span><b>' + esc(L0 ? T(L0.t) : T(S.ovT)) + '</b><p>' + esc(L0 ? T(L0.s) : T(S.ovS)) + '</p></div>';
+    }
+    var p = sm.sel.split('-'), lane = LANES[+p[0]], s = lane.steps[+p[1]];
+    return '<div class="sm-cap sm-cap-d"><span class="sm-cap-n">' + esc(T(lane.t)) + ' · ' + (+p[1] + 1) + '/' + lane.steps.length + '</span><b>' + esc(L() === 'th' ? s[1] : s[0]) + '</b><p>' + esc(L() === 'th' ? s[5] : s[4]) + '</p></div>';
   }
+  function controlsHTML(){
+    var isFs = document.fullscreenElement && ssec && document.fullscreenElement === ssec.querySelector('[data-sm-x="stage"]');
+    var dots = '';
+    for(var i = 0; i <= LANES.length; i++) dots += '<button type="button" class="sm-dot' + (sm.ch === i ? ' on' : '') + '" data-sm-ch="' + i + '" aria-label="' + (i ? esc(T(LANES[i - 1].t)) : esc(T(S.all))) + '"></button>';
+    var pp = sm.playing ? '<svg viewBox="0 0 24 24"><path d="M7 5h3v14H7zM14 5h3v14h-3z"/></svg>' : '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg>';
+    return '<div class="sm-bar"><button type="button" class="sm-btn sm-pp" data-sm-act="play" aria-label="' + esc(T(sm.playing ? S.pause : S.play)) + '">' + pp + '</button>' +
+      '<button type="button" class="sm-btn" data-sm-act="prev" aria-label="prev"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>' +
+      '<div class="sm-dots">' + dots + '</div>' +
+      '<button type="button" class="sm-btn" data-sm-act="next" aria-label="next"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>' +
+      '<span class="sm-sp"></span>' +
+      '<button type="button" class="sm-btn" data-sm-act="out" aria-label="zoom out"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>' +
+      '<button type="button" class="sm-btn" data-sm-act="in" aria-label="zoom in"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>' +
+      '<button type="button" class="sm-btn sm-txt" data-sm-act="fs">' + esc(T(isFs ? S.exit : S.full)) + '</button></div>' +
+      '<div class="sm-prog"><i style="animation-duration:' + (sm.playing ? CH_MS : 0) + 'ms"></i></div>';
+  }
+  var CH_MS = 7000;
   function spaint(){
     if(!ssec) return;
     var q = function(k){ return ssec.querySelector('[data-sm-x="' + k + '"]'); };
     q('eb').textContent = T(S.eb); q('h').textContent = T(S.h); q('lede').textContent = T(S.lede);
-    var isFs = document.fullscreenElement === q('stage');
-    q('stage').innerHTML = '<div class="sm-tools"><button type="button" data-sm-act="in">＋</button><button type="button" data-sm-act="out">－</button><button type="button" data-sm-act="reset">' + esc(T(S.reset)) + '</button><button type="button" data-sm-act="fs">' + esc(T(isFs ? S.exit : S.full)) + '</button></div>' +
-      smSVG() + smDetail() + '<div class="sm-legend">' + esc(T(S.legend)) + '</div>';
+    q('stage').innerHTML = smSVG() + '<div class="sm-hud">' + smDetail() + '</div>' + controlsHTML() +
+      '<div class="sm-legend"><span class="b"></span>' + esc(T(S.lgB)) + '<span class="s"></span>' + esc(T(S.lgS)) + '<span class="k"></span>' + esc(T(S.lgK)) + '</div>';
+    rollPerm(); markLanes();
+    keyPaint();
   }
-  function applyView(){ var g = ssec && ssec.querySelector('[data-sm-view]'); if(g) g.setAttribute('transform', 'translate(' + sm.x + ' ' + sm.y + ') scale(' + sm.k + ')'); }
-  function zoomAt(f, px, py){ var nk = Math.max(0.6, Math.min(4, sm.k * f)); f = nk / sm.k; sm.x = px - (px - sm.x) * f; sm.y = py - (py - sm.y) * f; sm.k = nk; applyView(); }
+  function repaintUI(){
+    var st = ssec && ssec.querySelector('[data-sm-x="stage"]'); if(!st) return;
+    var hud = st.querySelector('.sm-hud'); if(hud) hud.innerHTML = smDetail();
+    var bar = st.querySelector('.sm-bar'), prog = st.querySelector('.sm-prog');
+    if(bar){ var tmp = document.createElement('div'); tmp.innerHTML = controlsHTML(); bar.replaceWith(tmp.children[0]); if(prog) prog.replaceWith(tmp.children[0]); }
+    ssec.querySelectorAll('.sm-node').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-sm') === sm.sel); });
+    markLanes();
+  }
+  function markLanes(){ if(!ssec) return; ssec.querySelectorAll('.sm-lane-g').forEach(function(g){ var li = +g.getAttribute('data-lane'); g.classList.toggle('dim', sm.ch > 0 && li !== sm.ch - 1); }); }
+  function applyView(){ var g = ssec && ssec.querySelector('[data-sm-view]'); if(g) g.setAttribute('transform', 'translate(' + sm.x.toFixed(2) + ' ' + sm.y.toFixed(2) + ') scale(' + sm.k.toFixed(4) + ')'); }
+  function targetFor(ch){
+    if(!ch){ var sv = ssec.querySelector('.sm-svg').viewBox.baseVal, k0 = 0.86; return { k:k0, x:(sv.width - VW * k0) / 2, y:sv.height * 0.11 }; }
+    var svg = ssec.querySelector('.sm-svg'), vb = svg.viewBox.baseVal, y = laneY(ch - 1);
+    var k = Math.min(vb.width / (VW - 20), vb.height / (LH * 1.6)), cyL = y + LH / 2;
+    return { k:k, x:(vb.width - VW * k) / 2, y:vb.height / 2 - cyL * k };
+  }
+  function flyTo(t, ms){
+    if(sm.anim) cancelAnimationFrame(sm.anim);
+    var a = { k:sm.k, x:sm.x, y:sm.y }, t0 = performance.now();
+    function ease(u){ return u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; }
+    function step(now){
+      var u = Math.min(1, (now - t0) / (ms || 1100)), e = ease(u);
+      sm.k = a.k + (t.k - a.k) * e; sm.x = a.x + (t.x - a.x) * e; sm.y = a.y + (t.y - a.y) * e; applyView();
+      if(u < 1) sm.anim = requestAnimationFrame(step);
+    }
+    sm.anim = requestAnimationFrame(step);
+  }
+  function goCh(ch, keepPlay){
+    sm.ch = (ch + LANES.length + 1) % (LANES.length + 1); sm.sel = null;
+    flyTo(targetFor(sm.ch)); repaintUI();
+    if(keepPlay !== false && sm.playing) schedule();
+  }
+  function schedule(){ clearTimeout(sm.timer); if(sm.playing && onSm()) sm.timer = setTimeout(function(){ goCh(sm.ch + 1); }, CH_MS); }
+  function onSm(){ return location.hash === '#/secmap'; }
+  function stopPlay(){ if(sm.playing){ sm.playing = false; clearTimeout(sm.timer); repaintUI(); } }
+  function zoomAt(f, px, py){ var nk = Math.max(0.5, Math.min(5, sm.k * f)); f = nk / sm.k; sm.x = px - (px - sm.x) * f; sm.y = py - (py - sm.y) * f; sm.k = nk; applyView(); }
   function svgPoint(ev){
-    var svg = ssec.querySelector('.sm-svg'); if(!svg) return { x:0, y:0 };
+    var svg = ssec.querySelector('.sm-svg'); if(!svg) return { x:0, y:0, sc:1 };
     var r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal, sc = Math.min(r.width / vb.width, r.height / vb.height);
     var ox = (r.width - vb.width * sc) / 2, oy = (r.height - vb.height * sc) / 2;
     return { x:(ev.clientX - r.left - ox) / sc, y:(ev.clientY - r.top - oy) / sc, sc:sc };
@@ -374,30 +478,31 @@
     var stage = ssec.querySelector('[data-sm-x="stage"]');
     var drag = null, pts = {}, pinch = null, moved = false;
     stage.addEventListener('click', function(ev){
+      var dot = ev.target.closest('[data-sm-ch]'); if(dot){ goCh(+dot.getAttribute('data-sm-ch')); return; }
       var b = ev.target.closest('[data-sm-act]');
       if(b){
         var a = b.getAttribute('data-sm-act'), svg = ssec.querySelector('.sm-svg'), vb = svg.viewBox.baseVal;
-        if(a === 'in') zoomAt(1.25, vb.width / 2, vb.height / 2);
-        else if(a === 'out') zoomAt(0.8, vb.width / 2, vb.height / 2);
-        else if(a === 'reset'){ sm.k = 1; sm.x = 0; sm.y = 0; applyView(); }
+        if(a === 'play'){ sm.playing = !sm.playing; sm.sel = null; if(sm.playing){ goCh(sm.ch); } else { clearTimeout(sm.timer); repaintUI(); } }
+        else if(a === 'prev') goCh(sm.ch - 1);
+        else if(a === 'next') goCh(sm.ch + 1);
+        else if(a === 'in'){ stopPlay(); zoomAt(1.25, vb.width / 2, vb.height / 2); }
+        else if(a === 'out'){ stopPlay(); zoomAt(0.8, vb.width / 2, vb.height / 2); }
         else if(a === 'fs'){
           if(document.fullscreenElement) document.exitFullscreen();
-          else if(stage.requestFullscreen) stage.requestFullscreen().catch(function(){ stage.classList.toggle('sm-pseudo-fs'); });
-          else stage.classList.toggle('sm-pseudo-fs');
+          else if(stage.requestFullscreen) stage.requestFullscreen().catch(function(){ stage.classList.toggle('sm-pseudo-fs'); repaintUI(); });
+          else { stage.classList.toggle('sm-pseudo-fs'); repaintUI(); }
         }
         return;
       }
       if(moved) return;
       var n = ev.target.closest('[data-sm]');
-      sm.sel = n ? (sm.sel === n.getAttribute('data-sm') ? null : n.getAttribute('data-sm')) : sm.sel;
-      if(n){ ssec.querySelectorAll('.sm-node').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-sm') === sm.sel); }); var d = ssec.querySelector('.sm-detail'); if(d) d.outerHTML = smDetail(); }
+      if(n){ stopPlay(); sm.sel = sm.sel === n.getAttribute('data-sm') ? null : n.getAttribute('data-sm'); repaintUI(); }
     });
-    stage.addEventListener('wheel', function(ev){ if(!ev.target.closest('.sm-svg')) return; ev.preventDefault(); var p = svgPoint(ev); zoomAt(ev.deltaY < 0 ? 1.12 : 0.89, p.x, p.y); }, { passive:false });
+    stage.addEventListener('wheel', function(ev){ if(!ev.target.closest('.sm-svg')) return; ev.preventDefault(); stopPlay(); var p = svgPoint(ev); zoomAt(ev.deltaY < 0 ? 1.12 : 0.89, p.x, p.y); }, { passive:false });
     stage.addEventListener('pointerdown', function(ev){
       if(!ev.target.closest('.sm-svg')) return;
       pts[ev.pointerId] = { x:ev.clientX, y:ev.clientY };
-      var ids = Object.keys(pts);
-      moved = false;
+      var ids = Object.keys(pts); moved = false;
       if(ids.length === 1) drag = { x:ev.clientX, y:ev.clientY, sx:sm.x, sy:sm.y };
       else if(ids.length === 2){ var a = pts[ids[0]], b = pts[ids[1]]; pinch = { d:Math.hypot(a.x - b.x, a.y - b.y), k:sm.k }; drag = null; }
     });
@@ -407,18 +512,85 @@
       var ids = Object.keys(pts);
       if(pinch && ids.length === 2){
         var a = pts[ids[0]], b = pts[ids[1]], d = Math.hypot(a.x - b.x, a.y - b.y), mid = svgPoint({ clientX:(a.x + b.x) / 2, clientY:(a.y + b.y) / 2 });
-        zoomAt((pinch.k * d / pinch.d) / sm.k, mid.x, mid.y); moved = true; return;
+        stopPlay(); zoomAt((pinch.k * d / pinch.d) / sm.k, mid.x, mid.y); moved = true; return;
       }
       if(drag){
-        var p = svgPoint(ev), sc = p.sc || 1;
-        var dx = (ev.clientX - drag.x) / sc, dy = (ev.clientY - drag.y) / sc;
-        if(Math.abs(dx) + Math.abs(dy) > 3) moved = true;
-        sm.x = drag.sx + dx; sm.y = drag.sy + dy; applyView();
+        var p = svgPoint(ev), sc = p.sc || 1, dx = (ev.clientX - drag.x) / sc, dy = (ev.clientY - drag.y) / sc;
+        if(Math.abs(dx) + Math.abs(dy) > 3){ moved = true; stopPlay(); }
+        if(moved){ sm.x = drag.sx + dx; sm.y = drag.sy + dy; applyView(); }
       }
     });
     function up(ev){ delete pts[ev.pointerId]; if(Object.keys(pts).length < 2) pinch = null; if(!Object.keys(pts).length){ drag = null; setTimeout(function(){ moved = false; }, 0); } }
     window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
-    document.addEventListener('fullscreenchange', function(){ spaint(); });
+    document.addEventListener('fullscreenchange', function(){ repaintUI(); });
+    window.addEventListener('hashchange', function(){ if(onSm()){ if(sm.playing) schedule(); } else clearTimeout(sm.timer); });
+    if(!sm.permTimer) sm.permTimer = setInterval(function(){ if(onSm() && !document.hidden) rollPerm(); }, 1100);
+    schedule();
+    ssec.addEventListener('click', keyClick);
+  }
+
+  /* ---------------- change the admin key (Worker: /api/admin/key/rotate) ---------------- */
+  var K = {
+    h:{ en:'Change the admin key', th:'เปลี่ยนรหัสแอดมิน' },
+    p:{ en:'Type the current key and a new one here — never send a key in a chat or a message. The old key stops working the moment the new one is saved.', th:'พิมพ์รหัสปัจจุบันและรหัสใหม่ที่นี่ — ห้ามส่งรหัสทางแชตหรือข้อความ เมื่อบันทึกรหัสใหม่ รหัสเก่าจะใช้ไม่ได้ทันที' },
+    cur:{ en:'Current admin key', th:'รหัสแอดมินปัจจุบัน' }, nw:{ en:'New admin key', th:'รหัสแอดมินใหม่' }, cf:{ en:'Type the new key again', th:'พิมพ์รหัสใหม่อีกครั้ง' },
+    gen:{ en:'Make a strong key for me', th:'สุ่มรหัสที่แข็งแรงให้' }, go:{ en:'Save the new key', th:'บันทึกรหัสใหม่' },
+    rule:{ en:'At least 16 characters, with letters and numbers.', th:'อย่างน้อย 16 ตัวอักษร มีทั้งตัวอักษรและตัวเลข' },
+    mismatch:{ en:'The two new keys are not the same.', th:'รหัสใหม่สองช่องไม่ตรงกัน' }, weak:{ en:'Too weak — see the rule above.', th:'รหัสอ่อนเกินไป — ดูเงื่อนไขด้านบน' },
+    bad:{ en:'The current key is not correct (or this address is locked for 15 minutes).', th:'รหัสปัจจุบันไม่ถูกต้อง (หรือถูกล็อก 15 นาที)' },
+    noWorker:{ en:'The Worker on Cloudflare is an older version — deploy line-qr-worker_NEW.js first.', th:'Worker บน Cloudflare ยังเป็นเวอร์ชันเก่า — deploy ไฟล์ line-qr-worker_NEW.js ก่อนนะคะ' },
+    ok:{ en:'Saved. The old key no longer works. Keep the new key somewhere safe.', th:'บันทึกแล้ว รหัสเก่าใช้ไม่ได้แล้ว เก็บรหัสใหม่ไว้ในที่ปลอดภัยนะคะ' },
+    st0:{ en:'Status: using the key stored in Cloudflare.', th:'สถานะ: ใช้รหัสที่ตั้งไว้ใน Cloudflare' }, st1:{ en:'Status: changed from this page on', th:'สถานะ: เปลี่ยนจากหน้านี้เมื่อ' },
+    rec:{ en:'Forgot the new key? Change ADMIN_USERS_KEY in the Cloudflare dashboard — that value then works again.', th:'ลืมรหัสใหม่? เปลี่ยนค่า ADMIN_USERS_KEY ในหน้า Cloudflare แล้วใช้ค่านั้นเข้าได้อีกครั้ง' },
+    copy:{ en:'Copy', th:'คัดลอก' }, copied:{ en:'Copied', th:'คัดลอกแล้ว' }
+  };
+  var ks = { status:null, msg:'', ok:false, busy:false };
+  function keyStatus(){
+    if(!key()){ ks.status = null; return; }
+    api('GET', '/api/admin/key/status').then(function(j){ ks.status = j.__status === 404 ? 'old' : (j.error ? null : j); keyPaint(); });
+  }
+  function keyPaint(){
+    var box = ssec && ssec.querySelector('[data-sm-x="key"]'); if(!box) return;
+    var act = document.activeElement; if(act && box.contains(act) && act.tagName === 'INPUT' && !ks.force) return;
+    ks.force = false;
+    var st = ks.status === 'old' ? T(K.noWorker) : (ks.status && ks.status.rotated ? T(K.st1) + ' ' + fmtDate(ks.status.at) : (ks.status ? T(K.st0) : ''));
+    box.innerHTML = '<div class="smk-h"><svg viewBox="0 0 24 24">' + ICON.key + '</svg><b>' + esc(T(K.h)) + '</b></div><p class="smk-p">' + esc(T(K.p)) + '</p>' +
+      (st ? '<p class="smk-st">' + esc(st) + '</p>' : '') +
+      '<div class="smk-g"><label>' + esc(T(K.cur)) + '<input type="password" data-k="cur" autocomplete="off"></label>' +
+      '<label>' + esc(T(K.nw)) + '<input type="text" data-k="nw" autocomplete="off" spellcheck="false"></label>' +
+      '<label>' + esc(T(K.cf)) + '<input type="text" data-k="cf" autocomplete="off" spellcheck="false"></label></div>' +
+      '<p class="smk-rule">' + esc(T(K.rule)) + '</p>' +
+      '<div class="smk-row"><button type="button" class="gb-btn" data-k-act="gen">' + esc(T(K.gen)) + '</button><button type="button" class="gb-go" data-k-act="go"' + (ks.busy ? ' disabled' : '') + '>' + esc(T(K.go)) + '</button></div>' +
+      (ks.msg ? '<p class="smk-msg ' + (ks.ok ? 'ok' : 'bad') + '">' + esc(ks.msg) + '</p>' : '') +
+      '<p class="smk-rec">' + esc(T(K.rec)) + '</p>';
+  }
+  function strongKey(){
+    var a = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789', r = window.crypto.getRandomValues(new Uint8Array(28)), s = '';
+    for(var i = 0; i < r.length; i++){ s += a[r[i] % a.length]; if(i % 7 === 6 && i < 27) s += '-'; }
+    if(!/[0-9]/.test(s)) s += '7';
+    return s;
+  }
+  function keyClick(ev){
+    var b = ev.target.closest('[data-k-act]'); if(!b) return;
+    var box = ssec.querySelector('[data-sm-x="key"]'), v = function(n){ var el = box.querySelector('[data-k="' + n + '"]'); return el ? el.value : ''; };
+    if(b.getAttribute('data-k-act') === 'gen'){
+      var k = strongKey(); box.querySelector('[data-k="nw"]').value = k; box.querySelector('[data-k="cf"]').value = k; return;
+    }
+    var cur = v('cur').trim(), nw = v('nw').trim(), cf = v('cf').trim();
+    if(nw !== cf){ ks.msg = T(K.mismatch); ks.ok = false; ks.force = true; keyPaint(); return; }
+    if(nw.length < 16 || !/[A-Za-z]/.test(nw) || !/[0-9]/.test(nw)){ ks.msg = T(K.weak); ks.ok = false; ks.force = true; keyPaint(); return; }
+    ks.busy = true;
+    fetch(WORKER_BASE + '/api/admin/key/rotate', { method:'POST', headers:{ 'X-Admin-Key':cur, 'Content-Type':'application/json' }, body:JSON.stringify({ newKey:nw }) })
+      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ j.__status = r.status; return j; }); })
+      .catch(function(){ return { error:'net' }; })
+      .then(function(j){
+        ks.busy = false;
+        if(j.ok){ setKey(nw); ks.msg = T(K.ok); ks.ok = true; ks.status = { rotated:true, at:j.at }; }
+        else if(j.__status === 404){ ks.msg = T(K.noWorker); ks.ok = false; }
+        else if(j.error === 'weak_key'){ ks.msg = T(K.weak); ks.ok = false; }
+        else { ks.msg = T(K.bad); ks.ok = false; }
+        ks.force = true; keyPaint();
+      });
   }
 
   /* =========================================================== build both pages */
@@ -429,13 +601,13 @@
     gsec.innerHTML = '<div class="gb-wrap"><div class="section-head reveal in-view"><div class="eyebrow"><span class="cursor"></span><span data-gb="eb"></span></div><h2 data-gb="h"></h2><p class="lede" data-gb="lede"></p><div class="rule"></div></div><div data-gb="body"></div></div>';
     document.body.appendChild(gsec);
     ssec = document.createElement('section'); ssec.id = 'secmap'; ssec.setAttribute('data-route', 'secmap');
-    ssec.innerHTML = '<div class="sm-wrap"><div class="section-head reveal in-view"><div class="eyebrow"><span class="cursor"></span><span data-sm-x="eb"></span></div><h2 data-sm-x="h"></h2><p class="lede" data-sm-x="lede"></p><div class="rule"></div></div><div class="sm-stage" data-sm-x="stage"></div></div>';
+    ssec.innerHTML = '<div class="sm-wrap"><div class="section-head reveal in-view"><div class="eyebrow"><span class="cursor"></span><span data-sm-x="eb"></span></div><h2 data-sm-x="h"></h2><p class="lede" data-sm-x="lede"></p><div class="rule"></div></div><div class="sm-stage" data-sm-x="stage"></div><div class="smk" data-sm-x="key"></div></div>';
     document.body.appendChild(ssec);
     window.__spzAddRoute({ id:'gradebook', feat:true, after:'connectedusers', t:G.h, d:{ en:'Scores and results for every classroom student. Admin only.', th:'คะแนนและผลสอบของนักเรียนทุกคน เฉพาะแอดมิน' } });
     window.__spzAddRoute({ id:'secmap', feat:true, after:'gradebook', t:S.h, d:{ en:'An animated map of how the site is protected. Admin only.', th:'แผนผังเคลื่อนไหวแสดงการป้องกันของเว็บ เฉพาะแอดมิน' } });
-    gwire(); swire(); gpaint(); spaint();
+    gwire(); spaint(); swire(); gpaint(); keyStatus();
     new MutationObserver(function(){ gb.forcePaint = true; gpaint(); spaint(); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
-    window.addEventListener('hashchange', function(){ if(location.hash === '#/gradebook' && gb.users === null){ gb.forcePaint = true; gpaint(); } });
+    window.addEventListener('hashchange', function(){ if(location.hash === '#/gradebook' && gb.users === null){ gb.forcePaint = true; gpaint(); } if(location.hash === '#/secmap'){ keyStatus(); } });
     return true;
   }
   function boot(){ var tries = 0; var iv = setInterval(function(){ if(build() || ++tries > 80) clearInterval(iv); }, 400); }
