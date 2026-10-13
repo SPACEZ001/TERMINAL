@@ -1,3 +1,122 @@
+/* SPACEZ cascade v6 -- shared block (same code in SPACEZ_TERMINAL part-46.js, index.html, ADMIN_GENERATOR.html) */
+(function(){
+  'use strict';
+  if(window.__SPZ_V6 || !window.crypto || !window.crypto.subtle) return;
+  var subtle = window.crypto.subtle, te = new TextEncoder(), td = new TextDecoder();
+  function cat(){ var a = Array.prototype.slice.call(arguments), n = 0, i, o, off = 0; for(i = 0; i < a.length; i++) n += a[i].length; o = new Uint8Array(n); for(i = 0; i < a.length; i++){ o.set(a[i], off); off += a[i].length; } return o; }
+  function b64(u){ var s = '', i; for(i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return btoa(s); }
+  function unb64(s){ var b = atob(s), o = new Uint8Array(b.length), i; for(i = 0; i < b.length; i++) o[i] = b.charCodeAt(i); return o; }
+  function rand(n){ return window.crypto.getRandomValues(new Uint8Array(n)); }
+  function U8(p){ return p.then(function(x){ return new Uint8Array(x); }); }
+
+  /* ===== CASCADE v6 (Round AO) — permuted operation order =====
+     Four different operations work on the running key state:
+       A  stretch : PBKDF2 (hash a, 20k–40k rounds)
+       B  mix     : HMAC (hash b)
+       C  gate    : HKDF(hash c) -> AES-CTR key -> reveals a random 32-byte seed stored
+                    encrypted in the vault -> folded into the state with HMAC-SHA512
+       D  expand  : HKDF deriveBits (hash d)
+     Every vault carries a random 32-byte "sched". For each of 12 rounds it picks
+     one of the 24 orders of A-B-C-D (ABCD, ABDC, ACBD, ... DCBA) and which hash
+     (SHA-256 / 384 / 512) each operation uses, so no two vaults run the same chain.
+       PBKDF2-SHA512 200k  ->  12 permuted rounds  ->  HMAC-SHA384 SEAL over every field
+       ->  HKDF-SHA512  ->  AES-CTR  ->  AES-CBC  ->  AES-GCM (three layers, GCM = tamper check) */
+  var V6 = { L1:200000, CYC:12, H:['SHA-256', 'SHA-384', 'SHA-512'], BITS:{ 'SHA-256':256, 'SHA-384':384, 'SHA-512':512 } };
+  var PERMS = (function(){ var out = []; function go(pre, rest){ if(!rest.length){ out.push(pre); return; } for(var i = 0; i < rest.length; i++) go(pre + rest[i], rest.slice(0, i) + rest.slice(i + 1)); } go('', 'ABCD'); return out; })();
+  function plan(schedB64){
+    var b = unb64(schedB64), p = [], r;
+    if(b.length < 32) throw new Error('sched');
+    for(r = 0; r < V6.CYC; r++){
+      var x = b[r], y = b[(r + 12) % 32], z = b[(r + 20) % 32];
+      p.push({ order:PERMS[(x ^ (y << 1)) % 24], a:V6.H[y % 3], b:V6.H[(y >> 2) % 3], c:V6.H[z % 3], d:V6.H[(z >> 2) % 3], it:20000 + (b[(r + 7) % 32] % 5) * 5000 });
+    }
+    return p;
+  }
+  function pbkdf2(keyBytes, salt, it, hash, bits){
+    return subtle.importKey('raw', keyBytes, 'PBKDF2', false, ['deriveBits']).then(function(k){ return U8(subtle.deriveBits({ name:'PBKDF2', hash:hash, salt:salt, iterations:it }, k, bits)); });
+  }
+  function hmac(hash, keyBytes, msg){
+    return subtle.importKey('raw', keyBytes, { name:'HMAC', hash:hash }, false, ['sign']).then(function(k){ return U8(subtle.sign('HMAC', k, msg)); });
+  }
+  function hkdfBits(ikm, salt, info, hash, bits){
+    return subtle.importKey('raw', ikm, 'HKDF', false, ['deriveBits']).then(function(k){ return U8(subtle.deriveBits({ name:'HKDF', hash:hash, salt:salt, info:info }, k, bits)); });
+  }
+  function hkdfKey(ikm, salt, info, hash, algo, usages){
+    return subtle.importKey('raw', ikm, 'HKDF', false, ['deriveKey']).then(function(k){ return subtle.deriveKey({ name:'HKDF', hash:hash, salt:salt, info:info }, k, algo, false, usages); });
+  }
+  function ctr(mode, key, iv, data){ return U8(subtle[mode]({ name:'AES-CTR', counter:iv, length:64 }, key, data)); }
+
+  function loop(st0, s2, s3, s4, P, gates, gen){
+    var state = st0, out = [], r = 0;
+    function op(letter, R, rr){
+      var tag = '/' + rr + '/' + R.order + '/' + letter;
+      if(letter === 'A') return pbkdf2(state, cat(s3, new Uint8Array([rr, R.it >> 8 & 255, R.it & 255])), R.it, R.a, V6.BITS[R.a]);
+      if(letter === 'B') return hmac(R.b, state, cat(s4, te.encode('SPACEZ/V6/MIX' + tag)));
+      if(letter === 'D') return hkdfBits(state, s2, te.encode('SPACEZ/V6/EXP' + tag), R.d, 512);
+      /* C: gate */
+      return hkdfKey(state, s2, te.encode('SPACEZ/V6/GATE' + tag), R.c, { name:'AES-CTR', length:256 }, [gen ? 'encrypt' : 'decrypt']).then(function(gk){
+        if(gen){
+          var seed = rand(32), iv = rand(16);
+          return ctr('encrypt', gk, iv, seed).then(function(ct){ out.push({ iv:b64(iv), ct:b64(ct) }); return seed; });
+        }
+        var g = gates[rr]; if(!g) throw new Error('gate');
+        return ctr('decrypt', gk, unb64(g.iv), unb64(g.ct));
+      }).then(function(seed){ return hmac('SHA-512', seed, cat(state, te.encode('SPACEZ/V6/FOLD' + tag))); });
+    }
+    function round(){
+      if(r >= V6.CYC) return Promise.resolve({ state:state, gates:out });
+      var R = P[r], rr = r, i = 0;
+      function next(){
+        if(i >= 4){ r++; return round(); }
+        var L = R.order.charAt(i++);
+        return op(L, R, rr).then(function(ns){ state = ns; return next(); });
+      }
+      return next();
+    }
+    return round();
+  }
+  function sealMsg(v){ return te.encode(['v6', v.s1, v.s2, v.s3, v.s4, v.sched, JSON.stringify(v.gates), v.ctrIv, v.cbcIv, v.iv, v.ct].join('|')); }
+  function sealKey(state, s4, usage){ return hkdfKey(state, s4, te.encode('SPACEZ/V6/SEAL'), 'SHA-512', { name:'HMAC', hash:'SHA-384', length:384 }, [usage]); }
+  function finalKeys(state, s4, usage){
+    return Promise.all([
+      hkdfKey(state, s4, te.encode('SPACEZ/V6/FINAL/CTR'), 'SHA-512', { name:'AES-CTR', length:256 }, [usage]),
+      hkdfKey(state, s4, te.encode('SPACEZ/V6/FINAL/CBC'), 'SHA-512', { name:'AES-CBC', length:256 }, [usage]),
+      hkdfKey(state, s4, te.encode('SPACEZ/V6/FINAL/GCM'), 'SHA-512', { name:'AES-GCM', length:256 }, [usage])
+    ]).then(function(k){ return { ctr:k[0], cbc:k[1], gcm:k[2] }; });
+  }
+  function open6(v, password){
+    return Promise.resolve().then(function(){
+      if(!v || v.v !== 6 || !v.gates || v.gates.length !== V6.CYC) throw new Error('shape');
+      var P = plan(v.sched), s1 = unb64(v.s1), s2 = unb64(v.s2), s3 = unb64(v.s3), s4 = unb64(v.s4), state;
+      return pbkdf2(te.encode(password), s1, V6.L1, 'SHA-512', 512).then(function(st0){ return loop(st0, s2, s3, s4, P, v.gates, false); })
+        .then(function(res){ state = res.state; return sealKey(state, s4, 'verify'); })
+        .then(function(sk){ return subtle.verify('HMAC', sk, unb64(v.seal), sealMsg(v)); })
+        .then(function(ok){ if(!ok) throw new Error('seal'); return finalKeys(state, s4, 'decrypt'); })
+        .then(function(k){
+          return U8(subtle.decrypt({ name:'AES-GCM', iv:unb64(v.iv), tagLength:128 }, k.gcm, unb64(v.ct)))
+            .then(function(m1){ return U8(subtle.decrypt({ name:'AES-CBC', iv:unb64(v.cbcIv) }, k.cbc, m1)); })
+            .then(function(m2){ return ctr('decrypt', k.ctr, unb64(v.ctrIv), m2); });
+        })
+        .then(function(plain){ var d = JSON.parse(td.decode(plain)); if(!d || typeof d !== 'object') throw new Error('bad'); return d; });
+    }).catch(function(){ throw new Error('Tampering Detected'); });
+  }
+  function generate6(password, payload){
+    var s1 = rand(16), s2 = rand(16), s3 = rand(16), s4 = rand(16), sched = rand(32), P = plan(b64(sched)), state, gates;
+    return pbkdf2(te.encode(password), s1, V6.L1, 'SHA-512', 512).then(function(st0){ return loop(st0, s2, s3, s4, P, null, true); })
+      .then(function(res){ state = res.state; gates = res.gates; return finalKeys(state, s4, 'encrypt'); })
+      .then(function(k){
+        var ctrIv = rand(16), cbcIv = rand(16), iv = rand(12);
+        return ctr('encrypt', k.ctr, ctrIv, te.encode(JSON.stringify(payload)))
+          .then(function(m1){ return U8(subtle.encrypt({ name:'AES-CBC', iv:cbcIv }, k.cbc, m1)); })
+          .then(function(m2){ return U8(subtle.encrypt({ name:'AES-GCM', iv:iv, tagLength:128 }, k.gcm, m2)); })
+          .then(function(ct){
+            var v = { v:6, s1:b64(s1), s2:b64(s2), s3:b64(s3), s4:b64(s4), sched:b64(sched), gates:gates, ctrIv:b64(ctrIv), cbcIv:b64(cbcIv), iv:b64(iv), ct:b64(ct) };
+            return sealKey(state, s4, 'sign').then(function(sk){ return U8(subtle.sign('HMAC', sk, sealMsg(v))); }).then(function(sig){ v.seal = b64(sig); return v; });
+          });
+      });
+  }
+  window.__SPZ_V6 = { open:open6, generate:generate6, plan:plan, perms:PERMS };
+})();
 /* SPACEZ cascade v5 -- shared block (same code in SPACEZ_TERMINAL part-46.js, index.html, ADMIN_GENERATOR.html) */
 (function(){
   'use strict';
@@ -228,6 +347,7 @@
      "Tampering Detected". Everything before it always runs to completion,
      so a right and a wrong password cost the same amount of real work. */
   function openVault(vault, password){
+    if(vault && vault.v === 6 && window.__SPZ_V6) return window.__SPZ_V6.open(vault, password);   /* Round AO: permuted operation order */
     if(vault && vault.v === 5 && window.__SPZ_V5) return window.__SPZ_V5.open(vault, password);   /* Round AN: shuffled hash chain */
     return Promise.resolve().then(function(){
       if(!vault || !vault.gates || vault.gates.length !== CYCLES) throw new Error('shape');
