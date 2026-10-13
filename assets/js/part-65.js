@@ -391,7 +391,7 @@
   var CORR = ['zigzag', 'flat', 'triangle', 'dzz', 'combo'], CORR_NT = ['zigzag', 'flat', 'dzz', 'combo'];
   var STRUCTS = {
     impulse:{ t:{en:'Impulse (1-2-3-4-5)',th:'Impulse (1-2-3-4-5)'}, legs:['1','2','3','4','5'],
-      pts:[[0,.05],[.18,.42],[.27,.25],[.6,.85],[.72,.66],[1,.98]],
+      pts:[[0,.05],[.22,.36],[.32,.22],[.56,.84],[.7,.64],[1,.98]],
       ok:[['impulse','lead'], CORR_NT, ['impulse'], CORR, ['impulse','end']],
       why:[{en:'Wave 1 moves with the trend: impulse or leading diagonal.',th:'Wave 1 ไปตามเทรนด์: ต้องเป็น Impulse หรือ Leading Diagonal'},
            {en:'Wave 2 is a correction — any three except a triangle (a triangle is never wave 2).',th:'Wave 2 เป็นการปรับฐาน — เป็น 3 คลื่นแบบไหนก็ได้ ยกเว้น Triangle (Triangle ไม่เป็น wave 2)'},
@@ -399,7 +399,7 @@
            {en:'Wave 4 is a correction — any three, triangles included.',th:'Wave 4 เป็นการปรับฐาน — เป็น 3 คลื่นแบบไหนก็ได้ รวมถึง Triangle'},
            {en:'Wave 5 moves with the trend: impulse or ending diagonal.',th:'Wave 5 ไปตามเทรนด์: ต้องเป็น Impulse หรือ Ending Diagonal'}] },
     zigzag:{ t:{en:'Zigzag (A-B-C)',th:'Zigzag (A-B-C)'}, legs:['A','B','C'],
-      pts:[[0,.95],[.42,.45],[.62,.68],[1,.08]],
+      pts:[[0,.95],[.3,.5],[.46,.68],[1,.08]],
       ok:[['impulse','lead'], CORR, ['impulse','end']],
       why:[{en:'Wave A of a zigzag is a five: impulse or leading diagonal.',th:'Wave A ของ Zigzag เป็น 5 คลื่น: Impulse หรือ Leading Diagonal'},
            {en:'Wave B is a correction — any three.',th:'Wave B เป็นการปรับฐาน — เป็น 3 คลื่นแบบไหนก็ได้'},
@@ -437,23 +437,77 @@
     okPick:{ en:'Allowed here.', th:'ใช้ได้ในตำแหน่งนี้' },
     allowed:{ en:'Allowed:', th:'ที่ใช้ได้:' }
   };
-  var pr = { s:'impulse', pick:{}, checked:false };
+  var PU2 = {
+    tapWave:{ en:'Tap a wave on the chart (or a box below), then pick its pattern from the cards.', th:'แตะคลื่นบนกราฟ (หรือกล่องด้านล่าง) แล้วเลือกรูปแบบจากการ์ด' },
+    pickFor:{ en:'Pick the pattern for wave', th:'เลือกรูปแบบของคลื่น' },
+    close:{ en:'Close', th:'ปิด' },
+    five:{ en:'5 waves', th:'5 คลื่น' }, three:{ en:'3 waves', th:'3 คลื่น' },
+    timeH:{ en:'Time behaviour — a practitioner’s guideline', th:'พฤติกรรมด้านเวลา — แนวทางจากประสบการณ์ผู้สอน' },
+    timeNote:{ en:'These are observations from practice (Focus), not rules. Use them as an extra clue when two counts look equally good.', th:'ข้อสังเกตจากการใช้งานจริงของผู้สอน (Focus) ไม่ใช่กฎ ใช้เป็นเบาะแสเพิ่มเติมเวลามีการนับสองแบบที่ดูดีพอกัน' },
+    t1:{ en:'Impulse wave 1 tends to take <b>longer</b> than zigzag wave A — even though both are fives. A new trend starts slowly; a correction starts quickly.', th:'Wave 1 ของ Impulse มักใช้เวลา<b>นานกว่า</b> wave A ของ Zigzag — แม้ทั้งคู่จะเป็น 5 คลื่น เทรนด์ใหม่เริ่มช้า แต่การปรับฐานเริ่มเร็ว' },
+    t2:{ en:'Zigzag wave C tends to take <b>longer</b> than wave A.', th:'Wave C ของ Zigzag มักใช้เวลา<b>นานกว่า</b> wave A' },
+    t3:{ en:'Impulse wave 3 is the <b>steepest</b>: it covers the most distance in relatively little time.', th:'Wave 3 ของ Impulse <b>ชันที่สุด</b>: ไปได้ระยะไกลในเวลาค่อนข้างสั้น' },
+    impL:{ en:'Impulse', th:'Impulse' }, zzL:{ en:'Zigzag', th:'Zigzag' },
+    slow:{ en:'slower', th:'ช้ากว่า' }, steep:{ en:'steep', th:'ชัน' }, fast:{ en:'quick', th:'เร็ว' }, longer:{ en:'longer', th:'นานกว่า' }
+  };
+  var PT_HINT = {
+    impulse:{ en:'Waves 1, 3, 5, A, C', th:'Wave 1, 3, 5, A, C' }, lead:{ en:'Wave 1 or A', th:'Wave 1 หรือ A' }, end:{ en:'Wave 5 or C', th:'Wave 5 หรือ C' },
+    zigzag:{ en:'Sharp correction', th:'ปรับฐานแบบชัน' }, flat:{ en:'Sideways correction', th:'ปรับฐานแบบออกข้าง' }, triangle:{ en:'Wave 4, B, X, E — never 2', th:'Wave 4, B, X, E — ไม่เป็น 2' },
+    dzz:{ en:'W-X-Y, both zigzags', th:'W-X-Y เป็น Zigzag ทั้งคู่' }, combo:{ en:'W-X-Y, sideways', th:'W-X-Y ออกข้าง' }
+  };
+  var SHAPE_LAB = {
+    impulse:{1:'1',2:'2',3:'3',4:'4',5:'5'}, lead:{1:'1',2:'2',3:'3',4:'4',5:'5'}, end:{1:'1',2:'2',3:'3',4:'4',5:'5'},
+    zigzag:{1:'a',2:'b',3:'c'}, flat:{1:'a',2:'b',3:'c'}, triangle:{1:'a',2:'b',3:'c',4:'d',5:'e'},
+    dzz:{3:'w',4:'x',7:'y'}, combo:{3:'w',4:'x',5:'y'}
+  };
+  function prMini(key, w, h){
+    var sh = SHAPE[key], pd = 12, out = '';
+    function X(t){ return pd + (w - 2 * pd) * t; }
+    function Y(v){ var lo = -0.05, hi = 1.25; return pd + (h - 2 * pd) * (1 - (v - lo) / (hi - lo)); }
+    if(key === 'lead' || key === 'end' || key === 'triangle'){
+      var a = sh[1], b = sh[3], c = sh[2], d = sh[4];
+      out += '<path d="M' + X(a[0]) + ' ' + Y(a[1]) + ' L' + X(b[0] + (b[0] - a[0]) * .35) + ' ' + Y(b[1] + (b[1] - a[1]) * .35) + '" class="ewv-pr-mguide"></path>';
+      out += '<path d="M' + X(c[0]) + ' ' + Y(c[1]) + ' L' + X(d[0] + (d[0] - c[0]) * .35) + ' ' + Y(d[1] + (d[1] - c[1]) * .35) + '" class="ewv-pr-mguide"></path>';
+    }
+    out += '<path d="M' + sh.map(function(p){ return X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1); }).join(' L') + '" class="ewv-pr-mpath"></path>';
+    var lab = SHAPE_LAB[key] || {};
+    sh.forEach(function(p, i){
+      if(!lab[i]) return;
+      var prev = sh[i - 1] ? sh[i - 1][1] : 0, up = p[1] >= prev;
+      out += '<circle cx="' + X(p[0]).toFixed(1) + '" cy="' + Y(p[1]).toFixed(1) + '" r="2.2" class="ewv-pr-mdot"></circle><text x="' + X(p[0]).toFixed(1) + '" y="' + (Y(p[1]) + (up ? -5 : 11)).toFixed(1) + '" class="ewv-pr-mlab">' + lab[i] + '</text>';
+    });
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" class="ewv-pr-mini">' + out + '</svg>';
+  }
+  function prStructMini(k){
+    var S = STRUCTS[k], w = 120, h = 60, pd = 9;
+    function X(t){ return pd + (w - 2 * pd) * t; }
+    function Y(v){ return pd + (h - 2 * pd) * (1 - v); }
+    var d = 'M' + S.pts.map(function(p){ return X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1); }).join(' L');
+    var lb = S.legs.map(function(l, i){ var p = S.pts[i + 1], up = p[1] > S.pts[i][1]; return '<text x="' + X(p[0]).toFixed(1) + '" y="' + (Y(p[1]) + (up ? -3 : 9)).toFixed(1) + '" class="ewv-pr-mlab">' + l + '</text>'; }).join('');
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" class="ewv-pr-mini"><path d="' + d + '" class="ewv-pr-mpath"></path>' + lb + '</svg>';
+  }
+  var pr = { s:'impulse', pick:{}, checked:false, open:null };
   function prDraw(){
-    var S = STRUCTS[pr.s], W = 640, H = 240, pad = 22, d = '', i, k;
+    var S = STRUCTS[pr.s], W = 720, H = 330, pad = 30, d = '', i, k;
     function X(t){ return pad + (W - 2 * pad) * t; }
     function Y(v){ return pad + (H - 2 * pad) * (1 - v); }
-    var labels = '';
+    var labels = '', hits = '', grid = '';
+    for(i = 1; i < 10; i++) grid += '<path d="M' + X(i / 10).toFixed(1) + ' ' + (pad - 8) + ' L' + X(i / 10).toFixed(1) + ' ' + (H - pad + 8) + '" class="ewv-pr-grid"></path>';
     for(i = 0; i < S.legs.length; i++){
-      var a = S.pts[i], b = S.pts[i + 1], sh = SHAPE[pr.pick[i] || 'none'];
+      var a = S.pts[i], b = S.pts[i + 1], sh = SHAPE[pr.pick[i] || 'none'], seg = '';
       for(k = 0; k < sh.length; k++){
         var tx = X(a[0] + (b[0] - a[0]) * sh[k][0]), ty = Y(a[1] + (b[1] - a[1]) * sh[k][1]);
         d += (d ? ' L' : 'M') + tx.toFixed(1) + ' ' + ty.toFixed(1);
       }
-      var up = b[1] > a[1];
-      labels += '<circle cx="' + X(b[0]).toFixed(1) + '" cy="' + Y(b[1]).toFixed(1) + '" r="3" class="ewv-dot"></circle><text x="' + X(b[0]).toFixed(1) + '" y="' + (Y(b[1]) + (up ? -9 : 18)).toFixed(1) + '" class="ewv-lab">' + S.legs[i] + '</text>';
+      var up = b[1] > a[1], r = pr.checked ? prCheck(i) : null;
+      var hc = 'ewv-pr-hit' + (pr.open === i ? ' on' : '') + (r === true ? ' ok' : (pr.checked && r !== true ? ' bad' : ''));
+      hits += '<rect x="' + X(a[0]).toFixed(1) + '" y="' + (pad - 14) + '" width="' + (X(b[0]) - X(a[0])).toFixed(1) + '" height="' + (H - 2 * pad + 28) + '" rx="10" class="' + hc + '" data-pr-open="' + i + '"></rect>';
+      labels += '<circle cx="' + X(b[0]).toFixed(1) + '" cy="' + Y(b[1]).toFixed(1) + '" r="3.2" class="ewv-dot"></circle><text x="' + X(b[0]).toFixed(1) + '" y="' + (Y(b[1]) + (up ? -11 : 21)).toFixed(1) + '" class="ewv-lab">' + S.legs[i] + '</text>';
+      var mid = (X(a[0]) + X(b[0])) / 2;
+      labels += '<text x="' + mid.toFixed(1) + '" y="' + (H - 6) + '" class="ewv-pr-legtag' + (pr.pick[i] ? ' set' : '') + '">' + esc(pr.pick[i] ? T(PT[pr.pick[i]]) : '?') + '</text>';
     }
     var skel = 'M' + S.pts.map(function(p){ return X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1); }).join(' L');
-    return '<svg class="ewv-svg" viewBox="0 0 ' + W + ' ' + H + '"><path d="' + skel + '" class="ewv-skel" fill="none"></path><path d="' + d + '" class="ewv-sub" fill="none"></path>' + labels + '</svg>';
+    return '<svg class="ewv-svg ewv-pr-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">' + grid + hits + '<path d="' + skel + '" class="ewv-skel" fill="none"></path><path d="' + d + '" class="ewv-sub ewv-pr-line" fill="none"></path>' + labels + '</svg>';
   }
   function prCheck(i){
     var S = STRUCTS[pr.s], v = pr.pick[i];
@@ -462,45 +516,83 @@
     if(ok && pr.s === 'combo' && i === 2 && pr.pick[0] === 'zigzag' && v === 'zigzag') return 'zz';
     return ok;
   }
+  function prCards(i){
+    var S = STRUCTS[pr.s];
+    return '<div class="ewv-pr-cards"><div class="ewv-pr-cards-h"><b>' + esc(T(PU2.pickFor)) + ' ' + S.legs[i] + '</b><button type="button" data-pr-act="close">' + esc(T(PU2.close)) + ' ✕</button></div><div class="ewv-pr-cgrid">' +
+      PT_ORDER.map(function(k){
+        return '<button type="button" class="ewv-pr-card' + (pr.pick[i] === k ? ' on' : '') + '" data-pr-pick="' + k + '">' + prMini(k, 150, 84) +
+          '<span class="n">' + esc(T(PT[k])) + '</span><span class="c ' + (MOTIVE[k] ? 'm' : 'k') + '">' + esc(T(MOTIVE[k] ? PU2.five : PU2.three)) + '</span><span class="h">' + esc(T(PT_HINT[k])) + '</span></button>';
+      }).join('') + '</div></div>';
+  }
+  function prTimeGuide(){
+    var w = 300, h = 130, pd = 16;
+    function X(t){ return pd + (w - 2 * pd) * t; }
+    function Y(v){ return pd + (h - 2 * pd) * (1 - v); }
+    function path(pts){ return 'M' + pts.map(function(p){ return X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1); }).join(' L'); }
+    var imp = [[0,.05],[.22,.36],[.32,.22],[.56,.84],[.7,.64],[1,.98]];
+    var zz = [[0,.95],[.24,.5],[.4,.68],[1,.06]];
+    function brk(x0, x1, y, lab, cls){ return '<path d="M' + X(x0).toFixed(1) + ' ' + (y - 4) + ' L' + X(x0).toFixed(1) + ' ' + y + ' L' + X(x1).toFixed(1) + ' ' + y + ' L' + X(x1).toFixed(1) + ' ' + (y - 4) + '" class="ewv-pr-tb ' + cls + '"></path><text x="' + ((X(x0) + X(x1)) / 2).toFixed(1) + '" y="' + (y + 11) + '" class="ewv-pr-tt ' + cls + '">' + lab + '</text>'; }
+    var labI = ['1','2','3','4','5'].map(function(l, i){ var p = imp[i + 1], up = p[1] > imp[i][1]; return '<text x="' + X(p[0]).toFixed(1) + '" y="' + (Y(p[1]) + (up ? -5 : 12)).toFixed(1) + '" class="ewv-pr-mlab">' + l + '</text>'; }).join('');
+    var labZ = ['A','B','C'].map(function(l, i){ var p = zz[i + 1], up = p[1] > zz[i][1]; return '<text x="' + X(p[0]).toFixed(1) + '" y="' + (Y(p[1]) + (up ? -5 : 12)).toFixed(1) + '" class="ewv-pr-mlab">' + l + '</text>'; }).join('');
+    var svgI = '<svg viewBox="0 0 ' + w + ' ' + (h + 26) + '" class="ewv-pr-tsvg"><path d="' + path(imp) + '" class="ewv-pr-mpath"></path><path d="' + path([imp[2], imp[3]]) + '" class="ewv-pr-steep"></path>' + labI +
+      brk(0, .22, h + 6, '1 · ' + T(PU2.slow), 'a') + brk(.32, .56, h + 6, '3 · ' + T(PU2.steep), 'b') + '</svg>';
+    var svgZ = '<svg viewBox="0 0 ' + w + ' ' + (h + 26) + '" class="ewv-pr-tsvg"><path d="' + path(zz) + '" class="ewv-pr-mpath"></path>' + labZ +
+      brk(0, .24, h + 6, 'A · ' + T(PU2.fast), 'b') + brk(.4, 1, h + 6, 'C · ' + T(PU2.longer), 'a') + '</svg>';
+    return '<div class="ewv-pr-time"><div class="ewv-pr-time-h">⏱ ' + esc(T(PU2.timeH)) + '</div><div class="ewv-pr-time-g"><figure>' + svgI + '<figcaption>' + esc(T(PU2.impL)) + '</figcaption></figure><figure>' + svgZ + '<figcaption>' + esc(T(PU2.zzL)) + '</figcaption></figure></div>' +
+      '<ul><li>' + T(PU2.t1) + '</li><li>' + T(PU2.t2) + '</li><li>' + T(PU2.t3) + '</li></ul><p>' + esc(T(PU2.timeNote)) + '</p></div>';
+  }
   function prHTML(){
     var S = STRUCTS[pr.s];
-    var h = '<div class="ewv-pr"><div class="ewv-pr-top"><span>' + esc(T(PU.pick)) + '</span><select data-pr-s="1">' +
-      Object.keys(STRUCTS).map(function(k){ return '<option value="' + k + '"' + (k === pr.s ? ' selected' : '') + '>' + esc(T(STRUCTS[k].t)) + '</option>'; }).join('') + '</select>' +
-      '<button type="button" class="go" data-pr-act="check">' + esc(T(PU.chk)) + '</button><button type="button" data-pr-act="rnd">' + esc(T(PU.rnd)) + '</button><button type="button" data-pr-act="ans">' + esc(T(PU.ans)) + '</button><button type="button" data-pr-act="clr">' + esc(T(PU.clr)) + '</button></div>';
-    h += '<div class="ewv-diagram">' + prDraw() + '</div><div class="ewv-pr-legs">';
+    var h = '<div class="ewv-pr"><div class="ewv-pr-lbl">' + esc(T(PU.pick)) + '</div><div class="ewv-pr-structs">' +
+      Object.keys(STRUCTS).map(function(k){ return '<button type="button" class="ewv-pr-st' + (k === pr.s ? ' on' : '') + '" data-pr-st="' + k + '">' + prStructMini(k) + '<span>' + esc(T(STRUCTS[k].t)) + '</span></button>'; }).join('') + '</div>' +
+      '<div class="ewv-pr-top"><button type="button" class="go" data-pr-act="check">' + esc(T(PU.chk)) + '</button><button type="button" data-pr-act="rnd">' + esc(T(PU.rnd)) + '</button><button type="button" data-pr-act="ans">' + esc(T(PU.ans)) + '</button><button type="button" data-pr-act="clr">' + esc(T(PU.clr)) + '</button><span class="ewv-pr-tip">' + esc(T(PU2.tapWave)) + '</span></div>';
+    h += '<div class="ewv-diagram ewv-pr-chart">' + prDraw() + '</div>';
+    if(pr.open !== null && pr.open < S.legs.length) h += prCards(pr.open);
+    h += '<div class="ewv-pr-legs">';
     var nOk = 0;
     S.legs.forEach(function(lg, i){
       var r = pr.checked ? prCheck(i) : null, cls = '';
       if(pr.checked){ cls = r === true ? ' ok' : ' bad'; if(r === true) nOk++; }
+      if(pr.open === i) cls += ' open';
       var note = '';
       if(pr.checked){
         if(r === true) note = T(PU.okPick);
         else if(r === 'zz') note = T(PU.bothZZ);
         else note = T(S.why[i]) + ' ' + T(PU.allowed) + ' ' + S.ok[i].map(function(k){ return T(PT[k]); }).join(', ');
       }
-      h += '<div class="ewv-pr-leg' + cls + '"><b>' + esc(T(PU.wave)) + ' ' + lg + '</b><select data-pr-leg="' + i + '"><option value="">' + esc(T(PU.choose)) + '</option>' +
-        PT_ORDER.map(function(k){ return '<option value="' + k + '"' + (pr.pick[i] === k ? ' selected' : '') + '>' + esc(T(PT[k])) + (MOTIVE[k] ? ' (5)' : ' (3)') + '</option>'; }).join('') + '</select>' + (note ? '<em>' + esc(note) + '</em>' : '') + '</div>';
+      var v = pr.pick[i];
+      h += '<button type="button" class="ewv-pr-leg' + cls + '" data-pr-open="' + i + '"><b>' + esc(T(PU.wave)) + ' ' + lg + '</b>' +
+        (v ? prMini(v, 120, 56) + '<span class="pk">' + esc(T(PT[v])) + '</span>' : '<span class="pk none">' + esc(T(PU.choose)) + '</span>') +
+        (note ? '<em>' + esc(note) + '</em>' : '') + '</button>';
     });
     h += '</div>';
     if(pr.checked) h += '<div class="ewv-pr-sum ' + (nOk === S.legs.length ? 'ok' : 'bad') + '">' + esc(nOk === S.legs.length ? T(PU.allOk) : T(PU.some).replace('{n}', nOk).replace('{t}', S.legs.length)) + '</div>';
+    h += prTimeGuide();
     return h + '</div>';
   }
   function mountPractice(host){
     host.innerHTML = prHTML();
     if(host.__wired) return;
     host.__wired = true;
-    host.addEventListener('change', function(ev){
-      var t = ev.target;
-      if(t.hasAttribute('data-pr-s')){ pr.s = t.value; pr.pick = {}; pr.checked = false; host.innerHTML = prHTML(); return; }
-      if(t.hasAttribute('data-pr-leg')){ pr.pick[+t.getAttribute('data-pr-leg')] = t.value; pr.checked = false; host.innerHTML = prHTML(); }
-    });
     host.addEventListener('click', function(ev){
+      var st = ev.target.closest('[data-pr-st]');
+      if(st){ pr.s = st.getAttribute('data-pr-st'); pr.pick = {}; pr.checked = false; pr.open = 0; host.innerHTML = prHTML(); return; }
+      var op = ev.target.closest('[data-pr-open]');
+      if(op){ var n = +op.getAttribute('data-pr-open'); pr.open = pr.open === n ? null : n; host.innerHTML = prHTML(); var cd = host.querySelector('.ewv-pr-cards'); if(cd && cd.scrollIntoView) try { cd.scrollIntoView({ block:'nearest', behavior:'smooth' }); } catch(e){} return; }
+      var pk = ev.target.closest('[data-pr-pick]');
+      if(pk && pr.open !== null){
+        pr.pick[pr.open] = pk.getAttribute('data-pr-pick'); pr.checked = false;
+        var S0 = STRUCTS[pr.s], nx = null;
+        for(var j = 1; j <= S0.legs.length; j++){ var c = (pr.open + j) % S0.legs.length; if(!pr.pick[c]){ nx = c; break; } }
+        pr.open = nx; host.innerHTML = prHTML(); return;
+      }
       var b = ev.target.closest('[data-pr-act]'); if(!b) return;
       var a = b.getAttribute('data-pr-act'), S = STRUCTS[pr.s];
-      if(a === 'check') pr.checked = true;
-      else if(a === 'clr'){ pr.pick = {}; pr.checked = false; }
-      else if(a === 'ans'){ pr.pick = {}; S.ok.forEach(function(arr, i){ pr.pick[i] = arr[0]; }); if(pr.s === 'combo') pr.pick[2] = 'flat'; pr.checked = true; }
-      else if(a === 'rnd'){ var ks = Object.keys(STRUCTS); pr.s = ks[Math.floor(Math.random() * ks.length)]; pr.pick = {}; pr.checked = false; }
+      if(a === 'check'){ pr.checked = true; pr.open = null; }
+      else if(a === 'close') pr.open = null;
+      else if(a === 'clr'){ pr.pick = {}; pr.checked = false; pr.open = 0; }
+      else if(a === 'ans'){ pr.pick = {}; S.ok.forEach(function(arr, i){ pr.pick[i] = arr[0]; }); if(pr.s === 'combo') pr.pick[2] = 'flat'; pr.checked = true; pr.open = null; }
+      else if(a === 'rnd'){ var ks = Object.keys(STRUCTS); pr.s = ks[Math.floor(Math.random() * ks.length)]; pr.pick = {}; pr.checked = false; pr.open = 0; }
       host.innerHTML = prHTML();
     });
   }
