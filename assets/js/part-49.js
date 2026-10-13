@@ -1215,7 +1215,7 @@
     var vals = slot.series.vals;
     var svg = technicalChartSVG(vals, sma(vals, 50), sma(vals, 200));
     if(!svg) return head + '<div class="pr-empty">' + esc(T(UI.goldChartUnavailable)) + '</div>';
-    return head +
+    return '<div class="pr-keep">' + head +
       '<div class="pr-chart-block">' + svg +
         '<div class="pr-tech-legend">' +
           '<span class="pr-tech-i"><i style="background:#161616"></i>' + esc(T(UI.techPrice)) + '</span>' +
@@ -1223,7 +1223,7 @@
           '<span class="pr-tech-i"><i style="background:#b8860b"></i>' + esc(T(UI.techSma200)) + '</span>' +
         '</div>' +
         '<div class="pr-chart-axis"><span>' + esc(slot.series.dates[0]) + '</span><span>' + esc(slot.series.dates[slot.series.dates.length - 1]) + '</span></div>' +
-      '</div>';
+      '</div></div>';
   }
 
   function chartHistoryReady(syms){
@@ -1354,7 +1354,22 @@
     return goldTechChartHTML('GC=F', UI.goldChartGoldH) +
       '<div class="pr-flow-note" style="margin-top:10px;">' + esc(T(UI.goldPriceNote)) + '</div>' +
       '<div class="pr-regime-strip">' + cellsHTML + '</div>' +
+      (isNum(g.range_pos) ? '<div class="pr-flow-note" style="margin-top:8px;">' + esc(T(range52Note(g))) + '</div>' : '') +
       '<div class="pr-flow-wrap" style="margin-top:12px;">' + rows + '</div>';
+  }
+  /* 52-week range position = (last close − 52W low close) ÷ (52W high close − 52W low close) × 100 */
+  function range52Note(g){
+    var p = g.range_pos.toFixed(0);
+    var hiTxt = isNum(g.off_high) ? fmtSigned(g.off_high, 1) + '%' : '';
+    var loTxt = isNum(g.off_low) ? fmtSigned(g.off_low, 1) + '%' : '';
+    return {
+      en:'52-week range position ' + p + '% = where the latest GLD close sits between its lowest close (0%) and highest close (100%) of the past year. ' +
+         (hiTxt ? 'It is ' + hiTxt + ' from the 52-week high and ' + loTxt + ' above the 52-week low, so it sits near the bottom of the range. ' : '') +
+         'Formula: (price − 52W low) ÷ (52W high − 52W low) × 100.',
+      th:'ตำแหน่งในกรอบ 52 สัปดาห์ ' + p + '% = ราคาปิดล่าสุดของ GLD อยู่ตรงไหนระหว่างราคาปิดต่ำสุด (0%) กับสูงสุด (100%) ในรอบ 1 ปี ' +
+         (hiTxt ? 'ตอนนี้ห่างจุดสูงสุด ' + hiTxt + ' และสูงกว่าจุดต่ำสุด ' + loTxt + ' จึงอยู่ค่อนไปทางล่างของกรอบ ' : '') +
+         'สูตร: (ราคา − ต่ำสุด 52 สัปดาห์) ÷ (สูงสุด − ต่ำสุด) × 100'
+    };
   }
 
   /* ---- Round AE: Gold vs other markets (rescaled to 100 + correlation + plain explanation) ---- */
@@ -1997,9 +2012,23 @@
     '</div>';
   }
 
+  /* Round AO: a heading must never print at the bottom of one page with its chart on the next */
+  function keepHeadsWithCharts(){
+    var root = document.getElementById('printreport'); if(!root) return;
+    var hs = root.querySelectorAll('.pr-sec-h, .pr-rel-h');
+    Array.prototype.forEach.call(hs, function(h){
+      if(h.parentNode && h.parentNode.classList && (h.parentNode.classList.contains('pr-keep') || h.parentNode.classList.contains('pr-rel'))) return;
+      var nx = h.nextElementSibling;
+      if(!nx || !/pr-chart-block|pr-regime-strip|pr-flow-wrap|pr-empty/.test(nx.className || '')) return;
+      if(nx.offsetHeight > 700) return;
+      var w = document.createElement('div'); w.className = 'pr-keep';
+      h.parentNode.insertBefore(w, h); w.appendChild(h); w.appendChild(nx);
+    });
+  }
   function doPrint(){
     function reveal(){
       document.body.classList.add('spz-printing-report');
+      keepHeadsWithCharts();
       /* Round AM: the certificate prints on A4 landscape with no margin (thick card stock) */
       var pageCss = null;
       if(reportType === 'cert'){
