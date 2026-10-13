@@ -2317,7 +2317,7 @@ function cexAdminView(u, ids) {
   const cur = exams.find((x) => x.allow && x.status !== "done") || exams.find((x) => x.allow) || exams[0] || { setId: "main", status: "new" };
   return {
     username: u.username, password: u.password, note: u.note || "", displayName: u.displayName || "", createdAt: u.createdAt, learned: u.learned || {},
-    exams, results: exams,
+    exams, results: exams, grades: Array.isArray(u.gb) ? u.gb : [],
     // summary of the "current" set, kept for older screens
     setId: cur.setId, status: cur.status, percent: cur.percent, score: cur.score, total: cur.total, finishedAt: cur.finishedAt, openAt: cur.openAt,
   };
@@ -2597,6 +2597,53 @@ async function handleCexAdminBankSet(request, env) {
   await env.SESSIONS.put(cexBankKey(sid), JSON.stringify({ settings, questions }));
   return json({ ok: true, count: questions.length, settings }, env);
 }
+// ---------- Round AO: gradebook -- manual score entries stored on the classroom exam account ----------
+const GB_KINDS = ["exam", "quiz", "homework", "practice", "project", "attendance", "other"];
+function gbClean(e) {
+  if (!e || typeof e !== "object") return null;
+  const num = (v) => { const n = Number(v); return isFinite(n) ? Math.round(n * 100) / 100 : null; };
+  const score = num(e.score), max = num(e.max);
+  if (score === null || max === null || max <= 0 || score < 0 || score > max * 2) return null;
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(String(e.date || "")) ? String(e.date) : new Date().toISOString().slice(0, 10);
+  return {
+    date, kind: GB_KINDS.indexOf(e.kind) !== -1 ? e.kind : "other",
+    title: String(e.title || "").trim().slice(0, 100) || "-",
+    score, max, note: String(e.note || "").trim().slice(0, 240),
+  };
+}
+async function handleCexAdminGrades(request, env) {
+  if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
+  let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const username = cexUserName(body.username);
+  const u = username ? await cexGetUser(username, env) : null;
+  if (!u) return json({ error: "not_found" }, env, 404);
+  cexNorm(u);
+  const gb = Array.isArray(u.gb) ? u.gb : [];
+  const op = String(body.op || "");
+  if (op === "add" || op === "edit") {
+    const e = gbClean(body.entry);
+    if (!e) return json({ error: "bad_entry" }, env, 400);
+    if (op === "add") {
+      if (gb.length >= 300) return json({ error: "too_many" }, env, 400);
+      e.id = "g" + cexRand(8).toLowerCase(); e.at = Date.now();
+      gb.push(e);
+    } else {
+      const i = gb.findIndex((x) => x.id === body.id);
+      if (i === -1) return json({ error: "not_found" }, env, 404);
+      gb[i] = Object.assign({ id: gb[i].id, at: gb[i].at }, e, { editedAt: Date.now() });
+    }
+  } else if (op === "del") {
+    const i = gb.findIndex((x) => x.id === body.id);
+    if (i === -1) return json({ error: "not_found" }, env, 404);
+    gb.splice(i, 1);
+  } else {
+    return json({ error: "bad_op" }, env, 400);
+  }
+  u.gb = gb;
+  await cexPutUser(u, env);
+  return json({ ok: true, grades: gb }, env);
+}
+
 async function handleCexAdminSets(request, env) {
   if (!isAdminKeyValid(request, env)) return json({ error: "unauthorized" }, env, 401);
   return json({ sets: await cexSetsInfo(env) }, env);
@@ -3006,6 +3053,7 @@ const SPZ_ROUTES = {
       if (url.pathname === "/api/admin/cexam/sets/delete" && request.method === "POST") return withCorsOrigin(await handleCexAdminSetDelete(request, env), allowOrigin);
       if (url.pathname === "/api/admin/cexam/bank" && request.method === "GET") return withCorsOrigin(await handleCexAdminBankGet(request, env), allowOrigin);
       if (url.pathname === "/api/admin/cexam/bank/set" && request.method === "POST") return withCorsOrigin(await handleCexAdminBankSet(request, env), allowOrigin);
+      if (url.pathname === "/api/admin/cexam/grades" && request.method === "POST") return withCorsOrigin(await handleCexAdminGrades(request, env), allowOrigin);
       if (url.pathname === "/api/admin/cexam/result" && request.method === "GET") return withCorsOrigin(await handleCexAdminResult(request, env), allowOrigin);
       if (url.pathname === "/api/quietvalue/results" && request.method === "GET") return await handleQuietValueResults(request, env);
       if (url.pathname === "/api/printreport/analysis" && request.method === "GET") return await handlePrintReportAnalysis(request, env);
