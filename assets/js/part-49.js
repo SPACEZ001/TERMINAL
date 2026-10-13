@@ -2501,9 +2501,9 @@
         '<pattern id="ctDots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".7" class="dg"></circle></pattern>' +
         '<path id="ctMicro" d="M' + i3 + ' ' + i3 + ' H' + (W - i3) + ' V' + (H - i3) + ' H' + i3 + ' Z"></path>' +
       '</defs>' +
-      '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="url(#ctGlow)"></rect>' +
+
       '<rect x="' + i2 + '" y="' + i2 + '" width="' + (W - 2 * i2) + '" height="' + (H - 2 * i2) + '" fill="url(#ctDots)"></rect>' +
-      '<path d="' + wp + ' L' + x1 + ' ' + yb + ' L' + x0 + ' ' + yb + ' Z" fill="url(#ctArea)"></path>' +
+      '<path d="' + wp + ' L' + x1 + ' ' + yb + ' L' + x0 + ' ' + yb + ' Z" class="ar"></path>' +
       '<g class="wmk">' + cdl + '<path d="' + wp + '" class="wl"></path></g>' +
       '<image href="' + PR_LOGO + '" x="' + (W / 2 - 110) + '" y="' + (H / 2 - 130) + '" width="220" height="264" class="wm"></image>' +
       '<rect x="' + i1 + '" y="' + i1 + '" width="' + (W - 2 * i1) + '" height="' + (H - 2 * i1) + '" class="f1"></rect>' +
