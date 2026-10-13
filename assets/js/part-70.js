@@ -22,7 +22,7 @@
 
   var ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   /* no I / O / 0 / 1 -- easy to read aloud */
   var REF_RE = /SPZ-[A-Z]{2}-\d{6}-\d{4}-[A-Z0-9]{4,10}/;
-  var PR_CODES = { market:'MK', gold:'GD', idea:'ID', announcement:'AN', bubble:'BB', eval:'EV' };
+  var PR_CODES = { market:'MK', gold:'GD', idea:'ID', announcement:'AN', bubble:'BB', eval:'EV', cert:'CT', gradebook:'GB' };
   var WEB_URL = 'https://terminal.spacezblack.workers.dev/';
   var LS_KEY = 'spz.report.analyst';
   var NAME = 'Noraset Boikaw';
@@ -155,8 +155,11 @@
   function prepPrintReport(sheet){
     var meta = q1('.pr-meta', sheet);
     var m = meta ? meta.textContent.match(REF_RE) : null;
+    if(sheet.classList.contains('pr-cert')){            /* the certificate carries its own signature + QR */
+      mark(sheet, m ? m[0] : forPrintReport('cert'));   /* PDF file name SPZ-CT-... so the REPORTS sorter can file it */
+      return;
+    }
     mark(sheet, m ? m[0] : '');
-    if(sheet.classList.contains('pr-cert')) return;   /* the certificate carries its own signature + QR */
     putBlock(sheet, '.pr-foot', false);
   }
   function prepCompare(sheet){

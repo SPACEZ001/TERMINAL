@@ -177,8 +177,10 @@
     var old = document.getElementById('gbPrint'); if(old) old.remove();
     var d = document.createElement('div'); d.id = 'gbPrint'; d.innerHTML = html; document.body.appendChild(d);
     document.body.classList.add('spz-printing-gb');
+    var oldTitle = document.title;
+    try { if(window.__SPZ_REPORTREF) document.title = window.__SPZ_REPORTREF.make('GB'); } catch(e){}   /* PDF file name SPZ-GB-... */
     var done = false;
-    function clean(){ if(done) return; done = true; document.body.classList.remove('spz-printing-gb'); var x = document.getElementById('gbPrint'); if(x) x.remove(); window.removeEventListener('afterprint', clean); }
+    function clean(){ if(done) return; done = true; document.title = oldTitle; document.body.classList.remove('spz-printing-gb'); var x = document.getElementById('gbPrint'); if(x) x.remove(); window.removeEventListener('afterprint', clean); }
     window.addEventListener('afterprint', clean);
     setTimeout(function(){ window.print(); }, 60);
     setTimeout(clean, 120000);
