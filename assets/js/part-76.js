@@ -341,6 +341,7 @@
     return true;
   }
   window.__SPZ_AUTOWAVE_ENGINE = { analyse:analyse, zigzag:zigzag };
+  window.__SPZ_AUTOWAVE_OPEN = function(sym){ st.sym = String(sym || st.sym).toUpperCase(); st.force = true; location.hash = '#/autowave'; setTimeout(run, 60); };
   function boot(){ var n = 0, iv = setInterval(function(){ if(build() || ++n > 80) clearInterval(iv); }, 400); }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 1400); });
   else setTimeout(boot, 1400);
