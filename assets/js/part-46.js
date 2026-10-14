@@ -377,7 +377,7 @@
      init(), below), so the only thing a password can still do is unlock
      Workbench. เอาค่า Ciphertext, Salt, IV ของ Full Access (รหัส 50 ช่อง)
      มาใส่ตรงนี้ (สร้างด้วย ADMIN_GENERATOR.html) */
-  var VAULT_FULL = {"v":4,"s1":"mkdQcgClsnvkGyoBGGivQg==","s2":"9YocjP94X+KXzaDgEjSuGg==","s3":"hy15gzrBLmYFR2+cvfPPCA==","s4":"ky5slYhVrHQoXnN7itBYcg==","gates":[{"iv":"8ua/11yPR3cWSJKJEBQVhQ==","ct":"/RpQQax3SbFjk3XfRXL5DP9gJ6rQqkNt/72nKLY8b6Q="},{"iv":"JBpkOqWqQUGoNpvaBlMZhg==","ct":"nVsIciHOqQOZeoRiBpVa2MEpCDeP3npI3gG5YjD/z0M="},{"iv":"3pbyESaKph58+1raRCifUg==","ct":"N3RWhWpuNS9II+Knxy22n4sZfy75Zvpz1KFe3QMFSlk="},{"iv":"UBs3G4dOB8mAFjSRlyDRUQ==","ct":"5q+pIWVpnm52L5GAMp/4Q1L51D7ZlV4Gvypoei8dShA="},{"iv":"jqk5KZTuminXpYENqvBGPA==","ct":"s84YTT4n78TgNAZDV8fEb4sJNGEfYXZXICBRoQzik78="}],"ctrIv":"YtBFuzHAlM73O0uKkyqL2w==","iv":"ZqvmBtUJW2peCcUC","ct":"Yw9ZQfcOwU9A9jmBxghZgtyj2k5flNijg9Cnjungi45aNULy9mmGCiDf8V7jF5MhqyhdEK490/I="};
+  var VAULT_FULL = {"v":6,"s1":"cseJWXwoXYhyvORR4JeXAw==","s2":"mL9VsCYq+aki3yac0Kuwsg==","s3":"Sanlhhy5bVOoG4C+9+2H9w==","s4":"D94o5hYySd7iqzMIVz5olA==","sched":"ZoUxvAGWFaeXfB7R8cjsBwB0StkhxSQ9UinYtHwEuQU=","gates":[{"iv":"dyzoKH9VNB7N+duuAMreow==","ct":"mq14pwi3lI5+uA8lh+/6UJxMRlVzB9lg02gMyEEX18A="},{"iv":"psrFdJMRQHr2cH6g/eDHjg==","ct":"UOnsoXYNDvXwEzb8WsysYPYZR+JpauNyg9N7PyPAPjg="},{"iv":"yF2fBzH5/HHv9V5KeQImHQ==","ct":"LLC+atdXSyRTwGj2DvOyrxS5+uq/4mr6Lsb0EwyDJEs="},{"iv":"PgYsAPHDgXVV36hRnVNf3g==","ct":"vHhvOaACobcnyhcK8LS0UkshV6cq/+YxlMvGewuqj84="},{"iv":"5f/vfPViiyPmrsoryUfwjQ==","ct":"ycYlZDk8UaYm9P2nihd2ehQrUTVSXbdfx6Ru7YnKi5I="},{"iv":"q5LIrV2QUSNUWJrKZhXpiw==","ct":"mmCKQfynMyJRe9tbVgtYy8jvi1Laskcgap1RA2byxDI="},{"iv":"UZhjc7QbPvq1bR8GPxKECA==","ct":"OgDvMs6WYm/ByPs5kxEucheCfcX9SIJswwfBB79jKMU="},{"iv":"llSa2nZun9o9532sZNz4RA==","ct":"JGZk5rJQ8qo7w5OM/Vn/GITXh/WUR3Y8+3yhHrHNGaI="},{"iv":"KCjQY8slkCnKNRLUYrjNog==","ct":"3p/TmkPO6jJM6I1bOfFe/KdTFsvsN0ZzENb0+jlHayE="},{"iv":"r3yvXtAOMjnHGFTO239BwQ==","ct":"hmXvkh6HysJNPgetPyWeHcMOl5hK4+HZgbheTGBm6mI="},{"iv":"DvirWlEFJRWYNF4m1R3uNg==","ct":"4zGuozK6iPkzB98S0sldE+vfmvJqXb7JtUmXZFsx5X8="},{"iv":"YU0A9Qz1OLjOMSvdSmy1tw==","ct":"hXxSEdygIMrNgcc8D61fXwmfX/rR666k0N+DGQ/PunY="}],"ctrIv":"ieP8cEn5gA4cMIw57v6ApQ==","cbcIv":"qkD/J1S6Qwfngh2zPiY9Wg==","iv":"BQZjoydxJV1dUQIe","ct":"TPfJr/aIrTR+0bZkr5bCgBoWD9RZHFZshq2RlzOrMwN6C6Htsjo3R8rEzG/pIPJ9cGLjGSKySym2pOIL6TjETA==","seal":"0/mrYPhi8tw8w+drFuLh1II0vLOF8vp315rIw+mUPleDN67yCUlU9rQLe2+ERosu"};
 
   var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','controlgrid','printreport','journalNew','connectedusers','announcements','quietValue','adminnotes','gradebook','secmap','autowave','universe'];
   /* 'journal' (the list) and 'journalView' (a single post) are deliberately
@@ -476,7 +476,7 @@
     editorLoggedT:{en:'EDITOR',th:'EDITOR'},
     editorLoggedS:{en:'You have read-only Editor access.',th:'คุณมีสิทธิ์ EDITOR แบบอ่านอย่างเดียว'},
     fullT:{en:'ADMIN LOGIN',th:'ADMIN LOGIN'},
-    fullS:{en:'50 fields · 800 characters',th:'รหัสผ่าน 50 ช่อง · 800 ตัวอักษร'},
+    fullS:{en:'50 fields · import the .txt file or type them in',th:'รหัสผ่าน 50 ช่อง · นำเข้าไฟล์ .txt หรือพิมพ์เอง'},
     loggedT:{en:'ADMIN',th:'ADMIN'},
     loggedS:{en:'You are signed in.',th:'คุณเข้าสู่ระบบแล้ว'},
     logoutBtn:{en:'Log out',th:'ออกจากระบบ'},
@@ -524,6 +524,9 @@
     bulkHint:{en:'1 line = 1 field. Leading numbering like "01. " is stripped automatically.',
                th:'1 บรรทัด = 1 ช่อง ระบบตัดเลขนำหน้าเช่น "01. " ให้อัตโนมัติ'},
     bulkPh:{en:'Paste all 50 lines here',th:'วางรหัสทั้ง 50 บรรทัดตรงนี้'},
+    importTxt:{en:'📂 Import .txt file',th:'📂 นำเข้าไฟล์ .txt'},
+    importDone:{en:'Filled {n} / 50 fields from the file',th:'เติมจากไฟล์แล้ว {n} / 50 ช่อง'},
+    importBad:{en:'Could not read that file. Use the SPACEZ_ADMIN_CODES_....txt file from ADMIN_GENERATOR.',th:'อ่านไฟล์นี้ไม่ได้ ใช้ไฟล์ SPACEZ_ADMIN_CODES_....txt จาก ADMIN_GENERATOR'},
     step:[
       {en:'VAULT INTEGRITY',th:'ตรวจสอบตู้เซฟ'},
       {en:'PBKDF2-SHA512',th:'ยืดรหัสผ่าน 300,000 รอบ'},
@@ -819,6 +822,8 @@
             '<div class="cag-prog"><i id="cagAdvBar"></i></div>' +
             '<div class="cag-grid" id="cagAdvGrid"></div>' +
             '<div class="cag-tools">' +
+              '<button class="cag-tool" type="button" id="cagImportBtn" data-x="importTxt"></button>' +
+              '<input type="file" id="cagImportFile" accept=".txt,text/plain" hidden>' +
               '<button class="cag-tool" type="button" id="cagBulkBtn" data-x="bulk"></button>' +
               '<button class="cag-tool" type="button" id="cagMaskBtn" data-x="mask"></button>' +
               '<button class="cag-tool" type="button" id="cagClearBtn" data-x="clear"></button>' +
@@ -971,14 +976,46 @@
     });
     var bulkBox = gate.querySelector('#cagBulkBox');
     gate.querySelector('#cagBulkBtn').addEventListener('click', function(){ bulkBox.classList.toggle('show'); });
-    gate.querySelector('#cagSpreadBtn').addEventListener('click', function(){
-      var text = gate.querySelector('#cagBulkText').value;
+    /* Shared by the Bulk paste box and the .txt import. One numbered line per
+       field ("01. code") is read line by line first, so codes that contain
+       spaces survive; otherwise fall back to the run-together scan below. */
+    function spreadCodes(text){
+      var byIndex = {}, lineHits = 0;
+      String(text || '').split(/\r?\n/).forEach(function(ln){
+        var lm = /^\s*(\d{1,2})\s*[.)]\s?(.*?)\s*$/.exec(ln);
+        if(lm && lm[2]){ var q = parseInt(lm[1], 10); if(q >= 1 && q <= 50){ byIndex[q] = lm[2]; lineHits++; } }
+      });
+      if(lineHits < 2){ byIndex = {}; spreadLegacy(String(text || ''), byIndex); }
+      var n = 0;
+      Object.keys(byIndex).forEach(function(k){
+        var idx = parseInt(k, 10) - 1;
+        if(idx >= 0 && idx < 50){ advInputs[idx].value = byIndex[k]; advInputs[idx].classList.add('filled'); n++; }
+      });
+      updateAdvCount();
+      return n;
+    }
+    var importFile = gate.querySelector('#cagImportFile');
+    gate.querySelector('#cagImportBtn').addEventListener('click', function(){ importFile.value = ''; importFile.click(); });
+    importFile.addEventListener('change', function(){
+      var f = importFile.files && importFile.files[0], err = gate.querySelector('#cagErrAdv');
+      if(!f) return;
+      function say(t, ok){ err.textContent = t; err.classList.remove('hidden'); err.classList.toggle('cag-ok', !!ok); }
+      if(f.size > 200000){ importFile.value = ''; say(Tt(TXT.importBad)); return; }
+      var rd = new FileReader();
+      rd.onload = function(){
+        var n = spreadCodes(rd.result);
+        importFile.value = '';
+        say(n ? Tt(TXT.importDone).replace('{n}', n) : Tt(TXT.importBad), n > 0);
+      };
+      rd.onerror = function(){ importFile.value = ''; say(Tt(TXT.importBad)); };
+      rd.readAsText(f);
+    });
+    function spreadLegacy(text, byIndex){
       /* Numbered fragments can arrive as one per line OR run together on a
          single line/paragraph (common when pasted from voice-to-text notes),
          and can be out of order. So we scan the whole blob for "NN. frag" /
          "NN) frag" pairs and place each fragment straight into slot NN,
          instead of assuming line position == slot position. */
-      var byIndex = {};
       var re = /(?:^|\s)(\d{1,2})\s*[.)]\s*(\S+)/g, m;
       while((m = re.exec(text))){
         var n = parseInt(m[1], 10);
@@ -990,14 +1027,9 @@
         var toks = text.split(/\s+/).map(function(s){ return s.trim(); }).filter(Boolean);
         toks.forEach(function(t, i){ byIndex[i + 1] = t; });
       }
-      Object.keys(byIndex).forEach(function(k){
-        var idx = parseInt(k, 10) - 1;
-        if(idx >= 0 && idx < 50){
-          advInputs[idx].value = byIndex[k];
-          advInputs[idx].classList.add('filled');
-        }
-      });
-      updateAdvCount();
+    }
+    gate.querySelector('#cagSpreadBtn').addEventListener('click', function(){
+      spreadCodes(gate.querySelector('#cagBulkText').value);
     });
 
     btnAdv.addEventListener('click', tryFull);
@@ -1261,7 +1293,7 @@
         memberFbCta: TXT.memberFbCta, memberGoogleCta: TXT.memberGoogleCta,
         toFullLink: TXT.toFullLink, toMemberLink: TXT.toMemberLink,
         fullT: TXT.fullT, fullS: TXT.fullS,
-        bulk: TXT.bulk, mask: TXT.mask, clear: TXT.clear, spread: TXT.spread, bulkHint: TXT.bulkHint,
+        bulk: TXT.bulk, importTxt: TXT.importTxt, mask: TXT.mask, clear: TXT.clear, spread: TXT.spread, bulkHint: TXT.bulkHint,
         enterAdv: TXT.enter
       };
       if(typeof map[k] === 'string') el.textContent = map[k];
@@ -1276,7 +1308,7 @@
     attempts++;
     if(attempts >= 5) lockUntil = Date.now() + 30000;
   }
-  function showErr(el, msg){ el.textContent = msg; el.classList.remove('hidden'); }
+  function showErr(el, msg){ el.textContent = msg; el.classList.remove('hidden'); el.classList.remove('cag-ok'); }
   function clearErr(el){ el.classList.add('hidden'); }
 
   function finishUnlock(tier){
