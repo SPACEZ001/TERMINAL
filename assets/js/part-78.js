@@ -32,15 +32,21 @@
   var U = {
     eb:{ en:'Admin · ebook', th:'แอดมิน · อีบุ๊ก' },
     h:{ en:'Ebook registry', th:'ทะเบียนแจกอีบุ๊ก' },
-    lede:{ en:'Every copy is personal and traceable. Register the reader, make their PDF, upload it, and send them the private link: they must accept the terms before they can download.', th:'อีบุ๊กทุกเล่มเป็นฉบับเฉพาะคนและสืบย้อนได้ ลงทะเบียนผู้รับ สร้าง PDF ของเขา อัปโหลด แล้วส่งลิงก์ส่วนตัวให้ ผู้รับต้องกดยอมรับเงื่อนไขก่อนจึงจะดาวน์โหลดได้' },
+    lede:{ en:'Every copy is personal and traceable. Register the reader, send the private link, and once they have accepted the terms and typed their name, make their PDF and upload it.', th:'อีบุ๊กทุกเล่มเป็นฉบับเฉพาะคนและสืบย้อนได้ ลงทะเบียนผู้รับ ส่งลิงก์ส่วนตัวให้ พอผู้รับกดยอมรับเงื่อนไขและพิมพ์ชื่อแล้ว ค่อยสร้าง PDF และอัปโหลด' },
     tReg:{ en:'Registry', th:'ทะเบียน' }, tNew:{ en:'Give a new copy', th:'แจกเล่มใหม่' }, tFind:{ en:'Find the owner', th:'ตรวจหาเจ้าของ' },
     keyLede:{ en:'Enter the admin key to open the registry.', th:'ใส่รหัสแอดมินเพื่อเปิดทะเบียน' }, keyPh:{ en:'Admin key', th:'รหัสแอดมิน' }, open:{ en:'Open', th:'เปิด' },
     bad:{ en:'Wrong admin key.', th:'รหัสแอดมินไม่ถูกต้อง' }, net:{ en:'Could not reach the server. Has the new Worker been deployed?', th:'ติดต่อเซิร์ฟเวอร์ไม่ได้ ได้ deploy Worker ตัวใหม่แล้วหรือยัง' },
-    name:{ en:'Reader name (as on their ID)', th:'ชื่อผู้รับ (ตามบัตรประชาชน)' }, contact:{ en:'Contact (LINE / phone / email)', th:'ช่องทางติดต่อ (LINE / โทร / อีเมล)' },
+    name:{ en:'Reader name (a nickname or LINE ID is fine)', th:'ชื่อผู้รับ (ชื่อเล่นหรือไอดีไลน์ก็ได้)' }, contact:{ en:'Contact (LINE / phone / email)', th:'ช่องทางติดต่อ (LINE / โทร / อีเมล)' },
     note:{ en:'Note (course, payment, …)', th:'หมายเหตุ (คอร์ส การชำระเงิน ฯลฯ)' }, lang:{ en:'Ebook language', th:'ภาษาของอีบุ๊ก' },
     issue:{ en:'1 · Register this reader', th:'1 · ลงทะเบียนผู้รับ' }, needName:{ en:'Type the reader name first.', th:'กรุณาพิมพ์ชื่อผู้รับก่อน' },
-    s2:{ en:'2 · Make the PDF', th:'2 · สร้าง PDF' }, s2h:{ en:'In the print window choose "Save as PDF". The file name is already set.', th:'ในหน้าต่างพิมพ์ เลือก "บันทึกเป็น PDF" ชื่อไฟล์ตั้งไว้ให้แล้ว' },
-    s3:{ en:'3 · Upload that PDF', th:'3 · อัปโหลด PDF นั้น' }, s4:{ en:'4 · Send the private link', th:'4 · ส่งลิงก์ส่วนตัวให้ผู้รับ' },
+    flow:{ en:'Do not know the real name? Register a nickname or LINE ID, send the link first: the reader types their full name when accepting, and the PDF you make afterwards prints that name.', th:'ไม่รู้ชื่อจริง? ลงชื่อเล่นหรือไอดีไลน์ไว้ก่อน แล้วส่งลิงก์ให้ผู้รับก่อน ผู้รับจะกรอกชื่อจริงเองตอนกดยอมรับ จากนั้นค่อยกดสร้าง PDF เล่มจะพิมพ์ชื่อที่ผู้รับกรอก' },
+    willUse:{ en:'Name printed in the book', th:'ชื่อที่จะพิมพ์ในเล่ม' }, vLine:{ en:'dotted code line', th:'แถบจุดไข่ปลา' },
+    drop:{ en:'Drop a PDF or a picture here, or click to choose', th:'ลากไฟล์ PDF หรือรูปภาพมาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์' }, dropH:{ en:'PDF: hidden code, PDF title, identical-file check. Picture/screenshot: QR, dotted code line, background dots.', th:'PDF: ตรวจรหัสซ่อน ชื่อในไฟล์ และเทียบว่าเป็นไฟล์เดียวกันทุกไบต์ · รูป/ภาพหน้าจอ: อ่าน QR แถบจุดไข่ปลา และลายจุดพื้นหลัง' },
+    hashT:{ en:'SHA-256 of this file', th:'SHA-256 (ลายนิ้วมือ) ของไฟล์นี้' }, adv:{ en:'Advanced: read the dots by clicking', th:'ขั้นสูง: อ่านลายจุดด้วยการคลิกเอง' },
+    s2:{ en:'3 · Make the PDF', th:'3 · สร้าง PDF' }, s2h:{ en:'Use Google Chrome. In the print window choose "Save as PDF". The file name is already set.', th:'ใช้ Google Chrome ในหน้าต่างพิมพ์ เลือก "บันทึกเป็น PDF" ชื่อไฟล์ตั้งไว้ให้แล้ว' },
+    s3:{ en:'4 · Upload that PDF', th:'4 · อัปโหลด PDF นั้น' }, s3h:{ en:'The reader downloads it from the same link. Nothing else to send.', th:'ผู้รับดาวน์โหลดได้จากลิงก์เดิม ไม่ต้องส่งอะไรเพิ่ม' },
+    s4:{ en:'2 · Send the private link', th:'2 · ส่งลิงก์ส่วนตัวให้ผู้รับ' }, s4h:{ en:'The reader opens it, reads the terms and types their full name. Press Refresh to see when they have done it.', th:'ผู้รับเปิดลิงก์ อ่านเงื่อนไข แล้วพิมพ์ชื่อ-นามสกุลจริงเอง กด "รีเฟรช" เพื่อดูว่ากดยอมรับแล้วหรือยัง' },
+    notYet:{ en:'Not accepted yet: the book will print the registered name. Better to wait until the reader has accepted.', th:'ผู้รับยังไม่ได้กดยอมรับ ถ้าสร้างตอนนี้เล่มจะพิมพ์ชื่อที่ลงทะเบียนไว้ แนะนำให้รอผู้รับกดยอมรับก่อน' },
     make:{ en:'Make PDF', th:'สร้าง PDF' }, upload:{ en:'Upload PDF', th:'อัปโหลด PDF' }, copyLink:{ en:'Copy link', th:'คัดลอกลิงก์' }, line:{ en:'Send via LINE', th:'ส่งทาง LINE' },
     copied:{ en:'Copied', th:'คัดลอกแล้ว' }, uploading:{ en:'Uploading…', th:'กำลังอัปโหลด…' }, uploaded:{ en:'Uploaded', th:'อัปโหลดแล้ว' },
     building:{ en:'Building the book…', th:'กำลังประกอบเล่ม…' }, noContent:{ en:'Lesson content not found. Run CLASSROOM_CONTENT_UPLOADER first.', th:'ไม่พบเนื้อหาบทเรียน กรุณารัน CLASSROOM_CONTENT_UPLOADER ก่อน' },
@@ -49,8 +55,8 @@
     revoke:{ en:'Revoke', th:'ยกเลิกสิทธิ์' }, unrevoke:{ en:'Restore', th:'คืนสิทธิ์' }, del:{ en:'Delete', th:'ลบ' }, delQ:{ en:'Delete this record and its PDF? This cannot be undone.', th:'ลบรายการนี้และไฟล์ PDF? ย้อนกลับไม่ได้' },
     evidence:{ en:'Evidence sheet', th:'เอกสารหลักฐาน' }, export:{ en:'Download registry (JSON + CSV)', th:'ดาวน์โหลดทะเบียน (JSON + CSV)' }, reload:{ en:'Refresh', th:'รีเฟรช' },
     empty:{ en:'No copies given out yet.', th:'ยังไม่มีการแจก' }, serial:{ en:'Serial', th:'ลำดับ' }, given:{ en:'Given', th:'แจกเมื่อ' },
-    fCode:{ en:'A · Code or serial', th:'A · รหัสเล่มหรือเลขลำดับ' }, fCodeH:{ en:'Type EB-XXXXXX, or the serial number.', th:'พิมพ์ EB-XXXXXX หรือเลขลำดับ' },
-    fText:{ en:'B · Text you found (copied from the leak)', th:'B · ข้อความที่เจอ (คัดลอกจากที่หลุด)' }, fTextH:{ en:'Copy any paragraph from the leaked file (or from a post that pasted it) and paste it here. Every paragraph carries the copy code in invisible text, so one paragraph is enough. If someone re-typed the text, paste as much as you can: the wording fingerprint needs several paragraphs.', th:'คัดลอกย่อหน้าใดก็ได้จากไฟล์ที่หลุด (หรือจากโพสต์ที่คนเอาไปแปะ) มาวางที่นี่ ทุกย่อหน้าซ่อนเลขที่ฉบับเป็นตัวอักษรล่องหนไว้ ย่อหน้าเดียวก็พอ ถ้าคนพิมพ์เนื้อหาใหม่เอง ให้วางมาให้ยาวที่สุด ระบบจะเทียบถ้อยคำเฉพาะของแต่ละเล่ม (ต้องหลายย่อหน้า)' },
+    fCode:{ en:'Code or serial', th:'รหัสเล่มหรือเลขลำดับ' }, fFile:{ en:'B · File or picture you found', th:'B · ไฟล์หรือรูปที่เจอ' }, fCodeH:{ en:'Type EB-XXXXXX, or the serial number.', th:'พิมพ์ EB-XXXXXX หรือเลขลำดับ' },
+    fText:{ en:'Text you found', th:'ข้อความที่เจอ' }, fTextH:{ en:'Paste a paragraph copied from the leak, or text an AI/OCR read off a screenshot (the dotted line ●•●• at the top of each page counts). Re-typed text: paste as much as you can for the wording fingerprint.', th:'วางย่อหน้าที่คัดลอกจากไฟล์ที่หลุด หรือข้อความที่ให้ AI/OCR อ่านจากภาพหน้าจอ (แถบจุด ●•●• หัวกระดาษก็อ่านได้) ถ้าคนพิมพ์ใหม่เอง วางมาให้ยาวที่สุด ระบบจะเทียบถ้อยคำเฉพาะของแต่ละเล่ม' },
     fPdf:{ en:'C · PDF file you found', th:'C · ไฟล์ PDF ที่เจอ' }, fImg:{ en:'D · Picture / screenshot you found', th:'D · รูปหรือภาพหน้าจอที่เจอ' },
     fImgH:{ en:'Upload any picture or screenshot of a page. The system first looks for the QR (copyright page), then reads the faint dot pattern that is printed in the background of every page. A sharp screenshot of any page works; a heavily compressed photo may not.', th:'อัปโหลดรูปหรือภาพหน้าจอของหน้าไหนก็ได้ ระบบจะหา QR ก่อน (อยู่ในหน้าลิขสิทธิ์) ถ้าไม่มีจะอ่านลายจุดจาง ๆ ที่พิมพ์อยู่ในพื้นหลังทุกหน้าให้เอง ภาพหน้าจอที่ชัดใช้ได้ทุกหน้า แต่รูปที่ถูกบีบอัดหนักหรือถ่ายจากจออาจอ่านไม่ได้' },
     fPdfH:{ en:'Upload the leaked PDF. Checks the code in the text, the PDF title and whether it is the exact same file you uploaded (SHA-256).', th:'อัปโหลดไฟล์ PDF ที่หลุด ระบบตรวจรหัสในตัวอักษร ชื่อในไฟล์ และเทียบว่าเป็นไฟล์เดียวกับที่คุณอัปโหลดไปหรือไม่ (SHA-256)' },
@@ -159,6 +165,19 @@
   /* dot pattern: 16-bit serial + CRC-8, twice = 48 data cells in an 8x6 grid
      inside a 10x8 tile; corner cells hold the markers (top-left is double) */
   function crc8(v){ var c = 0, bytes = [(v >> 8) & 255, v & 255]; bytes.forEach(function(b){ c ^= b; for(var i = 0; i < 8; i++) c = (c & 128) ? ((c << 1) ^ 7) & 255 : (c << 1) & 255; }); return c; }
+  /* dotted code line printed in the page header: start ●●• + 24 bits (● = 1, • = 0) + end •●● */
+  function dotLine(serial){ return '●●•' + dotBits(serial).slice(0, 24).map(function(b){ return b ? '●' : '•'; }).join('') + '•●●'; }
+  function decodeLineText(text){
+    var out = [], re = /[●⬤⚫•·∙⦁◦○]{28,34}/g, m;
+    while((m = re.exec(text))){
+      var b = m[0].split('').map(function(ch){ return /[●⬤⚫]/.test(ch) ? 1 : 0; }).join('');
+      for(var o = 0; o + 30 <= b.length; o++){
+        var w = b.slice(o, o + 30); if(w.slice(0, 3) !== '110' || w.slice(27) !== '011') continue;
+        var se = parseInt(w.slice(3, 19), 2), cr = parseInt(w.slice(19, 27), 2); if(se > 0 && crc8(se) === cr) out.push(se);
+      }
+    }
+    return out;
+  }
   function dotBits(serial){ var s = ('0000000000000000' + serial.toString(2)).slice(-16) + ('00000000' + crc8(serial).toString(2)).slice(-8); return (s + s).split('').map(Number); }
   var DOT = { cols:10, rows:8, step:7 };
   function dotTileSVG(serial){
@@ -255,7 +274,7 @@
     /* author and recipient */
     x.fillStyle = '#fff'; x.font = '800 ' + Math.round(7 * mm) + 'px ' + FT; x.fillText(TX.by, L, H - 26 * mm);
     var bg2 = x.createLinearGradient(L, 0, L + 50 * mm, 0); bg2.addColorStop(0, '#22c3f2'); bg2.addColorStop(1, '#21c07a'); x.fillStyle = bg2; x.fillRect(L, H - 21 * mm, 50 * mm, 1.3 * mm);
-    x.fillStyle = 'rgba(255,255,255,.78)'; x.font = '500 ' + Math.round(4.4 * mm) + 'px ' + FT; x.fillText(TX.forWho + ' ' + rec.name + '  ·  ' + rec.id, L, H - 12 * mm);
+    x.fillStyle = 'rgba(255,255,255,.78)'; x.font = '500 ' + Math.round(4.4 * mm) + 'px ' + FT; x.fillText(TX.forWho + ' ' + printName(rec) + '  ·  ' + rec.id, L, H - 12 * mm);
     return c.toDataURL('image/jpeg', 0.92);
   }
   function dotPatternSVG(serial){
@@ -265,6 +284,7 @@
   function fetchContent(){
     return fetch(WORKER_BASE + '/api/classroom/content', { headers:{ 'X-Admin-Key':key() } }).then(function(r){ if(!r.ok) throw new Error('st' + r.status); return r.json(); }).then(function(d){ return d.content || {}; });
   }
+  function printName(r){ return (r.accepted && r.accepted.typedName) || r.name; }
   function buildBook(rec, content){
     var lang = rec.lang === 'en' ? 'en' : 'th', TX = BOOK[lang], B = window.__SPZ_EWV_BOOK;
     var tree = (B && B.tree) || [], title = function(id){ var t = B && B.title(id); return t ? (t[lang] || t.en) : id; };
@@ -276,7 +296,7 @@
       var j = 0; (item.children || []).forEach(function(ch){ if(ch === 'practice' || !(content[ch] && content[ch][lang])) return; j++; chapters.push([n + '.' + j, ch, 1]); });
     });
     if(!chapters.length) return null;
-    var nm = esc(rec.name), id = esc(rec.id), zw = zwEncode(rec.id), qrUrl = SITE + 'ebook.html#v=' + rec.id;
+    var nm = esc(printName(rec)), id = esc(rec.id), zw = zwEncode(rec.id), qrUrl = SITE + 'ebook.html#v=' + rec.id;
     var toc = chapters.map(function(c){ return '<div class="eb-toc-r l' + c[2] + '"><span class="tn">' + c[0] + '</span><span class="tt">' + esc(title(c[1])) + '</span></div>'; }).join('');
     var body = chapters.map(function(c, i){
       var html = String(content[c[1]][lang]).replace(/data-ewv-practice/g, 'data-x');
@@ -286,25 +306,34 @@
       /* the copy code, in invisible text, at the end of every paragraph and table cell:
          any paragraph copied out of the PDF carries it along */
       html = html.replace(/<\/(p|li|td)>/g, '<span class="eb-g2"> ' + id + '</span></$1>');
-      return '<section class="eb-chap' + (c[2] ? ' sub' : '') + '"><span class="eb-ghost">SPZ ' + id + ' #' + rec.serial + ' ' + nm + '</span><div class="eb-ch-head"><span class="eb-ch-n">' + esc(TX.ch) + ' ' + c[0] + '</span><h1>' + esc(title(c[1])) + '</h1></div>' +
-        '<div class="ewv-gl-shell"><div class="gl-detail-body">' + html + '</div></div></section>';
+      return '<div class="eb-chap' + (c[2] ? ' sub' : '') + '"><span class="eb-ghost">SPZ ' + id + ' #' + rec.serial + ' ' + nm + '</span><div class="eb-ch-head"><span class="eb-ch-n">' + esc(TX.ch) + ' ' + c[0] + '</span><h1>' + esc(title(c[1])) + '</h1></div>' +
+        '<div class="ewv-gl-shell"><div class="gl-detail-body">' + html + '</div></div></div>';
     }).join('');
     var terms = termsText(lang, rec.name, rec.title || 'Elliott Wave Classroom', rec.id).map(function(t, i){ return '<li>' + esc(t) + '</li>'; }).join('');
     /* background image (one tiny tile, repeated) keeps the PDF small; print-color-adjust:exact makes Chrome print it even with "background graphics" off */
     var dots = "url('data:image/svg+xml;utf8," + encodeURIComponent(dotTileSVG(rec.serial)) + "')";
     return '<div class="eb-dots" style="background-image:' + dots + '"></div>' +
-      '<div class="eb-foot">' + esc(TX.foot.replace('{n}', rec.name).replace('{id}', rec.id)) + '</div>' +
       '<div class="eb-cover"><img class="eb-cover-img" alt="" src="' + rec.__cover + '"></div>' +
       '<div class="eb-fw"><h2>' + esc(TX.fw) + '</h2>' + TX.fwbody.map(function(p){ return '<p>' + esc(p) + '</p>'; }).join('') + '<div class="sg">' + esc(TX.sign) + '</div></div>' +
       '<div class="eb-copy"><h2>' + esc(TX.copyH) + '</h2><p class="cpy">© 2569 / 2026 Noraset Boikaw · SPACEZ TERMINAL. All rights reserved. สงวนลิขสิทธิ์</p>' +
         '<div class="eb-lic"><div class="who"><span>' + esc(TX.forWho) + '</span><b>' + nm + '</b><span>' + esc(TX.copyNo) + '</span><b class="mono">' + id + '</b></div><ol>' + terms + '</ol></div>' +
         '<div class="eb-orn"><svg viewBox="0 0 300 120" class="orn"><g fill="none" stroke="#0a78c2" stroke-width="1.2" opacity=".55"><path d="M10 60 C60 10, 100 110, 150 60 S240 10, 290 60"/><path d="M10 60 C60 110, 100 10, 150 60 S240 110, 290 60"/><circle cx="150" cy="60" r="44"/><circle cx="150" cy="60" r="52" stroke-dasharray="2 4"/></g></svg>' +
-          '<div class="eb-qr">' + qrSVG(qrUrl) + '</div><span class="eb-qrcap">' + esc(TX.scan) + '</span></div></div>' +
+          '<div class="eb-qr">' + qrSVG(qrUrl) + '</div><span class="eb-qrcap">' + esc(TX.scan) + '</span></div>' +
+        '<p class="eb-verify">' + (lang === 'th' ? 'ตรวจสอบว่าเป็นฉบับที่ออกโดย SPACEZ TERMINAL จริง ได้ที่ ' : 'Check that this is a genuine SPACEZ TERMINAL copy at ') + 'spacez001.github.io/TERMINAL/ebook.html</p></div>' +
       '<div class="eb-tocp"><h2>' + esc(TX.toc) + '</h2>' + toc + '</div>' + body;
   }
-  var EB_CSS = '@page{size:A4;margin:16mm 15mm 18mm !important;}@page ebcover{size:A4;margin:0 !important;}' +
-    'body.spz-printing-ebook>*:not(#spzEbook){display:none!important;}' +
-    'html,body.spz-printing-ebook{background:#fff!important;}';
+  function cssStr(t){ return '"' + String(t).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'; }
+  /* running header/footer live in the page margins (Chrome page-margin boxes), so they never cover the text */
+  function ebPageCSS(rec, TX){
+    var f = 'font-family:"IBM Plex Mono","Noto Sans Thai",monospace;font-size:7.5pt;color:#8a92a0;', ft = 'font-family:"Noto Sans Thai","Inter",sans-serif;font-size:7.5pt;color:#8a92a0;';
+    return '@page{size:A4;margin:18mm 16mm 19mm !important;' +
+      '@top-left{content:' + cssStr('SPACEZ TERMINAL · ' + TX.title) + ';' + ft + 'vertical-align:bottom;padding-bottom:3mm;}' +
+      '@top-right{content:' + cssStr(dotLine(rec.serial)) + ';' + f + 'color:#b4bbc7;letter-spacing:.6pt;vertical-align:bottom;padding-bottom:3mm;}' +
+      '@bottom-left{content:' + cssStr(TX.foot.replace('{n}', printName(rec)).replace('{id}', rec.id)) + ';' + ft + 'vertical-align:top;padding-top:3mm;}' +
+      '@bottom-right{content:counter(page);' + f + 'vertical-align:top;padding-top:3mm;}}' +
+      '@page ebcover{size:A4;margin:0 !important;@top-left{content:none}@top-right{content:none}@bottom-left{content:none}@bottom-right{content:none}}' +
+      'body.spz-printing-ebook>*:not(#spzEbook){display:none!important;}html,body.spz-printing-ebook{background:#fff!important;}';
+  }
   function printBook(rec){
     if(!window.__SPZ_EWV_BOOK) return Promise.reject(new Error('nobook'));
     var lang = rec.lang === 'en' ? 'en' : 'th';
@@ -316,7 +345,7 @@
       var old = document.getElementById('spzEbook'); if(old) old.remove();
       var box = document.createElement('div'); box.id = 'spzEbook'; box.className = 'spz-ebook lang-' + rec.lang + (isSafari() ? ' safari' : ''); box.innerHTML = html;
       document.body.appendChild(box);
-      var stl = document.createElement('style'); stl.id = 'spzEbookPage'; stl.textContent = EB_CSS; document.body.appendChild(stl);
+      var stl = document.createElement('style'); stl.id = 'spzEbookPage'; stl.textContent = ebPageCSS(rec, BOOK[lang]); document.body.appendChild(stl);
       var prevTitle = document.title;
       document.title = 'SPZ-EB-' + rec.id.replace(/^EB-/, '') + '-' + safeName(rec.name);
       document.body.classList.add('spz-printing-ebook');
@@ -351,6 +380,9 @@
       var html = '<div class="ev2">' +
         '<div class="ev2-h"><div><div class="ev2-brand">SPACEZ TERMINAL</div><h1>' + W2('รายงานหลักฐานการแจกจ่ายเอกสารลิขสิทธิ์', 'Copyright document distribution evidence report') + '</h1></div>' +
           '<div class="ev2-no"><span>' + W2('เลขที่รายงาน', 'Report no.') + '</span><b>' + docNo + '</b><span>' + W2('จัดทำเมื่อ', 'Prepared') + '</span><b>' + esc(fmtDate(now)) + '</b></div></div>' +
+        '<table class="ev2-memo"><tr><th>' + W2('เรื่อง', 'Subject') + '</th><td>' + W2('หลักฐานการแจกจ่ายและการยอมรับเงื่อนไขการใช้งานอันมีลิขสิทธิ์ ฉบับเลขที่ ', 'Evidence of distribution and licence acceptance for copy ') + esc(r.id) + '</td></tr>' +
+          '<tr><th>' + W2('เจ้าของลิขสิทธิ์', 'Copyright owner') + '</th><td>' + W2('นรเศรษฐ์ บ่อแก้ว (SPACEZ TERMINAL)', 'Noraset Boikaw (SPACEZ TERMINAL)') + '</td></tr>' +
+          '<tr><th>' + W2('แหล่งข้อมูล', 'Source') + '</th><td>' + W2('ทะเบียนแจกอีบุ๊กของระบบ (บันทึกอัตโนมัติบนเซิร์ฟเวอร์ ณ เวลาที่เกิดเหตุการณ์)', 'The system ebook registry (recorded automatically on the server when each event happened)') + '</td></tr></table>' +
         '<div class="ev2-sum"><div><span>' + W2('งาน', 'Work') + '</span><b>' + esc(r.title || 'Elliott Wave Classroom') + '</b></div><div><span>' + W2('ผู้รับ', 'Recipient') + '</span><b>' + esc(r.name) + '</b></div>' +
           '<div><span>' + W2('เลขที่ฉบับ', 'Copy code') + '</span><b class="m">' + esc(r.id) + ' · #' + r.serial + '</b></div>' +
           '<div><span>' + W2('สถานะการยอมรับเงื่อนไข', 'Terms') + '</span><b class="' + (a ? 'ok' : 'bad') + '">' + (a ? W2('ยอมรับแล้ว ', 'Accepted ') + esc(fmtDate(a.at)) : W2('ยังไม่ได้ยอมรับ', 'Not accepted yet')) + '</b></div>' +
@@ -359,15 +391,16 @@
         '<h2>1 · ' + W2('ลำดับเหตุการณ์', 'Timeline') + '</h2><ol class="ev2-tl">' + tl.map(function(t){ return '<li><time>' + esc(fmtDate(t[0])) + '</time><span>' + t[1] + '</span></li>'; }).join('') + '</ol>' +
         '<h2>2 · ' + W2('ข้อมูลผู้รับและการยอมรับเงื่อนไข', 'Recipient and acceptance') + '</h2><table class="ev-t">' +
           row(W2('ชื่อผู้รับ (ที่แอดมินบันทึก)', 'Recipient (as registered)'), esc(r.name)) + row(W2('ช่องทางติดต่อ', 'Contact'), esc(r.contact || '—')) + row(W2('หมายเหตุ', 'Note'), esc(r.note || '—')) +
-          row(W2('ชื่อที่ผู้รับพิมพ์ยืนยันเอง', 'Name typed by the recipient'), esc(a ? a.typedName : '—')) + row(W2('วันเวลาที่ยอมรับ', 'Accepted at'), esc(a ? fmtDate(a.at) : '—')) +
+          row(W2('ชื่อที่ผู้รับพิมพ์ยืนยันเอง', 'Name typed by the recipient'), esc(a ? a.typedName : '—')) + (a && a.typedContact ? row(W2('ช่องทางติดต่อที่ผู้รับกรอก', 'Contact typed by the recipient'), esc(a.typedContact)) : '') + row(W2('วันเวลาที่ยอมรับ', 'Accepted at'), esc(a ? fmtDate(a.at) : '—')) +
           row(W2('หมายเลข IP · ประเทศ', 'IP address · country'), esc(a ? (a.ip || '—') + ' · ' + (a.country || '—') : '—'), 'm') + row(W2('อุปกรณ์ / เบราว์เซอร์', 'Device / browser'), esc(a ? a.ua : '—'), 's') +
           row(W2('ฉบับของเงื่อนไข', 'Terms version'), esc(a ? a.termsVersion : TERMS_VERSION), 'm') +
           row(W2('รหัส SHA-256 ของข้อความเงื่อนไข', 'SHA-256 of the terms text'), esc(hash) + (a && a.termsHash ? (a.termsHash === hash ? ' <b class="ok">✓ ' + W2('ตรงกับที่ผู้รับเห็นตอนกดยอมรับ', 'matches what the recipient saw') + '</b>' : ' <b class="bad">≠ ' + esc(a.termsHash) + '</b>') : ''), 's m') + '</table>' +
         '<p class="ev2-note">' + W2('SHA-256 คือ "ลายนิ้วมือ" ของข้อความ ถ้าแก้แม้แต่ตัวอักษรเดียว รหัสจะเปลี่ยนทั้งหมด ระบบบันทึกรหัสของข้อความที่ผู้รับเห็นจริงตอนกดยอมรับ การที่รหัสตรงกันแสดงว่าเงื่อนไขในรายงานนี้คือข้อความเดียวกับที่ผู้รับยอมรับ ไม่ได้ถูกแก้ภายหลัง ใครก็ตรวจซ้ำได้ด้วยเครื่องมือ SHA-256 ทั่วไป', 'SHA-256 is a fingerprint of the text: changing a single character changes the whole code. The system stored the code of the exact text the recipient saw when accepting; a match shows the terms in this report are the ones accepted, unchanged. Anyone can re-check it with any SHA-256 tool.') + '</p>' +
-        '<h3>' + W2('ข้อความเงื่อนไขที่ผู้รับยอมรับ', 'Terms the recipient accepted') + '</h3><ol class="ev-terms">' + terms.map(function(t){ return '<li>' + esc(t) + '</li>'; }).join('') + '</ol>' +
+        '<div class="ev2-keep"><h3>' + W2('ข้อความเงื่อนไขที่ผู้รับยอมรับ', 'Terms the recipient accepted') + '</h3><ol class="ev-terms">' + terms.map(function(t){ return '<li>' + esc(t) + '</li>'; }).join('') + '</ol></div>' +
         '<h2>3 · ' + W2('ไฟล์ที่แจกและเครื่องหมายระบุตัวตนในเอกสาร', 'The file given out and its identifying marks') + '</h2><table class="ev-t">' +
           row(W2('ไฟล์ที่อัปโหลด', 'File uploaded'), esc(r.fileAt ? fmtDate(r.fileAt) + ' · ' + Math.round((r.fileSize || 0) / 1024) + ' KB' : '—')) + row(W2('SHA-256 ของไฟล์', 'SHA-256 of the file'), esc(r.fileSha256 || W2('— (ไฟล์อัปโหลดก่อนระบบบันทึกค่านี้)', '— (uploaded before this was recorded)')), 's m') +
-          row('1. ' + W2('ชื่อและเลขที่ฉบับ ท้ายทุกหน้า หน้าปก หน้าลิขสิทธิ์', 'Name and copy code on every page, the cover and the copyright page'), esc(r.name + ' · ' + r.id)) +
+          row('1. ' + W2('ชื่อและเลขที่ฉบับ ท้ายกระดาษทุกหน้า หน้าปก หน้าลิขสิทธิ์ (มองเห็นได้)', 'Name and copy code in the footer of every page, on the cover and the copyright page (visible)'), esc(printName(r) + ' · ' + r.id)) +
+          row('1A. ' + W2('แถบจุดไข่ปลา หัวกระดาษมุมขวาทุกหน้า (● = 1, • = 0 เข้ารหัสเลขลำดับ อ่านได้จากภาพหน้าจอ)', 'Dotted line in the top-right header of every page (● = 1, • = 0, encodes the serial; readable from a screenshot)'), esc(dotLine(r.serial)), 'm') +
           row('2. ' + W2('ลายจุดพื้นหลังทุกหน้า (เข้ารหัสเลขลำดับ)', 'Background dot pattern on every page (encodes the serial)'), '#' + r.serial, 'm') +
           row('3. ' + W2('QR ในลายตกแต่งหน้าลิขสิทธิ์', 'QR in the copyright-page ornament'), esc(SITE + 'ebook.html#v=' + r.id), 's m') +
           row('4. ' + W2('ตัวอักษรล่องหนท้ายทุกย่อหน้า + ชื่อในข้อมูลไฟล์', 'Invisible text after every paragraph + PDF title'), esc(r.id + ' · SPZ-EB-' + r.id.replace(/^EB-/, ''))) +
@@ -381,12 +414,12 @@
         '<h2>6 · ' + W2('วิธีตรวจสอบซ้ำโดยบุคคลที่สาม', 'How a third party can re-check this') + '</h2><ol class="ev-terms">' +
           '<li>' + W2('สแกน QR ในหน้าลิขสิทธิ์ของสำเนาที่พบ จะได้ลิงก์ที่มีเลขที่ฉบับ ', 'Scan the QR on the copyright page of the copy found; the link carries copy code ') + esc(r.id) + '</li>' +
           '<li>' + W2('คัดลอกย่อหน้าใดก็ได้จากสำเนาที่พบ ข้อความที่วางได้จะมีเลขที่ฉบับติดมา', 'Copy any paragraph from the copy found; the pasted text contains the copy code') + '</li>' +
-          '<li>' + W2('คำนวณ SHA-256 ของไฟล์ที่พบ แล้วเทียบกับค่าในข้อ 3', 'Compute the SHA-256 of the file found and compare it with section 3') + '</li></ol>' +
+          '<li>' + W2('คำนวณ SHA-256 ของไฟล์ที่พบ แล้วเทียบกับค่าในข้อ 3 หรือเปิดหน้าตรวจสอบสาธารณะ ', 'Compute the SHA-256 of the file found and compare it with section 3, or use the public check page ') + '<span class="m">' + esc(SITE + 'ebook.html') + '</span>' + W2(' ลากไฟล์ไปวาง ระบบจะบอกว่าตรงกับไฟล์ที่ออกให้หรือไม่ (ไม่แสดงชื่อผู้รับ)', ': drop the file there and it says whether it is the file that was issued (the recipient name is not shown)') + '</li></ol>' +
         '<div class="ev2-sign"><div><span></span><b>' + W2('ผู้จัดทำรายงาน', 'Prepared by') + '</b><em>' + W2('นรเศรษฐ์ บ่อแก้ว (เจ้าของลิขสิทธิ์)', 'Noraset Boikaw (copyright owner)') + '</em></div><div><span></span><b>' + W2('พยาน', 'Witness') + '</b><em>&nbsp;</em></div><div><span></span><b>' + W2('วันที่', 'Date') + '</b><em>&nbsp;</em></div></div>' +
         '<p class="ev2-foot">' + docNo + ' · SPACEZ TERMINAL · ' + W2('รายงานสร้างอัตโนมัติจากทะเบียนแจกอีบุ๊ก', 'generated from the ebook registry') + '</p></div>';
       var old = document.getElementById('spzEbook'); if(old) old.remove();
       var box = document.createElement('div'); box.id = 'spzEbook'; box.className = 'spz-ebook ev'; box.innerHTML = html; document.body.appendChild(box);
-      var stl = document.createElement('style'); stl.id = 'spzEbookPage'; stl.textContent = '@page{size:A4;margin:14mm 14mm 16mm !important;}body.spz-printing-ebook>*:not(#spzEbook){display:none!important;}html,body.spz-printing-ebook{background:#fff!important;}'; document.body.appendChild(stl);
+      var stl = document.createElement('style'); stl.id = 'spzEbookPage'; stl.textContent = '@page{size:A4;margin:16mm 16mm 18mm !important;@bottom-left{content:' + cssStr(docNo + ' · SPACEZ TERMINAL') + ';font:8pt "IBM Plex Mono",monospace;color:#8a92a0;vertical-align:top;padding-top:3mm;}@bottom-right{content:' + cssStr(W2('หน้า ', 'Page ')) + ' counter(page) " / " counter(pages);font:8pt "Noto Sans Thai","IBM Plex Mono",sans-serif;color:#8a92a0;vertical-align:top;padding-top:3mm;}}body.spz-printing-ebook>*:not(#spzEbook){display:none!important;}html,body.spz-printing-ebook{background:#fff!important;}'; document.body.appendChild(stl);
       var prevTitle = document.title; document.title = 'SPZ-EBEV-' + r.id.replace(/^EB-/, '') + '-' + safeName(r.name);
       document.body.classList.add('spz-printing-ebook');
       function done(){ document.body.classList.remove('spz-printing-ebook'); document.title = prevTitle; var s2 = document.getElementById('spzEbookPage'); if(s2) s2.remove(); var b = document.getElementById('spzEbook'); if(b) b.remove(); window.removeEventListener('afterprint', done); }
@@ -406,6 +439,7 @@
     (text.match(/EB-[A-Z0-9]{6}/g) || []).forEach(function(c){ add(byId(c), 'vCode'); });
     zwDecodeAll(text).forEach(function(c){ var m = /EB-[A-Z0-9]{6}/.exec(c); if(m) add(byId(m[0]), 'vZw'); });
     var m2 = /SPZ-EB-([A-Z0-9]{6})/.exec(text); if(m2) add(byId('EB-' + m2[1]), 'vMeta');
+    decodeLineText(text).forEach(function(se){ add(bySerial(se), 'vLine'); });
     var lang = /[฀-๿]/.test(text) ? 'th' : 'en', wb = wordingBits(text, lang), known = wb.filter(function(x){ return x != null; }).length;
     if(known >= 3){
       var scored = (S.list || []).filter(function(r){ return (r.lang || 'th') === lang; }).map(function(r){
@@ -454,12 +488,34 @@
      with a small companion to its right), size the grid from it, check the
      other three corners, read the 48 cells and keep only results whose two
      copies both pass the checksum and agree */
+  /* the dotted code line in the page header: a row of evenly spaced dots, big = 1, small = 0 */
+  function lineFromBlobs(all){
+    var srt = all.filter(function(b){ return b.w <= b.h * 1.6 && b.h <= b.w * 1.6; }).sort(function(a, b){ return a.y - b.y; }), rows = [], cur = [];
+    srt.forEach(function(b){ if(cur.length && b.y - cur[cur.length - 1].y > Math.max(1.5, b.h * 0.35)){ rows.push(cur); cur = []; } cur.push(b); }); if(cur.length) rows.push(cur);
+    var found = {}, best = null;
+    rows.forEach(function(row){
+      if(row.length < 28) return;
+      row.sort(function(a, b){ return a.x - b.x; });
+      for(var i = 0; i + 28 <= row.length; i++){
+        var step = row[i + 1].x - row[i].x; if(step < 2) continue;
+        var run = [row[i]], j = i + 1;
+        while(j < row.length && Math.abs(row[j].x - run[run.length - 1].x - step) < step * 0.22){ run.push(row[j]); j++; }
+        if(run.length < 28) continue;
+        var ns = run.map(function(b){ return b.n; }), lo = Math.min.apply(null, ns), hi = Math.max.apply(null, ns);
+        if(hi < lo * 1.5) continue;
+        var th = (lo + hi) / 2, str = run.map(function(b){ return b.n > th ? '●' : '•'; }).join('');
+        decodeLineText(str).forEach(function(se){ found[se] = (found[se] || 0) + 1; if(!best || found[se] > found[best]) best = se; });
+        i = j - 1;
+      }
+    });
+    return best;
+  }
   function autoDots(img){
     var big = Math.max(img.naturalWidth, img.naturalHeight), sc = Math.min(1, 3000 / big), W = Math.round(img.naturalWidth * sc), H = Math.round(img.naturalHeight * sc);
     var c = document.createElement('canvas'); c.width = W; c.height = H; var x = c.getContext('2d'); x.drawImage(img, 0, 0, W, H);
     var d = x.getImageData(0, 0, W, H).data, g = new Uint8Array(W * H), i;
     for(i = 0; i < W * H; i++) g[i] = (d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11) | 0;
-    var seen = new Uint8Array(W * H), blobs = [], stack = [];
+    var seen = new Uint8Array(W * H), blobs = [], all = [], stack = [];
     for(i = 0; i < W * H; i++){
       if(seen[i] || g[i] > 250) continue;
       var n = 0, sx = 0, sy = 0, mn = 255, x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1, big2 = false; stack.length = 0; stack.push(i); seen[i] = 1;
@@ -470,9 +526,12 @@
         var nb = [q - 1, q + 1, q - W, q + W];
         for(var k = 0; k < 4; k++){ var r = nb[k]; if(r < 0 || r >= W * H || seen[r] || g[r] > 250) continue; if((k === 0 && qx === 0) || (k === 1 && qx === W - 1)) continue; seen[r] = 1; stack.push(r); }
       }
-      if(big2 || mn < 140 || x1 - x0 > 40 || y1 - y0 > 40) continue;
+      if(big2 || x1 - x0 > 40 || y1 - y0 > 40) continue;
+      if(n >= 2) all.push({ x:sx / n, y:sy / n, w:x1 - x0 + 1, h:y1 - y0 + 1, n:n });
+      if(mn < 140) continue;
       blobs.push({ x:sx / n, y:sy / n, w:x1 - x0 + 1, h:y1 - y0 + 1, n:n, x0:x0 });
     }
+    var ln = lineFromBlobs(all); if(ln) return { serial:ln, votes:1, via:'vLine' };
     if(blobs.length < 8) return null;
     var cellG = 8, grid = {};
     blobs.forEach(function(b, k){ var key = Math.floor(b.x / cellG) + ',' + Math.floor(b.y / cellG); (grid[key] = grid[key] || []).push(k); });
@@ -591,22 +650,23 @@
       body = '<div class="eb-tools"><button type="button" class="eb-b" data-eb-act="reload">' + esc(T(U.reload)) + '</button><button type="button" class="eb-b" data-eb-act="export">' + esc(T(U.export)) + '</button></div>' +
         ((S.list || []).length ? (S.list || []).map(rowHTML).join('') : '<div class="eb-none">' + esc(T(U.empty)) + '</div>');
     } else if(S.tab === 'new'){
-      var r = S.last;
-      body = '<div class="eb-form"><label>' + esc(T(U.name)) + '<input type="text" data-eb="fName" maxlength="80"></label><label>' + esc(T(U.contact)) + '<input type="text" data-eb="fContact" maxlength="120"></label>' +
+      var r = S.last && (byId(S.last.id) || S.last);
+      body = '<p class="eb-flow">' + esc(T(U.flow)) + '</p><div class="eb-form"><label>' + esc(T(U.name)) + '<input type="text" data-eb="fName" maxlength="80"></label><label>' + esc(T(U.contact)) + '<input type="text" data-eb="fContact" maxlength="120"></label>' +
         '<label>' + esc(T(U.note)) + '<input type="text" data-eb="fNote" maxlength="300"></label><label>' + esc(T(U.lang)) + '<select data-eb="fLang"><option value="th">ไทย</option><option value="en">English</option></select></label>' +
         '<button type="button" class="eb-b pri" data-eb-act="issue">' + esc(T(U.issue)) + '</button><div class="eb-msg" data-eb-msg="new"></div></div>' +
-        (r ? '<div class="eb-steps"><div class="eb-card"><b>' + esc(r.name) + '</b><span class="mono">' + esc(r.id) + ' · #' + r.serial + '</span></div>' +
-          '<div class="eb-step"><h4>' + esc(T(U.s2)) + '</h4><p>' + esc(T(U.s2h)) + '</p><button type="button" class="eb-b pri" data-eb-act="make" data-id="' + esc(r.id) + '">' + esc(T(U.make)) + '</button></div>' +
-          '<div class="eb-step"><h4>' + esc(T(U.s3)) + '</h4><label class="eb-b pri">' + esc(T(U.upload)) + '<input type="file" accept="application/pdf" data-eb-up="' + esc(r.id) + '" hidden></label></div>' +
-          '<div class="eb-step"><h4>' + esc(T(U.s4)) + '</h4><input type="text" readonly value="' + esc(accLink(r)) + '" class="eb-link"><div class="eb-tools"><button type="button" class="eb-b" data-eb-act="copy" data-id="' + esc(r.id) + '">' + esc(T(U.copyLink)) + '</button><a class="eb-b" target="_blank" rel="noopener" href="https://line.me/R/msg/text/?' + encodeURIComponent(accLink(r)) + '">' + esc(T(U.line)) + '</a></div></div>' +
+        (r ? '<div class="eb-steps"><div class="eb-card"><b>' + esc(r.name) + '</b><span class="mono">' + esc(r.id) + ' · #' + r.serial + '</span>' + (r.accepted ? '<i class="eb-st ok">' + esc(T(U.accepted)) + '</i>' : '<i class="eb-st pd">' + esc(T(U.pending)) + '</i>') + '</div>' +
+          '<div class="eb-step"><h4>' + esc(T(U.s4)) + '</h4><p>' + esc(T(U.s4h)) + '</p><input type="text" readonly value="' + esc(accLink(r)) + '" class="eb-link"><div class="eb-tools"><button type="button" class="eb-b" data-eb-act="copy" data-id="' + esc(r.id) + '">' + esc(T(U.copyLink)) + '</button><a class="eb-b" target="_blank" rel="noopener" href="https://line.me/R/msg/text/?' + encodeURIComponent(accLink(r)) + '">' + esc(T(U.line)) + '</a><button type="button" class="eb-b" data-eb-act="reload">' + esc(T(U.reload)) + '</button></div></div>' +
+          '<div class="eb-step' + (r.accepted ? '' : ' dim') + '"><h4>' + esc(T(U.s2)) + '</h4><p>' + esc(T(U.s2h)) + '</p><p class="eb-will">' + esc(T(U.willUse)) + ': <b>' + esc(printName(r)) + '</b></p>' + (r.accepted ? '' : '<p class="eb-warn">' + esc(T(U.notYet)) + '</p>') + '<button type="button" class="eb-b pri" data-eb-act="make" data-id="' + esc(r.id) + '">' + esc(T(U.make)) + '</button></div>' +
+          '<div class="eb-step"><h4>' + esc(T(U.s3)) + '</h4><p>' + esc(T(U.s3h)) + '</p><label class="eb-b pri">' + esc(T(U.upload)) + '<input type="file" accept="application/pdf" data-eb-up="' + esc(r.id) + '" hidden></label></div>' +
           '<div class="eb-msg" data-eb-msg="' + esc(r.id) + '"></div></div>' : '');
     } else {
       body = '<div class="eb-find">' +
-        '<div class="eb-step"><h4>' + esc(T(U.fCode)) + '</h4><p>' + esc(T(U.fCodeH)) + '</p><div class="eb-tools"><input type="text" data-eb="qCode" placeholder="EB-XXXXXX"><button type="button" class="eb-b pri" data-eb-act="fCode">' + esc(T(U.check)) + '</button></div></div>' +
-        '<div class="eb-step"><h4>' + esc(T(U.fText)) + '</h4><p>' + esc(T(U.fTextH)) + '</p><textarea data-eb="qText" rows="5"></textarea><button type="button" class="eb-b pri" data-eb-act="fText">' + esc(T(U.check)) + '</button></div>' +
-        '<div class="eb-step"><h4>' + esc(T(U.fPdf)) + '</h4><p>' + esc(T(U.fPdfH)) + '</p><input type="file" accept="application/pdf" data-eb="qPdf"></div>' +
-        '<div class="eb-step"><h4>' + esc(T(U.fImg)) + '</h4><p>' + esc(T(U.fImgH)) + '</p><input type="file" accept="image/*" data-eb="qImg"><div data-eb="dots"></div></div>' +
-        '<div class="eb-out" data-eb="findOut"></div></div>';
+        '<label class="eb-drop" data-eb="drop"><span class="eb-drop-ic"><svg viewBox="0 0 48 48" width="46" height="46" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 30H11a8 8 0 0 1-1-15.9A12 12 0 0 1 33 12a9 9 0 0 1 4 17.4"/><path d="M24 22v18M17 29l7-7 7 7"/></svg></span>' +
+          '<b>' + esc(T(U.drop)) + '</b><span class="eb-drop-k"><i>PDF</i><i>PNG</i><i>JPG</i><i>' + esc(L() === 'th' ? 'ภาพหน้าจอ' : 'screenshot') + '</i></span><small>' + esc(T(U.dropH)) + '</small><input type="file" accept="application/pdf,.pdf,image/*" data-eb="qFile" hidden></label>' +
+        '<div class="eb-out" data-eb="findOut"></div><div class="eb-hash" data-eb="hash"></div>' +
+        '<div class="eb-find2"><div class="eb-step"><h4>' + esc(T(U.fCode)) + '</h4><p>' + esc(T(U.fCodeH)) + '</p><div class="eb-tools"><input type="text" data-eb="qCode" placeholder="EB-XXXXXX"><button type="button" class="eb-b pri" data-eb-act="fCode">' + esc(T(U.check)) + '</button></div></div>' +
+        '<div class="eb-step"><h4>' + esc(T(U.fText)) + '</h4><p>' + esc(T(U.fTextH)) + '</p><textarea data-eb="qText" rows="4"></textarea><button type="button" class="eb-b pri" data-eb-act="fText">' + esc(T(U.check)) + '</button></div></div>' +
+        '<details class="eb-adv" data-eb="adv"><summary>' + esc(T(U.adv)) + '</summary><div data-eb="dots"></div></details></div>';
     }
     main.innerHTML = tabs + body;
   }
@@ -618,6 +678,39 @@
     var cols = ['id', 'serial', 'name', 'contact', 'note', 'lang', 'createdAt', 'hasFile', 'revoked', 'acceptedAt', 'typedName', 'ip', 'country', 'downloads'];
     var csv = '﻿' + cols.join(',') + '\n' + L2.map(function(r){ var a = r.accepted || {}; return [r.id, r.serial, r.name, r.contact, r.note, r.lang, new Date(r.createdAt).toISOString(), r.hasFile, r.revoked, a.at ? new Date(a.at).toISOString() : '', a.typedName || '', a.ip || '', a.country || '', (r.downloads || []).length].map(function(v){ return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
     setTimeout(function(){ dl('SPZ-EBREG-' + stamp + '.csv', csv, 'text/csv'); }, 400);
+  }
+  function hexOf(buf){ return crypto.subtle.digest('SHA-256', buf).then(function(h){ return Array.prototype.map.call(new Uint8Array(h), function(v){ return ('0' + v.toString(16)).slice(-2); }).join(''); }); }
+  /* one drop zone for everything: PDF or picture, decided by the file itself */
+  function handleFile(f){
+    var out = sec.querySelector('[data-eb="findOut"]'), hb = sec.querySelector('[data-eb="hash"]');
+    out.innerHTML = '<div class="eb-none">' + esc(T(U.tool)) + '</div>'; hb.innerHTML = '';
+    f.arrayBuffer().then(function(buf){
+      var isPdf = /pdf/i.test(f.type) || /\.pdf$/i.test(f.name) || String.fromCharCode.apply(null, new Uint8Array(buf.slice(0, 5))) === '%PDF-';
+      return hexOf(buf).then(function(hex){
+        hb.innerHTML = '<span>' + esc(T(U.hashT)) + ' · ' + esc(f.name) + ' · ' + Math.round(f.size / 1024) + ' KB</span><code>' + hex + '</code>';
+        var same = (S.list || []).filter(function(r){ return r.fileSha256 && r.fileSha256 === hex; }).map(function(r){ return { r:r, via:'vHash' }; });
+        if(isPdf){
+          var ex = { kind:'pdf', name:f.name, size:f.size, sha:hex, at:Date.now() };
+          return pdfText(f).then(function(t){ showFind(same.concat(analyseText(t + ' ' + f.name)), '', ex); }).catch(function(){ showFind(same, 'PDF?', ex); });
+        }
+        var img = new Image(); img.onload = function(){
+          var th = document.createElement('canvas'), k = Math.min(1, 900 / Math.max(img.naturalWidth, img.naturalHeight)); th.width = Math.round(img.naturalWidth * k); th.height = Math.round(img.naturalHeight * k); th.getContext('2d').drawImage(img, 0, 0, th.width, th.height);
+          var ex = { kind:'image', name:f.name, sha:hex, img:th.toDataURL('image/jpeg', 0.85), at:Date.now() };
+          qrFromImage(img).catch(function(){ return null; }).then(function(data){
+            var m = data && /EB-[A-Z0-9]{6}/.exec(data), r = m && byId(m[0]);
+            if(r){ showFind(same.concat([{ r:r, via:'vQr' }]), '', ex); return; }
+            out.innerHTML = '<div class="eb-none">' + esc(T(U.autoDots)) + '</div>';
+            setTimeout(function(){
+              var res = null; try { res = autoDots(img); } catch(e){}
+              var r2 = res && bySerial(res.serial);
+              if(r2){ showFind(same.concat([{ r:r2, via:res.via || 'vDots', extra:res.via ? '' : res.votes + 'x' }]), '', ex); return; }
+              showFind(same, T(U.manual), ex); var ad = sec.querySelector('[data-eb="adv"]'); if(ad) ad.open = true; openDots(img);
+            }, 30);
+          });
+        };
+        img.src = URL.createObjectURL(f);
+      });
+    });
   }
   function wire(){
     sec.addEventListener('click', function(ev){
@@ -651,6 +744,9 @@
       if(act === 'fText'){ var tv = sec.querySelector('[data-eb="qText"]').value; showFind(analyseText(tv), '', { kind:'text', text:tv.slice(0, 1200), at:Date.now() }); }
       if(act === 'dotsReset' && S.dots){ S.dots.pts = []; S.dots.cv.getContext('2d').putImageData(S.dots.base, 0, 0); sec.querySelector('[data-eb="dotsN"]').textContent = '0 / 4'; }
     });
+    sec.addEventListener('dragover', function(ev){ var z = ev.target.closest && ev.target.closest('[data-eb="drop"]'); if(z){ ev.preventDefault(); z.classList.add('on'); } });
+    sec.addEventListener('dragleave', function(ev){ var z = ev.target.closest && ev.target.closest('[data-eb="drop"]'); if(z) z.classList.remove('on'); });
+    sec.addEventListener('drop', function(ev){ var z = ev.target.closest && ev.target.closest('[data-eb="drop"]'); if(!z) return; ev.preventDefault(); z.classList.remove('on'); var f = ev.dataTransfer.files && ev.dataTransfer.files[0]; if(f) handleFile(f); });
     sec.addEventListener('change', function(ev){
       var up = ev.target.getAttribute && ev.target.getAttribute('data-eb-up');
       if(up){
@@ -664,36 +760,7 @@
         }).catch(function(){ msg(up, T(U.net)); });
         return;
       }
-      if(ev.target.matches('[data-eb="qPdf"]')){
-        var pf = ev.target.files[0]; if(!pf) return;
-        sec.querySelector('[data-eb="findOut"]').innerHTML = '<div class="eb-none">' + esc(T(U.tool)) + '</div>';
-        pf.arrayBuffer().then(function(buf){ return crypto.subtle.digest('SHA-256', buf); }).then(function(h){
-          var hex = Array.prototype.map.call(new Uint8Array(h), function(v){ return ('0' + v.toString(16)).slice(-2); }).join('');
-          var same = (S.list || []).filter(function(r){ return r.fileSha256 && r.fileSha256 === hex; }).map(function(r){ return { r:r, via:'vHash' }; });
-          var ex = { kind:'pdf', name:pf.name, size:pf.size, sha:hex, at:Date.now() };
-          return pdfText(pf).then(function(t){ showFind(same.concat(analyseText(t + ' ' + pf.name)), '', ex); }).catch(function(){ showFind(same, 'PDF?', ex); });
-        });
-      }
-      if(ev.target.matches('[data-eb="qImg"]')){
-        var im = ev.target.files[0]; if(!im) return;
-        var img = new Image(); img.onload = function(){
-          var th = document.createElement('canvas'), k = Math.min(1, 900 / Math.max(img.naturalWidth, img.naturalHeight)); th.width = Math.round(img.naturalWidth * k); th.height = Math.round(img.naturalHeight * k); th.getContext('2d').drawImage(img, 0, 0, th.width, th.height);
-          var ex = { kind:'image', name:im.name, img:th.toDataURL('image/jpeg', 0.85), at:Date.now() };
-          var out = sec.querySelector('[data-eb="findOut"]'); out.innerHTML = '<div class="eb-none">' + esc(T(U.tool)) + '</div>';
-          qrFromImage(img).catch(function(){ return null; }).then(function(data){
-            var m = data && /EB-[A-Z0-9]{6}/.exec(data), r = m && byId(m[0]);
-            if(r){ showFind([{ r:r, via:'vQr' }], '', ex); return; }
-            out.innerHTML = '<div class="eb-none">' + esc(T(U.autoDots)) + '</div>';
-            setTimeout(function(){
-              var res = null; try { res = autoDots(img); } catch(e){}
-              var r2 = res && bySerial(res.serial);
-              if(r2){ showFind([{ r:r2, via:'vDots', extra:res.votes + 'x' }], '', ex); return; }
-              showFind([], T(U.manual), ex); openDots(img);
-            }, 30);
-          });
-        };
-        img.src = URL.createObjectURL(im);
-      }
+      if(ev.target.matches('[data-eb="qFile"]') && ev.target.files[0]) handleFile(ev.target.files[0]);
     });
   }
   /* a shortcut inside Print Report, next to the other report types */
