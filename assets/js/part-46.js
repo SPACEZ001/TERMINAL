@@ -379,7 +379,7 @@
      มาใส่ตรงนี้ (สร้างด้วย ADMIN_GENERATOR.html) */
   var VAULT_FULL = {"v":6,"s1":"cseJWXwoXYhyvORR4JeXAw==","s2":"mL9VsCYq+aki3yac0Kuwsg==","s3":"Sanlhhy5bVOoG4C+9+2H9w==","s4":"D94o5hYySd7iqzMIVz5olA==","sched":"ZoUxvAGWFaeXfB7R8cjsBwB0StkhxSQ9UinYtHwEuQU=","gates":[{"iv":"dyzoKH9VNB7N+duuAMreow==","ct":"mq14pwi3lI5+uA8lh+/6UJxMRlVzB9lg02gMyEEX18A="},{"iv":"psrFdJMRQHr2cH6g/eDHjg==","ct":"UOnsoXYNDvXwEzb8WsysYPYZR+JpauNyg9N7PyPAPjg="},{"iv":"yF2fBzH5/HHv9V5KeQImHQ==","ct":"LLC+atdXSyRTwGj2DvOyrxS5+uq/4mr6Lsb0EwyDJEs="},{"iv":"PgYsAPHDgXVV36hRnVNf3g==","ct":"vHhvOaACobcnyhcK8LS0UkshV6cq/+YxlMvGewuqj84="},{"iv":"5f/vfPViiyPmrsoryUfwjQ==","ct":"ycYlZDk8UaYm9P2nihd2ehQrUTVSXbdfx6Ru7YnKi5I="},{"iv":"q5LIrV2QUSNUWJrKZhXpiw==","ct":"mmCKQfynMyJRe9tbVgtYy8jvi1Laskcgap1RA2byxDI="},{"iv":"UZhjc7QbPvq1bR8GPxKECA==","ct":"OgDvMs6WYm/ByPs5kxEucheCfcX9SIJswwfBB79jKMU="},{"iv":"llSa2nZun9o9532sZNz4RA==","ct":"JGZk5rJQ8qo7w5OM/Vn/GITXh/WUR3Y8+3yhHrHNGaI="},{"iv":"KCjQY8slkCnKNRLUYrjNog==","ct":"3p/TmkPO6jJM6I1bOfFe/KdTFsvsN0ZzENb0+jlHayE="},{"iv":"r3yvXtAOMjnHGFTO239BwQ==","ct":"hmXvkh6HysJNPgetPyWeHcMOl5hK4+HZgbheTGBm6mI="},{"iv":"DvirWlEFJRWYNF4m1R3uNg==","ct":"4zGuozK6iPkzB98S0sldE+vfmvJqXb7JtUmXZFsx5X8="},{"iv":"YU0A9Qz1OLjOMSvdSmy1tw==","ct":"hXxSEdygIMrNgcc8D61fXwmfX/rR666k0N+DGQ/PunY="}],"ctrIv":"ieP8cEn5gA4cMIw57v6ApQ==","cbcIv":"qkD/J1S6Qwfngh2zPiY9Wg==","iv":"BQZjoydxJV1dUQIe","ct":"TPfJr/aIrTR+0bZkr5bCgBoWD9RZHFZshq2RlzOrMwN6C6Htsjo3R8rEzG/pIPJ9cGLjGSKySym2pOIL6TjETA==","seal":"0/mrYPhi8tw8w+drFuLh1II0vLOF8vp315rIw+mUPleDN67yCUlU9rQLe2+ERosu"};
 
-  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','controlgrid','printreport','journalNew','connectedusers','announcements','quietValue','adminnotes','gradebook','secmap','autowave','universe'];
+  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','controlgrid','printreport','journalNew','connectedusers','announcements','quietValue','adminnotes','gradebook','secmap','autowave','universe','ebookreg'];
   /* 'journal' (the list) and 'journalView' (a single post) are deliberately
      NOT in this list -- anyone can open them. The paywall for those two
      lives inside the module itself instead: the list/titles always render,
@@ -507,6 +507,7 @@
     /* Secret Notes: admin-only encrypted notebook (part-66.js). */
     adminNotes:{en:'Notes',th:'โน้ต'},
     adminGradebook:{en:'Gradebook',th:'สมุดคะแนน'},
+    adminEbook:{en:'Ebook registry',th:'ทะเบียนแจกอีบุ๊ก'},
     adminSecMap:{en:'Security map',th:'แผนผังความปลอดภัย'},
     /* Round U (#218): the admin-shortcut grid grew to 9 flat buttons over
        several rounds with no structure -- grouping them under three small
@@ -721,6 +722,10 @@
                   '<button class="cag-admin-link" type="button" id="cagBtnGradebook">' +
                     '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12a3 3 0 013 3v13H7a3 3 0 01-3-3V4z"/><path d="M4 17a3 3 0 013-3h12"/><path d="M8 8h7"/><path d="M8 11h4"/></svg>' +
                     '<span data-x="adminGradebook"></span>' +
+                  '</button>' +
+                  '<button class="cag-admin-link" type="button" id="cagBtnEbook">' +
+                    '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h9l5 5v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/><path d="M14 3v5h5"/><circle cx="12" cy="14" r="2.5"/><path d="M12 11.5V10M12 18v-1.5M9.5 14H8M16 14h-1.5"/></svg>' +
+                    '<span data-x="adminEbook"></span>' +
                   '</button>' +
                   '<button class="cag-admin-link" type="button" id="cagBtnSecMap">' +
                     '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5l8-3z"/><path d="M9 12l2 2 4-4"/></svg>' +
@@ -965,6 +970,7 @@
     gate.querySelector('#cagBtnNotes').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/adminnotes'; });
     gate.querySelector('#cagBtnGradebook').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/gradebook'; });
     gate.querySelector('#cagBtnSecMap').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/secmap'; });
+    gate.querySelector('#cagBtnEbook').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/ebookreg'; });
 
     gate.querySelector('#cagMaskBtn').addEventListener('click', function(){
       var show = advInputs[0] && advInputs[0].type === 'password';
@@ -1176,7 +1182,7 @@
     var adminLinks = gate.querySelector('#cagAdminLinks');
     if(adminLinks){
       adminLinks.classList.toggle('hidden', currentTier !== 'full' && currentTier !== 'editor');
-      ['#cagBtnAddAnalysis','#cagBtnAnnouncements','#cagBtnConnectedUsers','#cagBtnCompareDownload','#cagBtnNotes','#cagBtnGradebook','#cagBtnSecMap','#cagBtnPrintReport'].forEach(function(sel){
+      ['#cagBtnAddAnalysis','#cagBtnAnnouncements','#cagBtnConnectedUsers','#cagBtnCompareDownload','#cagBtnNotes','#cagBtnGradebook','#cagBtnSecMap','#cagBtnPrintReport','#cagBtnEbook'].forEach(function(sel){
         var b = adminLinks.querySelector(sel); if(b) b.classList.toggle('hidden', currentTier === 'editor');
       });
     }
@@ -1279,7 +1285,7 @@
         adminCompareDownload: TXT.adminCompareDownload, adminConnectedUsers: TXT.adminConnectedUsers,
         adminAnnouncements: TXT.adminAnnouncements,
         adminPro: TXT.adminPro, adminBriefing: TXT.adminBriefing, adminQuietValue: TXT.adminQuietValue,
-        adminQrCode: TXT.adminQrCode, adminElliott: TXT.adminElliott, adminArena: TXT.adminArena, adminNotes: TXT.adminNotes, adminGradebook: TXT.adminGradebook, adminSecMap: TXT.adminSecMap,
+        adminQrCode: TXT.adminQrCode, adminElliott: TXT.adminElliott, adminArena: TXT.adminArena, adminNotes: TXT.adminNotes, adminGradebook: TXT.adminGradebook, adminEbook: TXT.adminEbook, adminSecMap: TXT.adminSecMap,
         adminGroupPublish: TXT.adminGroupPublish, adminGroupReports: TXT.adminGroupReports, adminGroupTools: TXT.adminGroupTools,
         tabMember: TXT.tabMember, tabFull: TXT.tabFull, tabLine: TXT.tabLine, tabTg: TXT.tabTg, tabEditor: TXT.tabEditor,
         editorT: TXT.editorT, editorS: TXT.editorS, editorNote: TXT.editorNote, editorSubmit: TXT.editorSubmit,
@@ -1418,7 +1424,7 @@
      `window.__SPZ_TIER() !== 'full'` check (see part-50/51/57/63) -- which
      'editor' always fails, same as 'member' or 'basic' -- so Editor lands
      on the same "Admins only." placeholder a logged-out visitor would. */
-  var ADMIN_ONLY_ROUTES = ['journalNew','connectedusers','announcements','gradebook','secmap','adminnotes','printreport'];
+  var ADMIN_ONLY_ROUTES = ['journalNew','connectedusers','announcements','gradebook','secmap','adminnotes','printreport','ebookreg'];
   var EDITOR_ROUTES = LOCKED_ROUTES.filter(function(id){ return ADMIN_ONLY_ROUTES.indexOf(id) === -1; });
   /* A LINE-linked visitor gets the same MEMBER_ROUTES access as a Member-code
      login, without also having to paste that code in -- a stand-in for a
