@@ -30,6 +30,12 @@
     lgDn:{ en:'falling', th:'ลง' }, lgUp:{ en:'rising', th:'ขึ้น' }, lgSz:{ en:'bigger star = bigger company', th:'ดาวใหญ่ = บริษัทใหญ่' },
     bh:{ en:'Black hole · the market core', th:'หลุมดำ · ใจกลางตลาด' },
     opts:{ en:'Options', th:'ตัวเลือก' },
+    zoomIn:{ en:'Zoom in ⤢', th:'ซูมเข้า ⤢' }, back:{ en:'← Back to the universe', th:'← กลับสู่จักรวาล' }, dbl:{ en:'Double-click a star to fly to it', th:'ดับเบิลคลิกดาวเพื่อบินเข้าไปดู' },
+    agoNow:{ en:'now', th:'ล่าสุด' }, dAgo:{ en:'trading days ago', th:'วันทำการก่อน' }, chartT:{ en:'Price, last {n} trading days', th:'ราคา {n} วันทำการล่าสุด' },
+    ma50:{ en:'50-day avg', th:'เส้นเฉลี่ย 50 วัน' }, ma200:{ en:'200-day avg', th:'เส้นเฉลี่ย 200 วัน' }, hi52:{ en:'52w high', th:'สูงสุด 52 สัปดาห์' }, lo52:{ en:'52w low', th:'ต่ำสุด 52 สัปดาห์' },
+    fromLo:{ en:'From 52w low', th:'จากจุดต่ำสุด 52 สัปดาห์' }, fromHi:{ en:'From 52w high', th:'จากจุดสูงสุด 52 สัปดาห์' }, vsMa50:{ en:'vs 50-day avg', th:'เทียบเส้น 50 วัน' }, vsMa200:{ en:'vs 200-day avg', th:'เทียบเส้น 200 วัน' },
+    vol:{ en:'Volatility (20d)', th:'ความผันผวน 20 วัน' }, roa:{ en:'ROA', th:'ROA' }, roic:{ en:'ROIC', th:'ROIC' }, debt:{ en:'Total debt', th:'หนี้รวม' },
+    grpPrice:{ en:'Price & trend', th:'ราคาและแนวโน้ม' }, grpVal:{ en:'Valuation', th:'ความถูกแพง' }, grpQual:{ en:'Business quality', th:'คุณภาพธุรกิจ' },
     sub:{ en:'Stock universe', th:'จักรวาลหุ้น' }, day:{ en:'today', th:'วันนี้' }, r52:{ en:'52-week range', th:'ช่วงราคา 52 สัปดาห์' },
     roe:{ en:'ROE', th:'ROE' }, margin:{ en:'Margin', th:'อัตรากำไร' }, dy:{ en:'Div yield', th:'ปันผล' }, offHi:{ en:'from 52w high', th:'จากจุดสูงสุด 52 สัปดาห์' },
     above:{ en:'above 200-day avg', th:'เหนือเส้นเฉลี่ย 200 วัน' }, below:{ en:'below 200-day avg', th:'ใต้เส้นเฉลี่ย 200 วัน' },
@@ -38,7 +44,8 @@
   var SECT_TH = { 'Technology':'เทคโนโลยี', 'Financial Services':'การเงิน', 'Consumer Cyclical':'สินค้าฟุ่มเฟือย', 'Industrials':'อุตสาหกรรม', 'Healthcare':'สุขภาพ', 'Consumer Defensive':'สินค้าจำเป็น', 'Real Estate':'อสังหาฯ', 'Energy':'พลังงาน', 'Basic Materials':'วัตถุดิบ', 'Utilities':'สาธารณูปโภค', 'Communication Services':'สื่อสาร', 'Other':'อื่นๆ' };
 
   var REDUCED = false; try { REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){}
-  var st = { mk:'all', col:'m1', spin:!REDUCED, rx:-0.38, ry:0, dist:1, sel:null, hover:null, q:'', orbit:0 };
+  var st = { mk:'all', col:'m1', spin:!REDUCED, rx:-0.38, ry:0, dist:1, sel:null, hover:null, q:'', orbit:0, tx:0, ty:0, tz:0, ox:0, oy:0 };
+  var focus = null, camAnim = null, camWarp = 0, lastTap = { t:0, s:null };
   var sec = null, stage = null, cv = null, ctx = null, stars = [], galaxies = [], raf = 0, W = 0, H = 0, DPR = 1, sprites = {};
   var infall = [], jetSparks = [], flare = 0, nextFlare = 0, selT = 0, holoW = 300, holoH = 320, TRACES = null, holoSide = 1, holoAnchor = null;
   var sky = [], disk = [], planets = [], comets = [], streaks = [], flashes = [], nebula = null, tick = 0, warpT0 = 0, lastFrame = 0, fakeFs = false;
@@ -151,10 +158,11 @@
   var CY = 1, SY = 0, CX = 1, SX = 0, KS = 1;
   function camPrep(){ CY = Math.cos(st.ry); SY = Math.sin(st.ry); CX = Math.cos(st.rx); SX = Math.sin(st.rx); KS = Math.min(W, H) / 900; }
   function project(x, y, z){
+    x -= st.tx; y -= st.ty; z -= st.tz;
     var x1 = x * CY - z * SY, z1 = x * SY + z * CY;
     var y1 = y * CX - z1 * SX, z2 = y * SX + z1 * CX;
     var D = 1500 * st.dist, f = 900 / Math.max(60, D + z2);
-    return { x:W / 2 + x1 * f * KS, y:H / 2 + y1 * f * KS, z:z2, f:f };
+    return { x:W / 2 + st.ox * W + x1 * f * KS, y:H / 2 + st.oy * H + y1 * f * KS, z:z2, f:f };
   }
   function orbitXZ(x, z){ var c = Math.cos(st.orbit), s = Math.sin(st.orbit); return [x * c - z * s, x * s + z * c]; }
   function visible(s){ return st.mk === 'all' || s.mk === st.mk; }
@@ -447,11 +455,49 @@
     }
     ctx.globalCompositeOperation = 'source-over';
   }
+  /* the star we flew to: a full-size sun with corona, rotating rays and an orbit HUD */
+  function drawHero(s, rgb, r0){
+    var p = s.p, g = Math.min(1, (performance.now() - focus.t0) / 1500), e = 1 - Math.pow(1 - g, 3);
+    var R = lerp(r0, Math.min(H * 0.17, 150), e), col = rgb.join(','), t = REDUCED ? 0 : tick;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    var cg = ctx.createRadialGradient(p.x, p.y, R * 0.2, p.x, p.y, R * 3.2);
+    cg.addColorStop(0, 'rgba(' + col + ',.4)'); cg.addColorStop(0.25, 'rgba(' + col + ',.18)'); cg.addColorStop(1, 'rgba(' + col + ',0)');
+    ctx.fillStyle = cg; ctx.fillRect(p.x - R * 3.2, p.y - R * 3.2, R * 6.4, R * 6.4);
+    /* slowly turning light rays */
+    for(var k = 0; k < 12; k++){
+      var a = k / 12 * Math.PI * 2 + t * 0.002 * (k % 2 ? 1 : -1.4), len = R * (1.6 + 0.9 * Math.sin(k * 2.3 + t * 0.01));
+      var lg = ctx.createLinearGradient(p.x, p.y, p.x + Math.cos(a) * len, p.y + Math.sin(a) * len);
+      lg.addColorStop(0, 'rgba(' + col + ',.5)'); lg.addColorStop(1, 'rgba(' + col + ',0)');
+      ctx.strokeStyle = lg; ctx.lineWidth = k % 3 ? 1.2 : 2.4;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + Math.cos(a) * len, p.y + Math.sin(a) * len); ctx.stroke();
+    }
+    /* body: hot white core fading to the star's colour, with a shimmering surface */
+    var bg = ctx.createRadialGradient(p.x - R * 0.2, p.y - R * 0.2, 0, p.x, p.y, R);
+    bg.addColorStop(0, 'rgba(255,255,255,.95)'); bg.addColorStop(0.22, 'rgba(' + col + ',.95)'); bg.addColorStop(0.85, 'rgba(' + col + ',.55)'); bg.addColorStop(1, 'rgba(' + col + ',0)');
+    ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(p.x, p.y, R, 0, Math.PI * 2); ctx.fill();
+    for(var j = 0; j < 3; j++){
+      ctx.strokeStyle = 'rgba(255,255,255,' + (0.12 + 0.06 * Math.sin(t * 0.05 + j)).toFixed(3) + ')'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(p.x, p.y, R * (0.55 + j * 0.13), R * (0.5 + j * 0.12), t * 0.004 + j, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    /* orbit HUD rings */
+    ctx.translate(p.x, p.y);
+    ctx.save(); ctx.rotate(t * 0.006); ctx.strokeStyle = 'rgba(140,230,255,' + (0.7 * e).toFixed(2) + ')'; ctx.lineWidth = 1.4;
+    for(var q = 0; q < 6; q++){ ctx.beginPath(); ctx.arc(0, 0, R * 1.35, q * Math.PI / 3 + 0.12, q * Math.PI / 3 + Math.PI / 3 - 0.12); ctx.stroke(); }
+    ctx.restore();
+    ctx.save(); ctx.rotate(-t * 0.004); ctx.strokeStyle = 'rgba(190,150,255,' + (0.45 * e).toFixed(2) + ')'; ctx.setLineDash([2, 6]); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(0, 0, R * 1.55, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+    ctx.font = '800 ' + Math.round(Math.max(18, R * 0.32)) + 'px "IBM Plex Mono", monospace'; ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(235,248,255,' + e.toFixed(2) + ')'; ctx.fillText(s.key, 0, R * 1.55 + Math.max(18, R * 0.32) + 10);
+    ctx.restore();
+    s.r = R;
+  }
   function drawStar(s, q){
     var v = st.col === 'rsi' ? s.s.rsi : s.s[st.col];
     var rgb = colorFor(+v, st.col).map(function(c){ return Math.round(c / 12) * 12; });
     var tw = REDUCED ? 1 : 0.9 + 0.1 * Math.sin(tick * 0.05 + s.ph);
     var r = Math.min(70, s.size * s.p.f * KS * 3.4 * tw);
+    if(focus && focus.s === s){ drawHero(s, rgb, r); return; }
     var hit = q && (s.key.indexOf(q) === 0 || String(s.s.name || '').toUpperCase().indexOf(q) !== -1);
     if(q && !hit) ctx.globalAlpha = 0.2;
     ctx.drawImage(sprite(rgb), s.p.x - r, s.p.y - r, r * 2, r * 2);
@@ -476,7 +522,8 @@
     if(!stars.length) buildStars();
     tick++;
     if(st.spin && !st.dragging) st.ry += 0.0012;
-    if(!REDUCED) st.orbit += 0.00035;
+    if(!REDUCED && !focus && !camAnim) st.orbit += 0.00035;
+    stepCam(now);
     planets.forEach(function(pl){ pl.a += pl.sp * (REDUCED ? 0 : 1); });
     disk.forEach(function(d){ d.a += (REDUCED ? 0.2 : 1) * 0.9 * Math.pow(BH_R * 1.35 / d.r, 1.5) * 0.02; });
     stepInfall();
@@ -492,7 +539,7 @@
     }
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     camPrep();
-    drawSky(warp);
+    drawSky(Math.max(warp, camWarp));
     var c0 = project(0, 0, 0);
     var list = [];
     stars.forEach(function(s){
@@ -515,7 +562,7 @@
     /* galaxy labels */
     var fs = Math.round(11 * Math.max(.85, Math.min(1.35, 1 / st.dist)));
     ctx.font = '700 ' + fs + 'px Inter, "Noto Sans Thai", sans-serif'; ctx.textAlign = 'center';
-    galaxies.forEach(function(gx){
+    if(!focus) galaxies.forEach(function(gx){
       var o = orbitXZ(gx.x, gx.z), p = project(o[0], gx.y, o[1]); if(p.z < -1200) return;
       if(p.z > c0.z && Math.hypot(p.x - c0.x, p.y - c0.y) < BH_R * c0.f * KS * 1.7) return; /* hidden behind the black hole */
       var a = Math.max(.3, Math.min(.9, p.f)).toFixed(2), label = (L() === 'th' ? (SECT_TH[gx.name] || gx.name) : gx.name.toUpperCase());
@@ -530,13 +577,14 @@
     ctx.font = '600 11px "IBM Plex Mono", monospace'; ctx.textAlign = 'left';
     var big = stList.filter(function(s){ return s.r > 24; }).sort(function(a, b){ return b.r - a.r; }).slice(0, 14);
     stList.forEach(function(s){
+      if(focus) return;
       var show = s === st.hover || s === st.sel || (q && q.length >= 2 && s.key.indexOf(q) === 0) || big.indexOf(s) !== -1;
       if(!show) return;
       ctx.fillStyle = s === st.sel ? '#9fe7ff' : 'rgba(235,240,255,.88)';
       ctx.fillText(s.key, s.p.x + s.r * 0.45, s.p.y - s.r * 0.35);
     });
     var showSel = st.sel && st.sel.p && visible(st.sel) && st.sel.p.z > -1300;
-    if(showSel){ placeHolo(st.sel); drawReticle(st.sel, now); }
+    if(showSel && !focus && !camAnim){ placeHolo(st.sel); drawReticle(st.sel, now); }
     else hideHolo();
   }
   /* ---------- selection HUD: a circuit-board reticle around the star, a
@@ -556,7 +604,7 @@
     return out;
   }
   function drawReticle(s, now){
-    var p = s.p, rr = Math.max(14, s.r * 0.6), age = Math.min(1, (now - selT) / 700), e = 1 - Math.pow(1 - age, 3);
+    var p = s.p, rr = Math.max(14, s.r * 0.6), age = Math.max(0, Math.min(1, (now - selT) / 700)), e = 1 - Math.pow(1 - age, 3);
     if(!TRACES || TRACES.key !== s.key){ TRACES = makeTraces(s.key); TRACES.key = s.key; }
     ctx.save(); ctx.translate(p.x, p.y); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     var C1 = 'rgba(120,230,255,', C2 = 'rgba(190,150,255,';
@@ -659,6 +707,7 @@
     cv.width = W * DPR; cv.height = H * DPR; cv.style.width = W + 'px'; cv.style.height = H + 'px';
     if(!sky.length || grew) buildSky();
     if(!disk.length) buildDisk();
+    if(focus) setTimeout(renderFocusChart, 30);
   }
   function pick(px, py){
     var best = null, bd = 1e9;
@@ -696,8 +745,114 @@
       '<div class="uh-grid">' + cells.map(function(c){ return '<div><span>' + esc(c[0]) + '</span><b class="' + c[2] + '">' + esc(c[1]) + '</b></div>'; }).join('') + '</div>' +
       '<div class="uh-r52"><span>' + esc(T(U.r52)) + '</span><div class="uh-bar"><i style="left:' + pos.toFixed(1) + '%"></i></div><div class="uh-r52v"><em>' + num(lo, 2) + '</em><em>' + num(hi, 2) + '</em></div></div>' +
       '<div class="uh-note">' + (d.off_high != null ? pc(d.off_high) + ' ' + esc(T(U.offHi)) : '') + (d.above_ma200 != null ? ' · ' + esc(T(d.above_ma200 ? U.above : U.below)) : '') + '</div>' +
-      '<button type="button" class="un-wave" data-un-act="wave">' + esc(T(U.wave)) + '</button>';
+      '<div class="uh-btns"><button type="button" class="un-wave uh-zoom" data-un-act="focus">' + esc(T(U.zoomIn)) + '</button><button type="button" class="un-wave" data-un-act="wave">' + esc(T(U.wave)) + '</button></div>';
     holoW = box.offsetWidth || 300; holoH = box.offsetHeight || 340;
+  }
+  /* ---------- double-click: fly the camera into a star, then open its focus view ---------- */
+  function ease(u){ return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; }
+  function camTo(to, ms, done){
+    var d = to.ry - st.ry; while(d > Math.PI) d -= Math.PI * 2; while(d < -Math.PI) d += Math.PI * 2;
+    camAnim = { t0:performance.now(), ms:REDUCED ? 1 : ms, from:{ tx:st.tx, ty:st.ty, tz:st.tz, ox:st.ox, oy:st.oy, rx:st.rx, ry:st.ry, dist:st.dist }, to:{ tx:to.tx, ty:to.ty, tz:to.tz, ox:to.ox || 0, oy:to.oy || 0, rx:to.rx, ry:st.ry + d, dist:to.dist }, done:done, warp:!!to.warp };
+  }
+  function stepCam(now){
+    camWarp = 0;
+    if(!camAnim) return;
+    var a = camAnim, u = Math.min(1, (now - a.t0) / a.ms), e = ease(u);
+    ['tx', 'ty', 'tz', 'ox', 'oy', 'rx', 'ry'].forEach(function(k){ st[k] = lerp(a.from[k], a.to[k], e); });
+    /* zoom on a log scale so the dolly feels like a steady rush */
+    st.dist = Math.exp(lerp(Math.log(a.from.dist), Math.log(a.to.dist), e));
+    if(a.warp) camWarp = Math.sin(u * Math.PI) * 0.9;
+    if(u >= 1){ camAnim = null; if(a.done) a.done(); }
+  }
+  function focusStar(s){
+    if(!s || camAnim) return;
+    if(isFull() === false && W < 10) return;
+    var prev = { tx:st.tx, ty:st.ty, tz:st.tz, rx:st.rx, ry:st.ry, dist:st.dist, spin:st.spin };
+    st.spin = false; warpT0 = 0;
+    if(st.sel !== s){ st.sel = s; selT = performance.now(); }
+    card(); hideHolo();
+    var wx = s.wx != null ? s.wx : s.x, wz = s.wz != null ? s.wz : s.z, vx = -wx, vz = -wz;
+    var ry = Math.atan2(vx, vz) + (W >= 900 ? 0.55 : 0.75); /* look in from outside the ring, with the black hole off to the side */
+    focus = { s:s, prev:prev, rng:252, t0:performance.now() };
+    sec.querySelector('.un-stage').classList.add('un-focusing');
+    var wide = W >= 900; camTo({ tx:wx, ty:s.y, tz:wz, ox:wide ? -0.33 : 0, oy:wide ? 0 : -0.36, rx:-0.14, ry:ry, dist:wide ? 0.16 : 0.2, warp:true }, 1500, function(){
+      var fl = sec.querySelector('.un-flash'); fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go');
+      openFocus();
+    });
+  }
+  function unfocus(quick){
+    if(!focus) return;
+    var prev = focus.prev, box = sec.querySelector('[data-un="focus"]');
+    box.classList.remove('on'); box.innerHTML = '';
+    sec.querySelector('.un-stage').classList.remove('un-focusing');
+    focus = null;
+    if(quick){ st.ox = 0; st.oy = 0; st.tx = prev.tx; st.ty = prev.ty; st.tz = prev.tz; st.rx = prev.rx; st.ry = prev.ry; st.dist = prev.dist; camAnim = null; return; }
+    camTo({ tx:0, ty:0, tz:0, rx:prev.rx, ry:prev.ry, dist:Math.max(0.6, prev.dist), warp:true }, 1300, function(){ selT = performance.now(); paintCtl(); });
+  }
+  function sma(v, n){ var out = [], s = 0; for(var i = 0; i < v.length; i++){ s += v[i]; if(i >= n) s -= v[i - n]; out.push(i >= n - 1 ? s / n : null); } return out; }
+  function openFocus(){
+    if(!focus) return;
+    var s = focus.s, d = s.s, box = sec.querySelector('[data-un="focus"]');
+    var nm = String(d.name || '').replace(/^[A-Z0-9]+_/, ''), sect = L() === 'th' ? (SECT_TH[d.sector] || d.sector || '') : (d.sector || '');
+    function num(v, dp, suf){ return v == null || isNaN(v) ? '—' : Number(v).toFixed(dp) + (suf || ''); }
+    function pc(v){ return v == null || isNaN(v) ? '—' : (v > 0 ? '+' : '') + Number(v).toFixed(1) + '%'; }
+    function cls(v){ return v == null ? '' : v >= 0 ? 'up' : 'dn'; }
+    function grp(title, rows){ return '<div class="uf-grp"><h4>' + esc(T(title)) + '</h4>' + rows.map(function(r){ return '<div class="uf-row"><span>' + esc(typeof r[0] === 'string' ? r[0] : T(r[0])) + '</span><b class="' + (r[2] || '') + '">' + esc(r[1]) + '</b></div>'; }).join('') + '</div>'; }
+    var debt = d.debt ? '$' + fmtCap(d.ccy === 'THB' ? d.debt / (((window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot().fx) || {}).THB || 33.5) : d.debt) : '—';
+    box.innerHTML = '<i class="uh-c tl"></i><i class="uh-c tr"></i><i class="uh-c bl"></i><i class="uh-c br"></i>' +
+      '<div class="uf-head"><div class="uf-id"><b>' + esc(s.key) + '</b><span>' + esc(nm) + '</span><em>' + esc(sect) + (d.industry ? ' · ' + esc(d.industry) : '') + '</em></div>' +
+        '<div class="uf-px"><strong>' + esc(d.price) + ' <small>' + esc(d.ccy) + '</small></strong><span class="' + cls(d.chg_pct) + '">' + pc(d.chg_pct) + ' ' + esc(T(U.day)) + '</span><em>' + esc(T(U.mcap)) + ' $' + fmtCap(s.usd) + '</em></div>' +
+        '<button type="button" class="uf-back" data-un-act="unfocus">' + esc(T(U.back)) + '</button></div>' +
+      '<div class="uf-body"><div class="uf-chartbox"><div class="uf-rng">' + [[21, '1M'], [63, '3M'], [126, '6M'], [252, '1Y'], [9999, '2Y']].map(function(r){ return '<button type="button" data-un-act="rng' + r[0] + '" class="' + (focus.rng === r[0] ? 'on' : '') + '">' + r[1] + '</button>'; }).join('') + '<span class="uf-ct" data-uf="ct"></span></div>' +
+        '<div class="uf-chart" data-uf="chart"></div><div class="uf-lg"><i class="l1"></i>' + esc(T(U.ma50)) + '<i class="l2"></i>' + esc(T(U.ma200)) + '<i class="l3"></i>' + esc(T(U.hi52)) + ' / ' + esc(T(U.lo52)) + '</div></div>' +
+        '<div class="uf-stats">' +
+          grp(U.grpPrice, [['1M', pc(d.m1), cls(d.m1)], ['3M', pc(d.m3), cls(d.m3)], [U.fromHi, pc(d.off_high), cls(d.off_high)], [U.fromLo, pc(d.off_low), cls(d.off_low)], [U.vsMa50, pc(d.vs_ma50), cls(d.vs_ma50)], [U.vsMa200, pc(d.vs_ma200), cls(d.vs_ma200)], ['RSI', num(d.rsi, 0), ''], [U.vol, num(d.vol20, 1, '%'), '']]) +
+          grp(U.grpVal, [['P/E', num(d.pe, 1), ''], ['P/B', num(d.pb, 2), ''], [U.dy, num(d.div, 2, '%'), '']]) +
+          grp(U.grpQual, [[U.roe, num(d.roe, 1, '%'), ''], [U.roa, num(d.roa, 1, '%'), ''], [U.roic, num(d.roic, 1, '%'), ''], [U.margin, num(d.margin, 1, '%'), ''], ['D/E', num(d.de, 2), ''], [U.debt, debt, '']]) +
+          '<button type="button" class="un-wave" data-un-act="wave">' + esc(T(U.wave)) + '</button>' +
+        '</div></div>';
+    box.classList.add('on');
+    renderFocusChart();
+  }
+  function renderFocusChart(){
+    if(!focus) return;
+    var d = focus.s.s, host = sec.querySelector('[data-uf="chart"]'); if(!host) return;
+    sec.querySelectorAll('.uf-rng button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-un-act') === 'rng' + focus.rng); });
+    var all = String(d.c || '').split(',').map(Number).filter(function(x){ return !isNaN(x) && x > 0; });
+    if(all.length < 5){ host.innerHTML = '<p class="uf-none">—</p>'; return; }
+    var m50 = sma(all, 50), m200 = sma(all, 200), n = Math.min(all.length, focus.rng), off = all.length - n;
+    var v = all.slice(off), a50 = m50.slice(off), a200 = m200.slice(off);
+    var Wc = Math.max(280, host.clientWidth || 600), Hc = Math.max(200, host.clientHeight || 300), pl = 8, pr = 58, pt = 14, pb = 24;
+    var ys = v.concat(a50.filter(Boolean), a200.filter(Boolean)); if(d.hi52) ys.push(+d.hi52); if(d.lo52) ys.push(+d.lo52);
+    var mn = Math.min.apply(null, ys), mx = Math.max.apply(null, ys), pad = (mx - mn) * 0.06 || 1; mn -= pad; mx += pad;
+    function X(i){ return pl + i / Math.max(1, n - 1) * (Wc - pl - pr); }
+    function Y(y){ return pt + (1 - (y - mn) / (mx - mn)) * (Hc - pt - pb); }
+    function line(arr){ var o = '', on = false; arr.forEach(function(y, i){ if(y == null){ on = false; return; } o += (on ? 'L' : 'M') + X(i).toFixed(1) + ',' + Y(y).toFixed(1); on = true; }); return o; }
+    var up = v[v.length - 1] >= v[0], col = up ? '#7cc4ff' : '#ff7aa8', g = '';
+    for(var k = 0; k <= 4; k++){ var gy = mn + (mx - mn) * k / 4; g += '<line x1="' + pl + '" x2="' + (Wc - pr) + '" y1="' + Y(gy).toFixed(1) + '" y2="' + Y(gy).toFixed(1) + '" class="uf-grid"/><text x="' + (Wc - pr + 6) + '" y="' + (Y(gy) + 3.5).toFixed(1) + '" class="uf-ax">' + gy.toFixed(gy > 100 ? 0 : 2) + '</text>'; }
+    /* relative time ticks, in trading days */
+    [[21, '-1M'], [63, '-3M'], [126, '-6M'], [252, '-1Y'], [378, '-18M'], [504, '-2Y']].forEach(function(t){ if(t[0] < n - 3){ var xi = X(n - 1 - t[0]); g += '<line x1="' + xi.toFixed(1) + '" x2="' + xi.toFixed(1) + '" y1="' + pt + '" y2="' + (Hc - pb) + '" class="uf-grid v"/><text x="' + xi.toFixed(1) + '" y="' + (Hc - 6) + '" class="uf-ax c">' + t[1] + '</text>'; } });
+    var hl = '';
+    if(d.hi52){ hl += '<line x1="' + pl + '" x2="' + (Wc - pr) + '" y1="' + Y(+d.hi52).toFixed(1) + '" y2="' + Y(+d.hi52).toFixed(1) + '" class="uf-hl"/>'; }
+    if(d.lo52){ hl += '<line x1="' + pl + '" x2="' + (Wc - pr) + '" y1="' + Y(+d.lo52).toFixed(1) + '" y2="' + Y(+d.lo52).toFixed(1) + '" class="uf-hl"/>'; }
+    var pth = line(v), area = pth + 'L' + X(n - 1).toFixed(1) + ',' + (Hc - pb) + 'L' + X(0).toFixed(1) + ',' + (Hc - pb) + 'Z', ly = Y(v[v.length - 1]);
+    host.innerHTML = '<svg viewBox="0 0 ' + Wc + ' ' + Hc + '" width="100%" height="100%" class="uf-svg"><defs><linearGradient id="ufg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="' + col + '" stop-opacity=".38"/><stop offset="1" stop-color="' + col + '" stop-opacity="0"/></linearGradient><filter id="ufglow"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>' +
+      g + hl + '<path d="' + area + '" fill="url(#ufg)" class="uf-area"/><path d="' + line(a200) + '" class="uf-ma2"/><path d="' + line(a50) + '" class="uf-ma1"/>' +
+      '<path d="' + pth + '" fill="none" stroke="' + col + '" stroke-width="2" filter="url(#ufglow)" class="uf-line" pathLength="1"/>' +
+      '<circle cx="' + X(n - 1).toFixed(1) + '" cy="' + ly.toFixed(1) + '" r="4" fill="#fff" class="uf-dot"/><rect x="' + (Wc - pr + 2) + '" y="' + (ly - 9).toFixed(1) + '" width="' + (pr - 4) + '" height="18" rx="3" fill="' + col + '"/><text x="' + (Wc - pr / 2) + '" y="' + (ly + 4).toFixed(1) + '" class="uf-last">' + v[v.length - 1].toFixed(v[v.length - 1] > 100 ? 1 : 2) + '</text>' +
+      '<g class="uf-x" style="display:none"><line class="uf-xl" y1="' + pt + '" y2="' + (Hc - pb) + '"/><circle r="4.5" class="uf-xd"/></g><rect x="0" y="0" width="' + Wc + '" height="' + Hc + '" fill="transparent" class="uf-hit"/></svg><div class="uf-tip" style="display:none"></div>';
+    var ctEl = sec.querySelector('[data-uf="ct"]'); if(ctEl) ctEl.textContent = T(U.chartT).replace('{n}', n) + ' · ' + (v[v.length - 1] >= v[0] ? '+' : '') + ((v[v.length - 1] / v[0] - 1) * 100).toFixed(1) + '%';
+    var svg = host.querySelector('svg'), gx = svg.querySelector('.uf-x'), xl = svg.querySelector('.uf-xl'), xd = svg.querySelector('.uf-xd'), tip = host.querySelector('.uf-tip');
+    function move(ev){
+      var r = svg.getBoundingClientRect(), mx2 = (ev.clientX - r.left) / r.width * Wc;
+      var i = Math.max(0, Math.min(n - 1, Math.round((mx2 - pl) / (Wc - pl - pr) * (n - 1)))), x = X(i), y = Y(v[i]);
+      gx.style.display = ''; xl.setAttribute('x1', x); xl.setAttribute('x2', x); xd.setAttribute('cx', x); xd.setAttribute('cy', y);
+      var ago = n - 1 - i;
+      tip.style.display = ''; tip.innerHTML = '<b>' + v[i].toFixed(2) + '</b>' + (a50[i] ? '<span>MA50 ' + a50[i].toFixed(2) + '</span>' : '') + (a200[i] ? '<span>MA200 ' + a200[i].toFixed(2) + '</span>' : '') + '<em>' + (ago ? ago + ' ' + T(U.dAgo) : T(U.agoNow)) + '</em>';
+      var tx = x / Wc * r.width; tip.style.left = Math.min(r.width - 150, Math.max(0, tx + 12)) + 'px'; tip.style.top = Math.max(0, y / Hc * r.height - 50) + 'px';
+    }
+    svg.addEventListener('pointermove', move); svg.addEventListener('pointerdown', move);
+    svg.addEventListener('pointerleave', function(){ gx.style.display = 'none'; tip.style.display = 'none'; });
   }
   function flyTo(s){
     var o = orbitXZ(s.x, s.z), targetRy = Math.atan2(o[0], -o[1]), a0 = st.ry, t0 = performance.now(), d0 = st.dist;
@@ -740,7 +895,7 @@
     q('fs').setAttribute('aria-label', T(full ? U.exitFull : U.full));
     q('opts').textContent = (st.opts ? '✕ ' : '☰ ') + T(U.opts);
     q('hud').classList.toggle('open', !!st.opts);
-    q('lg').innerHTML = '<em>' + esc(T(U.lgDn)) + '</em><span class="un-grad"></span><em>' + esc(T(U.lgUp)) + '</em><span class="un-sz">' + esc(T(U.lgSz)) + '</span>';
+    q('lg').innerHTML = '<em>' + esc(T(U.lgDn)) + '</em><span class="un-grad"></span><em>' + esc(T(U.lgUp)) + '</em><span class="un-sz">' + esc(T(U.lgSz)) + '</span><span class="un-sz">· ' + esc(T(U.dbl)) + '</span>';
     q('n').textContent = n ? n + ' ' + T(U.stars) : T(U.noData);
     var dl = document.getElementById('unList');
     if(dl && !dl.children.length && stars.length) dl.innerHTML = stars.map(function(s){ return '<option value="' + esc(s.key) + '">'; }).join('');
@@ -749,7 +904,7 @@
   function wire(){
     var pts = {}, drag = null, pinch = null, moved = false;
     stage.addEventListener('pointerdown', function(ev){
-      if(ev.target !== cv) return;
+      if(ev.target !== cv || focus || camAnim) return;
       pts[ev.pointerId] = { x:ev.clientX, y:ev.clientY }; moved = false;
       var ids = Object.keys(pts);
       if(ids.length === 1) drag = { x:ev.clientX, y:ev.clientY, rx:st.rx, ry:st.ry };
@@ -772,11 +927,16 @@
       if(Object.keys(pts).length < 2) pinch = null;
       if(!Object.keys(pts).length){
         drag = null; st.dragging = false;
-        if(!moved && ev.target === cv){ var r = cv.getBoundingClientRect(); var s = pick(ev.clientX - r.left, ev.clientY - r.top); if(s !== st.sel) selT = performance.now(); st.sel = s; if(s) st.spin = false; paintCtl(); }
+        if(!moved && ev.target === cv && !focus && !camAnim){
+          var r = cv.getBoundingClientRect(), s = pick(ev.clientX - r.left, ev.clientY - r.top), tnow = performance.now();
+          if(s && lastTap.s === s && tnow - lastTap.t < 380){ lastTap = { t:0, s:null }; focusStar(s); return; }
+          lastTap = { t:tnow, s:s };
+          if(s !== st.sel) selT = tnow; st.sel = s; if(s) st.spin = false; paintCtl();
+        }
       }
     }
     window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
-    stage.addEventListener('wheel', function(ev){ if(ev.target !== cv) return; ev.preventDefault(); warpT0 = 0; st.dist = Math.max(0.3, Math.min(2.6, st.dist * (ev.deltaY > 0 ? 1.08 : 0.92))); }, { passive:false });
+    stage.addEventListener('wheel', function(ev){ if(ev.target !== cv || focus || camAnim) return; ev.preventDefault(); warpT0 = 0; st.dist = Math.max(0.3, Math.min(2.6, st.dist * (ev.deltaY > 0 ? 1.08 : 0.92))); }, { passive:false });
     sec.addEventListener('click', function(ev){
       var b;
       if((b = ev.target.closest('[data-un-mk]'))){ st.mk = b.getAttribute('data-un-mk'); paintCtl(); return; }
@@ -786,12 +946,16 @@
         if(a === 'spin') st.spin = !st.spin;
         else if(a === 'reset'){ st.rx = -0.38; st.ry = 0; st.sel = null; st.q = ''; st.distTarget = 1; warpT0 = REDUCED ? 0 : performance.now(); if(REDUCED) st.dist = 1; }
         else if(a === 'close') st.sel = null;
+        else if(a === 'focus' && st.sel){ focusStar(st.sel); return; }
+        else if(a === 'unfocus'){ unfocus(); return; }
+        else if(a.indexOf('rng') === 0){ if(focus){ focus.rng = +a.slice(3); renderFocusChart(); } return; }
         else if(a === 'info') st.info = !st.info;
         else if(a === 'opts') st.opts = !st.opts;
         else if(a === 'fs'){ toggleFull(); return; }
         else if(a === 'wave' && st.sel){
           var sym = st.sel.key;
           try { localStorage.setItem('spz.aw.sym', sym); } catch(e){}
+          if(focus) unfocus(true);
           if(isFull()) toggleFull();
           if(window.__SPZ_AUTOWAVE_OPEN) window.__SPZ_AUTOWAVE_OPEN(sym); else location.hash = '#/autowave';
           return;
@@ -805,7 +969,7 @@
       var qq = st.q.trim().toUpperCase(), m = qq && stars.filter(function(s){ return s.key === qq; })[0];
       if(m){ if(m !== st.sel) selT = performance.now(); st.sel = m; if(st.mk !== 'all' && m.mk !== st.mk) st.mk = 'all'; flyTo(m); card(); }
     });
-    document.addEventListener('keydown', function(ev){ if(ev.key === 'Escape' && fakeFs) toggleFull(); });
+    document.addEventListener('keydown', function(ev){ if(ev.key !== 'Escape') return; if(focus){ unfocus(); return; } if(fakeFs) toggleFull(); });
     window.addEventListener('resize', function(){ fit(false); resize(); });
     document.addEventListener('fullscreenchange', function(){ setTimeout(function(){ resize(); paintCtl(); }, 60); });
     document.addEventListener('webkitfullscreenchange', function(){ setTimeout(function(){ resize(); paintCtl(); }, 60); });
@@ -835,15 +999,17 @@
       '<datalist id="unList"></datalist>' +
       '<div class="un-stage"><canvas></canvas>' +
         '<div class="un-hud" data-un="hud"><div class="un-ctl" data-un="ctl"></div><div class="un-hbtn"><button type="button" class="un-optb" data-un-act="opts" data-un="opts"></button><button type="button" class="un-fsb" data-un-act="fs" data-un="fs"></button></div></div>' +
-        '<div class="un-card un-holo" data-un="card"></div>' +
+        '<div class="un-card un-holo" data-un="card"></div><div class="un-focus" data-un="focus"></div><div class="un-flash"></div>' +
         '<div class="un-foot"><div class="un-title"><div><b data-un="h2"></b><small data-un="h3"></small></div><button type="button" class="un-info" data-un-act="info" aria-label="i">i</button></div><p class="un-lede" data-un="lede2"></p><div class="un-lg" data-un="lg"></div></div>' +
         '<div class="un-n" data-un="n"></div></div></div>';
     document.body.appendChild(sec);
     stage = sec.querySelector('.un-stage'); cv = sec.querySelector('canvas'); ctx = cv.getContext('2d');
     window.__spzAddRoute({ id:'universe', after:'globe', t:U.h, d:{ en:'Every stock as a star orbiting a black hole: sectors are galaxies, size is market cap, colour is momentum.', th:'หุ้นทุกตัวเป็นดาวโคจรรอบหลุมดำ กลุ่มอุตสาหกรรมเป็นกาแล็กซี ขนาดตามมูลค่าตลาด สีตามโมเมนตัม' } });
     buildNebula(); buildPlanets();
+    /* read-only helper for tests: where a star is on screen right now */
+    window.__SPZ_UNI_POS = function(k){ var m = stars.filter(function(x){ return x.key === k; })[0]; return m && m.p ? { x:m.p.x, y:m.p.y } : null; };
     wire(); resize(); buildStars(); paintCtl();
-    window.addEventListener('hashchange', function(){ if(location.hash === '#/universe') enter(); else if(isFull()) toggleFull(); });
+    window.addEventListener('hashchange', function(){ if(location.hash === '#/universe') enter(); else { if(focus) unfocus(true); if(isFull()) toggleFull(); } });
     if(location.hash === '#/universe') enter();
     new MutationObserver(function(){ paintCtl(); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
     setInterval(function(){ if(location.hash === '#/universe' && !stars.length && buildStars()) paintCtl(); }, 1500);
