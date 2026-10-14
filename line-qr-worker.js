@@ -2574,7 +2574,9 @@ async function handleEbookUpload(request, env) {
   const head = new Uint8Array(buf.slice(0, 5));
   if (String.fromCharCode.apply(null, head) !== "%PDF-") return json({ error: "not_pdf" }, env, 400);
   await env.SESSIONS.put(EBKF_PREFIX + rec.id, buf);
+  const dig = new Uint8Array(await crypto.subtle.digest("SHA-256", buf));
   rec.hasFile = true; rec.fileSize = buf.byteLength; rec.fileAt = Date.now();
+  rec.fileSha256 = Array.prototype.map.call(dig, (x) => ("0" + x.toString(16)).slice(-2)).join("");
   await ebkPut(env, rec);
   return json({ ok: true, ebook: rec }, env);
 }
