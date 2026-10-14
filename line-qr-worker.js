@@ -2516,7 +2516,7 @@ async function handleCertRevoke(request, env) {
    KV: EBK:<id> record, EBKF:<id> PDF bytes, EBK_SERIAL counter.
    ===================================================================== */
 const EBK_PREFIX = "EBK:", EBKF_PREFIX = "EBKF:", EBK_MAX_PDF = 24 * 1024 * 1024;
-const EBK_TERMS_VERSION = "2026-10-14";
+const EBK_TERMS_VERSION = "2026-10-14", EBKH_PREFIX = "EBKH:";
 function ebkId(s) { return String(s || "").toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 20); }
 function ebkClean(v, n) { return String(v == null ? "" : v).replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, n); }
 function ebkPublic(r) { return { id: r.id, name: r.name, lang: r.lang, title: r.title, accepted: !!r.accepted, revoked: !!r.revoked, hasFile: !!r.hasFile, termsVersion: EBK_TERMS_VERSION }; }
@@ -2557,7 +2557,19 @@ async function handleEbookUpdate(request, env) {
   let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
   const rec = await ebkGet(env, ebkId(body.id));
   if (!rec) return json({ error: "not_found" }, env, 404);
-  if (body.delete === true) { await env.SESSIONS.delete(EBK_PREFIX + rec.id); await env.SESSIONS.delete(EBKF_PREFIX + rec.id); return json({ ok: true, deleted: true }, env); }
+  if (body.delete === true) {
+    await env.SESSIONS.delete(EBK_PREFIX + rec.id); await env.SESSIONS.delete(EBKF_PREFIX + rec.id);
+    if (rec.fileSha256) await env.SESSIONS.delete(EBKH_PREFIX + rec.fileSha256);
+    /* numbering continues from the highest copy still in the registry, so deleting test copies frees their numbers */
+    let max = 0, cursor;
+    do {
+      const page = await env.SESSIONS.list({ prefix: EBK_PREFIX, cursor });
+      for (const k of page.keys) { try { const r = JSON.parse(await env.SESSIONS.get(k.name)); if (r && r.serial > max) max = r.serial; } catch (e) { /* skip */ } }
+      cursor = page.list_complete ? undefined : page.cursor;
+    } while (cursor);
+    await env.SESSIONS.put("EBK_SERIAL", String(max));
+    return json({ ok: true, deleted: true, nextSerial: max + 1 }, env);
+  }
   if (typeof body.revoke === "boolean") rec.revoked = body.revoke;
   if (typeof body.note === "string") rec.note = ebkClean(body.note, 300);
   if (typeof body.contact === "string") rec.contact = ebkClean(body.contact, 120);
@@ -2575,8 +2587,10 @@ async function handleEbookUpload(request, env) {
   if (String.fromCharCode.apply(null, head) !== "%PDF-") return json({ error: "not_pdf" }, env, 400);
   await env.SESSIONS.put(EBKF_PREFIX + rec.id, buf);
   const dig = new Uint8Array(await crypto.subtle.digest("SHA-256", buf));
+  if (rec.fileSha256) await env.SESSIONS.delete(EBKH_PREFIX + rec.fileSha256);
   rec.hasFile = true; rec.fileSize = buf.byteLength; rec.fileAt = Date.now();
   rec.fileSha256 = Array.prototype.map.call(dig, (x) => ("0" + x.toString(16)).slice(-2)).join("");
+  await env.SESSIONS.put(EBKH_PREFIX + rec.fileSha256, rec.id);
   await ebkPut(env, rec);
   return json({ ok: true, ebook: rec }, env);
 }
@@ -2595,7 +2609,7 @@ async function handleEbookAccept(request, env) {
   if (body.agree !== true || !typed) return json({ error: "need_agree" }, env, 400);
   if (!rec.accepted) {
     rec.accepted = {
-      at: Date.now(), typedName: typed, termsVersion: EBK_TERMS_VERSION, termsHash: ebkClean(body.termsHash, 80),
+      at: Date.now(), typedName: typed, typedContact: ebkClean(body.typedContact, 120), termsVersion: EBK_TERMS_VERSION, termsHash: ebkClean(body.termsHash, 80),
       ip: request.headers.get("CF-Connecting-IP") || "", country: (request.cf && request.cf.country) || "",
       ua: ebkClean(request.headers.get("User-Agent"), 300)
     };
@@ -2613,6 +2627,15 @@ async function handleEbookDownload(request, env, origin) {
   rec.downloads = (rec.downloads || []).concat([{ at: Date.now(), ip: request.headers.get("CF-Connecting-IP") || "", country: (request.cf && request.cf.country) || "" }]).slice(-30);
   await ebkPut(env, rec);
   return new Response(buf, { headers: { "Content-Type": "application/pdf", "Cache-Control": "no-store", ...corsHeaders(env) } });
+}
+/* public check, no login: is this code or this file an official copy? Never returns the recipient name. */
+async function handleEbookVerify(request, env) {
+  const u = new URL(request.url), sha = String(u.searchParams.get("sha") || "").toLowerCase();
+  let rec = null, by = "code";
+  if (/^[0-9a-f]{64}$/.test(sha)) { by = "sha"; const id = await env.SESSIONS.get(EBKH_PREFIX + sha); rec = id ? await ebkGet(env, id) : null; }
+  else { let c = ebkId(u.searchParams.get("code")); if (c && c.indexOf("EB-") !== 0) c = "EB-" + c; rec = await ebkGet(env, c); }
+  if (!rec) return json({ ok: true, found: false, by }, env);
+  return json({ ok: true, found: true, by, id: rec.id, title: rec.title, issuedAt: rec.createdAt, revoked: !!rec.revoked, accepted: !!rec.accepted, fileMatch: by === "sha" }, env);
 }
 async function handleCertVerify(request, env) {
   const id = certId(new URL(request.url).searchParams.get("id"));
@@ -3268,6 +3291,7 @@ const SPZ_ROUTES = {
       if (url.pathname === "/api/admin/ebook/upload" && request.method === "POST") return withCorsOrigin(await handleEbookUpload(request, env), allowOrigin);
       if (url.pathname === "/api/ebook/terms" && request.method === "GET") return withCorsOrigin(await handleEbookTerms(request, env), allowOrigin);
       if (url.pathname === "/api/ebook/accept" && request.method === "POST") return withCorsOrigin(await handleEbookAccept(request, env), allowOrigin);
+      if (url.pathname === "/api/ebook/verify" && request.method === "GET") return withCorsOrigin(await handleEbookVerify(request, env), allowOrigin);
       if (url.pathname === "/api/ebook/file" && request.method === "GET") return withCorsOrigin(await handleEbookDownload(request, env), allowOrigin);
       if (url.pathname === "/api/admin/cexam/sets" && request.method === "GET") return withCorsOrigin(await handleCexAdminSets(request, env), allowOrigin);
       if (url.pathname === "/api/admin/cexam/sets/create" && request.method === "POST") return withCorsOrigin(await handleCexAdminSetCreate(request, env), allowOrigin);
