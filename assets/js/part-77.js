@@ -111,11 +111,11 @@
     }
   }
   function buildDisk(){
-    var n = (W < 700 ? 450 : 1000);
+    var n = (W < 700 ? 650 : 1500);
     disk = [];
     for(var i = 0; i < n; i++){
-      var r = BH_R * 1.35 + Math.pow(Math.random(), 1.8) * 300;
-      disk.push({ r:r, a:Math.random() * Math.PI * 2, y:(Math.random() - 0.5) * (4 + r * 0.04), w:0.9 + Math.random() * 2.2 });
+      var r = BH_R * 1.35 + Math.pow(Math.random(), 1.6) * 470;
+      disk.push({ r:r, a:Math.random() * Math.PI * 2, y:(Math.random() - 0.5) * (4 + r * 0.035), w:1.2 + Math.random() * 2.8 });
     }
   }
   function buildPlanets(){
@@ -172,13 +172,13 @@
     ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
     var g = ctx.createRadialGradient(W * 0.5, H * 0.5, 0, W * 0.5, H * 0.5, Math.max(W, H) * 0.8);
-    g.addColorStop(0, 'rgba(26,14,52,.55)'); g.addColorStop(0.5, 'rgba(8,8,26,.35)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    g.addColorStop(0, 'rgba(10,6,20,.45)'); g.addColorStop(0.5, 'rgba(3,3,10,.25)'); g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     /* nebula band, parallax with the camera */
     if(nebula){
       var nh = H * 1.25, nw = nh * 2, off = ((-st.ry / (Math.PI * 2)) * nw) % nw; if(off > 0) off -= nw;
       var ny = H / 2 - nh / 2 + st.rx * H * 0.55;
-      ctx.globalAlpha = 0.9; ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = 0.22; ctx.globalCompositeOperation = 'lighter';
       for(var xx = off; xx < W; xx += nw) ctx.drawImage(nebula, xx, ny, nw, nh);
       ctx.globalAlpha = 1;
     }
@@ -207,7 +207,7 @@
     ctx.globalAlpha = 1;
   }
   function diskColor(r){
-    var t = Math.min(1, (r - BH_R * 1.35) / 300);
+    var t = Math.min(1, (r - BH_R * 1.35) / 470);
     var c = t < 0.15 ? mix([255, 250, 235], [255, 214, 140], t / 0.15) : t < 0.5 ? mix([255, 214, 140], [255, 120, 70], (t - 0.15) / 0.35) : mix([255, 120, 70], [190, 50, 160], (t - 0.5) / 0.5);
     return c.map(function(v){ return Math.round(v / 16) * 16; });
   }
@@ -218,9 +218,9 @@
      faintly under) the shadow -- the lensed image. */
   var RINGS = null;
   function ringsInit(){
-    var nR = W < 700 ? 11 : 18, nS = W < 700 ? 44 : 72, rin = BH_R * 1.35, list = [];
+    var nR = W < 700 ? 14 : 24, nS = W < 700 ? 44 : 72, rin = BH_R * 1.35, list = [];
     for(var i = 0; i < nR; i++){
-      var u = i / (nR - 1), r = rin + Math.pow(u, 1.5) * 310, un = (i + 1) / (nR - 1), r2 = rin + Math.pow(Math.min(1, un), 1.5) * 310;
+      var u = i / (nR - 1), r = rin + Math.pow(u, 1.4) * 480, un = (i + 1) / (nR - 1), r2 = rin + Math.pow(Math.min(1, un), 1.4) * 480;
       list.push({ r:r, w:Math.max(6, r2 - r), c:diskColor(r).join(','), segs:nS, ph:Math.random() * 6.28 });
     }
     RINGS = list;
@@ -231,7 +231,7 @@
     ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
     for(var i = 0; i < RINGS.length; i++){
       var rg = RINGS[i], n = rg.segs, spin = tick * 0.012 * Math.pow(rin / rg.r, 1.5) * (REDUCED ? 0.2 : 1);
-      var fade = Math.pow(1 - (rg.r - rin) / 330, 1.8), pts = [];
+      var fade = Math.pow(Math.max(0, 1 - (rg.r - rin) / 500), 1.5), pts = [];
       for(var k = 0; k <= n; k++){ var a = k / n * Math.PI * 2; pts.push(project(Math.cos(a) * rg.r, 0, Math.sin(a) * rg.r)); }
       for(var c = 0; c < n; c += CH){
         var e = Math.min(n, c + CH), mid = pts[Math.floor((c + e) / 2)], am = (c + e) / 2 / n * Math.PI * 2;
@@ -239,7 +239,7 @@
         var vx = -Math.sin(am), vz = Math.cos(am), toward = -(vx * SY + vz * CY) * CX;
         var swirl = 0.62 + 0.38 * Math.sin(am * 3 + rg.ph - spin * 9) * Math.sin(am * 7 - rg.ph * 2 - spin * 5);
         var al = fade * (0.28 + 0.72 * (0.5 + 0.5 * toward)) * swirl, m;
-        ctx.strokeStyle = 'rgba(' + rg.c + ',' + Math.min(1, al * 0.3).toFixed(3) + ')';
+        ctx.strokeStyle = 'rgba(' + rg.c + ',' + Math.min(1, al * 0.42).toFixed(3) + ')';
         ctx.lineWidth = Math.max(1, rg.w * mid.f * KS * 0.95);
         ctx.beginPath(); ctx.moveTo(pts[c].x, pts[c].y); for(m = c + 1; m <= e; m++) ctx.lineTo(pts[m].x, pts[m].y); ctx.stroke();
         if(!front && edge > 0.05){
@@ -287,7 +287,7 @@
       if(front ? p.z > c0.z : p.z <= c0.z) continue;
       var tr = 0.05 + 0.22 * Math.pow(rin / d.r, 1.5), q = project(Math.cos(d.a - tr) * d.r, d.y, Math.sin(d.a - tr) * d.r);
       var vx = -Math.sin(d.a), vz = Math.cos(d.a), toward = -(vx * SY + vz * CY) * CX;
-      var b = (0.3 + 0.7 * (0.5 + 0.5 * toward)) * (1 - (d.r - BH_R) / 520);
+      var b = (0.35 + 0.75 * (0.5 + 0.5 * toward)) * (1 - (d.r - BH_R) / 720);
       ctx.globalAlpha = Math.max(0, Math.min(1, b));
       ctx.strokeStyle = d.cs || (d.cs = 'rgb(' + diskColor(d.r).join(',') + ')');
       ctx.lineWidth = Math.max(0.7, d.w * p.f * KS * 1.15);
@@ -343,15 +343,8 @@
     ctx.globalCompositeOperation = 'lighter';
     /* deep halo */
     var g = ctx.createRadialGradient(cx, cy, R * 0.8, cx, cy, R * 8 * pulse);
-    g.addColorStop(0, 'rgba(255,170,90,' + (0.32 * boost).toFixed(2) + ')'); g.addColorStop(0.18, 'rgba(220,90,160,.16)'); g.addColorStop(0.45, 'rgba(110,60,230,.08)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    g.addColorStop(0, 'rgba(255,170,90,' + (0.34 * boost).toFixed(2) + ')'); g.addColorStop(0.16, 'rgba(230,110,90,.12)'); g.addColorStop(0.4, 'rgba(120,50,90,.04)'); g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g; ctx.fillRect(cx - R * 8.5, cy - R * 8.5, R * 17, R * 17);
-    /* Einstein ring: starlight bent all the way around */
-    ctx.save(); ctx.translate(cx, cy);
-    ctx.rotate(tick * 0.002); ctx.strokeStyle = 'rgba(190,170,255,.16)'; ctx.lineWidth = Math.max(1, R * 0.03);
-    ctx.setLineDash([R * 0.6, R * 0.25, R * 0.1, R * 0.25]); ctx.beginPath(); ctx.arc(0, 0, R * 2.55, 0, Math.PI * 2); ctx.stroke();
-    ctx.rotate(-tick * 0.005); ctx.strokeStyle = 'rgba(140,200,255,.1)'; ctx.setLineDash([R * 0.15, R * 0.4]);
-    ctx.beginPath(); ctx.arc(0, 0, R * 2.9, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
-    ctx.restore();
     drawJets(cx, cy, R, project(0, -800, 0), project(0, 800, 0), boost);
     /* back half of the accretion disk (and its lensed image) */
     drawDiskPart(false, c0);

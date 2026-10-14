@@ -343,7 +343,7 @@
       var html = buildBook(rec, content);
       if(!html) throw new Error('nocontent');
       var old = document.getElementById('spzEbook'); if(old) old.remove();
-      var box = document.createElement('div'); box.id = 'spzEbook'; box.className = 'spz-ebook lang-' + rec.lang + (isSafari() ? ' safari' : ''); box.innerHTML = html;
+      var box = document.createElement('div'); box.id = 'spzEbook'; box.className = 'spz-ebook lang-' + rec.lang + (isSafari() ? ' safari' : ''); box.setAttribute('lang', lang); box.innerHTML = html;
       document.body.appendChild(box);
       var stl = document.createElement('style'); stl.id = 'spzEbookPage'; stl.textContent = ebPageCSS(rec, BOOK[lang]); document.body.appendChild(stl);
       var prevTitle = document.title;
@@ -357,6 +357,12 @@
   }
   /* evidence report: everything about one copy, laid out for a lawyer or a court.
      If it is opened from "Find the owner", what was found is attached as an exhibit. */
+  function sealSVG(txt){
+    return '<svg viewBox="0 0 120 120" class="ev2-sealsvg"><defs><path id="ebSealC" d="M60 60 m-44 0 a44 44 0 1 1 88 0 a44 44 0 1 1 -88 0"></path></defs>' +
+      '<circle cx="60" cy="60" r="56" class="o"></circle><circle cx="60" cy="60" r="50" class="i"></circle><circle cx="60" cy="60" r="34" class="i"></circle>' +
+      '<text class="t"><textPath href="#ebSealC" startOffset="0">' + esc(txt) + ' ★</textPath></text>' +
+      (window.__SPZ_PR_LOGO ? '<image href="' + window.__SPZ_PR_LOGO + '" x="42" y="38" width="36" height="36"></image>' : '') + '</svg>';
+  }
   function printEvidence(r, exhibit){
     var th = (r.lang || 'th') !== 'en', W2 = function(a, b){ return th ? a : b; };
     var terms = termsText(th ? 'th' : 'en', r.name, r.title || 'Elliott Wave Classroom', r.id);
@@ -378,8 +384,10 @@
           row(W2('ระบุตัวตนด้วย', 'Identified by'), esc(exhibit.via || '—')) + row(W2('ตรวจเมื่อ', 'Checked at'), esc(fmtDate(exhibit.at))) + '</table></div>';
       }
       var html = '<div class="ev2">' +
-        '<div class="ev2-h"><div><div class="ev2-brand">SPACEZ TERMINAL</div><h1>' + W2('รายงานหลักฐานการแจกจ่ายเอกสารลิขสิทธิ์', 'Copyright document distribution evidence report') + '</h1></div>' +
-          '<div class="ev2-no"><span>' + W2('เลขที่รายงาน', 'Report no.') + '</span><b>' + docNo + '</b><span>' + W2('จัดทำเมื่อ', 'Prepared') + '</span><b>' + esc(fmtDate(now)) + '</b></div></div>' +
+        '<div class="ev2-h"><div class="ev2-brandrow">' + (window.__SPZ_PR_LOGO ? '<img class="ev2-logo" src="' + window.__SPZ_PR_LOGO + '" alt="">' : '') + '<div><div class="ev2-brand">SPACEZ TERMINAL</div><div class="ev2-dept">' + W2('ฝ่ายทรัพย์สินทางปัญญา · ทะเบียนแจกเอกสาร', 'Intellectual property · distribution registry') + '</div></div></div>' +
+          '<div class="ev2-doc"><h1>' + W2('รายงานหลักฐานการแจกจ่ายเอกสารลิขสิทธิ์', 'Copyright distribution evidence report') + '</h1>' +
+          '<div class="ev2-no">' + W2('เลขที่รายงาน', 'Report no.') + ' <b>' + docNo + '</b> · ' + W2('จัดทำเมื่อ', 'Prepared') + ' <b>' + esc(fmtDate(now)) + '</b></div></div></div>' +
+        '<div class="ev2-ribbon">' + W2('เอกสารลับ · ใช้เป็นหลักฐานประกอบการดำเนินการทางกฎหมาย', 'Confidential · prepared as supporting evidence for legal action') + '</div>' +
         '<table class="ev2-memo"><tr><th>' + W2('เรื่อง', 'Subject') + '</th><td>' + W2('หลักฐานการแจกจ่ายและการยอมรับเงื่อนไขการใช้งานอันมีลิขสิทธิ์ ฉบับเลขที่ ', 'Evidence of distribution and licence acceptance for copy ') + esc(r.id) + '</td></tr>' +
           '<tr><th>' + W2('เจ้าของลิขสิทธิ์', 'Copyright owner') + '</th><td>' + W2('นรเศรษฐ์ บ่อแก้ว (SPACEZ TERMINAL)', 'Noraset Boikaw (SPACEZ TERMINAL)') + '</td></tr>' +
           '<tr><th>' + W2('แหล่งข้อมูล', 'Source') + '</th><td>' + W2('ทะเบียนแจกอีบุ๊กของระบบ (บันทึกอัตโนมัติบนเซิร์ฟเวอร์ ณ เวลาที่เกิดเหตุการณ์)', 'The system ebook registry (recorded automatically on the server when each event happened)') + '</td></tr></table>' +
@@ -415,7 +423,7 @@
           '<li>' + W2('สแกน QR ในหน้าลิขสิทธิ์ของสำเนาที่พบ จะได้ลิงก์ที่มีเลขที่ฉบับ ', 'Scan the QR on the copyright page of the copy found; the link carries copy code ') + esc(r.id) + '</li>' +
           '<li>' + W2('คัดลอกย่อหน้าใดก็ได้จากสำเนาที่พบ ข้อความที่วางได้จะมีเลขที่ฉบับติดมา', 'Copy any paragraph from the copy found; the pasted text contains the copy code') + '</li>' +
           '<li>' + W2('คำนวณ SHA-256 ของไฟล์ที่พบ แล้วเทียบกับค่าในข้อ 3 หรือเปิดหน้าตรวจสอบสาธารณะ ', 'Compute the SHA-256 of the file found and compare it with section 3, or use the public check page ') + '<span class="m">' + esc(SITE + 'ebook.html') + '</span>' + W2(' ลากไฟล์ไปวาง ระบบจะบอกว่าตรงกับไฟล์ที่ออกให้หรือไม่ (ไม่แสดงชื่อผู้รับ)', ': drop the file there and it says whether it is the file that was issued (the recipient name is not shown)') + '</li></ol>' +
-        '<div class="ev2-sign"><div><span></span><b>' + W2('ผู้จัดทำรายงาน', 'Prepared by') + '</b><em>' + W2('นรเศรษฐ์ บ่อแก้ว (เจ้าของลิขสิทธิ์)', 'Noraset Boikaw (copyright owner)') + '</em></div><div><span></span><b>' + W2('พยาน', 'Witness') + '</b><em>&nbsp;</em></div><div><span></span><b>' + W2('วันที่', 'Date') + '</b><em>&nbsp;</em></div></div>' +
+        '<div class="ev2-sign"><div class="ev2-seal">' + sealSVG(W2('SPACEZ TERMINAL · ทะเบียนแจกเอกสาร', 'SPACEZ TERMINAL · DISTRIBUTION REGISTRY')) + '</div><div><span></span><b>' + W2('ผู้จัดทำรายงาน', 'Prepared by') + '</b><em>' + W2('นรเศรษฐ์ บ่อแก้ว (เจ้าของลิขสิทธิ์)', 'Noraset Boikaw (copyright owner)') + '</em></div><div><span></span><b>' + W2('พยาน', 'Witness') + '</b><em>&nbsp;</em></div><div><span></span><b>' + W2('วันที่', 'Date') + '</b><em>&nbsp;</em></div></div>' +
         '<p class="ev2-foot">' + docNo + ' · SPACEZ TERMINAL · ' + W2('รายงานสร้างอัตโนมัติจากทะเบียนแจกอีบุ๊ก', 'generated from the ebook registry') + '</p></div>';
       var old = document.getElementById('spzEbook'); if(old) old.remove();
       var box = document.createElement('div'); box.id = 'spzEbook'; box.className = 'spz-ebook ev'; box.innerHTML = html; document.body.appendChild(box);
@@ -788,7 +796,7 @@
   }
   /* test hooks (read-only helpers, no secrets) */
   window.__SPZ_EBOOK_TEST = { applyWording:applyWording, wordingBits:wordingBits, zwEncode:zwEncode, zwDecodeAll:zwDecodeAll, dotTileSVG:dotTileSVG, decodeDotBits:decodeDotBits, dotBits:dotBits, crc8:crc8, buildBook:buildBook, termsText:termsText };
-  function boot(){ var n = 0, iv = setInterval(function(){ var a = build(), b = addPrintReportButton(); if((a && b) || ++n > 90) clearInterval(iv); }, 500); }
+  function boot(){ var n = 0, iv = setInterval(function(){ if(build() || ++n > 90) clearInterval(iv); }, 500); }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 1500); });
   else setTimeout(boot, 1500);
 })();
