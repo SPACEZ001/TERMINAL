@@ -701,6 +701,10 @@
     document.addEventListener('spz:tier', function(){ contentCache = null; contentErr = null; if(sec) paint(); });
   }
 
+  /* read-only hook for the ebook builder (part-78.js): the lesson tree and
+     titles. The lesson bodies still come from the Worker with the admin key. */
+  window.__SPZ_EWV_BOOK = { tree:TREE, title:function(id){ return NODE_TITLE[id] || null; } };
+
   if(document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 1200); });
   } else {

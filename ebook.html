@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>SPACEZ TERMINAL · Ebook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;800&family=Inter:wght@400;600;800&family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#05070d;--panel:#0c111c;--line:#1d2636;--text:#e8eef8;--dim:#93a0b4;--neon:#22c3f2;--ok:#21c07a;--bad:#ff4d63;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter','Noto Sans Thai',sans-serif;}
+  body{min-height:100vh;display:flex;justify-content:center;padding:28px 16px 60px;
+    background:radial-gradient(900px 500px at 80% -10%,rgba(34,195,242,.14),transparent 70%),radial-gradient(700px 500px at -10% 110%,rgba(124,77,255,.12),transparent 70%),var(--bg);}
+  .wrap{width:100%;max-width:680px;display:flex;flex-direction:column;gap:16px;}
+  .top{display:flex;justify-content:space-between;align-items:center;}
+  .brand{font-family:'IBM Plex Mono',monospace;font-weight:700;letter-spacing:4px;font-size:13px;color:var(--neon);}
+  .lang{font:600 12px 'IBM Plex Mono',monospace;color:var(--dim);background:none;border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;}
+  .card{background:linear-gradient(160deg,rgba(18,26,42,.9),rgba(10,14,24,.92));border:1px solid var(--line);border-radius:18px;padding:22px 20px;}
+  h1{margin:0 0 6px;font-size:26px;line-height:1.25;}
+  .sub{margin:0;color:var(--dim);font-size:14px;line-height:1.6;}
+  .who{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:14px 0 0;font-size:14px;}
+  .who span{color:var(--dim);} .who b{font-weight:700;} .mono{font-family:'IBM Plex Mono',monospace;}
+  ol{margin:0;padding-left:20px;line-height:1.85;font-size:14px;color:#cfd8e6;}
+  label.chk{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.6;margin-top:14px;cursor:pointer;}
+  label.chk input{width:18px;height:18px;margin-top:3px;accent-color:var(--neon);flex:none;}
+  .fld{display:flex;flex-direction:column;gap:6px;margin-top:14px;font-size:13px;color:var(--dim);}
+  .fld input{font:inherit;font-size:15px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:#070b13;color:var(--text);}
+  .fld input:focus{outline:none;border-color:var(--neon);}
+  .btn{margin-top:16px;width:100%;font:inherit;font-weight:800;font-size:15px;padding:14px;border:0;border-radius:12px;cursor:pointer;color:#04121a;background:linear-gradient(90deg,#22c3f2,#21c07a);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .msg{font-size:13.5px;margin-top:10px;line-height:1.6;} .msg.bad{color:var(--bad);} .msg.ok{color:var(--ok);}
+  .done{display:flex;gap:12px;align-items:center;}
+  .tick{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:rgba(33,192,122,.16);color:var(--ok);font-weight:800;flex:none;}
+  .foot{color:var(--dim);font-size:12px;text-align:center;line-height:1.7;}
+  .foot a{color:var(--neon);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div class="brand">SPACEZ TERMINAL</div><button class="lang" id="lang" type="button">EN / TH</button></div>
+  <div id="app" class="card"><p class="sub" id="loading">…</p></div>
+  <div class="foot" id="foot"></div>
+</div>
+<script>
+(function(){
+  'use strict';
+  var WORKER = 'https://spacez-line-link.spacezblack.workers.dev', SITE = 'https://spacez001.github.io/TERMINAL/SPACEZ_TERMINAL.html';
+  var q = {}; location.hash.replace(/^#/, '').split('&').forEach(function(p){ var i = p.indexOf('='); if(i > 0) q[p.slice(0, i)] = decodeURIComponent(p.slice(i + 1)); });
+  var lang = 'th', rec = null, app = document.getElementById('app');
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  var X = {
+    th:{ h:'รับอีบุ๊ก "{t}"', sub:'ฉบับนี้จัดทำเฉพาะสำหรับคุณ กรุณาอ่านเงื่อนไขการใช้ แล้วกดยอมรับเพื่อดาวน์โหลด', to:'มอบให้', no:'เลขที่ฉบับ', terms:'เงื่อนไขการใช้',
+      chk:'ข้าพเจ้าได้อ่านและยอมรับเงื่อนไขการใช้ข้างต้นทุกข้อ', typed:'พิมพ์ชื่อ-นามสกุลของคุณเพื่อยืนยัน', accept:'ยอมรับและดาวน์โหลด', dl:'ดาวน์โหลดอีบุ๊ก (PDF)',
+      okH:'ยอมรับเงื่อนไขแล้ว', okS:'บันทึกการยอมรับเรียบร้อย ดาวน์โหลดได้ที่ปุ่มด้านล่าง เก็บไฟล์ไว้ใช้ส่วนตัวเท่านั้น', wait:'แอดมินยังไม่ได้แนบไฟล์ กรุณากลับมาที่ลิงก์นี้อีกครั้งภายหลัง',
+      nf:'ไม่พบลิงก์นี้ หรือลิงก์ไม่ถูกต้อง', rv:'สิทธิ์การใช้ฉบับนี้ถูกยกเลิกแล้ว', net:'เชื่อมต่อไม่ได้ ลองใหม่อีกครั้ง', need:'กรุณาติ๊กยอมรับและพิมพ์ชื่อของคุณ',
+      vH:'สำเนาอย่างเป็นทางการของ SPACEZ TERMINAL', vS:'เอกสารนี้เป็นสื่อการเรียนรู้ของ SPACEZ TERMINAL เยี่ยมชมเว็บไซต์เพื่อเรียนรู้เพิ่มเติม', visit:'ไปที่เว็บไซต์', downloading:'กำลังดาวน์โหลด…',
+      foot:'© 2569 นรเศรษฐ์ บ่อแก้ว · SPACEZ TERMINAL · สื่อการเรียนรู้ ไม่ใช่คำแนะนำการลงทุน' },
+    en:{ h:'Your copy of "{t}"', sub:'This copy was made for you. Please read the terms of use, then accept to download.', to:'Licensed to', no:'Copy no.', terms:'Terms of use',
+      chk:'I have read and accept all of the terms above', typed:'Type your full name to confirm', accept:'Accept and download', dl:'Download the ebook (PDF)',
+      okH:'Terms accepted', okS:'Your acceptance is recorded. Use the button below to download. Keep the file for personal use only.', wait:'The admin has not attached the file yet. Please come back to this link later.',
+      nf:'This link was not found or is not valid.', rv:'The licence for this copy has been revoked.', net:'Could not connect. Please try again.', need:'Please tick the box and type your name.',
+      vH:'An official SPACEZ TERMINAL copy', vS:'This document is learning material from SPACEZ TERMINAL. Visit the website to learn more.', visit:'Visit the website', downloading:'Downloading…',
+      foot:'© 2026 Noraset Boikaw · SPACEZ TERMINAL · educational material, not investment advice' }
+  };
+  /* must match termsText() in assets/js/part-78.js exactly (the hash is compared) */
+  function terms(l, name, title, id){
+    if(l === 'en') return [
+      'This copy of "' + title + '" (copy ' + id + ') is the copyright work of Noraset Boikaw (SPACEZ TERMINAL) and is licensed to ' + name + ' for personal study only.',
+      'You may not copy, share, forward, upload, sell, rent or publish this book, in whole or in part, in any form, without written permission.',
+      'You may not remove, alter or hide the identifying marks in this copy.',
+      'This copy carries marks that identify you as its recipient. If it is found shared, you accept that these marks may be used as evidence.',
+      'If these terms are broken, the copyright owner may end this licence and take legal action, including a claim for damages.',
+      'When you accept, the system records the time, your IP address and your device as evidence of acceptance.',
+      'The content is for education only and is not investment advice.'
+    ];
+    return [
+      'หนังสือ "' + title + '" ฉบับนี้ (เลขที่ ' + id + ') เป็นงานอันมีลิขสิทธิ์ของ นรเศรษฐ์ บ่อแก้ว (SPACEZ TERMINAL) และอนุญาตให้ ' + name + ' ใช้เพื่อการศึกษาส่วนตัวเท่านั้น',
+      'ห้ามทำซ้ำ แบ่งปัน ส่งต่อ อัปโหลด ขาย ให้เช่า หรือเผยแพร่ ไม่ว่าทั้งเล่มหรือบางส่วน ในรูปแบบใด ๆ โดยไม่ได้รับอนุญาตเป็นลายลักษณ์อักษร',
+      'ห้ามลบ แก้ไข หรือปิดบังเครื่องหมายระบุตัวตนในเอกสารฉบับนี้',
+      'ฉบับนี้มีเครื่องหมายที่ระบุตัวผู้รับ หากพบการเผยแพร่ ผู้รับยอมรับว่าเครื่องหมายดังกล่าวใช้เป็นหลักฐานได้',
+      'หากฝ่าฝืนเงื่อนไข เจ้าของลิขสิทธิ์อาจยกเลิกสิทธิ์การใช้ และดำเนินการตามกฎหมาย รวมถึงเรียกร้องค่าเสียหาย',
+      'เมื่อกดยอมรับ ระบบจะบันทึกเวลา หมายเลข IP และอุปกรณ์ที่ใช้ เพื่อเป็นหลักฐานการยอมรับ',
+      'เนื้อหาจัดทำเพื่อการศึกษา ไม่ใช่คำแนะนำการลงทุน'
+    ];
+  }
+  function sha(str){ return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)).then(function(h){ return Array.prototype.map.call(new Uint8Array(h), function(x){ return ('0' + x.toString(16)).slice(-2); }).join(''); }); }
+  function t(k){ return X[lang][k]; }
+  function err(k){ app.innerHTML = '<p class="msg bad">' + esc(t(k)) + '</p>'; }
+  function paint(){
+    document.documentElement.lang = lang;
+    document.getElementById('foot').textContent = t('foot');
+    if(q.v){
+      app.innerHTML = '<h1>' + esc(t('vH')) + '</h1><p class="sub">' + esc(t('vS')) + '</p><a class="btn" style="display:block;text-align:center;text-decoration:none" href="' + SITE + '">' + esc(t('visit')) + '</a>';
+      return;
+    }
+    if(!rec) return;
+    if(rec.revoked){ err('rv'); return; }
+    var title = rec.title || 'Elliott Wave Classroom', tl = terms(rec.lang || lang, rec.name, title, rec.id);
+    var head = '<h1>' + esc(t('h').replace('{t}', title)) + '</h1><p class="sub">' + esc(t('sub')) + '</p>' +
+      '<div class="who"><span>' + esc(t('to')) + '</span><b>' + esc(rec.name) + '</b><span>' + esc(t('no')) + '</span><b class="mono">' + esc(rec.id) + '</b></div>';
+    var tbox = '<div class="card" style="margin-top:16px;background:#070b13"><b style="display:block;margin-bottom:8px">' + esc(t('terms')) + '</b><ol>' + tl.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ol></div>';
+    if(rec.accepted){
+      app.innerHTML = head + '<div class="done" style="margin-top:18px"><div class="tick">✓</div><div><b>' + esc(t('okH')) + '</b><p class="sub">' + esc(t('okS')) + '</p></div></div>' +
+        (rec.hasFile ? '<button class="btn" id="dl" type="button">' + esc(t('dl')) + '</button>' : '<p class="msg">' + esc(t('wait')) + '</p>') + tbox + '<p class="msg" id="m"></p>';
+      var d = document.getElementById('dl'); if(d) d.onclick = download;
+      return;
+    }
+    app.innerHTML = head + tbox +
+      '<label class="chk"><input type="checkbox" id="agree"><span>' + esc(t('chk')) + '</span></label>' +
+      '<div class="fld"><span>' + esc(t('typed')) + '</span><input type="text" id="typed" maxlength="80" autocomplete="name"></div>' +
+      '<button class="btn" id="go" type="button">' + esc(t('accept')) + '</button><p class="msg" id="m"></p>';
+    document.getElementById('go').onclick = function(){
+      var ok = document.getElementById('agree').checked, typed = document.getElementById('typed').value.trim(), m = document.getElementById('m'), b = this;
+      if(!ok || !typed){ m.className = 'msg bad'; m.textContent = t('need'); return; }
+      b.disabled = true;
+      sha(tl.join('\n')).then(function(h){
+        return fetch(WORKER + '/api/ebook/accept', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ id:q.id, t:q.t, agree:true, typedName:typed, termsHash:h }) });
+      }).then(function(r){ return r.json(); }).then(function(d){
+        b.disabled = false;
+        if(!d.ok){ m.className = 'msg bad'; m.textContent = d.error === 'revoked' ? t('rv') : t('net'); return; }
+        rec = d.ebook; paint(); if(rec.hasFile) download();
+      }).catch(function(){ b.disabled = false; m.className = 'msg bad'; m.textContent = t('net'); });
+    };
+  }
+  function download(){
+    var m = document.getElementById('m'); if(m){ m.className = 'msg'; m.textContent = t('downloading'); }
+    fetch(WORKER + '/api/ebook/file?id=' + encodeURIComponent(q.id) + '&t=' + encodeURIComponent(q.t)).then(function(r){ if(!r.ok) throw new Error(r.status); return r.blob(); }).then(function(b){
+      var a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'SPACEZ_Elliott_Wave_' + q.id + '.pdf'; document.body.appendChild(a); a.click(); a.remove();
+      if(m){ m.className = 'msg ok'; m.textContent = '✓'; }
+    }).catch(function(){ if(m){ m.className = 'msg bad'; m.textContent = t('net'); } });
+  }
+  document.getElementById('lang').onclick = function(){ lang = lang === 'th' ? 'en' : 'th'; paint(); };
+  if(q.v){ paint(); return; }
+  if(!q.id || !q.t){ err('nf'); return; }
+  fetch(WORKER + '/api/ebook/terms?id=' + encodeURIComponent(q.id) + '&t=' + encodeURIComponent(q.t)).then(function(r){ return r.json().then(function(d){ d.__s = r.status; return d; }); }).then(function(d){
+    if(!d.ok){ err('nf'); return; }
+    rec = d.ebook; lang = rec.lang === 'en' ? 'en' : 'th'; paint();
+  }).catch(function(){ err('net'); });
+})();
+</script>
+</body>
+</html>
