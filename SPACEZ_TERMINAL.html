@@ -4162,5 +4162,64 @@ render: heavy series on Canvas2D/WebGL off the React tree; React only owns chrom
 <script defer src="assets/js/min/part-70.js"></script>
 <!-- Classroom Exam: teacher-issued logins, one attempt each. See part-71.js. -->
 <script defer src="assets/js/min/part-71.js"></script>
+
+<!-- ===== SPACEZ COMPACT HEADER (2026-10-16) =====
+     Scrolling down past the first screen hides the SPACEZ // TERMINAL brand row:
+     the ticker moves to the very top and the nav pill (cycle, menu, tools,
+     theme, guide, EN/TH) floats at the top-right just under it. Scrolling back
+     to the top restores the full header. --spz-topH is frozen while compact
+     (see part-38.js) so the page content never jumps. -->
+<style>
+  .top-fixed .nav{transition:background .3s ease;}
+  html.spz-compact .top-fixed .nav{position:absolute !important;top:var(--spz-tickH,34px);right:0;left:auto;width:auto;max-width:100%;
+    padding:8px 14px !important;background:transparent !important;border:0 !important;box-shadow:none !important;pointer-events:none;
+    animation:spzPillIn .32s cubic-bezier(.2,.8,.2,1);}
+  html.spz-compact .top-fixed .nav > *:not(.nav-cluster){display:none !important;}
+  html.spz-compact .top-fixed .nav-cluster{pointer-events:auto;margin-left:0;width:auto;
+    background:rgba(8,10,16,.78);backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);
+    box-shadow:0 10px 30px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.04) inset;}
+  html[data-theme="light"].spz-compact .top-fixed .nav-cluster{background:rgba(255,255,255,.86);box-shadow:0 10px 26px rgba(0,0,0,.12);}
+  @keyframes spzPillIn{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:none;}}
+  html.spz-compact .top-fixed .ticker-bar{background:rgba(6,7,11,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+  html[data-theme="light"].spz-compact .top-fixed .ticker-bar{background:rgba(250,250,252,.95);}
+  @media(max-width:560px){
+    html.spz-compact .top-fixed{display:flex;flex-direction:column;}
+    html.spz-compact .top-fixed .ticker-bar{order:-2;}
+    html.spz-compact .top-fixed .nav{order:-1;position:static !important;width:100%;display:flex;justify-content:flex-end;padding:6px 8px !important;}
+    html.spz-compact .top-fixed .nav-cluster .gmh-pill{display:none !important;}
+    html.spz-compact .top-fixed .nav-cluster{flex-wrap:nowrap;gap:5px;padding:3px 4px;border-radius:999px;}
+    html.spz-compact .top-fixed .nav-cluster .theme-switch,
+    html.spz-compact .top-fixed .nav-cluster .nav-div,
+    html.spz-compact .top-fixed .nav-cluster .nv-pair{display:none !important;}
+  }
+</style>
+<script>
+(function(){
+  'use strict';
+  var root = document.documentElement, on = false, raf = 0;
+  function tickH(){ var t = document.querySelector('.top-fixed .ticker-bar'); return t ? Math.round(t.getBoundingClientRect().height) : 34; }
+  function set(v){
+    if(v === on) return;
+    if(v){
+      /* freeze the header height the page is laid out with before collapsing */
+      var tf = document.querySelector('.top-fixed');
+      if(tf) root.style.setProperty('--spz-topH', Math.round(tf.getBoundingClientRect().height) + 'px');
+      root.style.setProperty('--spz-tickH', tickH() + 'px');
+    }
+    on = v; root.classList.toggle('spz-compact', v);
+    if(!v){ var tf2 = document.querySelector('.top-fixed'); if(tf2){ var h = Math.round(tf2.getBoundingClientRect().height); if(h > 0) root.style.setProperty('--spz-topH', h + 'px'); } }
+  }
+  function check(){
+    raf = 0;
+    if(document.body.classList.contains('nav-open')) return;
+    var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+    if(!on && y > 140) set(true);
+    else if(on && y < 60) set(false);
+  }
+  window.addEventListener('scroll', function(){ if(!raf) raf = requestAnimationFrame(check); }, { passive:true });
+  window.addEventListener('hashchange', function(){ setTimeout(check, 60); });
+  window.addEventListener('resize', function(){ if(on) root.style.setProperty('--spz-tickH', tickH() + 'px'); });
+})();
+</script>
 </body>
 </html>
