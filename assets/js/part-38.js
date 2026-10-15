@@ -16,6 +16,8 @@
   function measureTop(){
     var t = document.querySelector('.top-fixed');
     if(!t) return;
+    /* compact header (end of SPACEZ_TERMINAL.html): keep the full height the page was laid out with */
+    if(document.documentElement.classList.contains('spz-compact')) return;
     var h = Math.round(t.getBoundingClientRect().height);
     if(h > 0) document.documentElement.style.setProperty('--spz-topH', h + 'px');
   }
