@@ -206,6 +206,47 @@
     navCtxLong: { en:'Long-term waves', th:'คลื่นระยะยาว' },
     navCtxAssets: { en:'Stocks, commodities, gold', th:'หุ้น สินค้าโภคภัณฑ์ ทองคำ' },
     navCtxOther: { en:'Other approaches', th:'แนวทางวิเคราะห์อื่น' },
+    /* 2026-10-16: new lesson groups (content uploaded separately) */
+    nx_diag_101: { en:'Diagonals explained', th:'Diagonal คืออะไร (ครบในหน้าเดียว)' },
+    nx_alt: { en:'Alternation in practice', th:'Alternation ในการใช้งานจริง' },
+    nx_alt_21: { en:'Wave 2 sharp → wave 4 sideways', th:'Wave 2 ชัน → wave 4 ออกข้าง' },
+    nx_alt_22: { en:'Wave 2 sideways → wave 4 sharp', th:'Wave 2 ออกข้าง → wave 4 ชัน' },
+    nx_alt_depth: { en:'Deep vs shallow, quick vs slow', th:'ลึกกับตื้น เร็วกับช้า' },
+    nx_alt_cx: { en:'Simple vs complex', th:'แบบเดี่ยวกับแบบซับซ้อน' },
+    nx_alt_ext: { en:'Which wave will extend?', th:'คลื่นไหนจะยืด (Extension)' },
+    nx_alt_corr: { en:'Alternation inside corrections', th:'Alternation ภายในการปรับฐาน' },
+    nx_scn: { en:'Advanced: when the count does not fit', th:'วิเคราะห์ขั้นสูง: เมื่อการนับไม่ลงตัว' },
+    nx_scn_w4short: { en:'Wave 4 too quick to be finished', th:'Wave 4 เร็วเกินกว่าจะจบ' },
+    nx_scn_3_not_done: { en:'Wave 3 is not over yet', th:'Wave 3 ยังไม่จบ' },
+    nx_scn_c_is_3: { en:'The "C" is really wave 3', th:'"C" ที่เห็นอาจเป็น wave 3' },
+    nx_scn_w3short: { en:'Wave 3 looks the shortest', th:'Wave 3 ดูสั้นที่สุด' },
+    nx_scn_1212: { en:'A series of 1-2s', th:'1-2 ซ้อน 1-2' },
+    nx_scn_trunc: { en:'Truncated fifth or unfinished fifth?', th:'Wave 5 ขาด (Truncation) หรือยังไม่จบ?' },
+    nx_scn_bhigh: { en:'New high: wave 5 or wave B?', th:'ทำยอดใหม่: wave 5 หรือ wave B?' },
+    nx_scn_tri_diag: { en:'Triangle or ending diagonal?', th:'Triangle หรือ Ending Diagonal?' },
+    nx_scn_dzz_imp: { en:'Double zigzag or impulse?', th:'Double Zigzag หรือ Impulse?' },
+    nx_scn_deep2: { en:'A very deep wave 2', th:'Wave 2 ลึกมาก' },
+    nx_scn_lead: { en:'Overlap at the start of a trend', th:'ซ้อนทับตั้งแต่ต้นเทรนด์' },
+    nx_scn_running: { en:'Corrections that never reach their target', th:'การปรับฐานที่ไปไม่ถึงเป้า' },
+    nx_scn_degree: { en:'Which degree is ending?', th:'คลื่นระดับไหนกำลังจบ?' },
+    nx_trade: { en:'Trading with Elliott Wave', th:'การเทรดด้วย Elliott Wave' },
+    nx_tr_basics: { en:'Entries, stops and targets', th:'จุดเข้า จุดตัดขาดทุน และเป้าหมาย' },
+    nx_tr_w3: { en:'Trading wave 3', th:'เทรด wave 3' },
+    nx_tr_w5: { en:'Trading wave 5', th:'เทรด wave 5' },
+    nx_tr_c: { en:'Zigzag and flat: trading wave C', th:'Zigzag และ Flat: เทรด wave C' },
+    nx_tr_c_exit: { en:'Taking profit on wave C', th:'เก็บกำไร wave C' },
+    nx_tr_tri: { en:'Trading triangles', th:'เทรดด้วย Triangle' },
+    nx_tr_ed: { en:'Ending diagonal reversals', th:'เทรดการกลับตัวจาก Ending Diagonal' },
+    nx_tr_top: { en:'Selling the end of an impulse', th:'ขายตอนจบ Impulse' },
+    nx_tr_channel: { en:'Trading with channels', th:'เทรดด้วยช่องราคา (Channel)' },
+    nx_tr_manage: { en:'Managing an open trade', th:'การบริหารออเดอร์ที่เปิดอยู่' },
+    nx_tr_check: { en:'Pre-trade checklist', th:'เช็กลิสต์ก่อนเข้าเทรด' },
+    nx_fm: { en:'Measuring Fibonacci correctly', th:'วัดฟีโบนัชชีให้ถูก' },
+    nx_fm_map: { en:'What to measure against what', th:'คลื่นไหนวัดเทียบกับคลื่นไหน' },
+    nx_fm_retr: { en:'Retracement: where to click', th:'Retracement: คลิกที่จุดไหน' },
+    nx_fm_ext: { en:'Extension: the three clicks', th:'Extension: คลิก 3 จุด' },
+    nx_fm_corr: { en:'A-B-C, triangles and W-X-Y', th:'A-B-C, Triangle และ W-X-Y' },
+    nx_fm_err: { en:'Common measuring mistakes', th:'ข้อผิดพลาดในการวัดที่พบบ่อย' },
 
     /* ---- Round AB: admin-key gate + content-loading states, mirroring
        Connected Users (part-50.js) exactly in wording style/tone. ---- */
@@ -242,14 +283,54 @@
     ctx:UI.navCtx, 'ctx-long':UI.navCtxLong, 'ctx-assets':UI.navCtxAssets, 'ctx-other':UI.navCtxOther,
     guide:UI.navGuide, 'gd-alternation':UI.navGdAlt, 'gd-channel':UI.navGdChannel, 'gd-extension':UI.navGdExt, 'gd-truncation':UI.navGdTrunc, 'gd-depth':UI.navGdDepth,
     volume:UI.navVolume, personality:UI.navPersonality, howto:UI.navHowto, w3c:UI.navW3c, markets:UI.navMarkets, basics:UI.navBasics, glossary:UI.navGlossary, example:UI.navExample,
-    mistakes:UI.navMistakes, further:UI.navFurther
+    mistakes:UI.navMistakes, further:UI.navFurther,
+    'diag-101':UI.nx_diag_101,
+    'alt':UI.nx_alt,
+    'alt-21':UI.nx_alt_21,
+    'alt-22':UI.nx_alt_22,
+    'alt-depth':UI.nx_alt_depth,
+    'alt-cx':UI.nx_alt_cx,
+    'alt-ext':UI.nx_alt_ext,
+    'alt-corr':UI.nx_alt_corr,
+    'scn':UI.nx_scn,
+    'scn-w4short':UI.nx_scn_w4short,
+    'scn-3-not-done':UI.nx_scn_3_not_done,
+    'scn-c-is-3':UI.nx_scn_c_is_3,
+    'scn-w3short':UI.nx_scn_w3short,
+    'scn-1212':UI.nx_scn_1212,
+    'scn-trunc':UI.nx_scn_trunc,
+    'scn-bhigh':UI.nx_scn_bhigh,
+    'scn-tri-diag':UI.nx_scn_tri_diag,
+    'scn-dzz-imp':UI.nx_scn_dzz_imp,
+    'scn-deep2':UI.nx_scn_deep2,
+    'scn-lead':UI.nx_scn_lead,
+    'scn-running':UI.nx_scn_running,
+    'scn-degree':UI.nx_scn_degree,
+    'trade':UI.nx_trade,
+    'tr-basics':UI.nx_tr_basics,
+    'tr-w3':UI.nx_tr_w3,
+    'tr-w5':UI.nx_tr_w5,
+    'tr-c':UI.nx_tr_c,
+    'tr-c-exit':UI.nx_tr_c_exit,
+    'tr-tri':UI.nx_tr_tri,
+    'tr-ed':UI.nx_tr_ed,
+    'tr-top':UI.nx_tr_top,
+    'tr-channel':UI.nx_tr_channel,
+    'tr-manage':UI.nx_tr_manage,
+    'tr-check':UI.nx_tr_check,
+    'fm':UI.nx_fm,
+    'fm-map':UI.nx_fm_map,
+    'fm-retr':UI.nx_fm_retr,
+    'fm-ext':UI.nx_fm_ext,
+    'fm-corr':UI.nx_fm_corr,
+    'fm-err':UI.nx_fm_err
   };
   // Ordered from the basics a beginner needs first down to the advanced material.
   var TREE = [
     { id:'overview' },
     { id:'basics' },
     { id:'degree' },
-    { id:'motive', children:['impulse', 'diag-lead', 'diag-end'] },
+    { id:'motive', children:['impulse', 'diag-101', 'diag-lead', 'diag-end'] },
     { id:'corrective', children:[
       'zigzag',
       'flat', 'flat-regular', 'flat-expanded', 'flat-running',
@@ -259,6 +340,7 @@
     { id:'gallery' },
     { id:'personality' },
     { id:'guide', children:['gd-start', 'gd-alternation', 'gd-channel', 'gd-extension', 'gd-nest', 'gd-truncation', 'gd-depth', 'gd-thrust', 'gd-corrdone'] },
+    { id:'alt', children:['alt-21', 'alt-22', 'alt-depth', 'alt-cx', 'alt-ext', 'alt-corr'] },
     { id:'adv', children:['adv-orthodox', 'adv-function', 'adv-errors', 'adv-after5', 'adv-scale', 'adv-throw', 'adv-look', 'time-obs', 'adv-practice'] },
     { id:'fib', children:[
       'fib-intro', 'fib-history',
@@ -266,13 +348,16 @@
       'fib-proj3', 'fib-proj', 'fib-c', 'fib-cluster', 'fib-ratio', 'fib-time', 'fib-timeseq',
       'fib-ao', 'volume'
     ] },
+    { id:'fm', children:['fm-map', 'fm-retr', 'fm-ext', 'fm-corr', 'fm-err'] },
     { id:'howto' },
     { id:'rules-sheet' },
     { id:'practice' },
     { id:'alt-count' },
     { id:'recount', children:['rc-tri2', 'rc-overlap', 'rc-flat', 'rc-ext'] },
+    { id:'scn', children:['scn-w4short', 'scn-3-not-done', 'scn-c-is-3', 'scn-w3short', 'scn-1212', 'scn-trunc', 'scn-bhigh', 'scn-tri-diag', 'scn-dzz-imp', 'scn-deep2', 'scn-lead', 'scn-running', 'scn-degree'] },
     { id:'mtf' },
     { id:'example' },
+    { id:'trade', children:['tr-basics', 'tr-w3', 'tr-w5', 'tr-c', 'tr-c-exit', 'tr-tri', 'tr-ed', 'tr-top', 'tr-channel', 'tr-manage', 'tr-check'] },
     { id:'w3c' },
     { id:'markets' },
     { id:'ctx', children:['ctx-long', 'ctx-assets', 'ctx-other'] },
@@ -378,9 +463,13 @@
       fetchClassroomContent();
       return;
     }
+    /* a lesson that is in the menu but not on the server yet stays hidden until it is uploaded */
+    function has(id){ return !contentCache || id === 'practice' || !!contentCache[id]; }
     var navHTML = TREE.map(function(entry){
-      var html = navItemHTML(entry.id, false);
-      if(entry.children) html += entry.children.map(function(cid){ return navItemHTML(cid, true); }).join('');
+      var kids = (entry.children || []).filter(has);
+      if(!has(entry.id) && !kids.length) return '';
+      var html = has(entry.id) ? navItemHTML(entry.id, false) : '';
+      html += kids.map(function(cid){ return navItemHTML(cid, true); }).join('');
       return html;
     }).join('');
     bodyEl.innerHTML =
@@ -573,9 +662,11 @@
   }
   function prHTML(){
     var S = STRUCTS[pr.s];
-    var h = '<div class="ewv-pr"><div class="ewv-pr-lbl">' + esc(T(PU.pick)) + '</div><div class="ewv-pr-structs">' +
-      Object.keys(STRUCTS).map(function(k){ return '<button type="button" class="ewv-pr-st' + (k === pr.s ? ' on' : '') + '" data-pr-st="' + k + '">' + prStructMini(k) + '<span>' + esc(T(STRUCTS[k].t)) + '</span></button>'; }).join('') + '</div>' +
-      '<div class="ewv-pr-top"><button type="button" class="go" data-pr-act="check">' + esc(T(PU.chk)) + '</button><button type="button" data-pr-act="rnd">' + esc(T(PU.rnd)) + '</button><button type="button" data-pr-act="ans">' + esc(T(PU.ans)) + '</button><button type="button" data-pr-act="clr">' + esc(T(PU.clr)) + '</button><span class="ewv-pr-tip">' + esc(T(PU2.tapWave)) + '</span></div>';
+    /* the structure picker and the action buttons live in one narrow bar that sticks under the header */
+    var h = '<div class="ewv-pr"><div class="ewv-pr-bar"><span class="ewv-pr-lbl">' + esc(T(PU.pick)) + '</span><div class="ewv-pr-structs">' +
+      Object.keys(STRUCTS).map(function(k){ return '<button type="button" class="ewv-pr-st' + (k === pr.s ? ' on' : '') + '" data-pr-st="' + k + '" title="' + esc(T(STRUCTS[k].t)) + '">' + prStructMini(k) + '<span>' + esc(T(STRUCTS[k].t).replace(/\s*\(.*\)\s*$/, '')) + '</span></button>'; }).join('') + '</div>' +
+      '<div class="ewv-pr-top"><button type="button" class="go" data-pr-act="check">' + esc(T(PU.chk)) + '</button><button type="button" data-pr-act="rnd">' + esc(T(PU.rnd)) + '</button><button type="button" data-pr-act="ans">' + esc(T(PU.ans)) + '</button><button type="button" data-pr-act="clr">' + esc(T(PU.clr)) + '</button></div></div>' +
+      '<p class="ewv-pr-tip">' + esc(T(PU2.tapWave)) + '</p>';
     h += '<div class="ewv-diagram ewv-pr-chart">' + prDraw() + '</div>';
     if(pr.open !== null && pr.open < S.legs.length) h += prCards(pr.open);
     h += '<div class="ewv-pr-legs">';
