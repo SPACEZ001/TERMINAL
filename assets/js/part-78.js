@@ -188,6 +188,20 @@
     var k = 0; for(var j = 1; j <= 6; j++) for(var i = 1; i <= 8; i++){ if(b[k]) dot(i, j, 0.8); k++; }
     return '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">' + o + '</svg>';
   }
+  /* the same tile as a small PNG: Chrome embeds one bitmap and repeats it, instead of
+     rasterising an SVG background on every page (that alone made PDFs several MB bigger) */
+  function dotTilePNG(serial){
+    try {
+      var S = 4, b = dotBits(serial), w = DOT.cols * DOT.step, h = DOT.rows * DOT.step, cv = document.createElement('canvas');
+      cv.width = w * S; cv.height = h * S; var x = cv.getContext('2d'); x.fillStyle = '#d6dbe4';
+      function dot(cx, cy, r){ x.beginPath(); x.arc(cx * S, cy * S, r * S, 0, 6.2832); x.fill(); }
+      function cell(i, j, r){ dot(i * DOT.step + 3.5, j * DOT.step + 3.5, r); }
+      cell(0, 0, 1.15); dot(3.5 + 2.6, 3.5, 0.75);
+      cell(DOT.cols - 1, 0, 1.15); cell(DOT.cols - 1, DOT.rows - 1, 1.15); cell(0, DOT.rows - 1, 1.15);
+      var k = 0; for(var j = 1; j <= 6; j++) for(var i = 1; i <= 8; i++){ if(b[k]) cell(i, j, 0.8); k++; }
+      return cv.toDataURL('image/png');
+    } catch(e){ return null; }
+  }
   function decodeDotBits(vals){
     /* most cells are empty, so compare against the median (background) and the darkest few */
     var sorted = vals.slice().sort(function(a, b){ return a - b; }), lo = sorted[Math.floor(vals.length / 2)], hi = (sorted[vals.length - 1] + sorted[vals.length - 2] + sorted[vals.length - 3]) / 3;
@@ -355,7 +369,7 @@
     x.fillStyle = '#fff'; x.font = '800 ' + Math.round(6.4 * mm) + 'px ' + FT; x.fillText(TX.by, L, H - 33 * mm);
     x.fillStyle = 'rgba(232,238,248,.75)'; x.font = '500 ' + Math.round(3.9 * mm) + 'px ' + FT; x.fillText(TX.forWho + ' ' + printName(rec) + '  ·  ' + rec.id, L, H - 24 * mm);
     x.fillStyle = '#d6b46a'; x.font = '700 ' + Math.round(3.4 * mm) + 'px ' + MONO; x.textAlign = 'right'; x.fillText('ELLIOTT WAVE · CLASSROOM', W - L, H - 24 * mm); x.textAlign = 'left';
-    return c.toDataURL('image/jpeg', 0.93);
+    return c.toDataURL('image/jpeg', 0.86);
   }
   /* back cover: same night sky, a short blurb and the verification address */
   function backPNG(rec, TX){
@@ -378,7 +392,7 @@
     x.fillStyle = '#d6b46a'; x.fillText('spacez001.github.io/TERMINAL/ebook.html', W / 2, H - 33 * mm);
     x.fillStyle = 'rgba(232,238,248,.55)'; x.font = '500 ' + Math.round(3.2 * mm) + 'px ' + FT;
     x.fillText('© 2569 / 2026 Noraset Boikaw · SPACEZ TERMINAL · ' + rec.id, W / 2, H - 22 * mm);
-    return c.toDataURL('image/jpeg', 0.9);
+    return c.toDataURL('image/jpeg', 0.84);
   }
   function dotPatternSVG(serial){
     var t = dotTileSVG(serial), inner = t.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, ''), w = DOT.cols * DOT.step, h = DOT.rows * DOT.step;
@@ -417,7 +431,8 @@
     }).join('');
     var terms = termsText(lang, rec.name, rec.title || 'Elliott Wave Classroom', rec.id).map(function(t, i){ return '<li>' + esc(t) + '</li>'; }).join('');
     /* background image (one tiny tile, repeated) keeps the PDF small; print-color-adjust:exact makes Chrome print it even with "background graphics" off */
-    var dots = "url('data:image/svg+xml;utf8," + encodeURIComponent(dotTileSVG(rec.serial)) + "')";
+    var png = dotTilePNG(rec.serial);
+    var dots = png ? "url('" + png + "');background-size:" + (DOT.cols * DOT.step) + "px " + (DOT.rows * DOT.step) + "px" : "url('data:image/svg+xml;utf8," + encodeURIComponent(dotTileSVG(rec.serial)) + "')";
     return '<div class="eb-dots" style="background-image:' + dots + '"></div>' +
       '<div class="eb-cover"><img class="eb-cover-img" alt="" src="' + rec.__cover + '"></div>' +
       '<div class="eb-fw"><span class="eb-q">“</span><h2>' + esc(TX.fw) + '</h2>' + TX.fwbody.map(function(p){ return '<p>' + esc(p) + '</p>'; }).join('') + '<div class="sg">' + esc(TX.sign) + '</div></div>' +
@@ -868,7 +883,7 @@
         var f = ev.target.files && ev.target.files[0]; if(!f) return;
         msg(up, T(U.uploading), true);
         api('/api/admin/ebook/upload?id=' + encodeURIComponent(up), { method:'POST', body:f, ctype:'application/pdf' }).then(function(d){
-          if(!d.ok){ msg(up, (d.error || 'error') + ''); return; }
+          if(!d.ok){ msg(up, d.error === 'too_big' ? T({ en:'The PDF is too big for the server. Make it again with the latest version of this page (smaller file), or deploy the new Worker (accepts up to 90 MB).', th:'ไฟล์ PDF ใหญ่เกินที่เซิร์ฟเวอร์รับได้ ให้กดสร้าง PDF ใหม่จากหน้านี้ (ไฟล์จะเล็กลง) หรือ deploy Worker ตัวใหม่ (รับได้ถึง 90 MB)' }) : d.error === 'not_pdf' ? T({ en:'This is not a PDF file.', th:'ไฟล์นี้ไม่ใช่ PDF' }) : (d.error || 'error') + ''); return; }
           msg(up, T(U.uploaded) + ' · ' + Math.round(f.size / 1024) + ' KB', true);
           if(S.last && S.last.id === up) S.last = d.ebook;
           S.list = (S.list || []).map(function(x){ return x.id === up ? d.ebook : x; });
