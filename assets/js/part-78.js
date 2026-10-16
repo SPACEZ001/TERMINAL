@@ -229,11 +229,11 @@
     th:{ title:'ห้องเรียนคลื่นเอลเลียต', kick:'คู่มือฉบับสมบูรณ์', big:'คลื่น<br>เอลเลียต', sub:'Elliott Wave Classroom · จากพื้นฐานถึงการนำไปใช้จริง', by:'โดย นรเศรษฐ์ บ่อแก้ว (Focus)',
       fw:'คำนำ', toc:'สารบัญ', ch:'บทที่', edition:'ฉบับปี 2569', copyH:'ลิขสิทธิ์และสิทธิ์การใช้', forWho:'ฉบับเฉพาะของ', copyNo:'เลขที่ฉบับ', scan:'สแกนเพื่อเยี่ยมชมเว็บไซต์',
       fwbody:['หนังสือเล่มนี้รวบรวมบทเรียนทั้งหมดจากห้องเรียนคลื่นเอลเลียตบน SPACEZ TERMINAL ไว้ในที่เดียว เพื่อให้ผู้เรียนอ่านทบทวนได้ทุกที่ แม้ไม่ได้เปิดเว็บไซต์', 'เนื้อหาเรียงจากพื้นฐานไปสู่ขั้นสูง: เริ่มจากรูปแบบคลื่นขับเคลื่อนและคลื่นปรับฐาน กฎและแนวทาง ฟีโบนัชชี ไปจนถึงการนับสำรอง การนับใหม่เมื่อราคาผิดกฎ และการนำไปใช้จริง ทุกบทมีภาพประกอบเพื่อให้เห็นรูปแบบได้ชัดเจน', 'ขอให้จำไว้เสมอว่า หลักคลื่นเป็นเครื่องมือจัดระเบียบความเป็นไปได้ ไม่ใช่ลูกแก้ววิเศษ ให้ใช้ร่วมกับการบริหารความเสี่ยงทุกครั้ง', 'เนื้อหาทั้งหมดจัดทำเพื่อการศึกษา ไม่ใช่คำแนะนำการลงทุน'],
-      sign:'นรเศรษฐ์ บ่อแก้ว (Focus)', foot:'ฉบับเฉพาะของ {n} · {id} · ห้ามเผยแพร่ต่อ' },
+      sign:'นรเศรษฐ์ บ่อแก้ว (Focus)', verify:'ตรวจสอบว่าเป็นฉบับแท้ได้ที่', back:['คู่มือคลื่นเอลเลียตฉบับสมบูรณ์จากห้องเรียน SPACEZ TERMINAL ตั้งแต่ประวัติและพื้นฐาน ไปจนถึงการนับคลื่นขั้นสูง การวัดฟีโบนัชชี และการวางแผนเทรด', 'ทุกบทอธิบายด้วยแผนภาพ เพื่อให้อ่านทบทวนได้ทุกที่ แม้ไม่ได้ต่ออินเทอร์เน็ต'], backList:['รูปแบบคลื่นครบทุกแบบ พร้อมกฎและแนวทาง', 'สถานการณ์นับคลื่นใหม่และการนับสำรอง', 'จุดเข้า จุดตัดขาดทุน และเป้าหมายของแต่ละรูปแบบ', 'วิธีวัดฟีโบนัชชีให้ถูกต้อง'], foot:'ฉบับเฉพาะของ {n} · {id} · ห้ามเผยแพร่ต่อ' },
     en:{ title:'Elliott Wave Classroom', kick:'The complete handbook', big:'Elliott<br>Wave', sub:'From the basics to real-world practice', by:'by Noraset Boikaw (Focus)',
       fw:'Foreword', toc:'Contents', ch:'Chapter', edition:'2026 edition', copyH:'Copyright and licence', forWho:'Personal copy of', copyNo:'Copy no.', scan:'Scan to visit the website',
       fwbody:['This book collects every lesson from the Elliott Wave Classroom on SPACEZ TERMINAL in one place, so students can review anywhere, even offline.', 'The material runs from the basics to advanced topics: motive and corrective patterns, rules and guidelines, Fibonacci, alternate counts, recounting when price breaks a rule, and practical application. Every chapter is illustrated so the patterns are easy to see.', 'Always remember: the wave principle is a way to organise possibilities, not a crystal ball. Use it together with sound risk management.', 'Educational material only — not investment advice.'],
-      sign:'Noraset Boikaw (Focus)', foot:'Personal copy of {n} · {id} · do not share' }
+      sign:'Noraset Boikaw (Focus)', verify:'Check that this copy is genuine at', back:['The complete Elliott Wave handbook from the SPACEZ TERMINAL classroom — from the history and the basics to advanced counting, Fibonacci measurement and trade planning.', 'Every lesson is explained with diagrams, so you can review anywhere, even offline.'], backList:['Every wave pattern with its rules and guidelines', 'Recount scenarios and alternate counts', 'Entries, stops and targets for each pattern', 'How to measure Fibonacci correctly'], foot:'Personal copy of {n} · {id} · do not share' }
   };
   function qrSVG(text){
     try { if(typeof qrcode === 'function'){ var q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize:4, margin:4, scalable:true }); } } catch(e){}
@@ -241,41 +241,144 @@
   }
   function isSafari(){ var u = navigator.userAgent; return /safari/i.test(u) && !/chrome|chromium|crios|edg|opr|android/i.test(u); }
   /* the cover is drawn on a canvas and printed as a picture, so every browser
-     prints the same colours (CSS gradients and "print backgrounds" no longer matter) */
+     prints the same colours (CSS gradients and "print backgrounds" no longer matter).
+     2026-10-16: redesigned -- deep night sky, gold Fibonacci spiral, gold wave. */
+  function rnd(seed){ var s0 = seed >>> 0 || 1; return function(){ s0 ^= s0 << 13; s0 ^= s0 >>> 17; s0 ^= s0 << 5; return ((s0 >>> 0) % 100000) / 100000; }; }
+  function coverBase(x, W, H, mm, seed){
+    var g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#04070f'); g.addColorStop(0.5, '#0a1530'); g.addColorStop(1, '#030509');
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    [[0.82, 0.22, 0.7, 'rgba(46,96,180,.38)'], [0.12, 0.62, 0.55, 'rgba(201,162,74,.10)'], [0.55, 0.95, 0.6, 'rgba(34,120,200,.16)']].forEach(function(n){
+      var r = x.createRadialGradient(W * n[0], H * n[1], 0, W * n[0], H * n[1], W * n[2]); r.addColorStop(0, n[3]); r.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = r; x.fillRect(0, 0, W, H);
+    });
+    var R = rnd(seed || 77);
+    for(var i = 0; i < 950; i++){
+      var sx = R() * W, sy = R() * H, sz = Math.pow(R(), 3) * 2.6 + 0.5, a = 0.25 + R() * 0.7;
+      x.fillStyle = R() < 0.18 ? 'rgba(240,212,138,' + a.toFixed(2) + ')' : 'rgba(225,235,255,' + a.toFixed(2) + ')';
+      x.beginPath(); x.arc(sx, sy, sz, 0, 6.2832); x.fill();
+      if(sz > 2.4){ x.fillStyle = 'rgba(255,255,255,.35)'; x.fillRect(sx - sz * 4, sy - 0.5, sz * 8, 1); x.fillRect(sx - 0.5, sy - sz * 4, 1, sz * 8); }
+    }
+    /* frame */
+    x.strokeStyle = 'rgba(214,180,106,.55)'; x.lineWidth = 2; x.strokeRect(9 * mm, 9 * mm, W - 18 * mm, H - 18 * mm);
+    x.strokeStyle = 'rgba(214,180,106,.22)'; x.lineWidth = 1; x.strokeRect(11 * mm, 11 * mm, W - 22 * mm, H - 22 * mm);
+    x.fillStyle = '#d6b46a';
+    [[9, 9], [201, 9], [9, 288], [201, 288]].forEach(function(p){ var cx = p[0] * mm, cy = p[1] * mm; x.save(); x.translate(cx, cy); x.rotate(Math.PI / 4); x.fillRect(-1.3 * mm, -1.3 * mm, 2.6 * mm, 2.6 * mm); x.restore(); });
+  }
+  function goldSpiral(x, cx, cy, size, alpha){
+    /* Fibonacci squares with the quarter arcs that make the golden spiral */
+    var f = [1, 1, 2, 3, 5, 8, 13, 21, 34], u = size / 34, X0 = cx, Y0 = cy, dir = 0;
+    var boxes = [], x0 = 0, y0 = 0, w = 1, h = 1;
+    boxes.push([0, 0, 1, 1, 0]);
+    var minx = 0, miny = 0, maxx = 1, maxy = 1;
+    for(var i = 1; i < f.length; i++){
+      var s0 = f[i], bx, by;
+      if(dir === 0){ bx = maxx; by = miny; } else if(dir === 1){ bx = maxx - s0; by = maxy; } else if(dir === 2){ bx = minx - s0; by = maxy - s0; } else { bx = minx; by = miny - s0; }
+      boxes.push([bx, by, s0, s0, dir]);
+      minx = Math.min(minx, bx); miny = Math.min(miny, by); maxx = Math.max(maxx, bx + s0); maxy = Math.max(maxy, by + s0);
+      dir = (dir + 1) % 4;
+    }
+    var ox = cx - (minx + maxx) / 2 * u, oy = cy - (miny + maxy) / 2 * u;
+    x.strokeStyle = 'rgba(214,180,106,' + (alpha * 0.45).toFixed(3) + ')'; x.lineWidth = 1.2;
+    boxes.forEach(function(b){ x.strokeRect(ox + b[0] * u, oy + b[1] * u, b[2] * u, b[3] * u); });
+    x.strokeStyle = 'rgba(240,212,138,' + alpha.toFixed(3) + ')'; x.lineWidth = 2.4;
+    boxes.slice(1).forEach(function(b){
+      var d = b[4], s0 = b[2] * u, X = ox + b[0] * u, Y = oy + b[1] * u, ccx, ccy, a0;
+      if(d === 0){ ccx = X; ccy = Y + s0; a0 = -Math.PI / 2; } else if(d === 1){ ccx = X; ccy = Y; a0 = 0; } else if(d === 2){ ccx = X + s0; ccy = Y; a0 = Math.PI / 2; } else { ccx = X + s0; ccy = Y + s0; a0 = Math.PI; }
+      x.beginPath(); x.arc(ccx, ccy, s0, a0, a0 + Math.PI / 2); x.stroke();
+    });
+  }
+  function goldWave(x, pts, lw){
+    var g = x.createLinearGradient(pts[0][0], 0, pts[pts.length - 1][0], 0);
+    g.addColorStop(0, '#8a6a2a'); g.addColorStop(0.35, '#f0d48a'); g.addColorStop(0.7, '#d6b46a'); g.addColorStop(1, '#7d5f24');
+    x.save(); x.shadowColor = 'rgba(240,212,138,.55)'; x.shadowBlur = lw * 6;
+    x.beginPath(); pts.forEach(function(p, i){ if(i) x.lineTo(p[0], p[1]); else x.moveTo(p[0], p[1]); });
+    x.strokeStyle = g; x.lineWidth = lw; x.lineJoin = 'round'; x.lineCap = 'round'; x.stroke(); x.restore();
+  }
+  function wrapCanvas(x, text, maxW){
+    var parts;
+    try { parts = Array.from(new Intl.Segmenter(/[฀-๿]/.test(text) ? 'th' : 'en', { granularity:'word' }).segment(text)).map(function(s){ return s.segment; }); }
+    catch(e){ parts = text.split(/(\s+)/); }
+    var lines = [], cur = '';
+    parts.forEach(function(w){ if(x.measureText(cur + w).width > maxW && cur.trim()){ lines.push(cur.trim()); cur = w.trim() ? w : ''; } else cur += w; });
+    if(cur.trim()) lines.push(cur.trim());
+    return lines;
+  }
   function coverPNG(rec, TX){
     var W = 1654, H = 2339, c = document.createElement('canvas'); c.width = W; c.height = H; var x = c.getContext('2d');
-    var g = x.createLinearGradient(0, 0, W * 0.55, H); g.addColorStop(0, '#071120'); g.addColorStop(0.55, '#0a1c33'); g.addColorStop(1, '#06101d');
-    x.fillStyle = g; x.fillRect(0, 0, W, H);
-    var rg = x.createRadialGradient(W * 0.85, H * 0.08, 0, W * 0.85, H * 0.08, W * 0.75); rg.addColorStop(0, 'rgba(26,90,140,.75)'); rg.addColorStop(1, 'rgba(15,58,92,0)');
-    x.fillStyle = rg; x.fillRect(0, 0, W, H);
-    var mm = W / 210, L = 18 * mm, FT = '"Noto Sans Thai", "Inter", sans-serif', MONO = '"IBM Plex Mono", monospace';
+    var mm = W / 210, L = 22 * mm, FT = '"Noto Sans Thai", "Inter", sans-serif', MONO = '"IBM Plex Mono", monospace';
+    coverBase(x, W, H, mm, (rec.seed >>> 0) || 77);
+    goldSpiral(x, W * 0.74, H * 0.3, 105 * mm, 0.3);
     x.textBaseline = 'alphabetic';
-    x.fillStyle = '#22c3f2'; x.font = '700 ' + Math.round(4.6 * mm) + 'px ' + MONO; try { x.letterSpacing = Math.round(1.6 * mm) + 'px'; } catch(e){}
-    x.fillText('SPACEZ TERMINAL', L, 30 * mm);
+    /* masthead */
+    x.fillStyle = '#d6b46a'; x.font = '700 ' + Math.round(4.2 * mm) + 'px ' + MONO; try { x.letterSpacing = Math.round(1.8 * mm) + 'px'; } catch(e){}
+    x.fillText('SPACEZ TERMINAL', L, 28 * mm);
     try { x.letterSpacing = '0px'; } catch(e){}
-    x.fillStyle = 'rgba(255,255,255,.7)'; x.font = '500 ' + Math.round(4.2 * mm) + 'px ' + MONO; x.textAlign = 'right'; x.fillText(TX.edition, W - L, 30 * mm); x.textAlign = 'left';
-    /* kicker pill */
-    x.font = '700 ' + Math.round(5.2 * mm) + 'px ' + FT; var kw = x.measureText(TX.kick).width + 8 * mm, ky = 72 * mm;
-    x.fillStyle = '#22c3f2'; if(x.roundRect){ x.beginPath(); x.roundRect(L, ky, kw, 10 * mm, 2 * mm); x.fill(); } else x.fillRect(L, ky, kw, 10 * mm);
-    x.fillStyle = '#071120'; x.fillText(TX.kick, L + 4 * mm, ky + 7.1 * mm);
-    /* title */
-    x.fillStyle = '#fff'; x.font = '900 ' + Math.round(30 * mm) + 'px ' + FT;
-    TX.big.split('<br>').forEach(function(line, i){ x.fillText(line, L - 1 * mm, ky + 42 * mm + i * 32 * mm); });
-    x.font = '500 ' + Math.round(6.4 * mm) + 'px ' + FT; x.fillStyle = 'rgba(255,255,255,.88)'; x.fillText(TX.sub, L, ky + 88 * mm);
-    /* the wave */
-    var P = [[0, 270], [120, 170], [170, 205], [330, 70], [380, 120], [470, 30], [560, 150], [600, 110], [760, 250], [800, 230]], bx = 0, by = 176 * mm, bw = W, bh = 80 * mm;
-    function px(p){ return [bx + p[0] / 800 * bw, by + p[1] / 300 * bh]; }
-    var wg = x.createLinearGradient(0, by, 0, by + bh); wg.addColorStop(0, 'rgba(34,195,242,.42)'); wg.addColorStop(1, 'rgba(34,195,242,0)');
-    x.beginPath(); P.forEach(function(p, i){ var q = px(p); if(i) x.lineTo(q[0], q[1]); else x.moveTo(q[0], q[1]); }); x.lineTo(W, by + bh + 4 * mm); x.lineTo(0, by + bh + 4 * mm); x.closePath(); x.fillStyle = wg; x.fill();
-    x.beginPath(); P.forEach(function(p, i){ var q = px(p); if(i) x.lineTo(q[0], q[1]); else x.moveTo(q[0], q[1]); }); x.strokeStyle = '#22c3f2'; x.lineWidth = 1.4 * mm; x.lineJoin = 'round'; x.stroke();
-    x.fillStyle = '#fff'; x.font = '700 ' + Math.round(6.5 * mm) + 'px ' + MONO; x.textAlign = 'center';
-    [['1', 120, 150], ['2', 170, 236], ['3', 330, 52], ['4', 380, 150], ['5', 470, 14], ['A', 560, 180], ['B', 600, 92], ['C', 760, 282]].forEach(function(t){ var q = px([t[1], t[2]]); x.fillText(t[0], q[0], q[1]); });
+    x.fillStyle = 'rgba(255,255,255,.62)'; x.font = '500 ' + Math.round(3.8 * mm) + 'px ' + MONO; x.textAlign = 'right'; x.fillText(TX.edition, W - L, 28 * mm); x.textAlign = 'left';
+    x.fillStyle = 'rgba(214,180,106,.5)'; x.fillRect(L, 32 * mm, W - 2 * L, 1);
+    /* kicker with gold rules */
+    var ky = 84 * mm;
+    x.font = '700 ' + Math.round(5 * mm) + 'px ' + FT; x.fillStyle = '#f0d48a';
+    var kw = x.measureText(TX.kick).width;
+    x.fillRect(L, ky - 1.6 * mm, 12 * mm, 2); x.fillText(TX.kick, L + 16 * mm, ky); x.fillRect(L + 20 * mm + kw, ky - 1.6 * mm, 12 * mm, 2);
+    /* title: first line white, second line gold */
+    var lines = TX.big.split('<br>');
+    lines.forEach(function(line, i){
+      x.font = '900 ' + Math.round((i ? 31 : 27) * mm) + 'px ' + FT;
+      if(i){ var tg = x.createLinearGradient(L, ky, L + 150 * mm, ky); tg.addColorStop(0, '#f6e2a6'); tg.addColorStop(0.5, '#d6b46a'); tg.addColorStop(1, '#a8833a'); x.fillStyle = tg; }
+      else x.fillStyle = '#ffffff';
+      x.save(); x.shadowColor = 'rgba(0,0,0,.55)'; x.shadowBlur = 4 * mm; x.fillText(line, L - 1.2 * mm, ky + 34 * mm + i * 33 * mm); x.restore();
+    });
+    x.font = '500 ' + Math.round(5.6 * mm) + 'px ' + FT; x.fillStyle = 'rgba(232,238,248,.9)';
+    wrapCanvas(x, TX.sub, 150 * mm).forEach(function(t, i){ x.fillText(t, L, ky + 84 * mm + i * 8 * mm); });
+    /* the wave: an impulse with sub-waves, then A-B-C */
+    var bx = 14 * mm, by = 238 * mm, sw = W - 28 * mm, sh = 54 * mm;
+    function P(t, v){ return [bx + sw * t, by - sh * v]; }
+    function sub5(a, b){ var xs = [0, .2, .32, .66, .78, 1], ys = [0, .38, .22, .78, .62, 1]; return xs.map(function(xx, i){ return [a[0] + (b[0] - a[0]) * xx, a[1] + (b[1] - a[1]) * ys[i]]; }); }
+    function sub3(a, b){ var xs = [0, .42, .62, 1], ys = [0, .64, .38, 1]; return xs.map(function(xx, i){ return [a[0] + (b[0] - a[0]) * xx, a[1] + (b[1] - a[1]) * ys[i]]; }); }
+    var piv = [P(0, .02), P(.13, .36), P(.2, .2), P(.44, .86), P(.52, .64), P(.66, 1), P(.75, .58), P(.81, .76), P(.98, .1)];
+    var kinds = ['5', '3', '5', '3', '5', '5', '3', '5'], path = [piv[0]];
+    for(var i = 0; i < kinds.length; i++){ var seg = kinds[i] === '5' ? sub5(piv[i], piv[i + 1]) : sub3(piv[i], piv[i + 1]); path = path.concat(seg.slice(1)); }
+    var fg = x.createLinearGradient(0, by - sh, 0, by + 10 * mm); fg.addColorStop(0, 'rgba(214,180,106,.20)'); fg.addColorStop(1, 'rgba(214,180,106,0)');
+    x.beginPath(); path.forEach(function(p, j){ if(j) x.lineTo(p[0], p[1]); else x.moveTo(p[0], p[1]); }); x.lineTo(path[path.length - 1][0], by + 10 * mm); x.lineTo(path[0][0], by + 10 * mm); x.closePath(); x.fillStyle = fg; x.fill();
+    goldWave(x, path, 0.75 * mm);
+    var labs = ['', '1', '2', '3', '4', '5', 'A', 'B', 'C'];
+    x.textAlign = 'center'; x.font = '700 ' + Math.round(5 * mm) + 'px ' + MONO;
+    piv.forEach(function(p, j){
+      if(!labs[j]) return;
+      var up = j === 0 ? false : (j + 1 < piv.length ? p[1] < piv[j + 1][1] && p[1] < piv[j - 1][1] : p[1] < piv[j - 1][1]);
+      x.fillStyle = '#05070d'; x.strokeStyle = '#f0d48a'; x.lineWidth = 0.45 * mm;
+      x.beginPath(); x.arc(p[0], p[1], 1.6 * mm, 0, 6.2832); x.fill(); x.stroke();
+      x.fillStyle = '#fff'; x.fillText(labs[j], p[0], p[1] + (up ? -4.5 * mm : 8.5 * mm));
+    });
     x.textAlign = 'left';
     /* author and recipient */
-    x.fillStyle = '#fff'; x.font = '800 ' + Math.round(7 * mm) + 'px ' + FT; x.fillText(TX.by, L, H - 26 * mm);
-    var bg2 = x.createLinearGradient(L, 0, L + 50 * mm, 0); bg2.addColorStop(0, '#22c3f2'); bg2.addColorStop(1, '#21c07a'); x.fillStyle = bg2; x.fillRect(L, H - 21 * mm, 50 * mm, 1.3 * mm);
-    x.fillStyle = 'rgba(255,255,255,.78)'; x.font = '500 ' + Math.round(4.4 * mm) + 'px ' + FT; x.fillText(TX.forWho + ' ' + printName(rec) + '  ·  ' + rec.id, L, H - 12 * mm);
-    return c.toDataURL('image/jpeg', 0.92);
+    x.fillStyle = 'rgba(214,180,106,.5)'; x.fillRect(L, H - 44 * mm, W - 2 * L, 1);
+    x.fillStyle = '#fff'; x.font = '800 ' + Math.round(6.4 * mm) + 'px ' + FT; x.fillText(TX.by, L, H - 33 * mm);
+    x.fillStyle = 'rgba(232,238,248,.75)'; x.font = '500 ' + Math.round(3.9 * mm) + 'px ' + FT; x.fillText(TX.forWho + ' ' + printName(rec) + '  ·  ' + rec.id, L, H - 24 * mm);
+    x.fillStyle = '#d6b46a'; x.font = '700 ' + Math.round(3.4 * mm) + 'px ' + MONO; x.textAlign = 'right'; x.fillText('ELLIOTT WAVE · CLASSROOM', W - L, H - 24 * mm); x.textAlign = 'left';
+    return c.toDataURL('image/jpeg', 0.93);
+  }
+  /* back cover: same night sky, a short blurb and the verification address */
+  function backPNG(rec, TX){
+    var W = 1654, H = 2339, c = document.createElement('canvas'); c.width = W; c.height = H; var x = c.getContext('2d');
+    var mm = W / 210, L = 26 * mm, FT = '"Noto Sans Thai", "Inter", sans-serif', MONO = '"IBM Plex Mono", monospace';
+    coverBase(x, W, H, mm, ((rec.seed >>> 0) || 77) ^ 0x5bd1e995);
+    goldSpiral(x, W * 0.5, H * 0.78, 120 * mm, 0.18);
+    x.textBaseline = 'alphabetic'; x.textAlign = 'center';
+    x.fillStyle = '#d6b46a'; x.font = '700 ' + Math.round(4 * mm) + 'px ' + MONO; try { x.letterSpacing = Math.round(1.6 * mm) + 'px'; } catch(e){}
+    x.fillText('SPACEZ TERMINAL', W / 2, 40 * mm); try { x.letterSpacing = '0px'; } catch(e){}
+    x.fillStyle = '#fff'; x.font = '900 ' + Math.round(11 * mm) + 'px ' + FT; x.fillText(TX.title, W / 2, 66 * mm);
+    x.fillStyle = 'rgba(214,180,106,.7)'; x.fillRect(W / 2 - 20 * mm, 73 * mm, 40 * mm, 2);
+    x.font = '400 ' + Math.round(4.6 * mm) + 'px ' + FT; x.fillStyle = 'rgba(232,238,248,.88)';
+    var y = 92 * mm;
+    (TX.back || []).forEach(function(par){ wrapCanvas(x, par, W - 2 * L).forEach(function(t){ x.fillText(t, W / 2, y); y += 8 * mm; }); y += 5 * mm; });
+    x.font = '700 ' + Math.round(4.2 * mm) + 'px ' + FT; x.fillStyle = '#f0d48a';
+    (TX.backList || []).forEach(function(t){ x.fillText('◆  ' + t, W / 2, y); y += 9 * mm; });
+    x.font = '500 ' + Math.round(3.6 * mm) + 'px ' + MONO; x.fillStyle = 'rgba(232,238,248,.7)';
+    x.fillText(TX.verify, W / 2, H - 40 * mm);
+    x.fillStyle = '#d6b46a'; x.fillText('spacez001.github.io/TERMINAL/ebook.html', W / 2, H - 33 * mm);
+    x.fillStyle = 'rgba(232,238,248,.55)'; x.font = '500 ' + Math.round(3.2 * mm) + 'px ' + FT;
+    x.fillText('© 2569 / 2026 Noraset Boikaw · SPACEZ TERMINAL · ' + rec.id, W / 2, H - 22 * mm);
+    return c.toDataURL('image/jpeg', 0.9);
   }
   function dotPatternSVG(serial){
     var t = dotTileSVG(serial), inner = t.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, ''), w = DOT.cols * DOT.step, h = DOT.rows * DOT.step;
@@ -306,7 +409,10 @@
       /* the copy code, in invisible text, at the end of every paragraph and table cell:
          any paragraph copied out of the PDF carries it along */
       html = html.replace(/<\/(p|li|td)>/g, '<span class="eb-g2"> ' + id + '</span></$1>');
-      return '<div class="eb-chap' + (c[2] ? ' sub' : '') + '"><span class="eb-ghost">SPZ ' + id + ' #' + rec.serial + ' ' + nm + '</span><div class="eb-ch-head"><span class="eb-ch-n">' + esc(TX.ch) + ' ' + c[0] + '</span><h1>' + esc(title(c[1])) + '</h1></div>' +
+      var head = c[2]
+        ? '<div class="eb-ch-head"><span class="eb-ch-pill">' + c[0] + '</span><h1>' + esc(title(c[1])) + '</h1></div>'
+        : '<div class="eb-ch-head band"><span class="eb-ch-num">' + (c[0].length < 2 ? '0' : '') + c[0] + '</span><div class="eb-ch-txt"><span class="eb-ch-n">' + esc(TX.ch) + ' ' + c[0] + '</span><h1>' + esc(title(c[1])) + '</h1></div></div>';
+      return '<div class="eb-chap' + (c[2] ? ' sub' : '') + '"><span class="eb-ghost">SPZ ' + id + ' #' + rec.serial + ' ' + nm + '</span>' + head +
         '<div class="ewv-gl-shell"><div class="gl-detail-body">' + html + '</div></div></div>';
     }).join('');
     var terms = termsText(lang, rec.name, rec.title || 'Elliott Wave Classroom', rec.id).map(function(t, i){ return '<li>' + esc(t) + '</li>'; }).join('');
@@ -314,13 +420,14 @@
     var dots = "url('data:image/svg+xml;utf8," + encodeURIComponent(dotTileSVG(rec.serial)) + "')";
     return '<div class="eb-dots" style="background-image:' + dots + '"></div>' +
       '<div class="eb-cover"><img class="eb-cover-img" alt="" src="' + rec.__cover + '"></div>' +
-      '<div class="eb-fw"><h2>' + esc(TX.fw) + '</h2>' + TX.fwbody.map(function(p){ return '<p>' + esc(p) + '</p>'; }).join('') + '<div class="sg">' + esc(TX.sign) + '</div></div>' +
+      '<div class="eb-fw"><span class="eb-q">“</span><h2>' + esc(TX.fw) + '</h2>' + TX.fwbody.map(function(p){ return '<p>' + esc(p) + '</p>'; }).join('') + '<div class="sg">' + esc(TX.sign) + '</div></div>' +
       '<div class="eb-copy"><h2>' + esc(TX.copyH) + '</h2><p class="cpy">© 2569 / 2026 Noraset Boikaw · SPACEZ TERMINAL. All rights reserved. สงวนลิขสิทธิ์</p>' +
         '<div class="eb-lic"><div class="who"><span>' + esc(TX.forWho) + '</span><b>' + nm + '</b><span>' + esc(TX.copyNo) + '</span><b class="mono">' + id + '</b></div><ol>' + terms + '</ol></div>' +
         '<div class="eb-orn"><svg viewBox="0 0 300 120" class="orn"><g fill="none" stroke="#0a78c2" stroke-width="1.2" opacity=".55"><path d="M10 60 C60 10, 100 110, 150 60 S240 10, 290 60"/><path d="M10 60 C60 110, 100 10, 150 60 S240 110, 290 60"/><circle cx="150" cy="60" r="44"/><circle cx="150" cy="60" r="52" stroke-dasharray="2 4"/></g></svg>' +
           '<div class="eb-qr">' + qrSVG(qrUrl) + '</div><span class="eb-qrcap">' + esc(TX.scan) + '</span></div>' +
         '<p class="eb-verify">' + (lang === 'th' ? 'ตรวจสอบว่าเป็นฉบับที่ออกโดย SPACEZ TERMINAL จริง ได้ที่ ' : 'Check that this is a genuine SPACEZ TERMINAL copy at ') + 'spacez001.github.io/TERMINAL/ebook.html</p></div>' +
-      '<div class="eb-tocp"><h2>' + esc(TX.toc) + '</h2>' + toc + '</div>' + body;
+      '<div class="eb-tocp"><h2>' + esc(TX.toc) + '</h2><div class="eb-toc-list">' + toc + '</div></div>' + body +
+      (rec.__back ? '<div class="eb-cover eb-back"><img class="eb-cover-img" alt="" src="' + rec.__back + '"></div>' : '');
   }
   function cssStr(t){ return '"' + String(t).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'; }
   /* running header/footer live in the page margins (Chrome page-margin boxes), so they never cover the text */
@@ -339,7 +446,7 @@
     var lang = rec.lang === 'en' ? 'en' : 'th';
     var fonts = (document.fonts && document.fonts.load) ? Promise.all(['900 120px "Noto Sans Thai"', '700 20px "Noto Sans Thai"', '700 20px "IBM Plex Mono"'].map(function(f){ return document.fonts.load(f).catch(function(){}); })) : Promise.resolve();
     return fonts.then(fetchContent).then(function(content){
-      rec.__cover = coverPNG(rec, BOOK[lang]);
+      rec.__cover = coverPNG(rec, BOOK[lang]); rec.__back = backPNG(rec, BOOK[lang]);
       var html = buildBook(rec, content);
       if(!html) throw new Error('nocontent');
       var old = document.getElementById('spzEbook'); if(old) old.remove();
