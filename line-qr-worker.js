@@ -2515,7 +2515,26 @@ async function handleCertRevoke(request, env) {
    ebook.html page after accepting the terms with their private link.
    KV: EBK:<id> record, EBKF:<id> PDF bytes, EBK_SERIAL counter.
    ===================================================================== */
-const EBK_PREFIX = "EBK:", EBKF_PREFIX = "EBKF:", EBK_MAX_PDF = 24 * 1024 * 1024;
+const EBK_PREFIX = "EBK:", EBKF_PREFIX = "EBKF:", EBK_MAX_PDF = 90 * 1024 * 1024, EBK_CHUNK = 20 * 1024 * 1024;
+/* KV values are limited to 25 MB, so a big PDF is stored as EBKF:<id> (first part) + EBKF:<id>:1, :2 ... */
+async function ebkFilePut(env, id, buf, oldParts) {
+  const parts = Math.max(1, Math.ceil(buf.byteLength / EBK_CHUNK));
+  for (let i = 0; i < parts; i++) await env.SESSIONS.put(EBKF_PREFIX + id + (i ? ":" + i : ""), buf.slice(i * EBK_CHUNK, (i + 1) * EBK_CHUNK));
+  for (let i = parts; i < (oldParts || 0); i++) await env.SESSIONS.delete(EBKF_PREFIX + id + ":" + i);
+  return parts;
+}
+async function ebkFileGet(env, rec) {
+  const parts = rec.fileParts || 1, bufs = [];
+  for (let i = 0; i < parts; i++) { const b = await env.SESSIONS.get(EBKF_PREFIX + rec.id + (i ? ":" + i : ""), "arrayBuffer"); if (!b) return null; bufs.push(new Uint8Array(b)); }
+  if (bufs.length === 1) return bufs[0].buffer;
+  const out = new Uint8Array(bufs.reduce((n, b) => n + b.byteLength, 0)); let o = 0;
+  for (const b of bufs) { out.set(b, o); o += b.byteLength; }
+  return out.buffer;
+}
+async function ebkFileDelete(env, rec) {
+  const parts = rec.fileParts || 1;
+  for (let i = 0; i < parts; i++) await env.SESSIONS.delete(EBKF_PREFIX + rec.id + (i ? ":" + i : ""));
+}
 const EBK_TERMS_VERSION = "2026-10-14", EBKH_PREFIX = "EBKH:";
 function ebkId(s) { return String(s || "").toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 20); }
 function ebkClean(v, n) { return String(v == null ? "" : v).replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, n); }
@@ -2558,7 +2577,7 @@ async function handleEbookUpdate(request, env) {
   const rec = await ebkGet(env, ebkId(body.id));
   if (!rec) return json({ error: "not_found" }, env, 404);
   if (body.delete === true) {
-    await env.SESSIONS.delete(EBK_PREFIX + rec.id); await env.SESSIONS.delete(EBKF_PREFIX + rec.id);
+    await env.SESSIONS.delete(EBK_PREFIX + rec.id); await ebkFileDelete(env, rec);
     if (rec.fileSha256) await env.SESSIONS.delete(EBKH_PREFIX + rec.fileSha256);
     /* numbering continues from the highest copy still in the registry, so deleting test copies frees their numbers */
     let max = 0, cursor;
@@ -2585,7 +2604,7 @@ async function handleEbookUpload(request, env) {
   if (buf.byteLength > EBK_MAX_PDF) return json({ error: "too_big" }, env, 413);
   const head = new Uint8Array(buf.slice(0, 5));
   if (String.fromCharCode.apply(null, head) !== "%PDF-") return json({ error: "not_pdf" }, env, 400);
-  await env.SESSIONS.put(EBKF_PREFIX + rec.id, buf);
+  rec.fileParts = await ebkFilePut(env, rec.id, buf, rec.fileParts || 1);
   const dig = new Uint8Array(await crypto.subtle.digest("SHA-256", buf));
   if (rec.fileSha256) await env.SESSIONS.delete(EBKH_PREFIX + rec.fileSha256);
   rec.hasFile = true; rec.fileSize = buf.byteLength; rec.fileAt = Date.now();
@@ -2622,7 +2641,7 @@ async function handleEbookDownload(request, env, origin) {
   if (!ebkTokenOk(rec, u.searchParams.get("t"))) return json({ error: "not_found" }, env, 404);
   if (rec.revoked) return json({ error: "revoked" }, env, 403);
   if (!rec.accepted) return json({ error: "need_agree" }, env, 403);
-  const buf = await env.SESSIONS.get(EBKF_PREFIX + rec.id, "arrayBuffer");
+  const buf = await ebkFileGet(env, rec);
   if (!buf) return json({ error: "no_file" }, env, 404);
   rec.downloads = (rec.downloads || []).concat([{ at: Date.now(), ip: request.headers.get("CF-Connecting-IP") || "", country: (request.cf && request.cf.country) || "" }]).slice(-30);
   await ebkPut(env, rec);
