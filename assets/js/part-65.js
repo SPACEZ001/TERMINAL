@@ -207,6 +207,7 @@
     navCtxAssets: { en:'Stocks, commodities, gold', th:'หุ้น สินค้าโภคภัณฑ์ ทองคำ' },
     navCtxOther: { en:'Other approaches', th:'แนวทางวิเคราะห์อื่น' },
     /* 2026-10-16: new lesson groups (content uploaded separately) */
+    nx_history: { en:'History: who created the theory', th:'ประวัติ: ใครคิดค้นทฤษฎีนี้' },
     nx_diag_101: { en:'Diagonals explained', th:'Diagonal คืออะไร (ครบในหน้าเดียว)' },
     nx_alt: { en:'Alternation in practice', th:'Alternation ในการใช้งานจริง' },
     nx_alt_21: { en:'Wave 2 sharp → wave 4 sideways', th:'Wave 2 ชัน → wave 4 ออกข้าง' },
@@ -284,6 +285,7 @@
     guide:UI.navGuide, 'gd-alternation':UI.navGdAlt, 'gd-channel':UI.navGdChannel, 'gd-extension':UI.navGdExt, 'gd-truncation':UI.navGdTrunc, 'gd-depth':UI.navGdDepth,
     volume:UI.navVolume, personality:UI.navPersonality, howto:UI.navHowto, w3c:UI.navW3c, markets:UI.navMarkets, basics:UI.navBasics, glossary:UI.navGlossary, example:UI.navExample,
     mistakes:UI.navMistakes, further:UI.navFurther,
+    'history':UI.nx_history,
     'diag-101':UI.nx_diag_101,
     'alt':UI.nx_alt,
     'alt-21':UI.nx_alt_21,
@@ -328,6 +330,7 @@
   // Ordered from the basics a beginner needs first down to the advanced material.
   var TREE = [
     { id:'overview' },
+    { id:'history' },
     { id:'basics' },
     { id:'degree' },
     { id:'motive', children:['impulse', 'diag-101', 'diag-lead', 'diag-end'] },
