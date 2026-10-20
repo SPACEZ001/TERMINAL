@@ -41,7 +41,7 @@
   var STATUS = {
     now:'mixed', regime:'live', stock:'live', proof:'daily', anomaly:'live',
     correl:'daily', rulelab:'daily', daily:'live',
-    flow:'mixed', globe:'mixed', infl:'mixed', directory:'mixed', desk:'mixed',
+    flow:'mixed', globe:'mixed', infl:'mixed', macrolab:'mixed', directory:'mixed', desk:'mixed',
     outlook:'frozen', scenarios:'frozen', pro:'frozen',
     types:'teach', glossary:'teach', signals:'teach', start:'teach', guided:'teach',
     chartlab:'sim'
