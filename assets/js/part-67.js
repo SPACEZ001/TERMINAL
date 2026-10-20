@@ -28,6 +28,8 @@
             th:'สุ่มข้อสอบจากคลังข้อสอบจำลอง Elliott Wave ของเรา ฝึกคนเดียว หรือแข่งเพื่อขึ้นอันดับ เป็นสื่อฝึกเท่านั้น ไม่ใช่ข้อสอบ CEWA จริง' },
     tabPlay: { en:'Play', th:'เล่น' },
     tabBoard: { en:'Leaderboard', th:'อันดับ' },
+    tabVocab: { en:'Vocabulary', th:'คำศัพท์' },
+    vocabLoading: { en:'Loading the word list…', th:'กำลังโหลดคำศัพท์…' },
     loginH: { en:'Log in to play', th:'เข้าสู่ระบบเพื่อเล่น' },
     loginP: { en:'Scores are saved to your account, so you need to log in first. Choose LINE or Telegram.',
               th:'คะแนนจะผูกกับบัญชีของคุณ จึงต้องเข้าสู่ระบบก่อน เลือก LINE หรือ Telegram' },
@@ -408,7 +410,8 @@
       ranked:'<path d="M8 1.6l5.4 2v4.1c0 3.1-2.2 5.3-5.4 6.7-3.2-1.4-5.4-3.6-5.4-6.7V3.6z"/><polygon points="' + starPts(8, 7.6, 2.8, 1.2) + '"/>',
       blitz:'<path d="M9.2 1.5L3.4 9h4.4l-1 5.5L12.6 7H8.2z"/>',
       week:'<path d="M12.6 9.6A5.6 5.6 0 0 1 6.4 3.4a5.6 5.6 0 1 0 6.2 6.2z"/>',
-      all:'<polygon points="' + starPts(8, 8.3, 6.6, 2.9) + '"/>'
+      all:'<polygon points="' + starPts(8, 8.3, 6.6, 2.9) + '"/>',
+      book:'<path d="M2.5 3.2c2-.9 3.8-.9 5.5.4 1.7-1.3 3.5-1.3 5.5-.4v9.6c-2-.9-3.8-.9-5.5.4-1.7-1.3-3.5-1.3-5.5-.4z"/><path d="M8 3.6v9.6"/>'
     };
     return '<svg viewBox="0 0 16 16" aria-hidden="true">' + (d[k] || '') + '</svg>';
   }
@@ -677,9 +680,10 @@
 
   function paint(){
     if(!bodyEl) return;
-    var tabs = '<div class="az-tabs">' + segHTML('tab', tab, [['play', U.tabPlay, 'play'], ['board', U.tabBoard, 'board']], true) + '</div>';
+    var tabs = '<div class="az-tabs">' + segHTML('tab', tab, [['play', U.tabPlay, 'play'], ['board', U.tabBoard, 'board'], ['vocab', U.tabVocab, 'book']], true) + '</div>';
     var inner;
-    if(tab === 'board') inner = boardHTML();
+    if(tab === 'vocab') inner = '<div class="az-vocab"><p class="az-note">' + esc(T(U.vocabLoading)) + '</p></div>';
+    else if(tab === 'board') inner = boardHTML();
     else if(view === 'loading') inner = '<p class="az-note">' + esc(T(U.starting)) + '</p>';
     else if(view === 'quiz' && run) inner = quizHTML();
     else if(view === 'result' && run && run.final) inner = resultHTML();
@@ -689,8 +693,24 @@
     if(!arenaOk()){ bodyEl.innerHTML = '<div class="az-wrap"><p class="az-note">' + esc(T(VIS_TXT.closed)) + '</p></div>'; stopWatch(); return; }
     bodyEl.innerHTML = '<div class="az-wrap">' + (showTabs ? visBarHTML() + tabs : '') + inner + '</div>';
     if(tab === 'play' && view === 'menu' && !sessionCode()) watchLogin(); else stopWatch();
+    if(tab === 'vocab') mountVocab();
     if(view === 'quiz' && run && run.q.tpq && !run.sent && !run.reveal) tick();
     countUp();
+  }
+  /* 2026-10-21: vocabulary tab -- word list + flashcards + word game live in
+     part-80.js, loaded only the first time this tab is opened. */
+  var vocabLoading = false;
+  function mountVocab(){
+    var host = bodyEl && bodyEl.querySelector('.az-vocab');
+    if(!host) return;
+    if(window.__SPZ_VOCAB){ window.__SPZ_VOCAB.mount(host); return; }
+    if(vocabLoading) return;
+    vocabLoading = true;
+    var s = document.createElement('script');
+    s.src = 'assets/js/min/part-80.js';
+    s.onload = function(){ vocabLoading = false; if(tab === 'vocab') mountVocab(); };
+    s.onerror = function(){ vocabLoading = false; };
+    document.head.appendChild(s);
   }
   function countUp(){
     var els = bodyEl.querySelectorAll('[data-count]');
