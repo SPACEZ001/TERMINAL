@@ -670,6 +670,8 @@ def trend_stats(closes):
 MACRO = [
     ("^TNX",      "us10y",  "US 10-year yield",      "ผลตอบแทนพันธบัตรสหรัฐฯ 10 ปี"),
     ("^IRX",      "us3m",   "US 3-month yield",      "ผลตอบแทนพันธบัตรสหรัฐฯ 3 เดือน"),
+    ("^FVX",      "us5y",   "US 5-year yield",       "ผลตอบแทนพันธบัตรสหรัฐฯ 5 ปี"),
+    ("^TYX",      "us30y",  "US 30-year yield",      "ผลตอบแทนพันธบัตรสหรัฐฯ 30 ปี"),
     ("^VIX",      "vix",    "Volatility index",      "ดัชนีความผันผวน"),
     ("DX-Y.NYB",  "dxy",    "US dollar index",       "ดัชนีดอลลาร์สหรัฐฯ"),
     ("^GSPC",     "spx",    "S&P 500",               "เอสแอนด์พี 500"),
