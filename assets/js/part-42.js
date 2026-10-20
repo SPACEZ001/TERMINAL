@@ -12,8 +12,8 @@
   var T = {
     eyebrow:{en:'ASSET CORRELATION MAP',th:'แผนที่ความสัมพันธ์สินทรัพย์'},
     h:{en:'What Moves Together, What Doesn’t',th:'อะไรขยับไปด้วยกัน อะไรไม่ไปด้วยกัน'},
-    lede:{en:'How closely 14 sector and asset-class ETFs — plus the S&P 500 itself — have tracked each other week to week. A reading near +1 means two things have moved almost in lockstep; near -1 means they have tended to move opposite each other; near 0 means little relationship at all. This is the same weekly price history the backtest engine already uses, just turned into a map instead of a single number.',
-      th:'ETF ตัวแทนกลุ่มอุตสาหกรรมและสินทรัพย์ 14 กลุ่ม บวก S&P 500 เอง เคยขยับตามกันมากแค่ไหนในแต่ละสัปดาห์ ค่าใกล้ +1 แปลว่าสองอย่างขยับไปด้วยกันเกือบตลอด ค่าใกล้ -1 แปลว่ามักขยับสวนทางกัน ค่าใกล้ 0 แปลว่าแทบไม่เกี่ยวกัน ข้อมูลชุดเดียวกับที่เครื่องมือ backtest ใช้อยู่แล้ว แค่เอามาทำเป็นแผนที่แทนตัวเลขเดียว'},
+    lede:{en:'How closely 14 sector and asset-class ETFs — plus the S&P 500 itself and 18 big US and Thai stocks — have tracked each other week to week. A reading near +1 means two things have moved almost in lockstep; near -1 means they have tended to move opposite each other; near 0 means little relationship at all. This is the same weekly price history the backtest engine already uses, just turned into a map instead of a single number.',
+      th:'ETF ตัวแทนกลุ่มอุตสาหกรรมและสินทรัพย์ 14 กลุ่ม บวก S&P 500 และหุ้นใหญ่สหรัฐฯ/ไทย 18 ตัว เคยขยับตามกันมากแค่ไหนในแต่ละสัปดาห์ ค่าใกล้ +1 แปลว่าสองอย่างขยับไปด้วยกันเกือบตลอด ค่าใกล้ -1 แปลว่ามักขยับสวนทางกัน ค่าใกล้ 0 แปลว่าแทบไม่เกี่ยวกัน ข้อมูลชุดเดียวกับที่เครื่องมือ backtest ใช้อยู่แล้ว แค่เอามาทำเป็นแผนที่แทนตัวเลขเดียว'},
     win52:{en:'1 year',th:'1 ปี'}, win156:{en:'3 years',th:'3 ปี'},
     win260:{en:'5 years',th:'5 ปี'}, win0:{en:'All history',th:'ทั้งหมด'},
     topPairH:{en:'MOST TIED TOGETHER',th:'ผูกกันแน่นที่สุด'},
@@ -115,7 +115,7 @@
   /* individual stocks folded into the map alongside the sector ETFs, at the
      user's request — resampled to weekly (see isoWeek/stockWeeklySeries)
      so they line up with the ETFs' already-weekly history */
-  var STOCKS = ['NVDA', 'JPM', 'TISCO'];
+  var STOCKS = ['NVDA', 'JPM', 'TISCO', 'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META', 'TSLA', 'AVGO', 'LLY', 'XOM', 'KO', 'WMT', 'BRK.B', 'PTT', 'ADVANC', 'KBANK'];
 
   /* first trading day found per ISO week, matching the same convention the
      backtest job already uses server-side to build the ETF weekly series */
@@ -340,7 +340,7 @@
             '" style="background:' + corrColor(c.v) + '">' + c.v.toFixed(2).replace(/^0\./, '.') + '</td>';
         }).join('') + '</tr>';
     }).join('');
-    return '<div class="cm-tablewrap"><table class="cm-grid">' + head + rows + '</table>' +
+    return '<div class="cm-tablewrap"><table class="cm-grid' + (syms.length > 24 ? ' cm-dense' : '') + '">' + head + rows + '</table>' +
       '<div class="cm-legend"><span>' + esc(tx(T.legOpp)) + '</span><span class="cm-legbar"></span><span>' +
       esc(tx(T.legTogether)) + '</span>' +
       '<span style="margin-left:10px;">' + esc(tx(T.pickHint)) + '</span></div></div>';
