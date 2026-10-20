@@ -369,9 +369,157 @@
     { id:'further' }
   ];
 
+
+  /* ===== 2026-10-21: second room -- the Stock Classroom. Same content store
+     on the Worker (ids prefixed sk-), same gate, same nav/detail shell; only
+     the tree and the page header change with the room. ===== */
+  var UX = {
+    roomEw:  { en:'Elliott Wave Classroom', th:'ห้องเรียน Elliott Wave' },
+    roomStk: { en:'Stock Classroom', th:'ห้องเรียนหุ้น' },
+    hStk:    { en:'Stock Classroom', th:'ห้องเรียนหุ้น' },
+    ledeStk: { en:'What to look at before you buy a stock: the business, the financial statements, the valuation, the economy, the market itself, and how to protect your money. Educational only — not investment advice.',
+               th:'ก่อนซื้อหุ้นต้องดูอะไรบ้าง: ธุรกิจ งบการเงิน มูลค่า เศรษฐกิจ ตัวตลาดเอง และวิธีปกป้องเงินของเรา เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน' },
+    exam:    { en:'CEWA exam mode', th:'โหมดแนวสอบ CEWA' },
+    examOn:  { en:'ON', th:'เปิด' },
+    examOff: { en:'OFF', th:'ปิด' },
+    examTip: { en:'Admin only. Marks the topics most likely to appear in the CEWA exam and adds a red exam note to each lesson.',
+               th:'เฉพาะแอดมิน ติดป้ายแดงหัวข้อที่น่าจะออกสอบ CEWA และเพิ่มโน้ตแดงแนวข้อสอบในแต่ละบท' },
+    xLvl:    { en:'Exam likelihood', th:'โอกาสออกสอบ' },
+    xL3:     { en:'very likely', th:'ออกบ่อยมาก' },
+    xL2:     { en:'likely', th:'น่าจะออก' },
+    xL1:     { en:'possible', th:'อาจออก' },
+    xL0:     { en:'not on the exam', th:'ไม่อยู่ในข้อสอบ' },
+    xAsk:    { en:'How it is usually asked', th:'มักถามแบบไหน' },
+    xWord:   { en:'Wording you will see', th:'คำที่เจอในโจทย์' },
+    xTrap:   { en:'Trap', th:'กับดัก' },
+    xKnow:   { en:'Must remember', th:'ต้องจำ' },
+    xBadge3: { en:'EXAM ★★★', th:'สอบ ★★★' },
+    xBadge2: { en:'EXAM ★★', th:'สอบ ★★' },
+    xBadge1: { en:'EXAM ★', th:'สอบ ★' },
+    xMapH:   { en:'Exam map — every lesson ranked', th:'แผนที่ข้อสอบ — ทุกบทเรียงตามโอกาสออก' },
+    xBasis:  { en:'A prediction, not the real exam.', th:'เป็นการคาดการณ์ ไม่ใช่ข้อสอบจริง' }
+  };
+  var STK_TITLE = {
+    'sk-overview':{ en:'Start here: what to check before buying', th:'เริ่มที่นี่: ก่อนซื้อหุ้นต้องดูอะไร' },
+    'sk-start':{ en:'What a share is and how the market works', th:'หุ้นคืออะไร ตลาดหุ้นทำงานยังไง' },
+    'sk-account':{ en:'Accounts, orders and fees', th:'บัญชี คำสั่งซื้อขาย และค่าธรรมเนียม' },
+    'sk-fund':{ en:'Reading the business', th:'อ่านพื้นฐานบริษัท' },
+    'sk-biz':{ en:'How the company makes money (moat)', th:'บริษัททำเงินยังไง (คูเมือง)' },
+    'sk-fs':{ en:'The three financial statements', th:'งบการเงิน 3 งบ' },
+    'sk-is':{ en:'Income statement', th:'งบกำไรขาดทุน' },
+    'sk-bs':{ en:'Balance sheet', th:'งบแสดงฐานะการเงิน (งบดุล)' },
+    'sk-cf':{ en:'Cash flow statement', th:'งบกระแสเงินสด' },
+    'sk-ratio':{ en:'Key ratios in one table', th:'อัตราส่วนสำคัญในตารางเดียว' },
+    'sk-quality':{ en:'Earnings quality and red flags', th:'คุณภาพกำไรและสัญญาณอันตราย' },
+    'sk-mgmt':{ en:'Management, owners and governance', th:'ผู้บริหาร ผู้ถือหุ้นใหญ่ และธรรมาภิบาล' },
+    'sk-val':{ en:'Valuation: cheap or expensive?', th:'ประเมินมูลค่า: ถูกหรือแพง' },
+    'sk-pe':{ en:'P/E and PEG', th:'P/E และ PEG' },
+    'sk-pbv':{ en:'P/BV and ROE', th:'P/BV และ ROE' },
+    'sk-div':{ en:'Dividend yield', th:'อัตราเงินปันผล' },
+    'sk-ev':{ en:'EV/EBITDA and P/S', th:'EV/EBITDA และ P/S' },
+    'sk-dcf':{ en:'DCF made simple', th:'DCF แบบเข้าใจง่าย' },
+    'sk-peer':{ en:'Comparing with peers', th:'เทียบกับเพื่อนในกลุ่ม' },
+    'sk-mos':{ en:'Margin of safety', th:'ส่วนเผื่อความปลอดภัย' },
+    'sk-macro':{ en:'The economy', th:'เศรษฐกิจ' },
+    'sk-rates':{ en:'Interest rates and stocks', th:'ดอกเบี้ยกับหุ้น' },
+    'sk-infl':{ en:'Inflation', th:'เงินเฟ้อ' },
+    'sk-gdp':{ en:'Growth, jobs and PMI', th:'การเติบโต การจ้างงาน และ PMI' },
+    'sk-cycle':{ en:'Economic cycle and sectors', th:'วัฏจักรเศรษฐกิจกับกลุ่มอุตสาหกรรม' },
+    'sk-fx':{ en:'Currencies and foreign money', th:'ค่าเงินและเงินต่างชาติ' },
+    'sk-thai':{ en:'Reading the Thai economy', th:'อ่านเศรษฐกิจไทย' },
+    'sk-cal':{ en:'The news calendar', th:'ปฏิทินข่าวเศรษฐกิจ' },
+    'sk-mkt':{ en:'Reading the market', th:'อ่านตลาด' },
+    'sk-trend':{ en:'Trend and moving averages', th:'แนวโน้มและเส้นค่าเฉลี่ย' },
+    'sk-sr':{ en:'Support and resistance', th:'แนวรับแนวต้าน' },
+    'sk-candle':{ en:'Candlesticks', th:'แท่งเทียน' },
+    'sk-vol':{ en:'Volume', th:'วอลุ่ม (ปริมาณซื้อขาย)' },
+    'sk-ind':{ en:'RSI and MACD', th:'RSI และ MACD' },
+    'sk-breadth':{ en:'Market breadth', th:'ความกว้างของตลาด' },
+    'sk-sent':{ en:'Sentiment and fear', th:'อารมณ์ตลาดและความกลัว' },
+    'sk-flow':{ en:'Money flow and sector rotation', th:'กระแสเงินและการหมุนกลุ่ม' },
+    'sk-port':{ en:'Portfolio and risk', th:'พอร์ตและความเสี่ยง' },
+    'sk-alloc':{ en:'Asset allocation and diversification', th:'จัดสรรสินทรัพย์และกระจายความเสี่ยง' },
+    'sk-size':{ en:'Position size and stop-loss', th:'ขนาดการลงทุนและจุดตัดขาดทุน' },
+    'sk-dca':{ en:'DCA vs lump sum', th:'DCA หรือลงทีเดียว' },
+    'sk-psych':{ en:'Investor psychology', th:'จิตวิทยานักลงทุน' },
+    'sk-journal':{ en:'Investment journal', th:'บันทึกการลงทุน' },
+    'sk-routine':{ en:'What to follow: daily to yearly', th:'ต้องติดตามอะไร รายวันถึงรายปี' },
+    'sk-case':{ en:'Case studies (made-up companies)', th:'กรณีศึกษา (บริษัทสมมติ)' },
+    'sk-case-trap':{ en:'Cheap stock or value trap?', th:'หุ้นถูก หรือกับดักมูลค่า' },
+    'sk-case-growth':{ en:'Is a growth stock too expensive?', th:'หุ้นเติบโตแพงเกินไปไหม' },
+    'sk-case-bank':{ en:'Analysing a bank', th:'วิเคราะห์หุ้นธนาคาร' },
+    'sk-case-div':{ en:'A dividend that looks too good', th:'ปันผลสูงจนน่าสงสัย' },
+    'sk-case-cyc':{ en:'Cyclical stock at peak earnings', th:'หุ้นวัฏจักรตอนกำไรสูงสุด' },
+    'sk-case-turn':{ en:'Turnaround story', th:'หุ้นฟื้นตัว (Turnaround)' },
+    'sk-check':{ en:'Checklist before you buy or sell', th:'เช็กลิสต์ก่อนซื้อหรือขาย' },
+    'sk-practice':{ en:'Practice questions', th:'แบบฝึกหัด' },
+    'sk-glossary':{ en:'Stock glossary', th:'ศัพท์หุ้น' }
+  };
+  var STK_TREE = [
+    { id:'sk-overview' }, { id:'sk-start' }, { id:'sk-account' },
+    { id:'sk-fund', children:['sk-biz', 'sk-fs', 'sk-is', 'sk-bs', 'sk-cf', 'sk-ratio', 'sk-quality', 'sk-mgmt'] },
+    { id:'sk-val', children:['sk-pe', 'sk-pbv', 'sk-div', 'sk-ev', 'sk-dcf', 'sk-peer', 'sk-mos'] },
+    { id:'sk-macro', children:['sk-rates', 'sk-infl', 'sk-gdp', 'sk-cycle', 'sk-fx', 'sk-thai', 'sk-cal'] },
+    { id:'sk-mkt', children:['sk-trend', 'sk-sr', 'sk-candle', 'sk-vol', 'sk-ind', 'sk-breadth', 'sk-sent', 'sk-flow'] },
+    { id:'sk-port', children:['sk-alloc', 'sk-size', 'sk-dca', 'sk-psych', 'sk-journal'] },
+    { id:'sk-routine' },
+    { id:'sk-case', children:['sk-case-trap', 'sk-case-growth', 'sk-case-bank', 'sk-case-div', 'sk-case-cyc', 'sk-case-turn'] },
+    { id:'sk-check' }, { id:'sk-practice' }, { id:'sk-glossary' }
+  ];
+  /* Elliott Wave worked examples (2026-10-21) -- slotted into the EW tree right after the scenarios */
+  var EX_TITLE = {
+    'ex':{ en:'Worked examples: read the chart', th:'ตัวอย่างการวิเคราะห์: ลองอ่านกราฟ' },
+    'ex-01':{ en:'Ex 1 · Which wave are we in?', th:'ตัวอย่าง 1 · ตอนนี้อยู่คลื่นไหน' },
+    'ex-02':{ en:'Ex 2 · Five or three?', th:'ตัวอย่าง 2 · 5 คลื่นหรือ 3 คลื่น' },
+    'ex-03':{ en:'Ex 3 · B went past the start', th:'ตัวอย่าง 3 · B เลยจุดเริ่ม' },
+    'ex-04':{ en:'Ex 4 · Triangle in wave 4', th:'ตัวอย่าง 4 · Triangle ใน wave 4' },
+    'ex-05':{ en:'Ex 5 · Wedge at the top', th:'ตัวอย่าง 5 · ลิ่มที่ยอด' },
+    'ex-06':{ en:'Ex 6 · Wave 5 that fell short', th:'ตัวอย่าง 6 · Wave 5 ที่ไปไม่ถึง' },
+    'ex-07':{ en:'Ex 7 · A very deep wave 2', th:'ตัวอย่าง 7 · Wave 2 ที่ลึกมาก' },
+    'ex-08':{ en:'Ex 8 · A long sideways wave 4', th:'ตัวอย่าง 8 · Wave 4 ที่ออกข้างนาน' },
+    'ex-09':{ en:'Ex 9 · Extended fifth', th:'ตัวอย่าง 9 · Wave 5 ยืด' },
+    'ex-10':{ en:'Ex 10 · Overlap in wave 1', th:'ตัวอย่าง 10 · ซ้อนทับใน wave 1' },
+    'ex-11':{ en:'Ex 11 · Correction that cannot go down', th:'ตัวอย่าง 11 · การปรับฐานที่ลงไม่ได้' },
+    'ex-12':{ en:'Ex 12 · Projecting wave 5 with a channel', th:'ตัวอย่าง 12 · คาดเป้า wave 5 ด้วย Channel' },
+    'ex-13':{ en:'Ex 13 · Wave 4 alternation', th:'ตัวอย่าง 13 · Alternation ของ wave 4' },
+    'ex-14':{ en:'Ex 14 · The count breaks', th:'ตัวอย่าง 14 · การนับพัง' },
+    'ex-15':{ en:'Ex 15 · Fibonacci cluster', th:'ตัวอย่าง 15 · กลุ่มฟีโบนัชชีซ้อนกัน' },
+    'ex-16':{ en:'Ex 16 · Labelling degrees', th:'ตัวอย่าง 16 · ติดป้ายระดับคลื่น' },
+    'ex-17':{ en:'Ex 17 · Double zigzag or impulse?', th:'ตัวอย่าง 17 · Double Zigzag หรือ Impulse' },
+    'ex-18':{ en:'Ex 18 · Where does wave C end?', th:'ตัวอย่าง 18 · Wave C จะจบที่ไหน' },
+    'ex-19':{ en:'Ex 19 · Expanding triangle trap', th:'ตัวอย่าง 19 · กับดัก Expanding Triangle' },
+    'ex-20':{ en:'Ex 20 · Full cycle quiz', th:'ตัวอย่าง 20 · ทดสอบทั้งรอบ' }
+  };
+  (function(){
+    var k;
+    for(k in STK_TITLE) NODE_TITLE[k] = STK_TITLE[k];
+    for(k in EX_TITLE) NODE_TITLE[k] = EX_TITLE[k];
+    var exKids = []; for(k in EX_TITLE) if(k !== 'ex') exKids.push(k);
+    for(var i = 0; i < TREE.length; i++) if(TREE[i].id === 'scn'){ TREE.splice(i + 1, 0, { id:'ex', children:exKids }); break; }
+  })();
+  var ROOMS = { ew:{ tree:TREE, t:UX.roomEw, first:'overview' }, stk:{ tree:STK_TREE, t:UX.roomStk, first:'sk-overview' } };
+  function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+  function lsSet(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
+  var room = lsGet('spz.ewRoom') === 'stk' ? 'stk' : 'ew';
+  var lastByRoom = { ew:'overview', stk:'sk-overview' };
+  var examOn = lsGet('spz.ewExam') === '1';
+  function inRoom(id, r){
+    var tr = ROOMS[r].tree;
+    for(var i = 0; i < tr.length; i++){ if(tr[i].id === id) return true; if(tr[i].children && tr[i].children.indexOf(id) !== -1) return true; }
+    return false;
+  }
+  function isAdmin(){ return !!(window.__SPZ_TIER && window.__SPZ_TIER() === 'full'); }
+  function examMap(){ return (contentCache && contentCache.__exam && contentCache.__exam.nodes) || null; }
+  function examReady(){ return isAdmin() && !!examMap(); }
+  function stkAvailable(){
+    if(!contentCache) return true;
+    for(var k in contentCache) if(k.indexOf('sk-') === 0) return true;
+    return false;
+  }
+
   var sec = null;
   var bodyEl = null;
-  var currentId = 'overview';
+  var currentId = room === 'stk' ? 'sk-overview' : 'overview';
 
   /* Round AB: fetched once per page load (both languages come back in the
      same response, so a language toggle never needs a second round trip).
@@ -447,11 +595,60 @@
     if(retry) retry.addEventListener('click', fetchClassroomContent);
   }
 
+  function examBadge(id){
+    if(!examOn || !examReady()) return '';
+    var x = examMap()[id];
+    if(!x || !x.l) return '';
+    return '<span class="ewv-xb l' + x.l + '">' + esc(T(UX['xBadge' + x.l])) + '</span>';
+  }
   function navItemHTML(id, isSub){
     var active = id === currentId ? ' active' : '';
     var subCls = isSub ? (/^(flat|tri|fr)-/.test(id) ? ' ewv-gl-sub ewv-gl-sub2' : ' ewv-gl-sub') : '';
     return '<button type="button" class="gl-nav-item' + active + subCls + '" data-node="' + id + '">' +
-      '<span class="gl-nav-name">' + esc(T(NODE_TITLE[id])) + '</span></button>';
+      '<span class="gl-nav-name">' + esc(T(NODE_TITLE[id])) + '</span>' + examBadge(id) + '</button>';
+  }
+  /* red exam note on top of a lesson (admin + exam mode only) */
+  function examNoteHTML(id){
+    if(!examOn || !examReady()) return '';
+    var M = examMap(), x = M[id], h = '';
+    if(x){
+      var lv = x.l || 0;
+      h += '<div class="ewv-xnote l' + lv + '"><div class="ewv-xnote-h"><span>🎯 ' + esc(T(UX.exam)) + '</span><b>' + esc(T(UX.xLvl)) + ': ' +
+        (lv ? '★★★'.slice(0, lv) + ' ' : '') + esc(T(UX['xL' + lv])) + '</b></div><dl>' +
+        (x.ask ? '<dt>' + esc(T(UX.xAsk)) + '</dt><dd>' + T(x.ask) + '</dd>' : '') +
+        (x.know ? '<dt>' + esc(T(UX.xKnow)) + '</dt><dd>' + T(x.know) + '</dd>' : '') +
+        (x.word ? '<dt>' + esc(T(UX.xWord)) + '</dt><dd class="w">' + x.word + '</dd>' : '') +
+        (x.trap ? '<dt>' + esc(T(UX.xTrap)) + '</dt><dd>' + T(x.trap) + '</dd>' : '') +
+        '</dl></div>';
+    }
+    if(id === 'overview'){
+      var rows = [], k;
+      for(k in M) if(M[k].l && NODE_TITLE[k] && inRoom(k, 'ew')) rows.push(k);
+      rows.sort(function(a, b){ return (M[b].l - M[a].l) || 0; });
+      var basis = contentCache.__exam.basis;
+      h += '<div class="ewv-xnote ewv-xmap"><div class="ewv-xnote-h"><span>🗺 ' + esc(T(UX.xMapH)) + '</span><b>' + esc(T(UX.xBasis)) + '</b></div>' +
+        (basis ? '<p class="ewv-xbasis">' + T(basis) + '</p>' : '') + '<div class="ewv-xmap-g">' +
+        [3, 2, 1].map(function(lv){
+          var r = rows.filter(function(k){ return M[k].l === lv; });
+          if(!r.length) return '';
+          return '<div class="ewv-xmap-c l' + lv + '"><h5>' + '★★★'.slice(0, lv) + ' ' + esc(T(UX['xL' + lv])) + ' <small>(' + r.length + ')</small></h5>' +
+            r.map(function(k){ return '<button type="button" data-node="' + k + '">' + esc(T(NODE_TITLE[k])) + '</button>'; }).join('') + '</div>';
+        }).join('') + '</div></div>';
+    }
+    return h;
+  }
+  function roomsHTML(reader){
+    var showStk = stkAvailable();
+    var tabs = ['ew', 'stk'].filter(function(r){ return r === 'ew' || showStk; }).map(function(r){
+      return '<button type="button" class="ewv-room' + (r === room ? ' on' : '') + '" data-room="' + r + '"><i>' + (r === 'ew' ? '〰' : '▤') + '</i>' + esc(T(ROOMS[r].t)) + '</button>';
+    }).join('');
+    var ex = '';
+    if(reader && examReady() && room === 'ew'){
+      ex = '<button type="button" class="ewv-xtog' + (examOn ? ' on' : '') + '" data-exam-toggle="1" title="' + esc(T(UX.examTip)) + '">' +
+        '<span class="sw"><i></i></span>🎯 ' + esc(T(UX.exam)) + ' <b>' + esc(T(examOn ? UX.examOn : UX.examOff)) + '</b></button>';
+    }
+    if(tabs.indexOf('data-room="stk"') === -1 && !ex) return '';
+    return '<div class="ewv-rooms">' + tabs + ex + '</div>';
   }
 
   function renderShell(){
@@ -468,19 +665,22 @@
     }
     /* a lesson that is in the menu but not on the server yet stays hidden until it is uploaded */
     function has(id){ return !contentCache || id === 'practice' || !!contentCache[id]; }
-    var navHTML = TREE.map(function(entry){
+    if(room === 'stk' && !stkAvailable()) room = 'ew';
+    if(!inRoom(currentId, room)) currentId = lastByRoom[room] || ROOMS[room].first;
+    lastByRoom[room] = currentId;
+    var navHTML = ROOMS[room].tree.map(function(entry){
       var kids = (entry.children || []).filter(has);
       if(!has(entry.id) && !kids.length) return '';
       var html = has(entry.id) ? navItemHTML(entry.id, false) : '';
       html += kids.map(function(cid){ return navItemHTML(cid, true); }).join('');
       return html;
     }).join('');
-    bodyEl.innerHTML =
-      '<div class="gl-shell ewv-gl-shell">' +
+    bodyEl.innerHTML = roomsHTML(reader) +
+      '<div class="gl-shell ewv-gl-shell' + (reader ? '' : ' ewv-locked') + (examOn && examReady() ? ' ewv-exam-on' : '') + '">' +
         '<div class="gl-nav">' + navHTML + '</div>' +
         '<div class="gl-detail gl-anim">' +
-          '<div class="gl-detail-head"><span class="gl-detail-name">' + esc(T(NODE_TITLE[currentId])) + '</span></div>' +
-          '<div class="gl-detail-body">' + (reader ? detailBodyHTML() : lockedPreviewHTML()) + '</div>' +
+          '<div class="gl-detail-head"><span class="gl-detail-name">' + esc(T(NODE_TITLE[currentId])) + '</span>' + (reader ? examBadge(currentId) : '') + '</div>' +
+          '<div class="gl-detail-body">' + (reader ? examNoteHTML(currentId) + detailBodyHTML() : lockedPreviewHTML()) + '</div>' +
         '</div>' +
       '</div>' +
       '<p class="ewv-note">' + esc(T(UI.note)) + '</p>';
@@ -725,8 +925,8 @@
     if(!sec) return;
     var q = function(k){ return sec.querySelector('[data-ewv="' + k + '"]'); };
     if(q('eb')) q('eb').textContent = T(UI.eb);
-    if(q('h')) q('h').textContent = T(UI.h);
-    if(q('lede')) q('lede').textContent = T(UI.lede);
+    if(q('h')) q('h').textContent = T(room === 'stk' ? UX.hStk : UI.h);
+    if(q('lede')) q('lede').textContent = T(room === 'stk' ? UX.ledeStk : UI.lede);
     bodyEl = q('body');
     if(bodyEl) renderShell();
   }
@@ -760,9 +960,23 @@
     // Validity is checked against NODE_TITLE (not fetched content) since the
     // nav tree -- unlike the lesson text -- is always available client-side.
     bodyEl.addEventListener('click', function(ev){
+      var rm = ev.target.closest('[data-room]');
+      if(rm){
+        var r = rm.getAttribute('data-room');
+        if(ROOMS[r] && r !== room){ lastByRoom[room] = currentId; room = r; lsSet('spz.ewRoom', r); currentId = lastByRoom[r] || ROOMS[r].first; paint(); }
+        return;
+      }
+      if(ev.target.closest('[data-exam-toggle]')){
+        examOn = !examOn; lsSet('spz.ewExam', examOn ? '1' : '0');
+        var navK = bodyEl.querySelector('.gl-nav'), navT = navK ? navK.scrollTop : 0, yK = window.pageYOffset;
+        renderShell();
+        var navK2 = bodyEl.querySelector('.gl-nav'); if(navK2) navK2.scrollTop = navT; window.scrollTo(0, yK);
+        return;
+      }
       var el = ev.target.closest('[data-node]');
       if(!el || !NODE_TITLE[el.getAttribute('data-node')]) return;
       currentId = el.getAttribute('data-node');
+      if(!inRoom(currentId, room)){ var other = room === 'ew' ? 'stk' : 'ew'; if(inRoom(currentId, other)){ room = other; lsSet('spz.ewRoom', other); paint(); return; } }
       // Keep the reader where they are: the nav list keeps its own scroll position and the page does not
       // jump to the top; if the lesson header ended up above the screen, bring just the header into view.
       var nav0 = bodyEl.querySelector('.gl-nav'), navTop = nav0 ? nav0.scrollTop : 0, y0 = window.pageYOffset;
@@ -778,7 +992,7 @@
 
     window.__spzAddRoute({
       id:'elliott', after:'signals',
-      t:{en:'Elliott Wave Classroom',th:'ห้องเรียน Elliott Wave'},
+      t:{en:'Classroom: Elliott Wave · Stocks',th:'ห้องเรียน Elliott Wave · หุ้น'},
       d:{en:'The 5-3 wave pattern, the three hard rules, the common guidelines, and an honest look at where the whole framework goes wrong.',
          th:'รูปแบบคลื่น 5-3 กฎหลักสามข้อ แนวทางที่ใช้กันทั่วไป และมุมมองตรงไปตรงมาว่าทฤษฎีนี้มักผิดพลาดตรงไหน'}
     });
