@@ -1591,7 +1591,7 @@ var CL_UI = {
              starting point -- so it now runs right after the orientation
              tour, before the risk-quiz/archetypes/glossary/signals that
              build on it. */
-          ids:['guided', 'basics', 'start', 'types', 'glossary', 'signals', 'elliott', 'autowave'] },
+          ids:['guided', 'basics', 'start', 'types', 'glossary', 'signals', 'elliott', 'stockclass', 'autowave'] },
         /* Exam Arena (part-67.js): CEWA practice / ranked / blitz + leaderboard */
         { k:'arena', t:{en:'Test yourself',th:'ทดสอบตัวเอง'}, ids:['arena'] },
         { k:'market', t:{en:'Read the market',th:'อ่านตลาด'},
