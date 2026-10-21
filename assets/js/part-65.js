@@ -99,7 +99,7 @@
       '</div>' +
       '<div class="ewv-garble">' +
         '<p>' + esc(garble(id + 'a', 46)) + '</p>' +
-        '<div class="ewv-garble-chart"><svg viewBox="0 0 400 150" preserveAspectRatio="none"><polyline fill="none" stroke="currentColor" stroke-width="3" points="0,120 60,60 95,85 170,20 210,70 260,50 300,110 340,80 400,130"/></svg><span>' + esc(T(UI.devLock)) + '</span></div>' +
+        '<div class="ewv-garble-chart">' + (room === 'stk' ? STK_LOCK_SVG : '<svg viewBox="0 0 400 150" preserveAspectRatio="none"><polyline fill="none" stroke="currentColor" stroke-width="3" points="0,120 60,60 95,85 170,20 210,70 260,50 300,110 340,80 400,130"/>') + '</svg><span>' + esc(T(UI.devLock)) + '</span></div>' +
         '<p>' + esc(garble(id + 'b', 38)) + '</p>' +
         '<p>' + esc(garble(id + 'c', 30)) + '</p>' +
       '</div>';
@@ -110,6 +110,42 @@
   function clearAdminKey(){
     try { sessionStorage.removeItem(ADMIN_KEY_STORAGE); } catch(e){}
   }
+
+
+  /* ---- 2026-10-21 (b): page background art. Elliott Wave = layered waves;
+     Stocks = candlesticks, bars, a rising line and a grid. Pure inline SVG,
+     drawn in currentColor so both themes tint it through CSS. ---- */
+  var EW_BG = '<svg viewBox="0 0 1200 420" preserveAspectRatio="xMidYMid slice">' +
+    '<path class="w1" d="M0 300 C120 220 200 360 320 260 S520 120 640 220 S860 340 980 180 S1140 120 1200 160" />' +
+    '<path class="w2" d="M0 340 L90 250 L140 290 L260 150 L320 210 L430 90 L480 140 L560 70 L640 200 L700 160 L820 300 L870 250 L960 330 L1040 260 L1200 300" />' +
+    '<path class="w3" d="M0 380 C160 330 260 400 400 340 S640 280 760 330 S1000 380 1200 320" /></svg>';
+  var STK_BG = (function(){
+    var s = '<svg viewBox="0 0 1200 420" preserveAspectRatio="xMidYMid slice"><g class="g">';
+    for(var gx = 0; gx <= 1200; gx += 60) s += '<line x1="' + gx + '" y1="0" x2="' + gx + '" y2="420"/>';
+    for(var gy = 0; gy <= 420; gy += 60) s += '<line x1="0" y1="' + gy + '" x2="1200" y2="' + gy + '"/>';
+    s += '</g><g class="c">';
+    var p = 300, x;
+    for(x = 30; x < 1200; x += 34){
+      var o = p, c = p + (Math.sin(x * 0.013) * 22 - Math.cos(x * 0.031) * 14) - 4, hi = Math.min(o, c) - 14 - (x % 3) * 4, lo = Math.max(o, c) + 12 + (x % 5) * 2;
+      s += '<line class="' + (c < o ? 'u' : 'd') + '" x1="' + x + '" y1="' + hi.toFixed(0) + '" x2="' + x + '" y2="' + lo.toFixed(0) + '"/>' +
+           '<rect class="' + (c < o ? 'u' : 'd') + '" x="' + (x - 8) + '" y="' + Math.min(o, c).toFixed(0) + '" width="16" height="' + Math.max(3, Math.abs(c - o)).toFixed(0) + '" rx="2"/>';
+      p = Math.max(90, Math.min(330, c));
+    }
+    s += '</g><g class="b">';
+    for(x = 20; x < 1200; x += 24) s += '<rect x="' + x + '" y="' + (420 - (18 + ((x * 7) % 46))) + '" width="14" height="' + (18 + ((x * 7) % 46)) + '"/>';
+    s += '</g><path class="l" d="M0 360 L120 330 L240 340 L360 280 L480 300 L600 230 L720 250 L840 180 L960 200 L1080 120 L1200 90"/></svg>';
+    return s;
+  })();
+  var STK_LOCK_SVG = (function(){
+    var s = '<svg viewBox="0 0 400 150" preserveAspectRatio="none">', p = 110;
+    for(var i = 0; i < 18; i++){
+      var x = 12 + i * 21.5, c = p - 8 + ((i * 37) % 19) - 4;
+      s += '<line x1="' + x + '" y1="' + (Math.min(p, c) - 10) + '" x2="' + x + '" y2="' + (Math.max(p, c) + 10) + '" stroke="currentColor" stroke-width="2"/>' +
+           '<rect x="' + (x - 6) + '" y="' + Math.min(p, c) + '" width="12" height="' + Math.max(4, Math.abs(c - p)) + '" fill="currentColor"/>';
+      p = Math.max(25, c);
+    }
+    return s;
+  })();
 
   var UI = {
     eb: { en:'Classroom', th:'ห้องเรียน' },
@@ -377,6 +413,8 @@
     roomEw:  { en:'Elliott Wave Classroom', th:'ห้องเรียน Elliott Wave' },
     roomStk: { en:'Stock Classroom', th:'ห้องเรียนหุ้น' },
     hStk:    { en:'Stock Classroom', th:'ห้องเรียนหุ้น' },
+    ebStk:   { en:'Classroom · Stocks', th:'ห้องเรียน · หุ้น' },
+    stkMissing: { en:'The Stock Classroom lessons have not been uploaded yet. Run the classroom uploader once with the admin key.', th:'ยังไม่ได้อัปโหลดบทเรียนห้องเรียนหุ้น ให้เปิดไฟล์อัปโหลดเนื้อหาห้องเรียนแล้วกดหนึ่งครั้งด้วยรหัสแอดมิน' },
     ledeStk: { en:'What to look at before you buy a stock: the business, the financial statements, the valuation, the economy, the market itself, and how to protect your money. Educational only — not investment advice.',
                th:'ก่อนซื้อหุ้นต้องดูอะไรบ้าง: ธุรกิจ งบการเงิน มูลค่า เศรษฐกิจ ตัวตลาดเอง และวิธีปกป้องเงินของเรา เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน' },
     exam:    { en:'CEWA exam mode', th:'โหมดแนวสอบ CEWA' },
@@ -500,7 +538,7 @@
   var ROOMS = { ew:{ tree:TREE, t:UX.roomEw, first:'overview' }, stk:{ tree:STK_TREE, t:UX.roomStk, first:'sk-overview' } };
   function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
   function lsSet(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
-  var room = lsGet('spz.ewRoom') === 'stk' ? 'stk' : 'ew';
+  var room = 'ew';
   var lastByRoom = { ew:'overview', stk:'sk-overview' };
   var examOn = lsGet('spz.ewExam') === '1';
   function inRoom(id, r){
@@ -519,7 +557,7 @@
 
   var sec = null;
   var bodyEl = null;
-  var currentId = room === 'stk' ? 'sk-overview' : 'overview';
+  var currentId = 'overview';
 
   /* Round AB: fetched once per page load (both languages come back in the
      same response, so a language toggle never needs a second round trip).
@@ -533,7 +571,7 @@
     var key = getAdminKey();
     if(!key) return;
     contentLoading = true; contentErr = null;
-    renderShell();
+    setTimeout(renderShell, 0);
     fetch(WORKER_BASE + '/api/classroom/content', { headers:{ 'X-Admin-Key': key } })
       .then(function(r){
         if(r.status === 401){ clearAdminKey(); contentErr = 'bad'; contentCache = null; contentLoading = false; renderShell(); return null; }
@@ -577,8 +615,8 @@
     return out || ('<div class="ewv-content-err"><p>' + esc(T(UI.contentMissing)) + '</p></div>');
   }
 
-  function submitContentKey(){
-    var input = bodyEl && bodyEl.querySelector('[data-ewv-key="input"]');
+  function submitContentKey(root){
+    var input = (root && root.querySelector) ? root.querySelector('[data-ewv-key="input"]') : null;
     var key = input ? input.value.trim() : '';
     if(!key) return;
     setAdminKey(key);
@@ -587,10 +625,11 @@
 
   function wireContentGate(){
     if(!bodyEl) return;
-    var input = bodyEl.querySelector('[data-ewv-key="input"]');
-    if(input) input.addEventListener('keydown', function(ev){ if(ev.key === 'Enter') submitContentKey(); });
-    var submit = bodyEl.querySelector('[data-ewv-key="submit"]');
-    if(submit) submit.addEventListener('click', submitContentKey);
+    var root = bodyEl;
+    var input = root.querySelector('[data-ewv-key="input"]');
+    if(input) input.addEventListener('keydown', function(ev){ if(ev.key === 'Enter') submitContentKey(root); });
+    var submit = root.querySelector('[data-ewv-key="submit"]');
+    if(submit) submit.addEventListener('click', function(){ submitContentKey(root); });
     var retry = bodyEl.querySelector('[data-ewv-key="retry"]');
     if(retry) retry.addEventListener('click', fetchClassroomContent);
   }
@@ -638,22 +677,19 @@
     return h;
   }
   function roomsHTML(reader){
-    var showStk = stkAvailable();
-    var tabs = ['ew', 'stk'].filter(function(r){ return r === 'ew' || showStk; }).map(function(r){
-      return '<button type="button" class="ewv-room' + (r === room ? ' on' : '') + '" data-room="' + r + '"><i>' + (r === 'ew' ? '〰' : '▤') + '</i>' + esc(T(ROOMS[r].t)) + '</button>';
-    }).join('');
+    var tabs = '';
     var ex = '';
     if(reader && examReady() && room === 'ew'){
       ex = '<button type="button" class="ewv-xtog' + (examOn ? ' on' : '') + '" data-exam-toggle="1" title="' + esc(T(UX.examTip)) + '">' +
         '<span class="sw"><i></i></span>🎯 ' + esc(T(UX.exam)) + ' <b>' + esc(T(examOn ? UX.examOn : UX.examOff)) + '</b></button>';
     }
-    if(tabs.indexOf('data-room="stk"') === -1 && !ex) return '';
+    if(!ex) return '';
     return '<div class="ewv-rooms">' + tabs + ex + '</div>';
   }
 
-  function renderShell(){
+  function renderShellOne(){
     if(!bodyEl) return;
-    if(!NODE_TITLE[currentId]) currentId = 'overview';
+    if(!NODE_TITLE[currentId]) currentId = ROOMS[room].first;
     var reader = canRead();
     // Kick off the one-time content fetch, then bail out of this render --
     // fetchClassroomContent() calls renderShell() itself right away to paint
@@ -661,13 +697,14 @@
     // same markup twice.
     if(reader && getAdminKey() && !contentCache && !contentLoading && !contentErr){
       fetchClassroomContent();
-      return;
     }
     /* a lesson that is in the menu but not on the server yet stays hidden until it is uploaded */
     function has(id){ return !contentCache || id === 'practice' || !!contentCache[id]; }
-    if(room === 'stk' && !stkAvailable()) room = 'ew';
-    if(!inRoom(currentId, room)) currentId = lastByRoom[room] || ROOMS[room].first;
-    lastByRoom[room] = currentId;
+    if(!inRoom(currentId, room)) currentId = ROOMS[room].first;
+    if(room === 'stk' && reader && contentCache && !stkAvailable()){
+      bodyEl.innerHTML = '<div class="ewv-content-err"><p>' + esc(T(UX.stkMissing)) + '</p></div>';
+      return;
+    }
     var navHTML = ROOMS[room].tree.map(function(entry){
       var kids = (entry.children || []).filter(has);
       if(!has(entry.id) && !kids.length) return '';
@@ -921,24 +958,36 @@
     });
   }
 
-  function paint(){
-    if(!sec) return;
+  /* ===== 2026-10-21 (b): two separate pages share this module --
+     #/elliott (room 'ew') and #/stockclass (room 'stk'). Each page keeps its
+     own section, body element and current lesson; use() swaps them into the
+     module-level variables the render code already reads, so the rendering
+     functions above stay single-page code. Content, admin key and exam mode
+     are shared. ===== */
+  var INST = [];
+  function use(inst){ sec = inst.sec; bodyEl = inst.bodyEl; currentId = inst.currentId; room = inst.key; }
+  function keep(inst){ inst.currentId = currentId; }
+  function renderShell(){ INST.forEach(function(inst){ use(inst); renderShellOne(); keep(inst); }); }
+  function paintOne(inst){
+    use(inst);
     var q = function(k){ return sec.querySelector('[data-ewv="' + k + '"]'); };
-    if(q('eb')) q('eb').textContent = T(UI.eb);
-    if(q('h')) q('h').textContent = T(room === 'stk' ? UX.hStk : UI.h);
-    if(q('lede')) q('lede').textContent = T(room === 'stk' ? UX.ledeStk : UI.lede);
-    bodyEl = q('body');
-    if(bodyEl) renderShell();
+    if(q('eb')) q('eb').textContent = T(inst.key === 'stk' ? UX.ebStk : UI.eb);
+    if(q('h')) q('h').textContent = T(inst.key === 'stk' ? UX.hStk : UI.h);
+    if(q('lede')) q('lede').textContent = T(inst.key === 'stk' ? UX.ledeStk : UI.lede);
+    renderShellOne();
+    keep(inst);
   }
+  function paint(){ INST.forEach(paintOne); }
 
-  function build(){
-    if(document.getElementById('elliott')) return true;
-    if(!document.querySelector('.top-fixed') || !window.__spzAddRoute) return false;
-
-    sec = document.createElement('section');
-    sec.id = 'elliott';
-    sec.setAttribute('data-route', 'elliott');
-    sec.innerHTML =
+  function makePage(key){
+    var id = key === 'stk' ? 'stockclass' : 'elliott';
+    if(document.getElementById(id)) return;
+    var s = document.createElement('section');
+    s.id = id;
+    s.setAttribute('data-route', id);
+    s.className = 'ewv-page ewv-page-' + key;
+    s.innerHTML =
+      '<div class="ewv-pagebg" aria-hidden="true">' + (key === 'stk' ? STK_BG : EW_BG) + '</div>' +
       '<div class="ewv-wrap">' +
         '<div class="section-head reveal in-view">' +
           '<div class="eyebrow"><span class="cursor"></span><span data-ewv="eb"></span></div>' +
@@ -948,39 +997,33 @@
         '</div>' +
         '<div data-ewv="body"></div>' +
       '</div>';
-    document.body.appendChild(sec);
-
-    bodyEl = sec.querySelector('[data-ewv="body"]');
-    // One delegated click listener on the (never-replaced) body container
-    // handles every nav item, every map box/leaf, every thumbnail card, and
-    // every "Fibonacci Tools" sub-list row inside the fetched content -- they
-    // all just carry a data-node attribute. renderShell() replaces this
-    // container's innerHTML on every click, but the listener itself survives
-    // because it's bound to bodyEl, not to any node that gets re-created.
-    // Validity is checked against NODE_TITLE (not fetched content) since the
-    // nav tree -- unlike the lesson text -- is always available client-side.
-    bodyEl.addEventListener('click', function(ev){
-      var rm = ev.target.closest('[data-room]');
-      if(rm){
-        var r = rm.getAttribute('data-room');
-        if(ROOMS[r] && r !== room){ lastByRoom[room] = currentId; room = r; lsSet('spz.ewRoom', r); currentId = lastByRoom[r] || ROOMS[r].first; paint(); }
-        return;
-      }
+    document.body.appendChild(s);
+    var inst = { key:key, sec:s, bodyEl:s.querySelector('[data-ewv="body"]'), currentId:ROOMS[key].first };
+    INST.push(inst);
+    // One delegated click listener per page body: nav items, map boxes,
+    // thumbnail cards and in-lesson links all carry data-node.
+    inst.bodyEl.addEventListener('click', function(ev){
+      use(inst);
       if(ev.target.closest('[data-exam-toggle]')){
         examOn = !examOn; lsSet('spz.ewExam', examOn ? '1' : '0');
         var navK = bodyEl.querySelector('.gl-nav'), navT = navK ? navK.scrollTop : 0, yK = window.pageYOffset;
-        renderShell();
+        renderShellOne(); keep(inst);
         var navK2 = bodyEl.querySelector('.gl-nav'); if(navK2) navK2.scrollTop = navT; window.scrollTo(0, yK);
         return;
       }
       var el = ev.target.closest('[data-node]');
       if(!el || !NODE_TITLE[el.getAttribute('data-node')]) return;
-      currentId = el.getAttribute('data-node');
-      if(!inRoom(currentId, room)){ var other = room === 'ew' ? 'stk' : 'ew'; if(inRoom(currentId, other)){ room = other; lsSet('spz.ewRoom', other); paint(); return; } }
+      var nid = el.getAttribute('data-node');
+      if(!inRoom(nid, inst.key)){
+        var other = INST.filter(function(x){ return x !== inst && inRoom(nid, x.key); })[0];
+        if(other){ other.currentId = nid; paintOne(other); location.hash = '#/' + other.sec.id; }
+        return;
+      }
+      currentId = nid;
       // Keep the reader where they are: the nav list keeps its own scroll position and the page does not
       // jump to the top; if the lesson header ended up above the screen, bring just the header into view.
       var nav0 = bodyEl.querySelector('.gl-nav'), navTop = nav0 ? nav0.scrollTop : 0, y0 = window.pageYOffset;
-      renderShell();
+      renderShellOne(); keep(inst);
       var nav1 = bodyEl.querySelector('.gl-nav'); if(nav1) nav1.scrollTop = navTop;
       window.scrollTo(0, y0);
       var head = bodyEl.querySelector('.gl-detail');
@@ -989,24 +1032,34 @@
         if(top < topH) window.scrollTo({ top: window.pageYOffset + top - topH, behavior: 'smooth' });
       }
     });
-
-    window.__spzAddRoute({
+    window.__spzAddRoute(key === 'stk' ? {
+      id:'stockclass', after:'elliott',
+      t:{en:'Stock Classroom',th:'ห้องเรียนหุ้น'},
+      d:{en:'What to check before you buy a stock: the business, financial statements, valuation, the economy, reading the market and managing risk.',
+         th:'ก่อนซื้อหุ้นต้องดูอะไร: ธุรกิจ งบการเงิน มูลค่า เศรษฐกิจ การอ่านตลาด และการบริหารความเสี่ยง'}
+    } : {
       id:'elliott', after:'signals',
-      t:{en:'Classroom: Elliott Wave · Stocks',th:'ห้องเรียน Elliott Wave · หุ้น'},
+      t:{en:'Elliott Wave Classroom',th:'ห้องเรียน Elliott Wave'},
       d:{en:'The 5-3 wave pattern, the three hard rules, the common guidelines, and an honest look at where the whole framework goes wrong.',
          th:'รูปแบบคลื่น 5-3 กฎหลักสามข้อ แนวทางที่ใช้กันทั่วไป และมุมมองตรงไปตรงมาว่าทฤษฎีนี้มักผิดพลาดตรงไหน'}
     });
+    s.__render = function(){ paintOne(inst); };
+    paintOne(inst);
+  }
 
-    sec.__render = paint;
-    paint();
+  function build(){
+    if(document.getElementById('elliott') && document.getElementById('stockclass')) return true;
+    if(!document.querySelector('.top-fixed') || !window.__spzAddRoute) return false;
+    makePage('ew');
+    makePage('stk');
     return true;
   }
 
   function boot(){
     var tries = 0;
     var iv = setInterval(function(){ if(build() || ++tries > 60) clearInterval(iv); }, 400);
-    new MutationObserver(function(){ if(sec) paint(); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
-    document.addEventListener('spz:tier', function(){ contentCache = null; contentErr = null; if(sec) paint(); });
+    new MutationObserver(function(){ paint(); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+    document.addEventListener('spz:tier', function(){ contentCache = null; contentErr = null; paint(); });
   }
 
   /* read-only hook for the ebook builder (part-78.js): the lesson tree and
