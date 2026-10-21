@@ -37,7 +37,8 @@
     keyLede:{ en:'Enter the admin key to open the registry.', th:'ใส่รหัสแอดมินเพื่อเปิดทะเบียน' }, keyPh:{ en:'Admin key', th:'รหัสแอดมิน' }, open:{ en:'Open', th:'เปิด' },
     bad:{ en:'Wrong admin key.', th:'รหัสแอดมินไม่ถูกต้อง' }, net:{ en:'Could not reach the server. Has the new Worker been deployed?', th:'ติดต่อเซิร์ฟเวอร์ไม่ได้ ได้ deploy Worker ตัวใหม่แล้วหรือยัง' },
     name:{ en:'Reader name (a nickname or LINE ID is fine)', th:'ชื่อผู้รับ (ชื่อเล่นหรือไอดีไลน์ก็ได้)' }, contact:{ en:'Contact (LINE / phone / email)', th:'ช่องทางติดต่อ (LINE / โทร / อีเมล)' },
-    note:{ en:'Note (course, payment, …)', th:'หมายเหตุ (คอร์ส การชำระเงิน ฯลฯ)' }, lang:{ en:'Ebook language', th:'ภาษาของอีบุ๊ก' },
+    note:{ en:'Note (course, payment, …)', th:'หมายเหตุ (คอร์ส การชำระเงิน ฯลฯ)' },
+    book:{ en:'Which book', th:'เล่มที่จะแจก' }, bookEw:{ en:'Elliott Wave Classroom', th:'ห้องเรียน Elliott Wave' }, bookStk:{ en:'Stock Classroom', th:'ห้องเรียนหุ้น' }, lang:{ en:'Ebook language', th:'ภาษาของอีบุ๊ก' },
     issue:{ en:'1 · Register this reader', th:'1 · ลงทะเบียนผู้รับ' }, needName:{ en:'Type the reader name first.', th:'กรุณาพิมพ์ชื่อผู้รับก่อน' },
     flow:{ en:'Do not know the real name? Register a nickname or LINE ID, send the link first: the reader types their full name when accepting, and the PDF you make afterwards prints that name.', th:'ไม่รู้ชื่อจริง? ลงชื่อเล่นหรือไอดีไลน์ไว้ก่อน แล้วส่งลิงก์ให้ผู้รับก่อน ผู้รับจะกรอกชื่อจริงเองตอนกดยอมรับ จากนั้นค่อยกดสร้าง PDF เล่มจะพิมพ์ชื่อที่ผู้รับกรอก' },
     willUse:{ en:'Name printed in the book', th:'ชื่อที่จะพิมพ์ในเล่ม' }, vLine:{ en:'dotted code line', th:'แถบจุดไข่ปลา' },
@@ -249,6 +250,79 @@
       fwbody:['This book collects every lesson from the Elliott Wave Classroom on SPACEZ TERMINAL in one place, so students can review anywhere, even offline.', 'The material runs from the basics to advanced topics: motive and corrective patterns, rules and guidelines, Fibonacci, alternate counts, recounting when price breaks a rule, and practical application. Every chapter is illustrated so the patterns are easy to see.', 'Always remember: the wave principle is a way to organise possibilities, not a crystal ball. Use it together with sound risk management.', 'Educational material only — not investment advice.'],
       sign:'Noraset Boikaw (Focus)', verify:'Check that this copy is genuine at', back:['The complete Elliott Wave handbook from the SPACEZ TERMINAL classroom — from the history and the basics to advanced counting, Fibonacci measurement and trade planning.', 'Every lesson is explained with diagrams, so you can review anywhere, even offline.'], backList:['Every wave pattern with its rules and guidelines', 'Recount scenarios and alternate counts', 'Entries, stops and targets for each pattern', 'How to measure Fibonacci correctly'], foot:'Personal copy of {n} · {id} · do not share' }
   };
+  /* 2026-10-21 (b): second book -- the Stock Classroom. A record's book is its
+     title ("Stock Classroom"), which the Worker already stores, so no Worker change. */
+  var BOOK_STK = {
+    th:{ title:'ห้องเรียนหุ้น', kick:'คู่มือลงทุนหุ้นฉบับเข้าใจง่าย', big:'ลงทุน<br>หุ้น', sub:'Stock Classroom · ธุรกิจ งบการเงิน มูลค่า เศรษฐกิจ อ่านตลาด และบริหารความเสี่ยง', by:'โดย นรเศรษฐ์ บ่อแก้ว (Focus)',
+      fw:'คำนำ', toc:'สารบัญ', ch:'บทที่', edition:'ฉบับปี 2569', copyH:'ลิขสิทธิ์และสิทธิ์การใช้', forWho:'ฉบับเฉพาะของ', copyNo:'เลขที่ฉบับ', scan:'สแกนเพื่อเยี่ยมชมเว็บไซต์',
+      fwbody:['หนังสือเล่มนี้รวบรวมบทเรียนทั้งหมดจากห้องเรียนหุ้นบน SPACEZ TERMINAL ไว้ในที่เดียว ให้อ่านทบทวนได้ทุกที่ แม้ไม่ได้เปิดเว็บไซต์', 'เนื้อหาเรียงตามลำดับที่ควรคิดก่อนซื้อหุ้น: เข้าใจธุรกิจ อ่านงบการเงิน ประเมินมูลค่า ดูเศรษฐกิจ อ่านตลาด แล้วจึงวางแผนบริหารความเสี่ยงและติดตามผล พร้อมกรณีศึกษาและแบบฝึกหัด', 'ตัวอย่างทั้งหมดใช้บริษัทสมมติและตัวเลขกลมๆ เพื่อให้เห็นหลักการชัดเจน', 'เนื้อหาทั้งหมดจัดทำเพื่อการศึกษา ไม่ใช่คำแนะนำการลงทุน'],
+      sign:'นรเศรษฐ์ บ่อแก้ว (Focus)', verify:'ตรวจสอบว่าเป็นฉบับแท้ได้ที่', back:['คู่มือลงทุนหุ้นจากห้องเรียน SPACEZ TERMINAL — ก่อนซื้อหุ้นต้องดูอะไรบ้าง อธิบายทีละขั้นด้วยภาพและตัวอย่าง', 'อ่านจบแล้วใช้เช็กลิสต์ท้ายเล่มได้ทันทีก่อนซื้อทุกครั้ง'], backList:['อ่านงบการเงิน 3 งบและอัตราส่วนสำคัญ', 'ประเมินมูลค่า P/E P/BV ปันผล และ DCF', 'อ่านเศรษฐกิจ ดอกเบี้ย และวัฏจักร', 'บริหารความเสี่ยงและกรณีศึกษา 6 เรื่อง'], foot:'ฉบับเฉพาะของ {n} · {id} · ห้ามเผยแพร่ต่อ' },
+    en:{ title:'Stock Classroom', kick:'An easy guide to investing in stocks', big:'Stock<br>Investing', sub:'The business, financial statements, valuation, the economy, reading the market and managing risk', by:'by Noraset Boikaw (Focus)',
+      fw:'Foreword', toc:'Contents', ch:'Chapter', edition:'2026 edition', copyH:'Copyright and licence', forWho:'Personal copy of', copyNo:'Copy no.', scan:'Scan to visit the website',
+      fwbody:['This book collects every lesson from the Stock Classroom on SPACEZ TERMINAL in one place, so you can review anywhere, even offline.', 'The chapters follow the order you should think in before buying a stock: understand the business, read the statements, judge the price, check the economy, read the market, then plan your risk and follow up — with case studies and practice questions.', 'All examples use made-up companies and round numbers so the ideas are easy to see.', 'Educational material only — not investment advice.'],
+      sign:'Noraset Boikaw (Focus)', verify:'Check that this copy is genuine at', back:['The stock-investing handbook from the SPACEZ TERMINAL classroom — what to check before you buy, explained step by step with pictures and examples.', 'Finish it and use the checklist at the end before every purchase.'], backList:['The three financial statements and key ratios', 'Valuation: P/E, P/BV, dividends and DCF', 'The economy, interest rates and the cycle', 'Risk management and six case studies'], foot:'Personal copy of {n} · {id} · do not share' }
+  };
+  function bookOf(r){ return /stock/i.test((r && r.title) || '') ? 'stk' : 'ew'; }
+  function bookTX(r, lang){ return (bookOf(r) === 'stk' ? BOOK_STK : BOOK)[lang]; }
+  /* Stock book cover: plain and calm -- ivory paper, navy type, an emerald
+     accent, a row of small candles and a gold rising line. back=true draws the
+     back cover in the same style. */
+  function coverStkPNG(rec, TX, back){
+    var W = 1654, H = 2339, c = document.createElement('canvas'); c.width = W; c.height = H; var x = c.getContext('2d');
+    var mm = W / 210, L = 22 * mm, FT = '"Noto Sans Thai", "Inter", sans-serif', MONO = '"IBM Plex Mono", monospace';
+    var bg = x.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#fbfaf6'); bg.addColorStop(1, '#f1efe7'); x.fillStyle = bg; x.fillRect(0, 0, W, H);
+    x.strokeStyle = 'rgba(20,40,70,.05)'; x.lineWidth = 1;
+    for(var gx = 0; gx <= W; gx += 10 * mm){ x.beginPath(); x.moveTo(gx, 0); x.lineTo(gx, H); x.stroke(); }
+    for(var gy = 0; gy <= H; gy += 10 * mm){ x.beginPath(); x.moveTo(0, gy); x.lineTo(W, gy); x.stroke(); }
+    x.fillStyle = '#0f6b4f'; x.fillRect(0, 0, W, 6 * mm);
+    x.textBaseline = 'alphabetic';
+    var r = rnd(((rec.seed >>> 0) || 77) ^ (back ? 0x5bd1e995 : 0));
+    if(back){
+      x.textAlign = 'center';
+      x.fillStyle = '#0f6b4f'; x.font = '700 ' + Math.round(4 * mm) + 'px ' + MONO; x.fillText('SPACEZ TERMINAL', W / 2, 40 * mm);
+      x.fillStyle = '#14233d'; x.font = '900 ' + Math.round(11 * mm) + 'px ' + FT; x.fillText(TX.title, W / 2, 66 * mm);
+      x.fillStyle = '#0f6b4f'; x.fillRect(W / 2 - 20 * mm, 73 * mm, 40 * mm, 2);
+      x.font = '400 ' + Math.round(4.6 * mm) + 'px ' + FT; x.fillStyle = '#33415c';
+      var y = 92 * mm;
+      (TX.back || []).forEach(function(par){ wrapCanvas(x, par, W - 52 * mm).forEach(function(t){ x.fillText(t, W / 2, y); y += 8 * mm; }); y += 5 * mm; });
+      x.font = '700 ' + Math.round(4.2 * mm) + 'px ' + FT; x.fillStyle = '#0f6b4f';
+      (TX.backList || []).forEach(function(t){ x.fillText('—  ' + t + '  —', W / 2, y); y += 9 * mm; });
+      x.font = '500 ' + Math.round(3.6 * mm) + 'px ' + MONO; x.fillStyle = '#5b6680'; x.fillText(TX.verify, W / 2, H - 40 * mm);
+      x.fillStyle = '#0f6b4f'; x.fillText('spacez001.github.io/TERMINAL/ebook.html', W / 2, H - 33 * mm);
+      x.fillStyle = '#7b8496'; x.font = '500 ' + Math.round(3.2 * mm) + 'px ' + FT; x.fillText('© 2569 / 2026 Noraset Boikaw · SPACEZ TERMINAL · ' + rec.id, W / 2, H - 22 * mm);
+      return c.toDataURL('image/jpeg', 0.86);
+    }
+    x.fillStyle = '#0f6b4f'; x.font = '700 ' + Math.round(4.2 * mm) + 'px ' + MONO; try { x.letterSpacing = Math.round(1.8 * mm) + 'px'; } catch(e){}
+    x.fillText('SPACEZ TERMINAL', L, 28 * mm); try { x.letterSpacing = '0px'; } catch(e){}
+    x.fillStyle = '#5b6680'; x.font = '500 ' + Math.round(3.8 * mm) + 'px ' + MONO; x.textAlign = 'right'; x.fillText(TX.edition, W - L, 28 * mm); x.textAlign = 'left';
+    x.fillStyle = 'rgba(20,35,61,.25)'; x.fillRect(L, 32 * mm, W - 2 * L, 1);
+    var ky = 74 * mm;
+    x.font = '700 ' + Math.round(5 * mm) + 'px ' + FT; x.fillStyle = '#0f6b4f'; x.fillRect(L, ky - 1.6 * mm, 10 * mm, 2); x.fillText(TX.kick, L + 14 * mm, ky);
+    TX.big.split('<br>').forEach(function(line, i){
+      x.font = '900 ' + Math.round(30 * mm) + 'px ' + FT; x.fillStyle = i ? '#0f6b4f' : '#14233d';
+      x.fillText(line, L - 1.2 * mm, ky + 34 * mm + i * 32 * mm);
+    });
+    x.font = '500 ' + Math.round(5.4 * mm) + 'px ' + FT; x.fillStyle = '#33415c';
+    wrapCanvas(x, TX.sub, 150 * mm).forEach(function(t, i){ x.fillText(t, L, ky + 84 * mm + i * 8 * mm); });
+    var bx = L, by = 238 * mm, sw = W - 2 * L, n = 22, step = sw / n, p = 0.18, pts = [];
+    var Y = function(v){ return by - v * 62 * mm; };
+    x.strokeStyle = 'rgba(20,35,61,.18)'; x.lineWidth = 1; x.beginPath(); x.moveTo(bx, by + 6 * mm); x.lineTo(bx + sw, by + 6 * mm); x.stroke();
+    for(var i = 0; i < n; i++){
+      var o = p, cl = Math.max(0.08, Math.min(0.95, p + 0.03 + (r() - 0.42) * 0.11)), hi = Math.max(o, cl) + 0.03 + r() * 0.04, lo = Math.min(o, cl) - 0.03 - r() * 0.04;
+      var cx = bx + step * (i + 0.5), up = cl >= o;
+      x.strokeStyle = x.fillStyle = up ? '#0f8a64' : '#c2414b'; x.lineWidth = 0.5 * mm;
+      x.beginPath(); x.moveTo(cx, Y(hi)); x.lineTo(cx, Y(lo)); x.stroke();
+      x.fillRect(cx - step * 0.28, Y(Math.max(o, cl)), step * 0.56, Math.max(1.2 * mm, Math.abs(Y(o) - Y(cl))));
+      pts.push([cx, Y(Math.max(o, cl)) - 9 * mm]); p = cl;
+    }
+    x.strokeStyle = '#c99a2e'; x.lineWidth = 0.8 * mm; x.lineJoin = 'round'; x.beginPath();
+    pts.forEach(function(q, j){ if(j) x.lineTo(q[0], q[1]); else x.moveTo(q[0], q[1]); }); x.stroke();
+    x.fillStyle = 'rgba(20,35,61,.25)'; x.fillRect(L, H - 44 * mm, W - 2 * L, 1);
+    x.fillStyle = '#14233d'; x.font = '800 ' + Math.round(6.4 * mm) + 'px ' + FT; x.fillText(TX.by, L, H - 33 * mm);
+    x.fillStyle = '#5b6680'; x.font = '500 ' + Math.round(3.9 * mm) + 'px ' + FT; x.fillText(TX.forWho + ' ' + printName(rec) + '  ·  ' + rec.id, L, H - 24 * mm);
+    x.fillStyle = '#0f6b4f'; x.font = '700 ' + Math.round(3.4 * mm) + 'px ' + MONO; x.textAlign = 'right'; x.fillText('STOCK · CLASSROOM', W - L, H - 24 * mm); x.textAlign = 'left';
+    return c.toDataURL('image/jpeg', 0.88);
+  }
   function qrSVG(text){
     try { if(typeof qrcode === 'function'){ var q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize:4, margin:4, scalable:true }); } } catch(e){}
     return '';
@@ -403,8 +477,8 @@
   }
   function printName(r){ return (r.accepted && r.accepted.typedName) || r.name; }
   function buildBook(rec, content){
-    var lang = rec.lang === 'en' ? 'en' : 'th', TX = BOOK[lang], B = window.__SPZ_EWV_BOOK;
-    var tree = (B && B.tree) || [], title = function(id){ var t = B && B.title(id); return t ? (t[lang] || t.en) : id; };
+    var lang = rec.lang === 'en' ? 'en' : 'th', TX = bookTX(rec, lang), B = window.__SPZ_EWV_BOOK;
+    var tree = (B && (bookOf(rec) === 'stk' ? B.stkTree : B.tree)) || [], title = function(id){ var t = B && B.title(id); return t ? (t[lang] || t.en) : id; };
     var chapters = [], n = 0;
     tree.forEach(function(item){
       if(item.id === 'practice') return;
@@ -461,15 +535,17 @@
     var lang = rec.lang === 'en' ? 'en' : 'th';
     var fonts = (document.fonts && document.fonts.load) ? Promise.all(['900 120px "Noto Sans Thai"', '700 20px "Noto Sans Thai"', '700 20px "IBM Plex Mono"'].map(function(f){ return document.fonts.load(f).catch(function(){}); })) : Promise.resolve();
     return fonts.then(fetchContent).then(function(content){
-      rec.__cover = coverPNG(rec, BOOK[lang]); rec.__back = backPNG(rec, BOOK[lang]);
+      var TXB = bookTX(rec, lang);
+      if(bookOf(rec) === 'stk'){ rec.__cover = coverStkPNG(rec, TXB); rec.__back = coverStkPNG(rec, TXB, true); }
+      else { rec.__cover = coverPNG(rec, TXB); rec.__back = backPNG(rec, TXB); }
       var html = buildBook(rec, content);
       if(!html) throw new Error('nocontent');
       var old = document.getElementById('spzEbook'); if(old) old.remove();
       var box = document.createElement('div'); box.id = 'spzEbook'; box.className = 'spz-ebook lang-' + rec.lang + (isSafari() ? ' safari' : ''); box.setAttribute('lang', lang); box.innerHTML = html;
       document.body.appendChild(box);
-      var stl = document.createElement('style'); stl.id = 'spzEbookPage'; stl.textContent = ebPageCSS(rec, BOOK[lang]); document.body.appendChild(stl);
+      var stl = document.createElement('style'); stl.id = 'spzEbookPage'; stl.textContent = ebPageCSS(rec, bookTX(rec, lang)); document.body.appendChild(stl);
       var prevTitle = document.title;
-      document.title = 'SPZ-EB-' + rec.id.replace(/^EB-/, '') + '-' + safeName(rec.name);
+      document.title = 'SPZ-EB-' + (bookOf(rec) === 'stk' ? 'STOCK-' : '') + rec.id.replace(/^EB-/, '') + '-' + safeName(rec.name);
       document.body.classList.add('spz-printing-ebook');
       function done(){ document.body.classList.remove('spz-printing-ebook'); document.title = prevTitle; var s = document.getElementById('spzEbookPage'); if(s) s.remove(); var b = document.getElementById('spzEbook'); if(b) b.remove(); window.removeEventListener('afterprint', done); }
       window.addEventListener('afterprint', done);
@@ -753,7 +829,7 @@
   function rowHTML(r){
     var a = r.accepted, st = r.revoked ? '<i class="eb-st rv">' + esc(T(U.revoked)) + '</i>' : a ? '<i class="eb-st ok">' + esc(T(U.accepted)) + ' · ' + esc(fmtDate(a.at)) + '</i>' : '<i class="eb-st pd">' + esc(T(U.pending)) + '</i>';
     return '<div class="eb-row" data-id="' + esc(r.id) + '">' +
-      '<div class="eb-r1"><b>' + esc(r.name) + '</b><span class="mono">' + esc(r.id) + ' · #' + r.serial + ' · ' + esc((r.lang || 'th').toUpperCase()) + '</span>' + st + '</div>' +
+      '<div class="eb-r1"><b>' + esc(r.name) + '</b><span class="mono">' + esc(r.id) + ' · #' + r.serial + ' · ' + esc((r.lang || 'th').toUpperCase()) + '</span><i class="eb-book ' + bookOf(r) + '">' + esc(T(bookOf(r) === 'stk' ? U.bookStk : U.bookEw)) + '</i>' + st + '</div>' +
       '<div class="eb-r2"><span>' + esc(T(U.given)) + ' ' + esc(fmtDate(r.createdAt)) + '</span>' + (r.contact ? '<span>' + esc(r.contact) + '</span>' : '') + '<span>' + esc(r.hasFile ? T(U.file) : T(U.noFile)) + '</span><span>' + (r.downloads || []).length + ' ' + esc(T(U.dl)) + '</span>' +
         (a ? '<span class="mono">' + esc(T(U.ip)) + ' ' + esc(a.ip) + ' ' + esc(a.country || '') + '</span><span>' + esc(T(U.typed)) + ': ' + esc(a.typedName) + '</span>' : '') + (r.note ? '<span>' + esc(r.note) + '</span>' : '') + '</div>' +
       '<div class="eb-r3"><button type="button" class="eb-b" data-eb-act="make" data-id="' + esc(r.id) + '">' + esc(T(U.make)) + '</button>' +
@@ -782,7 +858,7 @@
     } else if(S.tab === 'new'){
       var r = S.last && (byId(S.last.id) || S.last);
       body = '<p class="eb-flow">' + esc(T(U.flow)) + '</p><div class="eb-form"><label>' + esc(T(U.name)) + '<input type="text" data-eb="fName" maxlength="80"></label><label>' + esc(T(U.contact)) + '<input type="text" data-eb="fContact" maxlength="120"></label>' +
-        '<label>' + esc(T(U.note)) + '<input type="text" data-eb="fNote" maxlength="300"></label><label>' + esc(T(U.lang)) + '<select data-eb="fLang"><option value="th">ไทย</option><option value="en">English</option></select></label>' +
+        '<label>' + esc(T(U.note)) + '<input type="text" data-eb="fNote" maxlength="300"></label><label>' + esc(T(U.book)) + '<select data-eb="fBook"><option value="ew">' + esc(T(U.bookEw)) + '</option><option value="stk">' + esc(T(U.bookStk)) + '</option></select></label><label>' + esc(T(U.lang)) + '<select data-eb="fLang"><option value="th">ไทย</option><option value="en">English</option></select></label>' +
         '<button type="button" class="eb-b pri" data-eb-act="issue">' + esc(T(U.issue)) + '</button><div class="eb-msg" data-eb-msg="new"></div></div>' +
         (r ? '<div class="eb-steps"><div class="eb-card"><b>' + esc(r.name) + '</b><span class="mono">' + esc(r.id) + ' · #' + r.serial + '</span>' + (r.accepted ? '<i class="eb-st ok">' + esc(T(U.accepted)) + '</i>' : '<i class="eb-st pd">' + esc(T(U.pending)) + '</i>') + '</div>' +
           '<div class="eb-step"><h4>' + esc(T(U.s4)) + '</h4><p>' + esc(T(U.s4h)) + '</p><input type="text" readonly value="' + esc(accLink(r)) + '" class="eb-link"><div class="eb-tools"><button type="button" class="eb-b" data-eb-act="copy" data-id="' + esc(r.id) + '">' + esc(T(U.copyLink)) + '</button><a class="eb-b" target="_blank" rel="noopener" href="https://line.me/R/msg/text/?' + encodeURIComponent(accLink(r)) + '">' + esc(T(U.line)) + '</a><button type="button" class="eb-b" data-eb-act="reload">' + esc(T(U.reload)) + '</button></div></div>' +
@@ -854,7 +930,7 @@
         var name = sec.querySelector('[data-eb="fName"]').value.trim();
         if(!name){ msg('new', T(U.needName)); return; }
         b.disabled = true;
-        api('/api/admin/ebook/issue', { method:'POST', json:{ name:name, contact:sec.querySelector('[data-eb="fContact"]').value, note:sec.querySelector('[data-eb="fNote"]').value, lang:sec.querySelector('[data-eb="fLang"]').value, title:'Elliott Wave Classroom' } })
+        api('/api/admin/ebook/issue', { method:'POST', json:{ name:name, contact:sec.querySelector('[data-eb="fContact"]').value, note:sec.querySelector('[data-eb="fNote"]').value, lang:sec.querySelector('[data-eb="fLang"]').value, title:(sec.querySelector('[data-eb="fBook"]') && sec.querySelector('[data-eb="fBook"]').value === 'stk') ? 'Stock Classroom' : 'Elliott Wave Classroom' } })
           .then(function(d){ b.disabled = false; if(!d.ok){ msg('new', d.__status === 401 ? T(U.bad) : T(U.net)); return; } S.last = d.ebook; S.list = [d.ebook].concat(S.list || []); paint(); })
           .catch(function(){ b.disabled = false; msg('new', T(U.net)); });
         return;
