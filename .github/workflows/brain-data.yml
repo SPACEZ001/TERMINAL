@@ -1,0 +1,68 @@
+name: brain-data
+
+# Refreshes data/brain.json (US economy series from FRED's keyless CSV export
+# + weekly ETF closes) for the admin-only Market Brain board (#/brain), and
+# data/econ.json (this + next week's economic calendar) which the board's
+# "what to watch" tab reads. FRED series update at most daily, the calendar
+# a few times a week, so twice a day is plenty.
+
+on:
+  schedule:
+    - cron: '23 1 * * *'
+    - cron: '47 13 * * *'   # after most US releases (8:30 / 10:00 ET)
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/fetch_brain.py'
+      - '.github/workflows/brain-data.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: brain-data
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install deps
+        run: pip install --quiet --upgrade yfinance
+
+      - name: Build economy snapshot
+        run: python scripts/fetch_brain.py
+
+      - name: Refresh economic calendar
+        run: python scripts/fetch_econ.py || echo "calendar fetch failed - keeping the old file"
+
+      # Same fetch+rebase+retry pattern as the other data jobs.
+      - name: Commit if changed
+        run: |
+          git config user.name  "spacez-market-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -z "$(git status --porcelain data/brain.json data/econ.json)" ]; then
+            echo "no change"; exit 0
+          fi
+          git add data/brain.json data/econ.json
+          git commit -m "data: economy snapshot $(date -u '+%Y-%m-%d %H:%M UTC')"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo "pushed on attempt $attempt"; exit 0
+            fi
+            echo "push rejected, rebasing onto origin/main (attempt $attempt)"
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              echo "could not rebase cleanly"; break
+            fi
+          done
+          echo "::error::could not push the economy update after 3 attempts"
+          exit 1
