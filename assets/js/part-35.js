@@ -44,7 +44,7 @@
     flow:'mixed', globe:'mixed', infl:'mixed', macrolab:'mixed', directory:'mixed', desk:'mixed',
     outlook:'frozen', scenarios:'frozen', pro:'frozen',
     types:'teach', glossary:'teach', signals:'teach', start:'teach', guided:'teach',
-    chartlab:'sim'
+    chartlab:'sim', brain:'mixed'
   };
 
   function badgeHTML(kind){
