@@ -57,6 +57,15 @@ SERIES = {
     "mort":     ("MORTGAGE30US", "30y mortgage rate", "ดอกเบี้ยบ้าน 30 ปี", "%", "lvl"),
     "oil":      ("DCOILWTICO", "WTI crude oil", "น้ำมันดิบ WTI", "$", "lvl"),
     "recprob":  ("RECPROUSM156N", "Recession probability (model)", "โอกาสเกิดภาวะถดถอย (โมเดล)", "%", "lvl"),
+    # added 2026-10-25 for the forecast tab
+    "wages":    ("CES0500000003", "Wage growth", "ค่าจ้างเฉลี่ยโต", "%", "yoy"),
+    "jolts":    ("JTSJOL", "Job openings", "ตำแหน่งงานว่าง", "m", "lvl_m"),
+    "permits":  ("PERMIT", "Building permits", "ใบอนุญาตก่อสร้างบ้าน", "k", "lvl"),
+    "mich":     ("MICH", "Consumers' 1y inflation expectation", "เงินเฟ้อที่ผู้บริโภคคาด 1 ปี", "%", "lvl"),
+    "exp1y":    ("EXPINF1YR", "1y expected inflation (Cleveland Fed)", "เงินเฟ้อคาด 1 ปี (Cleveland Fed)", "%", "lvl"),
+    "t10y3m":   ("T10Y3M", "10y minus 3m", "ส่วนต่าง 10 ปี − 3 เดือน", "pt", "lvl"),
+    "y3m":      ("DGS3MO", "3m Treasury bill", "ตั๋วเงินคลัง 3 เดือน", "%", "lvl"),
+    "gdpnow":   ("GDPNOW", "GDPNow (Atlanta Fed nowcast)", "GDPNow (ประมาณการสด Atlanta Fed)", "%", "lvl"),
 }
 
 # ETFs for model portfolios + risk (weekly closes, 2 years)
@@ -129,6 +138,7 @@ def build_series(key, spec):
     rows = fred(sid)
     if not rows:
         raise ValueError("empty")
+    index_tail = [[t, round(v, 3)] for t, v in rows[-30:]] if tf == "yoy" else None
     tail = rows[-30:]
     gap = (_d(tail[-1][0]) - _d(tail[0][0])).days / max(1, len(tail) - 1)
     daily = gap <= 8   # daily or weekly series -> store weekly history
@@ -136,6 +146,8 @@ def build_series(key, spec):
         rows = yoy(rows)
     elif tf == "mom_k":
         rows = [(rows[i][0], round(rows[i][1] - rows[i - 1][1], 0)) for i in range(1, len(rows))]
+    elif tf == "lvl_m":
+        rows = [(t, round(v / 1000.0, 2)) for t, v in rows]
     elif tf == "lvl_k":
         rows = [(t, round(v / 1000.0, 1)) for t, v in rows]
     last = rows[-1]
@@ -165,6 +177,7 @@ def build_series(key, spec):
         "t": last[0], "v": round(last[1], rnd),
         "m1": ago(28), "m3": ago(88), "y1": ago(360),
         "hist": [[t, round(v, rnd)] for t, v in hist],
+        **({"idx": index_tail} if index_tail else {}),
     }
 
 
@@ -176,6 +189,24 @@ def fetch_macro():
         except Exception as e:  # noqa: BLE001 -- fail soft per series
             errs.append("%s:%s" % (k, type(e).__name__))
     return out, errs
+
+
+def fetch_recessions():
+    """NBER recession months (USREC) as [start, end] pairs since 1990."""
+    rows = fred("USREC")
+    out, start, prev = [], None, None
+    for t, v in rows:
+        if t < "1990":
+            continue
+        if v >= 1 and start is None:
+            start = t
+        if v < 1 and start is not None:
+            out.append([start, prev])
+            start = None
+        prev = t
+    if start:
+        out.append([start, prev])
+    return out
 
 
 def fetch_etfs():
@@ -212,6 +243,10 @@ def main():
         pass
     macro, merr = fetch_macro()
     etfs, eerr = fetch_etfs()
+    try:
+        recs = fetch_recessions()
+    except Exception:  # noqa: BLE001
+        recs = prev.get("recessions") or []
     # keep the last good copy of anything that failed this run
     for k, v in (prev.get("macro") or {}).items():
         macro.setdefault(k, v)
@@ -228,6 +263,7 @@ def main():
         },
         "macro": macro,
         "etf": etfs,
+        "recessions": recs,
         "errors": merr + eerr,
     }
     with open(OUT, "w", encoding="utf-8") as f:
