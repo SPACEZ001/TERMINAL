@@ -44,6 +44,38 @@
     if(state === 'fail') state = 'idle';
     load();
   }
+  /* 2026-10-25: on this page the site's floating nav pill would sit on top of
+     the board's own tab bar once the header turns compact. Here it folds into
+     a small oval button at the top-right; clicking it opens the full pill. */
+  var CSS = 'html.bz-route .gmh-banner{display:none!important;}' +
+    'html.bz-route.spz-compact:not(.bz-navx) .top-fixed .nav{display:none!important;}' +
+    'html.bz-route.spz-compact.bz-navx .top-fixed .nav{right:64px!important;}' +
+    '.bz-navdot{position:fixed;top:calc(var(--spz-tickH,34px) + 9px);right:14px;z-index:1300;display:none;align-items:center;gap:6px;height:38px;padding:0 14px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(8,10,16,.82);color:#e5e7eb;font:600 12.5px/1 var(--sans,sans-serif);cursor:pointer;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 10px 26px rgba(0,0,0,.4);}' +
+    '.bz-navdot svg{width:16px;height:16px;}' +
+    '.bz-navdot:hover{border-color:#22d3ee;color:#fff;}' +
+    'html.bz-route.spz-compact .bz-navdot{display:inline-flex;}' +
+    'html.bz-navx .bz-navdot{background:linear-gradient(135deg,#22d3ee,#a78bfa);color:#071019;border-color:transparent;}' +
+    'html[data-theme="light"] .bz-navdot{background:rgba(255,255,255,.92);color:#312e81;border-color:#c7d2fe;box-shadow:0 10px 24px rgba(99,102,241,.18);}' +
+    'html.bz-route.spz-compact .bz-tabs{top:calc(var(--spz-tickH,34px) + 8px)!important;margin-right:116px;margin-left:86px;transition:top .25s ease;}' +
+    'html.bz-route.spz-compact.bz-navx .bz-tabs{top:calc(var(--spz-tickH,34px) + 62px)!important;}' +
+    '@media(max-width:560px){html.bz-route.spz-compact .bz-tabs{margin-right:0;margin-left:0;top:calc(var(--spz-tickH,34px) + 54px)!important;}}';
+  var dot = null;
+  function navDot(){
+    if(dot) return;
+    var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
+    dot = document.createElement('button'); dot.type = 'button'; dot.className = 'bz-navdot'; dot.setAttribute('aria-label', 'menu');
+    var paint = function(){ var open = document.documentElement.classList.contains('bz-navx'); dot.innerHTML = (open ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>') + '<span>' + T(open ? { en:'Close', th:'ปิด' } : { en:'Menu', th:'เมนู' }) + '</span>'; };
+    dot.addEventListener('click', function(){ document.documentElement.classList.toggle('bz-navx'); paint(); });
+    document.body.appendChild(dot); paint();
+    new MutationObserver(paint).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+  }
+  function routeFlag(){
+    var on = location.hash === '#/brain';
+    document.documentElement.classList.toggle('bz-route', on);
+    if(!on) document.documentElement.classList.remove('bz-navx');
+    if(on) navDot();
+  }
+  window.addEventListener('hashchange', routeFlag);
   function build(){
     if(document.getElementById('brain')) return true;
     if(!document.querySelector('.top-fixed') || !window.__spzAddRoute) return false;
@@ -51,7 +83,7 @@
     sec.innerHTML = '<div data-bz="slot"></div>';
     document.body.appendChild(sec);
     window.__spzAddRoute({ id:'brain', after:'secmap', t:U.h, d:U.d });
-    window.addEventListener('hashchange', check);
+    window.addEventListener('hashchange', check); routeFlag();
     /* the admin may log in while already sitting on #/brain */
     setInterval(function(){ if(location.hash === '#/brain' && state !== 'ready' && state !== 'loading') check(); }, 1500);
     new MutationObserver(function(){ if(state !== 'ready' && state !== 'loading') check(); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
