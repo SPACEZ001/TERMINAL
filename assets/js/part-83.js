@@ -75,6 +75,8 @@
     star:'<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.8L12 3.5z"/>',
     layers:'<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/>',
     plus:'<path d="M12 5v14M5 12h14"/>',
+    book:'<path d="M4 5.5A2.5 2.5 0 016.5 3H20v15H6.5A2.5 2.5 0 004 20.5v-15z"/><path d="M4 20.5A2.5 2.5 0 016.5 18H20v3H6.5"/><path d="M9 7h7M9 10.5h5"/>',
+    printer:'<path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/><circle cx="17.5" cy="12" r=".8" fill="currentColor"/>',
     x:'<path d="M6 6l12 12M18 6L6 18"/>'
   };
   function ico(k, cls){ return '<svg class="bz-i ' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (IC[k] || '') + '</svg>'; }
@@ -124,7 +126,7 @@
   }
   /* opt: { series:[{name, pts:[[t,v]], color, dash, w}], h, unit, band:{lo,hi,label}, zero, ref:[{v,label}], dec } */
   function lineChart(opt){
-    var W = 640, H = opt.h || 220, P = { l:42, r:58, t:14, b:24 };
+    var W = opt.W || 640, H = opt.h || 300, P = { l:42, r:58, t:14, b:24 };
     var ser = opt.series.filter(function(s){ return s.pts && s.pts.length > 1; });
     if(!ser.length) return '<div class="bz-nodata">' + T({ en:'No data yet', th:'ยังไม่มีข้อมูล' }) + '</div>';
     var x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
@@ -219,11 +221,11 @@
       segs += '<path d="M' + (cx + r * Math.cos(s)).toFixed(1) + ' ' + (cy + r * Math.sin(s)).toFixed(1) + ' A' + r + ' ' + r + ' 0 0 1 ' + (cx + r * Math.cos(e)).toFixed(1) + ' ' + (cy + r * Math.sin(e)).toFixed(1) + '" stroke="' + cols[i] + '" stroke-width="14" fill="none" stroke-linecap="round" opacity=".9"/>';
     }
     var a = a0 + clamp(v, 0, 100) / 100 * Math.PI;
-    return '<svg class="bz-gauge" viewBox="0 0 220 128">' + segs +
+    return '<svg class="bz-gauge" viewBox="0 0 220 162">' + segs +
       '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + (r - 22) * Math.cos(a)).toFixed(1) + '" y2="' + (cy + (r - 22) * Math.sin(a)).toFixed(1) + '" class="bz-needle"/>' +
       '<circle cx="' + cx + '" cy="' + cy + '" r="7" class="bz-hub"/>' +
-      '<text x="' + cx + '" y="' + (cy - 26) + '" text-anchor="middle" class="bz-gv">' + Math.round(v) + '</text>' +
-      '<text x="' + cx + '" y="' + (cy + 20) + '" text-anchor="middle" class="bz-gl2">' + esc(label || '') + '</text></svg>';
+      '<text x="' + cx + '" y="' + (cy + 35) + '" text-anchor="middle" class="bz-gv">' + Math.round(v) + '</text>' +
+      '<text x="' + cx + '" y="' + (cy + 54) + '" text-anchor="middle" class="bz-gl2">' + esc(label || '') + '</text></svg>';
   }
   /* investment clock: g = growth momentum (-1..1, right = stronger), i = inflation momentum (-1..1, up = hotter) */
   function clockSVG(g, i, phase){
@@ -765,7 +767,7 @@
     if(A.risk){
       var iv = ts.map(function(t){ var k = A.risk.cts.indexOf(t); return k >= 0 && A.risk.vols[k] ? 1 / A.risk.vols[k] : null; });
       var ivs = iv.reduce(function(s, v){ return s + (v || 0); }, 0);
-      if(ivs) x = x.map(function(v, i){ return iv[i] ? v * 0.75 + 0.25 * iv[i] / ivs : v; });
+      if(ivs) x = x.map(function(v, i){ return iv[i] ? v * 0.85 + 0.15 * iv[i] / ivs : v; });
     }
     var cards = A.cards;
     x = x.map(function(v, i){ var c = cards[i]; return v * (c && c.fit > 0 ? 1.1 : c && c.fit < 0 ? 0.9 : 1) * (c && c.q && c.q <= 2 ? 0.85 : 1); });
@@ -846,7 +848,8 @@
     ['over', { en:'Market today', th:'ภาพรวมวันนี้' }, 'brain'], ['infl', { en:'Inflation & rates', th:'เงินเฟ้อ & ดอกเบี้ย' }, 'flame'],
     ['growth', { en:'Economy & jobs', th:'เศรษฐกิจ & การจ้างงาน' }, 'factory'], ['fx', { en:'Currencies & commodities', th:'ค่าเงิน & สินค้าโภคภัณฑ์' }, 'coin'],
     ['rot', { en:'Rotation & ideas', th:'เงินไหลไปไหน & ไอเดีย' }, 'compass'], ['out', { en:'Outlook 1–3 months', th:'แนวโน้ม 1–3 เดือน' }, 'radar'],
-    ['pf', { en:'My portfolio', th:'พอร์ตของฉัน' }, 'pie'], ['cal', { en:'This week', th:'จับตาสัปดาห์นี้' }, 'cal']
+    ['pf', { en:'My portfolio', th:'พอร์ตของฉัน' }, 'pie'], ['cal', { en:'This week', th:'จับตาสัปดาห์นี้' }, 'cal'],
+    ['guide', { en:'How to read', th:'วิธีดูหน้านี้' }, 'book'], ['print', { en:'Print / PDF', th:'พิมพ์ / PDF' }, 'printer']
   ];
   var UX = {
     eb:{ en:'ADMIN · MARKET BRAIN', th:'แอดมิน · สมองตลาด' },
@@ -873,76 +876,10 @@
   };
   var STYLE = [{ en:'Careful', th:'ระมัดระวัง' }, { en:'Balanced', th:'สมดุล' }, { en:'Growth', th:'เติบโต' }];
 
-  function sec(title, inner, icon, extra){ return '<section class="bz-sec' + (extra ? ' ' + extra : '') + '"><h4>' + (icon ? ico(icon) : '') + esc(T(title)) + '</h4>' + inner + '</section>'; }
+  function sec(title, inner, icon, extra){ return '<div class="bz-sec' + (extra ? ' ' + extra : '') + '"><h4>' + (icon ? ico(icon) : '') + esc(T(title)) + '</h4>' + inner + '</div>'; }
   function kpi(label, val, sub, tn){ return '<div class="bz-kpi ' + (tn || '') + '"><span>' + esc(T(label)) + '</span><b>' + val + '</b>' + (sub ? '<em>' + sub + '</em>' : '') + '</div>'; }
   function chip(t, tn){ return '<span class="bz-chip ' + (tn || '') + '">' + t + '</span>'; }
   function note(t){ return '<p class="bz-note">' + esc(T(t)) + '</p>'; }
-
-  function vOver(E){
-    var ph = PHASES[E.phase];
-    var h = '<div class="bz-hero">' +
-      '<div class="bz-wx bz-' + tone((E.score - 50) / 25) + '">' + ico(E.weather.k, 'bz-wxi') + gauge(E.score, T(E.weather.w)) + '<p>' + esc(T(E.weather.s)) + '</p></div>' +
-      '<div class="bz-htx"><div class="bz-eb">' + esc(T(UX.today)) + '</div><p class="bz-head">' + esc(T(E.head)) + '</p>' +
-        '<div class="bz-chips">' + chip(ico('compass') + esc(T(UX.phase)) + ': <b>' + esc(T(ph.short)) + '</b>', ph.tone) + chip(esc(T(UX.conf)) + ' ' + E.phaseConf + '%') +
-        chip(esc(T({ en:'Score', th:'คะแนนรวม' })) + ' <b>' + Math.round(E.score) + '/100</b>') + '</div>' +
-        '<ol class="bz-top">' + E.top.map(function(p){ return '<li class="' + tone(p.score) + '">' + esc(T(p.say)) + '</li>'; }).join('') + '</ol></div>' +
-      '<div class="bz-clk">' + clockSVG(E.g, E.i, E.phase) + '<b>' + esc(T(ph.name)) + '</b><p>' + esc(T(ph.why)) + '</p></div></div>';
-    h += '<h3 class="bz-h3">' + esc(T(UX.pillars)) + '</h3><div class="bz-pills">' + E.pillars.map(function(p){
-      return '<button type="button" class="bz-pill ' + tone(p.score) + '" data-go="' + p.tab + '"><div class="bz-pt">' + ico(p.icon) + '<span>' + esc(T(p.title)) + '</span><i>' + esc(T(toneWord(p.score))) + '</i></div>' +
-        '<div class="bz-pv"><b>' + p.value + '</b><em>' + esc(T(p.sub)) + '</em></div>' + spark(p.spark, p.score >= 1 ? '#34d399' : p.score <= -1 ? '#fb7185' : '#fbbf24') +
-        '<p>' + esc(T(p.say)) + '</p><span class="bz-meter">' + [-2, -1, 0, 1, 2].map(function(k){ return '<i class="' + (Math.round(p.score) === k ? 'on' : '') + '"></i>'; }).join('') + '</span></button>';
-    }).join('') + '</div>';
-    h += '<div class="bz-two">' + sec(UX.changed, E.changes.length ? '<ul class="bz-chg">' + E.changes.map(function(c){
-      var cls = c.good === true ? 'good' : c.good === false ? 'bad' : 'mid';
-      return '<li class="' + cls + '"><span>' + esc(T(c.n)) + '</span><b>' + (c.pct ? spc(c.d, 1) : sg(c.d, c.unit === '%' ? 2 : 1) + (c.unit === '%' ? ' pt' : c.unit)) + '</b><em>' + esc(T({ en:'now', th:'ตอนนี้' })) + ' ' + f(c.now, c.unit === '%' ? 2 : 1) + (c.unit === '%' ? '%' : '') + '</em></li>';
-    }).join('') + '</ul>' : note(UX.nochg), 'bolt') +
-      sec(UX.div, E.diverge.length ? '<ul class="bz-div">' + E.diverge.map(function(d){ return '<li>' + ico('alert') + '<span>' + esc(T(d)) + '</span></li>'; }).join('') + '</ul>' : note(UX.nodiv), 'swap') + '</div>';
-    h += sec(UX.play, '<div class="bz-play">' + PLAY[E.phase].map(function(t, i){ return '<div><b>' + esc(T(STYLE[i])) + '</b><p>' + esc(T(t)) + '</p></div>'; }).join('') + '</div>' +
-      '<p class="bz-note">' + esc(T({ en:'Usually strongest now: ', th:'กลุ่มที่มักเด่นช่วงนี้: ' })) + ph.etf.map(function(t){ return '<code>' + t + '</code>'; }).join(' ') + ' · ' + esc(T({ en:'usually weakest: ', th:'มักอ่อน: ' })) + ph.avoid.map(function(t){ return '<code>' + t + '</code>'; }).join(' ') + '</p>', 'layers');
-    return h;
-  }
-
-  function curveSVG(){
-    var mk = function(k){ var o = mkt(k); return o ? [o.price, isNum(o.m1) ? o.price / (1 + o.m1 / 100) : null] : [null, null]; };
-    var y2 = mac('y2'), pts = [['3M', mk('us3m')], ['2Y', y2 ? [y2.v, y2.m1] : [null, null]], ['5Y', mk('us5y')], ['10Y', mk('us10y')], ['30Y', mk('us30y')]];
-    var vals = []; pts.forEach(function(p){ vals.push(p[1][0], p[1][1]); }); vals = vals.filter(isNum);
-    if(vals.length < 4) return '';
-    var lo = Math.min.apply(null, vals) - 0.15, hi = Math.max.apply(null, vals) + 0.15, W = 640, H = 210, P = 46;
-    var X = function(i){ return P + i * (W - 2 * P) / (pts.length - 1); }, Y = function(v){ return 18 + (1 - (v - lo) / (hi - lo)) * (H - 50); };
-    var s = '', pa = '', pb = '';
-    niceTicks(lo, hi, 4).forEach(function(v){ s += '<line class="bz-gl" x1="' + P + '" x2="' + (W - P) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/><text class="bz-ax" x="' + (P - 6) + '" y="' + (Y(v) + 3) + '" text-anchor="end">' + v + '%</text>'; });
-    pts.forEach(function(p, i){
-      if(isNum(p[1][1])) pb += (pb ? 'L' : 'M') + X(i) + ' ' + Y(p[1][1]);
-      if(isNum(p[1][0])) pa += (pa ? 'L' : 'M') + X(i) + ' ' + Y(p[1][0]);
-      s += '<text class="bz-ax" x="' + X(i) + '" y="' + (H - 8) + '" text-anchor="middle">' + p[0] + '</text>';
-      if(isNum(p[1][0])) s += '<circle cx="' + X(i) + '" cy="' + Y(p[1][0]) + '" r="4.5" fill="#22d3ee"/><text class="bz-tag" x="' + X(i) + '" y="' + (Y(p[1][0]) - 10) + '" text-anchor="middle" fill="#22d3ee">' + f(p[1][0], 2) + '</text>';
-    });
-    return '<div class="bz-leg"><span><i style="background:#22d3ee"></i>' + esc(T({ en:'Now', th:'ตอนนี้' })) + '</span><span><i style="background:#94a3b8"></i>' + esc(T({ en:'1 month ago', th:'1 เดือนก่อน' })) + '</span></div>' +
-      '<svg viewBox="0 0 ' + W + ' ' + H + '" class="bz-svg">' + s + '<path d="' + pb + '" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5 5"/><path d="' + pa + '" fill="none" stroke="#22d3ee" stroke-width="2.6"/></svg>';
-  }
-  function vInfl(E){
-    var I = E.infl, F = E.fed;
-    var h = '<div class="bz-kpis">' +
-      kpi({ en:'CPI', th:'เงินเฟ้อ CPI' }, pc(I.cpi, 1), mshort(mac('cpi') && mac('cpi').t), I.cpi > 3 ? 'bad' : I.cpi < 2.5 ? 'good' : '') +
-      kpi({ en:'Core CPI', th:'Core CPI' }, pc(I.core_cpi, 1), '', I.core_cpi > 3 ? 'bad' : '') +
-      kpi({ en:'Core PCE (Fed)', th:'Core PCE (เฟดใช้)' }, pc(I.v, 2), sg(I.c3, 2) + ' / 3m', I.v > 3 ? 'bad' : I.v < 2.5 ? 'good' : '') +
-      kpi({ en:'5y expected', th:'คาดการณ์ 5 ปี' }, pc(I.be5, 2), '', I.be5 > 2.6 ? 'bad' : '') +
-      kpi({ en:'Fed funds', th:'ดอกเบี้ยเฟด' }, pc(F.ff, 2)) + kpi({ en:'2y yield', th:'บอนด์ 2 ปี' }, pc(F.y2, 2), sg(F.gap, 2) + ' vs Fed') +
-      kpi({ en:'10y yield', th:'บอนด์ 10 ปี' }, pc(F.y10, 2), sg(F.dy10, 2) + ' / 1m', F.dy10 > 0.25 ? 'bad' : F.dy10 < -0.25 ? 'good' : '') +
-      kpi({ en:'Real 10y', th:'ยีลด์จริง 10 ปี' }, pc(F.real, 2), '', F.real > 2.2 ? 'bad' : '') + kpi({ en:'Mortgage 30y', th:'ดอกเบี้ยบ้าน 30 ปี' }, pc(mv('mort'), 2)) + '</div>';
-    h += '<div class="bz-callout ' + (F.gap > 0.25 ? 'bad' : F.gap < -0.25 ? 'good' : 'mid') + '">' + ico('bank') + '<div><b>' + esc(T({ en:'What the bond market expects from the Fed', th:'ตลาดบอนด์คาดอะไรจากเฟด' })) + '</b><p>' + esc(T(F.say)) + '. ' +
-      esc(T({ en:'Rule of thumb: when the 2-year yield is clearly below the Fed rate, traders expect cuts; clearly above, hikes. Today the gap is ' + sg(F.gap, 2) + ' points.', th:'หลักจำง่าย: ถ้าบอนด์ 2 ปีต่ำกว่าดอกเบี้ยเฟดชัดเจน ตลาดคาดว่าจะลดดอกเบี้ย ถ้าสูงกว่าชัดเจน คาดว่าจะขึ้น ตอนนี้ต่างกัน ' + sg(F.gap, 2) + ' จุด' })) + '</p></div></div>';
-    h += '<div class="bz-two">' + sec({ en:'Inflation vs the 2% goal', th:'เงินเฟ้อเทียบเป้า 2%' }, lineChart({ series:[
-        { name:{ en:'CPI', th:'CPI' }, pts:histSince('cpi', 6), color:COL.c }, { name:{ en:'Core CPI', th:'Core CPI' }, pts:histSince('core_cpi', 6), color:COL.b }, { name:{ en:'Core PCE', th:'Core PCE' }, pts:histSince('core_pce', 6), color:COL.a, w:2.6 }],
-        unit:'%', band:{ lo:1.5, hi:2.5, label:{ en:'Fed goal ≈ 2%', th:'เป้าเฟด ≈ 2%' } } }), 'flame') +
-      sec({ en:'Fed rate vs bond yields', th:'ดอกเบี้ยเฟดเทียบบอนด์ยีลด์' }, lineChart({ series:[
-        { name:{ en:'Fed funds', th:'ดอกเบี้ยเฟด' }, pts:histSince('ff', 5), color:COL.d, w:2.6 }, { name:{ en:'2y', th:'2 ปี' }, pts:histSince('y2', 5), color:COL.a }, { name:{ en:'10y', th:'10 ปี' }, pts:histSince('y10', 5), color:COL.b }], unit:'%', dec:2 }), 'bank') + '</div>';
-    h += '<div class="bz-two">' + sec({ en:'Yield curve: now vs a month ago', th:'เส้นอัตราผลตอบแทน: ตอนนี้ vs เดือนก่อน' }, curveSVG() + note({ en:'Upward-sloping is normal. When short maturities sit above long ones the curve is “inverted”, a classic slowdown warning.', th:'เส้นชันขึ้นคือปกติ ถ้าระยะสั้นสูงกว่าระยะยาวเรียกว่า “กลับหัว” เป็นสัญญาณเตือนเศรษฐกิจชะลอแบบคลาสสิก' }), 'curve') +
-      sec({ en:'Real yield & inflation expectations', th:'ยีลด์จริงและเงินเฟ้อที่ตลาดคาด' }, lineChart({ series:[
-        { name:{ en:'Real 10y yield', th:'ยีลด์จริง 10 ปี' }, pts:histSince('real10', 5), color:COL.e, w:2.4 }, { name:{ en:'5y breakeven', th:'เงินเฟ้อคาด 5 ปี' }, pts:histSince('be5', 5), color:COL.f }], unit:'%', dec:2, zero:true }) +
-        note({ en:'Real yield = what bonds pay after inflation. Above ~2% money is genuinely expensive, which usually weighs on high-valuation growth stocks and gold.', th:'ยีลด์จริง = ผลตอบแทนบอนด์หลังหักเงินเฟ้อ ถ้าสูงกว่าราว 2% แปลว่าเงินแพงจริง มักกดดันหุ้นเติบโตที่ราคาแพงและทองคำ' }), 'scale') + '</div>';
-    return h;
-  }
 
   function recessionSignals(E){
     var G = E.growth, S = [
@@ -961,7 +898,7 @@
   }
   function barChart(pts, opt){
     opt = opt || {}; if(!pts || pts.length < 2) return '';
-    var W = 640, H = opt.h || 180, P = { l:42, r:12, t:12, b:24 }, vs = pts.map(function(p){ return p[1]; }), lo = Math.min(0, Math.min.apply(null, vs)), hi = Math.max(0, Math.max.apply(null, vs));
+    var W = opt.W || 640, H = opt.h || 280, P = { l:42, r:12, t:12, b:24 }, vs = pts.map(function(p){ return p[1]; }), lo = Math.min(0, Math.min.apply(null, vs)), hi = Math.max(0, Math.max.apply(null, vs));
     var Y = function(v){ return P.t + (1 - (v - lo) / (hi - lo || 1)) * (H - P.t - P.b); }, bw = (W - P.l - P.r) / pts.length, s = '';
     niceTicks(lo, hi, 4).forEach(function(v){ s += '<line class="bz-gl" x1="' + P.l + '" x2="' + (W - P.r) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/><text class="bz-ax" x="' + (P.l - 6) + '" y="' + (Y(v) + 3) + '" text-anchor="end">' + v + '</text>'; });
     pts.forEach(function(p, i){
@@ -971,125 +908,11 @@
     });
     return '<svg viewBox="0 0 ' + W + ' ' + H + '" class="bz-svg">' + s + '</svg>';
   }
-  function vGrowth(E){
-    var G = E.growth, sig = recessionSignals(E), lit = sig.filter(function(s){ return s[1]; }).length;
-    var slow = E.scen.filter(function(s){ return s.k === 'slow'; })[0];
-    var h = '<div class="bz-kpis">' +
-      kpi({ en:'Unemployment', th:'ว่างงาน' }, pc(G.un, 1), esc(T({ en:'12m low ', th:'ต่ำสุด 12 เดือน ' })) + pc(G.unMin, 1), G.un - G.unMin > 0.4 ? 'bad' : '') +
-      kpi({ en:'New jobs (3m avg)', th:'จ้างงานเพิ่ม (เฉลี่ย 3 เดือน)' }, f(G.pay3, 0) + 'k', '', G.pay3 < 50 ? 'bad' : G.pay3 > 150 ? 'good' : '') +
-      kpi({ en:'Weekly claims', th:'ขอสวัสดิการ/สัปดาห์' }, f(G.cl, 0) + 'k', spc(G.clY, 0) + ' y/y', G.clY > 15 ? 'bad' : '') +
-      kpi({ en:'Sahm rule', th:'สัญญาณ Sahm' }, f(G.sahm, 2), esc(T({ en:'≥0.5 = recession', th:'≥0.5 = ถดถอย' })), G.sahm >= 0.5 ? 'bad' : G.sahm < 0.2 ? 'good' : '') +
-      kpi({ en:'Real GDP', th:'GDP จริง' }, pc(G.gdp, 1), mshort(mac('gdp') && mac('gdp').t), G.gdp < 1 ? 'bad' : G.gdp > 2 ? 'good' : '') +
-      kpi({ en:'Retail sales', th:'ยอดค้าปลีก' }, spc(mv('retail'), 1), esc(T({ en:'after inflation ', th:'หลังหักเงินเฟ้อ ' })) + spc(G.realRetail, 1)) +
-      kpi({ en:'Industrial output', th:'การผลิตอุตสาหกรรม' }, spc(G.ip, 1), 'y/y', G.ip < 0 ? 'bad' : '') +
-      kpi({ en:'Consumer mood', th:'ความเชื่อมั่นผู้บริโภค' }, f(G.sent, 1), esc(T({ en:'avg ≈ 85', th:'ค่าเฉลี่ยราว 85' })), G.sent < 60 ? 'bad' : '') +
-      kpi({ en:'Recession odds (Fed model)', th:'โอกาสถดถอย (โมเดลเฟด)' }, pc(G.rp, 1), '', G.rp > 20 ? 'bad' : 'good') + '</div>';
-    h += '<div class="bz-two">' + sec({ en:'Recession checklist', th:'เช็กลิสต์สัญญาณถดถอย' }, '<div class="bz-rmeter"><div class="bz-rbar"><i style="width:' + (lit * 10) + '%"></i></div><b>' + lit + '/10</b><span>' + esc(T(lit >= 6 ? { en:'many warning lights on', th:'ไฟเตือนติดหลายดวง' } : lit >= 3 ? { en:'a few warning lights', th:'มีไฟเตือนบางดวง' } : { en:'mostly clear', th:'ส่วนใหญ่ยังปกติ' })) + '</span></div>' +
-        '<ul class="bz-chk">' + sig.map(function(s){ return '<li class="' + (s[1] ? 'on' : '') + '">' + ico(s[1] ? 'alert' : 'check') + '<span>' + esc(T(s[0])) + '</span><b>' + s[2] + '</b></li>'; }).join('') + '</ul>' +
-        (slow ? note({ en:'The outlook engine currently gives the “growth scare” scenario about ' + slow.p + '%.', th:'ตอนนี้ระบบให้โอกาสสถานการณ์ “เศรษฐกิจชะลอแรง” ประมาณ ' + slow.p + '%' }) : ''), 'alert') +
-      sec({ en:'Unemployment & the Sahm rule', th:'อัตราว่างงานและสัญญาณ Sahm' }, lineChart({ series:[{ name:{ en:'Unemployment', th:'ว่างงาน' }, pts:histSince('unrate', 8), color:COL.a, w:2.6 }, { name:{ en:'Sahm rule', th:'Sahm' }, pts:histSince('sahm', 8), color:COL.f }], unit:'%', ref:[{ v:0.5, label:{ en:'Sahm trigger 0.5', th:'เส้นเตือน Sahm 0.5' } }] }), 'user') + '</div>';
-    h += '<div class="bz-two">' + sec({ en:'New jobs each month (thousands)', th:'จำนวนงานใหม่ต่อเดือน (พันตำแหน่ง)' }, barChart(lastN(mac('payrolls') && mac('payrolls').hist, 30), { unit:'k' }), 'factory') +
-      sec({ en:'Weekly jobless claims (thousands)', th:'คนขอสวัสดิการว่างงานรายสัปดาห์ (พันคน)' }, lineChart({ series:[{ name:{ en:'Claims', th:'ขอสวัสดิการ' }, pts:histSince('claims', 3), color:COL.d, area:true }], unit:'k', dec:0 }), 'user') + '</div>';
-    h += '<div class="bz-two">' + sec({ en:'Spending & production growth (y/y)', th:'การใช้จ่ายและการผลิตโต (เทียบปีก่อน)' }, lineChart({ series:[{ name:{ en:'Retail sales', th:'ค้าปลีก' }, pts:histSince('retail', 6), color:COL.e }, { name:{ en:'Industrial output', th:'การผลิต' }, pts:histSince('indpro', 6), color:COL.b }, { name:{ en:'CPI', th:'เงินเฟ้อ' }, pts:histSince('cpi', 6), color:COL.g, dash:'4 4', w:1.5 }], unit:'%', zero:true }), 'trend') +
-      sec({ en:'Real GDP growth (annualised, by quarter)', th:'GDP จริงรายไตรมาส (ปรับเป็นต่อปี)' }, barChart(lastN(mac('gdp') && mac('gdp').hist, 16), { unit:'%', dec:1, up:'#22d3ee' }), 'globe') + '</div>';
-    return h;
-  }
-
   function thaiBreadth(){
     var n = 0, up = 0, m1 = [];
     Object.keys(D.m.stocks).forEach(function(t){ var s = D.m.stocks[t]; if(s.cal !== 'th') return; n++; if(s.above_ma200) up++; if(isNum(s.m1)) m1.push(s.m1); });
     return { n:n, up:n ? up / n * 100 : null, m1:median(m1) };
   }
-  function vFx(E){
-    var X = E.fx, C = E.comm, tb = thaiBreadth(), thd = flow('THD') || {};
-    var h = '<div class="bz-kpis">' +
-      kpi({ en:'Dollar index', th:'ดัชนีดอลลาร์' }, f(X.dxy, 2), spc(X.dx1, 1) + ' / 1m', X.dx3 > 2 ? 'bad' : X.dx3 < -2 ? 'good' : '') +
-      kpi({ en:'USD/THB', th:'1 ดอลลาร์ = บาท' }, f(X.thb && X.thb.rate, 2), esc(T({ en:'baht ', th:'บาท ' })) + spc(X.thb1, 1) + ' / 1m', X.thb1 < -1.5 ? 'bad' : X.thb1 > 1.5 ? 'good' : '') +
-      kpi({ en:'Baht this year', th:'เงินบาทปีนี้' }, spc(X.thbY, 1), esc(T({ en:'− = weaker', th:'ลบ = อ่อนค่า' }))) +
-      kpi({ en:'Oil (WTI)', th:'น้ำมัน WTI' }, '$' + f(C.oil, 1), spc(C.oilY, 0) + ' y/y', C.oilY > 25 ? 'bad' : '') +
-      kpi({ en:'Gold', th:'ทองคำ' }, spc(C.gold1, 1), spc(C.gold3, 1) + ' / 3m') + kpi({ en:'Commodities', th:'สินค้าโภคภัณฑ์' }, spc(C.dbc3, 1), '3m') +
-      kpi({ en:'Thai stocks (THD)', th:'หุ้นไทย (THD)' }, spc(thd.m1, 1), spc(thd.m3, 1) + ' / 3m', thd.m3 > 3 ? 'good' : thd.m3 < -3 ? 'bad' : '') +
-      kpi({ en:'Thai stocks in up-trend', th:'หุ้นไทยที่ยังเป็นขาขึ้น' }, pc(tb.up, 0), tb.n + esc(T({ en:' stocks', th:' ตัว' })), tb.up < 40 ? 'bad' : tb.up > 60 ? 'good' : '') + '</div>';
-    var thSay = [];
-    if(X.dx3 > 2) thSay.push({ en:'A firmer dollar tends to pull foreign money out of Thai stocks and weaken the baht.', th:'ดอลลาร์ที่แข็งขึ้นมักดึงเงินต่างชาติออกจากหุ้นไทยและทำให้บาทอ่อน' });
-    if(X.dx3 < -2) thSay.push({ en:'A softer dollar usually helps flows into Thailand and other emerging markets.', th:'ดอลลาร์อ่อนมักช่วยให้เงินไหลเข้าไทยและตลาดเกิดใหม่' });
-    if(X.thb1 < -1) thSay.push({ en:'A weaker baht helps exporters and tourism earnings, hurts importers and anyone paying in dollars.', th:'บาทอ่อนช่วยผู้ส่งออกและรายได้ท่องเที่ยว แต่ไม่ดีกับผู้นำเข้าและคนที่ต้องจ่ายเป็นดอลลาร์' });
-    if(X.thb1 > 1) thSay.push({ en:'A stronger baht cheapens imports and foreign assets for Thai investors, but trims exporters\' baht income.', th:'บาทแข็งทำให้ของนำเข้าและการลงทุนต่างประเทศถูกลงสำหรับคนไทย แต่รายได้ผู้ส่งออกที่แปลงเป็นบาทลดลง' });
-    if(C.oilY > 25) thSay.push({ en:'Thailand imports most of its oil, so expensive crude widens the import bill and pushes local prices up — PTT-type producers gain, airlines and transport lose.', th:'ไทยนำเข้าน้ำมันเกือบทั้งหมด น้ำมันแพงทำให้ค่าใช้จ่ายนำเข้าสูงและดันราคาสินค้าในประเทศ ผู้ผลิตพลังงานได้ประโยชน์ สายการบินและขนส่งเสียประโยชน์' });
-    if(!thSay.length) thSay.push({ en:'No strong currency or commodity pressure on Thailand right now.', th:'ตอนนี้ยังไม่มีแรงกดดันจากค่าเงินหรือสินค้าโภคภัณฑ์ต่อไทยมากนัก' });
-    h += '<div class="bz-callout mid">' + ico('globe') + '<div><b>' + esc(T({ en:'What it means for Thailand', th:'แปลว่าอะไรสำหรับไทย' })) + '</b>' + thSay.map(function(t){ return '<p>' + esc(T(t)) + '</p>'; }).join('') + '</div></div>';
-    var ccy = D.m.ccy || {}, rows = Object.keys(ccy).filter(function(k){ return k !== 'USD' && isNum(ccy[k].m1); }).map(function(k){ return { n:k, v:ccy[k].m1, hi:k === 'THB' }; }).sort(function(a, b){ return b.v - a.v; });
-    h += '<div class="bz-two">' + sec({ en:'Currencies vs the dollar, last month', th:'ค่าเงินเทียบดอลลาร์ 1 เดือนล่าสุด' }, bars(rows) + note({ en:'Positive = the currency strengthened against the US dollar.', th:'บวก = ค่าเงินนั้นแข็งขึ้นเมื่อเทียบดอลลาร์' }), 'coin') +
-      sec({ en:'Crude oil (WTI, $ per barrel)', th:'น้ำมันดิบ WTI (ดอลลาร์ต่อบาร์เรล)' }, lineChart({ series:[{ name:{ en:'WTI', th:'WTI' }, pts:histSince('oil', 5), color:COL.d, area:true }], unit:'', dec:1 }), 'barrel') + '</div>';
-    var A = (D.m.flows && D.m.flows.asset) || [];
-    h += sec({ en:'Every asset class at a glance', th:'สินทรัพย์ทุกประเภทในตารางเดียว' }, '<div class="bz-tw"><table class="bz-heat"><thead><tr><th></th><th>1W</th><th>1M</th><th>3M</th><th>YTD</th><th>' + esc(T({ en:'trend', th:'แนวโน้ม' })) + '</th></tr></thead><tbody>' +
-      A.map(function(a){ return '<tr><td><b>' + esc(a.sym) + '</b><em>' + esc(L() === 'th' ? a.th : a.en) + '</em></td>' + ['w1', 'm1', 'm3', 'ytd'].map(function(k){ return '<td class="' + heatCls(a[k], k === 'w1' ? 0.4 : k === 'm1' ? 1 : k === 'm3' ? 1.8 : 2.5) + '">' + spc(a[k], 1) + '</td>'; }).join('') + '<td>' + (a.above_ma200 ? '<span class="bz-up">' + esc(T({ en:'up', th:'ขาขึ้น' })) + '</span>' : '<span class="bz-dn">' + esc(T({ en:'down', th:'ขาลง' })) + '</span>') + '</td></tr>'; }).join('') + '</tbody></table></div>', 'layers');
-    return h;
-  }
-
-  function quadrant(list){
-    if(!list.length) return '';
-    var W = 640, H = 330, P = 40, xs = list.map(function(s){ return s.m1; }), ys = list.map(function(s){ return s.m3; });
-    var xm = Math.max(3, Math.max.apply(null, xs.map(Math.abs))) * 1.15, ym = Math.max(5, Math.max.apply(null, ys.map(Math.abs))) * 1.15;
-    var X = function(v){ return P + (v + xm) / (2 * xm) * (W - 2 * P); }, Y = function(v){ return P / 2 + (1 - (v + ym) / (2 * ym)) * (H - 1.5 * P); };
-    var s = '<rect class="bz-qd lead" x="' + X(0) + '" y="' + Y(ym) + '" width="' + (X(xm) - X(0)) + '" height="' + (Y(0) - Y(ym)) + '"/><rect class="bz-qd weak" x="' + X(-xm) + '" y="' + Y(ym) + '" width="' + (X(0) - X(-xm)) + '" height="' + (Y(0) - Y(ym)) + '"/>' +
-      '<rect class="bz-qd lag" x="' + X(-xm) + '" y="' + Y(0) + '" width="' + (X(0) - X(-xm)) + '" height="' + (Y(-ym) - Y(0)) + '"/><rect class="bz-qd imp" x="' + X(0) + '" y="' + Y(0) + '" width="' + (X(xm) - X(0)) + '" height="' + (Y(-ym) - Y(0)) + '"/>';
-    var lab = [[xm, ym, { en:'LEADING', th:'นำตลาด' }, 'end', 14], [-xm, ym, { en:'FADING', th:'เริ่มแผ่ว' }, 'start', 14], [-xm, -ym, { en:'LAGGING', th:'ตามหลัง' }, 'start', -6], [xm, -ym, { en:'IMPROVING', th:'เริ่มฟื้น' }, 'end', -6]];
-    lab.forEach(function(l){ s += '<text class="bz-qdl" x="' + (X(l[0]) + (l[3] === 'end' ? -8 : 8)) + '" y="' + (Y(l[1]) + l[4]) + '" text-anchor="' + l[3] + '">' + esc(T(l[2])) + '</text>'; });
-    s += '<line class="bz-qa" x1="' + X(0) + '" x2="' + X(0) + '" y1="' + Y(ym) + '" y2="' + Y(-ym) + '"/><line class="bz-qa" x1="' + X(-xm) + '" x2="' + X(xm) + '" y1="' + Y(0) + '" y2="' + Y(0) + '"/>';
-    s += '<text class="bz-ax" x="' + (W - P) + '" y="' + (H - 8) + '" text-anchor="end">' + esc(T({ en:'1-month return →', th:'ผลตอบแทน 1 เดือน →' })) + '</text><text class="bz-ax" x="' + (P + 4) + '" y="' + (P / 2 + 10) + '">' + esc(T({ en:'↑ 3-month return', th:'↑ ผลตอบแทน 3 เดือน' })) + '</text>';
-    list.forEach(function(it){
-      var fav = it.fav ? ' fav' : '';
-      s += '<g class="bz-qp' + fav + '"><circle cx="' + X(it.m1).toFixed(1) + '" cy="' + Y(it.m3).toFixed(1) + '" r="' + (it.fav ? 8 : 6) + '"/><text x="' + (X(it.m1) + 10).toFixed(1) + '" y="' + (Y(it.m3) + 4).toFixed(1) + '">' + esc(it.label) + '</text><title>' + esc(it.title) + ': 1M ' + spc(it.m1, 1) + ', 3M ' + spc(it.m3, 1) + '</title></g>';
-    });
-    return '<svg viewBox="0 0 ' + W + ' ' + H + '" class="bz-svg">' + s + '</svg>';
-  }
-  function vRot(E){
-    var ph = PHASES[E.phase], S = (D.m.flows && D.m.flows.sector) || [], Cn = (D.m.flows && D.m.flows.country) || [];
-    var ETF_SEC = { XLK:'Technology', XLF:'Financial Services', XLE:'Energy', XLV:'Healthcare', XLY:'Consumer Cyclical', XLP:'Consumer Defensive', XLI:'Industrials', XLU:'Utilities', XLB:'Basic Materials', XLRE:'Real Estate', XLC:'Communication Services', SMH:'Technology' };
-    var list = S.map(function(s){ return { label:s.sym, title:L() === 'th' ? s.th : s.en, m1:s.m1, m3:s.m3, fav:ph.sectors.indexOf(ETF_SEC[s.sym]) >= 0 || ph.etf.indexOf(s.sym) >= 0 }; });
-    var leaders = S.slice().sort(function(a, b){ return (b.m3 + b.m1) - (a.m3 + a.m1); }).slice(0, 4).map(function(s){ return s.sym; });
-    var match = leaders.filter(function(t){ return ph.sectors.indexOf(ETF_SEC[t]) >= 0 || ph.etf.indexOf(t) >= 0; }).length;
-    var h = '<div class="bz-callout ' + (match >= 2 ? 'good' : 'mid') + '">' + ico('compass') + '<div><b>' + esc(T({ en:'Does the market agree with the phase?', th:'ตลาดจริงตรงกับช่วงเศรษฐกิจไหม' })) + '</b><p>' +
-      esc(T({ en:'Leading sectors now: ' + leaders.join(', ') + '. ' + match + ' of 4 are ones the “' + ph.short.en + '” phase usually favours' + (match >= 2 ? ' — the market is behaving as the phase suggests.' : ' — the market is not following the textbook yet; the phase call may be early or wrong.'),
-        th:'กลุ่มที่นำตอนนี้: ' + leaders.join(', ') + ' ตรงกับกลุ่มที่ช่วง “' + ph.short.th + '” มักเด่น ' + match + ' จาก 4 กลุ่ม' + (match >= 2 ? ' แปลว่าตลาดเคลื่อนไหวตามสภาวะเศรษฐกิจ' : ' แปลว่าตลาดยังไม่เป็นไปตามตำรา การอ่านช่วงเศรษฐกิจอาจเร็วไปหรือคลาดได้') })) + '</p></div></div>';
-    h += '<div class="bz-two">' + sec({ en:'Sector rotation map', th:'แผนที่การหมุนเวียนกลุ่มหุ้น' }, quadrant(list) + note({ en:'Bigger dots = sectors the current phase usually favours. Money tends to rotate clockwise: improving → leading → fading → lagging.', th:'จุดใหญ่ = กลุ่มที่ช่วงเศรษฐกิจตอนนี้มักเอื้อ เงินมักหมุนตามเข็มนาฬิกา: เริ่มฟื้น → นำตลาด → เริ่มแผ่ว → ตามหลัง' }), 'compass') +
-      sec({ en:'Countries, last 3 months', th:'ตลาดหุ้นแต่ละประเทศ 3 เดือนล่าสุด' }, bars(Cn.map(function(c){ return { n:L() === 'th' ? c.th : c.en, sub:c.sym, v:c.m3, hi:c.sym === 'THD' }; }).sort(function(a, b){ return b.v - a.v; })), 'globe') + '</div>';
-    var P = pairs();
-    h += sec({ en:'Pairs that work well together right now', th:'คู่สินทรัพย์ที่ถือคู่กันแล้วดี ตอนนี้' }, P.length ? '<div class="bz-pairs">' + P.map(function(p){
-      var a = info(p.a), b = info(p.b);
-      return '<div class="bz-pair"><div><b>' + p.a + '</b><em>' + esc(a ? a.n : '') + '</em></div>' + ico('plus') + '<div><b>' + p.b + '</b><em>' + esc(b ? b.n : '') + '</em></div><p>' +
-        esc(T({ en:'Correlation ' + f(p.c, 2) + ' — they ' + (p.c < 0 ? 'often move in opposite directions' : p.c < 0.4 ? 'move fairly independently' : 'move somewhat together') + '. A 50/50 mix swung about ' + f(p.vol, 0) + '% a year.', th:'ความสัมพันธ์ ' + f(p.c, 2) + ' ' + (p.c < 0 ? 'มักเคลื่อนไหวสวนทางกัน' : p.c < 0.4 ? 'เคลื่อนไหวค่อนข้างอิสระต่อกัน' : 'เคลื่อนไหวไปด้วยกันบ้าง') + ' ถ้าถือคู่กันอย่างละครึ่ง แกว่งประมาณ ' + f(p.vol, 0) + '% ต่อปี' })) + '</p></div>';
-    }).join('') + '</div>' + note({ en:'Built from the phase\'s favoured assets, each paired with the partner that lowered risk the most over the past year.', th:'สร้างจากสินทรัพย์ที่ช่วงเศรษฐกิจนี้มักเอื้อ จับคู่กับตัวที่ช่วยลดความเสี่ยงได้มากที่สุดในปีที่ผ่านมา' }) : note({ en:'Needs the weekly ETF data in brain.json.', th:'ต้องใช้ข้อมูล ETF รายสัปดาห์ใน brain.json' }), 'swap');
-    h += '<div class="bz-two">' + basket('us', { en:'US stocks that fit today', th:'หุ้นสหรัฐฯ ที่เข้ากับสภาวะตอนนี้' }) + basket('th', { en:'Thai stocks that fit today', th:'หุ้นไทยที่เข้ากับสภาวะตอนนี้' }) + '</div>';
-    return h;
-  }
-  function basket(mk, title){
-    var rows = autoPick(mk, 8);
-    return sec(title, rows.length ? '<div class="bz-tw"><table class="bz-tbl"><thead><tr><th></th><th>' + esc(T({ en:'Quality', th:'คุณภาพ' })) + '</th><th>' + esc(T({ en:'Price', th:'ราคา' })) + '</th><th>' + esc(T({ en:'Trend', th:'แนวโน้ม' })) + '</th><th>P/E</th></tr></thead><tbody>' + rows.map(function(r){
-      return '<tr><td><b>' + esc(r.t) + '</b><em>' + esc(sectName(r.sec)) + '</em></td><td>' + stars(r.c.q) + '</td><td>' + stars(r.c.v) + '</td><td>' + stars(r.c.m) + '</td><td>' + f(r.c.I.s.pe, 1) + '</td></tr>';
-    }).join('') + '</tbody></table></div><button type="button" class="bz-btn" data-pfmode="auto' + mk + '">' + ico('flask') + esc(T({ en:'Analyse this basket as a portfolio', th:'วิเคราะห์ตะกร้านี้แบบพอร์ต' })) + '</button>' : note({ en:'Not enough data.', th:'ข้อมูลไม่พอ' }), 'star');
-  }
-
-  function vOut(E){
-    var h = '<p class="bz-lead">' + esc(T({ en:'The three paths that matter most, with odds weighed from today\'s evidence, what wins or loses in each, and the exact numbers that tell you which one is unfolding.', th:'3 เส้นทางที่สำคัญที่สุด พร้อมโอกาสที่คำนวณจากหลักฐานวันนี้ สิ่งที่ชนะหรือแพ้ในแต่ละแบบ และตัวเลขที่บอกว่ากำลังเกิดแบบไหน' })) + '</p>';
-    h += '<div class="bz-scen">' + E.scen.map(function(s, i){
-      return '<div class="bz-sc bz-sc-' + s.k + (i === 0 ? ' top' : '') + '"><div class="bz-sch">' + ico(s.icon) + '<b>' + esc(T(s.name)) + '</b><span class="bz-scp">' + s.p + '%</span></div><div class="bz-scbar"><i style="width:' + s.p + '%"></i></div>' +
-        '<p>' + esc(T(s.story)) + '</p><div class="bz-wl"><div><h6>' + esc(T({ en:'Tends to win', th:'มักได้ประโยชน์' })) + '</h6>' + (L() === 'th' ? s.winTh : s.win).map(function(x){ return '<span class="up">' + esc(x) + '</span>'; }).join('') + '</div>' +
-        '<div><h6>' + esc(T({ en:'Tends to lose', th:'มักเสียประโยชน์' })) + '</h6>' + (L() === 'th' ? s.loseTh : s.lose).map(function(x){ return '<span class="dn">' + esc(x) + '</span>'; }).join('') + '</div></div>' +
-        '<h6>' + esc(T({ en:'You will know it is happening when…', th:'จะรู้ว่ากำลังเกิดแบบนี้เมื่อ…' })) + '</h6><ul class="bz-trig">' + s.trig.map(function(t){
-          var ok = isNum(t.cur) && (t.dir > 0 ? t.cur >= t.thr : t.cur <= t.thr), prog = isNum(t.cur) ? clamp(t.dir > 0 ? t.cur / t.thr : t.thr / Math.max(t.cur, 0.01), 0, 1) * 100 : 0;
-          return '<li class="' + (ok ? 'on' : '') + '"><span>' + esc(T(t.n)) + ' <b>' + f(t.thr, t.d) + t.unit + '</b></span><i><u style="width:' + prog.toFixed(0) + '%"></u></i><em>' + esc(T({ en:'now', th:'ตอนนี้' })) + ' ' + f(t.cur, t.d) + t.unit + (ok ? ' ✓' : '') + '</em></li>';
-        }).join('') + '</ul></div>';
-    }).join('') + '</div>';
-    h += sec({ en:'How the odds were weighed', th:'คิดโอกาสจากอะไร' }, '<ul class="bz-why">' +
-      '<li>' + esc(T({ en:'Growth momentum ' + sg(E.g, 2) + ' and inflation momentum ' + sg(E.i, 2) + ' (−1 … +1) from jobs, spending, output, sentiment, prices and oil.', th:'แรงส่งเศรษฐกิจ ' + sg(E.g, 2) + ' และแรงส่งเงินเฟ้อ ' + sg(E.i, 2) + ' (ช่วง −1 ถึง +1) คิดจากการจ้างงาน การใช้จ่าย การผลิต ความเชื่อมั่น ราคาสินค้า และน้ำมัน' })) + '</li>' +
-      '<li>' + esc(T({ en:'Recession clues: Sahm rule, claims, credit spreads, curve history, breadth and the Fed\'s own recession model.', th:'เบาะแสถดถอย: สัญญาณ Sahm คนขอสวัสดิการว่างงาน ส่วนต่างหุ้นกู้ ประวัติเส้นอัตราผลตอบแทน ความกว้างของตลาด และโมเดลของเฟด' })) + '</li>' +
-      '<li>' + esc(T({ en:'Inflation clues: core PCE trend, 5-year expectations, oil versus a year ago, and whether bonds are pricing hikes.', th:'เบาะแสเงินเฟ้อ: ทิศทาง Core PCE เงินเฟ้อคาดการณ์ 5 ปี น้ำมันเทียบปีก่อน และตลาดบอนด์คาดว่าจะขึ้นดอกเบี้ยไหม' })) + '</li>' +
-      '<li>' + esc(T({ en:'The scores are combined and turned into odds that add to 100%. They update automatically whenever the data does.', th:'นำคะแนนมารวมกันแล้วแปลงเป็นโอกาสที่รวมกันได้ 100% และอัปเดตเองทุกครั้งที่ข้อมูลเปลี่ยน' })) + '</li></ul>', 'radar');
-    return h;
-  }
-
   var EVT = [
     [/CPI|Consumer Price/i, { en:'Inflation for consumers. Hotter than expected = rates stay high longer.', th:'เงินเฟ้อฝั่งผู้บริโภค ถ้าสูงกว่าคาด ดอกเบี้ยมักอยู่สูงนานขึ้น' }],
     [/PCE/i, { en:'The Fed\'s preferred inflation gauge.', th:'ตัววัดเงินเฟ้อที่เฟดใช้ตัดสินใจ' }],
@@ -1106,28 +929,6 @@
     [/Trade Balance/i, { en:'Exports minus imports.', th:'ส่งออกลบนำเข้า' }]
   ];
   var CTRY = { US:{ en:'US', th:'สหรัฐฯ' }, EU:{ en:'Euro area', th:'ยูโรโซน' }, GB:{ en:'UK', th:'อังกฤษ' }, JP:{ en:'Japan', th:'ญี่ปุ่น' }, CN:{ en:'China', th:'จีน' }, TH:{ en:'Thailand', th:'ไทย' }, DE:{ en:'Germany', th:'เยอรมนี' } };
-  function vCal(){
-    var ev = (D.econ && D.econ.economicCalendar) || [], now = Date.now() - 6 * 3600e3;
-    var up = ev.filter(function(e){ return Date.parse(e.time.replace(' ', 'T') + 'Z') >= now && (e.impact === 'high' || e.impact === 'medium'); });
-    var past = ev.filter(function(e){ return Date.parse(e.time.replace(' ', 'T') + 'Z') < now && e.impact === 'high'; }).slice(-6);
-    function row(e){
-      var why = ''; for(var i = 0; i < EVT.length; i++){ if(EVT[i][0].test(e.event)){ why = T(EVT[i][1]); break; } }
-      var d = new Date(Date.parse(e.time.replace(' ', 'T') + 'Z'));
-      return '<li class="' + e.impact + '"><time>' + d.toLocaleString(L() === 'th' ? 'th-TH' : 'en-GB', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', timeZone:'Asia/Bangkok' }) + '</time><span class="bz-ct">' + esc(T(CTRY[e.country] || { en:e.country })) + '</span><div><b>' + esc(e.event) + '</b>' + (why ? '<em>' + esc(why) + '</em>' : '') + '</div><span class="bz-num">' +
-        (e.estimate != null ? esc(T({ en:'exp ', th:'คาด ' })) + e.estimate + (e.unit || '') : '') + (e.prev != null ? ' · ' + esc(T({ en:'prev ', th:'ก่อน ' })) + e.prev + (e.unit || '') : '') + '</span></li>';
-    }
-    var h = sec({ en:'Coming up (times in Thailand)', th:'กำลังจะประกาศ (เวลาไทย)' }, up.length ? '<ul class="bz-cal">' + up.map(row).join('') + '</ul>' : note({ en:'No medium/high-impact releases left in the calendar file. It refreshes twice a day.', th:'ไม่มีตัวเลขสำคัญเหลือในปฏิทินช่วงนี้ ไฟล์ปฏิทินอัปเดตวันละ 2 ครั้ง' }), 'cal');
-    if(past.length) h += sec({ en:'Recently released (high impact)', th:'เพิ่งประกาศไป (สำคัญมาก)' }, '<ul class="bz-cal past">' + past.map(row).join('') + '</ul>', 'eye');
-    var E = E_last, w = [];
-    E.scen.forEach(function(s){ s.trig.forEach(function(t){ if(isNum(t.cur)){ var dist = t.dir > 0 ? (t.thr - t.cur) / Math.abs(t.thr) : (t.cur - t.thr) / Math.abs(t.thr); w.push({ s:s, t:t, dist:dist }); } }); });
-    w.sort(function(a, b){ return a.dist - b.dist; });
-    h += sec({ en:'Our own tripwires — closest first', th:'เส้นเตือนของเรา — เรียงจากที่ใกล้จะถึงที่สุด' }, '<ul class="bz-trig wide">' + w.slice(0, 6).map(function(x){
-      var hit = x.dist <= 0;
-      return '<li class="' + (hit ? 'on' : '') + '"><span>' + esc(T(x.t.n)) + ' <b>' + f(x.t.thr, x.t.d) + x.t.unit + '</b> <small>(' + esc(T(x.s.name)) + ')</small></span><em>' + esc(T({ en:'now', th:'ตอนนี้' })) + ' ' + f(x.t.cur, x.t.d) + x.t.unit + ' · ' + (hit ? esc(T({ en:'reached', th:'ถึงแล้ว' })) : esc(T({ en:'distance ', th:'ห่าง ' })) + f(x.dist * 100, 0) + '%') + '</em></li>';
-    }).join('') + '</ul>', 'radar');
-    return h;
-  }
-
   /* ============================================================== FORECAST
      Forward-looking models, each simple enough to state in one line and each
      shown with the numbers it is built from:
@@ -1447,6 +1248,430 @@
     return h;
   }
 
+  /* ============================================ RE-LAID-OUT TABS (2026-10-25 c)
+     12-column rows (.bz-row + .s3/.s4/.s5/.s6/.s7/.s8/.s12), bigger charts. */
+  function row(cells){ return '<div class="bz-row">' + cells.join('') + '</div>'; }
+  function cell(span, title, inner, icon, extra){ return '<div class="bz-sec s' + span + (extra ? ' ' + extra : '') + '"><h4>' + (icon ? ico(icon) : '') + esc(T(title)) + '</h4>' + inner + '</div>'; }
+  var BIG = { W:1100, h:380 }, MID = { W:760, h:340 };
+  function lc(o, size){ o.W = size.W; o.h = o.h || size.h; return lineChart(o); }
+
+  function vOver(E){
+    var ph = PHASES[E.phase];
+    var h = '<div class="bz-hero">' +
+      '<div class="bz-wx bz-' + tone((E.score - 50) / 25) + '">' + ico(E.weather.k, 'bz-wxi') + gauge(E.score, T(E.weather.w)) + '<p>' + esc(T(E.weather.s)) + '</p></div>' +
+      '<div class="bz-htx"><div class="bz-eb">' + esc(T(UX.today)) + '</div><p class="bz-head">' + esc(T(E.head)) + '</p>' +
+        '<div class="bz-chips">' + chip(ico('compass') + esc(T(UX.phase)) + ': <b>' + esc(T(ph.short)) + '</b>', ph.tone) + chip(esc(T(UX.conf)) + ' ' + E.phaseConf + '%') +
+        chip(esc(T({ en:'Score', th:'คะแนนรวม' })) + ' <b>' + Math.round(E.score) + '/100</b>') + '</div>' +
+        '<ol class="bz-top">' + E.top.map(function(p){ return '<li class="' + tone(p.score) + '">' + esc(T(p.say)) + '</li>'; }).join('') + '</ol></div>' +
+      '<div class="bz-clk">' + clockSVG(E.g, E.i, E.phase) + '<b>' + esc(T(ph.name)) + '</b><p>' + esc(T(ph.why)) + '</p></div></div>';
+    h += '<h3 class="bz-h3">' + esc(T(UX.pillars)) + '</h3><div class="bz-pills">' + E.pillars.map(function(p){
+      return '<button type="button" class="bz-pill ' + tone(p.score) + '" data-go="' + p.tab + '"><div class="bz-pt">' + ico(p.icon) + '<span>' + esc(T(p.title)) + '</span><i>' + esc(T(toneWord(p.score))) + '</i></div>' +
+        '<div class="bz-pv"><b>' + p.value + '</b><em>' + esc(T(p.sub)) + '</em></div>' + spark(p.spark, p.score >= 1 ? '#34d399' : p.score <= -1 ? '#fb7185' : '#fbbf24') +
+        '<p>' + esc(T(p.say)) + '</p><span class="bz-meter">' + [-2, -1, 0, 1, 2].map(function(k){ return '<i class="' + (Math.round(p.score) === k ? 'on' : '') + '"></i>'; }).join('') + '</span></button>';
+    }).join('') + '</div>';
+    /* what changed: big tiles */
+    h += '<h3 class="bz-h3">' + ico('bolt') + esc(T(UX.changed)) + '</h3>' + (E.changes.length ? '<div class="bz-tiles">' + E.changes.map(function(c){
+      var cls = c.good === true ? 'good' : c.good === false ? 'bad' : 'mid', val = c.pct ? spc(c.d, 1) : sg(c.d, c.unit === '%' ? 2 : 1) + (c.unit === '%' ? ' pt' : c.unit);
+      var w = clamp(c.mag / 3 * 100, 12, 100);
+      return '<div class="bz-tile ' + cls + '"><span class="n">' + esc(T(c.n)) + '</span><b>' + val + '</b><em>' + esc(T({ en:'now', th:'ตอนนี้' })) + ' <strong>' + f(c.now, c.unit === '%' ? 2 : 1) + (c.unit === '%' ? '%' : '') + '</strong></em>' +
+        '<i class="bar"><u style="width:' + w.toFixed(0) + '%"></u></i><small>' + esc(T(c.good === true ? { en:'good for stocks', th:'ดีต่อหุ้น' } : c.good === false ? { en:'bad for stocks', th:'ไม่ดีต่อหุ้น' } : { en:'watch', th:'จับตา' })) + ' · ' + esc(T({ en:'size ', th:'ขนาด ' })) + f(c.mag, 1) + '×</small></div>';
+    }).join('') + '</div>' : note(UX.nochg));
+    h += '<h3 class="bz-h3">' + ico('swap') + esc(T(UX.div)) + '</h3>' + (E.diverge.length ? '<div class="bz-dtiles">' + E.diverge.map(function(d, i){ return '<div class="bz-dt"><span class="k">' + (i + 1) + '</span><p>' + esc(T(d)) + '</p></div>'; }).join('') + '</div>' : note(UX.nodiv));
+    h += row([cell(12, UX.play, '<div class="bz-play">' + PLAY[E.phase].map(function(t, i){ return '<div><b>' + esc(T(STYLE[i])) + '</b><p>' + esc(T(t)) + '</p></div>'; }).join('') + '</div>' +
+      '<p class="bz-note">' + esc(T({ en:'Usually strongest now: ', th:'กลุ่มที่มักเด่นช่วงนี้: ' })) + ph.etf.map(function(t){ return '<code>' + t + '</code>'; }).join(' ') + ' · ' + esc(T({ en:'usually weakest: ', th:'มักอ่อน: ' })) + ph.avoid.map(function(t){ return '<code>' + t + '</code>'; }).join(' ') + '</p>', 'layers')]);
+    return h;
+  }
+
+  function curveSVG(){
+    var mk = function(k){ var o = mkt(k); return o ? [o.price, isNum(o.m1) ? o.price / (1 + o.m1 / 100) : null] : [null, null]; };
+    var y2 = mac('y2'), pts = [['3M', mk('us3m')], ['2Y', y2 ? [y2.v, y2.m1] : [null, null]], ['5Y', mk('us5y')], ['10Y', mk('us10y')], ['30Y', mk('us30y')]];
+    var vals = []; pts.forEach(function(p){ vals.push(p[1][0], p[1][1]); }); vals = vals.filter(isNum);
+    if(vals.length < 4) return '';
+    var lo = Math.min.apply(null, vals) - 0.15, hi = Math.max.apply(null, vals) + 0.15, W = 760, H = 340, P = 50;
+    var X = function(i){ return P + i * (W - 2 * P) / (pts.length - 1); }, Y = function(v){ return 24 + (1 - (v - lo) / (hi - lo)) * (H - 60); };
+    var s = '', pa = '', pb = '', area = '';
+    niceTicks(lo, hi, 5).forEach(function(v){ s += '<line class="bz-gl" x1="' + P + '" x2="' + (W - P) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/><text class="bz-ax" x="' + (P - 8) + '" y="' + (Y(v) + 4) + '" text-anchor="end">' + v + '%</text>'; });
+    pts.forEach(function(p, i){
+      if(isNum(p[1][1])) pb += (pb ? 'L' : 'M') + X(i) + ' ' + Y(p[1][1]);
+      if(isNum(p[1][0])){ pa += (pa ? 'L' : 'M') + X(i) + ' ' + Y(p[1][0]); }
+      s += '<text class="bz-ax big" x="' + X(i) + '" y="' + (H - 10) + '" text-anchor="middle">' + p[0] + '</text>';
+    });
+    area = pa + 'L' + X(pts.length - 1) + ' ' + (H - 36) + 'L' + X(0) + ' ' + (H - 36) + 'Z';
+    pts.forEach(function(p, i){ if(isNum(p[1][0])){ var d = isNum(p[1][1]) ? p[1][0] - p[1][1] : null; s += '<circle cx="' + X(i) + '" cy="' + Y(p[1][0]) + '" r="6" fill="#22d3ee" stroke="var(--bz-bgc,#0b0f17)" stroke-width="2.5"/><text class="bz-tag big" x="' + X(i) + '" y="' + (Y(p[1][0]) - 14) + '" text-anchor="middle" fill="#22d3ee">' + f(p[1][0], 2) + '%</text>' + (isNum(d) ? '<text class="bz-ax" x="' + X(i) + '" y="' + (Y(p[1][0]) + 22) + '" text-anchor="middle" fill="' + (d > 0 ? '#fb7185' : '#34d399') + '">' + sg(d, 2) + '</text>' : ''); } });
+    return '<div class="bz-leg"><span><i style="background:#22d3ee"></i>' + esc(T({ en:'Now', th:'ตอนนี้' })) + '</span><span><i style="background:#94a3b8"></i>' + esc(T({ en:'1 month ago', th:'1 เดือนก่อน' })) + '</span></div>' +
+      '<svg viewBox="0 0 ' + W + ' ' + H + '" class="bz-svg"><defs><linearGradient id="bzCv" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#22d3ee" stop-opacity=".28"/><stop offset="1" stop-color="#22d3ee" stop-opacity="0"/></linearGradient></defs>' + s + '<path d="' + area + '" fill="url(#bzCv)"/><path d="' + pb + '" fill="none" stroke="#94a3b8" stroke-width="2.2" stroke-dasharray="6 6"/><path d="' + pa + '" fill="none" stroke="#22d3ee" stroke-width="3"/></svg>';
+  }
+  function vInfl(E){
+    var I = E.infl, F = E.fed;
+    var h = '<div class="bz-kpis">' +
+      kpi({ en:'CPI', th:'เงินเฟ้อ CPI' }, pc(I.cpi, 1), mshort(mac('cpi') && mac('cpi').t), I.cpi > 3 ? 'bad' : I.cpi < 2.5 ? 'good' : '') +
+      kpi({ en:'Core CPI', th:'Core CPI' }, pc(I.core_cpi, 1), '', I.core_cpi > 3 ? 'bad' : '') +
+      kpi({ en:'Core PCE (Fed)', th:'Core PCE (เฟดใช้)' }, pc(I.v, 2), sg(I.c3, 2) + ' / 3m', I.v > 3 ? 'bad' : I.v < 2.5 ? 'good' : '') +
+      kpi({ en:'5y expected', th:'คาดการณ์ 5 ปี' }, pc(I.be5, 2), '', I.be5 > 2.6 ? 'bad' : '') +
+      kpi({ en:'Fed funds', th:'ดอกเบี้ยเฟด' }, pc(F.ff, 2)) + kpi({ en:'2y yield', th:'บอนด์ 2 ปี' }, pc(F.y2, 2), sg(F.gap, 2) + ' vs Fed') +
+      kpi({ en:'10y yield', th:'บอนด์ 10 ปี' }, pc(F.y10, 2), sg(F.dy10, 2) + ' / 1m', F.dy10 > 0.25 ? 'bad' : F.dy10 < -0.25 ? 'good' : '') +
+      kpi({ en:'Real 10y', th:'ยีลด์จริง 10 ปี' }, pc(F.real, 2), '', F.real > 2.2 ? 'bad' : '') + kpi({ en:'Mortgage 30y', th:'ดอกเบี้ยบ้าน 30 ปี' }, pc(mv('mort'), 2)) + '</div>';
+    h += '<div class="bz-callout ' + (F.gap > 0.25 ? 'bad' : F.gap < -0.25 ? 'good' : 'mid') + '">' + ico('bank') + '<div><b>' + esc(T({ en:'What the bond market expects from the Fed', th:'ตลาดบอนด์คาดอะไรจากเฟด' })) + '</b><p>' + esc(T(F.say)) + '. ' +
+      esc(T({ en:'Rule of thumb: when the 2-year yield is clearly below the Fed rate, traders expect cuts; clearly above, hikes. Today the gap is ' + sg(F.gap, 2) + ' points.', th:'หลักจำง่าย: ถ้าบอนด์ 2 ปีต่ำกว่าดอกเบี้ยเฟดชัดเจน ตลาดคาดว่าจะลดดอกเบี้ย ถ้าสูงกว่าชัดเจน คาดว่าจะขึ้น ตอนนี้ต่างกัน ' + sg(F.gap, 2) + ' จุด' })) + '</p></div></div>';
+    h += row([cell(6, { en:'Inflation vs the 2% goal', th:'เงินเฟ้อเทียบเป้า 2%' }, lc({ series:[
+        { name:{ en:'CPI', th:'CPI' }, pts:histSince('cpi', 6), color:COL.c }, { name:{ en:'Core CPI', th:'Core CPI' }, pts:histSince('core_cpi', 6), color:COL.b }, { name:{ en:'Core PCE', th:'Core PCE' }, pts:histSince('core_pce', 6), color:COL.a, w:2.8 }],
+        unit:'%', band:{ lo:1.5, hi:2.5, label:{ en:'Fed goal ≈ 2%', th:'เป้าเฟด ≈ 2%' } }, rec:D.b && D.b.recessions }, MID), 'flame'),
+      cell(6, { en:'Fed rate vs bond yields', th:'ดอกเบี้ยเฟดเทียบบอนด์ยีลด์' }, lc({ series:[
+        { name:{ en:'Fed funds', th:'ดอกเบี้ยเฟด' }, pts:histSince('ff', 5), color:COL.d, w:2.8 }, { name:{ en:'2y', th:'2 ปี' }, pts:histSince('y2', 5), color:COL.a }, { name:{ en:'10y', th:'10 ปี' }, pts:histSince('y10', 5), color:COL.b }], unit:'%', dec:2 }, MID), 'bank')]);
+    h += row([cell(6, { en:'Yield curve: now vs a month ago', th:'เส้นอัตราผลตอบแทน: ตอนนี้ vs เดือนก่อน' }, curveSVG() + note({ en:'Upward-sloping is normal. When short maturities sit above long ones the curve is “inverted”, a classic slowdown warning. Small numbers = change over the month.', th:'เส้นชันขึ้นคือปกติ ถ้าระยะสั้นสูงกว่าระยะยาวเรียกว่า “กลับหัว” เป็นสัญญาณเตือนเศรษฐกิจชะลอแบบคลาสสิก ตัวเลขเล็กใต้จุด = เปลี่ยนไปเท่าไหร่ในเดือนนี้' }), 'curve'),
+      cell(6, { en:'Real yield & inflation expectations', th:'ยีลด์จริงและเงินเฟ้อที่ตลาดคาด' }, lc({ series:[
+        { name:{ en:'Real 10y yield', th:'ยีลด์จริง 10 ปี' }, pts:histSince('real10', 5), color:COL.e, w:2.6 }, { name:{ en:'5y breakeven', th:'เงินเฟ้อคาด 5 ปี' }, pts:histSince('be5', 5), color:COL.f }, { name:{ en:'Consumers 1y', th:'ผู้บริโภคคาด 1 ปี' }, pts:histSince('mich', 5), color:COL.d, dash:'4 4', w:1.6 }], unit:'%', dec:2, zero:true }, MID) +
+        note({ en:'Real yield = what bonds pay after inflation. Above ~2% money is genuinely expensive, which usually weighs on high-valuation growth stocks and gold.', th:'ยีลด์จริง = ผลตอบแทนบอนด์หลังหักเงินเฟ้อ ถ้าสูงกว่าราว 2% แปลว่าเงินแพงจริง มักกดดันหุ้นเติบโตที่ราคาแพงและทองคำ' }), 'scale')]);
+    return h;
+  }
+
+  function vGrowth(E){
+    var G = E.growth, sig = recessionSignals(E), lit = sig.filter(function(s){ return s[1]; }).length;
+    var slow = E.scen.filter(function(s){ return s.k === 'slow'; })[0];
+    var h = '<div class="bz-kpis">' +
+      kpi({ en:'Unemployment', th:'ว่างงาน' }, pc(G.un, 1), esc(T({ en:'12m low ', th:'ต่ำสุด 12 เดือน ' })) + pc(G.unMin, 1), G.un - G.unMin > 0.4 ? 'bad' : '') +
+      kpi({ en:'New jobs (3m avg)', th:'จ้างงานเพิ่ม (เฉลี่ย 3 เดือน)' }, f(G.pay3, 0) + 'k', '', G.pay3 < 50 ? 'bad' : G.pay3 > 150 ? 'good' : '') +
+      kpi({ en:'Weekly claims', th:'ขอสวัสดิการ/สัปดาห์' }, f(G.cl, 0) + 'k', spc(G.clY, 0) + ' y/y', G.clY > 15 ? 'bad' : '') +
+      kpi({ en:'Job openings', th:'ตำแหน่งงานว่าง' }, f(mv('jolts'), 1) + 'm', mshort(mac('jolts') && mac('jolts').t)) +
+      kpi({ en:'Wage growth', th:'ค่าจ้างโต' }, pc(mv('wages'), 1), 'y/y') +
+      kpi({ en:'Sahm rule', th:'สัญญาณ Sahm' }, f(G.sahm, 2), esc(T({ en:'≥0.5 = recession', th:'≥0.5 = ถดถอย' })), G.sahm >= 0.5 ? 'bad' : G.sahm < 0.2 ? 'good' : '') +
+      kpi({ en:'Real GDP', th:'GDP จริง' }, pc(G.gdp, 1), 'GDPNow ' + pc(mv('gdpnow'), 1), G.gdp < 1 ? 'bad' : G.gdp > 2 ? 'good' : '') +
+      kpi({ en:'Retail sales', th:'ยอดค้าปลีก' }, spc(mv('retail'), 1), esc(T({ en:'after inflation ', th:'หลังหักเงินเฟ้อ ' })) + spc(G.realRetail, 1)) +
+      kpi({ en:'Consumer mood', th:'ความเชื่อมั่นผู้บริโภค' }, f(G.sent, 1), esc(T({ en:'avg ≈ 85', th:'ค่าเฉลี่ยราว 85' })), G.sent < 60 ? 'bad' : '') + '</div>';
+    h += '<div class="bz-sec"><h4>' + ico('alert') + esc(T({ en:'Recession checklist', th:'เช็กลิสต์สัญญาณถดถอย' })) + '</h4><div class="bz-rmeter"><div class="bz-rbar"><i style="width:' + (lit * 10) + '%"></i></div><b>' + lit + '/10</b><span>' + esc(T(lit >= 6 ? { en:'many warning lights on', th:'ไฟเตือนติดหลายดวง' } : lit >= 3 ? { en:'a few warning lights', th:'มีไฟเตือนบางดวง' } : { en:'mostly clear', th:'ส่วนใหญ่ยังปกติ' })) + (slow ? ' · ' + esc(T({ en:'“growth scare” odds ', th:'โอกาส “เศรษฐกิจชะลอแรง” ' })) + slow.p + '%' : '') + '</span></div>' +
+      '<div class="bz-chkg">' + sig.map(function(s){ return '<div class="' + (s[1] ? 'on' : '') + '">' + ico(s[1] ? 'alert' : 'check') + '<span>' + esc(T(s[0])) + '</span><b>' + s[2] + '</b></div>'; }).join('') + '</div></div>';
+    h += row([cell(12, { en:'Unemployment & the Sahm rule', th:'อัตราว่างงานและสัญญาณ Sahm' }, lc({ series:[{ name:{ en:'Unemployment', th:'ว่างงาน' }, pts:histSince('unrate', 10), color:COL.a, w:2.8 }, { name:{ en:'Sahm rule', th:'Sahm' }, pts:histSince('sahm', 10), color:COL.f }], unit:'%', ref:[{ v:0.5, label:{ en:'Sahm trigger 0.5', th:'เส้นเตือน Sahm 0.5' } }], rec:D.b && D.b.recessions, h:340 }, BIG), 'user')]);
+    h += row([cell(6, { en:'New jobs each month (thousands)', th:'จำนวนงานใหม่ต่อเดือน (พันตำแหน่ง)' }, barChart(lastN(mac('payrolls') && mac('payrolls').hist, 36), { unit:'k', W:760, h:330 }), 'factory'),
+      cell(6, { en:'Weekly jobless claims (thousands)', th:'คนขอสวัสดิการว่างงานรายสัปดาห์ (พันคน)' }, lc({ series:[{ name:{ en:'Claims', th:'ขอสวัสดิการ' }, pts:histSince('claims', 3), color:COL.d, area:true }], unit:'k', dec:0 }, MID), 'user')]);
+    h += row([cell(6, { en:'Spending & production growth (y/y)', th:'การใช้จ่ายและการผลิตโต (เทียบปีก่อน)' }, lc({ series:[{ name:{ en:'Retail sales', th:'ค้าปลีก' }, pts:histSince('retail', 6), color:COL.e }, { name:{ en:'Industrial output', th:'การผลิต' }, pts:histSince('indpro', 6), color:COL.b }, { name:{ en:'Wages', th:'ค่าจ้าง' }, pts:histSince('wages', 6), color:COL.d }, { name:{ en:'CPI', th:'เงินเฟ้อ' }, pts:histSince('cpi', 6), color:COL.g, dash:'4 4', w:1.5 }], unit:'%', zero:true }, MID), 'trend'),
+      cell(6, { en:'Real GDP growth (annualised, by quarter)', th:'GDP จริงรายไตรมาส (ปรับเป็นต่อปี)' }, barChart(lastN(mac('gdp') && mac('gdp').hist, 20), { unit:'%', dec:1, up:'#22d3ee', W:760, h:330 }), 'globe')]);
+    return h;
+  }
+
+  function vFx(E){
+    var X = E.fx, C = E.comm, tb = thaiBreadth(), thd = flow('THD') || {};
+    var h = '<div class="bz-kpis">' +
+      kpi({ en:'Dollar index', th:'ดัชนีดอลลาร์' }, f(X.dxy, 2), spc(X.dx1, 1) + ' / 1m', X.dx3 > 2 ? 'bad' : X.dx3 < -2 ? 'good' : '') +
+      kpi({ en:'USD/THB', th:'1 ดอลลาร์ = บาท' }, f(X.thb && X.thb.rate, 2), esc(T({ en:'baht ', th:'บาท ' })) + spc(X.thb1, 1) + ' / 1m', X.thb1 < -1.5 ? 'bad' : X.thb1 > 1.5 ? 'good' : '') +
+      kpi({ en:'Baht this year', th:'เงินบาทปีนี้' }, spc(X.thbY, 1), esc(T({ en:'− = weaker', th:'ลบ = อ่อนค่า' }))) +
+      kpi({ en:'Oil (WTI)', th:'น้ำมัน WTI' }, '$' + f(C.oil, 1), spc(C.oilY, 0) + ' y/y', C.oilY > 25 ? 'bad' : '') +
+      kpi({ en:'Gold', th:'ทองคำ' }, spc(C.gold1, 1), spc(C.gold3, 1) + ' / 3m') + kpi({ en:'Commodities', th:'สินค้าโภคภัณฑ์' }, spc(C.dbc3, 1), '3m') +
+      kpi({ en:'Thai stocks (THD)', th:'หุ้นไทย (THD)' }, spc(thd.m1, 1), spc(thd.m3, 1) + ' / 3m', thd.m3 > 3 ? 'good' : thd.m3 < -3 ? 'bad' : '') +
+      kpi({ en:'Thai stocks in up-trend', th:'หุ้นไทยที่ยังเป็นขาขึ้น' }, pc(tb.up, 0), tb.n + esc(T({ en:' stocks', th:' ตัว' })), tb.up < 40 ? 'bad' : tb.up > 60 ? 'good' : '') + '</div>';
+    var thSay = [];
+    if(X.dx3 > 2) thSay.push({ en:'A firmer dollar tends to pull foreign money out of Thai stocks and weaken the baht.', th:'ดอลลาร์ที่แข็งขึ้นมักดึงเงินต่างชาติออกจากหุ้นไทยและทำให้บาทอ่อน' });
+    if(X.dx3 < -2) thSay.push({ en:'A softer dollar usually helps flows into Thailand and other emerging markets.', th:'ดอลลาร์อ่อนมักช่วยให้เงินไหลเข้าไทยและตลาดเกิดใหม่' });
+    if(X.thb1 < -1) thSay.push({ en:'A weaker baht helps exporters and tourism earnings, hurts importers and anyone paying in dollars.', th:'บาทอ่อนช่วยผู้ส่งออกและรายได้ท่องเที่ยว แต่ไม่ดีกับผู้นำเข้าและคนที่ต้องจ่ายเป็นดอลลาร์' });
+    if(X.thb1 > 1) thSay.push({ en:'A stronger baht cheapens imports and foreign assets for Thai investors, but trims exporters\' baht income.', th:'บาทแข็งทำให้ของนำเข้าและการลงทุนต่างประเทศถูกลงสำหรับคนไทย แต่รายได้ผู้ส่งออกที่แปลงเป็นบาทลดลง' });
+    if(C.oilY > 25) thSay.push({ en:'Thailand imports most of its oil, so expensive crude widens the import bill and pushes local prices up — energy producers gain, airlines and transport lose.', th:'ไทยนำเข้าน้ำมันเกือบทั้งหมด น้ำมันแพงทำให้ค่าใช้จ่ายนำเข้าสูงและดันราคาสินค้าในประเทศ ผู้ผลิตพลังงานได้ประโยชน์ สายการบินและขนส่งเสียประโยชน์' });
+    if(!thSay.length) thSay.push({ en:'No strong currency or commodity pressure on Thailand right now.', th:'ตอนนี้ยังไม่มีแรงกดดันจากค่าเงินหรือสินค้าโภคภัณฑ์ต่อไทยมากนัก' });
+    h += '<div class="bz-callout mid">' + ico('globe') + '<div><b>' + esc(T({ en:'What it means for Thailand', th:'แปลว่าอะไรสำหรับไทย' })) + '</b>' + thSay.map(function(t){ return '<p>' + esc(T(t)) + '</p>'; }).join('') + '</div></div>';
+    var ccy = D.m.ccy || {}, rows = Object.keys(ccy).filter(function(k){ return k !== 'USD' && isNum(ccy[k].m1); }).map(function(k){ return { k:k, m1:ccy[k].m1, ytd:ccy[k].ytd, r:ccy[k].rate }; }).sort(function(a, b){ return b.m1 - a.m1; });
+    h += '<div class="bz-sec"><h4>' + ico('coin') + esc(T({ en:'Currencies vs the US dollar', th:'ค่าเงินทั่วโลกเทียบดอลลาร์' })) + '</h4><div class="bz-fxg">' + rows.map(function(r){
+      return '<div class="' + heatCls(r.m1, 0.6) + (r.k === 'THB' ? ' me' : '') + '"><b>' + r.k + '</b><strong>' + spc(r.m1, 1) + '</strong><em>1M · YTD ' + spc(r.ytd, 1) + '</em><small>' + f(r.r, r.r > 100 ? 0 : 3) + ' / $</small></div>';
+    }).join('') + '</div>' + note({ en:'Positive = the currency strengthened against the US dollar. Thai baht is outlined.', th:'บวก = ค่าเงินนั้นแข็งขึ้นเมื่อเทียบดอลลาร์ ช่องที่มีกรอบคือเงินบาท' }) + '</div>';
+    h += row([cell(12, { en:'Crude oil (WTI, $ per barrel)', th:'น้ำมันดิบ WTI (ดอลลาร์ต่อบาร์เรล)' }, lc({ series:[{ name:{ en:'WTI', th:'WTI' }, pts:histSince('oil', 6), color:COL.d, area:true, w:2.6 }], unit:'', dec:1, rec:D.b && D.b.recessions, h:340 }, BIG), 'barrel')]);
+    var A = (D.m.flows && D.m.flows.asset) || [];
+    h += '<div class="bz-sec"><h4>' + ico('layers') + esc(T({ en:'Every asset class at a glance', th:'สินทรัพย์ทุกประเภทในตารางเดียว' })) + '</h4><div class="bz-tw"><table class="bz-heat big"><thead><tr><th></th><th>' + esc(T({ en:'Price', th:'ราคา' })) + '</th><th>1W</th><th>1M</th><th>3M</th><th>6M</th><th>YTD</th><th>RSI</th><th>' + esc(T({ en:'trend', th:'แนวโน้ม' })) + '</th></tr></thead><tbody>' +
+      A.map(function(a){ return '<tr><td><b>' + esc(a.sym) + '</b><em>' + esc(L() === 'th' ? a.th : a.en) + '</em></td><td>' + f(a.price, 2) + '</td>' + ['w1', 'm1', 'm3', 'm6', 'ytd'].map(function(k){ return '<td class="' + heatCls(a[k], k === 'w1' ? 0.4 : k === 'm1' ? 1 : k === 'm3' ? 1.8 : 2.5) + '">' + spc(a[k], 1) + '</td>'; }).join('') + '<td>' + f(a.rsi, 0) + '</td><td>' + (a.above_ma200 ? '<span class="bz-up">' + esc(T({ en:'up', th:'ขาขึ้น' })) + '</span>' : '<span class="bz-dn">' + esc(T({ en:'down', th:'ขาลง' })) + '</span>') + '</td></tr>'; }).join('') + '</tbody></table></div></div>';
+    return h;
+  }
+
+  function quadrant(list){
+    if(!list.length) return '';
+    var W = 1000, H = 560, P = 50, xs = list.map(function(s){ return s.m1; }), ys = list.map(function(s){ return s.m3; });
+    var xm = Math.max(3, Math.max.apply(null, xs.map(Math.abs))) * 1.2, ym = Math.max(5, Math.max.apply(null, ys.map(Math.abs))) * 1.2;
+    var X = function(v){ return P + (v + xm) / (2 * xm) * (W - 2 * P); }, Y = function(v){ return P / 2 + (1 - (v + ym) / (2 * ym)) * (H - 1.5 * P); };
+    var s = '<rect class="bz-qd lead" x="' + X(0) + '" y="' + Y(ym) + '" width="' + (X(xm) - X(0)) + '" height="' + (Y(0) - Y(ym)) + '"/><rect class="bz-qd weak" x="' + X(-xm) + '" y="' + Y(ym) + '" width="' + (X(0) - X(-xm)) + '" height="' + (Y(0) - Y(ym)) + '"/>' +
+      '<rect class="bz-qd lag" x="' + X(-xm) + '" y="' + Y(0) + '" width="' + (X(0) - X(-xm)) + '" height="' + (Y(-ym) - Y(0)) + '"/><rect class="bz-qd imp" x="' + X(0) + '" y="' + Y(0) + '" width="' + (X(xm) - X(0)) + '" height="' + (Y(-ym) - Y(0)) + '"/>';
+    [[xm, ym, { en:'LEADING', th:'นำตลาด' }, 'end', 22], [-xm, ym, { en:'FADING', th:'เริ่มแผ่ว' }, 'start', 22], [-xm, -ym, { en:'LAGGING', th:'ตามหลัง' }, 'start', -10], [xm, -ym, { en:'IMPROVING', th:'เริ่มฟื้น' }, 'end', -10]].forEach(function(l){ s += '<text class="bz-qdl big" x="' + (X(l[0]) + (l[3] === 'end' ? -12 : 12)) + '" y="' + (Y(l[1]) + l[4]) + '" text-anchor="' + l[3] + '">' + esc(T(l[2])) + '</text>'; });
+    niceTicks(-xm, xm, 6).forEach(function(v){ s += '<text class="bz-ax" x="' + X(v) + '" y="' + (Y(0) + 16) + '" text-anchor="middle">' + v + '%</text>'; });
+    niceTicks(-ym, ym, 6).forEach(function(v){ if(v) s += '<text class="bz-ax" x="' + (X(0) - 6) + '" y="' + (Y(v) + 4) + '" text-anchor="end">' + v + '%</text>'; });
+    s += '<line class="bz-qa" x1="' + X(0) + '" x2="' + X(0) + '" y1="' + Y(ym) + '" y2="' + Y(-ym) + '"/><line class="bz-qa" x1="' + X(-xm) + '" x2="' + X(xm) + '" y1="' + Y(0) + '" y2="' + Y(0) + '"/>';
+    s += '<text class="bz-ax big" x="' + (W - P) + '" y="' + (H - 6) + '" text-anchor="end">' + esc(T({ en:'1-month return →', th:'ผลตอบแทน 1 เดือน →' })) + '</text><text class="bz-ax big" x="' + (P + 4) + '" y="' + (P / 2 + 14) + '">' + esc(T({ en:'↑ 3-month return', th:'↑ ผลตอบแทน 3 เดือน' })) + '</text>';
+    list.forEach(function(it){
+      s += '<g class="bz-qp' + (it.fav ? ' fav' : '') + '"><circle cx="' + X(it.m1).toFixed(1) + '" cy="' + Y(it.m3).toFixed(1) + '" r="' + (it.fav ? 11 : 8) + '"/><text x="' + (X(it.m1) + 14).toFixed(1) + '" y="' + (Y(it.m3) - 2).toFixed(1) + '">' + esc(it.label) + '</text><text class="sub" x="' + (X(it.m1) + 14).toFixed(1) + '" y="' + (Y(it.m3) + 13).toFixed(1) + '">' + esc(it.title) + '</text><title>' + esc(it.title) + ': 1M ' + spc(it.m1, 1) + ', 3M ' + spc(it.m3, 1) + '</title></g>';
+    });
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" class="bz-svg">' + s + '</svg>';
+  }
+  function vRot(E){
+    var ph = PHASES[E.phase], S = (D.m.flows && D.m.flows.sector) || [], Cn = (D.m.flows && D.m.flows.country) || [];
+    var ETF_SEC = { XLK:'Technology', XLF:'Financial Services', XLE:'Energy', XLV:'Healthcare', XLY:'Consumer Cyclical', XLP:'Consumer Defensive', XLI:'Industrials', XLU:'Utilities', XLB:'Basic Materials', XLRE:'Real Estate', XLC:'Communication Services', SMH:'Technology' };
+    var isFav = function(sym){ return ph.sectors.indexOf(ETF_SEC[sym]) >= 0 || ph.etf.indexOf(sym) >= 0; };
+    var list = S.map(function(s){ return { label:s.sym, title:L() === 'th' ? s.th : s.en, m1:s.m1, m3:s.m3, fav:isFav(s.sym) }; });
+    var ranked = S.slice().sort(function(a, b){ return (b.m3 + b.m1) - (a.m3 + a.m1); }), leaders = ranked.slice(0, 4).map(function(s){ return s.sym; });
+    var match = leaders.filter(isFav).length;
+    var h = '<div class="bz-callout ' + (match >= 2 ? 'good' : 'mid') + '">' + ico('compass') + '<div><b>' + esc(T({ en:'Does the market agree with the phase?', th:'ตลาดจริงตรงกับช่วงเศรษฐกิจไหม' })) + '</b><p>' +
+      esc(T({ en:'Leading sectors now: ' + leaders.join(', ') + '. ' + match + ' of 4 are ones the “' + ph.short.en + '” phase usually favours' + (match >= 2 ? ' — the market is behaving as the phase suggests.' : ' — the market is not following the textbook yet; the phase call may be early.'),
+        th:'กลุ่มที่นำตอนนี้: ' + leaders.join(', ') + ' ตรงกับกลุ่มที่ช่วง “' + ph.short.th + '” มักเด่น ' + match + ' จาก 4 กลุ่ม' + (match >= 2 ? ' แปลว่าตลาดเคลื่อนไหวตามสภาวะเศรษฐกิจ' : ' แปลว่าตลาดยังไม่เป็นไปตามตำรา การอ่านช่วงเศรษฐกิจอาจเร็วไป') })) + '</p></div></div>';
+    var rk = '<div class="bz-rank">' + ranked.map(function(s, i){ return '<div class="' + (isFav(s.sym) ? 'fav' : '') + '"><span class="i">' + (i + 1) + '</span><b>' + s.sym + '</b><em>' + esc(L() === 'th' ? s.th : s.en) + '</em><span class="' + (s.m1 >= 0 ? 'up' : 'dn') + '">1M ' + spc(s.m1, 1) + '</span><span class="' + (s.m3 >= 0 ? 'up' : 'dn') + '">3M ' + spc(s.m3, 1) + '</span></div>'; }).join('') + '</div>';
+    h += row([cell(8, { en:'Sector rotation map', th:'แผนที่การหมุนเวียนกลุ่มหุ้น' }, quadrant(list) + note({ en:'Bigger cyan dots = sectors the current phase usually favours. Money tends to rotate clockwise: improving → leading → fading → lagging.', th:'จุดใหญ่สีฟ้า = กลุ่มที่ช่วงเศรษฐกิจตอนนี้มักเอื้อ เงินมักหมุนตามเข็มนาฬิกา: เริ่มฟื้น → นำตลาด → เริ่มแผ่ว → ตามหลัง' }), 'compass'),
+      cell(4, { en:'Sector ranking (1M + 3M)', th:'อันดับกลุ่มหุ้น (1 + 3 เดือน)' }, rk, 'trend')]);
+    var cn = Cn.slice().sort(function(a, b){ return b.m3 - a.m3; });
+    h += '<div class="bz-sec"><h4>' + ico('globe') + esc(T({ en:'Stock markets by country', th:'ตลาดหุ้นแต่ละประเทศ' })) + '</h4><div class="bz-cng">' + cn.map(function(c){
+      return '<div class="' + heatCls(c.m3, 1.8) + (c.sym === 'THD' ? ' me' : '') + '"><b>' + esc(L() === 'th' ? c.th : c.en) + '</b><small>' + c.sym + '</small><strong>' + spc(c.m3, 1) + '</strong><em>1M ' + spc(c.m1, 1) + ' · YTD ' + spc(c.ytd, 1) + '</em></div>';
+    }).join('') + '</div>' + note({ en:'Big number = 3-month return.', th:'ตัวเลขใหญ่ = ผลตอบแทน 3 เดือน' }) + '</div>';
+    var P = pairs();
+    h += '<div class="bz-sec"><h4>' + ico('swap') + esc(T({ en:'Pairs that work well together right now', th:'คู่สินทรัพย์ที่ถือคู่กันแล้วดี ตอนนี้' })) + '</h4>' + (P.length ? '<div class="bz-pairs">' + P.map(function(p){
+      var a = info(p.a), b = info(p.b), cw = clamp((1 - p.c) / 2 * 100, 0, 100);
+      return '<div class="bz-pair"><div class="pa"><b>' + p.a + '</b><em>' + esc(a ? a.n : '') + '</em></div><span class="pl">' + ico('plus') + '</span><div class="pb"><b>' + p.b + '</b><em>' + esc(b ? b.n : '') + '</em></div>' +
+        '<div class="pm"><span>' + esc(T({ en:'Correlation', th:'ความสัมพันธ์' })) + '</span><i><u style="width:' + cw.toFixed(0) + '%"></u></i><b>' + f(p.c, 2) + '</b></div><div class="pm"><span>' + esc(T({ en:'50/50 swings', th:'แกว่งเมื่อถือคู่' })) + '</span><b>' + f(p.vol, 0) + '% / ' + esc(T({ en:'yr', th:'ปี' })) + '</b></div>' +
+        '<p>' + esc(T({ en:p.c < 0 ? 'Often move in opposite directions — one cushions the other.' : p.c < 0.4 ? 'Move fairly independently — good spread of risk.' : 'Move somewhat together — modest diversification.', th:p.c < 0 ? 'มักเคลื่อนไหวสวนทางกัน ตัวหนึ่งช่วยรองรับอีกตัว' : p.c < 0.4 ? 'เคลื่อนไหวค่อนข้างอิสระ กระจายความเสี่ยงได้ดี' : 'เคลื่อนไหวไปด้วยกันบ้าง กระจายความเสี่ยงได้พอประมาณ' })) + '</p></div>';
+    }).join('') + '</div>' : note({ en:'Needs the weekly ETF data in brain.json.', th:'ต้องใช้ข้อมูล ETF รายสัปดาห์ใน brain.json' })) + '</div>';
+    h += row([basket('us', { en:'US stocks that fit today', th:'หุ้นสหรัฐฯ ที่เข้ากับสภาวะตอนนี้' }), basket('th', { en:'Thai stocks that fit today', th:'หุ้นไทยที่เข้ากับสภาวะตอนนี้' })]);
+    return h;
+  }
+  function basket(mk, title){
+    var rows = autoPick(mk, 8);
+    return cell(6, title, rows.length ? '<div class="bz-tw"><table class="bz-tbl big"><thead><tr><th></th><th>' + esc(T({ en:'Quality', th:'คุณภาพ' })) + '</th><th>' + esc(T({ en:'Price', th:'ราคา' })) + '</th><th>' + esc(T({ en:'Trend', th:'แนวโน้ม' })) + '</th><th>P/E</th><th>ROE</th><th>' + esc(T({ en:'Div', th:'ปันผล' })) + '</th><th>3M</th></tr></thead><tbody>' + rows.map(function(r){
+      var s = r.c.I.s;
+      return '<tr><td><b>' + esc(r.t) + '</b><em>' + esc(sectName(r.sec)) + '</em></td><td>' + stars(r.c.q) + '</td><td>' + stars(r.c.v) + '</td><td>' + stars(r.c.m) + '</td><td>' + f(s.pe, 1) + '</td><td>' + pc(s.roe, 0) + '</td><td>' + pc(s.div, 1) + '</td><td class="' + (s.m3 >= 0 ? 'up' : 'dn') + '">' + spc(s.m3, 1) + '</td></tr>';
+    }).join('') + '</tbody></table></div><button type="button" class="bz-btn" data-pfmode="auto' + mk + '">' + ico('flask') + esc(T({ en:'Analyse this basket as a portfolio', th:'วิเคราะห์ตะกร้านี้แบบพอร์ต' })) + '</button>' : note({ en:'Not enough data.', th:'ข้อมูลไม่พอ' }), 'star');
+  }
+
+  function vOut(E){
+    var h = '<p class="bz-lead">' + esc(T({ en:'The three paths that matter most, with odds weighed from today\'s evidence, what wins or loses in each, and the exact numbers that tell you which one is unfolding.', th:'3 เส้นทางที่สำคัญที่สุด พร้อมโอกาสที่คำนวณจากหลักฐานวันนี้ สิ่งที่ชนะหรือแพ้ในแต่ละแบบ และตัวเลขที่บอกว่ากำลังเกิดแบบไหน' })) + '</p>';
+    h += '<div class="bz-scen">' + E.scen.map(function(s, i){
+      return '<div class="bz-sc bz-sc-' + s.k + (i === 0 ? ' top' : '') + '"><div class="bz-sch">' + ico(s.icon) + '<b>' + esc(T(s.name)) + '</b><span class="bz-scp">' + s.p + '%</span></div><div class="bz-scbar"><i style="width:' + s.p + '%"></i></div>' +
+        '<p>' + esc(T(s.story)) + '</p><div class="bz-wl"><div><h6>' + esc(T({ en:'Tends to win', th:'มักได้ประโยชน์' })) + '</h6>' + (L() === 'th' ? s.winTh : s.win).map(function(x){ return '<span class="up">' + esc(x) + '</span>'; }).join('') + '</div>' +
+        '<div><h6>' + esc(T({ en:'Tends to lose', th:'มักเสียประโยชน์' })) + '</h6>' + (L() === 'th' ? s.loseTh : s.lose).map(function(x){ return '<span class="dn">' + esc(x) + '</span>'; }).join('') + '</div></div>' +
+        '<h6>' + esc(T({ en:'You will know it is happening when…', th:'จะรู้ว่ากำลังเกิดแบบนี้เมื่อ…' })) + '</h6><ul class="bz-trig">' + s.trig.map(function(t){
+          var ok = isNum(t.cur) && (t.dir > 0 ? t.cur >= t.thr : t.cur <= t.thr), prog = isNum(t.cur) ? clamp(t.dir > 0 ? t.cur / t.thr : t.thr / Math.max(t.cur, 0.01), 0, 1) * 100 : 0;
+          return '<li class="' + (ok ? 'on' : '') + '"><span>' + esc(T(t.n)) + ' <b>' + f(t.thr, t.d) + t.unit + '</b></span><i><u style="width:' + prog.toFixed(0) + '%"></u></i><em>' + esc(T({ en:'now', th:'ตอนนี้' })) + ' ' + f(t.cur, t.d) + t.unit + (ok ? ' ✓' : '') + '</em></li>';
+        }).join('') + '</ul></div>';
+    }).join('') + '</div>';
+    var F = F_last || {}, sig = recessionSignals(E).filter(function(s){ return s[1]; }).length;
+    var mtr = function(label, v, lo, hi, txt, col){ var p = clamp((v - lo) / (hi - lo) * 100, 0, 100); return '<div class="bz-wm"><span>' + esc(T(label)) + '</span><div class="bz-wmb"><i style="left:' + p.toFixed(0) + '%;background:' + col + '"></i></div><div class="bz-wml"><em>' + lo + '</em><b style="color:' + col + '">' + txt + '</b><em>+' + hi + '</em></div></div>'; };
+    h += '<div class="bz-sec bz-how"><h4>' + ico('radar') + esc(T({ en:'How the odds were weighed', th:'คิดโอกาสจากอะไร' })) + '</h4><div class="bz-howg">' +
+      '<div class="bz-hw a">' + ico('factory') + '<h5>' + esc(T({ en:'Growth momentum', th:'แรงส่งเศรษฐกิจ' })) + '</h5>' + mtr({ en:'−1 slowing … +1 accelerating', th:'−1 ชะลอ … +1 เร่งตัว' }, E.g, -1, 1, sg(E.g, 2), E.g >= 0 ? '#34d399' : '#fb7185') + '<p>' + esc(T({ en:'Jobs, spending, output, sentiment and cyclical stocks vs defensives.', th:'การจ้างงาน การใช้จ่าย การผลิต ความเชื่อมั่น และหุ้นวัฏจักรเทียบหุ้นตั้งรับ' })) + '</p></div>' +
+      '<div class="bz-hw b">' + ico('flame') + '<h5>' + esc(T({ en:'Inflation momentum', th:'แรงส่งเงินเฟ้อ' })) + '</h5>' + mtr({ en:'−1 cooling … +1 heating', th:'−1 เย็นลง … +1 ร้อนขึ้น' }, E.i, -1, 1, sg(E.i, 2), E.i >= 0 ? '#fb923c' : '#22d3ee') + '<p>' + esc(T({ en:'Core PCE and CPI trend, 5-year expectations, oil.', th:'ทิศทาง Core PCE และ CPI เงินเฟ้อคาด 5 ปี และน้ำมัน' })) + '</p></div>' +
+      '<div class="bz-hw c">' + ico('alert') + '<h5>' + esc(T({ en:'Recession clues', th:'เบาะแสถดถอย' })) + '</h5><div class="bz-big">' + sig + '<small>/10</small></div><p>' + esc(T({ en:'Sahm rule, claims, credit spreads, curve history, breadth and the Fed\'s recession model' + (F.rec ? ' · 12-month odds ' + f(F.rec.p, 0) + '%' : '') + '.', th:'สัญญาณ Sahm คนขอสวัสดิการ ส่วนต่างหุ้นกู้ ประวัติเส้นยีลด์ ความกว้างตลาด และโมเดลของเฟด' + (F.rec ? ' · โอกาส 12 เดือน ' + f(F.rec.p, 0) + '%' : '') })) + '</p></div>' +
+      '<div class="bz-hw d">' + ico('bank') + '<h5>' + esc(T({ en:'Rate pressure', th:'แรงกดดันดอกเบี้ย' })) + '</h5><div class="bz-big">' + sg(E.fed.gap, 2) + '<small>pt</small></div><p>' + esc(T({ en:'2-year yield minus the Fed rate' + (F.fed ? '; Taylor rule ' + pc(F.fed.taylor, 2) : '') + '.', th:'บอนด์ 2 ปีลบดอกเบี้ยเฟด' + (F.fed ? ' · กฎเทย์เลอร์ ' + pc(F.fed.taylor, 2) : '') })) + '</p></div>' +
+      '</div><div class="bz-flowline">' + E.scen.map(function(s){ return '<span class="bz-sc-' + s.k + '" style="flex:' + Math.max(4, s.p) + '"><b>' + esc(T(s.name)) + '</b> ' + s.p + '%</span>'; }).join('') + '</div>' +
+      '<p class="bz-note">' + esc(T({ en:'The four readings are combined into a score for each path and turned into odds that add up to 100%. They update automatically whenever the data does.', th:'นำค่าทั้ง 4 ด้านมารวมเป็นคะแนนของแต่ละเส้นทาง แล้วแปลงเป็นโอกาสที่รวมกันได้ 100% อัปเดตเองทุกครั้งที่ข้อมูลเปลี่ยน' })) + '</p></div>';
+    return h;
+  }
+
+  function vCal(){
+    var ev = (D.econ && D.econ.economicCalendar) || [], now = Date.now() - 6 * 3600e3;
+    var ts = function(e){ return Date.parse(e.time.replace(' ', 'T') + 'Z'); };
+    var show = ev.filter(function(e){ return e.impact === 'high' || e.impact === 'medium'; }).sort(function(a, b){ return ts(a) - ts(b); });
+    var days = {}, order = [];
+    show.forEach(function(e){ var d = new Date(ts(e) + 7 * 3600e3).toISOString().slice(0, 10); if(!days[d]){ days[d] = []; order.push(d); } days[d].push(e); });
+    var todayK = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
+    var whyOf = function(e){ for(var i = 0; i < EVT.length; i++){ if(EVT[i][0].test(e.event)) return T(EVT[i][1]); } return ''; };
+    var upcoming = show.filter(function(e){ return ts(e) >= now; }).length;
+    var h = !show.length ? '' : '<div class="bz-callout ' + (upcoming ? 'good' : 'mid') + '">' + ico('cal') + '<div><b>' + esc(T(upcoming ? { en:upcoming + ' important releases still to come', th:'ยังมีตัวเลขสำคัญรอประกาศอีก ' + upcoming + ' รายการ' } : { en:'This week\'s releases are done', th:'ตัวเลขของสัปดาห์นี้ประกาศครบแล้ว' })) + '</b><p>' + esc(T(upcoming ? { en:'Times are Thailand time. Red edge = market-moving.', th:'เวลาเป็นเวลาไทย ขอบแดง = ตัวเลขที่ขยับตลาดแรง' } : { en:'Next week\'s calendar is usually published over the weekend and appears here automatically. Below is the week that just ended.', th:'ปฏิทินสัปดาห์หน้ามักออกช่วงเสาร์–อาทิตย์ และจะขึ้นที่นี่เองอัตโนมัติ ด้านล่างคือสัปดาห์ที่เพิ่งผ่านไป' })) + '</p></div></div>';
+    h += '<div class="bz-calg">' + (order.length ? order.map(function(d){
+      var past = d < todayK, dd = new Date(tms(d));
+      return '<div class="bz-day' + (past ? ' past' : '') + (d === todayK ? ' today' : '') + '"><div class="bz-dh"><b>' + dd.toLocaleDateString(L() === 'th' ? 'th-TH' : 'en-GB', { weekday:'long', timeZone:'UTC' }) + '</b><span>' + dd.toLocaleDateString(L() === 'th' ? 'th-TH' : 'en-GB', { day:'numeric', month:'short', timeZone:'UTC' }) + '</span>' + (d === todayK ? '<i>' + esc(T({ en:'today', th:'วันนี้' })) + '</i>' : past ? '<i class="p">' + esc(T({ en:'done', th:'ผ่านแล้ว' })) + '</i>' : '') + '</div>' +
+        (function(list){ var hi = list.filter(function(e){ return e.impact === 'high'; }), md = list.filter(function(e){ return e.impact !== 'high'; }), first = hi.concat(md).slice(0, Math.max(4, hi.length)), rest = hi.concat(md).slice(first.length); return first.concat(rest.length ? [{ __more:rest }] : []); })(days[d]).map(function(e){ if(e.__more) return '<details class="bz-more"><summary>+' + e.__more.length + ' ' + esc(T({ en:'more (medium impact)', th:'รายการ (สำคัญปานกลาง)' })) + '</summary>' + e.__more.map(function(x){ return '<div class="bz-ev ' + x.impact + '"><time>' + new Date(ts(x)).toLocaleTimeString(L() === 'th' ? 'th-TH' : 'en-GB', { hour:'2-digit', minute:'2-digit', timeZone:'Asia/Bangkok' }) + '</time><span class="ct">' + esc(x.country) + '</span><div><b>' + esc(x.event) + '</b><small>' + (x.estimate != null ? esc(T({ en:'exp ', th:'คาด ' })) + x.estimate + (x.unit || '') : '') + (x.prev != null ? ' · ' + esc(T({ en:'prev ', th:'ครั้งก่อน ' })) + x.prev + (x.unit || '') : '') + '</small></div></div>'; }).join('') + '</details>'; var w = whyOf(e); return '<div class="bz-ev ' + e.impact + '"><time>' + new Date(ts(e)).toLocaleTimeString(L() === 'th' ? 'th-TH' : 'en-GB', { hour:'2-digit', minute:'2-digit', timeZone:'Asia/Bangkok' }) + '</time><span class="ct">' + esc(e.country) + '</span><div><b>' + esc(e.event) + '</b>' + (w ? '<em>' + esc(w) + '</em>' : '') + '<small>' + (e.estimate != null ? esc(T({ en:'exp ', th:'คาด ' })) + e.estimate + (e.unit || '') : '') + (e.prev != null ? ' · ' + esc(T({ en:'prev ', th:'ครั้งก่อน ' })) + e.prev + (e.unit || '') : '') + (e.actual != null ? ' · <strong>' + esc(T({ en:'actual ', th:'ออกจริง ' })) + e.actual + (e.unit || '') + '</strong>' : '') + '</small></div></div>'; }).join('') + '</div>';
+    }).join('') : note({ en:'No medium/high-impact releases in the calendar file right now. It refreshes twice a day.', th:'ตอนนี้ยังไม่มีตัวเลขสำคัญในปฏิทิน ไฟล์ปฏิทินอัปเดตวันละ 2 ครั้ง' })) + '</div>';
+    var E = E_last, w = [];
+    E.scen.forEach(function(s){ s.trig.forEach(function(t){ if(isNum(t.cur)){ var dist = t.dir > 0 ? (t.thr - t.cur) / Math.abs(t.thr) : (t.cur - t.thr) / Math.abs(t.thr); w.push({ s:s, t:t, dist:dist }); } }); });
+    w.sort(function(a, b){ return a.dist - b.dist; });
+    h += '<h3 class="bz-h3">' + ico('radar') + esc(T({ en:'Our own tripwires — closest first', th:'เส้นเตือนของเรา — เรียงจากที่ใกล้จะถึงที่สุด' })) + '</h3><div class="bz-wires">' + w.slice(0, 8).map(function(x){
+      var hit = x.dist <= 0, p = clamp(100 - x.dist * 100, 0, 100);
+      return '<div class="' + (hit ? 'on' : '') + '"><span>' + esc(T(x.s.name)) + '</span><b>' + esc(T(x.t.n)) + ' ' + f(x.t.thr, x.t.d) + x.t.unit + '</b><i><u style="width:' + p.toFixed(0) + '%"></u></i><em>' + esc(T({ en:'now', th:'ตอนนี้' })) + ' ' + f(x.t.cur, x.t.d) + x.t.unit + ' · ' + (hit ? esc(T({ en:'reached', th:'ถึงแล้ว' })) : esc(T({ en:'distance ', th:'ห่าง ' })) + f(x.dist * 100, 0) + '%') + '</em></div>';
+    }).join('') + '</div>';
+    return h;
+  }
+
+  /* ================================================== GUIDE + PRINT (2026-10-25 c) */
+  var GUIDE = [
+    ['sum', 'layers', { en:'Summary', th:'สรุปทุกอย่าง' }, { en:'The whole picture on one screen: now, ahead and how to position.', th:'ภาพรวมทั้งหมดในหน้าเดียว: ตอนนี้ ข้างหน้า และควรจัดพอร์ตอย่างไร' },
+      [{ en:'Read the three lines in the gradient box first: Now → Ahead → Positioning.', th:'อ่าน 3 บรรทัดในกล่องขอบไล่สีก่อน: ตอนนี้ → ข้างหน้า → การจัดพอร์ต' }, { en:'Forecast cards: left number = now, coloured number = 6 months ahead; the shaded fan is the likely range.', th:'การ์ดคาดการณ์: เลขซ้าย = ตอนนี้ เลขสี = อีก 6 เดือน แถบจางคือช่วงที่น่าจะเป็น' }, { en:'In the big table, the dot colour in the last column tells you if it is good (green) or bad (red) for stocks. Click a row to open its details.', th:'ในตารางใหญ่ จุดสีในคอลัมน์สุดท้ายบอกว่าดี (เขียว) หรือไม่ดี (แดง) ต่อหุ้น กดที่แถวเพื่อดูรายละเอียด' }]],
+    ['fc', 'radar', { en:'Forecast', th:'พยากรณ์ล่วงหน้า' }, { en:'Where each key number is heading over 3, 6 and 12 months, and why.', th:'ตัวเลขสำคัญแต่ละตัวกำลังจะไปทางไหนใน 3, 6 และ 12 เดือน และเพราะอะไร' },
+      [{ en:'Solid line = history. Dashed line in the purple zone = forecast. Darker band = 68% likely, lighter = 95%.', th:'เส้นทึบ = ข้อมูลจริง เส้นประในโซนม่วง = คาดการณ์ แถบเข้ม = โอกาส 68% แถบจาง = 95%' }, { en:'Bullets under each chart say exactly what the forecast is built from.', th:'ข้อความใต้กราฟบอกชัดเจนว่าคาดการณ์มาจากอะไร' }, { en:'Leading index above 50 = economy should keep expanding; below 50 = slowing.', th:'ดัชนีชี้นำเกิน 50 = เศรษฐกิจน่าจะยังขยายตัว ต่ำกว่า 50 = กำลังชะลอ' }]],
+    ['over', 'brain', { en:'Market today', th:'ภาพรวมวันนี้' }, { en:'The weather gauge, investment clock and nine drivers of the market.', th:'เกจสภาพอากาศตลาด นาฬิกาการลงทุน และ 9 เรื่องที่ขับเคลื่อนตลาด' },
+      [{ en:'Gauge 0–100: above 55 the backdrop helps stocks, below 45 it hurts.', th:'เกจ 0–100: เกิน 55 สภาวะช่วยหุ้น ต่ำกว่า 45 กดดันหุ้น' }, { en:'The white dot on the clock shows the economic phase and which assets usually lead.', th:'จุดขาวบนนาฬิกาบอกช่วงเศรษฐกิจ และสินทรัพย์ที่มักนำในช่วงนั้น' }, { en:'“What changed” tiles: bigger bar = a bigger-than-usual move.', th:'ช่อง “อะไรเปลี่ยนไป”: แถบยิ่งยาว = ขยับแรงกว่าปกติมาก' }]],
+    ['infl', 'flame', { en:'Inflation & rates', th:'เงินเฟ้อ & ดอกเบี้ย' }, { en:'Prices, the Fed and bond yields.', th:'ราคาสินค้า เฟด และบอนด์ยีลด์' },
+      [{ en:'Inflation inside the green band (≈2%) = the Fed is relaxed.', th:'เงินเฟ้ออยู่ในแถบเขียว (≈2%) = เฟดสบายใจ' }, { en:'2-year yield far above the Fed rate = hikes being priced.', th:'บอนด์ 2 ปีสูงกว่าดอกเบี้ยเฟดมาก = ตลาดคาดว่าจะขึ้นดอกเบี้ย' }, { en:'Real yield above 2% = expensive money, tough for growth stocks.', th:'ยีลด์จริงเกิน 2% = เงินแพง ยากสำหรับหุ้นเติบโต' }]],
+    ['growth', 'factory', { en:'Economy & jobs', th:'เศรษฐกิจ & การจ้างงาน' }, { en:'Jobs, spending and the recession checklist.', th:'การจ้างงาน การใช้จ่าย และเช็กลิสต์ถดถอย' },
+      [{ en:'Red tiles in the checklist are warning lights; 6+ lit is serious.', th:'ช่องแดงในเช็กลิสต์คือไฟเตือน ถ้าติด 6 ดวงขึ้นไปถือว่าน่าห่วง' }, { en:'Sahm line crossing 0.5 has marked every US recession since 1970.', th:'เส้น Sahm ทะลุ 0.5 เกิดขึ้นทุกครั้งที่สหรัฐฯ ถดถอยตั้งแต่ปี 1970' }, { en:'Grey columns on charts are official recessions.', th:'แถบเทาในกราฟคือช่วงถดถอยอย่างเป็นทางการ' }]],
+    ['fx', 'coin', { en:'Currencies & commodities', th:'ค่าเงิน & สินค้าโภคภัณฑ์' }, { en:'Dollar, baht, oil, gold and every asset class.', th:'ดอลลาร์ เงินบาท น้ำมัน ทอง และสินทรัพย์ทุกประเภท' },
+      [{ en:'Green tiles = currency strengthened vs the dollar.', th:'ช่องเขียว = ค่าเงินแข็งขึ้นเทียบดอลลาร์' }, { en:'“What it means for Thailand” translates moves into local impact.', th:'กล่อง “แปลว่าอะไรสำหรับไทย” แปลการเคลื่อนไหวเป็นผลต่อไทย' }, { en:'In the asset table, scan the 3M column for leaders.', th:'ในตารางสินทรัพย์ ดูคอลัมน์ 3M เพื่อหาตัวนำ' }]],
+    ['rot', 'compass', { en:'Rotation & ideas', th:'เงินไหลไปไหน & ไอเดีย' }, { en:'Which sectors and countries money is moving into, plus stock ideas.', th:'เงินกำลังไหลเข้ากลุ่มหุ้นและประเทศไหน พร้อมไอเดียหุ้น' },
+      [{ en:'Top-right of the map = leading; bottom-right = just starting to improve (often the best entries).', th:'มุมขวาบนของแผนที่ = นำตลาด มุมขวาล่าง = เพิ่งเริ่มฟื้น (มักเป็นจุดเข้าที่ดี)' }, { en:'Pairs: lower correlation = better protection when held together.', th:'คู่สินทรัพย์: ความสัมพันธ์ยิ่งต่ำ ยิ่งช่วยกันกันความเสี่ยงได้ดี' }, { en:'Stock baskets use quality, price, trend and phase fit — open one as a portfolio to test it.', th:'ตะกร้าหุ้นคัดจากคุณภาพ ราคา แนวโน้ม และความเข้ากับช่วงเศรษฐกิจ กดเปิดเป็นพอร์ตเพื่อทดสอบได้' }]],
+    ['out', 'radar', { en:'Outlook 1–3 months', th:'แนวโน้ม 1–3 เดือน' }, { en:'Three scenarios with odds and tripwires.', th:'3 สถานการณ์พร้อมโอกาสและเส้นเตือน' },
+      [{ en:'The card with the glowing border is the most likely path.', th:'การ์ดที่มีขอบเรืองแสงคือเส้นทางที่น่าจะเกิดมากที่สุด' }, { en:'Tripwire bars fill up as the number approaches its trigger.', th:'แถบเส้นเตือนจะเต็มขึ้นเรื่อยๆ เมื่อตัวเลขเข้าใกล้จุดเตือน' }, { en:'If tripwires of a less likely scenario start lighting up, the odds will shift.', th:'ถ้าเส้นเตือนของสถานการณ์ที่โอกาสน้อยเริ่มติด โอกาสจะเปลี่ยนตาม' }]],
+    ['pf', 'pie', { en:'My portfolio', th:'พอร์ตของฉัน' }, { en:'Health check, risk, stress tests, re-balancing and report cards.', th:'ตรวจสุขภาพพอร์ต ความเสี่ยง ทดสอบวิกฤต ปรับสัดส่วน และสมุดพก' },
+      [{ en:'Signed in with LINE/Telegram = your account\'s tickers; otherwise pick a model or your simulation.', th:'ล็อกอิน LINE/Telegram = ใช้หุ้นในบัญชี ถ้าไม่ล็อกอินเลือกพอร์ตตัวอย่างหรือพอร์ตจำลอง' }, { en:'Health above 70 = well built; fix the red items first.', th:'สุขภาพเกิน 70 = จัดพอร์ตดี แก้ข้อสีแดงก่อน' }, { en:'“Use these weights” applies the suggested re-balance in one click.', th:'ปุ่ม “ใช้สัดส่วนนี้” ปรับตามคำแนะนำได้ในคลิกเดียว' }]],
+    ['cal', 'cal', { en:'This week', th:'จับตาสัปดาห์นี้' }, { en:'Economic releases by day (Thai time) and our tripwires.', th:'ตัวเลขเศรษฐกิจรายวัน (เวลาไทย) และเส้นเตือนของเรา' },
+      [{ en:'Red edge = high impact, amber = medium.', th:'ขอบแดง = สำคัญมาก ขอบเหลือง = สำคัญปานกลาง' }, { en:'Compare “actual” with “expected” when it comes out: a big miss moves markets.', th:'เทียบ “ออกจริง” กับ “คาด” ถ้าต่างกันมาก ตลาดจะขยับแรง' }, { en:'Tripwires closest to 100% are the ones to watch this week.', th:'เส้นเตือนที่ใกล้ 100% คือสิ่งที่ต้องจับตาสัปดาห์นี้' }]]
+  ];
+  var GLOSS = [
+    ['Core PCE', { en:'Inflation without food and energy — the Fed\'s favourite gauge.', th:'เงินเฟ้อที่ไม่รวมอาหารและพลังงาน เป็นตัวที่เฟดชอบใช้ที่สุด' }],
+    ['Fed funds', { en:'The overnight interest rate the US central bank controls.', th:'ดอกเบี้ยข้ามคืนที่ธนาคารกลางสหรัฐฯ ควบคุม' }],
+    ['Yield', { en:'The interest a bond pays per year at today\'s price.', th:'ผลตอบแทนต่อปีของพันธบัตร ณ ราคาวันนี้' }],
+    ['Yield curve', { en:'Long-term minus short-term yields. Negative (inverted) = warning.', th:'ยีลด์ระยะยาวลบระยะสั้น ถ้าติดลบ (กลับหัว) = สัญญาณเตือน' }],
+    ['Real yield', { en:'Bond yield after inflation.', th:'ผลตอบแทนพันธบัตรหลังหักเงินเฟ้อ' }],
+    ['Taylor rule', { en:'A formula for where the policy rate “should” be given inflation and jobs.', th:'สูตรคำนวณว่าดอกเบี้ยนโยบาย “ควร” อยู่ที่เท่าไหร่ จากเงินเฟ้อและการจ้างงาน' }],
+    ['Sahm rule', { en:'Rise in unemployment vs its 12-month low. ≥0.5 = recession has started.', th:'อัตราว่างงานที่เพิ่มขึ้นจากจุดต่ำสุด 12 เดือน ≥0.5 = เข้าสู่ภาวะถดถอยแล้ว' }],
+    ['GDPNow', { en:'The Atlanta Fed\'s live estimate of this quarter\'s growth.', th:'ประมาณการเศรษฐกิจไตรมาสนี้แบบสดของเฟดแอตแลนตา' }],
+    ['VIX', { en:'Expected S&P 500 swings from options. Above 25 = fear.', th:'ความผันผวนที่ตลาดออปชันคาดไว้สำหรับ S&P 500 เกิน 25 = ตลาดกลัว' }],
+    ['CAPE', { en:'Price ÷ 10-year average earnings. Long-run average ≈ 17.', th:'ราคา ÷ กำไรเฉลี่ย 10 ปี ค่าเฉลี่ยระยะยาวประมาณ 17' }],
+    ['Credit spread', { en:'Extra yield junk bonds pay over Treasuries. Widening = stress.', th:'ดอกเบี้ยส่วนเพิ่มของหุ้นกู้เสี่ยงสูงเทียบพันธบัตรรัฐ ถ้ากว้างขึ้น = ตลาดเครียด' }],
+    ['Correlation', { en:'−1 move opposite, 0 unrelated, +1 move together.', th:'−1 สวนทาง · 0 ไม่เกี่ยวกัน · +1 ไปทางเดียวกัน' }],
+    ['Beta', { en:'How much a holding moves when the market moves 1%.', th:'หุ้นตัวนั้นขยับเท่าไหร่เมื่อตลาดขยับ 1%' }],
+    ['Volatility', { en:'Typical yearly swing, in %.', th:'การแกว่งตัวปกติต่อปี เป็น %' }],
+    ['Breakeven', { en:'Inflation the bond market expects (nominal minus real yield).', th:'เงินเฟ้อที่ตลาดบอนด์คาด (ยีลด์ปกติลบยีลด์จริง)' }],
+    ['DXY', { en:'The US dollar against six major currencies.', th:'ค่าเงินดอลลาร์เทียบ 6 สกุลหลัก' }]
+  ];
+  function vGuide(){
+    var h = '<div class="bz-gintro"><div>' + ico('compass', 'bz-gi') + '</div><div><h3>' + esc(T({ en:'How to use the Market Brain', th:'วิธีใช้สมองตลาด' })) + '</h3><p>' + esc(T({ en:'A 5-minute routine: 1) Summary — read the three lines. 2) Forecast — check the fans for anything turning. 3) This week — note what is released. 4) Rotation — see where money is moving. 5) My portfolio — fix the red items.', th:'ทำ 5 นาทีต่อวัน: 1) สรุปทุกอย่าง อ่าน 3 บรรทัด 2) พยากรณ์ล่วงหน้า ดูว่ามีอะไรกำลังเปลี่ยนทิศ 3) จับตาสัปดาห์นี้ ดูตัวเลขที่จะประกาศ 4) เงินไหลไปไหน ดูว่าเงินกำลังย้ายไปทางไหน 5) พอร์ตของฉัน แก้ข้อสีแดง' })) + '</p></div></div>';
+    h += '<div class="bz-steps">' + [1, 2, 3, 4, 5].map(function(n, i){ var g = GUIDE[[0, 1, 9, 6, 8][i]]; return '<button type="button" data-go="' + g[0] + '"><span>' + n + '</span>' + ico(g[1]) + '<b>' + esc(T(g[2])) + '</b></button>'; }).join('') + '</div>';
+    h += '<div class="bz-gcards">' + GUIDE.map(function(g){
+      return '<div class="bz-gc"><div class="bz-gch">' + ico(g[1]) + '<b>' + esc(T(g[2])) + '</b><button type="button" class="bz-btn sm ghost" data-go="' + g[0] + '">' + esc(T({ en:'Open', th:'เปิด' })) + ' →</button></div><p>' + esc(T(g[3])) + '</p><ul>' + g[4].map(function(x){ return '<li>' + esc(T(x)) + '</li>'; }).join('') + '</ul></div>';
+    }).join('') + '</div>';
+    h += '<h3 class="bz-h3">' + ico('book') + esc(T({ en:'Words used on this page', th:'คำศัพท์ที่ใช้ในหน้านี้' })) + '</h3><div class="bz-gloss">' + GLOSS.map(function(g){ return '<div><b>' + esc(g[0]) + '</b><span>' + esc(T(g[1])) + '</span></div>'; }).join('') + '</div>';
+    h += '<div class="bz-callout mid">' + ico('star') + '<div><b>' + esc(T({ en:'Colours everywhere', th:'ความหมายของสีทั้งหน้า' })) + '</b><p>' + esc(T({ en:'Green = good for stocks · Amber = neutral / watch · Red = bad for stocks · Purple = forecast.', th:'เขียว = ดีต่อหุ้น · เหลือง = กลางๆ / จับตา · แดง = ไม่ดีต่อหุ้น · ม่วง = ค่าคาดการณ์' })) + '</p></div></div>';
+    return h;
+  }
+
+  /* ---------------------------------------------------------------- print */
+  var PR = { type:'brief', secs:{}, orient:'portrait', theme:'light', cover:true };
+  var PR_TYPES = [
+    ['brief', 'layers', { en:'Executive brief', th:'สรุปผู้บริหาร' }, { en:'Cover + summary: now, ahead, table, forecasts. ~3 pages.', th:'ปก + สรุป: ตอนนี้ ข้างหน้า ตาราง และคาดการณ์ ราว 3 หน้า' }, ['sum']],
+    ['weekly', 'cal', { en:'Weekly report', th:'รายงานประจำสัปดาห์' }, { en:'Summary, market today and this week\'s calendar.', th:'สรุป ภาพรวมวันนี้ และปฏิทินสัปดาห์นี้' }, ['sum', 'over', 'cal']],
+    ['forecast', 'radar', { en:'Forecast report', th:'รายงานพยากรณ์' }, { en:'All forecast charts with methods + the three scenarios.', th:'กราฟคาดการณ์ทั้งหมดพร้อมวิธีคิด + 3 สถานการณ์' }, ['fc', 'out']],
+    ['economy', 'factory', { en:'Economy report', th:'รายงานเศรษฐกิจ' }, { en:'Inflation & rates, jobs & growth, currencies & commodities.', th:'เงินเฟ้อและดอกเบี้ย การจ้างงานและเศรษฐกิจ ค่าเงินและสินค้าโภคภัณฑ์' }, ['infl', 'growth', 'fx']],
+    ['portfolio', 'pie', { en:'Portfolio report', th:'รายงานพอร์ต' }, { en:'The portfolio currently selected on “My portfolio”.', th:'พอร์ตที่เลือกอยู่ในหน้า “พอร์ตของฉัน”' }, ['pf', 'rot']],
+    ['full', 'book', { en:'Full report', th:'ฉบับเต็มทุกอย่าง' }, { en:'Every tab of the Market Brain in one document.', th:'ทุกแท็บของสมองตลาดในเอกสารเดียว' }, ['sum', 'fc', 'over', 'infl', 'growth', 'fx', 'rot', 'out', 'pf', 'cal']],
+    ['custom', 'check', { en:'Choose myself', th:'เลือกเอง' }, { en:'Tick exactly the sections you want.', th:'ติ๊กเลือกเฉพาะส่วนที่ต้องการ' }, null]
+  ];
+  var PR_SECS = ['sum', 'fc', 'over', 'infl', 'growth', 'fx', 'rot', 'out', 'pf', 'cal'];
+  function prTitle(k){ for(var i = 0; i < TABS.length; i++) if(TABS[i][0] === k) return TABS[i][1]; return { en:k, th:k }; }
+  function prList(){ if(PR.type === 'custom') return PR_SECS.filter(function(k){ return PR.secs[k]; }); for(var i = 0; i < PR_TYPES.length; i++) if(PR_TYPES[i][0] === PR.type) return PR_TYPES[i][4]; return ['sum']; }
+  function vPrint(){
+    var h = '<div class="bz-row bz-prw"><div class="bz-sec s4"><h4><span class="bz-pn">1</span>' + esc(T({ en:'Choose a document', th:'เลือกเอกสาร' })) + '</h4><div class="bz-prt">' + PR_TYPES.map(function(p){
+      return '<label class="' + (PR.type === p[0] ? 'on' : '') + '"><input type="radio" name="bzPrT" value="' + p[0] + '"' + (PR.type === p[0] ? ' checked' : '') + '>' + ico(p[1]) + '<span><b>' + esc(T(p[2])) + '</b><em>' + esc(T(p[3])) + '</em></span></label>';
+    }).join('') + '</div></div>';
+    var list = prList();
+    h += '<div class="bz-sec s3"><h4><span class="bz-pn">2</span>' + esc(T({ en:'Options', th:'ตั้งค่า' })) + '</h4>' +
+      '<h6 class="bz-prh">' + esc(T({ en:'Sections', th:'ส่วนที่จะพิมพ์' })) + '</h6><div class="bz-prs">' + PR_SECS.map(function(k){ var on = list.indexOf(k) >= 0; return '<label class="' + (on ? 'on' : '') + '"><input type="checkbox" data-prs="' + k + '"' + (on ? ' checked' : '') + '><span>' + esc(T(prTitle(k))) + '</span></label>'; }).join('') + '</div>' +
+      '<h6 class="bz-prh">' + esc(T({ en:'Paper', th:'แนวกระดาษ' })) + '</h6><div class="bz-pro">' + [['portrait', { en:'Portrait A4', th:'แนวตั้ง A4' }], ['landscape', { en:'Landscape A4', th:'แนวนอน A4' }]].map(function(o){ return '<button type="button" data-pro="' + o[0] + '" class="' + (PR.orient === o[0] ? 'on' : '') + '"><span class="paper ' + o[0][0] + '"><i></i><i></i><i></i></span>' + esc(T(o[1])) + '</button>'; }).join('') + '</div>' +
+      '<h6 class="bz-prh">' + esc(T({ en:'Colours', th:'โทนสี' })) + '</h6><div class="bz-pro">' + [['light', { en:'Light (saves ink)', th:'สว่าง (ประหยัดหมึก)' }], ['dark', { en:'Dark (like the site)', th:'มืด (เหมือนเว็บ)' }]].map(function(o){ return '<button type="button" data-prth="' + o[0] + '" class="' + (PR.theme === o[0] ? 'on' : '') + '"><span class="sw ' + o[0] + '"></span>' + esc(T(o[1])) + '</button>'; }).join('') + '</div>' +
+      '<label class="bz-tg"><input type="checkbox" data-prcover' + (PR.cover ? ' checked' : '') + '><span>' + esc(T({ en:'Cover page with key numbers', th:'มีหน้าปกพร้อมตัวเลขสำคัญ' })) + '</span></label>' +
+      '<div class="bz-prgo"><button type="button" class="bz-btn" data-prprint>' + ico('printer') + esc(T({ en:'Print / Save as PDF', th:'พิมพ์ / บันทึกเป็น PDF' })) + '</button><button type="button" class="bz-btn ghost" data-prpdf>' + ico('book') + esc(T({ en:'Download PDF file', th:'ดาวน์โหลดไฟล์ PDF' })) + '</button><p class="bz-note" data-prmsg>' + esc(T({ en:'In the print window choose “Save as PDF” for the sharpest file.', th:'ในหน้าต่างพิมพ์ เลือก “บันทึกเป็น PDF” จะได้ไฟล์คมชัดที่สุด' })) + '</p></div></div>';
+    h += '<div class="bz-sec s5 bz-prv"><h4>' + ico('eye') + esc(T({ en:'Preview', th:'ตัวอย่างเอกสาร' })) + '<span class="bz-fq">' + list.length + ' ' + esc(T({ en:'sections', th:'ส่วน' })) + (PR.cover ? ' + ' + esc(T({ en:'cover', th:'ปก' })) : '') + '</span></h4><div class="bz-paperbox ' + PR.orient + '"><iframe title="preview" data-prframe></iframe><div class="bz-prload">' + esc(T({ en:'Building the document…', th:'กำลังสร้างเอกสาร…' })) + '</div></div></div></div>';
+    setTimeout(buildPreview, 30);
+    return h;
+  }
+  function coverHTML(E, F){
+    var now = new Date(), ds = now.toLocaleDateString(L() === 'th' ? 'th-TH' : 'en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    var ph = PHASES[E.phase], it = F.items, k = function(lbl, v){ return '<div><span>' + esc(T(lbl)) + '</span><b>' + v + '</b></div>'; };
+    var c6 = fcAt(it.core, 6), f12 = fcAt(it.ff, 12), y6 = fcAt(it.y10, 6);
+    return '<section class="pg cover"><div class="cv-band"></div><div class="cv-top"><span>SPACEZ TERMINAL</span><span>' + esc(ds) + '</span></div>' +
+      '<div class="cv-main"><div class="cv-eb">' + esc(T({ en:'MARKET BRAIN REPORT', th:'รายงานสมองตลาด' })) + '</div><h1>' + esc(T({ en:'Economy, markets & outlook', th:'เศรษฐกิจ ตลาด และแนวโน้ม' })) + '</h1>' +
+      '<div class="cv-score"><div class="cv-g">' + gauge(E.score, T(E.weather.w)) + '</div><div><b>' + esc(T(ph.name)) + '</b><p>' + esc(T(E.head)) + '</p></div></div>' +
+      '<div class="cv-k">' + k({ en:'Core inflation', th:'เงินเฟ้อพื้นฐาน' }, pc(E.infl.v, 2) + ' → ' + pc(c6 && c6.v, 2)) + k({ en:'Fed rate', th:'ดอกเบี้ยเฟด' }, pc(E.fed.ff, 2) + ' → ' + pc(f12 && f12.v, 2)) + k({ en:'10y yield', th:'บอนด์ 10 ปี' }, pc(E.fed.y10, 2) + ' → ' + pc(y6 && y6.v, 2)) + k({ en:'Unemployment', th:'ว่างงาน' }, pc(E.growth.un, 1)) +
+        k({ en:'GDP next quarter', th:'GDP ไตรมาสหน้า' }, pc(F.gdp.q1, 1)) + k({ en:'Recession odds 12m', th:'โอกาสถดถอย 12 เดือน' }, f(F.rec && F.rec.p, 0) + '%') + k({ en:'S&P 500 6m', th:'S&P 500 อีก 6 เดือน' }, f(fcAt(it.spx, 6) && fcAt(it.spx, 6).v, 0)) + k({ en:'Oil 6m', th:'น้ำมันอีก 6 เดือน' }, '$' + f(fcAt(it.oil, 6) && fcAt(it.oil, 6).v, 0)) + '</div>' +
+      '<div class="cv-toc"><h6>' + esc(T({ en:'Contents', th:'สารบัญ' })) + '</h6><ol>' + prList().map(function(s){ return '<li>' + esc(T(prTitle(s))) + '</li>'; }).join('') + '</ol></div></div>' +
+      '<div class="cv-foot">' + esc(T({ en:'Generated by SPACEZ TERMINAL · Market Brain · data: FRED, Yahoo Finance, Shiller, FINRA, Cboe', th:'สร้างโดย SPACEZ TERMINAL · สมองตลาด · ข้อมูล: FRED, Yahoo Finance, Shiller, FINRA, Cboe' })) + '</div></section>';
+  }
+  function renderTab(k){
+    var E = E_last, F = F_last;
+    return k === 'sum' ? vSum(E, F) : k === 'fc' ? vFc(E, F) : k === 'over' ? vOver(E) : k === 'infl' ? vInfl(E) : k === 'growth' ? vGrowth(E) : k === 'fx' ? vFx(E) : k === 'rot' ? vRot(E) : k === 'out' ? vOut(E) : k === 'pf' ? vPf() : k === 'cal' ? vCal() : '';
+  }
+  function docHTML(){
+    var list = prList(), ds = new Date().toLocaleDateString(L() === 'th' ? 'th-TH' : 'en-GB', { day:'numeric', month:'short', year:'numeric' });
+    var css = new URL('assets/css/min/part-83.css', location.href).href;
+    var fonts = Array.prototype.map.call(document.querySelectorAll('link[href*="fonts.googleapis"],link[href*="fonts.gstatic"]'), function(l){ return l.outerHTML; }).join('');
+    var body = (PR.cover ? coverHTML(E_last, F_last) : '') + list.map(function(k, i){
+      var html = ''; try { html = renderTab(k); } catch(e){ html = '<p>' + esc(String(e && e.message || e)) + '</p>'; }
+      return '<section class="pg"><header class="ph"><span><b>SPACEZ TERMINAL</b> · ' + esc(T({ en:'Market Brain', th:'สมองตลาด' })) + '</span><span>' + esc(T(prTitle(k))) + '</span><span>' + esc(ds) + '</span></header><h2 class="pt"><i>' + (i + 1) + '</i>' + esc(T(prTitle(k))) + '</h2><div class="bz-view">' + html + '</div></section>';
+    }).join('');
+    var dark = PR.theme === 'dark';
+    return '<!doctype html><html lang="' + L() + '" data-theme="' + (dark ? 'dark' : 'light') + '"><head><meta charset="utf-8"><title>SPACEZ_MarketBrain_' + new Date().toISOString().slice(0, 10) + '</title>' + fonts + '<link rel="stylesheet" href="' + css + '"><style>' +
+      ':root{--sans:"Inter","Noto Sans Thai",sans-serif;--mono:"IBM Plex Mono","Noto Sans Thai",monospace;' + (dark ? '--bg:#0a0d14;--white:#f4f6f1;--grey:#9aa3b2;--border-dim:rgba(255,255,255,.12);' : '--bg:#ffffff;--white:#1f2547;--grey:#5a628c;--border-dim:#e2e6fb;') + '}' +
+      '@page{size:A4 ' + PR.orient + ';margin:10mm;}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box;}' +
+      'html,body{margin:0;background:' + (dark ? '#05070c' : '#e9ecf8') + ';font-family:var(--sans);color:var(--white);}' +
+      '.doc{width:' + (PR.orient === 'landscape' ? '1080px' : '760px') + ';margin:0 auto;padding:18px 0;}' +
+      '.pg{background:var(--bg);padding:26px 26px 30px;margin:0 0 18px;border-radius:6px;box-shadow:0 6px 24px rgba(0,0,0,.15);page-break-after:always;break-after:page;position:relative;}' +
+      '.pg:last-child{page-break-after:auto;break-after:auto;}' +
+      '.ph{display:flex;justify-content:space-between;gap:10px;font-size:10px;color:var(--grey);border-bottom:2px solid transparent;border-image:linear-gradient(90deg,#22d3ee,#a78bfa,#f472b6) 1;padding-bottom:6px;margin-bottom:14px;font-family:var(--mono);}' +
+      '.pt{display:flex;align-items:center;gap:10px;font-size:22px;margin:0 0 14px;}.pt i{font-style:normal;display:inline-flex;width:32px;height:32px;border-radius:10px;align-items:center;justify-content:center;font-size:15px;color:#fff;background:linear-gradient(135deg,#22d3ee,#a78bfa);}' +
+      '.bz-wrap,.doc{--bz-good:' + (dark ? '#34d399' : '#059669') + ';--bz-mid:' + (dark ? '#fbbf24' : '#d97706') + ';--bz-bad:' + (dark ? '#fb7185' : '#e11d48') + ';--bz-card:' + (dark ? 'rgba(255,255,255,.04)' : '#f6f7ff') + ';--bz-card2:' + (dark ? 'rgba(255,255,255,.07)' : '#eef0fd') + ';--bz-line:' + (dark ? 'rgba(255,255,255,.1)' : '#e3e6f8') + ';--bz-bgc:var(--bg);--bz-ringbg:var(--bg);}' +
+      '.bz-view{animation:none!important;gap:12px;}.bz-sec,.bz-callout,.bz-kpi,.bz-pill,.bz-fcc,.bz-sc,.bz-card,.bz-hero,.bz-verdict,.bz-tile,.bz-day,.bz-gc{break-inside:avoid;page-break-inside:avoid;box-shadow:none!important;}' +
+      '.bz-sec{background:var(--bz-card)!important;padding:12px!important;}' +
+      '.bz-btn,.bz-modes,.bz-add,.bz-x,.bz-preset,.bz-tg,.bz-acct,.bz-hold input{display:none!important;}' +
+      '.bz-row{grid-template-columns:repeat(12,minmax(0,1fr))!important;gap:10px!important;}.bz-row>.s7,.bz-row>.s8{grid-column:span 7!important;}.bz-row>.s5,.bz-row>.s4{grid-column:span 5!important;}.bz-row>.s6{grid-column:span 6!important;}.bz-row>.s12{grid-column:span 12!important;}' +
+      '.bz-two{grid-template-columns:1fr 1fr!important;}.bz-fcgrid{grid-template-columns:repeat(4,minmax(0,1fr))!important;}.bz-dns{grid-template-columns:repeat(3,minmax(0,1fr))!important;}.bz-scen{grid-template-columns:1fr!important;}' +
+      '.bz-hero{grid-template-columns:200px 1fr!important;}.bz-clk{grid-column:1/-1;flex-direction:row!important;text-align:left!important;}.bz-pills{grid-template-columns:repeat(3,minmax(0,1fr))!important;}' +
+      '.bz-verdict{grid-template-columns:150px 1fr!important;}.bz-sum{min-width:0!important;font-size:11px!important;}.bz-tw{overflow:visible!important;}' +
+      '.cover{min-height:' + (PR.orient === 'landscape' ? '700px' : '1040px') + ';display:flex;flex-direction:column;overflow:hidden;padding:0!important;}' +
+      '.cv-band{height:14px;background:linear-gradient(90deg,#22d3ee,#a78bfa,#f472b6);}.cv-top{display:flex;justify-content:space-between;padding:22px 34px 0;font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--grey);}' +
+      '.cv-main{flex:1;padding:40px 34px 20px;display:flex;flex-direction:column;gap:22px;}.cv-eb{font-family:var(--mono);font-size:13px;letter-spacing:.2em;color:#0891b2;}' +
+      '.cover h1{margin:0;font-size:44px;line-height:1.15;background:linear-gradient(100deg,var(--white),#6366f1 60%,#db2777);-webkit-background-clip:text;background-clip:text;color:transparent;}' +
+      '.cv-score{display:grid;grid-template-columns:210px 1fr;gap:20px;align-items:center;padding:18px;border-radius:18px;background:var(--bz-card);}.cv-score b{font-size:16px;}.cv-score p{margin:6px 0 0;font-size:13px;line-height:1.75;color:var(--grey);}' +
+      '.cv-k{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}.cv-k div{padding:12px;border-radius:14px;background:var(--bz-card);border-left:3px solid #a78bfa;}.cv-k span{display:block;font-size:11px;color:var(--grey);}.cv-k b{font-family:var(--mono);font-size:15px;}' +
+      '.cv-toc h6{margin:0 0 6px;font-size:12px;letter-spacing:.1em;color:var(--grey);}.cv-toc ol{margin:0;padding-left:20px;columns:2;font-size:14px;line-height:2;}' +
+      '.cv-foot{padding:14px 34px;font-size:10.5px;color:var(--grey);border-top:1px solid var(--bz-line);}' +
+      '@media print{html,body{background:var(--bg);}.doc{width:auto;padding:0;}.pg{box-shadow:none;border-radius:0;margin:0;padding:0 0 6px;}.cover{min-height:' + (PR.orient === 'landscape' ? '185mm' : '275mm') + ';}}' +
+      '</style></head><body><div class="doc bz-wrap">' + body + '</div></body></html>';
+  }
+  var prTimer = null;
+  function buildPreview(){
+    if(!host) return;
+    var fr = host.querySelector('[data-prframe]'); if(!fr) return;
+    var box = fr.parentNode, ld = box.querySelector('.bz-prload'); ld.hidden = false;
+    var w = PR.orient === 'landscape' ? 1080 : 760;
+    fr.onload = function(){
+      try {
+        var d = fr.contentDocument, hgt = d.documentElement.scrollHeight; var s = box.clientWidth / (w + 40);
+        fr.style.width = (w + 40) + 'px'; fr.style.height = hgt + 'px'; fr.style.transform = 'scale(' + s + ')';
+        box.querySelector('.bz-pscale') ; box.style.height = Math.min(hgt * s, window.innerHeight * 0.78) + 'px';
+        box.dataset.h = hgt * s; ld.hidden = true;
+        setTimeout(function(){ try { var h2 = d.documentElement.scrollHeight; fr.style.height = h2 + 'px'; } catch(e){} }, 900);
+      } catch(e){ ld.hidden = true; }
+    };
+    fr.srcdoc = docHTML();
+  }
+  function prPrint(){ var fr = host && host.querySelector('[data-prframe]'); if(!fr || !fr.contentWindow) return; try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch(e){} }
+  function prPdf(btn){
+    var fr = host && host.querySelector('[data-prframe]'), msg = host.querySelector('[data-prmsg]'); if(!fr || !fr.contentDocument) return;
+    var d = fr.contentDocument, w = fr.contentWindow;
+    btn.disabled = true; if(msg) msg.textContent = T({ en:'Creating the PDF… this can take a few seconds.', th:'กำลังสร้างไฟล์ PDF… รอสักครู่' });
+    function go(){
+      var name = 'SPACEZ_MarketBrain_' + new Date().toISOString().slice(0, 10) + '.pdf';
+      var root = d.querySelector('.doc'); root.style.padding = '0'; root.classList.add('h2p');
+      /* html2canvas draws inline SVG as an image, so page CSS no longer reaches it: copy the computed look onto each node */
+      var PROPS = ['fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'stroke-linejoin', 'opacity', 'fill-opacity', 'stroke-opacity', 'font-size', 'font-family', 'font-weight', 'text-anchor', 'letter-spacing'];
+      d.querySelectorAll('svg').forEach(function(svg){
+        svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        var r = svg.getBoundingClientRect(); if(r.width && !svg.getAttribute('width')){ svg.setAttribute('width', r.width); svg.setAttribute('height', r.height); }
+        var cs0 = w.getComputedStyle(svg); if(!svg.getAttribute('color')) svg.setAttribute('color', cs0.color);
+        svg.querySelectorAll('*').forEach(function(n){ var cs = w.getComputedStyle(n), st = ''; PROPS.forEach(function(k){ var v = cs.getPropertyValue(k); if(v && v !== 'normal') st += k + ':' + v + ';'; }); n.setAttribute('style', st + (n.getAttribute('style') || '')); });
+      });
+      var hx = d.createElement('style'); hx.textContent = '.h2p .cover h1,.h2p .bz-vl b,.h2p .bz-fcv b.nx{background:none!important;-webkit-text-fill-color:currentColor!important;color:#4f46e5!important;}'; d.head.appendChild(hx);
+      d.querySelectorAll('.pg').forEach(function(p){ p.style.boxShadow = 'none'; p.style.margin = '0'; p.style.borderRadius = '0'; });
+      w.html2pdf().set({ margin:6, filename:name, image:{ type:'jpeg', quality:0.94 }, html2canvas:{ scale:2, useCORS:true, backgroundColor:PR.theme === 'dark' ? '#0a0d14' : '#ffffff' }, jsPDF:{ unit:'mm', format:'a4', orientation:PR.orient }, pagebreak:{ mode:['css', 'legacy'], avoid:['.bz-sec', '.bz-callout', '.bz-card', '.bz-sc', '.bz-fcc', '.bz-pill', '.bz-day'] } })
+        .from(root).outputPdf('blob').then(function(blob){ var u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); }, 4000); btn.disabled = false; if(msg) msg.textContent = T({ en:'Saved: ', th:'บันทึกแล้ว: ' }) + name; buildPreview(); })
+        .catch(function(err){ if(window.console) console.error(err); btn.disabled = false; if(msg) msg.textContent = T({ en:'Could not create the file — use “Print / Save as PDF” instead.', th:'สร้างไฟล์ไม่สำเร็จ ใช้ปุ่ม “พิมพ์ / บันทึกเป็น PDF” แทนได้' }); });
+    }
+    if(w.html2pdf) return go();
+    var s = d.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'; s.onload = go;
+    s.onerror = function(){ btn.disabled = false; if(msg) msg.textContent = T({ en:'Could not load the PDF tool — use “Print / Save as PDF”.', th:'โหลดเครื่องมือ PDF ไม่ได้ ใช้ปุ่ม “พิมพ์ / บันทึกเป็น PDF” แทนได้' }); };
+    d.head.appendChild(s);
+  }
+  function wirePrint(root){
+    root.addEventListener('change', function(ev){
+      var t = ev.target; if(tab !== 'print' || !t.closest('.bz-prw')) return;
+      if(t.name === 'bzPrT'){ PR.type = t.value; if(PR.type === 'custom' && !Object.keys(PR.secs).some(function(k){ return PR.secs[k]; })) PR.secs = { sum:1, fc:1 }; paint(); return; }
+      if(t.hasAttribute('data-prs')){ if(PR.type !== 'custom'){ PR.secs = {}; prList().forEach(function(k){ PR.secs[k] = 1; }); PR.type = 'custom'; } PR.secs[t.getAttribute('data-prs')] = t.checked ? 1 : 0; paint(); return; }
+      if(t.hasAttribute('data-prcover')){ PR.cover = t.checked; paint(); return; }
+    });
+    root.addEventListener('click', function(ev){
+      var b = ev.target.closest('[data-pro],[data-prth],[data-prprint],[data-prpdf]'); if(!b || !root.contains(b)) return;
+      if(b.hasAttribute('data-pro')){ PR.orient = b.getAttribute('data-pro'); paint(); }
+      else if(b.hasAttribute('data-prth')){ PR.theme = b.getAttribute('data-prth'); paint(); }
+      else if(b.hasAttribute('data-prprint')) prPrint();
+      else if(b.hasAttribute('data-prpdf')) prPdf(b);
+    });
+    window.addEventListener('resize', function(){ if(tab === 'print'){ clearTimeout(prTimer); prTimer = setTimeout(buildPreview, 300); } });
+  }
+
   /* ------------------------------------------------------- portfolio view */
   var PF = { acct:null, acctTickers:null, acctErr:null, loading:false };
   function account(){
@@ -1519,14 +1744,17 @@
     h += '</div>';
     var W = currentWeights(s), ts = Object.keys(W).filter(function(t){ return W[t] > 0; }), tot = ts.reduce(function(x, t){ return x + W[t]; }, 0) || 1;
     var ed = editable(s);
-    h += sec({ en:'Holdings', th:'สินทรัพย์ในพอร์ต' }, (ts.length ? '<div class="bz-tw"><table class="bz-tbl bz-hold"><thead><tr><th></th><th>' + esc(T({ en:'Weight', th:'สัดส่วน' })) + '</th><th>%</th><th></th></tr></thead><tbody>' + ts.map(function(t){
-        var I = info(t);
-        return '<tr' + (I ? '' : ' class="miss"') + '><td><b>' + esc(t) + '</b><em>' + esc(I ? I.n : T({ en:'not in our data', th:'ไม่มีในข้อมูลของเว็บ' })) + '</em></td><td>' + (ed ? '<input type="number" min="0" step="1" value="' + (+W[t].toFixed(2)) + '" data-pfw="' + esc(t) + '">' : f(W[t], 1)) + '</td><td>' + f(W[t] / tot * 100, 1) + '%</td><td>' + (ed ? '<button type="button" class="bz-x" data-pfdel="' + esc(t) + '" aria-label="remove">' + ico('x') + '</button>' : '') + '</td></tr>';
+    var maxW = Math.max.apply(null, ts.map(function(t){ return W[t]; }).concat([1]));
+    var holdInner = (ts.length ? '<div class="bz-tw"><table class="bz-tbl bz-hold"><thead><tr><th></th><th>' + esc(T({ en:'Weight', th:'สัดส่วน' })) + '</th><th>%</th><th class="wbh"></th><th>3M</th><th></th></tr></thead><tbody>' + ts.map(function(t, k){
+        var I = info(t), fl = I && (I.s || flow(t)) || {}, m3 = fl.m3;
+        return '<tr' + (I ? '' : ' class="miss"') + '><td><i class="dot" style="background:' + DCOL[k % DCOL.length] + '"></i><b>' + esc(t) + '</b><em>' + esc(I ? I.n : T({ en:'not in our data', th:'ไม่มีในข้อมูลของเว็บ' })) + '</em></td><td>' + (ed ? '<input type="number" min="0" step="1" value="' + (+W[t].toFixed(2)) + '" data-pfw="' + esc(t) + '">' : f(W[t], 1)) + '</td><td><b>' + f(W[t] / tot * 100, 1) + '%</b></td><td class="wb"><i style="width:' + (W[t] / maxW * 100).toFixed(0) + '%;background:' + DCOL[k % DCOL.length] + '"></i></td><td class="' + (m3 >= 0 ? 'up' : 'dn') + '">' + spc(m3, 1) + '</td><td>' + (ed ? '<button type="button" class="bz-x" data-pfdel="' + esc(t) + '" aria-label="remove">' + ico('x') + '</button>' : '') + '</td></tr>';
       }).join('') + '</tbody></table></div>' : note(s.mode === 'acct' ? { en:'Your account has no tickers yet — add some on the Watchlist page, or add them here (kept in this browser only).', th:'บัญชีนี้ยังไม่มีหุ้น เพิ่มได้ที่หน้า Watchlist หรือเพิ่มตรงนี้ (เก็บเฉพาะในเครื่องนี้)' } : { en:'Empty — add a ticker below.', th:'ยังว่าง เพิ่มหุ้นด้านล่างได้เลย' })) +
       (ed ? '<div class="bz-add">' + universeList() + '<input list="bzUni" data-pfnew placeholder="' + esc(T({ en:'Ticker, e.g. AAPL, PTT, SPY', th:'ชื่อหุ้น เช่น AAPL, PTT, SPY' })) + '"><input type="number" min="1" value="10" data-pfneww><button type="button" class="bz-btn sm" data-pfadd>' + ico('plus') + esc(T({ en:'Add', th:'เพิ่ม' })) + '</button><button type="button" class="bz-btn sm ghost" data-pfeq>' + esc(T({ en:'Equal weights', th:'แบ่งเท่ากันทุกตัว' })) + '</button></div>' : '') +
-      note({ en:'Weights are relative: 2 and 1 means two-thirds and one-third.', th:'สัดส่วนเป็นแบบเทียบกัน เช่น 2 กับ 1 คือ สองในสามกับหนึ่งในสาม' }), 'layers');
-    if(!ts.length) return h;
+      note({ en:'Weights are relative: 2 and 1 means two-thirds and one-third.', th:'สัดส่วนเป็นแบบเทียบกัน เช่น 2 กับ 1 คือ สองในสามกับหนึ่งในสาม' });
+    if(!ts.length) return h + row([cell(12, { en:'Holdings', th:'สินทรัพย์ในพอร์ต' }, holdInner, 'layers')]);
     var A = analyse(W); PF.last = A;
+    var parts = ts.map(function(t, k){ return { n:t, v:W[t] / tot, c:DCOL[k % DCOL.length] }; });
+    h += row([cell(7, { en:'Holdings', th:'สินทรัพย์ในพอร์ต' }, holdInner, 'layers'), cell(5, { en:'Weights at a glance', th:'สัดส่วนแบบเห็นภาพ' }, '<div class="bz-wdn">' + donut(parts.slice().sort(function(a, b){ return b.v - a.v; }), 220) + '<div class="bz-wdc"><b>' + ts.length + '</b><span>' + esc(T({ en:'holdings', th:'ตัว' })) + '</span></div></div><div class="bz-wtop">' + parts.slice().sort(function(a, b){ return b.v - a.v; }).slice(0, 6).map(function(p){ return '<div><i style="background:' + p.c + '"></i><b>' + esc(p.n) + '</b><span>' + f(p.v * 100, 1) + '%</span></div>'; }).join('') + '</div>', 'pie')]);
     var hs = Math.round(A.health), htone = hs >= 70 ? 'good' : hs >= 50 ? 'mid' : 'bad';
     h += '<div class="bz-pfh"><div class="bz-ring ' + htone + '" style="--p:' + hs + '"><b>' + hs + '</b><span>' + esc(T({ en:'health', th:'สุขภาพพอร์ต' })) + '</span></div><div class="bz-parts">' + A.parts.map(function(p){
       return '<div><span>' + esc(T(p.n)) + '</span><i><u style="width:' + clamp(p.v, 0, 100).toFixed(0) + '%" class="' + (p.v >= 70 ? 'good' : p.v >= 45 ? 'mid' : 'bad') + '"></u></i><b>' + Math.round(p.v) + '</b></div>';
@@ -1534,8 +1762,8 @@
       kpi({ en:'Swings (volatility)', th:'ความผันผวน' }, pc(A.risk.vol, 1), esc(T({ en:'per year', th:'ต่อปี' }))) + kpi({ en:'Worst drop', th:'ร่วงหนักสุด' }, spc(A.risk.dd, 1), esc(T({ en:'past year', th:'ในรอบปี' })), A.risk.dd < -20 ? 'bad' : '') +
       kpi({ en:'Beta vs S&P 500', th:'เบต้าเทียบ S&P 500' }, f(A.risk.beta, 2), esc(T({ en:'1 = moves like the market', th:'1 = ขยับเท่าตลาด' }))) +
       kpi({ en:'Independent bets', th:'จำนวนเดิมพันอิสระ' }, f(A.risk.effBets, 1), esc(T({ en:'of ', th:'จาก ' })) + A.ts.length, A.risk.effBets < 2 ? 'bad' : A.risk.effBets > 4 ? 'good' : '') + '</div>' : '') + '</div>';
-    h += '<div class="bz-two">' + sec({ en:'What to fix first', th:'สิ่งที่ควรแก้ก่อน' }, '<ul class="bz-iss">' + A.issues.map(function(x){ return '<li class="' + x.k + '">' + ico(x.k === 'good' ? 'check' : 'alert') + '<span>' + esc(T(x.t)) + '</span></li>'; }).join('') + '</ul>' + (A.missing.length ? note({ en:'Not analysed (no data on this site): ' + A.missing.join(', '), th:'ไม่ได้วิเคราะห์ (ไม่มีข้อมูลในเว็บ): ' + A.missing.join(', ') }) : ''), 'alert') +
-      (A.curve ? sec({ en:'Past year: this mix vs the S&P 500', th:'ย้อนหลัง 1 ปี: พอร์ตนี้ vs S&P 500' }, lineChart({ series:[{ name:{ en:'This portfolio', th:'พอร์ตนี้' }, pts:A.curve.p, color:COL.a, w:2.6 }, { name:{ en:'S&P 500', th:'S&P 500' }, pts:A.curve.s, color:COL.g, dash:'5 4' }], unit:'%', zero:true }) + note({ en:'Uses today\'s weights on last year\'s prices (weekly), so it shows how this mix behaved — not what you actually earned.', th:'ใช้สัดส่วนวันนี้กับราคาปีที่แล้ว (รายสัปดาห์) จึงบอกว่าพอร์ตแบบนี้เคยขยับอย่างไร ไม่ใช่กำไรที่ได้จริง' }), 'trend') : '') + '</div>';
+    h += '<div class="bz-row">' + cell(5, { en:'What to fix first', th:'สิ่งที่ควรแก้ก่อน' }, '<ul class="bz-iss">' + A.issues.map(function(x){ return '<li class="' + x.k + '">' + ico(x.k === 'good' ? 'check' : 'alert') + '<span>' + esc(T(x.t)) + '</span></li>'; }).join('') + '</ul>' + (function(){ var st = A.parts.filter(function(p){ return p.v >= 65; }), wk = A.parts.filter(function(p){ return p.v < 45; }); return '<h6 class="bz-prh">' + esc(T({ en:'Strengths', th:'จุดแข็ง' })) + '</h6><div class="bz-sw">' + (st.length ? st.map(function(p){ return '<span class="good">' + ico('check') + esc(T(p.n)) + ' <b>' + Math.round(p.v) + '</b></span>'; }).join('') : '<span>—</span>') + '</div><h6 class="bz-prh">' + esc(T({ en:'Weak spots', th:'จุดที่ยังอ่อน' })) + '</h6><div class="bz-sw">' + (wk.length ? wk.map(function(p){ return '<span class="bad">' + ico('alert') + esc(T(p.n)) + ' <b>' + Math.round(p.v) + '</b></span>'; }).join('') : '<span class="good">' + ico('check') + esc(T({ en:'none below 45', th:'ไม่มีด้านไหนต่ำกว่า 45' })) + '</span>') + '</div>'; })() + (A.missing.length ? note({ en:'Not analysed (no data on this site): ' + A.missing.join(', '), th:'ไม่ได้วิเคราะห์ (ไม่มีข้อมูลในเว็บ): ' + A.missing.join(', ') }) : ''), 'alert') +
+      (A.curve ? cell(7, { en:'Past year: this mix vs the S&P 500', th:'ย้อนหลัง 1 ปี: พอร์ตนี้ vs S&P 500' }, lc({ series:[{ name:{ en:'This portfolio', th:'พอร์ตนี้' }, pts:A.curve.p, color:COL.a, w:3, area:true }, { name:{ en:'S&P 500', th:'S&P 500' }, pts:A.curve.s, color:COL.g, dash:'5 4' }], unit:'%', zero:true }, MID) + note({ en:'Uses today\'s weights on last year\'s prices (weekly), so it shows how this mix behaved — not what you actually earned.', th:'ใช้สัดส่วนวันนี้กับราคาปีที่แล้ว (รายสัปดาห์) จึงบอกว่าพอร์ตแบบนี้เคยขยับอย่างไร ไม่ใช่กำไรที่ได้จริง' }), 'trend') : '') + '</div>';
     h += '<div class="bz-dns">' + donutBlock({ en:'Asset types', th:'ประเภทสินทรัพย์' }, Object.keys(A.mix.cls).map(function(k){ return { n:CLS_N[k], v:A.mix.cls[k] }; })) +
       donutBlock({ en:'Sectors (stocks only)', th:'กลุ่มอุตสาหกรรม (เฉพาะหุ้น)' }, Object.keys(A.mix.sec).map(function(k){ return { n:sectName(k), v:A.mix.sec[k] }; })) +
       donutBlock({ en:'Where', th:'ประเทศ' }, Object.keys(A.mix.geo).map(function(k){ return { n:GEO_N[k] || k, v:A.mix.geo[k] }; })) + '</div>';
@@ -1545,22 +1773,23 @@
           return '<div><b>' + esc(x.t) + '</b><span><i class="w" style="width:' + clamp(x.w, 0, 100).toFixed(1) + '%"></i><i class="r" style="width:' + clamp(x.r, 0, 100).toFixed(1) + '%"></i></span><em>' + f(x.w, 0) + '% → ' + f(x.r, 0) + '%</em></div>';
         }).join('') + '</div>' + note({ en:'Top bar = share of money, bottom bar = share of risk. When the bottom bar is much longer, that holding swings the whole portfolio.', th:'แถบบน = สัดส่วนเงิน แถบล่าง = สัดส่วนความเสี่ยง ถ้าแถบล่างยาวกว่ามาก ตัวนั้นคือตัวที่เขย่าทั้งพอร์ต' }), 'pie') + '</div>';
       if(A.risk.cts.length > 1 && A.risk.cts.length <= 14){
-        h += sec({ en:'Do they move together? (correlation, 1 year weekly)', th:'ขึ้นลงไปด้วยกันไหม? (ค่าสหสัมพันธ์ รายสัปดาห์ 1 ปี)' }, '<div class="bz-tw"><table class="bz-corr"><thead><tr><th></th>' + A.risk.cts.map(function(t){ return '<th>' + esc(t) + '</th>'; }).join('') + '</tr></thead><tbody>' + A.risk.cts.map(function(t, i){
+        h += '<div class="bz-row">' + cell(12, { en:'Do they move together? (correlation, 1 year weekly)', th:'ขึ้นลงไปด้วยกันไหม? (ค่าสหสัมพันธ์ รายสัปดาห์ 1 ปี)' }, '<div class="bz-tw"><table class="bz-corr"><thead><tr><th></th>' + A.risk.cts.map(function(t){ return '<th>' + esc(t) + '</th>'; }).join('') + '</tr></thead><tbody>' + A.risk.cts.map(function(t, i){
           return '<tr><th>' + esc(t) + '</th>' + A.risk.C[i].map(function(c, j){ var a2 = Math.abs(c); return '<td style="background:' + (i === j ? 'transparent' : c >= 0 ? 'rgba(251,113,133,' + (a2 * 0.75).toFixed(2) + ')' : 'rgba(52,211,153,' + (a2 * 0.75).toFixed(2) + ')') + '">' + (i === j ? '' : f(c, 2)) + '</td>'; }).join('') + '</tr>';
-        }).join('') + '</tbody></table></div>' + note({ en:'Red = move together (less protection). Green = move opposite (good for diversification).', th:'แดง = ขึ้นลงพร้อมกัน (ช่วยกันกระจายความเสี่ยงได้น้อย) เขียว = สวนทางกัน (ดีต่อการกระจายความเสี่ยง)' }), 'swap');
+        }).join('') + '</tbody></table></div>' + note({ en:'Red = move together (less protection). Green = move opposite (good for diversification).', th:'แดง = ขึ้นลงพร้อมกัน (ช่วยกันกระจายความเสี่ยงได้น้อย) เขียว = สวนทางกัน (ดีต่อการกระจายความเสี่ยง)' }), 'swap') + '</div>';
       }
     }
     if(A.rebal){
-      h += '<div class="bz-two">' + sec({ en:'Suggested re-balance', th:'แนวทางปรับสัดส่วน' }, '<div class="bz-tw"><table class="bz-tbl bz-reb"><thead><tr><th></th><th>' + esc(T({ en:'Now', th:'ตอนนี้' })) + '</th><th>' + esc(T({ en:'Suggested', th:'แนะนำ' })) + '</th><th></th></tr></thead><tbody>' + A.rebal.map(function(r){
+      h += '<div class="bz-row">' + cell(7, { en:'Suggested re-balance', th:'แนวทางปรับสัดส่วน' }, '<div class="bz-tw"><table class="bz-tbl bz-reb"><thead><tr><th></th><th>' + esc(T({ en:'Now', th:'ตอนนี้' })) + '</th><th>' + esc(T({ en:'Suggested', th:'แนะนำ' })) + '</th><th></th></tr></thead><tbody>' + A.rebal.map(function(r){
         var d = r.to - r.now;
         return '<tr><td><b>' + esc(r.t) + '</b><em>' + r.why.map(function(w){ return esc(T(w)); }).join(' · ') + '</em></td><td>' + f(r.now, 1) + '%</td><td><b>' + f(r.to, 1) + '%</b></td><td class="' + (d > 0.5 ? 'up' : d < -0.5 ? 'dn' : '') + '">' + (Math.abs(d) < 0.5 ? '—' : spc(d, 1)) + '</td></tr>';
       }).join('') + '</tbody></table></div>' + (editable(s) ? '<button type="button" class="bz-btn sm" data-pfapply>' + ico('check') + esc(T({ en:'Use these weights', th:'ใช้สัดส่วนนี้' })) + '</button>' : '') +
-        note({ en:'Rules: cap any single stock at 20% (sector ETFs 30%, broad funds 40%), lean a little toward steadier holdings, then +10% for phase fit and −15% for weak fundamentals.', th:'กฎที่ใช้: หุ้นตัวเดียวไม่เกิน 20% (ETF รายกลุ่ม 30% กองทุนกว้าง 40%) เอียงไปทางตัวที่แกว่งน้อยเล็กน้อย แล้วเพิ่ม 10% ให้ตัวที่เข้ากับสภาวะ และลด 15% ให้ตัวที่พื้นฐานอ่อน' }), 'scale') +
-        sec({ en:'Would help diversify', th:'ตัวที่ช่วยกระจายความเสี่ยงได้' }, A.adds.length ? '<ul class="bz-adds">' + A.adds.map(function(x){ var I = info(x.t); return '<li><b>' + x.t + '</b><span>' + esc(I ? I.n : '') + '</span><em>' + esc(T({ en:'correlation with your mix ', th:'สหสัมพันธ์กับพอร์ต ' })) + f(x.c, 2) + (x.fit > 0 ? ' · ' + esc(T({ en:'suits the phase', th:'เข้ากับสภาวะ' })) : '') + '</em>' + (editable(s) ? '<button type="button" class="bz-btn sm ghost" data-pfaddt="' + x.t + '">' + ico('plus') + '</button>' : '') + '</li>'; }).join('') + '</ul>' : note({ en:'Needs weekly data.', th:'ต้องใช้ข้อมูลรายสัปดาห์' }), 'plus') + '</div>';
+        note({ en:'Rules: cap any single stock at 20% (sector ETFs 30%, broad funds 40%), lean slightly (15%) toward steadier holdings, then +10% for phase fit and −15% for weak fundamentals.', th:'กฎที่ใช้: หุ้นตัวเดียวไม่เกิน 20% (ETF รายกลุ่ม 30% กองทุนกว้าง 40%) เอียงไปทางตัวที่แกว่งน้อยเล็กน้อย (15%) แล้วเพิ่ม 10% ให้ตัวที่เข้ากับสภาวะ และลด 15% ให้ตัวที่พื้นฐานอ่อน' }), 'scale') +
+        cell(5, { en:'Would help diversify', th:'ตัวที่ช่วยกระจายความเสี่ยงได้' }, A.adds.length ? '<ul class="bz-adds">' + A.adds.map(function(x){ var I = info(x.t); return '<li><b>' + x.t + '</b><span>' + esc(I ? I.n : '') + '</span><em>' + esc(T({ en:'correlation with your mix ', th:'สหสัมพันธ์กับพอร์ต ' })) + f(x.c, 2) + (x.fit > 0 ? ' · ' + esc(T({ en:'suits the phase', th:'เข้ากับสภาวะ' })) : '') + '</em>' + (editable(s) ? '<button type="button" class="bz-btn sm ghost" data-pfaddt="' + x.t + '">' + ico('plus') + '</button>' : '') + '</li>'; }).join('') + '</ul>' : note({ en:'Needs weekly data.', th:'ต้องใช้ข้อมูลรายสัปดาห์' }), 'plus') + '</div>';
     }
     h += sec({ en:'Report card for each holding', th:'สมุดพกรายตัว' }, '<div class="bz-cards">' + A.cards.filter(Boolean).map(function(c){
       var s2 = c.I.s, rows = c.I.etf ? [[{ en:'Trend', th:'แนวโน้ม' }, c.m], [{ en:'Steadiness', th:'ความนิ่ง' }, c.r]] : [[{ en:'Business quality', th:'คุณภาพธุรกิจ' }, c.q], [{ en:'Price vs peers', th:'ราคาเทียบกลุ่ม' }, c.v], [{ en:'Trend', th:'แนวโน้ม' }, c.m], [{ en:'Dividend', th:'ปันผล' }, c.inc], [{ en:'Steadiness', th:'ความนิ่ง' }, c.r]];
-      return '<div class="bz-card"><div class="bz-ch"><b>' + esc(c.t) + '</b><span>' + esc(c.I.n) + '</span>' + (c.fit > 0 ? chip(esc(T({ en:'fits phase', th:'เข้ากับสภาวะ' })), 'good') : c.fit < 0 ? chip(esc(T({ en:'phase headwind', th:'สภาวะไม่เอื้อ' })), 'bad') : '') + '</div>' +
+      var avgS = mean(rows.map(function(r){ return r[1]; }).filter(isNum)) || 0;
+      return '<div class="bz-card"><div class="bz-cl"><div class="bz-cs ' + (avgS >= 3.7 ? 'good' : avgS >= 2.7 ? 'mid' : 'bad') + '">' + f(avgS, 1) + '<small>/5</small></div><div class="bz-ch"><b>' + esc(c.t) + '</b><span>' + esc(c.I.n) + '</span>' + (c.fit > 0 ? chip(esc(T({ en:'fits phase', th:'เข้ากับสภาวะ' })), 'good') : c.fit < 0 ? chip(esc(T({ en:'phase headwind', th:'สภาวะไม่เอื้อ' })), 'bad') : '') + '</div></div>' +
         '<ul>' + rows.map(function(r){ return '<li><span>' + esc(T(r[0])) + '</span>' + (isNum(r[1]) ? stars(r[1]) : '<em>—</em>') + '</li>'; }).join('') + '</ul>' +
         (s2 && !c.I.etf ? '<div class="bz-fund"><span>P/E <b>' + f(s2.pe, 1) + '</b>' + (c.medPE ? ' <em>(' + esc(T({ en:'peers ', th:'กลุ่ม ' })) + f(c.medPE, 1) + ')</em>' : '') + '</span><span>ROE <b>' + pc(s2.roe, 0) + '</b></span><span>' + esc(T({ en:'margin', th:'อัตรากำไร' })) + ' <b>' + pc(s2.margin, 0) + '</b></span><span>D/E <b>' + f(s2.de, 2) + '</b></span><span>' + esc(T({ en:'yield', th:'ปันผล' })) + ' <b>' + pc(s2.div, 1) + '</b></span><span>3M <b>' + spc(s2.m3, 1) + '</b></span></div>'
           : '<div class="bz-fund"><span>3M <b>' + spc(c.r13, 1) + '</b></span><span>' + esc(T({ en:'volatility', th:'ผันผวน' })) + ' <b>' + pc(c.vol, 0) + '</b></span></div>') +
@@ -1609,7 +1838,7 @@
       '<button type="button" class="bz-btn sm ghost" data-bzref>' + ico('radar') + esc(T(UX.refresh)) + '</button></div>';
     var html = (D.b ? '' : '<div class="bz-callout bad">' + ico('alert') + '<div><p>' + esc(T(UX.nobrain)) + '</p></div></div>');
     try {
-      html += tab === 'sum' ? vSum(E, F_last) : tab === 'fc' ? vFc(E, F_last) : tab === 'over' ? vOver(E) : tab === 'infl' ? vInfl(E) : tab === 'growth' ? vGrowth(E) : tab === 'fx' ? vFx(E) : tab === 'rot' ? vRot(E) : tab === 'out' ? vOut(E) : tab === 'pf' ? vPf() : vCal();
+      html += tab === 'guide' ? vGuide() : tab === 'print' ? vPrint() : tab === 'sum' ? vSum(E, F_last) : tab === 'fc' ? vFc(E, F_last) : tab === 'over' ? vOver(E) : tab === 'infl' ? vInfl(E) : tab === 'growth' ? vGrowth(E) : tab === 'fx' ? vFx(E) : tab === 'rot' ? vRot(E) : tab === 'out' ? vOut(E) : tab === 'pf' ? vPf() : vCal();
     } catch(err){ html += '<div class="bz-callout bad">' + ico('alert') + '<div><p>' + esc(String(err && err.message || err)) + '</p></div></div>'; if(window.console) console.error(err); }
     html += '<footer class="bz-foot"><p>' + esc(T({ en:'Sources: FRED (St. Louis Fed) · Yahoo Finance via yfinance · Shiller/Yale · FINRA · Cboe · Faireconomy calendar. Market data refreshes every ~30 min; economy data twice a day; some series (GDP, CPI) are monthly or quarterly.', th:'แหล่งข้อมูล: FRED (เฟดสาขาเซนต์หลุยส์) · Yahoo Finance ผ่าน yfinance · Shiller/Yale · FINRA · Cboe · ปฏิทิน Faireconomy ข้อมูลตลาดอัปเดตราวทุก 30 นาที ข้อมูลเศรษฐกิจวันละ 2 ครั้ง บางตัว (GDP, CPI) ออกรายเดือนหรือรายไตรมาส' })) + '</p></footer>';
     body.innerHTML = meta + '<div class="bz-view bz-v-' + tab + '">' + html + '</div>';
@@ -1633,7 +1862,7 @@
     });
     slot.addEventListener('pointermove', onChartMove);
     slot.addEventListener('pointerleave', function(){ slot.querySelectorAll('.bz-chart').forEach(hideTip); }, true);
-    wirePf(slot);
+    wirePf(slot); wirePrint(slot);
     new MutationObserver(function(){ paint(); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
     document.addEventListener('spz:line', function(){ PF.acctTickers = null; if(tab === 'pf') paint(); });
     document.addEventListener('spz:acc', function(){ PF.acctTickers = null; if(tab === 'pf') paint(); });
