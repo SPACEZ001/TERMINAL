@@ -1588,7 +1588,7 @@
       '<label class="bz-tg"><input type="checkbox" data-prcover' + (PR.cover ? ' checked' : '') + '><span>' + esc(T({ en:'Cover page with key numbers', th:'มีหน้าปกพร้อมตัวเลขสำคัญ' })) + '</span></label>' +
       '<label class="bz-tg"><input type="checkbox" data-pranalyst' + (PR.analyst ? ' checked' : '') + '><span>' + esc(T({ en:'Analyst name, photo and web QR (last page)', th:'ชื่อนักวิเคราะห์ รูป และ QR เว็บ (หน้าสุดท้าย)' })) + '</span></label>' +
       '<div class="bz-prref">' + ico('layers') + '<span>' + esc(T({ en:'Report ID', th:'รหัสรายงาน' })) + '</span><b>' + esc(prRef()) + '</b><em>' + esc(T({ en:'The PDF is named after this code, so the REPORTS sorter on the Mac files it into “market-brain (สมองตลาด)”.', th:'ไฟล์ PDF จะตั้งชื่อตามรหัสนี้ ตัวจัดรายงานในเครื่อง Mac จะย้ายไปโฟลเดอร์ “market-brain (สมองตลาด)” ให้เอง' })) + '</em></div>' +
-      '<div class="bz-prgo"><button type="button" class="bz-btn" data-prprint>' + ico('printer') + esc(T({ en:'Print / Save as PDF', th:'พิมพ์ / บันทึกเป็น PDF' })) + '</button><button type="button" class="bz-btn ghost" data-prpdf>' + ico('book') + esc(T({ en:'Download PDF file', th:'ดาวน์โหลดไฟล์ PDF' })) + '</button><p class="bz-note" data-prmsg>' + esc(T({ en:'In the print window choose “Save as PDF” for the sharpest file.', th:'ในหน้าต่างพิมพ์ เลือก “บันทึกเป็น PDF” จะได้ไฟล์คมชัดที่สุด' })) + '</p></div></div>';
+      '<div class="bz-prgo"><button type="button" class="bz-btn" data-prprint>' + ico('printer') + esc(T({ en:'Print / Save as PDF', th:'พิมพ์ / บันทึกเป็น PDF' })) + '</button><button type="button" class="bz-btn ghost" data-prpdf>' + ico('book') + esc(T({ en:'Download PDF file', th:'ดาวน์โหลดไฟล์ PDF' })) + '</button><p class="bz-note" data-prmsg>' + esc(T({ en:'Both buttons lay the pages out first (about 10–40 seconds), so every browser prints the same pages.', th:'ทั้งสองปุ่มจะจัดหน้าก่อน (ราว 10–40 วินาที) ทุกเบราว์เซอร์จึงพิมพ์ออกมาเหมือนกัน' })) + '</p></div></div>';
     h += '<div class="bz-sec s5 bz-prv"><h4>' + ico('eye') + esc(T({ en:'Preview', th:'ตัวอย่างเอกสาร' })) + '<span class="bz-fq">' + list.length + ' ' + esc(T({ en:'sections', th:'ส่วน' })) + (PR.cover ? ' + ' + esc(T({ en:'cover', th:'ปก' })) : '') + '</span></h4><div class="bz-paperbox ' + PR.orient + '"><iframe title="preview" data-prframe></iframe><div class="bz-prload">' + esc(T({ en:'Building the document…', th:'กำลังสร้างเอกสาร…' })) + '</div></div></div></div>';
     setTimeout(buildPreview, 30);
     return h;
@@ -1688,15 +1688,25 @@
     };
     fr.srcdoc = docHTML();
   }
-  function prPrint(){ var fr = host && host.querySelector('[data-prframe]'); if(!fr || !fr.contentWindow) return; try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch(e){} PR.ref = null; setTimeout(function(){ if(tab === 'print') paint(); }, 1500); }
-  function prPdf(btn){
-    var fr = host && host.querySelector('[data-prframe]'), msg = host.querySelector('[data-prmsg]'); if(!fr || !fr.contentDocument) return;
-    var d = fr.contentDocument, w = fr.contentWindow, say = function(o){ if(msg) msg.textContent = T(o); };
-    btn.disabled = true; say({ en:'Creating the PDF… this can take a few seconds.', th:'กำลังสร้างไฟล์ PDF… รอสักครู่' });
-    function fail(err){ if(window.console) console.error(err); btn.disabled = false; say({ en:'Could not create the file — use “Print / Save as PDF” instead.', th:'สร้างไฟล์ไม่สำเร็จ ใช้ปุ่ม “พิมพ์ / บันทึกเป็น PDF” แทนได้' }); }
+  /* Print and PDF share one renderer: each section is drawn to a canvas and
+     cut into A4 pages at gaps between blocks (never through a card or chart),
+     so Safari, Chrome and the PDF all get exactly the same pages. */
+  var SAFE = '.bz-view>*,.bz-row>*,.bz-sec>*,.bz-two>*,tr,.bz-tiles>*,.bz-dtiles>*,.bz-pills>*,.bz-cards>*,.bz-fcgrid>*,.bz-mitems>*,.bz-calg>*,.bz-gcards>*,.bz-chkg>*,.bz-exp>*,.bz-flow li,.bz-dns>*,.bz-kpis>*,.bz-scen>*,.bz-pairs>*,.bz-cng>*,.bz-fxg>*,.bz-wires>*,.bz-fomcg>*,.bz-howg>*,.bz-gloss>*,.bz-day>*,.ab,.rh,.pt,.ph,.cv-main>*,.bz-mi dl>*,.bz-basis li,.bz-iss li,.bz-adds li,.bz-rank>*';
+  function prDims(){ var land = PR.orient === 'landscape', PW = land ? 297 : 210, PH = land ? 210 : 297, M = 8; return { land:land, PW:PW, PH:PH, M:M, CW:PW - 2 * M, CH:PH - 2 * M, bg:PR.theme === 'dark' ? '#0a0d14' : '#ffffff' }; }
+  function renderPages(say, done, fail){
+    /* a private off-screen copy of the document, so a preview refresh can never pull the page out from under the renderer */
+    var old = document.getElementById('bzRenderFrame'); if(old) old.remove();
+    var fr = document.createElement('iframe'); fr.id = 'bzRenderFrame'; fr.setAttribute('aria-hidden', 'true');
+    fr.style.cssText = 'position:fixed;left:-20000px;top:0;width:' + ((PR.orient === 'landscape' ? 1080 : 760) + 40) + 'px;height:1200px;border:0;visibility:visible;pointer-events:none;';
+    document.body.appendChild(fr);
+    var d, w, G = prDims(), timer = null, finished = false;
+    var fail0 = fail, done0 = done;
+    fail = function(e){ if(finished) return; finished = true; clearTimeout(timer); fr.remove(); fail0(e); };
+    done = function(o, g){ if(finished) return; finished = true; clearTimeout(timer); fr.remove(); done0(o, g); };
+    function watchdog(){ clearTimeout(timer); timer = setTimeout(function(){ fail('timeout'); }, 45000); }
     function load(src, test, cb){ if(test()) return cb(); var s = d.createElement('script'); s.src = src; s.onload = cb; s.onerror = function(){ fail('load ' + src); }; d.head.appendChild(s); }
     function prep(){
-      var root = d.querySelector('.doc'); root.classList.add('h2p'); root.style.padding = '0';
+      var root = d.querySelector('.doc'); if(root.classList.contains('h2p')) return; root.classList.add('h2p'); root.style.padding = '0';
       var PROPS = ['fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'stroke-linejoin', 'opacity', 'fill-opacity', 'stroke-opacity', 'font-size', 'font-family', 'font-weight', 'text-anchor', 'letter-spacing'];
       d.querySelectorAll('svg').forEach(function(svg){
         svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
@@ -1704,56 +1714,94 @@
         var cs0 = w.getComputedStyle(svg); if(!svg.getAttribute('color')) svg.setAttribute('color', cs0.color);
         svg.querySelectorAll('*').forEach(function(n){ var cs = w.getComputedStyle(n), st = ''; PROPS.forEach(function(k){ var v = cs.getPropertyValue(k); if(v && v !== 'normal') st += k + ':' + v + ';'; }); n.setAttribute('style', st + (n.getAttribute('style') || '')); });
       });
-      var hx = d.createElement('style'); hx.textContent = '.h2p .rh-title,.h2p .bz-vl b,.h2p .bz-fcv b.nx{background:none!important;-webkit-text-fill-color:currentColor!important;color:#4f46e5!important;}.h2p .pg{box-shadow:none!important;margin:0 0 0!important;border-radius:0!important;}'; d.head.appendChild(hx);
+      var hx = d.createElement('style'); hx.textContent = '.h2p .rh-title,.h2p .bz-vl b,.h2p .bz-fcv b.nx{background:none!important;-webkit-text-fill-color:currentColor!important;color:#4f46e5!important;}.h2p .pg{box-shadow:none!important;margin:0!important;border-radius:0!important;}'; d.head.appendChild(hx);
     }
-    /* y positions (CSS px from the top of a section) where a page may end without cutting a block in half */
-    var SAFE = '.bz-view>*,.bz-row>*,.bz-sec>*,.bz-two>*,tr,.bz-tiles>*,.bz-dtiles>*,.bz-pills>*,.bz-cards>*,.bz-fcgrid>*,.bz-mitems>*,.bz-calg>*,.bz-gcards>*,.bz-chkg>*,.bz-exp>*,.bz-flow li,.bz-dns>*,.bz-kpis>*,.bz-scen>*,.bz-pairs>*,.bz-cng>*,.bz-fxg>*,.bz-wires>*,.bz-fomcg>*,.bz-howg>*,.bz-gloss>*,.bz-day>*,.ab,.rh,.pt,.ph,.cv-main>*,.bz-mi dl>*,.bz-basis li,.bz-iss li,.bz-adds li,.bz-rank>*';
+    /* page cuts: candidate y = top of any block; a cut is allowed only if it does not pass through an
+       "atomic" box (chart, card, row, line of text...) in ANY column, and never right after a heading */
+    var ATOM = '.bz-sec,.bz-mi,.bz-day,svg,img,p,li,tr,dt,dd,h2,h3,h4,h5,h6,.pt,.ph,.rh,.bz-kpi,.bz-fcc,.bz-tile,.bz-dt,.bz-pill,.bz-card,.bz-pair,.bz-er,.bz-chkg>div,.bz-wires>div,.bz-fomcg>div,.bz-ev,.bz-gc,.bz-hw,.bz-sc,.bz-cons,.bz-leg,.bz-callout,.bz-chart,.bz-dn,.bz-rank>div,.bz-fxg>div,.bz-cng>div,.bz-gloss>div,.bz-flow li,.bz-rc>div,.bz-parts>div,.bz-wtop>div,.bz-sw,.bz-play>div,.bz-steps,.bz-scbar,.bz-trig li,.bz-gdp>div,.bz-rec3>div,.bz-cone>div,.bz-mtab,.ab,.cv-score,.cv-k>div,.bz-verdict,.bz-hero,.bz-pfh,.bz-wdn,.bz-rmeter,.bz-flowline';
     function cuts(pg, pageH){
-      var top = pg.getBoundingClientRect().top, H = pg.scrollHeight, c = [];
-      pg.querySelectorAll(SAFE).forEach(function(el){ var r = el.getBoundingClientRect(); if(r.height > 0){ c.push(r.top - top - 4); } });
+      var top = pg.getBoundingClientRect().top, H = pg.scrollHeight, c = [], atoms = [];
+      pg.querySelectorAll(SAFE).forEach(function(el){ var r = el.getBoundingClientRect(); if(r.height > 0) c.push(r.top - top - 3); });
+      pg.querySelectorAll(ATOM).forEach(function(el){
+        var r = el.getBoundingClientRect(); if(r.height <= 0 || r.height > pageH * 0.9) return;
+        var b = r.bottom - top;
+        if(/^H[2-6]$/.test(el.tagName) || el.classList.contains('pt') || el.classList.contains('bz-leg')){ var nx = el.nextElementSibling; if(nx){ var rn = nx.getBoundingClientRect(); if(rn.height > 0 && rn.height < pageH * 0.6) b = Math.max(b, rn.bottom - top); } }
+        atoms.push([r.top - top, b]);
+      });
+      var ok = function(y){ for(var i = 0; i < atoms.length; i++){ if(atoms[i][0] < y - 1 && atoms[i][1] > y + 1) return false; } return true; };
       c = c.filter(function(y){ return y > 0 && y < H; }).sort(function(a, b){ return a - b; });
       var out = [], start = 0;
       while(H - start > pageH){
-        var lim = start + pageH, best = null;
-        for(var i = 0; i < c.length; i++){ if(c[i] > start + pageH * 0.35 && c[i] <= lim) best = c[i]; }
-        var e = best || lim; out.push([start, e]); start = e;
+        var lim = start + pageH, best = null, loose = null;
+        for(var i = 0; i < c.length; i++){ if(c[i] > start + pageH * 0.25 && c[i] <= lim){ loose = c[i]; if(ok(c[i])) best = c[i]; } }
+        var e = best || loose || lim; out.push([start, e]); start = e;
       }
       out.push([start, H]); return out;
     }
-    function build(){
+    function run(){
       try { prep(); } catch(e){ return fail(e); }
-      var J = w.jspdf.jsPDF, land = PR.orient === 'landscape', pdf = new J({ unit:'mm', format:'a4', orientation:land ? 'landscape' : 'portrait' });
-      var PW = land ? 297 : 210, PH = land ? 210 : 297, M = 8, CW = PW - 2 * M, CH = PH - 2 * M, bg = PR.theme === 'dark' ? '#0a0d14' : '#ffffff';
-      var pages = Array.prototype.slice.call(d.querySelectorAll('.pg')), first = true, n = 0;
+      var pages = Array.prototype.slice.call(d.querySelectorAll('.pg')), n = 0, out = [];
       function next(){
-        if(n >= pages.length){
-          var name = prRef() + '.pdf';
-          try {
-            var blob = pdf.output('blob'), u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click();
-            setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); }, 4000);
-          } catch(e){ return fail(e); }
-          btn.disabled = false; PR.ref = null; say({ en:'Saved: ' + name, th:'บันทึกแล้ว: ' + name }); setTimeout(function(){ if(tab === 'print') paint(); }, 2500); return;
-        }
-        var pg = pages[n++], wpx = pg.offsetWidth, pageHpx = wpx * CH / CW, parts = cuts(pg, pageHpx);
+        if(n >= pages.length) return done(out, G);
+        watchdog();
+        var pg = pages[n++], wpx = pg.offsetWidth, pageHpx = wpx * G.CH / G.CW, parts = cuts(pg, pageHpx);
         var scale = Math.min(2, Math.sqrt(12e6 / Math.max(1, wpx * pg.scrollHeight)));
-        say({ en:'Creating the PDF… section ' + n + ' of ' + pages.length, th:'กำลังสร้างไฟล์ PDF… ส่วนที่ ' + n + ' จาก ' + pages.length });
-        w.html2canvas(pg, { scale:scale, useCORS:true, backgroundColor:bg, logging:false, windowWidth:d.documentElement.scrollWidth }).then(function(cv){
+        say({ en:'Preparing pages… section ' + n + ' of ' + pages.length, th:'กำลังจัดหน้า… ส่วนที่ ' + n + ' จาก ' + pages.length });
+        w.html2canvas(pg, { scale:scale, useCORS:true, backgroundColor:G.bg, logging:false }).then(function(cv){
           var k = cv.width / wpx;
           parts.forEach(function(p){
             var sh = Math.max(1, Math.round((p[1] - p[0]) * k)), sc = d.createElement('canvas'); sc.width = cv.width; sc.height = sh;
-            var cx = sc.getContext('2d'); cx.fillStyle = bg; cx.fillRect(0, 0, sc.width, sh); cx.drawImage(cv, 0, Math.round(p[0] * k), cv.width, sh, 0, 0, cv.width, sh);
-            if(!first) pdf.addPage(); first = false;
-            if(PR.theme === 'dark'){ pdf.setFillColor(10, 13, 20); pdf.rect(0, 0, PW, PH, 'F'); }
-            pdf.addImage(sc.toDataURL('image/jpeg', 0.9), 'JPEG', M, M, CW, sh / sc.width * CW);
+            var cx = sc.getContext('2d'); cx.fillStyle = G.bg; cx.fillRect(0, 0, sc.width, sh); cx.drawImage(cv, 0, Math.round(p[0] * k), cv.width, sh, 0, 0, cv.width, sh);
+            out.push({ src:sc.toDataURL('image/jpeg', 0.92), hmm:sh / sc.width * G.CW });
           });
-          setTimeout(next, 30);
+          setTimeout(next, 20);
         }).catch(fail);
       }
       next();
     }
-    load('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', function(){ return !!w.html2canvas; }, function(){
-      load('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', function(){ return !!(w.jspdf && w.jspdf.jsPDF); }, build);
-    });
+    fr.onload = function(){
+      d = fr.contentDocument; w = fr.contentWindow; watchdog();
+      var ready = d.fonts && d.fonts.ready ? d.fonts.ready : Promise.resolve();
+      ready.then(function(){ setTimeout(function(){ load('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', function(){ return !!w.html2canvas; }, run); }, 300); });
+    };
+    fr.srcdoc = docHTML();
+  }
+  function prBusy(btn, on){ host.querySelectorAll('[data-prprint],[data-prpdf]').forEach(function(b){ b.disabled = on; }); }
+  function prPrint(btn){
+    var msg = host.querySelector('[data-prmsg]'), say = function(o){ if(msg) msg.textContent = T(o); };
+    prBusy(btn, true); say({ en:'Preparing pages…', th:'กำลังจัดหน้า…' });
+    renderPages(say, function(pages, G){
+      var bg = G.bg, html = '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(prRef()) + '</title><style>@page{size:A4 ' + PR.orient + ';margin:0;}html,body{margin:0;padding:0;background:' + bg + ';}' +
+        '.p{width:' + G.PW + 'mm;height:' + G.PH + 'mm;box-sizing:border-box;padding:' + G.M + 'mm;page-break-after:always;break-after:page;overflow:hidden;background:' + bg + ';-webkit-print-color-adjust:exact;print-color-adjust:exact;}.p:last-child{page-break-after:auto;break-after:auto;}.p img{display:block;width:' + G.CW + 'mm;}</style></head><body>' +
+        pages.map(function(p){ return '<div class="p"><img src="' + p.src + '" style="height:' + p.hmm.toFixed(2) + 'mm"></div>'; }).join('') + '</body></html>';
+      var old = document.getElementById('bzPrintFrame'); if(old) old.remove();
+      var f = document.createElement('iframe'); f.id = 'bzPrintFrame'; f.setAttribute('aria-hidden', 'true');
+      f.style.cssText = 'position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none;';
+      document.body.appendChild(f);
+      var fd = f.contentWindow.document; fd.open(); fd.write(html); fd.close();
+      var imgs = fd.images, left = imgs.length, go = function(){ prBusy(btn, false); say({ en:pages.length + ' pages ready — choose “Save as PDF” in the print window for a file.', th:'พร้อม ' + pages.length + ' หน้า — ในหน้าต่างพิมพ์เลือก “บันทึกเป็น PDF” ถ้าต้องการไฟล์' }); try { f.contentWindow.focus(); f.contentWindow.print(); } catch(e){} PR.ref = null; setTimeout(function(){ if(tab === 'print') paint(); }, 4000); };
+      if(!left) return go();
+      Array.prototype.forEach.call(imgs, function(im){ if(im.complete){ if(--left === 0) go(); } else im.onload = im.onerror = function(){ if(--left === 0) go(); }; });
+    }, function(err){ if(window.console) console.error(err); prBusy(btn, false); say({ en:'Could not prepare the pages — reload the page and try again.', th:'จัดหน้าไม่สำเร็จ ลองโหลดหน้าใหม่แล้วกดอีกครั้ง' }); });
+  }
+  function prPdf(btn){
+    var msg = host.querySelector('[data-prmsg]'), say = function(o){ if(msg) msg.textContent = T(o); };
+    var w = window, d = document;
+    prBusy(btn, true); say({ en:'Creating the PDF…', th:'กำลังสร้างไฟล์ PDF…' });
+    function fail(err){ if(window.console) console.error(err); prBusy(btn, false); say({ en:'Could not create the file — use “Print / Save as PDF” instead.', th:'สร้างไฟล์ไม่สำเร็จ ใช้ปุ่ม “พิมพ์ / บันทึกเป็น PDF” แทนได้' }); }
+    function make(){
+      renderPages(say, function(pages, G){
+        try {
+          var J = w.jspdf.jsPDF, pdf = new J({ unit:'mm', format:'a4', orientation:G.land ? 'landscape' : 'portrait' });
+          pages.forEach(function(p, i){ if(i) pdf.addPage(); if(PR.theme === 'dark'){ pdf.setFillColor(10, 13, 20); pdf.rect(0, 0, G.PW, G.PH, 'F'); } pdf.addImage(p.src, 'JPEG', G.M, G.M, G.CW, p.hmm); });
+          var name = prRef() + '.pdf', blob = pdf.output('blob'), u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click();
+          setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); }, 4000);
+          prBusy(btn, false); PR.ref = null; say({ en:'Saved: ' + name, th:'บันทึกแล้ว: ' + name }); setTimeout(function(){ if(tab === 'print') paint(); }, 2500);
+        } catch(e){ fail(e); }
+      }, fail);
+    }
+    if(w && w.jspdf && w.jspdf.jsPDF) return make();
+    var s = d.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.onload = make; s.onerror = function(){ fail('jspdf'); }; d.head.appendChild(s);
   }
   function wirePrint(root){
     root.addEventListener('change', function(ev){
@@ -1768,7 +1816,7 @@
       var b = ev.target.closest('[data-pro],[data-prth],[data-prprint],[data-prpdf]'); if(!b || !root.contains(b)) return;
       if(b.hasAttribute('data-pro')){ PR.orient = b.getAttribute('data-pro'); paint(); }
       else if(b.hasAttribute('data-prth')){ PR.theme = b.getAttribute('data-prth'); paint(); }
-      else if(b.hasAttribute('data-prprint')) prPrint();
+      else if(b.hasAttribute('data-prprint')) prPrint(b);
       else if(b.hasAttribute('data-prpdf')) prPdf(b);
     });
     window.addEventListener('resize', function(){ if(tab === 'print'){ clearTimeout(prTimer); prTimer = setTimeout(buildPreview, 300); } });
