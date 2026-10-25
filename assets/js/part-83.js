@@ -1220,12 +1220,12 @@
     var hist = it.hist.filter(function(p){ return tms(p[0]) > tms(it.t) - years * 365 * 864e5; });
     var b = fcAt(it, 6), c = fcAt(it, 12), pre = it.unit === '$' ? '$' : '', u = it.unit === '%' ? '%' : '';
     return '<div class="bz-sec bz-fsec"><h4>' + ico('radar') + esc(T(it.name)) + '<span class="bz-fq">' + pre + f(it.now, it.dec) + u + ' → <b>' + pre + f(b && b.v, it.dec) + u + '</b> <small>6M</small> → <b>' + pre + f(c && c.v, it.dec) + u + '</b> <small>12M</small></span></h4>' +
-      lineChart({ series:[{ name:it.name, pts:hist, color:color, w:2.4, fc:it.fc }], unit:u, dec:it.dec, ref:it.ref, rec:D.b && D.b.recessions, band:extra && extra.band, zero:extra && extra.zero, h:240 }) + basisList(it) + '</div>';
+      lineChart({ series:[{ name:it.name, pts:hist, color:color, w:2.4, fc:it.fc }], unit:u, dec:it.dec, ref:it.ref, rec:D.b && D.b.recessions, band:extra && extra.band, zero:extra && extra.zero, h:280 }) + basisList(it) + fcDetails(it, F_last, E_last) + '</div>';
   }
   function vFc(E, F){
     var h = '<div class="bz-fcgrid wide">' + ['core', 'ff', 'y10', 'un', 'spx', 'oil'].map(function(k, i){ return fcCard(F.items[k], ['#f472b6', '#fbbf24', '#a78bfa', '#34d399', '#60a5fa', '#f97316'][i]); }).join('') + '</div>';
     h += '<div class="bz-two">' + fanSec(F.items.core, '#f472b6', 4, { band:{ lo:1.5, hi:2.5, label:{ en:'Fed goal', th:'เป้าเฟด' } } }) + fanSec(F.items.cpi, '#fb7185', 4, { band:{ lo:1.5, hi:2.5 } }) + '</div>';
-    h += '<div class="bz-two">' + fanSec(F.items.ff, '#fbbf24', 4) + fanSec(F.items.y2, '#22d3ee', 4) + '</div>';
+    h += '<div class="bz-two">' + fanSec(F.items.ff, '#fbbf24', 4) + fanSec(F.items.y2, '#22d3ee', 4) + '</div>' + fomcHTML(F);
     h += '<div class="bz-two">' + fanSec(F.items.y10, '#a78bfa', 4) + fanSec(F.items.un, '#34d399', 6) + '</div>';
     /* leading index + recession model */
     var L2 = F.lei, lv = L2.v;
@@ -1546,6 +1546,8 @@
   var MAN_T = { en:'How the Market Brain thinks', th:'คู่มือ: สมองตลาดคิดอย่างไร' };
   var WEB_URL = 'https://terminal.spacezblack.workers.dev/';
   try { PR.analyst = localStorage.getItem('spz.report.analyst') === '1'; } catch(e){}
+  PR.hd = { logo:1, brand:1, title:1, sub:1, dates:1, ref:1 };
+  try { var hs = JSON.parse(localStorage.getItem('spz.brain.prhead') || 'null'); if(hs) PR.hd = hs; } catch(e){}
   function prType(){ for(var i = 0; i < PR_TYPES.length; i++) if(PR_TYPES[i][0] === PR.type) return PR_TYPES[i]; return PR_TYPES[0]; }
   function prRef(){
     var code = PR.type === 'manual' ? 'MG' : 'MB';
@@ -1559,9 +1561,12 @@
   }
   function qrSvg(){ try { if(typeof qrcode !== 'function') return ''; var q = qrcode(0, 'M'); q.addData(WEB_URL); q.make(); return q.createSvgTag({ cellSize:4, margin:0, scalable:true }); } catch(e){ return ''; } }
   function docHead(title){
-    var lg = window.__SPZ_PR_LOGO || '', loc = L() === 'th' ? 'th-TH' : 'en-GB';
-    return '<div class="rh"><div class="rh-band"></div>' + (lg ? '<img class="rh-logo" src="' + lg + '" alt="">' : '') + '<div class="rh-brand">SPACEZ TERMINAL</div><div class="rh-title">' + esc(T(title)) + '</div><div class="rh-sub">' + esc(T({ en:'Market Brain · economy, markets and outlook', th:'สมองตลาด · เศรษฐกิจ ตลาด และแนวโน้ม' })) + '</div>' +
-      '<div class="rh-meta"><span>' + esc(T({ en:'Generated', th:'สร้างเมื่อ' })) + ': ' + esc(new Date().toLocaleString(loc)) + '</span><span>' + esc(T({ en:'Market data as of', th:'ข้อมูลตลาด ณ' })) + ': ' + esc(D.m && D.m.generated_at ? new Date(D.m.generated_at).toLocaleString(loc) : '—') + '</span><span>' + esc(T({ en:'Economy data', th:'ข้อมูลเศรษฐกิจ' })) + ': ' + esc(D.b && D.b.generated_at ? new Date(D.b.generated_at).toLocaleString(loc) : '—') + '</span><span class="rh-ref">' + esc(T({ en:'Report ID', th:'รหัสรายงาน' })) + ': <b>' + esc(prRef()) + '</b></span></div></div>';
+    var lg = window.__SPZ_PR_LOGO || '', loc = L() === 'th' ? 'th-TH' : 'en-GB', H = PR.hd || {};
+    var meta = (H.dates ? '<span>' + esc(T({ en:'Generated', th:'สร้างเมื่อ' })) + ': ' + esc(new Date().toLocaleString(loc)) + '</span><span>' + esc(T({ en:'Market data as of', th:'ข้อมูลตลาด ณ' })) + ': ' + esc(D.m && D.m.generated_at ? new Date(D.m.generated_at).toLocaleString(loc) : '—') + '</span><span>' + esc(T({ en:'Economy data', th:'ข้อมูลเศรษฐกิจ' })) + ': ' + esc(D.b && D.b.generated_at ? new Date(D.b.generated_at).toLocaleString(loc) : '—') + '</span>' : '') +
+      (H.ref ? '<span>' + esc(T({ en:'Report ID', th:'รหัสรายงาน' })) + ': ' + esc(prRef()) + '</span>' : '');
+    var inner = (H.logo && lg ? '<img class="rh-logo" src="' + lg + '" alt="">' : '') + (H.brand ? '<div class="rh-brand">SPACEZ TERMINAL</div>' : '') + (H.title ? '<div class="rh-title">' + esc(T(title)) + '</div>' : '') +
+      (H.sub ? '<div class="rh-sub">' + esc(T({ en:'Market Brain · economy, markets and outlook', th:'สมองตลาด · เศรษฐกิจ ตลาด และแนวโน้ม' })) + '</div>' : '') + (meta ? '<div class="rh-meta">' + meta + '</div>' : '');
+    return inner ? '<div class="rh">' + inner + '</div>' : '';
   }
   function analystBlock(){
     var ava = window.__SPZ_DEV_AVATAR || '';
@@ -1579,8 +1584,9 @@
       '<h6 class="bz-prh">' + esc(T({ en:'Sections', th:'ส่วนที่จะพิมพ์' })) + '</h6><div class="bz-prs">' + PR_SECS.map(function(k){ var on = list.indexOf(k) >= 0; return '<label class="' + (on ? 'on' : '') + '"><input type="checkbox" data-prs="' + k + '"' + (on ? ' checked' : '') + '><span>' + esc(T(prTitle(k))) + '</span></label>'; }).join('') + '</div>' +
       '<h6 class="bz-prh">' + esc(T({ en:'Paper', th:'แนวกระดาษ' })) + '</h6><div class="bz-pro">' + [['portrait', { en:'Portrait A4', th:'แนวตั้ง A4' }], ['landscape', { en:'Landscape A4', th:'แนวนอน A4' }]].map(function(o){ return '<button type="button" data-pro="' + o[0] + '" class="' + (PR.orient === o[0] ? 'on' : '') + '"><span class="paper ' + o[0][0] + '"><i></i><i></i><i></i></span>' + esc(T(o[1])) + '</button>'; }).join('') + '</div>' +
       '<h6 class="bz-prh">' + esc(T({ en:'Colours', th:'โทนสี' })) + '</h6><div class="bz-pro">' + [['light', { en:'Light (saves ink)', th:'สว่าง (ประหยัดหมึก)' }], ['dark', { en:'Dark (like the site)', th:'มืด (เหมือนเว็บ)' }]].map(function(o){ return '<button type="button" data-prth="' + o[0] + '" class="' + (PR.theme === o[0] ? 'on' : '') + '"><span class="sw ' + o[0] + '"></span>' + esc(T(o[1])) + '</button>'; }).join('') + '</div>' +
+      '<h6 class="bz-prh">' + esc(T({ en:'Document header', th:'หัวเอกสาร' })) + '</h6><div class="bz-prs">' + [['logo', { en:'Logo', th:'โลโก้' }], ['brand', { en:'Site name', th:'ชื่อเว็บ' }], ['title', { en:'Report name', th:'ชื่อรายงาน' }], ['sub', { en:'Subtitle', th:'คำอธิบายใต้ชื่อ' }], ['dates', { en:'Created / data dates', th:'วันที่สร้าง / วันที่ข้อมูล' }], ['ref', { en:'Report ID', th:'รหัสรายงาน' }]].map(function(o){ var on = PR.hd[o[0]]; return '<label class="' + (on ? 'on' : '') + '"><input type="checkbox" data-prhd="' + o[0] + '"' + (on ? ' checked' : '') + '><span>' + esc(T(o[1])) + '</span></label>'; }).join('') + '</div>' +
       '<label class="bz-tg"><input type="checkbox" data-prcover' + (PR.cover ? ' checked' : '') + '><span>' + esc(T({ en:'Cover page with key numbers', th:'มีหน้าปกพร้อมตัวเลขสำคัญ' })) + '</span></label>' +
-      '<label class="bz-tg"><input type="checkbox" data-pranalyst' + (PR.analyst ? ' checked' : '') + '><span>' + esc(T({ en:'Include analyst name, photo and web QR', th:'ใส่ชื่อนักวิเคราะห์ รูป และ QR เว็บ' })) + '</span></label>' +
+      '<label class="bz-tg"><input type="checkbox" data-pranalyst' + (PR.analyst ? ' checked' : '') + '><span>' + esc(T({ en:'Analyst name, photo and web QR (last page)', th:'ชื่อนักวิเคราะห์ รูป และ QR เว็บ (หน้าสุดท้าย)' })) + '</span></label>' +
       '<div class="bz-prref">' + ico('layers') + '<span>' + esc(T({ en:'Report ID', th:'รหัสรายงาน' })) + '</span><b>' + esc(prRef()) + '</b><em>' + esc(T({ en:'The PDF is named after this code, so the REPORTS sorter on the Mac files it into “market-brain (สมองตลาด)”.', th:'ไฟล์ PDF จะตั้งชื่อตามรหัสนี้ ตัวจัดรายงานในเครื่อง Mac จะย้ายไปโฟลเดอร์ “market-brain (สมองตลาด)” ให้เอง' })) + '</em></div>' +
       '<div class="bz-prgo"><button type="button" class="bz-btn" data-prprint>' + ico('printer') + esc(T({ en:'Print / Save as PDF', th:'พิมพ์ / บันทึกเป็น PDF' })) + '</button><button type="button" class="bz-btn ghost" data-prpdf>' + ico('book') + esc(T({ en:'Download PDF file', th:'ดาวน์โหลดไฟล์ PDF' })) + '</button><p class="bz-note" data-prmsg>' + esc(T({ en:'In the print window choose “Save as PDF” for the sharpest file.', th:'ในหน้าต่างพิมพ์ เลือก “บันทึกเป็น PDF” จะได้ไฟล์คมชัดที่สุด' })) + '</p></div></div>';
     h += '<div class="bz-sec s5 bz-prv"><h4>' + ico('eye') + esc(T({ en:'Preview', th:'ตัวอย่างเอกสาร' })) + '<span class="bz-fq">' + list.length + ' ' + esc(T({ en:'sections', th:'ส่วน' })) + (PR.cover ? ' + ' + esc(T({ en:'cover', th:'ปก' })) : '') + '</span></h4><div class="bz-paperbox ' + PR.orient + '"><iframe title="preview" data-prframe></iframe><div class="bz-prload">' + esc(T({ en:'Building the document…', th:'กำลังสร้างเอกสาร…' })) + '</div></div></div></div>';
@@ -1588,17 +1594,20 @@
     return h;
   }
   function coverHTML(E, F){
-    var now = new Date(), ds = now.toLocaleDateString(L() === 'th' ? 'th-TH' : 'en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-    var ph = PHASES[E.phase], it = F.items, k = function(lbl, v){ return '<div><span>' + esc(T(lbl)) + '</span><b>' + v + '</b></div>'; };
-    var c6 = fcAt(it.core, 6), f12 = fcAt(it.ff, 12), y6 = fcAt(it.y10, 6);
-    void ds;
+    var ph = PHASES[E.phase], it = F.items, c6 = fcAt(it.core, 6), f12 = fcAt(it.ff, 12), y6 = fcAt(it.y10, 6), u6 = fcAt(it.un, 6), s6 = fcAt(it.spx, 6), o6 = fcAt(it.oil, 6);
+    var tn = E.score >= 56 ? 'good' : E.score >= 44 ? 'mid' : 'bad';
+    var k = function(lbl, now, nx, dir){ return '<div class="' + (dir || '') + '"><span>' + esc(T(lbl)) + '</span><b>' + now + '</b>' + (nx ? '<em>→ ' + nx + '</em>' : '') + '</div>'; };
+    var d = function(a, b, inv){ if(!isNum(a) || !isNum(b)) return ''; var x = b - a; return Math.abs(x) < 1e-9 ? '' : ((x > 0) !== !!inv ? 'up' : 'dn'); };
     return '<section class="pg cover">' + docHead(PR.type === 'custom' ? { en:'Market Brain report', th:'รายงานสมองตลาด' } : prType()[2]) +
-      '<div class="cv-main">' +
-      '<div class="cv-score"><div class="cv-g">' + gauge(E.score, T(E.weather.w)) + '</div><div><b>' + esc(T(ph.name)) + '</b><p>' + esc(T(E.head)) + '</p></div></div>' +
-      '<div class="cv-k">' + k({ en:'Core inflation', th:'เงินเฟ้อพื้นฐาน' }, pc(E.infl.v, 2) + ' → ' + pc(c6 && c6.v, 2)) + k({ en:'Fed rate', th:'ดอกเบี้ยเฟด' }, pc(E.fed.ff, 2) + ' → ' + pc(f12 && f12.v, 2)) + k({ en:'10y yield', th:'บอนด์ 10 ปี' }, pc(E.fed.y10, 2) + ' → ' + pc(y6 && y6.v, 2)) + k({ en:'Unemployment', th:'ว่างงาน' }, pc(E.growth.un, 1)) +
-        k({ en:'GDP next quarter', th:'GDP ไตรมาสหน้า' }, pc(F.gdp.q1, 1)) + k({ en:'Recession odds 12m', th:'โอกาสถดถอย 12 เดือน' }, f(F.rec && F.rec.p, 0) + '%') + k({ en:'S&P 500 6m', th:'S&P 500 อีก 6 เดือน' }, f(fcAt(it.spx, 6) && fcAt(it.spx, 6).v, 0)) + k({ en:'Oil 6m', th:'น้ำมันอีก 6 เดือน' }, '$' + f(fcAt(it.oil, 6) && fcAt(it.oil, 6).v, 0)) + '</div>' +
+      '<div class="cv-main"><div class="cv-score ' + tn + '"><div class="cv-sl"><div class="cv-w">' + ico(E.weather.k) + '<b>' + esc(T(E.weather.w)) + '</b></div><div class="cv-g">' + gauge(E.score, '') + '</div><div class="cv-n">' + esc(T({ en:'Market score', th:'คะแนนตลาด' })) + ' <b>' + Math.round(E.score) + '</b>/100</div></div>' +
+        '<div class="cv-sr"><span class="cv-ph">' + esc(T(ph.short)) + '</span><b>' + esc(T(ph.name)) + '</b><p>' + esc(T(E.head)) + '</p></div></div>' +
+      '<h6 class="cv-kh">' + esc(T({ en:'Key numbers: now → 6 months (Fed: 12 months)', th:'ตัวเลขสำคัญ: ตอนนี้ → อีก 6 เดือน (เฟด: 12 เดือน)' })) + '</h6><div class="cv-k">' +
+        k({ en:'Core inflation', th:'เงินเฟ้อพื้นฐาน' }, pc(E.infl.v, 2), pc(c6 && c6.v, 2), d(E.infl.v, c6 && c6.v, true)) + k({ en:'Fed rate', th:'ดอกเบี้ยเฟด' }, pc(E.fed.ff, 2), pc(f12 && f12.v, 2), d(E.fed.ff, f12 && f12.v, true)) +
+        k({ en:'10-year yield', th:'บอนด์ 10 ปี' }, pc(E.fed.y10, 2), pc(y6 && y6.v, 2), d(E.fed.y10, y6 && y6.v, true)) + k({ en:'Unemployment', th:'ว่างงาน' }, pc(E.growth.un, 1), pc(u6 && u6.v, 2), d(E.growth.un, u6 && u6.v, true)) +
+        k({ en:'GDP next quarter', th:'GDP ไตรมาสหน้า' }, pc(F.gdp.q1, 1), '', F.gdp.q1 >= 2 ? 'up' : F.gdp.q1 < 1 ? 'dn' : '') + k({ en:'Recession odds 12m', th:'โอกาสถดถอย 12 เดือน' }, f(F.rec && F.rec.p, 0) + '%', '', F.rec && F.rec.p < 20 ? 'up' : F.rec && F.rec.p > 35 ? 'dn' : '') +
+        k({ en:'S&P 500 (SPY)', th:'S&P 500 (SPY)' }, f(F.spx && F.spx.last, 0), f(s6 && s6.v, 0), d(F.spx && F.spx.last, s6 && s6.v)) + k({ en:'Oil (WTI)', th:'น้ำมัน WTI' }, '$' + f(it.oil && it.oil.now, 0), '$' + f(o6 && o6.v, 0), d(it.oil && it.oil.now, o6 && o6.v, true)) + '</div>' +
       '<div class="cv-toc"><h6>' + esc(T({ en:'Contents', th:'สารบัญ' })) + '</h6><ol>' + prList().map(function(s){ return '<li>' + esc(T(prTitle(s))) + '</li>'; }).join('') + '</ol></div></div>' +
-      (PR.analyst ? analystBlock() : '') + '<div class="cv-foot">' + esc(T({ en:'Generated by SPACEZ TERMINAL · Market Brain · data: FRED, Yahoo Finance, Shiller, FINRA, Cboe', th:'สร้างโดย SPACEZ TERMINAL · สมองตลาด · ข้อมูล: FRED, Yahoo Finance, Shiller, FINRA, Cboe' })) + ' · ' + esc(prRef()) + '</div></section>';
+      '<div class="cv-foot">' + esc(T({ en:'SPACEZ TERMINAL · Market Brain · data: FRED, Yahoo Finance, Shiller, FINRA, Cboe', th:'SPACEZ TERMINAL · สมองตลาด · ข้อมูล: FRED, Yahoo Finance, Shiller, FINRA, Cboe' })) + (PR.hd.ref ? ' · ' + esc(prRef()) : '') + '</div></section>';
   }
   function renderTab(k){
     var E = E_last, F = F_last;
@@ -1631,12 +1640,16 @@
       '.bz-two{grid-template-columns:1fr 1fr!important;}.bz-fcgrid{grid-template-columns:repeat(4,minmax(0,1fr))!important;}.bz-dns{grid-template-columns:repeat(3,minmax(0,1fr))!important;}.bz-scen{grid-template-columns:1fr!important;}' +
       '.bz-hero{grid-template-columns:200px 1fr!important;}.bz-clk{grid-column:1/-1;flex-direction:row!important;text-align:left!important;}.bz-pills{grid-template-columns:repeat(3,minmax(0,1fr))!important;}' +
       '.bz-verdict{grid-template-columns:150px 1fr!important;}.bz-sum{min-width:0!important;font-size:11px!important;}.bz-tw{overflow:visible!important;}' +
-      '.pg::before{content:"";display:block;height:6px;margin:-26px -26px 18px;border-radius:6px 6px 0 0;background:linear-gradient(90deg,#22d3ee,#a78bfa,#f472b6);}' +
-      '.cover::before{display:none;}.rh{display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 0 16px;margin-bottom:16px;border-bottom:1px solid var(--bz-line);}' +
-      '.rh-band{align-self:stretch;height:8px;margin:0 -26px 18px;background:linear-gradient(90deg,#22d3ee,#a78bfa,#f472b6);}.cover .rh{padding:0 26px 16px;}.cover .rh-band{margin:0 -26px 22px;}' +
-      '.rh-logo{width:54px;height:auto;margin-bottom:8px;}.rh-brand{font-family:var(--mono);font-size:12px;letter-spacing:.32em;color:var(--grey);}' +
-      '.rh-title{font-size:24px;font-weight:800;margin-top:8px;color:#4f46e5;}html[data-theme=dark] .rh-title{color:#a5b4fc;}' +
-      '.rh-sub{font-size:12.5px;color:var(--grey);margin-top:4px;}.rh-meta{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 18px;margin-top:12px;font-size:10.5px;color:var(--grey);font-family:var(--mono);}.rh-ref b{color:var(--white);}' +
+      '.pg::before{content:"";display:block;height:5px;margin:-26px -26px 16px;border-radius:6px 6px 0 0;background:linear-gradient(90deg,#22d3ee,#a78bfa,#f472b6);}.pg:first-child::before{display:none;}' +
+      '.rh{display:flex;flex-direction:column;align-items:center;text-align:center;border-bottom:2px solid var(--white);padding:4px 0 16px;margin-bottom:18px;font-family:"Sarabun","Noto Sans Thai","Inter",sans-serif;}.cover .rh{margin:26px 26px 18px;}' +
+      '.rh-logo{width:46px;height:auto;margin-bottom:10px;}.rh-brand{font-size:15px;font-weight:800;letter-spacing:2px;}html[lang=th] .rh-brand{letter-spacing:2px;}' +
+      '.rh-title{font-size:20px;font-weight:800;letter-spacing:.5px;margin-top:8px;}.rh-sub{font-size:10.5px;color:var(--grey);letter-spacing:1px;margin-top:5px;}' +
+      '.rh-meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px 18px;font-size:10px;color:var(--grey);margin-top:12px;width:100%;}' +
+      '.cv-score{display:grid;grid-template-columns:230px 1fr;gap:22px;align-items:center;padding:20px;border-radius:18px;background:var(--bz-card);border-left:5px solid var(--bz-mid);}.cv-score.good{border-left-color:var(--bz-good);}.cv-score.bad{border-left-color:var(--bz-bad);}' +
+      '.cv-sl{display:flex;flex-direction:column;align-items:center;gap:2px;}.cv-w{display:flex;align-items:center;gap:8px;}.cv-w .bz-i{width:30px;height:30px;color:var(--bz-mid);}.cv-score.good .cv-w .bz-i{color:#f59e0b;}.cv-w b{font-size:24px;font-weight:800;}' +
+      '.cv-g{width:190px;}.cv-g .bz-gl2{display:none;}.cv-n{font-size:12px;color:var(--grey);}.cv-n b{font-family:var(--mono);font-size:15px;color:var(--white);}' +
+      '.cv-sr b{display:block;font-size:17px;line-height:1.4;}.cv-ph{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;color:#fff;background:linear-gradient(135deg,#6366f1,#a78bfa);margin-bottom:6px;}.cv-sr p{margin:8px 0 0;font-size:13px;line-height:1.75;color:var(--grey);}' +
+      '.cv-kh{margin:0 0 -8px;font-size:12px;color:var(--grey);letter-spacing:.04em;}' +
       '.ph img{width:16px;height:auto;vertical-align:-3px;margin-right:6px;}' +
       '.ab{display:flex;align-items:center;gap:16px;margin:18px 0 0;padding:14px 18px;border-radius:14px;border:1px solid var(--bz-line);background:var(--bz-card);break-inside:avoid;}' +
       '.ab-ava{width:58px;height:58px;border-radius:50%;object-fit:cover;}.ab-txt{flex:1;}.ab-cap{font-size:10.5px;color:var(--grey);letter-spacing:.08em;}.ab-name{font-size:17px;font-weight:800;}.ab-role{font-size:11.5px;color:var(--grey);}.ab-ref{font-family:var(--mono);font-size:10px;color:var(--grey);margin-top:3px;}' +
@@ -1649,7 +1662,10 @@
       '.cv-main{flex:1;padding:40px 34px 20px;display:flex;flex-direction:column;gap:22px;}.cv-eb{font-family:var(--mono);font-size:13px;letter-spacing:.2em;color:#0891b2;}' +
       '.cover h1{margin:0;font-size:44px;line-height:1.15;background:linear-gradient(100deg,var(--white),#6366f1 60%,#db2777);-webkit-background-clip:text;background-clip:text;color:transparent;}' +
       '.cv-score{display:grid;grid-template-columns:210px 1fr;gap:20px;align-items:center;padding:18px;border-radius:18px;background:var(--bz-card);}.cv-score b{font-size:16px;}.cv-score p{margin:6px 0 0;font-size:13px;line-height:1.75;color:var(--grey);}' +
-      '.cv-k{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}.cv-k div{padding:12px;border-radius:14px;background:var(--bz-card);border-left:3px solid #a78bfa;}.cv-k span{display:block;font-size:11px;color:var(--grey);}.cv-k b{font-family:var(--mono);font-size:15px;}' +
+      '.cv-k{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}.cv-k div{padding:12px 14px;border-radius:14px;background:var(--bz-card);border-left:4px solid #a78bfa;}.cv-k div.up{border-left-color:var(--bz-good);}.cv-k div.dn{border-left-color:var(--bz-bad);}' +
+      '.cv-k div.up,.cv-k div.dn{color:var(--white);}.cv-k span{display:block;font-size:12px;font-weight:600;color:var(--grey);}.cv-k b{display:block;font-family:var(--mono);font-size:20px;margin-top:2px;}.cv-k em{font-style:normal;font-family:var(--mono);font-size:13px;color:#6366f1;font-weight:700;}.cv-k div.up em{color:var(--bz-good);}.cv-k div.dn em{color:var(--bz-bad);}' +
+      'h2,h3,h4,h5,h6,.pt,.bz-h3,.rh{break-after:avoid;page-break-after:avoid;}p,li,dd{orphans:3;widows:3;}tr,.bz-er,.bz-chkg div,.bz-tile,.bz-dt,.bz-fcc,.bz-pair,.bz-hw,.bz-wires div,.bz-ev,.bz-gloss div,.ab,.bz-mi dl,.cv-score,.cv-k div{break-inside:avoid;page-break-inside:avoid;}thead{display:table-header-group;}' +
+      '.bz-sec>h4{break-after:avoid;}.bz-fdet{display:none!important;}' +
       '.cv-toc h6{margin:0 0 6px;font-size:12px;letter-spacing:.1em;color:var(--grey);}.cv-toc ol{margin:0;padding-left:20px;columns:2;font-size:14px;line-height:2;}' +
       '.cv-foot{padding:14px 34px;font-size:10.5px;color:var(--grey);border-top:1px solid var(--bz-line);}' +
       '@media print{html,body{background:var(--bg);}.doc{width:auto;padding:0;}.pg{box-shadow:none;border-radius:0;margin:0;padding:0 0 6px;}.cover{min-height:' + (PR.orient === 'landscape' ? '185mm' : '275mm') + ';}}' +
@@ -1705,6 +1721,7 @@
       if(t.name === 'bzPrT'){ PR.type = t.value; if(PR.type === 'custom' && !Object.keys(PR.secs).some(function(k){ return PR.secs[k]; })) PR.secs = { sum:1, fc:1 }; paint(); return; }
       if(t.hasAttribute('data-prs')){ if(PR.type !== 'custom'){ PR.secs = {}; prList().forEach(function(k){ PR.secs[k] = 1; }); PR.type = 'custom'; } PR.secs[t.getAttribute('data-prs')] = t.checked ? 1 : 0; paint(); return; }
       if(t.hasAttribute('data-prcover')){ PR.cover = t.checked; paint(); return; }
+      if(t.hasAttribute('data-prhd')){ PR.hd[t.getAttribute('data-prhd')] = t.checked ? 1 : 0; try { localStorage.setItem('spz.brain.prhead', JSON.stringify(PR.hd)); } catch(e){} paint(); return; }
       if(t.hasAttribute('data-pranalyst')){ PR.analyst = t.checked; try { localStorage.setItem('spz.report.analyst', t.checked ? '1' : '0'); } catch(e){} paint(); return; }
     });
     root.addEventListener('click', function(ev){
@@ -1839,6 +1856,76 @@
     var c = consensus(E, F);
     return '<div class="bz-cons"><div class="bz-consb"><i class="u" style="flex:' + c.up + '"></i><i class="m" style="flex:' + c.mid + '"></i><i class="d" style="flex:' + c.dn + '"></i></div><div class="bz-consl"><span class="u">' + esc(T({ en:'positive ', th:'บวก ' })) + c.up + '</span><span class="m">' + esc(T({ en:'neutral ', th:'กลาง ' })) + c.mid + '</span><span class="d">' + esc(T({ en:'negative ', th:'ลบ ' })) + c.dn + '</span></div><p>' +
       esc(T({ en:'Signals agree ' + f(c.agree, 0) + '% ' + (c.side > 0 ? 'on the positive side' : c.side < 0 ? 'on the negative side' : '— evenly split') + (c.agree < 60 ? ': a mixed picture, size positions modestly.' : c.agree > 75 ? ': a clear message.' : '.'), th:'สัญญาณเห็นตรงกัน ' + f(c.agree, 0) + '% ' + (c.side > 0 ? 'ไปทางบวก' : c.side < 0 ? 'ไปทางลบ' : '— แบ่งครึ่ง') + (c.agree < 60 ? ' ภาพยังปนกัน ควรลงทุนแบบพอประมาณ' : c.agree > 75 ? ' ข้อความชัดเจน' : '') })) + '</p></div>';
+  }
+
+  /* ======================================== FORECAST DETAIL (2026-10-25 e)
+     "Show more" panels under every forecast: a month-by-month path, the odds
+     of crossing levels that matter, and what would move the forecast. Plus a
+     meeting-by-meeting Fed path. */
+  var FOMC = [['2026-10-28', 0], ['2026-12-09', 0], ['2027-01-27', 1], ['2027-03-17', 1], ['2027-04-28', 1], ['2027-06-16', 1], ['2027-07-28', 1], ['2027-09-22', 1], ['2027-10-27', 1], ['2027-12-15', 1]];
+  function pathAt(it, months){
+    /* linear between now (0) and the 3 / 6 / 12-month points */
+    var pts = [[0, it.now, it.now, it.now]].concat(it.fc.map(function(q){ return [q.m, q.v, q.lo, q.hi]; }));
+    for(var i = 1; i < pts.length; i++){ if(months <= pts[i][0]){ var a = pts[i - 1], b = pts[i], w = (months - a[0]) / (b[0] - a[0]); return [a[1] + (b[1] - a[1]) * w, a[2] + (b[2] - a[2]) * w, a[3] + (b[3] - a[3]) * w]; } }
+    var l = pts[pts.length - 1]; return [l[1], l[2], l[3]];
+  }
+  function monthsTo(t){ return (tms(t) - Date.now()) / (30.44 * 864e5); }
+  function fomcRows(F){
+    var it = F.items.ff; if(!it) return [];
+    var prev = it.now, out = [];
+    FOMC.forEach(function(m){
+      var mo = monthsTo(m[0]); if(mo < -0.1 || mo > 13) return;
+      var p = pathAt(it, Math.max(0, mo)), d = p[0] - prev, pr = clamp(Math.abs(d) / 0.25, 0, 1);
+      out.push({ d:m[0], est:m[1], rate:p[0], chg:d, cum:p[0] - it.now, prob:pr * 100, dir:d > 0.0625 ? 1 : d < -0.0625 ? -1 : 0, lo:p[1], hi:p[2] });
+      prev = p[0];
+    });
+    return out;
+  }
+  function fomcHTML(F){
+    var rows = fomcRows(F); if(!rows.length) return '';
+    var loc = L() === 'th' ? 'th-TH' : 'en-GB';
+    return '<div class="bz-sec bz-fomc"><h4>' + ico('bank') + esc(T({ en:'Fed meeting by meeting (what the market is pricing)', th:'ดอกเบี้ยเฟดรายการประชุม (ตลาดกำลังคาดอะไร)' })) + '</h4><div class="bz-fomcg">' + rows.map(function(r){
+      var dd = new Date(tms(r.d)).toLocaleDateString(loc, { day:'numeric', month:'short', year:'2-digit', timeZone:'UTC' });
+      var lab = r.dir > 0 ? { en:'hike', th:'ขึ้น' } : r.dir < 0 ? { en:'cut', th:'ลด' } : { en:'hold', th:'คง' };
+      return '<div class="' + (r.dir > 0 ? 'up' : r.dir < 0 ? 'dn' : 'fl') + '"><span>' + esc(dd) + (r.est ? ' *' : '') + '</span><b>' + f(r.rate, 2) + '%</b><em class="dec">' + esc(T(lab)) + '</em><i><u style="width:' + f(r.prob, 0) + '%"></u></i><small>' + esc(T({ en:'odds of a 0.25 move ', th:'โอกาสขยับ 0.25 ' })) + f(r.prob, 0) + '% · ' + esc(T({ en:'vs today ', th:'เทียบวันนี้ ' })) + sg(r.cum, 2) + '</small></div>';
+    }).join('') + '</div>' + note({ en:'Built from the 3-month T-bill and the 2-year yield (the same path as the forecast chart), read at each meeting date. * 2027 dates are approximate until the Fed publishes its calendar.', th:'สร้างจากตั๋วเงินคลัง 3 เดือนและบอนด์ 2 ปี (เส้นทางเดียวกับกราฟคาดการณ์) อ่านค่า ณ วันประชุมแต่ละครั้ง * วันประชุมปี 2027 เป็นค่าประมาณจนกว่าเฟดจะประกาศปฏิทิน' }) + '</div>';
+  }
+  function probAbove(it, months, level){
+    var p = pathAt(it, months), sd = (p[2] - p[1]) / 2 || 1e-9;
+    return (1 - Phi((level - p[0]) / sd)) * 100;
+  }
+  function fcSens(it, F, E){
+    var k = it.k, s = [];
+    if(k === 'core' || k === 'cpi'){ s.push({ en:'If prices rise 0.05% a month faster than expected, the 12-month figure ends ≈ +0.6 pt higher.', th:'ถ้าราคาขึ้นเร็วกว่าคาดเดือนละ 0.05% ตัวเลข 12 เดือนข้างหน้าจะสูงกว่าคาดราว +0.6 จุด' });
+      if(k === 'cpi') s.push({ en:'Each 10% move in oil shifts headline CPI by roughly 0.2 pt within a quarter.', th:'น้ำมันขยับทุก 10% ทำให้ CPI ขยับราว 0.2 จุดภายในไตรมาส' }); }
+    if(k === 'ff'){ s.push({ en:'If core inflation is 0.5 pt higher, the Taylor rule rises 0.75 pt — pressure to hike.', th:'ถ้าเงินเฟ้อพื้นฐานสูงขึ้น 0.5 จุด กฎเทย์เลอร์จะสูงขึ้น 0.75 จุด เป็นแรงกดดันให้ขึ้นดอกเบี้ย' }, { en:'If unemployment rises 0.5 pt, the Taylor rule falls 0.5 pt — room to cut.', th:'ถ้าว่างงานเพิ่ม 0.5 จุด กฎเทย์เลอร์จะลดลง 0.5 จุด เปิดทางให้ลดดอกเบี้ย' }); }
+    if(k === 'y10' || k === 'y2'){ s.push({ en:'+0.2 pt in 5-year inflation expectations lifts 10y fair value ≈ +0.1 pt.', th:'เงินเฟ้อคาด 5 ปีเพิ่ม 0.2 จุด ทำให้มูลค่าเหมาะสมของบอนด์ 10 ปีเพิ่มราว 0.1 จุด' }, { en:'One extra 0.25 Fed hike priced lifts the 2y ≈ 0.15 and the 10y ≈ 0.07.', th:'ถ้าตลาดคาดเฟดขึ้นเพิ่ม 1 ครั้ง (0.25) บอนด์ 2 ปีเพิ่มราว 0.15 และ 10 ปีราว 0.07' }); }
+    if(k === 'un'){ s.push({ en:'If job growth stalls at 0, unemployment rises ≈ 0.18 pt a quarter.', th:'ถ้าการจ้างงานเพิ่มเป็นศูนย์ อัตราว่างงานจะขึ้นราว 0.18 จุดต่อไตรมาส' }, { en:'A 10% rise in weekly claims adds ≈ 0.12 pt a quarter.', th:'คนขอสวัสดิการว่างงานเพิ่ม 10% เพิ่มอัตราว่างงานราว 0.12 จุดต่อไตรมาส' }); }
+    if(k === 'spx'){ s.push({ en:'Every 5 points on the market score moves the expected yearly return ≈ 0.6 pt.', th:'คะแนนตลาดเปลี่ยน 5 แต้ม ผลตอบแทนคาดต่อปีเปลี่ยนราว 0.6 จุด' }, { en:'If VIX doubles, the likely range doubles too — the centre does not move.', th:'ถ้า VIX เพิ่มเป็น 2 เท่า ช่วงที่น่าจะเป็นจะกว้างขึ้น 2 เท่า แต่ค่ากลางไม่เปลี่ยน' }); }
+    if(k === 'oil') s.push({ en:'Oil has drifted back about 45% of the way to its 3-year average per year; a supply shock can override that quickly.', th:'น้ำมันมักกลับหาค่าเฉลี่ย 3 ปีราว 45% ต่อปี แต่เหตุการณ์ด้านอุปทานสามารถเปลี่ยนเรื่องนี้ได้เร็ว' });
+    return s;
+  }
+  function fcLevels(it){
+    var k = it.k, L2 = [];
+    var add = function(lbl, lvl, m){ L2.push({ n:lbl, p:probAbove(it, m, lvl) }); };
+    if(k === 'core' || k === 'cpi'){ add({ en:'above 3% in 6 months', th:'เกิน 3% ใน 6 เดือน' }, 3, 6); add({ en:'back below 2.5% in 12 months', th:'กลับต่ำกว่า 2.5% ใน 12 เดือน' }, 2.5, 12); L2[1].p = 100 - L2[1].p; }
+    if(k === 'ff'){ add({ en:'higher than today in 12 months', th:'สูงกว่าวันนี้ใน 12 เดือน' }, it.now + 0.01, 12); }
+    if(k === 'y10'){ add({ en:'above 5% in 6 months', th:'เกิน 5% ใน 6 เดือน' }, 5, 6); add({ en:'below 4.5% in 12 months', th:'ต่ำกว่า 4.5% ใน 12 เดือน' }, 4.5, 12); L2[1].p = 100 - L2[1].p; }
+    if(k === 'y2'){ add({ en:'above today in 6 months', th:'สูงกว่าวันนี้ใน 6 เดือน' }, it.now, 6); }
+    if(k === 'un'){ add({ en:'4.5% or more in 12 months', th:'ถึง 4.5% ขึ้นไปใน 12 เดือน' }, 4.5, 12); }
+    if(k === 'spx'){ add({ en:'higher in 6 months', th:'สูงกว่าวันนี้ใน 6 เดือน' }, it.now, 6); add({ en:'down 10% or more in 6 months', th:'ลง 10% ขึ้นไปใน 6 เดือน' }, it.now * 0.9, 6); L2[1].p = 100 - L2[1].p; }
+    if(k === 'oil'){ add({ en:'above $100 in 6 months', th:'เกิน $100 ใน 6 เดือน' }, 100, 6); add({ en:'below $80 in 12 months', th:'ต่ำกว่า $80 ใน 12 เดือน' }, 80, 12); L2[1].p = 100 - L2[1].p; }
+    return L2;
+  }
+  function fcDetails(it, F, E){
+    if(!it || !it.fc) return '';
+    var pre = it.unit === '$' ? '$' : '', u = it.unit === '%' ? '%' : '', rows = '';
+    for(var m = 1; m <= 12; m++){ var p = pathAt(it, m); rows += '<tr' + (m % 3 === 0 ? ' class="q"' : '') + '><td>' + esc(mshort(addM(it.t, m))) + '</td><td><b>' + pre + f(p[0], it.dec) + u + '</b></td><td>' + pre + f(p[1], it.dec) + ' – ' + f(p[2], it.dec) + u + '</td><td class="' + (p[0] - it.now >= 0 ? 'up' : 'dn') + '">' + sg(p[0] - it.now, it.dec) + '</td></tr>'; }
+    var lv = fcLevels(it), sn = fcSens(it, F, E);
+    return '<details class="bz-fdet"><summary>' + ico('plus') + esc(T({ en:'Show the detail: month by month, odds and what would change it', th:'ดูละเอียด: รายเดือน โอกาส และอะไรจะทำให้เปลี่ยน' })) + '</summary><div class="bz-fdg">' +
+      '<div><h6>' + esc(T({ en:'Month by month (68% range)', th:'รายเดือน (ช่วงโอกาส 68%)' })) + '</h6><table class="bz-mtab"><thead><tr><th></th><th>' + esc(T({ en:'Forecast', th:'คาด' })) + '</th><th>' + esc(T({ en:'Range', th:'ช่วง' })) + '</th><th>' + esc(T({ en:'vs now', th:'เทียบตอนนี้' })) + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div>' + (lv.length ? '<h6>' + esc(T({ en:'Odds of levels that matter', th:'โอกาสถึงระดับสำคัญ' })) + '</h6><div class="bz-odds">' + lv.map(function(o){ var p = clamp(o.p, 1, 99); return '<div><span>' + esc(T(o.n)) + '</span><i><u style="width:' + p.toFixed(0) + '%"></u></i><b>' + p.toFixed(0) + '%</b></div>'; }).join('') + '</div>' : '') +
+        (sn.length ? '<h6>' + esc(T({ en:'What would change the forecast', th:'อะไรจะทำให้คาดการณ์เปลี่ยน' })) + '</h6><ul class="bz-basis">' + sn.map(function(x){ return '<li>' + esc(T(x)) + '</li>'; }).join('') + '</ul>' : '') + '</div></div></details>';
   }
 
   /* ------------------------------------------------------- portfolio view */
