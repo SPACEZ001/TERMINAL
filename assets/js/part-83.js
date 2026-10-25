@@ -1693,12 +1693,11 @@
      so Safari, Chrome and the PDF all get exactly the same pages. */
   var SAFE = '.bz-view>*,.bz-row>*,.bz-sec>*,.bz-two>*,tr,.bz-tiles>*,.bz-dtiles>*,.bz-pills>*,.bz-cards>*,.bz-fcgrid>*,.bz-mitems>*,.bz-calg>*,.bz-gcards>*,.bz-chkg>*,.bz-exp>*,.bz-flow li,.bz-dns>*,.bz-kpis>*,.bz-scen>*,.bz-pairs>*,.bz-cng>*,.bz-fxg>*,.bz-wires>*,.bz-fomcg>*,.bz-howg>*,.bz-gloss>*,.bz-day>*,.ab,.rh,.pt,.ph,.cv-main>*,.bz-mi dl>*,.bz-basis li,.bz-iss li,.bz-adds li,.bz-rank>*';
   function prDims(){ var land = PR.orient === 'landscape', PW = land ? 297 : 210, PH = land ? 210 : 297, M = 8; return { land:land, PW:PW, PH:PH, M:M, CW:PW - 2 * M, CH:PH - 2 * M, bg:PR.theme === 'dark' ? '#0a0d14' : '#ffffff' }; }
-  function renderPages(say, done, fail){
+  function renderPages(say, done, fail, mode){
     /* a private off-screen copy of the document, so a preview refresh can never pull the page out from under the renderer */
     var old = document.getElementById('bzRenderFrame'); if(old) old.remove();
     var fr = document.createElement('iframe'); fr.id = 'bzRenderFrame'; fr.setAttribute('aria-hidden', 'true');
     fr.style.cssText = 'position:fixed;left:-20000px;top:0;width:' + ((PR.orient === 'landscape' ? 1080 : 760) + 40) + 'px;height:1200px;border:0;visibility:visible;pointer-events:none;';
-    document.body.appendChild(fr);
     var d, w, G = prDims(), timer = null, finished = false;
     var fail0 = fail, done0 = done;
     fail = function(e){ if(finished) return; finished = true; clearTimeout(timer); fr.remove(); fail0(e); };
@@ -1738,6 +1737,14 @@
       }
       out.push([start, H]); return out;
     }
+    function runDom(){
+      try {
+        var pages = Array.prototype.slice.call(d.querySelectorAll('.pg')), plan = [];
+        pages.forEach(function(pg){ var wpx = pg.offsetWidth; plan.push({ html:pg.outerHTML, w:wpx, parts:cuts(pg, wpx * G.CH / G.CW) }); });
+        var de = d.documentElement;
+        done({ plan:plan, head:d.head.innerHTML, theme:de.getAttribute('data-theme'), lang:de.getAttribute('lang') }, G);
+      } catch(e){ fail(e); }
+    }
     function run(){
       try { prep(); } catch(e){ return fail(e); }
       var pages = Array.prototype.slice.call(d.querySelectorAll('.pg')), n = 0, out = [];
@@ -1760,35 +1767,54 @@
       next();
     }
     fr.onload = function(){
-      d = fr.contentDocument; w = fr.contentWindow; watchdog();
+      d = fr.contentDocument; w = fr.contentWindow;
+      if(!d || !d.querySelector('.doc')) return;   /* Safari also fires load for the initial blank page */
+      if(fr.__started) return; fr.__started = true; watchdog();
       var ready = d.fonts && d.fonts.ready ? d.fonts.ready : Promise.resolve();
-      ready.then(function(){ setTimeout(function(){ load('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', function(){ return !!w.html2canvas; }, run); }, 300); });
+      ready.then(function(){ setTimeout(function(){ if(mode === 'dom') return runDom(); load('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', function(){ return !!w.html2canvas; }, run); }, 400); });
     };
     fr.srcdoc = docHTML();
+    document.body.appendChild(fr);
   }
   function prBusy(btn, on){ host.querySelectorAll('[data-prprint],[data-prpdf]').forEach(function(b){ b.disabled = on; }); }
   function prPrint(btn){
     var msg = host.querySelector('[data-prmsg]'), say = function(o){ if(msg) msg.textContent = T(o); };
     prBusy(btn, true); say({ en:'Preparing pages…', th:'กำลังจัดหน้า…' });
-    renderPages(say, function(pages, G){
-      var bg = G.bg, html = '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(prRef()) + '</title><style>@page{size:A4 ' + PR.orient + ';margin:0;}html,body{margin:0;padding:0;background:' + bg + ';}' +
-        '.p{width:' + G.PW + 'mm;height:' + G.PH + 'mm;box-sizing:border-box;padding:' + G.M + 'mm;page-break-after:always;break-after:page;overflow:hidden;background:' + bg + ';-webkit-print-color-adjust:exact;print-color-adjust:exact;}.p:last-child{page-break-after:auto;break-after:auto;}.p img{display:block;width:' + G.CW + 'mm;}</style></head><body>' +
-        pages.map(function(p){ return '<div class="p"><img src="' + p.src + '" style="height:' + p.hmm.toFixed(2) + 'mm"></div>'; }).join('') + '</body></html>';
+    renderPages(say, function(R, G){
+      var CWpx = G.CW * 96 / 25.4, total = 0, body = '';
+      R.plan.forEach(function(s){
+        var k = CWpx / s.w;
+        s.parts.forEach(function(p){
+          total++;
+          body += '<div class="p"><div class="clip" style="height:' + ((p[1] - p[0]) * k).toFixed(1) + 'px"><div class="mv" style="width:' + s.w + 'px;transform:scale(' + k.toFixed(5) + ') translateY(-' + p[0].toFixed(1) + 'px);-webkit-transform:scale(' + k.toFixed(5) + ') translateY(-' + p[0].toFixed(1) + 'px)">' + s.html + '</div></div></div>';
+        });
+      });
+      var head = R.head.replace(/@media print\{[\s\S]*?\}\}/, '').replace(/@page\{[^}]*\}/, '');   /* the preview's own print rules would re-flow the pages */
+      var html = '<!doctype html><html lang="' + (R.lang || 'th') + '" data-theme="' + (R.theme || 'light') + '"><head>' + head + '<style>@page{size:A4 ' + PR.orient + ';margin:0;}html,body{margin:0!important;padding:0!important;background:' + G.bg + '!important;}' +
+        '.p{width:' + G.PW + 'mm;height:' + G.PH + 'mm;box-sizing:border-box;padding:' + G.M + 'mm;page-break-after:always;break-after:page;overflow:hidden;position:relative;background:' + G.bg + ';}.p:last-child{page-break-after:auto;break-after:auto;}' +
+        '.clip{width:' + G.CW + 'mm;overflow:hidden;position:relative;}.mv{transform-origin:0 0;-webkit-transform-origin:0 0;}.mv .pg{margin:0!important;box-shadow:none!important;border-radius:0!important;page-break-after:auto!important;break-after:auto!important;}' +
+        '.mv .cover{height:' + (PR.orient === 'landscape' ? '700px' : '1000px') + '!important;min-height:0!important;}</style></head><body class="doc bz-wrap" style="width:auto;padding:0">' + body + '</body></html>';
       var old = document.getElementById('bzPrintFrame'); if(old) old.remove();
       var f = document.createElement('iframe'); f.id = 'bzPrintFrame'; f.setAttribute('aria-hidden', 'true');
-      f.style.cssText = 'position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none;';
-      document.body.appendChild(f);
-      var fd = f.contentWindow.document; fd.open(); fd.write(html); fd.close();
-      var imgs = fd.images, left = imgs.length, go = function(){ prBusy(btn, false); say({ en:pages.length + ' pages ready — choose “Save as PDF” in the print window for a file.', th:'พร้อม ' + pages.length + ' หน้า — ในหน้าต่างพิมพ์เลือก “บันทึกเป็น PDF” ถ้าต้องการไฟล์' }); try { f.contentWindow.focus(); f.contentWindow.print(); } catch(e){} PR.ref = null; setTimeout(function(){ if(tab === 'print') paint(); }, 4000); };
-      if(!left) return go();
-      Array.prototype.forEach.call(imgs, function(im){ if(im.complete){ if(--left === 0) go(); } else im.onload = im.onerror = function(){ if(--left === 0) go(); }; });
-    }, function(err){ if(window.console) console.error(err); prBusy(btn, false); say({ en:'Could not prepare the pages — reload the page and try again.', th:'จัดหน้าไม่สำเร็จ ลองโหลดหน้าใหม่แล้วกดอีกครั้ง' }); });
+      f.style.cssText = 'position:fixed;right:0;bottom:0;width:820px;height:1100px;border:0;opacity:0;pointer-events:none;z-index:-1;';
+      var fired = false;
+      f.onload = function(){
+        var fd = f.contentDocument; if(fired || !fd || !fd.querySelector('.p')) return; fired = true;
+        var ready = fd.fonts && fd.fonts.ready ? fd.fonts.ready : Promise.resolve();
+        ready.then(function(){ setTimeout(function(){
+          prBusy(btn, false); say({ en:total + ' pages ready — choose “Save as PDF” in the print window for a file.', th:'พร้อม ' + total + ' หน้า — ในหน้าต่างพิมพ์เลือก “บันทึกเป็น PDF” ถ้าต้องการไฟล์' });
+          try { f.contentWindow.focus(); f.contentWindow.print(); } catch(e){}
+          PR.ref = null; setTimeout(function(){ if(tab === 'print') paint(); }, 4000);
+        }, 500); });
+      };
+      f.srcdoc = html; document.body.appendChild(f);
+    }, function(err){ if(window.console) console.error(err); prBusy(btn, false); say({ en:'Could not prepare the pages (' + String(err && err.message || err).slice(0, 60) + ') — reload and try again.', th:'จัดหน้าไม่สำเร็จ (' + String(err && err.message || err).slice(0, 60) + ') ลองโหลดหน้าใหม่แล้วกดอีกครั้ง' }); }, 'dom');
   }
   function prPdf(btn){
     var msg = host.querySelector('[data-prmsg]'), say = function(o){ if(msg) msg.textContent = T(o); };
     var w = window, d = document;
     prBusy(btn, true); say({ en:'Creating the PDF…', th:'กำลังสร้างไฟล์ PDF…' });
-    function fail(err){ if(window.console) console.error(err); prBusy(btn, false); say({ en:'Could not create the file — use “Print / Save as PDF” instead.', th:'สร้างไฟล์ไม่สำเร็จ ใช้ปุ่ม “พิมพ์ / บันทึกเป็น PDF” แทนได้' }); }
+    function fail(err){ if(window.console) console.error(err); prBusy(btn, false); var why = String(err && err.message || err).slice(0, 60); say({ en:'Could not create the file (' + why + ') — use “Print / Save as PDF” and pick “Save as PDF”.', th:'สร้างไฟล์ไม่สำเร็จ (' + why + ') ใช้ปุ่ม “พิมพ์ / บันทึกเป็น PDF” แล้วเลือก “บันทึกเป็น PDF” แทนได้' }); }
     function make(){
       renderPages(say, function(pages, G){
         try {
