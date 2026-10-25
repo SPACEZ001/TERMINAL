@@ -1546,6 +1546,9 @@
   var MAN_T = { en:'How the Market Brain thinks', th:'คู่มือ: สมองตลาดคิดอย่างไร' };
   var WEB_URL = 'https://terminal.spacezblack.workers.dev/';
   try { PR.analyst = localStorage.getItem('spz.report.analyst') === '1'; } catch(e){}
+  var IS_SAFARI = /^((?!chrome|chromium|android|crios|fxios|edg|opr).)*safari/i.test(navigator.userAgent || '');
+  PR.br = 'auto'; try { PR.br = localStorage.getItem('spz.brain.prbr') || 'auto'; } catch(e){}
+  function prBr(){ return PR.br === 'chrome' || PR.br === 'safari' ? PR.br : (IS_SAFARI ? 'safari' : 'chrome'); }
   PR.hd = { logo:1, brand:1, title:1, sub:1, dates:1, ref:1 };
   try { var hs = JSON.parse(localStorage.getItem('spz.brain.prhead') || 'null'); if(hs) PR.hd = hs; } catch(e){}
   function prType(){ for(var i = 0; i < PR_TYPES.length; i++) if(PR_TYPES[i][0] === PR.type) return PR_TYPES[i]; return PR_TYPES[0]; }
@@ -1584,6 +1587,8 @@
       '<h6 class="bz-prh">' + esc(T({ en:'Sections', th:'ส่วนที่จะพิมพ์' })) + '</h6><div class="bz-prs">' + PR_SECS.map(function(k){ var on = list.indexOf(k) >= 0; return '<label class="' + (on ? 'on' : '') + '"><input type="checkbox" data-prs="' + k + '"' + (on ? ' checked' : '') + '><span>' + esc(T(prTitle(k))) + '</span></label>'; }).join('') + '</div>' +
       '<h6 class="bz-prh">' + esc(T({ en:'Paper', th:'แนวกระดาษ' })) + '</h6><div class="bz-pro">' + [['portrait', { en:'Portrait A4', th:'แนวตั้ง A4' }], ['landscape', { en:'Landscape A4', th:'แนวนอน A4' }]].map(function(o){ return '<button type="button" data-pro="' + o[0] + '" class="' + (PR.orient === o[0] ? 'on' : '') + '"><span class="paper ' + o[0][0] + '"><i></i><i></i><i></i></span>' + esc(T(o[1])) + '</button>'; }).join('') + '</div>' +
       '<h6 class="bz-prh">' + esc(T({ en:'Colours', th:'โทนสี' })) + '</h6><div class="bz-pro">' + [['light', { en:'Light (saves ink)', th:'สว่าง (ประหยัดหมึก)' }], ['dark', { en:'Dark (like the site)', th:'มืด (เหมือนเว็บ)' }]].map(function(o){ return '<button type="button" data-prth="' + o[0] + '" class="' + (PR.theme === o[0] ? 'on' : '') + '"><span class="sw ' + o[0] + '"></span>' + esc(T(o[1])) + '</button>'; }).join('') + '</div>' +
+      '<h6 class="bz-prh">' + esc(T({ en:'Printing from', th:'พิมพ์จากเบราว์เซอร์' })) + '</h6><div class="bz-pro bz-prbr">' + [['auto', { en:'Auto (' + (IS_SAFARI ? 'Safari' : 'Chrome') + ')', th:'อัตโนมัติ (' + (IS_SAFARI ? 'Safari' : 'Chrome') + ')' }], ['chrome', { en:'Chrome', th:'Chrome' }], ['safari', { en:'Safari', th:'Safari' }]].map(function(o){ return '<button type="button" data-prbr="' + o[0] + '" class="' + (PR.br === o[0] ? 'on' : '') + '">' + esc(T(o[1])) + '</button>'; }).join('') + '</div>' +
+      '<p class="bz-note bz-prtip">' + esc(T(prBr() === 'safari' ? { en:'In Safari\'s print window: Paper size A4 · Scale 100% · tick “Print backgrounds” · untick “Print headers and footers”.', th:'ในหน้าต่างพิมพ์ของ Safari: ขนาดกระดาษ A4 · สเกล 100% · ติ๊ก “พิมพ์พื้นหลัง” · ไม่ติ๊ก “พิมพ์หัวกระดาษและท้ายกระดาษ”' } : { en:'In Chrome\'s print window: Paper A4 · Margins “Default” or “None” · Scale “Default” · tick “Background graphics”.', th:'ในหน้าต่างพิมพ์ของ Chrome: กระดาษ A4 · ระยะขอบ “ค่าเริ่มต้น” หรือ “ไม่มี” · สเกล “ค่าเริ่มต้น” · ติ๊ก “กราฟิกพื้นหลัง”' })) + '</p>' +
       '<h6 class="bz-prh">' + esc(T({ en:'Document header', th:'หัวเอกสาร' })) + '</h6><div class="bz-prs">' + [['logo', { en:'Logo', th:'โลโก้' }], ['brand', { en:'Site name', th:'ชื่อเว็บ' }], ['title', { en:'Report name', th:'ชื่อรายงาน' }], ['sub', { en:'Subtitle', th:'คำอธิบายใต้ชื่อ' }], ['dates', { en:'Created / data dates', th:'วันที่สร้าง / วันที่ข้อมูล' }], ['ref', { en:'Report ID', th:'รหัสรายงาน' }]].map(function(o){ var on = PR.hd[o[0]]; return '<label class="' + (on ? 'on' : '') + '"><input type="checkbox" data-prhd="' + o[0] + '"' + (on ? ' checked' : '') + '><span>' + esc(T(o[1])) + '</span></label>'; }).join('') + '</div>' +
       '<label class="bz-tg"><input type="checkbox" data-prcover' + (PR.cover ? ' checked' : '') + '><span>' + esc(T({ en:'Cover page with key numbers', th:'มีหน้าปกพร้อมตัวเลขสำคัญ' })) + '</span></label>' +
       '<label class="bz-tg"><input type="checkbox" data-pranalyst' + (PR.analyst ? ' checked' : '') + '><span>' + esc(T({ en:'Analyst name, photo and web QR (last page)', th:'ชื่อนักวิเคราะห์ รูป และ QR เว็บ (หน้าสุดท้าย)' })) + '</span></label>' +
@@ -1692,13 +1697,18 @@
      cut into A4 pages at gaps between blocks (never through a card or chart),
      so Safari, Chrome and the PDF all get exactly the same pages. */
   var SAFE = '.bz-view>*,.bz-row>*,.bz-sec>*,.bz-two>*,tr,.bz-tiles>*,.bz-dtiles>*,.bz-pills>*,.bz-cards>*,.bz-fcgrid>*,.bz-mitems>*,.bz-calg>*,.bz-gcards>*,.bz-chkg>*,.bz-exp>*,.bz-flow li,.bz-dns>*,.bz-kpis>*,.bz-scen>*,.bz-pairs>*,.bz-cng>*,.bz-fxg>*,.bz-wires>*,.bz-fomcg>*,.bz-howg>*,.bz-gloss>*,.bz-day>*,.ab,.rh,.pt,.ph,.cv-main>*,.bz-mi dl>*,.bz-basis li,.bz-iss li,.bz-adds li,.bz-rank>*';
-  function prDims(){ var land = PR.orient === 'landscape', PW = land ? 297 : 210, PH = land ? 210 : 297, M = 8; return { land:land, PW:PW, PH:PH, M:M, CW:PW - 2 * M, CH:PH - 2 * M, bg:PR.theme === 'dark' ? '#0a0d14' : '#ffffff' }; }
-  function renderPages(say, done, fail, mode){
+  function prDims(br){
+    var land = PR.orient === 'landscape', PW = land ? 297 : 210, PH = land ? 210 : 297, M = 8, bg = PR.theme === 'dark' ? '#0a0d14' : '#ffffff';
+    /* Safari prints inside its own margins (and may add a header/footer), so its page boxes are kept well inside any printable A4 area */
+    if(br === 'safari') return { land:land, PW:PW, PH:PH, M:0, CW:land ? 262 : 180, CH:land ? 158 : 238, bg:bg, safari:true };
+    return { land:land, PW:PW, PH:PH, M:M, CW:PW - 2 * M, CH:PH - 2 * M, bg:bg };
+  }
+  function renderPages(say, done, fail, mode, br){
     /* a private off-screen copy of the document, so a preview refresh can never pull the page out from under the renderer */
     var old = document.getElementById('bzRenderFrame'); if(old) old.remove();
     var fr = document.createElement('iframe'); fr.id = 'bzRenderFrame'; fr.setAttribute('aria-hidden', 'true');
     fr.style.cssText = 'position:fixed;left:-20000px;top:0;width:' + ((PR.orient === 'landscape' ? 1080 : 760) + 40) + 'px;height:1200px;border:0;visibility:visible;pointer-events:none;';
-    var d, w, G = prDims(), timer = null, finished = false;
+    var d, w, G = prDims(br), timer = null, finished = false;
     var fail0 = fail, done0 = done;
     fail = function(e){ if(finished) return; finished = true; clearTimeout(timer); fr.remove(); fail0(e); };
     done = function(o, g){ if(finished) return; finished = true; clearTimeout(timer); fr.remove(); done0(o, g); };
@@ -1739,7 +1749,16 @@
     }
     function runDom(){
       try {
-        var pages = Array.prototype.slice.call(d.querySelectorAll('.pg')), plan = [];
+        var pages = Array.prototype.slice.call(d.querySelectorAll('.pg')), plan = [], solid = PR.theme === 'dark' ? '#a78bfa' : '#4f46e5';
+        /* print engines (Safari above all) draw soft radial "glow" blobs as solid shapes and gradient text as a coloured box:
+           mark them so the print page can drop the blobs and use a solid colour for the text */
+        Array.prototype.forEach.call(d.querySelectorAll('.doc *'), function(el){
+          if(el.ownerSVGElement || el.tagName === 'svg') return;
+          var cs = w.getComputedStyle(el), clip = cs.webkitBackgroundClip || cs.backgroundClip || '';
+          if(clip === 'text'){ el.style.setProperty('background', 'none', 'important'); el.style.setProperty('-webkit-text-fill-color', 'currentColor', 'important'); el.style.setProperty('color', solid, 'important'); }
+          var a = w.getComputedStyle(el, '::after'); if(a && a.content && a.content !== 'none' && /radial-gradient/.test(a.backgroundImage || '')) el.classList.add('nxa');
+          var b = w.getComputedStyle(el, '::before'); if(b && b.content && b.content !== 'none' && /radial-gradient/.test(b.backgroundImage || '')) el.classList.add('nxb');
+        });
         pages.forEach(function(pg){ var wpx = pg.offsetWidth; plan.push({ html:pg.outerHTML, w:wpx, parts:cuts(pg, wpx * G.CH / G.CW) }); });
         var de = d.documentElement;
         done({ plan:plan, head:d.head.innerHTML, theme:de.getAttribute('data-theme'), lang:de.getAttribute('lang') }, G);
@@ -1790,8 +1809,12 @@
         });
       });
       var head = R.head.replace(/@media print\{[\s\S]*?\}\}/, '').replace(/@page\{[^}]*\}/, '');   /* the preview's own print rules would re-flow the pages */
-      var html = '<!doctype html><html lang="' + (R.lang || 'th') + '" data-theme="' + (R.theme || 'light') + '"><head>' + head + '<style>@page{size:A4 ' + PR.orient + ';margin:0;}html,body{margin:0!important;padding:0!important;background:' + G.bg + '!important;}' +
-        '.p{width:' + G.PW + 'mm;height:' + G.PH + 'mm;box-sizing:border-box;padding:' + G.M + 'mm;page-break-after:always;break-after:page;overflow:hidden;position:relative;background:' + G.bg + ';}.p:last-child{page-break-after:auto;break-after:auto;}' +
+      /* body must be a plain block: the page wrapper is a flex column on the site, and Safari ignores page breaks inside flex boxes (that made the pages drift) */
+      var pageCss = G.safari
+        ? '@page{size:A4 ' + PR.orient + ';margin:12mm;}.p{display:block;width:' + G.CW + 'mm;margin:0 auto;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid;overflow:hidden;position:relative;background:' + G.bg + ';}'
+        : '@page{size:A4 ' + PR.orient + ';margin:0;}.p{display:block;width:' + G.PW + 'mm;height:' + G.PH + 'mm;box-sizing:border-box;padding:' + G.M + 'mm;page-break-after:always;break-after:page;overflow:hidden;position:relative;background:' + G.bg + ';}';
+      var html = '<!doctype html><html lang="' + (R.lang || 'th') + '" data-theme="' + (R.theme || 'light') + '"><head>' + head + '<style>' + pageCss + 'html,body{margin:0!important;padding:0!important;background:' + G.bg + '!important;}body{display:block!important;gap:0!important;}' +
+        '.p:last-child{page-break-after:auto;break-after:auto;}.nxa::after,.nxb::before{display:none!important;}' +
         '.clip{width:' + G.CW + 'mm;overflow:hidden;position:relative;}.mv{transform-origin:0 0;-webkit-transform-origin:0 0;}.mv .pg{margin:0!important;box-shadow:none!important;border-radius:0!important;page-break-after:auto!important;break-after:auto!important;}' +
         '.mv .cover{height:' + (PR.orient === 'landscape' ? '700px' : '1000px') + '!important;min-height:0!important;}</style></head><body class="doc bz-wrap" style="width:auto;padding:0">' + body + '</body></html>';
       var old = document.getElementById('bzPrintFrame'); if(old) old.remove();
@@ -1808,7 +1831,7 @@
         }, 500); });
       };
       f.srcdoc = html; document.body.appendChild(f);
-    }, function(err){ if(window.console) console.error(err); prBusy(btn, false); say({ en:'Could not prepare the pages (' + String(err && err.message || err).slice(0, 60) + ') — reload and try again.', th:'จัดหน้าไม่สำเร็จ (' + String(err && err.message || err).slice(0, 60) + ') ลองโหลดหน้าใหม่แล้วกดอีกครั้ง' }); }, 'dom');
+    }, function(err){ if(window.console) console.error(err); prBusy(btn, false); say({ en:'Could not prepare the pages (' + String(err && err.message || err).slice(0, 60) + ') — reload and try again.', th:'จัดหน้าไม่สำเร็จ (' + String(err && err.message || err).slice(0, 60) + ') ลองโหลดหน้าใหม่แล้วกดอีกครั้ง' }); }, 'dom', prBr());
   }
   function prPdf(btn){
     var msg = host.querySelector('[data-prmsg]'), say = function(o){ if(msg) msg.textContent = T(o); };
@@ -1839,8 +1862,9 @@
       if(t.hasAttribute('data-pranalyst')){ PR.analyst = t.checked; try { localStorage.setItem('spz.report.analyst', t.checked ? '1' : '0'); } catch(e){} paint(); return; }
     });
     root.addEventListener('click', function(ev){
-      var b = ev.target.closest('[data-pro],[data-prth],[data-prprint],[data-prpdf]'); if(!b || !root.contains(b)) return;
+      var b = ev.target.closest('[data-pro],[data-prth],[data-prbr],[data-prprint],[data-prpdf]'); if(!b || !root.contains(b)) return;
       if(b.hasAttribute('data-pro')){ PR.orient = b.getAttribute('data-pro'); paint(); }
+      else if(b.hasAttribute('data-prbr')){ PR.br = b.getAttribute('data-prbr'); try { localStorage.setItem('spz.brain.prbr', PR.br); } catch(e){} paint(); }
       else if(b.hasAttribute('data-prth')){ PR.theme = b.getAttribute('data-prth'); paint(); }
       else if(b.hasAttribute('data-prprint')) prPrint(b);
       else if(b.hasAttribute('data-prpdf')) prPdf(b);
