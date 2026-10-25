@@ -5,6 +5,10 @@ name: brain-data
 # data/econ.json (this + next week's economic calendar) which the board's
 # "what to watch" tab reads. FRED series update at most daily, the calendar
 # a few times a week, so twice a day is plenty.
+# 2026-10-26: also data/brain_ext.json (scripts/fetch_brain_ext.py: track
+# record, past look-alikes, warning rules, Fed liquidity, Thailand, event-day
+# moves) and a Telegram heads-up to the owner when a warning rule fires
+# (scripts/alerts_brain.py, same secrets as the market-data alerts).
 
 on:
   schedule:
@@ -14,6 +18,8 @@ on:
   push:
     paths:
       - 'scripts/fetch_brain.py'
+      - 'scripts/fetch_brain_ext.py'
+      - 'scripts/alerts_brain.py'
       - '.github/workflows/brain-data.yml'
 
 permissions:
@@ -26,7 +32,10 @@ concurrency:
 jobs:
   snapshot:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
     steps:
       - uses: actions/checkout@v4
 
@@ -43,15 +52,22 @@ jobs:
       - name: Refresh economic calendar
         run: python scripts/fetch_econ.py || echo "calendar fetch failed - keeping the old file"
 
+      - name: Build long-history extras (track record, look-alikes, warnings, liquidity, Thailand, events)
+        run: python scripts/fetch_brain_ext.py || echo "extras failed - keeping the old file"
+
+      - name: Telegram heads-up for new warning signals
+        run: python scripts/alerts_brain.py || echo "brain alerts failed - ignored"
+
       # Same fetch+rebase+retry pattern as the other data jobs.
       - name: Commit if changed
         run: |
           git config user.name  "spacez-market-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [ -z "$(git status --porcelain data/brain.json data/econ.json)" ]; then
+          if [ -z "$(git status --porcelain data/brain.json data/econ.json data/brain_ext.json data/alerts_state_brain.json)" ]; then
             echo "no change"; exit 0
           fi
-          git add data/brain.json data/econ.json
+          git add data/brain.json data/econ.json data/brain_ext.json
+          [ -f data/alerts_state_brain.json ] && git add data/alerts_state_brain.json
           git commit -m "data: economy snapshot $(date -u '+%Y-%m-%d %H:%M UTC')"
           for attempt in 1 2 3; do
             if git push origin HEAD:main; then
