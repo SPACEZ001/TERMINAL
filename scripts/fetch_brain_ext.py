@@ -21,6 +21,8 @@ draws them.
            (FRED), IMF forecasts for growth / inflation / jobs / debt.
   events   How much markets move on CPI, jobs-report and Fed days, and the
            next date of each.
+  px       Gold and bitcoin price forecasts, trend read, levels, walk-forward
+           test (scripts/brain_px.py, added 2026-10-26).
 
 Sources: FRED (fredgraph.csv), BIS SDMX API, IMF DataMapper API,
 federalreserve.gov FOMC calendars, BLS release archive (when reachable),
@@ -998,7 +1000,15 @@ def main():
     part("liq", build_liq)
     part("thai", build_thai, prev.get("thai"))
     part("events", build_events, prev.get("events"))
-    got = [k for k in ("track", "analog", "alerts", "liq", "thai", "events") if doc.get(k)]
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import brain_px
+        part("px", brain_px.build_px, fred, monthly)
+    except Exception as e:  # noqa: BLE001
+        doc["errors"].append("px_import:%s" % type(e).__name__)
+        if prev.get("px"):
+            doc["px"] = prev["px"]
+    got = [k for k in ("track", "analog", "alerts", "liq", "thai", "events", "px") if doc.get(k)]
     if len(got) < 3:
         print("too little built (%s) -- not writing" % got, file=sys.stderr)
         sys.exit(1)
