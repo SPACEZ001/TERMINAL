@@ -322,3 +322,178 @@ def build_world(get, fred):
     if not rows or (not cli and not imf):
         raise ValueError("no world data: %s" % errs)
     return out
+
+
+# =============================================================== playbook
+# History of the global clock since 2000 and what happened afterwards, so the
+# page can say "the last N times the world looked like this, X happened".
+#   * monthly growth / inflation momentum rebuilt with the same formulas as
+#     the live summary above (G20 CLI 6M change, share of CLIs rising,
+#     copper/gold 6M; median CPI 6M change, share of CPIs rising)
+#   * one month publication lag: a phase seen for month k is acted on at the
+#     end of month k+1, forward returns are measured from there
+#   * per phase: forward 6-month return of sector / asset ETFs vs SPY, and of
+#     every stock in market.json vs its benchmark (SPY for US, equal-weight of
+#     the Thai list for Thai stocks), with hit rate and sample size
+#   * per month (for the page's scenario calculator): momentum, Fed 6M change,
+#     what the phase was 6 / 12 months later, US recession within 12 months
+#     (FRED USREC), S&P 500 12-month return and worst drop, asset excess returns
+PB_ASSETS = ["SPY", "QQQ", "IWM", "XLK", "XLF", "XLE", "XLV", "XLI", "XLB", "XLU", "XLP", "XLY", "XLC", "XLRE",
+             "GLD", "TLT", "SHY", "EEM", "EFA", "THD", "DBC"]
+PH_CODES = ["recovery", "overheat", "stagflation", "reflation"]
+PB_VERSION = 2
+
+
+def _ph(gm, im):
+    if gm is None or im is None:
+        return None
+    return (1 if im >= 0 else 0) if gm >= 0 else (2 if im >= 0 else 3)
+
+
+def _clip(v, a=-1.0, b=1.0):
+    return max(a, min(b, v))
+
+
+def monthly_closes(syms, start="1999-01-01"):
+    import yfinance as yf
+    out = {}
+    for i in range(0, len(syms), 120):
+        chunk = syms[i:i + 120]
+        df = yf.download(chunk, start=start, interval="1mo", auto_adjust=True, progress=False, threads=True)
+        c = df["Close"]
+        if not hasattr(c, "columns"):
+            c = c.to_frame(chunk[0])
+        for col in c.columns:
+            s = c[col].dropna()
+            d = {}
+            for ix, v in zip(s.index, s.values):
+                if float(v) > 0:
+                    d[ix.strftime("%Y-%m")] = float(v)      # later rows of the same month overwrite earlier ones
+            if len(d) >= 24:
+                out[str(col)] = d
+    return out
+
+
+def build_playbook(get, fred, prev=None, market_path=None):
+    import os
+    from datetime import datetime, timezone
+    if prev and prev.get("v") == PB_VERSION and prev.get("gen"):
+        try:
+            age = (datetime.now(timezone.utc) - datetime.strptime(prev["gen"], "%Y-%m-%dT%H:%MZ").replace(tzinfo=timezone.utc)).days
+            if age < 3:
+                return prev
+        except Exception:  # noqa: BLE001
+            pass
+    errs = []
+    yr = date.today().year
+    cli = oecd_cli(get, "1998-01")
+    bis_codes = "+".join(c[2] for c in COUNTRIES)
+    cpi = bis_series(get, "WS_LONG_CPI", "M." + bis_codes + ".771", "1998-01")
+    ccodes = [c[1] for c in COUNTRIES if c[1] and cli.get(c[1])]
+    g20 = cli.get("G20") or {}
+    # market data
+    mp = market_path or os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "market.json")
+    stocks = {}
+    try:
+        with open(mp, encoding="utf-8") as f:
+            stocks = json.load(f).get("stocks") or {}
+    except Exception as e:  # noqa: BLE001
+        errs.append("market:%s" % type(e).__name__)
+    uni = {t: (s.get("yahoo") or t, s.get("cal"), s.get("sector")) for t, s in stocks.items() if s.get("cal") in ("us", "th")}
+    syms = PB_ASSETS + ["HG=F", "GC=F"] + sorted(set(v[0] for v in uni.values()))
+    px = monthly_closes(syms)
+    cu, au = px.get("HG=F", {}), px.get("GC=F", {})
+    # months
+    months = [k for k in sorted(g20) if k >= "2000-01"]
+    usrec = {d[:7]: v for d, v in fred("USREC")}
+    ff = {d[:7]: v for d, v in fred("FEDFUNDS")}
+    hist = []
+    for k in months:
+        k1, k6 = madd(k, -1), madd(k, -6)
+        gm = []
+        if g20.get(k) is not None and g20.get(k6) is not None:
+            gm.append(_clip(g20[k] - g20[k6]))
+        rs = [1 if cli[cc][k] >= cli[cc][k1] else 0 for cc in ccodes if cli[cc].get(k) is not None and cli[cc].get(k1) is not None]
+        if len(rs) >= 8:
+            gm.append((sum(rs) / len(rs) * 100 - 50) / 50)
+        if cu.get(k) and au.get(k) and cu.get(k6) and au.get(k6):
+            gm.append(_clip(((cu[k] / au[k]) / (cu[k6] / au[k6]) - 1) * 100 / 15))
+        now = [cpi[cc][k] for cc in cpi if cpi[cc].get(k) is not None and cpi[cc].get(k6) is not None]
+        was = [cpi[cc][k6] for cc in cpi if cpi[cc].get(k) is not None and cpi[cc].get(k6) is not None]
+        im = []
+        if len(now) >= 8:
+            im.append(_clip(_median(now) - _median(was)))
+            im.append((sum(1 for a, b in zip(now, was) if a > b) / len(now) * 100 - 50) / 50)
+        if not gm or not im:
+            continue
+        g, i = _mean(gm), _mean(im)
+        fd = ff.get(k) - ff.get(k6) if ff.get(k) is not None and ff.get(k6) is not None else None
+        hist.append({"k": k, "g": g, "i": i, "fed": fd, "ph": _ph(g, i)})
+    idx = {h["k"]: n for n, h in enumerate(hist)}
+
+    def fwd(d, k, n, lag=1):
+        a, b = d.get(madd(k, lag)), d.get(madd(k, lag + n))
+        return (b / a - 1) * 100 if a and b else None
+
+    # Thai benchmark: equal-weight monthly return of the Thai list
+    th_syms = [v[0] for v in uni.values() if v[1] == "th" and v[0] in px]
+    allm = sorted(set(m for s_ in th_syms for m in px[s_]))
+    th_idx, lvl = {}, 100.0
+    for j, m in enumerate(allm):
+        if j:
+            rr = [px[s_][m] / px[s_][allm[j - 1]] - 1 for s_ in th_syms if px[s_].get(m) and px[s_].get(allm[j - 1])]
+            if len(rr) >= 5:
+                lvl *= 1 + _mean(rr)
+        th_idx[m] = lvl
+    spy = px.get("SPY", {})
+    rows = []
+    for h in hist:
+        k = h["k"]
+        r = [k, _r(h["g"], 3), _r(h["i"], 3), _r(h["fed"], 2), h["ph"]]
+        j6, j12 = idx.get(madd(k, 6)), idx.get(madd(k, 12))
+        r.append(hist[j6]["ph"] if j6 is not None else None)
+        r.append(hist[j12]["ph"] if j12 is not None else None)
+        recs = [usrec.get(madd(k, n)) for n in range(1, 13)]
+        r.append(None if any(v is None for v in recs) else (1 if any(recs) else 0))
+        s12 = fwd(spy, k, 12)
+        r.append(_r(s12, 1))
+        # worst drop of SPY within the 12 months after the lag (month-end prices)
+        a = spy.get(madd(k, 1))
+        path = [spy.get(madd(k, 1 + n)) for n in range(1, 13)]
+        r.append(_r((min(path) / a - 1) * 100, 1) if a and all(path) else None)
+        s6 = fwd(spy, k, 6)
+        for sym in PB_ASSETS:
+            v = fwd(px.get(sym, {}), k, 6)
+            r.append(_r(v if sym == "SPY" else (v - s6 if v is not None and s6 is not None else None), 1))
+        rows.append(r)
+    # per-phase stats for assets and stocks
+    def stats(vals):
+        vals = [v for v in vals if v is not None]
+        if len(vals) < 6:
+            return None
+        return [_r(_mean(vals), 2), _r(sum(1 for v in vals if v > 0) / len(vals) * 100, 0), len(vals)]
+    ast = {}
+    for j, sym in enumerate(PB_ASSETS):
+        col = 10 + j
+        ast[sym] = {"all": stats([r[col] for r in rows]), "ph": [stats([r[col] for r in rows if r[4] == p]) for p in range(4)]}
+    stk = {}
+    for t, (ys, cal, sec) in uni.items():
+        d = px.get(ys)
+        if not d:
+            continue
+        bench = spy if cal == "us" else th_idx
+        ex = []
+        for h in hist:
+            a, b = fwd(d, h["k"], 6), fwd(bench, h["k"], 6)
+            ex.append((h["ph"], a - b if a is not None and b is not None else None))
+        al = stats([v for _, v in ex])
+        if not al:
+            continue
+        stk[t] = [al] + [stats([v for p, v in ex if p == q]) for q in range(4)]
+    # current: the month after the last complete one is not known yet, so the
+    # last history row is "now" in the same units
+    last = hist[-1] if hist else {}
+    return {"v": PB_VERSION, "gen": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ"),
+            "assets": PB_ASSETS, "cols": ["k", "g", "i", "fed", "ph", "ph6", "ph12", "rec12", "spx12", "dd12"] + ["x_" + a for a in PB_ASSETS],
+            "rows": rows, "ast": ast, "stk": stk, "now": {"k": last.get("k"), "g": _r(last.get("g"), 3), "i": _r(last.get("i"), 3), "fed": _r(last.get("fed"), 2)},
+            "fed_now": _r(ff[max(ff)], 2) if ff else None, "first": hist[0]["k"] if hist else None, "errors": errs}
