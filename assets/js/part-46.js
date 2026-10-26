@@ -976,7 +976,14 @@
     gate.querySelector('#cagBtnGradebook').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/gradebook'; });
     gate.querySelector('#cagBtnSecMap').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/secmap'; });
     gate.querySelector('#cagBtnEbook').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/ebookreg'; });
-    gate.querySelector('#cagBtnBrain').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/brain'; });
+    gate.querySelector('#cagBtnBrain').addEventListener('click', function(){
+      gate.hidden = true;
+      /* 2026-10-26: if the address already says #/brain, setting it again fires no
+         hashchange and nothing opens -- step the hash off and back so it always routes */
+      if(location.hash === '#/brain'){ try { history.replaceState(null, '', '#/home'); } catch(e){} }
+      location.hash = '#/brain';
+      setTimeout(function(){ window.scrollTo(0, 0); }, 60);
+    });
 
     gate.querySelector('#cagMaskBtn').addEventListener('click', function(){
       var show = advInputs[0] && advInputs[0].type === 'password';

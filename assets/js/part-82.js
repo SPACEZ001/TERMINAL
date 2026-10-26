@@ -57,6 +57,11 @@
     'html.bz-navx .bz-navdot{background:linear-gradient(135deg,#22d3ee,#a78bfa);color:#071019;border-color:transparent;}' +
     'html[data-theme="light"] .bz-navdot{background:rgba(255,255,255,.92);color:#312e81;border-color:#c7d2fe;box-shadow:0 10px 24px rgba(99,102,241,.18);}' +
     'html.bz-route.spz-compact .bz-tabs{top:calc(var(--spz-tickH,34px) + 8px)!important;margin-right:116px;margin-left:86px;transition:top .25s ease;}' +
+    /* 2026-10-26: the live-status strip (#spzLiveBar, a transparent full-width row inside
+       .top-fixed, z 50) lies over the stuck tab bar and swallowed taps on it. Let clicks
+       pass through the empty strip (and .top-fixed's own box); the ticker, the nav when
+       opened, the live chip and its pop-up still take clicks. */
+    'html.bz-route.spz-compact .top-fixed,html.bz-route.spz-compact #spzLiveBar{pointer-events:none;}html.bz-route.spz-compact .top-fixed>*:not(#spzLiveBar),html.bz-route.spz-compact #spzLiveBar>*{pointer-events:auto;}' +
     'html.bz-route.spz-compact.bz-navx .bz-tabs{top:calc(var(--spz-tickH,34px) + 62px)!important;}' +
     '@media(max-width:560px){html.bz-route.spz-compact .bz-tabs{margin-right:0;margin-left:0;top:calc(var(--spz-tickH,34px) + 54px)!important;}}';
   var dot = null;
