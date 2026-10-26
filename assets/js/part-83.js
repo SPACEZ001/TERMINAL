@@ -190,7 +190,8 @@
       '<line class="bz-xh" x1="0" x2="0" y1="' + P.t + '" y2="' + (H - P.b) + '" style="display:none"/></svg><div class="bz-tip" hidden></div></div>';
   }
   function onChartMove(ev){
-    var host = ev.target.closest && ev.target.closest('.bz-chart'); if(!host) return;
+    var host = ev.target.closest && ev.target.closest('.bz-chart');
+    if(!host){ var sl = ev.currentTarget; if(sl && sl.querySelectorAll) sl.querySelectorAll('.bz-tip:not([hidden])').forEach(function(t){ hideTip(t.parentNode); }); return; }
     var c = CH[host.getAttribute('data-ch')]; if(!c) return;
     var r = host.getBoundingClientRect(), px = (ev.clientX - r.left) / r.width * c.W;
     if(px < c.P.l || px > c.W - c.P.r){ hideTip(host); return; }
@@ -199,7 +200,7 @@
       var best = null, bd = Infinity;
       for(var j = 0; j < s.pts.length; j++){ var dd = Math.abs(s.pts[j].x - xt); if(dd < bd){ bd = dd; best = s.pts[j]; } }
       (s.fc || []).forEach(function(q){ var dq = Math.abs(q.x - xt); if(dq < bd){ bd = dq; best = [q.t, q.v]; best.fc = q; } });
-      if(best){ when = when || best[0]; rows.push('<div><i style="background:' + (s.color || COL['abcdefg'[i]]) + '"></i>' + esc(T(s.name) || '') + (best.fc ? ' <small>(' + esc(T({ en:'forecast', th:'คาด' })) + ')</small>' : '') + ' <b>' + f(best[1], c.dec) + c.unit + '</b>' + (best.fc && isNum(best.fc.lo) ? '<div class="bz-tr">' + f(best.fc.lo, c.dec) + ' – ' + f(best.fc.hi, c.dec) + c.unit + '</div>' : '') + '</div>'); }
+      if(best){ when = when || best[0]; rows.push('<div><i style="background:' + (s.color || COL['abcdefg'[i]]) + '"></i>' + esc(T(s.name) || '') + (best.fc ? ' <small>(' + esc(T({ en:'forecast', th:'คาด' })) + ')</small>' : '') + ' <b>' + (c.fmt ? c.fmt(best[1]) : f(best[1], c.dec) + c.unit) + '</b>' + (best.fc && isNum(best.fc.lo) ? '<div class="bz-tr">' + (c.fmt ? T({ en:'likely ', th:'ช่วง 68%: ' }) + (c.fmtR || c.fmt)(best.fc.lo) + ' – ' + (c.fmtR || c.fmt)(best.fc.hi) : f(best.fc.lo, c.dec) + ' – ' + f(best.fc.hi, c.dec) + c.unit) + '</div>' : '') + '</div>'); }
     });
     var xh = host.querySelector('.bz-xh'); xh.style.display = ''; xh.setAttribute('x1', px); xh.setAttribute('x2', px);
     var tip = host.querySelector('.bz-tip'); tip.hidden = false; tip.innerHTML = '<em>' + dshort(when) + '</em>' + rows.join('');
@@ -1502,7 +1503,7 @@
     ['cal', 'cal', { en:'This week', th:'จับตาสัปดาห์นี้' }, { en:'Economic releases by day (Thai time) and our tripwires.', th:'ตัวเลขเศรษฐกิจรายวัน (เวลาไทย) และเส้นเตือนของเรา' },
       [{ en:'Red edge = high impact, amber = medium.', th:'ขอบแดง = สำคัญมาก ขอบเหลือง = สำคัญปานกลาง' }, { en:'Compare “actual” with “expected” when it comes out: a big miss moves markets.', th:'เทียบ “ออกจริง” กับ “คาด” ถ้าต่างกันมาก ตลาดจะขยับแรง' }, { en:'Tripwires closest to 100% are the ones to watch this week.', th:'เส้นเตือนที่ใกล้ 100% คือสิ่งที่ต้องจับตาสัปดาห์นี้' }]],
     ['px', 'coin', { en:'Gold & bitcoin forecast', th:'คาดการณ์ทอง & บิตคอยน์' }, { en:'Price forecasts from 1 week to 12 months with a full trend read and key levels.', th:'คาดการณ์ราคา 1 สัปดาห์ถึง 12 เดือน พร้อมวิเคราะห์แนวโน้มและระดับราคาสำคัญ' },
-      [{ en:'Switch between gold and bitcoin with the two big buttons at the top.', th:'สลับทองคำ/บิตคอยน์ด้วยปุ่มใหญ่ 2 ปุ่มด้านบน' }, { en:'The fan on the big chart is the forecast: dark = 68% likely, light = 95%. Use 6M / 1Y / 3Y / All to zoom.', th:'แถบพัดบนกราฟใหญ่คือคาดการณ์ เข้ม = โอกาส 68% จาง = 95% กด 6M / 1Y / 3Y / ทั้งหมด เพื่อซูม' }, { en:'“Why this forecast” shows each piece in %; the track-record table says how far to trust each horizon.', th:'ตาราง “ทำไมคาดการณ์ออกมาแบบนี้” แยกแต่ละส่วนเป็น % และตารางความแม่นบอกว่าควรเชื่อแต่ละกรอบเวลาแค่ไหน' }]],
+      [{ en:'Switch between gold and bitcoin with the two big buttons at the top.', th:'สลับทองคำ/บิตคอยน์ด้วยปุ่มใหญ่ 2 ปุ่มด้านบน' }, { en:'On the big chart: the coloured “NOW” label is today\'s price; purple labels are where the forecast points at 3, 6 and 12 months; the right-hand badges show now, the 12-month target, support (green) and resistance (red).', th:'บนกราฟใหญ่: ป้ายสี “ตอนนี้” คือราคาวันนี้ ป้ายม่วงคือราคาที่คาดใน 3, 6 และ 12 เดือน ป้ายด้านขวาบอกราคาตอนนี้ เป้า 12 เดือน แนวรับ (เขียว) และแนวต้าน (แดง)' }, { en:'Move the mouse or a finger over the chart to read the price on any past day, or the forecast and its range in the purple zone.', th:'เลื่อนเมาส์หรือนิ้วบนกราฟ เพื่อดูราคาวันไหนก็ได้ในอดีต หรือราคาคาดการณ์และช่วงที่น่าจะเป็นในโซนม่วง' }, { en:'The strip under the chart lists now → 1 week → 12 months with dates; “What to watch next” gives the levels and the odds of breaking them within a month.', th:'แถบใต้กราฟเรียงราคา ตอนนี้ → 1 สัปดาห์ → 12 เดือน พร้อมวันที่ ส่วน “จุดที่ต้องจับตาต่อไป” บอกระดับราคาและโอกาสที่จะทะลุภายใน 1 เดือน' }, { en:'“Why this forecast” shows each piece in %; the track-record table says how far to trust each horizon.', th:'ตาราง “ทำไมคาดการณ์ออกมาแบบนี้” แยกแต่ละส่วนเป็น % และตารางความแม่นบอกว่าควรเชื่อแต่ละกรอบเวลาแค่ไหน' }]],
     ['track', 'target', { en:'Track record', th:'ความแม่นของสมอง' }, { en:'How often the forecasts were right, tested month by month since 2012.', th:'คาดการณ์เคยถูกบ่อยแค่ไหน ทดสอบทีละเดือนตั้งแต่ปี 2012' },
       [{ en:'Grade A/B = the model beats the “nothing changes” guess; C/D = lean on it less.', th:'เกรด A/B = โมเดลชนะการเดาว่า “ไม่เปลี่ยน” · C/D = เชื่อให้น้อยลง' }, { en:'“Inside the 68% range” should be near 68%: much lower = ranges were too narrow (the board now widens them automatically).', th:'“ตกในช่วง 68%” ควรใกล้ 68% ถ้าต่ำมาก = ช่วงเคยแคบเกินไป (ตอนนี้ระบบขยายให้อัตโนมัติ)' }, { en:'Grey dashed line = what was forecast 6 months earlier; coloured line = what happened.', th:'เส้นประเทา = ที่ทายไว้ 6 เดือนก่อน · เส้นสี = ที่เกิดขึ้นจริง' }]],
     ['analog', 'history', { en:'Past look-alikes', th:'อดีตที่คล้ายตอนนี้' }, { en:'The months since 1960 that looked most like today, and what came next.', th:'เดือนตั้งแต่ปี 1960 ที่หน้าตาคล้ายวันนี้ที่สุด และอะไรเกิดขึ้นต่อจากนั้น' },
@@ -1745,7 +1746,7 @@
     }
     /* page cuts: candidate y = top of any block; a cut is allowed only if it does not pass through an
        "atomic" box (chart, card, row, line of text...) in ANY column, and never right after a heading */
-    var ATOM = '.bz-sec,.bz-mi,.bz-day,svg,img,p,li,tr,dt,dd,h2,h3,h4,h5,h6,.pt,.ph,.rh,.bz-kpi,.bz-fcc,.bz-tile,.bz-dt,.bz-pill,.bz-card,.bz-pair,.bz-er,.bz-chkg>div,.bz-wires>div,.bz-fomcg>div,.bz-ev,.bz-gc,.bz-hw,.bz-sc,.bz-cons,.bz-leg,.bz-callout,.bz-chart,.bz-dn,.bz-rank>div,.bz-fxg>div,.bz-cng>div,.bz-gloss>div,.bz-flow li,.bz-rc>div,.bz-parts>div,.bz-wtop>div,.bz-sw,.bz-play>div,.bz-steps,.bz-scbar,.bz-trig li,.bz-gdp>div,.bz-rec3>div,.bz-cone>div,.bz-mtab,.ab,.cv-score,.cv-k>div,.bz-verdict,.bz-hero,.bz-pfh,.bz-wdn,.bz-rmeter,.bz-flowline,.bz-pxfc>div,.bz-pxtf>div,.bz-pxind>div,.bz-pxlad>div,.bz-pxsc>div,.bz-pxhero,.bz-pxseas,.bz-pxtabs,.bz-pxfib,.bz-pxsig li,.bz-trc,.bz-anout>div,.bz-al,.bz-alrec>div,.bz-evc,.bz-wisc>div,.bz-wipl>div,.bz-anhero,.bz-alhero,.bz-thhero,.bz-hm tr,.bz-wiscore,.bz-wis,.bz-wipre,.bz-tl';
+    var ATOM = '.bz-sec,.bz-mi,.bz-day,svg,img,p,li,tr,dt,dd,h2,h3,h4,h5,h6,.pt,.ph,.rh,.bz-kpi,.bz-fcc,.bz-tile,.bz-dt,.bz-pill,.bz-card,.bz-pair,.bz-er,.bz-chkg>div,.bz-wires>div,.bz-fomcg>div,.bz-ev,.bz-gc,.bz-hw,.bz-sc,.bz-cons,.bz-leg,.bz-callout,.bz-chart,.bz-dn,.bz-rank>div,.bz-fxg>div,.bz-cng>div,.bz-gloss>div,.bz-flow li,.bz-rc>div,.bz-parts>div,.bz-wtop>div,.bz-sw,.bz-play>div,.bz-steps,.bz-scbar,.bz-trig li,.bz-gdp>div,.bz-rec3>div,.bz-cone>div,.bz-mtab,.ab,.cv-score,.cv-k>div,.bz-verdict,.bz-hero,.bz-pfh,.bz-wdn,.bz-rmeter,.bz-flowline,.bz-pxpath>div,.bz-pxplan>div,.bz-pxfc>div,.bz-pxtf>div,.bz-pxind>div,.bz-pxlad>div,.bz-pxsc>div,.bz-pxhero,.bz-pxseas,.bz-pxtabs,.bz-pxfib,.bz-pxsig li,.bz-trc,.bz-anout>div,.bz-al,.bz-alrec>div,.bz-evc,.bz-wisc>div,.bz-wipl>div,.bz-anhero,.bz-alhero,.bz-thhero,.bz-hm tr,.bz-wiscore,.bz-wis,.bz-wipre,.bz-tl';
     function cuts(pg, pageH){
       var top = pg.getBoundingClientRect().top, H = pg.scrollHeight, c = [], atoms = [];
       pg.querySelectorAll(SAFE).forEach(function(el){ var r = el.getBoundingClientRect(); if(r.height > 0) c.push(r.top - top - 3); });
@@ -2645,6 +2646,89 @@
     });
     return '<div class="bz-leg">' + leg + '</div><svg class="bz-svg" viewBox="0 0 ' + W + ' ' + Hh + '">' + g + '</svg>';
   }
+  function pxShort(v, a){ return a === 'btc' ? (v >= 1000 ? '$' + (v / 1000).toFixed(v >= 100000 ? 0 : 1) + 'k' : '$' + v.toFixed(0)) : '$' + Math.round(v).toLocaleString('en-US'); }
+  function pxChart(o){
+    var W = 1100, H = 540, P = { l:14, r:96, t:34, b:34 }, a = o.a, col = o.N.col, lg = !!o.log;
+    var pts = o.price.map(function(p){ return { t:p[0], v:p[1], x:tms(p[0]) }; }), fcs = o.fc.map(function(q){ var r = Object.assign({}, q); r.x = tms(q.t); return r; });
+    var x0 = pts[0].x, xNow = tms(o.now.t), xEnd = fcs.length ? fcs[fcs.length - 1].x : xNow;
+    xEnd = xEnd + (xEnd - x0) * 0.02;
+    var vs = pts.map(function(p){ return p.v; });
+    fcs.forEach(function(q){ vs.push(q.lo, q.hi); });
+    var lo = Math.min.apply(null, vs), hi = Math.max.apply(null, vs);
+    if(o.res && o.res.p < hi * 1.15) hi = Math.max(hi, o.res.p); if(o.sup && o.sup.p > lo * 0.85) lo = Math.min(lo, o.sup.p);
+    var tf = function(v){ return lg ? Math.log10(Math.max(v, 1e-9)) : v; };
+    var y0 = tf(lo), y1 = tf(hi), pad = (y1 - y0) * 0.07; y0 -= pad; y1 += pad * 1.6;
+    var X = function(x){ return P.l + (x - x0) / (xEnd - x0) * (W - P.l - P.r); }, Y = function(v){ return P.t + (1 - (tf(v) - y0) / (y1 - y0)) * (H - P.t - P.b); };
+    var id = 'c' + (++chN), g = '';
+    g += '<defs><linearGradient id="' + id + 'a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + col + '" stop-opacity=".38"/><stop offset="1" stop-color="' + col + '" stop-opacity="0"/></linearGradient>' +
+      '<linearGradient id="' + id + 'f" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#a78bfa" stop-opacity=".05"/><stop offset="1" stop-color="#a78bfa" stop-opacity=".14"/></linearGradient>' +
+      '<clipPath id="' + id + 'c"><rect x="' + P.l + '" y="' + P.t + '" width="' + (W - P.l - P.r) + '" height="' + (H - P.t - P.b) + '"/></clipPath></defs>';
+    /* y grid + right-hand price scale */
+    var ticks = [];
+    if(lg){ [1, 2, 5].forEach(function(m){ for(var e = 0; e < 7; e++){ var v = m * Math.pow(10, e); if(tf(v) >= y0 && tf(v) <= y1) ticks.push(v); } }); ticks.sort(function(p, q){ return p - q; }); }
+    else ticks = niceTicks(y0, y1, 6);
+    ticks.forEach(function(v){ var yy = Y(v); g += '<line class="bz-gl" x1="' + P.l + '" x2="' + (W - P.r) + '" y1="' + yy.toFixed(1) + '" y2="' + yy.toFixed(1) + '"/><text class="bz-ax" x="' + (W - P.r + 8) + '" y="' + (yy + 4).toFixed(1) + '">' + pxShort(v, a) + '</text>'; });
+    /* x labels */
+    var span = (xEnd - x0) / 864e5, stepM = span > 2500 ? 24 : span > 1200 ? 6 : span > 500 ? 3 : 2, d0 = new Date(x0), mm = new Date(Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth() + 1, 1));
+    while(mm.getTime() < xEnd){
+      if(mm.getUTCMonth() % stepM === 0 || (stepM >= 12 && mm.getUTCMonth() === 0)){
+        var xx = X(mm.getTime()); g += '<line class="bz-gl v" x1="' + xx.toFixed(1) + '" x2="' + xx.toFixed(1) + '" y1="' + P.t + '" y2="' + (H - P.b) + '"/><text class="bz-ax" x="' + xx.toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle">' + esc(span > 1200 ? String(mm.getUTCFullYear() + (L() === 'th' ? 543 : 0)) : mshort(mm.toISOString().slice(0, 10))) + '</text>';
+      }
+      mm = new Date(Date.UTC(mm.getUTCFullYear(), mm.getUTCMonth() + 1, 1));
+    }
+    /* forecast zone */
+    g += '<rect x="' + X(xNow).toFixed(1) + '" y="' + P.t + '" width="' + (X(xEnd) - X(xNow)).toFixed(1) + '" height="' + (H - P.t - P.b) + '" fill="url(#' + id + 'f)"/><text class="bz-pxzone" x="' + (X(xNow) + 10).toFixed(1) + '" y="' + (P.t + 16) + '">' + esc(T({ en:'FORECAST →', th:'คาดการณ์ →' })) + '</text>';
+    g += '<g clip-path="url(#' + id + 'c)">';
+    /* support / resistance */
+    [[o.sup, '#34d399', { en:'support', th:'แนวรับ' }], [o.res, '#fb7185', { en:'resistance', th:'แนวต้าน' }]].forEach(function(z){ if(!z[0]) return; var yy = Y(z[0].p); g += '<line x1="' + P.l + '" x2="' + (W - P.r) + '" y1="' + yy.toFixed(1) + '" y2="' + yy.toFixed(1) + '" stroke="' + z[1] + '" stroke-width="1.3" stroke-dasharray="7 5" opacity=".85"/>'; });
+    /* price area + line */
+    var d = pts.map(function(p, i){ return (i ? 'L' : 'M') + X(p.x).toFixed(1) + ' ' + Y(p.v).toFixed(1); }).join('');
+    g += '<path d="' + d + 'L' + X(pts[pts.length - 1].x).toFixed(1) + ' ' + (H - P.b) + 'L' + X(pts[0].x).toFixed(1) + ' ' + (H - P.b) + 'Z" fill="url(#' + id + 'a)"/>';
+    [[o.ma200, '#a78bfa', '6 4'], [o.ma50, '#22d3ee', '']].forEach(function(m){ if(!m[0] || m[0].length < 2) return; g += '<path d="' + m[0].map(function(p, i){ return (i ? 'L' : 'M') + X(tms(p[0])).toFixed(1) + ' ' + Y(p[1]).toFixed(1); }).join('') + '" fill="none" stroke="' + m[1] + '" stroke-width="1.5"' + (m[2] ? ' stroke-dasharray="' + m[2] + '"' : '') + ' opacity=".9"/>'; });
+    g += '<path d="' + d + '" fill="none" stroke="' + col + '" stroke-width="2.6" stroke-linejoin="round"/>';
+    /* forecast fan */
+    if(fcs.length){
+      var f0 = [{ x:xNow, v:o.now.p, lo:o.now.p, hi:o.now.p, lo2:o.now.p, hi2:o.now.p }].concat(fcs);
+      var band = function(k1, k2){ return 'M' + f0.map(function(q){ return X(q.x).toFixed(1) + ' ' + Y(q[k2]).toFixed(1); }).join('L') + 'L' + f0.slice().reverse().map(function(q){ return X(q.x).toFixed(1) + ' ' + Y(q[k1]).toFixed(1); }).join('L') + 'Z'; };
+      g += '<path d="' + band('lo2', 'hi2') + '" fill="#a78bfa" opacity=".14"/><path d="' + band('lo', 'hi') + '" fill="#a78bfa" opacity=".28"/>';
+      g += '<path d="M' + f0.map(function(q){ return X(q.x).toFixed(1) + ' ' + Y(q.v).toFixed(1); }).join('L') + '" fill="none" stroke="#c4b5fd" stroke-width="2.4" stroke-dasharray="7 5"/>';
+    }
+    g += '</g>';
+    /* notable points: high / low in view */
+    var ih = 0, il = 0; pts.forEach(function(p, i){ if(p.v > pts[ih].v) ih = i; if(p.v < pts[il].v) il = i; });
+    [[ih, { en:'high', th:'สูงสุด' }, -12], [il, { en:'low', th:'ต่ำสุด' }, 20]].forEach(function(m){ var p = pts[m[0]]; if(!p || m[0] === pts.length - 1) return; var xx = X(p.x), yy = Y(p.v), anc = xx < P.l + 90 ? 'start' : xx > W - P.r - 90 ? 'end' : 'middle'; g += '<circle cx="' + xx.toFixed(1) + '" cy="' + yy.toFixed(1) + '" r="3.5" fill="' + col + '"/><text class="bz-pxnote" x="' + xx.toFixed(1) + '" y="' + (yy + m[2]).toFixed(1) + '" text-anchor="' + anc + '">' + esc(T(m[1])) + ' ' + pxMoney(p.v, a) + ' · ' + esc(dshort(p.t)) + '</text>'; });
+    /* forecast points with callouts */
+    var lastLX = X(xNow) + 18;
+    fcs.forEach(function(q, i){
+      var xx = X(q.x), yy = Y(q.v), up = q.v >= o.now.p, ch = (q.v / o.now.p - 1) * 100;
+      g += '<circle cx="' + xx.toFixed(1) + '" cy="' + yy.toFixed(1) + '" r="5" fill="#c4b5fd" stroke="var(--bz-bgc,#0b0f17)" stroke-width="2"/>';
+      if(xx - lastLX < 84 && i < fcs.length - 1) return;
+      lastLX = xx;
+      var above = q.v >= o.now.p ? true : false; if(i % 2) above = !above; var by = above ? yy - 42 : yy + 14, bw = 92, bx = Math.min(W - P.r - bw - 2, Math.max(P.l, xx - bw / 2));
+      g += '<line x1="' + xx.toFixed(1) + '" x2="' + xx.toFixed(1) + '" y1="' + (above ? yy - 6 : yy + 6).toFixed(1) + '" y2="' + (above ? by + 32 : by).toFixed(1) + '" stroke="#c4b5fd" stroke-width="1" opacity=".6"/>' +
+        '<rect x="' + bx.toFixed(1) + '" y="' + by.toFixed(1) + '" width="' + bw + '" height="32" rx="8" class="bz-pxcall"/>' +
+        '<text x="' + (bx + bw / 2).toFixed(1) + '" y="' + (by + 13).toFixed(1) + '" text-anchor="middle" class="bz-pxcl1">' + esc(T(q.lab)) + ' · <tspan class="' + (up ? 'u' : 'd') + '">' + spc(ch, 1) + '</tspan></text>' +
+        '<text x="' + (bx + bw / 2).toFixed(1) + '" y="' + (by + 27).toFixed(1) + '" text-anchor="middle" class="bz-pxcl2">' + pxMoney(q.v, a) + '</text>';
+    });
+    /* today marker */
+    var nx = X(xNow), ny = Y(o.now.p);
+    g += '<line x1="' + nx.toFixed(1) + '" x2="' + nx.toFixed(1) + '" y1="' + P.t + '" y2="' + (H - P.b) + '" stroke="var(--white)" stroke-width="1" stroke-dasharray="3 4" opacity=".45"/>' +
+      '<circle cx="' + nx.toFixed(1) + '" cy="' + ny.toFixed(1) + '" r="13" fill="' + col + '" opacity=".22" class="bz-pxpulse"/><circle cx="' + nx.toFixed(1) + '" cy="' + ny.toFixed(1) + '" r="6" fill="' + col + '" stroke="#fff" stroke-width="2"/>';
+    var bw2 = 150, bx2 = Math.max(P.l, nx - bw2 - 18), byy = ny - 76 > P.t + 4 ? ny - 76 : ny + 26;
+    g += '<line x1="' + (bx2 + bw2 - 10).toFixed(1) + '" y1="' + (byy + (byy < ny ? 42 : 0)).toFixed(1) + '" x2="' + nx.toFixed(1) + '" y2="' + ny.toFixed(1) + '" stroke="' + col + '" stroke-width="1.4"/>';
+    g += '<rect x="' + bx2.toFixed(1) + '" y="' + byy.toFixed(1) + '" width="' + bw2 + '" height="42" rx="10" fill="' + col + '"/><text x="' + (bx2 + 12).toFixed(1) + '" y="' + (byy + 16).toFixed(1) + '" class="bz-pxnowt">' + esc(T({ en:'NOW', th:'ตอนนี้' })) + ' · ' + esc(dshort(o.now.t)) + '</text><text x="' + (bx2 + 12).toFixed(1) + '" y="' + (byy + 34).toFixed(1) + '" class="bz-pxnowv">' + pxMoney(o.now.p, a) + '</text>';
+    /* right-axis badges: now + 12M */
+    var badge = function(v, c, txt){ var yy = Y(v); return '<rect x="' + (W - P.r + 2) + '" y="' + (yy - 10).toFixed(1) + '" width="' + (P.r - 4) + '" height="20" rx="6" fill="' + c + '"/><text x="' + (W - P.r + 8) + '" y="' + (yy + 4).toFixed(1) + '" class="bz-pxbadge">' + txt + '</text>'; };
+    var used = [Y(o.now.p)];
+    var lvlBadge = function(z, c, lab){ if(!z) return; var yy = Y(z.p); if(used.some(function(u){ return Math.abs(u - yy) < 21; })) return; used.push(yy); g += '<rect x="' + (W - P.r + 2) + '" y="' + (yy - 10).toFixed(1) + '" width="' + (P.r - 4) + '" height="20" rx="6" fill="var(--bz-bgc,#0b0f17)" stroke="' + c + '"/><text x="' + (W - P.r + 8) + '" y="' + (yy + 4).toFixed(1) + '" class="bz-pxbadge" fill="' + c + '" style="fill:' + c + '">' + esc(T(lab)) + ' ' + pxShort(z.p, a) + '</text>'; };
+    g += badge(o.now.p, col, pxShort(o.now.p, a));
+    lvlBadge(o.res, '#fb7185', { en:'R', th:'ต้าน' }); lvlBadge(o.sup, '#34d399', { en:'S', th:'รับ' });
+    if(fcs.length){ var lq = fcs[fcs.length - 1]; if(!used.some(function(u){ return Math.abs(u - Y(lq.v)) < 21; })) g += badge(lq.v, '#8b5cf6', pxShort(lq.v, a)); }
+    /* hover: reuse the board's crosshair / tooltip */
+    var ser = [{ name:o.N, color:col, pts:pts.map(function(p){ var r = [p.t, p.v]; r.x = p.x; return r; }), fc:fcs.map(function(q){ return { t:q.t, x:q.x, v:q.v, lo:q.lo, hi:q.hi }; }) }];
+    CH[id] = { ser:ser, X:X, Y:Y, x0:x0, x1:xEnd, W:W, H:H, P:P, unit:'', dec:a === 'btc' ? 0 : 1, fmt:function(v){ return pxMoney(v, a) + ' <small>(' + spc((v / o.now.p - 1) * 100, 1) + ' ' + T({ en:'vs now', th:'เทียบวันนี้' }) + ')</small>'; }, fmtR:function(v){ return pxMoney(v, a); } };
+    return '<div class="bz-chart bz-pxc" data-ch="' + id + '"><svg viewBox="0 0 ' + W + ' ' + H + '" class="bz-svg">' + g + '<line class="bz-xh" x1="0" x2="0" y1="' + P.t + '" y2="' + (H - P.b) + '" style="display:none"/></svg><div class="bz-tip" hidden></div></div>';
+  }
   function vPxOne(a){
     var P = X('px'), A = P && P[a]; if(!A) return noExt();
     var N = PXN[a], LV = pxLive(A, a), fc = pxFc(A, a, LV), Tr = A.trend, Lv = A.levels, thb = (D.m && D.m.ccy && D.m.ccy.THB && D.m.ccy.THB.rate) || (P.thb && P.thb[1]);
@@ -2661,26 +2745,31 @@
       '<div class="bz-pxbig"><span>' + esc(T({ en:'In 12 months', th:'อีก 12 เดือน' })) + '</span><b>' + pxMoney(f12.mid, a) + '</b><em class="' + (f12.e >= 0 ? 'up' : 'dn') + '">' + spc((Math.exp(f12.e) - 1) * 100, 1) + '</em><small>' + esc(T({ en:'likely ', th:'ช่วงที่น่าจะเป็น ' })) + pxMoney(f12.lo, a) + ' – ' + pxMoney(f12.hi, a) + '</small></div>' +
       '<div class="bz-pxodds"><div><span>' + esc(T({ en:'Higher in 6M', th:'สูงขึ้นใน 6 เดือน' })) + '</span>' + bar(f6.pup, f6.pup >= 50 ? 'good' : 'bad') + '<b>' + f(f6.pup, 0) + '%</b></div><div><span>' + esc(T({ en:'+10% or more', th:'ขึ้น 10% ขึ้นไป' })) + '</span>' + bar(f6.p10u, 'good') + '<b>' + f(f6.p10u, 0) + '%</b></div><div><span>' + esc(T({ en:'−10% or worse', th:'ลง 10% ขึ้นไป' })) + '</span>' + bar(f6.p10d, 'bad') + '<b>' + f(f6.p10d, 0) + '%</b></div></div></div></div>';
     /* big chart */
-    var rng = PX.r, cut = { '6m':183, '1y':366, '3y':1100, 'all':1e9 }[rng] || 366;
+    var rng = PX.r, cut = { '6m':183, '1y':366, '3y':1100, 'all':20000 }[rng] || 366;
     var lastT = A.last[0], t0 = addDays(lastT, -cut);
     var src = rng === 'all' ? A.hist_w.map(function(x){ return [x[0], x[1]]; }) : A.hist_d.filter(function(x){ return x[0] >= t0; });
     var price = src.map(function(x){ return [x[0], x[1] * (x[0] === lastT ? LV.k : 1)]; });
     if(LV.src === 'live' && LV.t > lastT) price.push([LV.t, LV.p]);
     var t1 = price[price.length - 1][0];
-    var fcPtsX = fc.map(function(q){ return { t:addDays(t1, q.d), v:q.mid, lo:q.lo, hi:q.hi, lo2:q.lo2, hi2:q.hi2 }; });
-    if(rng === '6m') fcPtsX = fcPtsX.filter(function(q){ return q.t <= addDays(t1, 190); });
-    var ser = [{ name:N, pts:price, color:N.col, w:2.6, area:true, fc:fcPtsX }];
-    if(rng !== 'all'){
-      ser.push({ name:{ en:'50-day avg', th:'เฉลี่ย 50 วัน' }, pts:src.filter(function(x){ return isNum(x[2]); }).map(function(x){ return [x[0], x[2]]; }), color:'#22d3ee', w:1.4 });
-      ser.push({ name:{ en:'200-day avg', th:'เฉลี่ย 200 วัน' }, pts:src.filter(function(x){ return isNum(x[3]); }).map(function(x){ return [x[0], x[3]]; }), color:'#a78bfa', w:1.4, dash:'6 4' });
-    }
-    var refs = [], gapOk = function(v){ return Math.abs(v / LV.p - 1) > 0.015; };
+    var fcPtsX = fc.map(function(q){ return { t:addDays(t1, q.d), v:q.mid, lo:q.lo, hi:q.hi, lo2:q.lo2, hi2:q.hi2, lab:q.lab, d:q.d, e:q.e }; });
+    if(rng === '6m') fcPtsX = fcPtsX.filter(function(q){ return q.d <= 182; });
+    var gapOk = function(v){ return Math.abs(v / LV.p - 1) > 0.012; };
     var r1 = (Lv.res || []).filter(function(r){ return gapOk(r.p); })[0], s1 = (Lv.sup || []).filter(function(r){ return gapOk(r.p); })[0];
-    if(r1) refs.push({ v:r1.p, label:{ en:'resistance ' + pxMoney(r1.p, a), th:'แนวต้าน ' + pxMoney(r1.p, a) } });
-    if(s1) refs.push({ v:s1.p, label:{ en:'support ' + pxMoney(s1.p, a), th:'แนวรับ ' + pxMoney(s1.p, a) } });
     h += '<div class="bz-sec bz-pxchart"><h4>' + ico('trend') + esc(T({ en:N.en + ' — price, trend and forecast', th:N.th + ' — ราคา แนวโน้ม และคาดการณ์' })) + '<span class="bz-pxr">' + [['6m', '6M'], ['1y', '1Y'], ['3y', '3Y'], ['all', T({ en:'All', th:'ทั้งหมด' })]].map(function(r){ return '<button type="button" data-pxr="' + r[0] + '" class="' + (rng === r[0] ? 'on' : '') + '">' + esc(r[1]) + '</button>'; }).join('') + '</span></h4>' +
-      lineChart({ series:ser, dec:a === 'btc' ? 0 : 0, h:470, ref:rng === 'all' ? [] : refs, W:1000 }) +
-      note({ en:'Purple zone = forecast for 1 week → 12 months. Dark fan = 68% likely, light fan = 95%. Dashed lines = nearest supports and resistances.', th:'โซนม่วง = คาดการณ์ 1 สัปดาห์ → 12 เดือน แถบเข้ม = โอกาส 68% แถบจาง = 95% เส้นประ = แนวรับแนวต้านที่ใกล้ที่สุด' }) + '</div>';
+      pxChart({ a:a, N:N, price:price, ma50:rng === 'all' ? [] : src.filter(function(x){ return isNum(x[2]); }).map(function(x){ return [x[0], x[2]]; }), ma200:rng === 'all' ? [] : src.filter(function(x){ return isNum(x[3]); }).map(function(x){ return [x[0], x[3]]; }),
+        fc:fcPtsX, now:{ t:t1, p:LV.p }, res:rng === 'all' ? null : r1, sup:rng === 'all' ? null : s1, Tr:Tr, log:rng === 'all' && a === 'btc' }) +
+      '<div class="bz-pxleg"><span><i style="background:' + N.col + '"></i>' + esc(T({ en:'price', th:'ราคา' })) + '</span>' + (rng === 'all' ? '' : '<span><i style="background:#22d3ee"></i>' + esc(T({ en:'50-day average', th:'เฉลี่ย 50 วัน' })) + '</span><span><i class="d" style="background:#a78bfa"></i>' + esc(T({ en:'200-day average', th:'เฉลี่ย 200 วัน' })) + '</span>') + '<span><i style="background:rgba(167,139,250,.45)"></i>' + esc(T({ en:'forecast 68%', th:'คาดการณ์ 68%' })) + '</span><span><i style="background:rgba(167,139,250,.18)"></i>' + esc(T({ en:'forecast 95%', th:'คาดการณ์ 95%' })) + '</span><span><i class="d" style="background:#34d399"></i>' + esc(T({ en:'support', th:'แนวรับ' })) + '</span><span><i class="d" style="background:#fb7185"></i>' + esc(T({ en:'resistance', th:'แนวต้าน' })) + '</span></div>' +
+      note({ en:'Move the mouse (or finger) over the chart to read the price on any day; in the purple zone it shows the forecast and its range.', th:'เลื่อนเมาส์ (หรือนิ้ว) บนกราฟเพื่อดูราคาวันไหนก็ได้ ในโซนสีม่วงจะแสดงราคาคาดการณ์และช่วงที่น่าจะเป็น' }) + '</div>';
+    /* path strip: now -> each horizon */
+    h += '<div class="bz-pxpath"><div class="now"><span>' + esc(T({ en:'Now', th:'ตอนนี้' })) + '</span><b>' + pxMoney(LV.p, a) + '</b><em>' + esc(dshort(LV.t)) + '</em></div>' + fc.map(function(q){ var ch = (Math.exp(q.e) - 1) * 100; return '<i>→</i><div class="' + (ch >= 0 ? 'up' : 'dn') + '"><span>' + esc(T(q.lab)) + '</span><b>' + pxMoney(q.mid, a) + '</b><em>' + spc(ch, 1) + '</em><small>' + esc(dshort(addDays(LV.t, q.d))) + '</small></div>'; }).join('') + '</div>';
+    /* playbook: what to watch from the key levels, with odds from the 1-month forecast */
+    var q1 = fc[1], pAbove = function(lv){ return (1 - Phi((Math.log(lv / LV.p) - q1.e) / q1.s)) * 100; };
+    var r2 = (Lv.res || []).filter(function(r){ return r1 && r.p > r1.p * 1.01; })[0], s2 = (Lv.sup || []).filter(function(r){ return s1 && r.p < s1.p * 0.99; })[0];
+    var plan = [];
+    if(r1) plan.push({ c:'good', h:{ en:'If it closes above ' + pxMoney(r1.p, a), th:'ถ้าปิดเหนือ ' + pxMoney(r1.p, a) }, p:{ en:'Next resistance ' + (r2 ? pxMoney(r2.p, a) + ' (' + spc((r2.p / LV.p - 1) * 100, 1) + ')' : 'the 52-week high ' + pxMoney(Tr.hi52, a)) + '. Chance of trading above it within a month: ' + f(pAbove(r1.p), 0) + '%.', th:'แนวต้านถัดไป ' + (r2 ? pxMoney(r2.p, a) + ' (' + spc((r2.p / LV.p - 1) * 100, 1) + ')' : 'จุดสูงสุด 52 สัปดาห์ ' + pxMoney(Tr.hi52, a)) + ' โอกาสขึ้นไปเหนือระดับนี้ภายใน 1 เดือน ' + f(pAbove(r1.p), 0) + '%' } });
+    if(r1 && s1) plan.push({ c:'mid', h:{ en:'Range to watch: ' + pxMoney(s1.p, a) + ' – ' + pxMoney(r1.p, a), th:'กรอบที่ต้องดู: ' + pxMoney(s1.p, a) + ' – ' + pxMoney(r1.p, a) }, p:{ en:'Chance it is still inside this range a month from now: ' + f(Math.max(0, pAbove(s1.p) - pAbove(r1.p)), 0) + '%. ' + (LV.p > Tr.ma200 ? 'Above the 200-day average (' + pxMoney(Tr.ma200, a) + '): the long trend is intact.' : 'Below the 200-day average (' + pxMoney(Tr.ma200, a) + '): reclaiming it would repair the long trend.'), th:'โอกาสที่อีก 1 เดือนราคายังอยู่ในกรอบนี้ ' + f(Math.max(0, pAbove(s1.p) - pAbove(r1.p)), 0) + '% ' + (LV.p > Tr.ma200 ? 'ราคายังอยู่เหนือเส้นเฉลี่ย 200 วัน (' + pxMoney(Tr.ma200, a) + ') แนวโน้มระยะยาวยังดี' : 'ราคาอยู่ใต้เส้นเฉลี่ย 200 วัน (' + pxMoney(Tr.ma200, a) + ') ถ้ากลับขึ้นไปได้ แนวโน้มระยะยาวจะฟื้น') } });
+    if(s1) plan.push({ c:'bad', h:{ en:'If it closes below ' + pxMoney(s1.p, a), th:'ถ้าปิดต่ำกว่า ' + pxMoney(s1.p, a) }, p:{ en:'Next support ' + (s2 ? pxMoney(s2.p, a) + ' (' + spc((s2.p / LV.p - 1) * 100, 1) + ')' : 'the 52-week low ' + pxMoney(Tr.lo52, a)) + '. Chance of trading below it within a month: ' + f(100 - pAbove(s1.p), 0) + '%.', th:'แนวรับถัดไป ' + (s2 ? pxMoney(s2.p, a) + ' (' + spc((s2.p / LV.p - 1) * 100, 1) + ')' : 'จุดต่ำสุด 52 สัปดาห์ ' + pxMoney(Tr.lo52, a)) + ' โอกาสลงไปต่ำกว่าระดับนี้ภายใน 1 เดือน ' + f(100 - pAbove(s1.p), 0) + '%' } });
+    if(plan.length) h += '<div class="bz-sec"><h4>' + ico('compass') + esc(T({ en:'What to watch next — levels and their odds', th:'จุดที่ต้องจับตาต่อไป — ระดับราคาและโอกาส' })) + '</h4><div class="bz-pxplan">' + plan.map(function(x){ return '<div class="' + x.c + '"><b>' + esc(T(x.h)) + '</b><p>' + esc(T(x.p)) + '</p></div>'; }).join('') + '</div>' + note({ en:'Odds come from the 1-month forecast range, so they already include the trend, the pull-back and the calibration.', th:'โอกาสคำนวณจากช่วงคาดการณ์ 1 เดือน จึงรวมแนวโน้ม แรงดึงกลับ และการปรับจากผลทดสอบย้อนหลังไว้แล้ว' }) + '</div>';
     /* horizon cards */
     h += '<div class="bz-pxfc">' + fc.map(function(q){
       var ch = (Math.exp(q.e) - 1) * 100;
@@ -2782,7 +2871,7 @@
     sec7.items.unshift({ t:{ en:'Gold & bitcoin price forecast', th:'คาดการณ์ราคาทองและบิตคอยน์' },
       what:{ en:'Daily prices: gold futures (GC=F) since 2000, bitcoin (BTC-USD) since 2014, plus real yields, the broad dollar and the Nasdaq-100 for the macro piece.', th:'ราคารายวัน: ทองคำ (GC=F) ตั้งแต่ปี 2000 บิตคอยน์ (BTC-USD) ตั้งแต่ปี 2014 รวมถึงยีลด์จริง ดัชนีดอลลาร์ และ Nasdaq-100 สำหรับส่วนเศรษฐกิจมหภาค' },
       how:{ en:'Expected move = half its own long-run growth + trend (12m and 3m momentum in volatility units) + a partial pull back when the gap to the 200-day average is bigger than usual + seasonality (half weight) + for bitcoin the halving cycle (35%) + macro (half of: real-yield and dollar betas for gold, Nasdaq beta for bitcoin). Ranges = blended volatility × a factor from a weekly walk-forward test.', th:'การขยับที่คาด = ครึ่งหนึ่งของการเติบโตระยะยาวของตัวเอง + แนวโน้ม (โมเมนตัม 12 และ 3 เดือนในหน่วยความผันผวน) + แรงดึงกลับบางส่วนเมื่อห่างเส้น 200 วันมากกว่าปกติ + ฤดูกาล (น้ำหนักครึ่ง) + วัฏจักรฮาล์ฟวิ่งสำหรับบิตคอยน์ (35%) + เศรษฐกิจมหภาค (ครึ่งหนึ่งของผลจากยีลด์จริงและดอลลาร์สำหรับทอง และจาก Nasdaq สำหรับบิตคอยน์) ช่วงคาดการณ์ = ความผันผวนผสม × ตัวคูณจากการทดสอบย้อนหลังรายสัปดาห์' },
-      why:{ en:'Each piece is a well-documented tendency, each is small, and each is shown separately — so a forecast can be checked and argued with. The walk-forward table shows honestly where it adds value (6–12 months) and where it does not (1 week).', th:'แต่ละส่วนเป็นแนวโน้มที่มีงานวิจัยรองรับ แต่ละส่วนมีผลไม่มาก และแสดงแยกให้เห็น จึงตรวจสอบและโต้แย้งได้ ตารางทดสอบย้อนหลังบอกตรงๆ ว่าช่วยได้ตรงไหน (6–12 เดือน) และช่วยไม่ได้ตรงไหน (1 สัปดาห์)' },
+      why:{ en:'Levels to watch: support and resistance are clusters of swing highs/lows of the last 18 months; the odds of breaking each within a month come from the same 1-month forecast range. Each piece is a well-documented tendency, each is small, and each is shown separately — so a forecast can be checked and argued with. The walk-forward table shows honestly where it adds value (6–12 months) and where it does not (1 week).', th:'จุดที่ต้องจับตา: แนวรับแนวต้านคือกลุ่มจุดกลับตัวสูง/ต่ำในช่วง 18 เดือน โอกาสที่จะทะลุแต่ละระดับภายใน 1 เดือนคำนวณจากช่วงคาดการณ์ 1 เดือนเดียวกัน แต่ละส่วนเป็นแนวโน้มที่มีงานวิจัยรองรับ แต่ละส่วนมีผลไม่มาก และแสดงแยกให้เห็น จึงตรวจสอบและโต้แย้งได้ ตารางทดสอบย้อนหลังบอกตรงๆ ว่าช่วยได้ตรงไหน (6–12 เดือน) และช่วยไม่ได้ตรงไหน (1 สัปดาห์)' },
       now:{ en:(g ? 'Gold ' + pxMoney(g.last[1], 'gold') + ' → 12M ' + pxMoney(g.fc[4].mid, 'gold') : '') + (b ? ' · Bitcoin ' + pxMoney(b.last[1], 'btc') + ' → 12M ' + pxMoney(b.fc[4].mid, 'btc') : '') + ' (before the macro piece).', th:(g ? 'ทอง ' + pxMoney(g.last[1], 'gold') + ' → 12 เดือน ' + pxMoney(g.fc[4].mid, 'gold') : '') + (b ? ' · บิตคอยน์ ' + pxMoney(b.last[1], 'btc') + ' → 12 เดือน ' + pxMoney(b.fc[4].mid, 'btc') : '') + ' (ก่อนรวมส่วนเศรษฐกิจมหภาค)' } });
     return s;
   };
@@ -2945,7 +3034,11 @@
     host.querySelector('[data-bz="eb"]').textContent = T(UX.eb);
     host.querySelector('[data-bz="h"]').textContent = T(UX.h);
     host.querySelector('[data-bz="lede"]').textContent = T(UX.lede);
-    nav.innerHTML = TABS.map(function(t){ return '<button type="button" role="tab" data-tab="' + t[0] + '" class="' + (tab === t[0] ? 'on' : '') + '" aria-selected="' + (tab === t[0]) + '">' + ico(t[2]) + '<span>' + esc(T(t[1])) + '</span></button>'; }).join('');
+    var keepX = nav.scrollLeft;
+    nav.innerHTML = '<button type="button" class="bz-tarr l" data-tscroll="-1" aria-label="previous">‹</button>' + TABS.map(function(t){ return '<button type="button" role="tab" data-tab="' + t[0] + '" class="' + (tab === t[0] ? 'on' : '') + '" aria-selected="' + (tab === t[0]) + '">' + ico(t[2]) + '<span>' + esc(T(t[1])) + '</span></button>'; }).join('') + '<button type="button" class="bz-tarr r" data-tscroll="1" aria-label="next">›</button>';
+    nav.scrollLeft = keepX;
+    /* 2026-10-26: keep the chosen tab in view and show the arrows only when there is more to scroll */
+    setTimeout(function(){ var on = nav.querySelector('[data-tab].on'); if(on){ var nl = nav.getBoundingClientRect(), r = on.getBoundingClientRect(); if(r.left < nl.left + 40 || r.right > nl.right - 40) nav.scrollTo({ left:nav.scrollLeft + (r.left - nl.left) - nl.width / 2 + r.width / 2, behavior:'smooth' }); } tabArrows(nav); }, 30);
     if(!D.m || !D.m.stocks){ body.innerHTML = '<div class="bz-wait">' + esc(T(UX.loading)) + '</div>'; return; }
     var E = E_last;
     var meta = '<div class="bz-meta"><span>' + ico('eye') + esc(T(UX.upd)) + ': ' + (D.m.generated_at ? new Date(D.m.generated_at).toLocaleString(L() === 'th' ? 'th-TH' : 'en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—') + '</span>' +
@@ -2959,6 +3052,7 @@
     body.innerHTML = meta + '<div class="bz-view bz-v-' + tab + '">' + html + '</div>';
     if(scrollTop){ var top = host.getBoundingClientRect().top + window.scrollY - 90; if(window.scrollY > top) window.scrollTo({ top:top, behavior:'smooth' }); }
   }
+  function tabArrows(nav){ var max = nav.scrollWidth - nav.clientWidth - 2; nav.classList.toggle('cl', nav.scrollLeft > 2); nav.classList.toggle('cr', nav.scrollLeft < max); }
   function refresh(){
     wkCache = {}; medCache = null; calCache = {};
     return loadData().then(function(){ if(D.m && D.m.stocks){ E_last = compute(); try { F_last = calibrate(forecast(E_last)); } catch(e){ if(window.console) console.error(e); } } paint(); });
@@ -2968,7 +3062,12 @@
     slot.innerHTML = '<div class="bz-wrap"><div class="section-head reveal in-view"><div class="eyebrow"><span class="cursor"></span><span data-bz="eb"></span></div><h2 data-bz="h"></h2><p class="lede" data-bz="lede"></p><div class="rule"></div></div>' +
       '<nav class="bz-tabs" role="tablist" data-bz="tabs"></nav><div data-bz="body"></div></div>';
     try { var t0 = sessionStorage.getItem('spz.brain.tab'); if(t0 && TABS.some(function(x){ return x[0] === t0; })) tab = t0; } catch(e){}
+    var navEl = slot.querySelector('[data-bz="tabs"]');
+    navEl.addEventListener('scroll', function(){ tabArrows(navEl); }, { passive:true });
+    navEl.addEventListener('wheel', function(ev){ if(Math.abs(ev.deltaY) > Math.abs(ev.deltaX) && navEl.scrollWidth > navEl.clientWidth){ navEl.scrollLeft += ev.deltaY; ev.preventDefault(); } }, { passive:false });
+    window.addEventListener('resize', function(){ tabArrows(navEl); });
     slot.addEventListener('click', function(ev){
+      var ar = ev.target.closest('[data-tscroll]'); if(ar && slot.contains(ar)){ navEl.scrollBy({ left:+ar.getAttribute('data-tscroll') * navEl.clientWidth * 0.7, behavior:'smooth' }); return; }
       var b = ev.target.closest('[data-tab],[data-go],[data-bzref]'); if(!b || !slot.contains(b)) return;
       if(b.hasAttribute('data-bzref')){ refresh(); return; }
       tab = b.getAttribute('data-tab') || b.getAttribute('data-go');
@@ -2976,7 +3075,8 @@
       paint(true);
     });
     slot.addEventListener('pointermove', onChartMove);
-    slot.addEventListener('pointerleave', function(){ slot.querySelectorAll('.bz-chart').forEach(hideTip); }, true);
+    /* 2026-10-26: was a capture listener, so moving between two lines inside a chart fired it and hid the tooltip */
+    slot.addEventListener('pointerleave', function(){ slot.querySelectorAll('.bz-chart').forEach(hideTip); });
     wirePf(slot); wirePrint(slot); wireWhatif(slot); wirePx(slot);
     new MutationObserver(function(){ paint(); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
     document.addEventListener('spz:line', function(){ PF.acctTickers = null; if(tab === 'pf') paint(); });
