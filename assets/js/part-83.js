@@ -3156,22 +3156,50 @@
        your plan  = for each stock you hold (typed, or taken from “My
                     portfolio”): keep or trim now, and what to switch to if
                     each scenario happens */
+  /* Multi-factor scores, the way quant funds screen stocks. Each raw
+     number becomes a z-score (how many standard deviations from the
+     average), capped at ±2; quality and price are compared within the same
+     sector of the same market (a bank's P/E against other banks), the rest
+     within the whole market. Missing data counts as average.
+       q  quality   ROE, profit margin, low debt/equity
+       g  earnings  latest-quarter earnings growth, revenue growth, forward EPS vs trailing
+       mo momentum  3-month return, distance above the 200-day average
+       va price     P/E, forward P/E, price/book (cheaper = higher)
+       an analysts  upside to the mean target, mean rating (only with 3+ analysts) */
   var FCACHE = null;
+  var FNAME = { q:{ en:'Quality', th:'คุณภาพ' }, g:{ en:'Earnings', th:'กำไรโต' }, mo:{ en:'Momentum', th:'โมเมนตัม' }, va:{ en:'Price', th:'ราคา' }, an:{ en:'Analysts', th:'นักวิเคราะห์' } };
   function factors(){
     var key = D.m && D.m.generated_at; if(FCACHE && FCACHE.k === key) return FCACHE.v;
-    var v = {}, by = { us:[], th:[] };
-    Object.keys(D.m.stocks || {}).forEach(function(t){ var s = D.m.stocks[t]; if(by[s.cal]) by[s.cal].push(t); });
-    ['us', 'th'].forEach(function(cal){
-      var L2 = by[cal];
-      var z = function(get){ var xs = L2.map(function(t){ return get(D.m.stocks[t]); }), ok = xs.filter(isNum), m = ok.reduce(function(a, b){ return a + b; }, 0) / (ok.length || 1), sd = Math.sqrt(ok.reduce(function(a, b){ return a + (b - m) * (b - m); }, 0) / (ok.length || 1)) || 1; return xs.map(function(x){ return isNum(x) ? clamp((x - m) / sd, -2, 2) : 0; }); };
-      var roe = z(function(s){ return isNum(s.roe) ? clamp(s.roe, -20, 50) : null; }), mar = z(function(s){ return isNum(s.margin) ? clamp(s.margin, -30, 60) : null; }), de = z(function(s){ return isNum(s.de) ? -clamp(s.de, 0, 5) : null; });
-      var m3 = z(function(s){ return isNum(s.m3) ? clamp(s.m3, -40, 60) : null; }), ma = z(function(s){ return isNum(s.vs_ma200) ? clamp(s.vs_ma200, -40, 35) : null; });
-      var pe = z(function(s){ return isNum(s.pe) && s.pe > 0 ? -Math.log(clamp(s.pe, 3, 150)) : null; });
-      L2.forEach(function(t, j){ var q = (roe[j] + mar[j] + de[j]) / 3, mo = (m3[j] + ma[j]) / 2, va = pe[j]; v[t] = { q:q, mo:mo, va:va, f:(q + mo + va) / 3 }; });
+    var v = {}, all = Object.keys(D.m.stocks || {}).filter(function(t){ var c = D.m.stocks[t].cal; return c === 'us' || c === 'th'; });
+    var zs = function(ts, get){ var xs = ts.map(function(t){ return get(D.m.stocks[t]); }), ok = xs.filter(isNum); if(ok.length < 5) return null; var m = ok.reduce(function(a, b){ return a + b; }, 0) / ok.length, sd = Math.sqrt(ok.reduce(function(a, b){ return a + (b - m) * (b - m); }, 0) / ok.length) || 1, o = {}; ts.forEach(function(t, j){ o[t] = isNum(xs[j]) ? clamp((xs[j] - m) / sd, -2, 2) : null; }); return o; };
+    var grp = function(byS){ var G = {}; all.forEach(function(t){ var s = D.m.stocks[t], k = s.cal + (byS ? '|' + (s.sector || '?') : ''); (G[k] = G[k] || []).push(t); }); return G; };
+    var Gm = grp(false), Gs = grp(true);
+    var run = function(get, sectorRel){ var out = {}; Object.keys(Gm).forEach(function(k){ var base = zs(Gm[k], get) || {}; if(sectorRel){ Object.keys(Gs).forEach(function(ks){ if(ks.indexOf(k + '|') !== 0 || Gs[ks].length < 6) return; var z = zs(Gs[ks], get); if(z) Object.keys(z).forEach(function(t){ base[t] = z[t]; }); }); } Object.keys(base).forEach(function(t){ out[t] = base[t]; }); }); return out; };
+    var avg = function(arr){ var a = arr.filter(isNum); return a.length ? a.reduce(function(x, y){ return x + y; }, 0) / a.length : null; };
+    var F = {
+      roe:run(function(s){ return isNum(s.roe) ? clamp(s.roe, -20, 50) : null; }, true), mar:run(function(s){ return isNum(s.margin) ? clamp(s.margin, -30, 60) : null; }, true), de:run(function(s){ return isNum(s.de) ? -clamp(s.de, 0, 5) : null; }, true),
+      eg:run(function(s){ return isNum(s.eg) ? clamp(s.eg, -60, 120) : null; }), rg:run(function(s){ return isNum(s.rg) ? clamp(s.rg, -40, 80) : null; }), feg:run(function(s){ return isNum(s.feg) ? clamp(s.feg, -50, 100) : null; }),
+      m3:run(function(s){ return isNum(s.m3) ? clamp(s.m3, -40, 60) : null; }), ma:run(function(s){ return isNum(s.vs_ma200) ? clamp(s.vs_ma200, -40, 35) : null; }),
+      pe:run(function(s){ return isNum(s.pe) && s.pe > 0 ? -Math.log(clamp(s.pe, 3, 150)) : null; }, true), fpe:run(function(s){ return isNum(s.fpe) && s.fpe > 0 ? -Math.log(clamp(s.fpe, 3, 150)) : null; }, true), pb:run(function(s){ return isNum(s.pb) && s.pb > 0 ? -Math.log(clamp(s.pb, 0.2, 60)) : null; }, true),
+      up:run(function(s){ return s.nan >= 3 && isNum(s.tgt) && s.price ? clamp((s.tgt / s.price - 1) * 100, -40, 80) : null; }), rec:run(function(s){ return s.nan >= 3 && isNum(s.rec) ? -s.rec : null; })
+    };
+    all.forEach(function(t){
+      var g = function(k){ return F[k][t]; };
+      var r = { q:avg([g('roe'), g('mar'), g('de')]), g:avg([g('eg'), g('rg'), g('feg')]), mo:avg([g('m3'), g('ma')]), va:avg([g('pe'), g('fpe'), g('pb')]), an:avg([g('up'), g('rec')]) };
+      var have = ['q', 'g', 'mo', 'va', 'an'].filter(function(k){ return isNum(r[k]); });
+      ['q', 'g', 'mo', 'va', 'an'].forEach(function(k){ if(!isNum(r[k])) r[k] = 0; });
+      r.n = have.length; r.f = have.length ? have.reduce(function(a, k){ return a + r[k]; }, 0) / have.length : 0; r.has = have;
+      v[t] = r;
     });
     FCACHE = { k:key, v:v }; return v;
   }
   function pbS(t){ var pb = X('wpb'); return t !== 'SPY' && pb && pb.stk && pb.stk[t]; }
+  function fzRaw(k, s){
+    var P = function(v, d){ return isNum(v) ? f(v, d == null ? 1 : d) : '—'; };
+    return k === 'q' ? 'ROE ' + P(s.roe) + '% · margin ' + P(s.margin) + '% · D/E ' + P(s.de, 2) : k === 'g' ? 'EPS q/q ' + spc(s.eg, 0) + ' · sales ' + spc(s.rg, 0) + ' · fwd EPS ' + spc(s.feg, 0) : k === 'mo' ? '3M ' + spc(s.m3, 0) + ' · vs 200d ' + spc(s.vs_ma200, 0) : k === 'va' ? 'P/E ' + P(s.pe) + ' · fwd ' + P(s.fpe) + ' · P/B ' + P(s.pb) : s.nan >= 3 ? 'target ' + spc(isNum(s.tgt) && s.price ? (s.tgt / s.price - 1) * 100 : null, 0) + ' · rating ' + P(s.rec, 1) + ' (' + s.nan + ')' : 'no analyst cover';
+  }
+  function fzBadges(fz, s){ return '<div class="bz-wfz">' + ['q', 'g', 'mo', 'va', 'an'].map(function(k){ var on = fz.has && fz.has.indexOf(k) >= 0; return '<span class="' + (on ? 'g' + grade(fz[k]) : 'gN') + '" title="' + esc(fzRaw(k, s)) + '">' + esc(T(FNAME[k])) + ' ' + (on ? grade(fz[k]) : '–') + '</span>'; }).join('') + '</div>'; }
+  function fzText(fz){ return ['q', 'g', 'mo', 'va', 'an'].filter(function(k){ return fz.has && fz.has.indexOf(k) >= 0; }).map(function(k){ return T(FNAME[k]) + ' ' + grade(fz[k]); }).join(', '); }
   function grade(z){ return z > 0.5 ? 'A' : z > 0 ? 'B' : z > -0.5 ? 'C' : 'D'; }
   function oneHot(q){ var a = [0, 0, 0, 0]; a[q] = 100; return a; }
   function stockExp(t, probs){ var e = 0, w = 0, per = []; for(var q = 0; q < 4; q++){ var pr = probs[q] || 0; if(pr <= 0) continue; var ed = stockEdge(t, q); per[q] = ed; if(ed){ e += pr * ed.sh; w += pr; } } return w ? { e:e / w, per:per, cov:w } : null; }
@@ -3219,10 +3247,20 @@
   }
   function holdCard(x, C){
     var e = x.x, fz = x.fz, s = x.s, best = C.scen[0];
-    var badge = function(lab, z){ return '<span class="g' + grade(z) + '">' + esc(T(lab)) + ' ' + grade(z) + '</span>'; };
     return '<div class="bz-wsc"><div class="bz-wsch"><b>' + esc(tick(x.t)) + '</b><span>' + esc((s.name || '').replace(/^[A-Z0-9&.\-]+_/, '').slice(0, 34)) + '</span><em>' + esc(sectName(s.sector || '')) + '</em></div>' +
       '<div class="bz-wscn"><div><small>' + esc(T({ en:'all scenarios, weighted', th:'ทุกฉากทัศน์ ถ่วงตามโอกาส' })) + '</small><b class="' + (e.e >= 0 ? 'up' : 'dn') + '">' + spc(e.e, 1) + '</b></div><div><small>' + esc(T({ en:'if ', th:'ถ้า' }) + phName(PHK[best])) + '</small><b>' + (e.per[best] ? spc(e.per[best].m, 1) : '—') + '</b></div><div><small>3M</small><b>' + spc(s.m3, 0) + '</b></div></div>' +
-      '<div class="bz-wfz">' + badge({ en:'Quality', th:'คุณภาพ' }, fz.q) + badge({ en:'Momentum', th:'โมเมนตัม' }, fz.mo) + badge({ en:'Price', th:'ราคา' }, fz.va) + '</div></div>';
+      fzBadges(fz, s) + '</div>';
+  }
+  function factorTable(probs){
+    var F = factors(), one = function(cal){
+      var rows = Object.keys(D.m.stocks || {}).filter(function(t){ var s = D.m.stocks[t]; return s.cal === cal && F[t] && F[t].n >= 3 && pbS(t); }).map(function(t){ var x = stockExp(t, probs), sc = x ? clamp(x.e / 3, -2, 2) : 0; return { t:t, s:D.m.stocks[t], fz:F[t], sc:sc, tot:0.5 * sc + 0.5 * F[t].f, e:x && x.e }; }).sort(function(a, b){ return b.tot - a.tot; }).slice(0, 15);
+      var cell = function(r, k){ var on = r.fz.has.indexOf(k) >= 0; return '<td class="fz ' + (on ? 'g' + grade(r.fz[k]) : 'gN') + '" title="' + esc(fzRaw(k, r.s)) + '"><b>' + (on ? grade(r.fz[k]) : '–') + '</b><i style="width:' + (on ? Math.round((clamp(r.fz[k], -2, 2) + 2) / 4 * 100) : 0) + '%"></i></td>'; };
+      return '<div><h6>' + ico('flag') + esc(T(cal === 'us' ? { en:'US — top 15', th:'สหรัฐฯ — 15 อันดับแรก' } : { en:'Thai — top 15', th:'ไทย — 15 อันดับแรก' })) + '</h6><div class="bz-tw"><table class="bz-tbl bz-wfzt"><thead><tr><th></th><th>' + esc(T({ en:'Scenarios', th:'ฉากทัศน์' })) + '</th>' + ['q', 'g', 'mo', 'va', 'an'].map(function(k){ return '<th>' + esc(T(FNAME[k])) + '</th>'; }).join('') + '<th>' + esc(T({ en:'Total', th:'รวม' })) + '</th></tr></thead><tbody>' +
+        rows.map(function(r){ return '<tr><td><b>' + esc(tick(r.t)) + '</b><small>' + esc(sectName(r.s.sector || '')) + (r.s.above_ma200 ? '' : ' · ' + T({ en:'below 200d', th:'ใต้เส้น 200 วัน' })) + '</small></td><td class="' + (r.e >= 0 ? 'up' : 'dn') + '">' + spc(r.e, 1) + '</td>' + ['q', 'g', 'mo', 'va', 'an'].map(function(k){ return cell(r, k); }).join('') + '<td class="tot">' + sg(r.tot, 2) + '</td></tr>'; }).join('') + '</tbody></table></div></div>';
+    };
+    return '<details class="bz-wadv bz-wfzd"><summary>' + ico('layers') + '<b>' + esc(T({ en:'Multi-factor scorecard — how fund managers would rank them', th:'ตารางคะแนนหลายปัจจัย — จัดอันดับแบบที่กองทุนใช้' })) + '</b><span>' + esc(T({ en:'Five factors, each graded A–D against the same market (quality and price against the same sector). Hover a grade to see the raw numbers.', th:'5 ปัจจัย ให้เกรด A–D เทียบกับหุ้นในตลาดเดียวกัน (คุณภาพและราคาเทียบกับกลุ่มเดียวกัน) ชี้ที่เกรดเพื่อดูตัวเลขจริง' })) + '</span></summary>' +
+      '<div class="bz-wfzk">' + [['q', { en:'ROE, profit margin, low debt', th:'ROE อัตรากำไร หนี้ต่ำ' }], ['g', { en:'quarterly earnings growth, sales growth, next-year EPS vs last year', th:'กำไรไตรมาสล่าสุดเทียบปีก่อน ยอดขายโต กำไรต่อหุ้นปีหน้าเทียบปีนี้' }], ['mo', { en:'3-month return, height above the 200-day average', th:'ผลตอบแทน 3 เดือน และระยะเหนือเส้น 200 วัน' }], ['va', { en:'P/E, forward P/E, price/book — cheaper scores higher', th:'P/E, P/E ล่วงหน้า, P/BV ยิ่งถูกยิ่งได้คะแนน' }], ['an', { en:'upside to analysts\' mean target and their average rating (3+ analysts)', th:'ส่วนต่างถึงราคาเป้าหมายเฉลี่ยของนักวิเคราะห์ และคำแนะนำเฉลี่ย (อย่างน้อย 3 คน)' }]].map(function(x){ return '<span><b>' + esc(T(FNAME[x[0]])) + '</b>' + esc(T(x[1])) + '</span>'; }).join('') + '</div>' +
+      '<div class="bz-wpk">' + one('us') + one('th') + '</div>' + note({ en:'Total = 50% scenario history + 50% the average of the five factors. Grades: A = well above average, B = above, C = below, D = well below. “–” = no data (e.g. no analyst coverage). Factor data from Yahoo Finance, refreshed every 30 minutes.', th:'รวม = สถิติฉากทัศน์ 50% + ค่าเฉลี่ย 5 ปัจจัย 50% เกรด A = ดีกว่าค่าเฉลี่ยมาก B = ดีกว่าค่าเฉลี่ย C = ต่ำกว่าค่าเฉลี่ย D = ต่ำกว่ามาก “–” = ไม่มีข้อมูล (เช่น ไม่มีนักวิเคราะห์ติดตาม) ข้อมูลปัจจัยจาก Yahoo Finance อัปเดตทุก 30 นาที' }) + '</details>';
   }
   function autoHTML(C){
     var pb = C.pb, ph = C.ph, probs = C.probs;
@@ -3235,8 +3273,9 @@
       note({ en:'Odds = what the world turned into 6 months after the ' + C.O.n + ' past months most like today (growth, inflation and Fed moves), since ' + pb.first.slice(0, 4) + '. “Own” = groups with the best 6-month return vs the S&P 500 in that phase, plus the top-scoring stocks for it.', th:'โอกาส = ดูจาก ' + C.O.n + ' เดือนในอดีตที่คล้ายตอนนี้ที่สุด (เศรษฐกิจ เงินเฟ้อ และการขยับของเฟด) ตั้งแต่ปี ' + (+pb.first.slice(0, 4) + 543) + ' ว่า 6 เดือนต่อมากลายเป็นช่วงไหน “ควรถือ” = กลุ่มที่ชนะ S&P 500 ใน 6 เดือนมากที่สุดในช่วงนั้น และหุ้นที่ได้คะแนนสูงสุดสำหรับช่วงนั้น' });
     h += '<h5 class="bz-wstep"><i>2</i>' + esc(T({ en:'What to own now — every scenario weighed by its odds', th:'ตอนนี้ควรถืออะไร — คิดรวมทุกฉากทัศน์ ถ่วงตามโอกาสเกิด' })) + '</h5>' +
       '<div class="bz-wdog"><div class="up"><h6>' + esc(T({ en:'Lean toward (groups)', th:'ควรเพิ่มน้ำหนัก (กลุ่ม)' })) + '</h6>' + ow.map(function(x){ return rowA(x, true); }).join('') + '</div><div class="dn"><h6>' + esc(T({ en:'Lean away from', th:'ควรลดน้ำหนัก' })) + '</h6>' + uw.map(function(x){ return rowA(x, false); }).join('') + '</div>' +
-      '<div class="st"><h6>' + esc(T({ en:'How the stocks are scored', th:'คะแนนหุ้นคิดอย่างไร' })) + '</h6><p class="bz-wsx">' + esc(T({ en:'50% history: how much the stock beat its market in each scenario, weighted by the odds (small samples shrunk). 50% what fund managers screen on: quality (ROE, margin, debt), momentum (3 months, 200-day trend) and price (P/E vs peers). Only stocks above their 200-day average are listed.', th:'50% สถิติ: หุ้นเคยชนะตลาดแค่ไหนในแต่ละฉากทัศน์ ถ่วงตามโอกาส (ตัวอย่างน้อยจะถูกปรับลด) อีก 50% คือปัจจัยที่กองทุนใช้คัดหุ้น: คุณภาพ (ROE อัตรากำไร หนี้) โมเมนตัม (3 เดือน แนวโน้ม 200 วัน) และราคา (P/E เทียบหุ้นอื่น) แสดงเฉพาะหุ้นที่อยู่เหนือเส้น 200 วัน' })) + '</p></div></div>' +
+      '<div class="st"><h6>' + esc(T({ en:'How the stocks are scored', th:'คะแนนหุ้นคิดอย่างไร' })) + '</h6><p class="bz-wsx">' + esc(T({ en:'50% history: how much the stock beat its market in each scenario, weighted by the odds. 50% the five factors fund managers screen on: quality, earnings growth, momentum, price and analysts (scorecard below). Only stocks above their 200-day average are listed.', th:'50% สถิติ: หุ้นเคยชนะตลาดแค่ไหนในแต่ละฉากทัศน์ ถ่วงตามโอกาส อีก 50% คือ 5 ปัจจัยที่กองทุนใช้คัดหุ้น: คุณภาพ กำไรโต โมเมนตัม ราคา และนักวิเคราะห์ (ดูตารางคะแนนด้านล่าง) แสดงเฉพาะหุ้นที่อยู่เหนือเส้น 200 วัน' })) + '</p></div></div>' +
       '<div class="bz-wpk"><div><h6>' + ico('flag') + esc(T({ en:'US stocks to own now', th:'หุ้นสหรัฐฯ ที่ควรถือตอนนี้' })) + '</h6><div class="bz-wscg">' + hu.map(function(x){ return holdCard(x, C); }).join('') + '</div></div><div><h6>' + ico('flag') + esc(T({ en:'Thai stocks to own now', th:'หุ้นไทยที่ควรถือตอนนี้' })) + '</h6><div class="bz-wscg">' + ht.map(function(x){ return holdCard(x, C); }).join('') + '</div></div></div>';
+    h += factorTable(probs);
     h += '<h5 class="bz-wstep"><i>3</i>' + esc(T({ en:'Your stocks — keep, trim or switch', th:'หุ้นที่คุณถือ — ถือต่อ ลด หรือย้ายไปตัวไหน' })) + '</h5><div data-wrres>' + planHTML(C) + '</div><datalist id="bzWrList">' + Object.keys(D.m.stocks || {}).map(function(t){ return '<option value="' + esc(t) + '">'; }).join('') + '</datalist>';
     return h + note({ en:'A rules-based plan from history and today\'s data — not personal advice. Check the company yourself before you trade.', th:'เป็นแผนตามกฎจากสถิติและข้อมูลวันนี้ ไม่ใช่คำแนะนำเฉพาะบุคคล ควรศึกษาบริษัทเองก่อนซื้อขาย' }) + '</div>';
   }
@@ -3255,7 +3294,7 @@
       var cand = holdNow(C.probs, s.cal, 12, hold, true), same = cand.filter(function(y){ return y.s.sector === s.sector; })[0], sw = (same && (!x || same.x.e > x.e + 1)) ? same : cand.filter(function(y){ return !x || y.x.e > x.e + 1; })[0];
       if(v === 'good') keep.push(t); if(v === 'bad'){ trim.push(t); if(sw) moves.push(t + ' → ' + sw.t); }
       var vt = { good:{ en:'Keep', th:'ถือต่อได้' }, mid:{ en:'Hold, watch', th:'ถือไว้ก่อน แต่จับตา' }, bad:{ en:'Trim / switch', th:'ควรลดหรือย้าย' } }[v];
-      var why = !x ? { en:'Not enough history for this stock.', th:'หุ้นตัวนี้มีข้อมูลย้อนหลังไม่พอ' } : { en:'Across the likely scenarios it has ' + (x.e >= 0 ? 'beaten' : 'lagged') + ' its market by ' + f(Math.abs(x.e), 1) + '% per 6 months on average; price is ' + (s.above_ma200 ? 'above' : 'below') + ' its 200-day average; quality ' + grade(fz.q) + ', momentum ' + grade(fz.mo) + ', price ' + grade(fz.va) + '.', th:'ในฉากทัศน์ที่น่าจะเกิด หุ้นนี้เคย' + (x.e >= 0 ? 'ชนะ' : 'แพ้') + 'ตลาดเฉลี่ย ' + f(Math.abs(x.e), 1) + '% ต่อ 6 เดือน ราคา' + (s.above_ma200 ? 'เหนือ' : 'ใต้') + 'เส้น 200 วัน คุณภาพ ' + grade(fz.q) + ' โมเมนตัม ' + grade(fz.mo) + ' ราคา ' + grade(fz.va) };
+      var why = !x ? { en:'Not enough history for this stock.', th:'หุ้นตัวนี้มีข้อมูลย้อนหลังไม่พอ' } : { en:'Across the likely scenarios it has ' + (x.e >= 0 ? 'beaten' : 'lagged') + ' its market by ' + f(Math.abs(x.e), 1) + '% per 6 months on average; price is ' + (s.above_ma200 ? 'above' : 'below') + ' its 200-day average; ' + fzText(fz) + '.', th:'ในฉากทัศน์ที่น่าจะเกิด หุ้นนี้เคย' + (x.e >= 0 ? 'ชนะ' : 'แพ้') + 'ตลาดเฉลี่ย ' + f(Math.abs(x.e), 1) + '% ต่อ 6 เดือน ราคา' + (s.above_ma200 ? 'เหนือ' : 'ใต้') + 'เส้น 200 วัน ' + fzText(fz) };
       var ifs = C.scen.slice(0, 3).map(function(q){
         var ed = x && x.per[q], k = PHK[q], alt = null;
         if(!ed || ed.sh < 0){ alt = holdNow(oneHot(q), s.cal, 6, hold, true).filter(function(y){ return y.s.sector === s.sector; })[0] || holdNow(oneHot(q), s.cal, 1, hold, true)[0]; }
@@ -3486,7 +3525,7 @@
     ],
     world:[
       X_({ en:'Top box: the world now', th:'กล่องบนสุด: เศรษฐกิจโลกตอนนี้' }, { en:'The phase name, one paragraph in plain words and four signals (growth, inflation, rates, what markets price), each on a red-to-green meter. On the right: what happened next in the 36 past months most like today.', th:'ชื่อช่วงเศรษฐกิจ ย่อหน้าสรุปภาษาง่าย และสัญญาณ 4 ตัว (เศรษฐกิจ เงินเฟ้อ ดอกเบี้ย ตลาดมองอย่างไร) บนแถบแดง-เขียว ด้านขวาคือสิ่งที่เกิดตามมาใน 36 เดือนในอดีตที่คล้ายตอนนี้ที่สุด' }, { en:'Coloured bar = chance of each phase 6 / 12 months ahead; compare the recession number with “normally”.', th:'แถบสี = โอกาสของแต่ละช่วงในอีก 6 / 12 เดือน ดูตัวเลขถดถอยเทียบกับ “ปกติ”' }),
-      X_({ en:'Auto plan (yellow box)', th:'แผนอัตโนมัติ (กล่องสีเหลือง)' }, { en:'Worked out by the system on every refresh: (1) the scenarios for the next 6 months with their odds, the signals that would confirm each (✓ = already showing) and what to own if it happens; (2) what to own now with every scenario weighed by its odds — stocks also scored on quality, momentum and price; (3) your stocks: keep, trim or switch, with an “If …” line per scenario.', th:'ระบบคำนวณให้ทุกครั้งที่ข้อมูลใหม่เข้า: (1) ฉากทัศน์ 6 เดือนข้างหน้าพร้อมโอกาส สัญญาณยืนยัน (✓ = เริ่มเห็นแล้ว) และควรถืออะไรถ้าเกิด (2) ตอนนี้ควรถืออะไร คิดรวมทุกฉากถ่วงตามโอกาส หุ้นให้คะแนนคุณภาพ โมเมนตัม และราคาด้วย (3) หุ้นที่คุณถือ ควรถือต่อ ลด หรือย้าย พร้อมบรรทัด “ถ้า…” ของแต่ละฉาก' }, { en:'When a scenario\'s ✓ count rises, follow its “If” line on your stock cards.', th:'เมื่อเครื่องหมาย ✓ ของฉากไหนเพิ่มขึ้น ให้ทำตามบรรทัด “ถ้า…” ของฉากนั้นในการ์ดหุ้นของคุณ' }),
+      X_({ en:'Auto plan (yellow box)', th:'แผนอัตโนมัติ (กล่องสีเหลือง)' }, { en:'Worked out by the system on every refresh: (1) the scenarios for the next 6 months with their odds, the signals that would confirm each (✓ = already showing) and what to own if it happens; (2) what to own now with every scenario weighed by its odds — stocks also scored on five fund-manager factors (quality, earnings growth, momentum, price, analysts) — open the multi-factor scorecard to see every grade; (3) your stocks: keep, trim or switch, with an “If …” line per scenario.', th:'ระบบคำนวณให้ทุกครั้งที่ข้อมูลใหม่เข้า: (1) ฉากทัศน์ 6 เดือนข้างหน้าพร้อมโอกาส สัญญาณยืนยัน (✓ = เริ่มเห็นแล้ว) และควรถืออะไรถ้าเกิด (2) ตอนนี้ควรถืออะไร คิดรวมทุกฉากถ่วงตามโอกาส หุ้นให้คะแนน 5 ปัจจัยแบบกองทุนด้วย (คุณภาพ กำไรโต โมเมนตัม ราคา นักวิเคราะห์) เปิดตารางคะแนนหลายปัจจัยเพื่อดูเกรดทุกตัว (3) หุ้นที่คุณถือ ควรถือต่อ ลด หรือย้าย พร้อมบรรทัด “ถ้า…” ของแต่ละฉาก' }, { en:'When a scenario\'s ✓ count rises, follow its “If” line on your stock cards.', th:'เมื่อเครื่องหมาย ✓ ของฉากไหนเพิ่มขึ้น ให้ทำตามบรรทัด “ถ้า…” ของฉากนั้นในการ์ดหุ้นของคุณ' }),
       X_({ en:'How the phase is worked out', th:'คิดช่วงเศรษฐกิจอย่างไร' }, { en:'Every input with its raw value and the score (−1 to +1) it contributes; growth and inflation momentum are the averages.', th:'ทุกตัวแปรพร้อมค่าจริงและคะแนน (−1 ถึง +1) ที่มันให้ แรงส่งเศรษฐกิจและเงินเฟ้อคือค่าเฉลี่ย' }, { en:'See which input is pushing the world into this phase, and which one would have to change to leave it.', th:'ดูว่าตัวไหนดันโลกเข้าช่วงนี้ และต้องเปลี่ยนตัวไหนถึงจะออกจากช่วงนี้' }),
       X_({ en:'Path and your-own-scenario calculator', th:'เส้นทางของโลก และตัวช่วยตั้งสถานการณ์เอง' }, { en:'The last 24 months on the growth × inflation map; then pick a scenario (or drag the sliders) to see the odds of recession, stagflation and a 10% stock drop, and which groups did best in similar past months.', th:'24 เดือนล่าสุดบนแผนที่ เศรษฐกิจ × เงินเฟ้อ แล้วเลือกสถานการณ์ (หรือเลื่อนแถบ) เพื่อดูโอกาสถดถอย โอกาส “ชะลอแต่ของแพง” โอกาสหุ้นร่วง 10% และกลุ่มที่ทำได้ดีในอดีตที่คล้ายกัน' }, { en:'Ask “what if inflation keeps rising?” before it happens and see what history says to own.', th:'ถามว่า “ถ้าเงินเฟ้อยังขึ้นต่อจะเป็นอย่างไร” ก่อนเกิดจริง แล้วดูว่าสถิติบอกให้ถืออะไร' }),
       X_({ en:'Groups that gain / lose', th:'กลุ่มที่ได้ / เสียประโยชน์' }, { en:'21 sectors and assets ranked by their 6-month return vs the S&P 500 in this phase since 2000; ★ = textbook favourite, ✕ = textbook avoid.', th:'21 กลุ่มและสินทรัพย์ เรียงตามผลตอบแทน 6 เดือนเทียบ S&P 500 ในช่วงนี้ตั้งแต่ปี 2543 ★ = ตำราว่าเด่น ✕ = ตำราว่าเลี่ยง' }, { en:'Favour the top of the list, trim the bottom; the right panel adds today\'s dollar, China and rate effects.', th:'เพิ่มน้ำหนักตัวบนๆ ลดตัวล่างๆ แผงขวาเสริมผลของดอลลาร์ จีน และดอกเบี้ยตอนนี้' }),
