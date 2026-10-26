@@ -239,6 +239,33 @@ def fetch_one(sym, thai):
         out["margin"] = pct(info.get("profitMargins"))
         pb = num(info.get("priceToBook"))
         out["pb"] = pb if (pb and pb > 0) else None
+        # Growth / earnings / analyst fields for the Market Brain's multi-factor
+        # stock scores (added 2026-10-26). Same get_info() response, no extra
+        # request. eg = latest quarter's earnings vs a year earlier, rg =
+        # revenue growth, feg = forward EPS vs trailing EPS, fpe = forward P/E,
+        # tgt / rec / nan = analysts' mean target, mean rating (1 buy..5 sell)
+        # and how many analysts.
+        # growth fields are always ratios in yfinance and can exceed 1.5, so
+        # they are not passed through pct() (which guesses ratio vs percent)
+        eg = info.get("earningsQuarterlyGrowth")
+        eg = num(eg if eg is not None else info.get("earningsGrowth"), 4)
+        out["eg"] = round(eg * 100.0, 1) if eg is not None else None
+        rg = num(info.get("revenueGrowth"), 4)
+        out["rg"] = round(rg * 100.0, 1) if rg is not None else None
+        fpe = num(info.get("forwardPE"))
+        out["fpe"] = fpe if (fpe and fpe > 0) else None
+        try:
+            te, fe = float(info.get("trailingEps")), float(info.get("forwardEps"))
+            out["feg"] = round((fe / te - 1) * 100.0, 1) if te > 0 and fe == fe else None
+        except (TypeError, ValueError):
+            out["feg"] = None
+        tgt = num(info.get("targetMeanPrice"))
+        out["tgt"] = tgt if (tgt and tgt > 0) else None
+        out["rec"] = num(info.get("recommendationMean"))
+        try:
+            out["nan"] = int(info.get("numberOfAnalystOpinions") or 0) or None
+        except (TypeError, ValueError):
+            out["nan"] = None
 
         # Dividend yield: `dividendYield` has flipped between a ratio and a
         # percent across yfinance releases, so derive it from cash instead.
