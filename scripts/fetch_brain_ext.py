@@ -21,6 +21,8 @@ draws them.
            (FRED), IMF forecasts for growth / inflation / jobs / debt.
   events   How much markets move on CPI, jobs-report and Fed days, and the
            next date of each.
+  world    Global outlook: IMF forecasts, OECD leading indicators, central-bank
+           rates and CPI (BIS), copper/gold (scripts/brain_world.py).
   px       Gold and bitcoin price forecasts, trend read, levels, walk-forward
            test (scripts/brain_px.py, added 2026-10-26).
 
@@ -1008,7 +1010,14 @@ def main():
         doc["errors"].append("px_import:%s" % type(e).__name__)
         if prev.get("px"):
             doc["px"] = prev["px"]
-    got = [k for k in ("track", "analog", "alerts", "liq", "thai", "events", "px") if doc.get(k)]
+    try:
+        import brain_world
+        part("world", brain_world.build_world, _get, fred)
+    except Exception as e:  # noqa: BLE001
+        doc["errors"].append("world_import:%s" % type(e).__name__)
+        if prev.get("world"):
+            doc["world"] = prev["world"]
+    got = [k for k in ("track", "analog", "alerts", "liq", "thai", "events", "px", "world") if doc.get(k)]
     if len(got) < 3:
         print("too little built (%s) -- not writing" % got, file=sys.stderr)
         sys.exit(1)
