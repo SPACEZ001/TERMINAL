@@ -1013,10 +1013,12 @@ def main():
     try:
         import brain_world
         part("world", brain_world.build_world, _get, fred)
+        part("wpb", brain_world.build_playbook, _get, fred, prev.get("wpb"))
     except Exception as e:  # noqa: BLE001
         doc["errors"].append("world_import:%s" % type(e).__name__)
-        if prev.get("world"):
-            doc["world"] = prev["world"]
+        for k in ("world", "wpb"):
+            if prev.get(k):
+                doc[k] = prev[k]
     got = [k for k in ("track", "analog", "alerts", "liq", "thai", "events", "px", "world") if doc.get(k)]
     if len(got) < 3:
         print("too little built (%s) -- not writing" % got, file=sys.stderr)
