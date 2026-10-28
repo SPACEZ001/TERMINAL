@@ -508,7 +508,15 @@
     adminNotes:{en:'Notes',th:'โน้ต'},
     adminGradebook:{en:'Gradebook',th:'สมุดคะแนน'},
     adminEbook:{en:'Ebook registry',th:'ทะเบียนแจกอีบุ๊ก'},
-    adminBrain:{en:'Market Brain',th:'สมองตลาด (Market Brain)'},
+    adminBrain:{en:'Market Brain',th:'สมองตลาด'},
+    adminBrainSub:{en:'Quant engine on live data — every forecast comes with its track record',th:'ระบบวิเคราะห์เชิงปริมาณจากข้อมูลจริง ทุกคาดการณ์มีสถิติความแม่นกำกับ'},
+    adminBrainTag:{en:'ADMIN ONLY',th:'เฉพาะแอดมิน'},
+    adminBrainGo:{en:'Open Market Brain',th:'เข้าสู่สมองตลาด'},
+    adminBrainC1:{en:'Forecasts',th:'พยากรณ์'},
+    adminBrainC2:{en:'World economy',th:'เศรษฐกิจโลก'},
+    adminBrainC3:{en:'Gold & BTC',th:'ทอง & บิตคอยน์'},
+    adminBrainC4:{en:'Stock picks',th:'คัดหุ้น'},
+    adminBrainC5:{en:'Portfolio',th:'พอร์ต'},
     adminSecMap:{en:'Security map',th:'แผนผังความปลอดภัย'},
     /* Round U (#218): the admin-shortcut grid grew to 9 flat buttons over
        several rounds with no structure -- grouping them under three small
@@ -659,6 +667,15 @@
             '<div class="cag-head"><div><b data-x="loggedT"></b><span data-x="loggedS"></span></div></div>' +
             '<div class="cag-admin-bio hidden" id="cagAdminBio"></div>' +
             '<div class="cag-admin-links hidden" id="cagAdminLinks">' +
+            '<button class="cag-admin-link cag-brain-hero" type="button" id="cagBtnBrain">' +
+              '<span class="cbh-net" aria-hidden="true"><svg viewBox="0 0 300 120" preserveAspectRatio="none"><g stroke="currentColor" stroke-width=".6" fill="none"><path d="M20 90L70 40 130 70 190 25 250 60 290 30"/><path d="M10 30L60 75 120 30 180 85 240 40 295 95"/><path d="M70 40L60 75M130 70L120 30M190 25L180 85M250 60L240 40"/></g><g fill="currentColor"><circle cx="70" cy="40" r="2"/><circle cx="130" cy="70" r="2"/><circle cx="190" cy="25" r="2"/><circle cx="250" cy="60" r="2"/><circle cx="60" cy="75" r="2"/><circle cx="120" cy="30" r="2"/><circle cx="180" cy="85" r="2"/><circle cx="240" cy="40" r="2"/></g></svg></span>' +
+              '<span class="cbh-top"><span class="cbh-pill"><i></i><span data-x="adminBrainTag"></span></span><span class="cbh-ver">QUANT ENGINE</span></span>' +
+              '<span class="cbh-main">' + '<span class="cbh-ico"><span class="cbh-ring"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4.5a3 3 0 0 0-3 3v.2A3 3 0 0 0 4 10.5a3 3 0 0 0 1 2.2A3 3 0 0 0 6.5 18 3 3 0 0 0 12 19V5.5a2.5 2.5 0 0 0-3-1z"/><path d="M15 4.5a3 3 0 0 1 3 3v.2a3 3 0 0 1 2 2.8 3 3 0 0 1-1 2.2A3 3 0 0 1 17.5 18 3 3 0 0 1 12 19"/><path d="M12 9h2.5M12 13h3"/></svg></span>' +
+                '<span class="cbh-t"><small>SPACEZ · MARKET BRAIN</small><b data-x="adminBrain"></b><em data-x="adminBrainSub"></em></span>' +
+              '</span>' +
+              '<span class="cbh-chips"><i data-x="adminBrainC1"></i><i data-x="adminBrainC2"></i><i data-x="adminBrainC3"></i><i data-x="adminBrainC4"></i><i data-x="adminBrainC5"></i></span>' +
+              '<span class="cbh-cta"><span data-x="adminBrainGo"></span><span class="cbh-go">→</span></span>' +
+            '</button>' +
               '<div class="cag-admin-group">' +
                 '<div class="cag-admin-group-h" data-x="adminGroupPublish"></div>' +
                 '<div class="cag-admin-grid">' +
@@ -696,10 +713,6 @@
               '<div class="cag-admin-group">' +
                 '<div class="cag-admin-group-h" data-x="adminGroupTools"></div>' +
                 '<div class="cag-admin-grid">' +
-                  '<button class="cag-admin-link" type="button" id="cagBtnBrain">' +
-                    '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4.5a3 3 0 00-3 3v.2A3 3 0 004 10.5a3 3 0 001 2.3A3 3 0 006 18a3 3 0 003 2.5V4.5zM15 4.5a3 3 0 013 3v.2a3 3 0 012 2.8 3 3 0 01-1 2.3A3 3 0 0118 18a3 3 0 01-3 2.5V4.5z"/><path d="M9 9H7.5M9 14H7.5M15 9h1.5M15 14h1.5"/></svg>' +
-                    '<span data-x="adminBrain"></span>' +
-                  '</button>' +
                   '<button class="cag-admin-link" type="button" id="cagBtnPro">' +
                     '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>' +
                     '<span data-x="adminPro"></span>' +
@@ -1298,7 +1311,7 @@
         adminCompareDownload: TXT.adminCompareDownload, adminConnectedUsers: TXT.adminConnectedUsers,
         adminAnnouncements: TXT.adminAnnouncements,
         adminPro: TXT.adminPro, adminBriefing: TXT.adminBriefing, adminQuietValue: TXT.adminQuietValue,
-        adminQrCode: TXT.adminQrCode, adminElliott: TXT.adminElliott, adminArena: TXT.adminArena, adminNotes: TXT.adminNotes, adminGradebook: TXT.adminGradebook, adminEbook: TXT.adminEbook, adminBrain: TXT.adminBrain, adminSecMap: TXT.adminSecMap,
+        adminQrCode: TXT.adminQrCode, adminElliott: TXT.adminElliott, adminArena: TXT.adminArena, adminNotes: TXT.adminNotes, adminGradebook: TXT.adminGradebook, adminEbook: TXT.adminEbook, adminBrain: TXT.adminBrain, adminBrainSub: TXT.adminBrainSub, adminBrainTag: TXT.adminBrainTag, adminBrainGo: TXT.adminBrainGo, adminBrainC1: TXT.adminBrainC1, adminBrainC2: TXT.adminBrainC2, adminBrainC3: TXT.adminBrainC3, adminBrainC4: TXT.adminBrainC4, adminBrainC5: TXT.adminBrainC5, adminSecMap: TXT.adminSecMap,
         adminGroupPublish: TXT.adminGroupPublish, adminGroupReports: TXT.adminGroupReports, adminGroupTools: TXT.adminGroupTools,
         tabMember: TXT.tabMember, tabFull: TXT.tabFull, tabLine: TXT.tabLine, tabTg: TXT.tabTg, tabEditor: TXT.tabEditor,
         editorT: TXT.editorT, editorS: TXT.editorS, editorNote: TXT.editorNote, editorSubmit: TXT.editorSubmit,
