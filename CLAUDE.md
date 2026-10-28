@@ -110,5 +110,12 @@ When you changed `assets/js/*.js` or `assets/css/*.css` too, `git status`
 should show those alongside the HTML — a commit for a code change is very
 rarely just the HTML file anymore.
 
+**Mirror backup on the Mac (2026-10-29, user request):** after every `git pull`
+or file change in the Mac's TERMINAL folder, also refresh the full mirror
+`~/Documents/💾 TERMINAL BACKUP` (same file names; excludes `.git/` and
+`💾 BACKUP (สำรองไฟล์)/`) by running, in `device_bash`,
+`SPZ_NONINTERACTIVE=1 bash "$HOME/mnt/Documents/TERMINAL/⚙️ อัตโนมัติ (AUTOMATION)/🔄 เช็ก+ซิงก์สำรอง (SYNC BACKUP).command" --sync`
+(needs the Documents folder connected). The daily 🚀 automation also runs it.
+
 **Always mask credentials in shell output:** pipe anything that could print the
 remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
