@@ -1519,26 +1519,6 @@ var CL_UI = {
        zero-padded number, and its own accent so it stands out without
        reading as the same "admin-only" card the cockpit special item uses */
     var MEMBER_BADGE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4-5h10l4 5-11 13L3 8z"/><path d="M3 8h18"/><path d="M9 3l3 5 3-5"/></svg>';
-    /* 2026-10-29: Market Brain (admin-only) gets its own featured entry near
-       the top of the menu -- shown only while signed in as admin; the page
-       itself stays locked for everyone else. */
-    function isAdm(){ try { return typeof window.__SPZ_TIER === 'function' && window.__SPZ_TIER() === 'full'; } catch(e){ return false; } }
-    var BRAIN_BADGE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4.5a3 3 0 0 0-3 3v.2A3 3 0 0 0 4 10.5a3 3 0 0 0 1 2.2A3 3 0 0 0 6.5 18 3 3 0 0 0 12 19V5.5a2.5 2.5 0 0 0-3-1z"/><path d="M15 4.5a3 3 0 0 1 3 3v.2a3 3 0 0 1 2 2.8 3 3 0 0 1-1 2.2A3 3 0 0 1 17.5 18 3 3 0 0 1 12 19"/><path d="M12 9h2.5M12 13h3"/></svg>';
-    function brainItem(){
-      var th = L() === 'th';
-      var a = el('a', 'np-item np-item-brain',
-        '<span class="np-head"><span class="np-n np-n-icon">' + BRAIN_BADGE_ICON + '</span>' +
-        '<span class="np-t">' + esc(th ? 'สมองตลาด' : 'Market Brain') + ' <i class="np-adm">ADMIN</i></span><span class="np-arrow">→</span></span>' +
-        '<span class="np-d">' + esc(th ? 'พยากรณ์ · เศรษฐกิจโลก · ทอง & บิตคอยน์ · คัดหุ้น · พอร์ต' : 'Forecasts · world outlook · gold & bitcoin · stock picks · portfolio') + '</span>');
-      a.href = '#/brain';
-      a.setAttribute('data-route-to', 'brain');
-      a.addEventListener('click', function(e){
-        e.preventDefault();
-        menu.classList.remove('open');
-        route('brain');
-      });
-      return a;
-    }
     function memberItem(){
       var th = L() === 'th';
       var a = el('a', 'np-item np-item-member',
@@ -1600,7 +1580,6 @@ var CL_UI = {
       pop.appendChild(item('home', '00', L() === 'th' ? 'หน้าแรก' : 'Home',
         L() === 'th' ? 'สารบัญรวมทุกหน้า' : 'Index of every screen'));
       pop.appendChild(memberItem());
-      /* 2026-10-29: Market Brain is reached from the Terminal Admin panel only (user request) */
       /* three groups, each in its own order, so a long menu stays readable */
       var GROUPS = [
         { k:'learn',  t:{en:'Learn',th:'เรียนรู้'},
