@@ -836,6 +836,7 @@
   }
   /* auto-picked stock baskets: quality + value + trend (+ income for Thailand), phase sectors favoured */
   function autoPick(mkt, n){
+    var sp = smartPick(mkt, n); if(sp && sp.length >= Math.min(n, 4)) return sp;
     var fav = PHASES[E_last.phase].sectors, rows = [];
     var caps = Object.keys(D.m.stocks).filter(function(t){ return (D.m.stocks[t].cal || 'us') === mkt; }).map(function(t){ return D.m.stocks[t].mcap || 0; });
     var medCap = median(caps) || 0;
@@ -1457,7 +1458,7 @@
     return cell(6, title, rows.length ? '<div class="bz-tw"><table class="bz-tbl big"><thead><tr><th></th><th>' + esc(T({ en:'Quality', th:'คุณภาพ' })) + '</th><th>' + esc(T({ en:'Price', th:'ราคา' })) + '</th><th>' + esc(T({ en:'Trend', th:'แนวโน้ม' })) + '</th><th>P/E</th><th>ROE</th><th>' + esc(T({ en:'Div', th:'ปันผล' })) + '</th><th>3M</th></tr></thead><tbody>' + rows.map(function(r){
       var s = r.c.I.s;
       return '<tr><td><b>' + esc(r.t) + '</b><em>' + esc(sectName(r.sec)) + '</em></td><td>' + stars(r.c.q) + '</td><td>' + stars(r.c.v) + '</td><td>' + stars(r.c.m) + '</td><td>' + f(s.pe, 1) + '</td><td>' + pc(s.roe, 0) + '</td><td>' + pc(s.div, 1) + '</td><td class="' + (s.m3 >= 0 ? 'up' : 'dn') + '">' + spc(s.m3, 1) + '</td></tr>';
-    }).join('') + '</tbody></table></div><button type="button" class="bz-btn" data-pfmode="auto' + mk + '">' + ico('flask') + esc(T({ en:'Analyse this basket as a portfolio', th:'วิเคราะห์ตะกร้านี้แบบพอร์ต' })) + '</button>' : note({ en:'Not enough data.', th:'ข้อมูลไม่พอ' }), 'star', 'bk');
+    }).join('') + '</tbody></table></div>' + note({ en:'Picked by the same engine as “Best overall” on World outlook (scenario history + five factors), 8 names, max 2 per sector. For the full list of 12, other types (blue chips, dividends, growth) and keep/trim checks, open World outlook.', th:'คัดด้วยระบบเดียวกับ “ควรถือตอนนี้” ในหน้าแนวโน้มเศรษฐกิจโลก (สถิติฉากทัศน์ + 5 ปัจจัย) 8 ตัว กลุ่มละไม่เกิน 2 ตัว ถ้าอยากดูครบ 12 ตัว ดูแบบหุ้นใหญ่ ปันผล กำไรโต หรือเช็กหุ้นที่ถือ ให้เปิดหน้าแนวโน้มเศรษฐกิจโลก' }) + '<button type="button" class="bz-btn ghost" data-go="world">' + ico('globe') + esc(T({ en:'Open World outlook', th:'เปิดหน้าแนวโน้มเศรษฐกิจโลก' })) + '</button><button type="button" class="bz-btn" data-pfmode="auto' + mk + '">' + ico('flask') + esc(T({ en:'Analyse this basket as a portfolio', th:'วิเคราะห์ตะกร้านี้แบบพอร์ต' })) + '</button>' : note({ en:'Not enough data.', th:'ข้อมูลไม่พอ' }), 'star', 'bk');
   }
 
   function vOut(E){
@@ -3350,10 +3351,9 @@
   }
   var WCAT = 'all';
   try { WCAT = localStorage.getItem('spz.brain.wcat') || 'all'; } catch(e){}
-  var CATS = [['all', { en:'Best overall', th:'ควรถือตอนนี้' }, 'star'], ['big', { en:'Blue chips', th:'หุ้นใหญ่หลัก' }, 'bank'], ['div', { en:'Dividend payers', th:'ปันผลเด่น' }, 'coin'], ['grow', { en:'Fast earnings growth', th:'กำไรโตแรง' }, 'trend'], ['res', { en:'Next 6 (reserve)', th:'ตัวสำรองอีก 6' }, 'layers']];
+  var CATS = [['all', { en:'Best overall', th:'ควรถือตอนนี้' }, 'star'], ['big', { en:'Blue chips', th:'หุ้นใหญ่หลัก' }, 'bank'], ['div', { en:'Dividend payers', th:'ปันผลเด่น' }, 'coin'], ['grow', { en:'Fast earnings growth', th:'กำไรโตแรง' }, 'trend']];
   function catPicks(probs, cal, cat){
-    if(cat === 'res') return holdNow(probs, cal, 12).slice(6, 12);
-    if(cat === 'all') return holdNow(probs, cal, 6);
+    if(cat === 'all') return holdNow(probs, cal, 12);
     var list = holdNow(probs, cal, 400, null, true), caps = Object.keys(D.m.stocks || {}).map(function(t){ return D.m.stocks[t]; }).filter(function(s){ return s.cal === cal && s.mcap; }).map(function(s){ return s.mcap; }).sort(function(a, b){ return b - a; }), cut = caps[Math.max(0, Math.floor(caps.length * (cal === 'th' ? 0.3 : 0.2)) - 1)] || 0, per = {};
     var keep = list.filter(function(x){ var s = x.s, fz = x.fz;
       if(cat === 'big') return s.mcap >= cut && fz.q > -0.5;
@@ -3362,11 +3362,14 @@
       return true; });
     keep.forEach(function(x){ x.sc2 = x.sc + (cat === 'div' ? 0.12 * Math.min(x.s.div, 9) : cat === 'grow' ? 0.3 * x.fz.g : cat === 'big' ? 0.2 * x.fz.q : 0); });
     keep.sort(function(a, b){ return b.sc2 - a.sc2; });
-    return keep.filter(function(x){ var k = x.s.sector || '?'; per[k] = (per[k] || 0) + 1; return per[k] <= 2; }).slice(0, 6);
+    return keep.filter(function(x){ var k = x.s.sector || '?'; per[k] = (per[k] || 0) + 1; return per[k] <= 2; }).slice(0, 12);
   }
   function stocksBlock(C){
-    var cat = WCAT, hu = catPicks(C.probs, 'us', cat), ht = catPicks(C.probs, 'th', cat);
-    var why = { all:{ en:'Highest total score: scenario history + the five factors.', th:'คะแนนรวมสูงสุด: สถิติฉากทัศน์ + 5 ปัจจัย' }, big:{ en:'The largest companies (top 20% in the US, top 30% in Thailand), quality not weak, ranked by total score.', th:'บริษัทขนาดใหญ่ที่สุด (20% แรกของสหรัฐฯ และ 30% แรกของไทย) คุณภาพไม่อ่อน เรียงตามคะแนนรวม' }, div:{ en:'Dividend yield ≥2.5% (US) / ≥4% (Thai), not over 12% (often a trap), solid quality.', th:'ปันผล ≥2.5% (สหรัฐฯ) / ≥4% (ไทย) ไม่เกิน 12% (สูงเกินมักเป็นกับดัก) และคุณภาพดี' }, grow:{ en:'Earnings-growth grade A–B and profits up on a year ago.', th:'เกรดกำไรโต A–B และกำไรสูงกว่าปีก่อน' }, res:{ en:'Ranks 7–12 of “Best overall” — good alternatives if a top pick is too expensive or you want to spread out.', th:'อันดับ 7–12 ของ “ควรถือตอนนี้” เป็นตัวเลือกสำรองถ้าตัวบนแพงไป หรืออยากกระจายเพิ่ม' } }[cat];
+    var cat = WCAT === 'res' ? 'all' : WCAT, hu = catPicks(C.probs, 'us', cat), ht = catPicks(C.probs, 'th', cat);
+    var why = { all:{ en:'The 12 highest total scores in each market: 50% how the stock did vs its market in the scenarios likely over the next 6 months (weighted by their odds), 50% the five factors. Only stocks in an up-trend. This is the main list.', th:'12 ตัวที่คะแนนรวมสูงสุดของแต่ละตลาด: 50% สถิติว่าหุ้นเคยชนะตลาดแค่ไหนในฉากทัศน์ที่น่าจะเกิดใน 6 เดือนข้างหน้า (ถ่วงตามโอกาส) และ 50% จาก 5 ปัจจัย เฉพาะหุ้นที่เป็นขาขึ้น นี่คือรายชื่อหลัก' },
+      big:{ en:'Same scoring, but only the biggest companies (top 20% by size in the US, 30% in Thailand) with solid quality — steadier, easier to trade, a good core.', th:'ใช้คะแนนเดียวกัน แต่เลือกเฉพาะบริษัทใหญ่สุด (20% แรกของสหรัฐฯ 30% แรกของไทย) ที่คุณภาพดี นิ่งกว่า ซื้อขายง่าย เหมาะเป็นแกนของพอร์ต' },
+      div:{ en:'Same scoring, but only companies paying a solid dividend (2.5%+ US, 4%+ Thai, under 12% to avoid traps) with good quality — for income.', th:'ใช้คะแนนเดียวกัน แต่เลือกเฉพาะหุ้นที่จ่ายปันผลดี (สหรัฐฯ 2.5% ขึ้นไป ไทย 4% ขึ้นไป ไม่เกิน 12% เพื่อเลี่ยงกับดัก) และคุณภาพดี เหมาะกับคนอยากได้รายได้' },
+      grow:{ en:'Same scoring, but only companies whose profits are growing fast (earnings grade A–B, profit up on a year ago) — more upside, more swing.', th:'ใช้คะแนนเดียวกัน แต่เลือกเฉพาะบริษัทที่กำไรโตเร็ว (เกรดกำไรโต A–B และกำไรสูงกว่าปีก่อน) โอกาสขึ้นมากกว่า แต่แกว่งมากกว่า' } }[cat];
     return '<div class="bz-wcatw" data-wcatbox><div class="bz-wcat">' + CATS.map(function(c){ return '<button type="button" data-wcat="' + c[0] + '" class="' + (cat === c[0] ? 'on' : '') + '">' + ico(c[2]) + esc(T(c[1])) + '</button>'; }).join('') + '</div><p class="bz-wcatn">' + esc(T(why)) + '</p>' +
       '<div class="bz-wpk"><div><h6>' + ico('flag') + esc(T({ en:'US stocks', th:'หุ้นสหรัฐฯ' })) + '</h6><div class="bz-wscg">' + (hu.length ? hu.map(function(x){ return holdCard(x, C, cat); }).join('') : note({ en:'None pass every filter right now.', th:'ตอนนี้ยังไม่มีตัวที่ผ่านทุกเงื่อนไข' })) + '</div></div><div><h6>' + ico('flag') + esc(T({ en:'Thai stocks', th:'หุ้นไทย' })) + '</h6><div class="bz-wscg">' + (ht.length ? ht.map(function(x){ return holdCard(x, C, cat); }).join('') : note({ en:'None pass every filter right now.', th:'ตอนนี้ยังไม่มีตัวที่ผ่านทุกเงื่อนไข' })) + '</div></div></div></div>';
   }
@@ -3659,7 +3662,7 @@
       X_({ en:'How the phase is worked out', th:'คิดช่วงเศรษฐกิจอย่างไร' }, { en:'Every input with its raw value and the score (−1 to +1) it contributes; growth and inflation momentum are the averages.', th:'ทุกตัวแปรพร้อมค่าจริงและคะแนน (−1 ถึง +1) ที่มันให้ แรงส่งเศรษฐกิจและเงินเฟ้อคือค่าเฉลี่ย' }, { en:'See which input is pushing the world into this phase, and which one would have to change to leave it.', th:'ดูว่าตัวไหนดันโลกเข้าช่วงนี้ และต้องเปลี่ยนตัวไหนถึงจะออกจากช่วงนี้' }),
       X_({ en:'Path and your-own-scenario calculator', th:'เส้นทางของโลก และตัวช่วยตั้งสถานการณ์เอง' }, { en:'The last 24 months on the growth × inflation map; then pick a scenario (or drag the sliders) to see the odds of recession, stagflation and a 10% stock drop, and which groups did best in similar past months.', th:'24 เดือนล่าสุดบนแผนที่ เศรษฐกิจ × เงินเฟ้อ แล้วเลือกสถานการณ์ (หรือเลื่อนแถบ) เพื่อดูโอกาสถดถอย โอกาส “ชะลอแต่ของแพง” โอกาสหุ้นร่วง 10% และกลุ่มที่ทำได้ดีในอดีตที่คล้ายกัน' }, { en:'Ask “what if inflation keeps rising?” before it happens and see what history says to own.', th:'ถามว่า “ถ้าเงินเฟ้อยังขึ้นต่อจะเป็นอย่างไร” ก่อนเกิดจริง แล้วดูว่าสถิติบอกให้ถืออะไร' }),
       X_({ en:'Groups that gain / lose', th:'กลุ่มที่ได้ / เสียประโยชน์' }, { en:'21 sectors and assets ranked by their 6-month return vs the S&P 500 in this phase since 2000; ★ = textbook favourite, ✕ = textbook avoid.', th:'21 กลุ่มและสินทรัพย์ เรียงตามผลตอบแทน 6 เดือนเทียบ S&P 500 ในช่วงนี้ตั้งแต่ปี 2543 ★ = ตำราว่าเด่น ✕ = ตำราว่าเลี่ยง' }, { en:'Favour the top of the list, trim the bottom; the right panel adds today\'s dollar, China and rate effects.', th:'เพิ่มน้ำหนักตัวบนๆ ลดตัวล่างๆ แผงขวาเสริมผลของดอลลาร์ จีน และดอกเบี้ยตอนนี้' }),
-      X_({ en:'Stock lists by type', th:'รายชื่อหุ้นตามประเภท' }, { en:'Buttons above the stock cards switch between best overall, blue chips, dividend payers, fast earnings growth and the next 6 reserve picks — all ranked by the same scenario + five-factor score.', th:'ปุ่มเหนือการ์ดหุ้นสลับได้ระหว่าง ควรถือตอนนี้ หุ้นใหญ่หลัก ปันผลเด่น กำไรโตแรง และตัวสำรองอีก 6 ตัว ทุกแบบเรียงด้วยคะแนนฉากทัศน์ + 5 ปัจจัยเดียวกัน' }, { en:'Pick the list that fits your goal (income, growth, safety), then check the company yourself.', th:'เลือกรายการที่ตรงเป้าหมาย (รายได้ปันผล เติบโต ความมั่นคง) แล้วศึกษาบริษัทเองอีกครั้ง' }),
+      X_({ en:'Stock lists by type', th:'รายชื่อหุ้นตามประเภท' }, { en:'Buttons above the stock cards switch between the main list of 12, blue chips, dividend payers and fast earnings growth — all ranked by the same scenario + five-factor score.', th:'ปุ่มเหนือการ์ดหุ้นสลับได้ระหว่าง ควรถือตอนนี้ (รายชื่อหลัก 12 ตัว) หุ้นใหญ่หลัก ปันผลเด่น และกำไรโตแรง ทุกแบบเรียงด้วยคะแนนฉากทัศน์ + 5 ปัจจัยเดียวกัน' }, { en:'Pick the list that fits your goal (income, growth, safety), then check the company yourself.', th:'เลือกรายการที่ตรงเป้าหมาย (รายได้ปันผล เติบโต ความมั่นคง) แล้วศึกษาบริษัทเองอีกครั้ง' }),
       X_({ en:'Map, cycle chart, forecasts, ranking', th:'แผนที่ กราฟวัฏจักร คาดการณ์ และอันดับ' }, { en:'Country tiles (switch the measure), each country\'s position in its cycle, forecasts for the big numbers and every country ranked with its ETF.', th:'ช่องประเทศ (สลับสิ่งที่ดูได้) ตำแหน่งในวัฏจักรของแต่ละประเทศ คาดการณ์ตัวเลขใหญ่ และอันดับทุกประเทศพร้อม ETF' }, { en:'Green countries have the best backdrop; their ETFs are the simple way to own them.', th:'ประเทศสีเขียวมีสภาวะเอื้อที่สุด ซื้อผ่าน ETF ของประเทศนั้นได้ง่ายที่สุด' })
     ],
     track:[
@@ -3717,7 +3720,7 @@
     world:{ p:B_('Which phase the world economy is in, where it is heading, and which groups and stocks to own — worked out automatically.', 'เศรษฐกิจโลกอยู่ช่วงไหน กำลังไปทางไหน และควรถือกลุ่ม/หุ้นอะไร ระบบคำนวณให้อัตโนมัติ'),
       l:[B_('Top box: phase now, growth and inflation arrows, most likely phase in 6 months.', 'กล่องบน: ช่วงตอนนี้ ลูกศรเศรษฐกิจและเงินเฟ้อ ช่วงที่น่าจะเป็นใน 6 เดือน'), B_('Yellow “Auto plan”: 1) scenarios 2) what to own now 3) your stocks.', 'กล่องเหลือง “แผนอัตโนมัติ”: 1) ฉากทัศน์ 2) ควรถืออะไรตอนนี้ 3) หุ้นที่คุณถือ')],
       r:[B_('Four phases: recovery (stocks lead), overheat (commodities lead), stagflation (cash and gold), slowdown (bonds).', '4 ช่วง: ฟื้นตัว (หุ้นเด่น) · ร้อนแรง (สินค้าโภคภัณฑ์เด่น) · ชะลอแต่ของแพง (เงินสด/ทอง) · ชะลอตัว (บอนด์)'), B_('A scenario card with 4–5 of 5 ✓ = it is really happening.', 'การ์ดฉากทัศน์ที่มี ✓ 4–5 จาก 5 = กำลังเกิดจริง'), B_('Stock grades A–D on five factors: quality, earnings growth, momentum, price, analysts.', 'เกรดหุ้น A–D จาก 5 ปัจจัย: คุณภาพ กำไรโต โมเมนตัม ราคา นักวิเคราะห์')],
-      a:[B_('Step 2: pick a list (best overall, blue chips, dividends, growth, reserve).', 'ขั้น 2: เลือกรายชื่อ (ควรถือตอนนี้ หุ้นใหญ่ ปันผล กำไรโต ตัวสำรอง)'), B_('Step 3: type your stocks → keep / trim / switch, plus an “If …” line for each scenario.', 'ขั้น 3: พิมพ์หุ้นที่ถือ → ถือต่อ / ลด / ย้าย และบรรทัด “ถ้า…” ของแต่ละฉาก')], w:['rot', 'pf'] },
+      a:[B_('Step 2: 12 stocks per market — the main list, or only blue chips, dividend payers or fast growers.', 'ขั้น 2: หุ้นตลาดละ 12 ตัว — รายชื่อหลัก หรือเฉพาะหุ้นใหญ่ ปันผลเด่น กำไรโตแรง'), B_('Step 3: type your stocks → keep / trim / switch, plus an “If …” line for each scenario.', 'ขั้น 3: พิมพ์หุ้นที่ถือ → ถือต่อ / ลด / ย้าย และบรรทัด “ถ้า…” ของแต่ละฉาก')], w:['rot', 'pf'] },
     track:{ p:B_('How accurate the forecasts have been, so you know which ones to trust.', 'ตรวจว่าคาดการณ์ในเว็บเคยแม่นแค่ไหน จะได้รู้ว่าควรเชื่อตัวไหนมากหรือน้อย'),
       l:[B_('“How to read the grades” box.', 'กล่อง “อ่านเกรดอย่างไร”'), B_('Each model card: grade, now → 6-month forecast, usual miss.', 'การ์ดแต่ละโมเดล: เกรด ตอนนี้ → คาด 6 เดือน และมักพลาดราวเท่าไร'), B_('Forecast vs reality charts.', 'กราฟคาดการณ์เทียบของจริง')],
       r:[B_('A grade = better than guessing “no change”, not “exact”. A ≥20% better, B 8–20%, C about the same, D worse.', 'เกรด = แม่นกว่าการเดาว่า “ไม่เปลี่ยน” ไม่ใช่แม่นเป๊ะ · A ดีกว่า ≥20% · B 8–20% · C พอๆ กัน · D แย่กว่า'), B_('“Inside the 68% range” near 68% = the band width is right.', '“ตกในช่วง 68%” ใกล้ 68% = ความกว้างของแถบพอดี')],
@@ -3769,7 +3772,7 @@
     pf:{ p:B_('A health check of your portfolio: risk, stress tests, rebalancing and a report card per holding.', 'ตรวจสุขภาพพอร์ต: ความเสี่ยง การทดสอบวิกฤต การปรับสมดุล และการ์ดรายตัว'),
       l:[B_('Source (your account, a model or a simulation), holdings, overall risk, stress tests, rebalancing advice.', 'แหล่งพอร์ต (บัญชีของคุณ โมเดล หรือจำลอง) · หุ้นที่ถือ · ความเสี่ยงรวม · การทดสอบวิกฤต · คำแนะนำปรับพอร์ต')],
       r:[B_('High correlation = they fall together; one holding above 20% = too concentrated.', 'สหสัมพันธ์สูง = ลงพร้อมกัน · ตัวเดียวเกิน 20% = กระจุกเกินไป')],
-      a:[B_('Rebalance with the suggestions; use “Your stocks” on World outlook to see what to switch to.', 'ปรับน้ำหนักตามคำแนะนำ และใช้ “หุ้นที่คุณถือ” ในหน้าแนวโน้มเศรษฐกิจโลกดูว่าควรย้ายไปตัวไหน')], w:['world', 'whatif'] },
+      a:[B_('Use “Compare every portfolio style” to see which mix gives the best return for the risk; auto-picked baskets are judged by the honest walk-forward line.', 'ใช้ตาราง “เทียบพอร์ตทุกแบบ” ดูว่าแบบไหนคุ้มความเสี่ยงที่สุด ส่วนพอร์ตคัดอัตโนมัติให้ดูเส้นทดสอบแบบไม่รู้อนาคตเป็นหลัก'), B_('Rebalance with the suggestions; use “Your stocks” on World outlook to see what to switch to.', 'ปรับน้ำหนักตามคำแนะนำ และใช้ “หุ้นที่คุณถือ” ในหน้าแนวโน้มเศรษฐกิจโลกดูว่าควรย้ายไปตัวไหน')], w:['world', 'whatif'] },
     cal:{ p:B_('The economic releases due this week, in Thai time, and what to watch for.', 'ตัวเลขเศรษฐกิจที่จะประกาศในสัปดาห์นี้ (เวลาไทย) และสิ่งที่ต้องจับตา'),
       l:[B_('Day and time; red edge = high impact, amber = medium; the expected value.', 'วันและเวลา · ขอบแดง = สำคัญมาก · ขอบเหลือง = ปานกลาง · ค่าที่คาด')],
       r:[B_('A big gap between the real figure and the forecast = a volatile day.', 'ตัวเลขจริงต่างจากที่คาดมาก = วันนั้นตลาดมักผันผวน')],
@@ -3809,6 +3812,110 @@
     return '<div class="bz-hb">' + h + '</div>';
   }
   XV.hb = function(){ return handbookHTML(true); };
+
+  /* ============================================ ONE BRAIN FOR STOCK PICKS (2026-10-29)
+     The World outlook, Rotation and My portfolio pages now pick stocks with
+     the same engine: scenario history (how each stock did vs its market in
+     the phases the world is likely to move into, weighted by the odds) +
+     five fund-manager factors. My portfolio also gets:
+       * an honest walk-forward test for the auto-picked baskets — the rules
+         re-run every 4 weeks over the past year using only the prices known
+         at the time (today's picks replayed on last year's prices would look
+         better than reality, because stocks that already rose get picked)
+       * a 12-month forecast fan for the portfolio and the market
+       * a side-by-side comparison of every portfolio style */
+  function smartPick(mkt, n){
+    var AC = autoCtx(); if(!AC) return null;
+    var caps = Object.keys(D.m.stocks).filter(function(t){ return D.m.stocks[t].cal === mkt; }).map(function(t){ return D.m.stocks[t].mcap || 0; }).sort(function(a, b){ return a - b; }), medCap = caps[Math.floor(caps.length / 2)] || 0;
+    return holdNow(AC.probs, mkt, 60).filter(function(x){ return (x.s.mcap || 0) >= medCap * 0.6; }).slice(0, n).map(function(x){ return { t:x.t, sc:x.sc, sec:x.s.sector, c:card(x.t), x:x }; });
+  }
+  function wkDate(k){ return new Date((k * 7 - 3) * 864e5).toISOString().slice(0, 10); }
+  function walkForward(mkt, n){
+    var AC = autoCtx(); if(!AC) return null;
+    var F = factors(), bench = weekly('SPY'), loc = mkt === 'th' ? weekly('THD') : null; if(!bench) return null;
+    var weeks = Object.keys(bench).map(Number).sort(function(a, b){ return a - b; }), end = weeks[weeks.length - 1], start = end - 52;
+    var at = function(m, k){ for(var j = 0; j < 3; j++){ var v = m[k - j]; if(v != null) return v; } return null; };
+    var U = {}; Object.keys(D.m.stocks).forEach(function(t){ var s = D.m.stocks[t]; if(s.cal !== mkt || !pbS(t)) return; var m = weekly(t); if(m) U[t] = m; });
+    var eq = 1, sp = 1, lc = 1, P = [[wkDate(start), 0]], S = [[wkDate(start), 0]], Lc = [[wkDate(start), 0]], picksLog = [];
+    for(var k = start; k < end; k += 4){
+      var c = [];
+      Object.keys(U).forEach(function(t){
+        var m = U[t], p = at(m, k), p13 = at(m, k - 13); if(!p || !p13) return;
+        var ma = 0, cn = 0; for(var j = 0; j < 40; j++){ var v = at(m, k - j); if(v){ ma += v; cn++; } } if(cn < 30 || p < ma / cn) return;
+        var x = stockExp(t, AC.probs); if(!x || x.cov < 60 || x.e <= 0) return;
+        c.push({ t:t, sec:D.m.stocks[t].sector || '?', e:x.e, mom:p / p13 - 1, fz:F[t] || { q:0, g:0, va:0, an:0, has:[] } });
+      });
+      if(!c.length) continue;
+      var mm = c.reduce(function(a, b){ return a + b.mom; }, 0) / c.length, sd = Math.sqrt(c.reduce(function(a, b){ return a + (b.mom - mm) * (b.mom - mm); }, 0) / c.length) || 1;
+      c.forEach(function(z){ var fs = ['q', 'g', 'va', 'an'].filter(function(f2){ return z.fz.has && z.fz.has.indexOf(f2) >= 0; }).map(function(f2){ return z.fz[f2]; }); fs.push(clamp((z.mom - mm) / sd, -2, 2)); z.sc = 0.5 * clamp(z.e / 3, -2, 2) + 0.5 * fs.reduce(function(a, b){ return a + b; }, 0) / fs.length; });
+      c.sort(function(a, b){ return b.sc - a.sc; });
+      var per = {}, pk = c.filter(function(z){ per[z.sec] = (per[z.sec] || 0) + 1; return per[z.sec] <= 2; }).slice(0, n);
+      picksLog.push([wkDate(k), pk.map(function(z){ return z.t; })]);
+      for(var w = k; w < Math.min(k + 4, end); w++){
+        var rs = pk.map(function(z){ var a = at(U[z.t], w), b = at(U[z.t], w + 1); return a && b ? b / a - 1 : 0; });
+        eq *= 1 + rs.reduce(function(a, b){ return a + b; }, 0) / rs.length;
+        var sa = at(bench, w), sb = at(bench, w + 1); if(sa && sb) sp *= sb / sa;
+        if(loc){ var la = at(loc, w), lb = at(loc, w + 1); if(la && lb) lc *= lb / la; }
+        P.push([wkDate(w + 1), (eq - 1) * 100]); S.push([wkDate(w + 1), (sp - 1) * 100]); if(loc) Lc.push([wkDate(w + 1), (lc - 1) * 100]);
+      }
+    }
+    return { p:P, s:S, l:loc ? Lc : null, ret:(eq - 1) * 100, spy:(sp - 1) * 100, loc:loc ? (lc - 1) * 100 : null, picks:picksLog };
+  }
+  /* expected 12-month return of a weight map: ETFs from the board's 6-month
+     expectations (x2); stocks = their market's expectation + their
+     scenario-weighted edge (counted once, so a conservative 12-month tilt) */
+  function pfExp12(W){
+    var AC = autoCtx(), F = F_last || {}, spx = F.items && F.items.spx, s12 = spx && fcAt(spx, 12), spxE = s12 ? (s12.v / spx.now - 1) * 100 : 6;
+    var exOf = function(sym){ return (F.exp || []).filter(function(z){ return z.sym === sym; })[0]; }, thd = exOf('THD'), thE = thd ? thd.r * 2 : spxE * 0.8;
+    var tot = 0, e = 0;
+    Object.keys(W).forEach(function(t){ var w = W[t]; if(!(w > 0)) return; var s = D.m.stocks && D.m.stocks[t], ex = exOf(t), x;
+      if(ex) x = ex.r * 2; else if(t === 'SPY') x = spxE; else if(s && (s.cal === 'us' || s.cal === 'th')){ var se = AC ? stockExp(t, AC.probs) : null; x = (s.cal === 'th' ? thE : spxE) + (se ? clamp(se.e, -10, 10) : 0); } else x = spxE * 0.5;
+      tot += w; e += w * x; });
+    return tot ? { e:e / tot, spx:spxE, th:thE } : null;
+  }
+  function fanFrom(curve, exp, vol){
+    if(!curve || !curve.length || !isNum(exp)) return null;
+    var last = curve[curve.length - 1], base = 1 + last[1] / 100, d0 = new Date(tms(last[0]));
+    return [3, 6, 12].map(function(m){ var d = new Date(Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth() + m, d0.getUTCDate())), g = exp * m / 12, s = (vol || 15) * Math.sqrt(m / 12); return { t:d.toISOString().slice(0, 10), m:m, v:(base * (1 + g / 100) - 1) * 100, lo:(base * (1 + (g - s) / 100) - 1) * 100, hi:(base * (1 + (g + s) / 100) - 1) * 100 }; });
+  }
+  function spxFan(curve){
+    var F = F_last || {}, it = F.items && F.items.spx; if(!it || !curve || !curve.length) return null;
+    var base = 1 + curve[curve.length - 1][1] / 100;
+    return it.fc.map(function(q){ return { t:q.t, m:q.m, v:(base * (q.v / it.now) - 1) * 100, lo:(base * (q.lo / it.now) - 1) * 100, hi:(base * (q.hi / it.now) - 1) * 100 }; });
+  }
+  var PFMODE_N = {
+    cons:{ en:'ETFs: about 60% bonds, 25% stocks, 10% gold. Smallest swings, lowest return — for money you may need soon or if drops keep you awake.', th:'ETF: บอนด์ราว 60% หุ้น 25% ทอง 10% แกว่งน้อยที่สุด ผลตอบแทนต่ำสุด เหมาะกับเงินที่อาจต้องใช้เร็ว หรือคนที่รับการขาดทุนไม่ได้' },
+    bal:{ en:'ETFs: about 50% world stocks, 35% bonds, 15% gold and commodities. The classic middle road.', th:'ETF: หุ้นทั่วโลกราว 50% บอนด์ 35% ทองและสินค้าโภคภัณฑ์ 15% สายกลางแบบคลาสสิก' },
+    grow:{ en:'ETFs: about 85% stocks with a tech tilt. Higher long-run return, much bigger drops.', th:'ETF: หุ้นราว 85% เอียงไปทางเทค ระยะยาวได้มากกว่า แต่ร่วงแรงกว่ามาก' },
+    autous:{ en:'8 US stocks chosen by the same engine as World outlook (scenario history + five factors), max 2 per sector. Can beat the market, but it is one country, all stocks, no bonds or gold.', th:'หุ้นสหรัฐฯ 8 ตัว คัดด้วยระบบเดียวกับหน้าแนวโน้มเศรษฐกิจโลก (สถิติฉากทัศน์ + 5 ปัจจัย) กลุ่มละไม่เกิน 2 ตัว มีโอกาสชนะตลาด แต่เป็นหุ้นล้วนประเทศเดียว ไม่มีบอนด์หรือทองช่วยพยุง' },
+    autoth:{ en:'8 Thai stocks from the same engine. Same idea for the SET; Thai stocks also swing with the baht and China.', th:'หุ้นไทย 8 ตัว จากระบบเดียวกัน หลักการเดียวกันแต่เป็นตลาดไทย ซึ่งแกว่งตามค่าเงินบาทและจีนด้วย' }
+  };
+  function pfCompare(s){
+    var rows = ['cons', 'bal', 'grow', 'autous', 'autoth'].map(function(k){
+      var W = k.indexOf('auto') === 0 ? (function(){ var o = {}; autoPick(k === 'autous' ? 'us' : 'th', 8).forEach(function(r){ o[r.t] = 12.5; }); return o; })() : presetWeights(k, s.tilt);
+      var A = analyse(W), X2 = pfExp12(W), wf = k.indexOf('auto') === 0 ? walkForward(k === 'autous' ? 'us' : 'th', 8) : null;
+      var vol = A.risk && A.risk.vol, past = wf ? wf.ret : A.risk && A.risk.ret;
+      return { k:k, n:k === 'autous' ? { en:'Auto-picked US', th:'คัดอัตโนมัติ US' } : k === 'autoth' ? { en:'Auto-picked Thai', th:'คัดอัตโนมัติ ไทย' } : PRESETS[k].n, past:past, vol:vol, dd:A.risk && A.risk.dd, exp:X2 && X2.e, ratio:X2 && vol ? X2.e / vol : null };
+    });
+    var best = function(key, hi){ var b = null; rows.forEach(function(r){ if(isNum(r[key]) && (!b || (hi ? r[key] > b[key] : r[key] < b[key]))) b = r; }); return b && b.k; };
+    var bR = best('ratio', true), bE = best('exp', true), bV = best('vol', false);
+    return '<div class="bz-tw"><table class="bz-tbl bz-pfcmp"><thead><tr><th></th><th>' + esc(T({ en:'Past year*', th:'ย้อนหลัง 1 ปี*' })) + '</th><th>' + esc(T({ en:'Swings / yr', th:'แกว่ง/ปี' })) + '</th><th>' + esc(T({ en:'Worst drop', th:'ร่วงหนักสุด' })) + '</th><th>' + esc(T({ en:'Expected 12M', th:'คาด 12 เดือน' })) + '</th><th>' + esc(T({ en:'Return per risk', th:'ผลตอบแทนต่อความเสี่ยง' })) + '</th><th></th></tr></thead><tbody>' +
+      rows.map(function(r){ var tags = []; if(r.k === bR) tags.push(['good', { en:'best for the risk', th:'คุ้มความเสี่ยงที่สุด' }]); if(r.k === bE) tags.push(['mid', { en:'highest expected', th:'คาดได้มากสุด' }]); if(r.k === bV) tags.push(['cy', { en:'calmest', th:'แกว่งน้อยสุด' }]);
+        return '<tr class="' + (s.mode === r.k ? 'on' : '') + '" data-pfmode="' + r.k + '"><td><b>' + esc(T(r.n)) + '</b><small>' + esc(T(PFMODE_N[r.k])) + '</small></td><td class="' + (r.past >= 0 ? 'up' : 'dn') + '">' + spc(r.past, 1) + '</td><td>' + pc(r.vol, 0) + '</td><td class="dn">' + spc(r.dd, 0) + '</td><td class="' + (r.exp >= 0 ? 'up' : 'dn') + '"><b>' + spc(r.exp, 1) + '</b></td><td>' + f(r.ratio, 2) + '</td><td>' + tags.map(function(g){ return '<span class="bz-pftag ' + g[0] + '">' + esc(T(g[1])) + '</span>'; }).join('') + '</td></tr>'; }).join('') + '</tbody></table></div>' +
+      note({ en:'Click a row to switch. *Auto-picked rows use the honest walk-forward test (rules re-run every 4 weeks with only the prices known then); ETF rows use the fixed mix on last year\'s prices. Expected 12M = the board\'s forecasts for each holding (ETFs) or the market forecast plus the stock\'s scenario edge. Return per risk = expected ÷ swings: higher is better value for the risk taken. There is no single “best” — pick the highest return-per-risk you can live with when it drops.', th:'กดแถวเพื่อสลับไปดูพอร์ตนั้น *แถวคัดอัตโนมัติใช้การทดสอบแบบไม่รู้อนาคต (คัดใหม่ทุก 4 สัปดาห์ด้วยราคาที่รู้ ณ ตอนนั้น) ส่วนแถว ETF ใช้สัดส่วนคงที่กับราคาปีที่แล้ว คาด 12 เดือน = คาดการณ์ของระบบสำหรับแต่ละตัว (ETF) หรือคาดการณ์ตลาด + ความได้เปรียบตามฉากทัศน์ของหุ้นนั้น ผลตอบแทนต่อความเสี่ยง = คาด ÷ แกว่ง ยิ่งสูงยิ่งคุ้ม ไม่มีแบบไหน “ดีที่สุด” สำหรับทุกคน ให้เลือกแบบที่ผลตอบแทนต่อความเสี่ยงสูง และทนการร่วงของมันได้' });
+  }
+  function pfCurveBlock(A, W, s){
+    var auto = s.mode === 'autous' || s.mode === 'autoth', mkt = s.mode === 'autoth' ? 'th' : 'us', wf = auto ? walkForward(mkt, 8) : null, X2 = pfExp12(W);
+    var main = wf ? wf.p : A.curve.p, fanP = fanFrom(main, X2 && X2.e, A.risk && A.risk.vol), fanS = spxFan(A.curve.s);
+    var ser = [{ name:wf ? { en:'Auto-pick, walk-forward (no hindsight)', th:'คัดอัตโนมัติ ทดสอบแบบไม่รู้อนาคต' } : { en:'This portfolio', th:'พอร์ตนี้' }, pts:main, color:COL.a, w:3, area:true, fc:fanP }, { name:{ en:'S&P 500', th:'S&P 500' }, pts:A.curve.s, color:COL.g, dash:'5 4', fc:fanS }];
+    if(wf) ser.push({ name:{ en:'Today\'s 8 picks replayed (hindsight)', th:'หุ้น 8 ตัววันนี้ย้อนไปถือ (รู้อนาคต)' }, pts:A.curve.p, color:'#fbbf24', w:1.4, dash:'2 4' });
+    if(wf && wf.l) ser.push({ name:{ en:'Thai market (THD)', th:'ตลาดหุ้นไทย (THD)' }, pts:wf.l, color:'#e879f9', w:1.6, dash:'5 4' });
+    var lastP = main[main.length - 1][1], lastS = A.curve.s[A.curve.s.length - 1][1], p12 = fanP && fanP[2], s12 = fanS && fanS.filter(function(q){ return q.m === 12; })[0];
+    var top = '<div class="bz-pfnow"><div><small>' + esc(T({ en:'Past year — now', th:'ย้อนหลัง 1 ปี — ตอนนี้' })) + '</small><b class="' + (lastP >= 0 ? 'up' : 'dn') + '">' + spc(lastP, 1) + '</b><em>S&P 500 ' + spc(lastS, 1) + (wf && wf.l ? ' · THD ' + spc(wf.loc, 1) : '') + '</em></div><i>→</i><div><small>' + esc(T({ en:'Expected next 12 months', th:'คาด 12 เดือนข้างหน้า' })) + '</small><b class="fc">' + spc(X2 && X2.e, 1) + '</b><em>' + esc(T({ en:'likely ', th:'ช่วง 68%: ' })) + spc(X2 && A.risk ? X2.e - A.risk.vol : null, 0) + ' … ' + spc(X2 && A.risk ? X2.e + A.risk.vol : null, 0) + '</em></div><div><small>' + esc(T({ en:'S&P 500 expected 12M', th:'S&P 500 คาด 12 เดือน' })) + '</small><b class="fc">' + spc(X2 && X2.spx, 1) + '</b></div></div>';
+    var warn = wf ? '<p class="bz-pfwarn">' + ico('alert') + esc(T({ en:'Why two lines? The thin amber line holds today\'s 8 picks for the whole past year — it looks great because the rules pick stocks that already rose (hindsight). The thick line is the honest test: the same rules re-run every 4 weeks using only what was known then. Judge the basket by the thick line: ' + spc(wf.ret, 1) + ' vs ' + (wf.l ? 'the Thai market ' + spc(wf.loc, 1) : 'S&P 500 ' + spc(wf.spy, 1)) + '.', th:'ทำไมมี 2 เส้น? เส้นเหลืองบางคือเอาหุ้น 8 ตัวที่คัดวันนี้ไปถือย้อนหลังทั้งปี ซึ่งดูดีเกินจริง เพราะกฎมักเลือกหุ้นที่ขึ้นมาแล้ว (รู้อนาคต) เส้นหนาคือการทดสอบที่ยุติธรรม: ใช้กฎเดิมคัดใหม่ทุก 4 สัปดาห์ด้วยข้อมูลที่รู้ ณ ตอนนั้นเท่านั้น ให้ตัดสินจากเส้นหนา: ' + spc(wf.ret, 1) + ' เทียบ ' + (wf.l ? 'ตลาดหุ้นไทย ' + spc(wf.loc, 1) : 'S&P 500 ' + spc(wf.spy, 1)) })) + '</p>' : '';
+    return top + lc({ series:ser, unit:'%', zero:true, legend:true }, MID) + warn +
+      note({ en:'Right side = forecast fan for the next 12 months (dark = 68% likely, light = 95%). ' + (wf ? 'The walk-forward still uses today\'s company fundamentals and scenario statistics that include the past year, so it is still somewhat optimistic.' : 'Uses today\'s weights on last year\'s prices (weekly), so it shows how this mix behaved — not what you actually earned.'), th:'ด้านขวา = พัดคาดการณ์ 12 เดือนข้างหน้า (เข้ม = โอกาส 68% จาง = 95%) ' + (wf ? 'การทดสอบแบบไม่รู้อนาคตยังใช้ข้อมูลพื้นฐานบริษัทของวันนี้ และสถิติฉากทัศน์ที่รวมปีที่ผ่านมาแล้ว จึงยังดูดีกว่าจริงอยู่บ้าง' : 'ใช้สัดส่วนวันนี้กับราคาปีที่แล้ว (รายสัปดาห์) จึงบอกว่าพอร์ตแบบนี้เคยขยับอย่างไร ไม่ใช่กำไรที่ได้จริง') });
+  }
 
   /* ------------------------------------------------------- portfolio view */
   var PF = { acct:null, acctTickers:null, acctErr:null, loading:false };
@@ -3877,7 +3984,7 @@
       : '<p class="bz-acct">' + ico('user') + esc(T({ en:'Not signed in with LINE or Telegram — use a model or simulated portfolio. Sign in (corner login) to analyse your own account\'s holdings.', th:'ยังไม่ได้เข้าสู่ระบบผ่าน LINE หรือ Telegram จึงใช้พอร์ตตัวอย่างหรือพอร์ตจำลองได้ ถ้าเข้าสู่ระบบ (ปุ่มล็อกอินมุมจอ) จะวิเคราะห์หุ้นในบัญชีของคุณเองได้' })) + '</p>') +
       '<div class="bz-modes">' + modes.map(function(m){ return '<button type="button" class="' + (s.mode === m[0] ? 'on' : '') + '" data-pfmode="' + m[0] + '">' + ico(m[2]) + esc(T(m[1])) + '</button>'; }).join('') + '</div>';
     if(PRESETS[s.mode]) h += '<div class="bz-preset"><p>' + esc(T(PRESETS[s.mode].d)) + '</p><label class="bz-tg"><input type="checkbox" data-pftilt' + (s.tilt ? ' checked' : '') + '><span>' + esc(T({ en:'Tilt 10% toward what the “' + PHASES[E_last.phase].short.en + '” phase favours', th:'เอียง 10% ไปทางสินทรัพย์ที่ช่วง “' + PHASES[E_last.phase].short.th + '” มักเอื้อ' })) + '</span></label><button type="button" class="bz-btn sm" data-pfcopy>' + esc(T({ en:'Copy into my simulation to edit', th:'คัดลอกไปแก้ในพอร์ตจำลองของฉัน' })) + '</button></div>';
-    if(s.mode === 'autous' || s.mode === 'autoth') h += '<div class="bz-preset"><p>' + esc(T({ en:'8 stocks picked by the rules (quality, price, trend, sector fit to the phase), max 2 per sector, equal weights.', th:'หุ้น 8 ตัวที่คัดตามกฎ (คุณภาพ ราคา แนวโน้ม และกลุ่มที่เข้ากับช่วงเศรษฐกิจ) กลุ่มละไม่เกิน 2 ตัว น้ำหนักเท่ากัน' })) + '</p><button type="button" class="bz-btn sm" data-pfcopy>' + esc(T({ en:'Copy into my simulation to edit', th:'คัดลอกไปแก้ในพอร์ตจำลองของฉัน' })) + '</button></div>';
+    if(s.mode === 'autous' || s.mode === 'autoth') h += '<div class="bz-preset"><p>' + esc(T(PFMODE_N[s.mode])) + ' ' + esc(T({ en:'Equal weights; the list updates with the data. The same picks appear as “Best overall” on World outlook and in the Rotation tab.', th:'น้ำหนักเท่ากัน รายชื่ออัปเดตตามข้อมูล หุ้นชุดเดียวกันนี้คือ “ควรถือตอนนี้” ในหน้าแนวโน้มเศรษฐกิจโลก และในแท็บเงินไหลไปไหน' })) + '</p></div>';
     if(s.mode === 'acct' && PF.acctErr) h += note({ en:'Could not read the account list (' + PF.acctErr + ').', th:'อ่านรายชื่อหุ้นจากบัญชีไม่ได้ (' + PF.acctErr + ')' });
     h += '</div>';
     var W = currentWeights(s), ts = Object.keys(W).filter(function(t){ return W[t] > 0; }), tot = ts.reduce(function(x, t){ return x + W[t]; }, 0) || 1;
@@ -3890,6 +3997,7 @@
       (ed ? '<div class="bz-add">' + universeList() + '<input list="bzUni" data-pfnew placeholder="' + esc(T({ en:'Ticker, e.g. AAPL, PTT, SPY', th:'ชื่อหุ้น เช่น AAPL, PTT, SPY' })) + '"><input type="number" min="1" value="10" data-pfneww><button type="button" class="bz-btn sm" data-pfadd>' + ico('plus') + esc(T({ en:'Add', th:'เพิ่ม' })) + '</button><button type="button" class="bz-btn sm ghost" data-pfeq>' + esc(T({ en:'Equal weights', th:'แบ่งเท่ากันทุกตัว' })) + '</button></div>' : '') +
       note({ en:'Weights are relative: 2 and 1 means two-thirds and one-third.', th:'สัดส่วนเป็นแบบเทียบกัน เช่น 2 กับ 1 คือ สองในสามกับหนึ่งในสาม' });
     if(!ts.length) return h + row([cell(12, { en:'Holdings', th:'สินทรัพย์ในพอร์ต' }, holdInner, 'layers')]);
+    h += '<details class="bz-more bz-pfcmpw"' + (s.cmpOpen === false ? '' : ' open') + '><summary>' + ico('scale') + esc(T({ en:'Compare every portfolio style — which suits you?', th:'เทียบพอร์ตทุกแบบ — แบบไหนดีกว่า และเหมาะกับใคร' })) + '</summary>' + pfCompare(s) + '</details>';
     var A = analyse(W); PF.last = A;
     var parts = ts.map(function(t, k){ return { n:t, v:W[t] / tot, c:DCOL[k % DCOL.length] }; });
     h += row([cell(7, { en:'Holdings', th:'สินทรัพย์ในพอร์ต' }, holdInner, 'layers'), cell(5, { en:'Weights at a glance', th:'สัดส่วนแบบเห็นภาพ' }, '<div class="bz-wdn">' + donut(parts.slice().sort(function(a, b){ return b.v - a.v; }), 220) + '<div class="bz-wdc"><b>' + ts.length + '</b><span>' + esc(T({ en:'holdings', th:'ตัว' })) + '</span></div></div><div class="bz-wtop">' + parts.slice().sort(function(a, b){ return b.v - a.v; }).slice(0, 6).map(function(p){ return '<div><i style="background:' + p.c + '"></i><b>' + esc(p.n) + '</b><span>' + f(p.v * 100, 1) + '%</span></div>'; }).join('') + '</div>', 'pie')]);
@@ -3901,7 +4009,7 @@
       kpi({ en:'Beta vs S&P 500', th:'เบต้าเทียบ S&P 500' }, f(A.risk.beta, 2), esc(T({ en:'1 = moves like the market', th:'1 = ขยับเท่าตลาด' }))) +
       kpi({ en:'Independent bets', th:'จำนวนเดิมพันอิสระ' }, f(A.risk.effBets, 1), esc(T({ en:'of ', th:'จาก ' })) + A.ts.length, A.risk.effBets < 2 ? 'bad' : A.risk.effBets > 4 ? 'good' : '') + '</div>' : '') + '</div>';
     h += '<div class="bz-row">' + cell(5, { en:'What to fix first', th:'สิ่งที่ควรแก้ก่อน' }, '<ul class="bz-iss">' + A.issues.map(function(x){ return '<li class="' + x.k + '">' + ico(x.k === 'good' ? 'check' : 'alert') + '<span>' + esc(T(x.t)) + '</span></li>'; }).join('') + '</ul>' + (function(){ var st = A.parts.filter(function(p){ return p.v >= 65; }), wk = A.parts.filter(function(p){ return p.v < 45; }); return '<h6 class="bz-prh">' + esc(T({ en:'Strengths', th:'จุดแข็ง' })) + '</h6><div class="bz-sw">' + (st.length ? st.map(function(p){ return '<span class="good">' + ico('check') + esc(T(p.n)) + ' <b>' + Math.round(p.v) + '</b></span>'; }).join('') : '<span>—</span>') + '</div><h6 class="bz-prh">' + esc(T({ en:'Weak spots', th:'จุดที่ยังอ่อน' })) + '</h6><div class="bz-sw">' + (wk.length ? wk.map(function(p){ return '<span class="bad">' + ico('alert') + esc(T(p.n)) + ' <b>' + Math.round(p.v) + '</b></span>'; }).join('') : '<span class="good">' + ico('check') + esc(T({ en:'none below 45', th:'ไม่มีด้านไหนต่ำกว่า 45' })) + '</span>') + '</div>'; })() + (A.missing.length ? note({ en:'Not analysed (no data on this site): ' + A.missing.join(', '), th:'ไม่ได้วิเคราะห์ (ไม่มีข้อมูลในเว็บ): ' + A.missing.join(', ') }) : ''), 'alert') +
-      (A.curve ? cell(7, { en:'Past year: this mix vs the S&P 500', th:'ย้อนหลัง 1 ปี: พอร์ตนี้ vs S&P 500' }, lc({ series:[{ name:{ en:'This portfolio', th:'พอร์ตนี้' }, pts:A.curve.p, color:COL.a, w:3, area:true }, { name:{ en:'S&P 500', th:'S&P 500' }, pts:A.curve.s, color:COL.g, dash:'5 4' }], unit:'%', zero:true }, MID) + note({ en:'Uses today\'s weights on last year\'s prices (weekly), so it shows how this mix behaved — not what you actually earned.', th:'ใช้สัดส่วนวันนี้กับราคาปีที่แล้ว (รายสัปดาห์) จึงบอกว่าพอร์ตแบบนี้เคยขยับอย่างไร ไม่ใช่กำไรที่ได้จริง' }), 'trend') : '') + '</div>';
+      (A.curve ? cell(7, { en:'Past year → next 12 months: this portfolio vs the S&P 500', th:'ย้อนหลัง 1 ปี → คาด 12 เดือนข้างหน้า: พอร์ตนี้ vs S&P 500' }, pfCurveBlock(A, W, s), 'trend') : '') + '</div>';
     h += '<div class="bz-dns">' + donutBlock({ en:'Asset types', th:'ประเภทสินทรัพย์' }, Object.keys(A.mix.cls).map(function(k){ return { n:CLS_N[k], v:A.mix.cls[k] }; })) +
       donutBlock({ en:'Sectors (stocks only)', th:'กลุ่มอุตสาหกรรม (เฉพาะหุ้น)' }, Object.keys(A.mix.sec).map(function(k){ return { n:sectName(k), v:A.mix.sec[k] }; })) +
       donutBlock({ en:'Where', th:'ประเทศ' }, Object.keys(A.mix.geo).map(function(k){ return { n:GEO_N[k] || k, v:A.mix.geo[k] }; })) + '</div>';
@@ -3937,7 +4045,7 @@
   }
   function wirePf(root){
     root.addEventListener('click', function(ev){
-      var b = ev.target.closest('button,input[data-pftilt]'); if(!b || !root.contains(b)) return;
+      var b = ev.target.closest('button,input[data-pftilt],tr[data-pfmode]'); if(!b || !root.contains(b)) return;
       var s = pfState();
       if(b.hasAttribute('data-pfmode')){ s.mode = b.getAttribute('data-pfmode'); lsSet(s); if(s.mode === 'acct') PF.acctTickers = null; tab = 'pf'; paint(true); return; }
       if(b.hasAttribute('data-pftilt')){ s.tilt = b.checked; lsSet(s); paint(); return; }
