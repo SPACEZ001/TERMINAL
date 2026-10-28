@@ -1584,6 +1584,7 @@
   function vGuide(){
     var h = '<div class="bz-gintro"><div>' + ico('compass', 'bz-gi') + '</div><div><h3>' + esc(T({ en:'How to use the Market Brain', th:'วิธีใช้สมองตลาด' })) + '</h3><p>' + esc(T({ en:'A 5-minute routine: 1) Summary — read the three lines. 2) Forecast — check the fans for anything turning. 3) This week — note what is released. 4) Rotation — see where money is moving. 5) My portfolio — fix the red items.', th:'ทำ 5 นาทีต่อวัน: 1) สรุปทุกอย่าง อ่าน 3 บรรทัด 2) พยากรณ์ล่วงหน้า ดูว่ามีอะไรกำลังเปลี่ยนทิศ 3) จับตาสัปดาห์นี้ ดูตัวเลขที่จะประกาศ 4) เงินไหลไปไหน ดูว่าเงินกำลังย้ายไปทางไหน 5) พอร์ตของฉัน แก้ข้อสีแดง' })) + '</p></div></div>';
     h += '<div class="bz-steps">' + [1, 2, 3, 4, 5].map(function(n, i){ var g = GUIDE[[0, 1, 9, 6, 8][i]]; return '<button type="button" data-go="' + g[0] + '"><span>' + n + '</span>' + ico(g[1]) + '<b>' + esc(T(g[2])) + '</b></button>'; }).join('') + '</div>';
+    h += '<h3 class="bz-h3" id="bz-pick">' + ico('target') + esc(T(PK_T)) + '</h3>' + pickGuideHTML(false);
     h += '<h3 class="bz-h3">' + ico('book') + esc(T(HB_T)) + '</h3>' + handbookHTML(false);
     h += '<h3 class="bz-h3">' + ico('book') + esc(T({ en:'Words used on this page', th:'คำศัพท์ที่ใช้ในหน้านี้' })) + '</h3><div class="bz-gloss">' + GLOSS.map(function(g){ return '<div><b>' + esc(g[0]) + '</b><span>' + esc(T(g[1])) + '</span></div>'; }).join('') + '</div>';
     h += '<div class="bz-callout mid">' + ico('star') + '<div><b>' + esc(T({ en:'Colours everywhere', th:'ความหมายของสีทั้งหน้า' })) + '</b><p>' + esc(T({ en:'Green = good for stocks · Amber = neutral / watch · Red = bad for stocks · Purple = forecast.', th:'เขียว = ดีต่อหุ้น · เหลือง = กลางๆ / จับตา · แดง = ไม่ดีต่อหุ้น · ม่วง = ค่าคาดการณ์' })) + '</p></div></div>';
@@ -1602,11 +1603,12 @@
     ['portfolio', 'pie', { en:'Portfolio report', th:'รายงานพอร์ต' }, { en:'The portfolio currently selected on “My portfolio”.', th:'พอร์ตที่เลือกอยู่ในหน้า “พอร์ตของฉัน”' }, ['pf', 'rot']],
     ['price', 'coin', { en:'Gold & bitcoin price forecast', th:'รายงานคาดการณ์ราคาทองและบิตคอยน์' }, { en:'Big charts, 1 week → 12 month forecasts, trend, key levels and track record for gold and bitcoin.', th:'กราฟใหญ่ คาดการณ์ 1 สัปดาห์ → 12 เดือน แนวโน้ม ระดับราคาสำคัญ และความแม่นย้อนหลัง ของทองคำและบิตคอยน์' }, ['px']],
     ['history', 'history', { en:'History, warnings & track record', th:'รายงานย้อนหลัง สัญญาณเตือน และความแม่น' }, { en:'How accurate the brain has been, the past months most like today, and every warning rule since 1970.', th:'สมองตลาดแม่นแค่ไหน ช่วงในอดีตที่คล้ายวันนี้ และกฎเตือนทุกข้อตั้งแต่ปี 1970' }, ['track', 'analog', 'alert']],
+    ['pick', 'target', { en:'How to pick stocks', th:'วิธีเลือกหุ้น' }, { en:'Six steps from the economy to one stock: where to look, what to check, the pass rules, a pre-buy checklist and the don\'ts.', th:'6 ขั้นจากภาพเศรษฐกิจถึงหุ้นรายตัว: ดูที่ไหน ดูอะไร เกณฑ์ผ่าน เช็กลิสต์ก่อนซื้อ และสิ่งที่ไม่ควรทำ' }, ['pick']],
     ['handbook', 'compass', { en:'Menu handbook', th:'คู่มือการใช้ทุกเมนู' }, { en:'What each menu is for, what to look at first, how to read it and what to do with it — plus “where do I find…?”.', th:'แต่ละเมนูไว้ทำอะไร ดูตรงไหนก่อน อ่านอย่างไร และเอาไปใช้อย่างไร พร้อม “อยากรู้… ดูเมนูไหน”' }, ['hb']],
     ['manual', 'flask', { en:'How the Market Brain thinks', th:'คู่มือ: สมองตลาดคิดอย่างไร' }, { en:'Every screen and model explained: what it looks at, how it decides, why — with today\'s numbers.', th:'อธิบายทุกหน้าและทุกโมเดล: ดูอะไร คิดอย่างไร เพราะอะไร พร้อมตัวเลขวันนี้' }, ['manual']],
     ['custom', 'check', { en:'Choose myself', th:'เลือกเอง' }, { en:'Tick exactly the sections you want.', th:'ติ๊กเลือกเฉพาะส่วนที่ต้องการ' }, null]
   ];
-  var PR_SECS = ['sum', 'fc', 'px', 'world', 'track', 'over', 'infl', 'liq', 'growth', 'alert', 'fx', 'thai', 'rot', 'out', 'analog', 'whatif', 'pf', 'cal', 'hb', 'manual'];
+  var PR_SECS = ['sum', 'fc', 'px', 'world', 'track', 'over', 'infl', 'liq', 'growth', 'alert', 'fx', 'thai', 'rot', 'out', 'analog', 'whatif', 'pf', 'cal', 'pick', 'hb', 'manual'];
   var MAN_T = { en:'How the Market Brain thinks', th:'คู่มือ: สมองตลาดคิดอย่างไร' };
   var WEB_URL = 'https://terminal.spacezblack.workers.dev/';
   try { PR.analyst = localStorage.getItem('spz.report.analyst') === '1'; } catch(e){}
@@ -1617,7 +1619,7 @@
   try { var hs = JSON.parse(localStorage.getItem('spz.brain.prhead') || 'null'); if(hs) PR.hd = hs; } catch(e){}
   function prType(){ for(var i = 0; i < PR_TYPES.length; i++) if(PR_TYPES[i][0] === PR.type) return PR_TYPES[i]; return PR_TYPES[0]; }
   function prRef(){
-    var code = PR.type === 'manual' ? 'MG' : PR.type === 'handbook' ? 'HB' : 'MB';
+    var code = PR.type === 'manual' ? 'MG' : PR.type === 'handbook' ? 'HB' : PR.type === 'pick' ? 'SP' : 'MB';
     if(!PR.ref || PR.refCode !== code || Date.now() - PR.refAt > 15 * 60000){
       var mk = window.__SPZ_REPORTREF && window.__SPZ_REPORTREF.make;
       if(mk) PR.ref = mk(code);
@@ -1640,7 +1642,7 @@
     return '<div class="ab">' + (ava ? '<img class="ab-ava" src="' + esc(ava) + '" alt="">' : '') + '<div class="ab-txt"><div class="ab-cap">' + esc(T({ en:'Prepared by', th:'จัดทำโดย' })) + '</div><div class="ab-name">Noraset Boikaw</div><div class="ab-role">Elliott Wave Analyst · SPACEZ TERMINAL</div><div class="ab-ref">' + esc(prRef()) + '</div></div>' +
       '<div class="ab-qr"><div class="ab-qrbox">' + qrSvg() + '</div><span>' + esc(T({ en:'Scan to open SPACEZ TERMINAL', th:'สแกนเพื่อเปิด SPACEZ TERMINAL' })) + '</span></div></div>';
   }
-  function prTitle(k){ if(k === 'manual') return MAN_T; if(k === 'hb') return HB_T; for(var i = 0; i < TABS.length; i++) if(TABS[i][0] === k) return TABS[i][1]; return { en:k, th:k }; }
+  function prTitle(k){ if(k === 'manual') return MAN_T; if(k === 'hb') return HB_T; if(k === 'pick') return PK_T; for(var i = 0; i < TABS.length; i++) if(TABS[i][0] === k) return TABS[i][1]; return { en:k, th:k }; }
   function prList(){ if(PR.type === 'custom') return PR_SECS.filter(function(k){ return PR.secs[k]; }); for(var i = 0; i < PR_TYPES.length; i++) if(PR_TYPES[i][0] === PR.type) return PR_TYPES[i][4]; return ['sum']; }
   function vPrint(){
     var h = '<div class="bz-row bz-prw"><div class="bz-sec s4"><h4><span class="bz-pn">1</span>' + esc(T({ en:'Choose a document', th:'เลือกเอกสาร' })) + '</h4><div class="bz-prt">' + PR_TYPES.map(function(p){
@@ -3832,6 +3834,61 @@
     }).join('') + '</div>';
     return '<div class="bz-hb">' + h + '</div>';
   }
+  /* ================================================== HOW TO PICK STOCKS (2026-10-29)
+     A step-by-step route from the big picture down to one stock, which tab /
+     main-site menu to open at each step, the pass rule, and a pre-buy checklist.
+     Shown on the How-to-read tab and printable as its own PDF. */
+  IC.filter = '<path d="M4 5h16l-6 7.5V19l-4 1.5v-8z"/>';
+  IC.search = '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>';
+  IC.refresh = '<path d="M20 11a8 8 0 00-14.5-4.5L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0014.5 4.5L20 16"/><path d="M20 20v-4h-4"/>';
+  var PK_T = { en:'How to pick stocks — what to look at, and how', th:'วิธีเลือกหุ้น — ต้องดูอะไร อย่างไร' };
+  var PK_STEPS = [
+    { c:'#22d3ee', i:'globe', t:B_('Read the weather first', 'ดูภาพใหญ่ก่อน (สภาพอากาศตลาด)'), go:['sum', 'world', 'out'], main:[],
+      l:[B_('Market score 0–100 on Summary.', 'คะแนนตลาด 0–100 ในหน้าสรุป'), B_('World: the phase now and the most likely phase in 6 months.', 'เศรษฐกิจโลก: ตอนนี้อยู่ช่วงไหน และ 6 เดือนข้างหน้ามีแนวโน้มเป็นช่วงไหน'), B_('Outlook 1–3 months: the odds of the three scenarios.', 'ภาพข้างหน้า 1–3 เดือน: โอกาสของ 3 ฉากทัศน์')],
+      r:[B_('Score 56+ and growth phase → stocks can be your main holding.', 'คะแนน 56+ และเศรษฐกิจขยายตัว → ถือหุ้นเป็นหลักได้'), B_('44–56 → normal weight, lean to quality companies.', '44–56 → ถือหุ้นปกติ เน้นบริษัทคุณภาพ'), B_('Below 44, or stagflation / slowdown odds rising → keep more cash and defensive sectors.', 'ต่ำกว่า 44 หรือโอกาสเงินเฟ้อกลับมา / ชะลอแรง เพิ่มขึ้น → ถือเงินสดและกลุ่มตั้งรับมากขึ้น')],
+      o:B_('How much of your money goes into stocks, and which kind of sectors.', 'ได้คำตอบว่า จะลงหุ้นกี่ % ของเงิน และควรเน้นกลุ่มแบบไหน') },
+    { c:'#818cf8', i:'filter', t:B_('Make a shortlist', 'คัดรายชื่อหุ้นเบื้องต้น'), go:['world', 'rot'], main:[],
+      l:[B_('World → step 2: 12 stocks per market, or the Blue chips / Dividend / Growth buttons.', 'เศรษฐกิจโลก → ขั้นที่ 2: หุ้น 12 ตัวต่อตลาด หรือกดปุ่ม หุ้นใหญ่ / ปันผล / กำไรโต'), B_('The five grade badges: quality, growth, momentum, value, analysts.', 'ป้ายเกรด 5 ปัจจัย: คุณภาพ การเติบโต โมเมนตัม ความถูก นักวิเคราะห์'), B_('Rotation: is the stock\'s sector one that does well in this phase?', 'หมุนกลุ่ม: กลุ่มของหุ้นตัวนั้นเป็นกลุ่มที่ได้ประโยชน์ในช่วงนี้ไหม')],
+      r:[B_('Keep stocks with 3 or more of the 5 grades at A–B and no D in quality.', 'เก็บตัวที่ได้เกรด A–B อย่างน้อย 3 ใน 5 และคุณภาพไม่ได้ D'), B_('Price above its 200-day line (✓ up-trend).', 'ราคาอยู่เหนือเส้นค่าเฉลี่ย 200 วัน (✓ ขาขึ้น)'), B_('Not more than 2 stocks from the same sector.', 'กลุ่มเดียวกันไม่เกิน 2 ตัว')],
+      o:B_('A list of about 10–15 names.', 'ได้รายชื่อราว 10–15 ตัว') },
+    { c:'#34d399', i:'search', t:B_('Check each stock closely', 'ตรวจทีละตัวให้ละเอียด'), go:[], main:[B_('One stock', 'ดูหุ้นรายตัว'), B_('Stock directory & compare', 'หุ้นตัวอย่างและเปรียบเทียบ'), B_('Anomaly scan', 'สแกนสัญญาณผิดปกติ')],
+      l:[B_('Profit and sales over the last quarters.', 'กำไรและยอดขายย้อนหลังหลายไตรมาส'), B_('Debt, and the price (P/E) against companies in the same sector.', 'หนี้สิน และราคา (P/E) เทียบกับบริษัทกลุ่มเดียวกัน'), B_('Any warning signal on the stock.', 'มีสัญญาณเตือนผิดปกติหรือไม่')],
+      r:[B_('Drop it if profit has fallen two quarters in a row.', 'ตัดทิ้งถ้ากำไรลดลง 2 ไตรมาสติด'), B_('Drop it if debt is high and still rising.', 'ตัดทิ้งถ้าหนี้สูงและยังเพิ่มขึ้น'), B_('Drop it if it is far more expensive than its peers without faster growth, or carries a warning.', 'ตัดทิ้งถ้าแพงกว่าเพื่อนมากโดยไม่ได้โตเร็วกว่า หรือมีสัญญาณเตือน')],
+      o:B_('About 6–10 stocks you understand and trust.', 'เหลือราว 6–10 ตัวที่เข้าใจและมั่นใจ') },
+    { c:'#fbbf24', i:'cal', t:B_('Choose when to buy', 'เลือกจังหวะซื้อ'), go:['cal', 'fc'], main:[B_('Where is money flowing', 'เงินทุนไหลไปไหน')],
+      l:[B_('Is money flowing into that sector right now?', 'เงินกำลังไหลเข้ากลุ่มนั้นไหม'), B_('Support and resistance on the stock\'s chart.', 'แนวรับ แนวต้าน บนกราฟหุ้น'), B_('This week: inflation (CPI), Fed meeting, jobs data.', 'สัปดาห์นี้มีประกาศอะไร: เงินเฟ้อ (CPI) ประชุมเฟด ตัวเลขจ้างงาน')],
+      r:[B_('Buy in 2–3 lots, not all at once.', 'ทยอยซื้อ 2–3 ไม้ ไม่ซื้อทีเดียวหมด'), B_('Avoid buying everything just before a big release.', 'อย่าซื้อหมดก่อนวันประกาศตัวเลขใหญ่'), B_('Near support is better than right after a big jump.', 'ซื้อใกล้แนวรับดีกว่าซื้อหลังพุ่งแรง')],
+      o:B_('A buying plan: which day, what price, how many lots.', 'ได้แผนซื้อ: วันไหน ราคาเท่าไร กี่ไม้') },
+    { c:'#f472b6', i:'pie', t:B_('Build the portfolio', 'จัดพอร์ต'), go:['pf'], main:[],
+      l:[B_('My portfolio: the compare table of the auto modes.', 'พอร์ตของฉัน: ตารางเปรียบเทียบโหมดอัตโนมัติ'), B_('The fair test line (picks re-made every 4 weeks), not only the hindsight line.', 'เส้นทดสอบแบบยุติธรรม (เลือกใหม่ทุก 4 สัปดาห์) ไม่ใช่ดูแต่เส้นมองย้อนหลัง'), B_('Weight per sector.', 'สัดส่วนแต่ละกลุ่ม')],
+      r:[B_('No single stock above 10–15%.', 'หุ้นตัวเดียวไม่เกิน 10–15%'), B_('No sector above 30%.', 'กลุ่มเดียวไม่เกิน 30%'), B_('8–15 stocks, plus the cash share from step 1.', 'ถือ 8–15 ตัว และเก็บเงินสดตามขั้นที่ 1')],
+      o:B_('A spread-out portfolio you can hold through ups and downs.', 'ได้พอร์ตที่กระจายดี ถือผ่านขึ้นลงได้') },
+    { c:'#a3e635', i:'refresh', t:B_('Monitor and switch', 'ติดตามและสลับตัว'), go:['world', 'sum', 'track'], main:[],
+      l:[B_('World → step 3: what to hold now vs what to switch.', 'เศรษฐกิจโลก → ขั้นที่ 3: ควรถือต่อ หรือควรสลับ'), B_('Has the phase changed? Did the scenario ✓ marks change?', 'ช่วงเศรษฐกิจเปลี่ยนไหม เครื่องหมาย ✓ ของฉากทัศน์เปลี่ยนไหม'), B_('Did your stock drop out of the 12 or fall below its 200-day line?', 'หุ้นของเราหลุดจาก 12 ตัว หรือหลุดเส้น 200 วันไหม')],
+      r:[B_('Review once a month — not every day.', 'ทบทวนเดือนละครั้ง ไม่ต้องดูทุกวัน'), B_('Switch if a stock is out of the list two checks in a row, or breaks its 200-day line and its quality grade falls.', 'สลับออกถ้าหลุดรายชื่อ 2 รอบติด หรือหลุดเส้น 200 วันพร้อมเกรดคุณภาพลดลง'), B_('Use the track record page to see how far to trust each forecast.', 'ดูหน้าความแม่นย้อนหลัง ว่าเชื่อแต่ละคาดการณ์ได้แค่ไหน')],
+      o:B_('A portfolio that keeps up with the economy.', 'พอร์ตที่ปรับตามเศรษฐกิจอยู่เสมอ') }
+  ];
+  var PK_CHECK = [B_('The market weather fits (step 1).', 'สภาพตลาดเหมาะ (ขั้นที่ 1)'), B_('3+ of the 5 grades at A–B, no D in quality.', 'เกรด A–B อย่างน้อย 3 ใน 5 และคุณภาพไม่ได้ D'), B_('Price above the 200-day line.', 'ราคาอยู่เหนือเส้น 200 วัน'), B_('Profit not falling; debt under control.', 'กำไรไม่ลดลง หนี้ไม่น่ากังวล'), B_('Not far more expensive than its peers.', 'ไม่แพงกว่าเพื่อนกลุ่มเดียวกันมาก'), B_('No warning signal.', 'ไม่มีสัญญาณเตือนผิดปกติ'), B_('Size ≤ 10–15% per stock, ≤ 30% per sector.', 'ขนาด ≤ 10–15% ต่อตัว ≤ 30% ต่อกลุ่ม'), B_('You know why you would sell it.', 'รู้ว่าจะขายเมื่อไร เพราะอะไร')];
+  var PK_DONT = [B_('Buy only because a score is high — read why it is high.', 'ซื้อเพราะคะแนนสูงอย่างเดียว ต้องอ่านเหตุผลด้วย'), B_('Put everything in one stock or one sector.', 'ใส่เงินทั้งหมดในหุ้นตัวเดียวหรือกลุ่มเดียว'), B_('Chase a stock that jumped a lot in a few days.', 'ไล่ซื้อหุ้นที่พุ่งแรงในไม่กี่วัน'), B_('Treat one forecast number as certain — use the range.', 'เชื่อตัวเลขคาดการณ์ตัวเดียวเป๊ะๆ ให้ดูเป็นกรอบ'), B_('Forget that past tests do not promise the future.', 'ลืมว่าผลทดสอบย้อนหลังไม่ได้รับประกันอนาคต')];
+  function pickGuideHTML(pr){
+    var mainChip = function(x){ return '<span class="bz-pkmain">' + ico('layers') + esc(T(x)) + '</span>'; };
+    var ul = function(arr){ return '<ul>' + arr.map(function(x){ return '<li>' + esc(T(x)) + '</li>'; }).join('') + '</ul>'; };
+    var h = '<div class="bz-pk"><div class="bz-pkintro">' + ico('target') + '<div><b>' + esc(T({ en:'Six steps, from wide to narrow', th:'6 ขั้น ไล่จากกว้างไปแคบ' })) + '</b><p>' + esc(T({ en:'Go from wide to narrow: the economy → a shortlist → each stock → timing → the portfolio → monthly check. The Market Brain gives you the shortlist; the main-site menus let you check each stock in detail.', th:'ไล่จากกว้างไปแคบ: เศรษฐกิจ → คัดรายชื่อ → ตรวจทีละตัว → จังหวะซื้อ → จัดพอร์ต → ติดตามรายเดือน สมองตลาดช่วยคัดรายชื่อ ส่วนเมนูหลักของเว็บใช้ตรวจหุ้นทีละตัวแบบละเอียด' })) + '</p></div></div>';
+    h += '<div class="bz-pkflow">' + PK_STEPS.map(function(s, i){ return '<span style="--pc:' + s.c + '"><i>' + (i + 1) + '</i>' + esc(T(s.t)) + '</span>'; }).join('<em>→</em>') + '</div>';
+    h += '<div class="bz-pkg">' + PK_STEPS.map(function(s, i){
+      var where = s.go.map(hbChip).join('') + s.main.map(mainChip).join('');
+      return '<div class="bz-pkc" style="--pc:' + s.c + '"><div class="bz-pkh"><i>' + (i + 1) + '</i>' + ico(s.i) + '<b>' + esc(T(s.t)) + '</b></div>' +
+        '<div class="bz-pkw"><span>' + esc(T({ en:'Where', th:'ดูที่ไหน' })) + '</span>' + where + '</div>' +
+        '<div class="bz-pkb l"><h6>' + ico('eye') + esc(T({ en:'What to look at', th:'ดูอะไร' })) + '</h6>' + ul(s.l) + '</div>' +
+        '<div class="bz-pkb r"><h6>' + ico('check') + esc(T({ en:'How to decide', th:'ตัดสินใจอย่างไร' })) + '</h6>' + ul(s.r) + '</div>' +
+        '<p class="bz-pko"><span>' + esc(T({ en:'You end up with', th:'ผลที่ได้' })) + '</span>' + esc(T(s.o)) + '</p></div>';
+    }).join('') + '</div>';
+    h += '<div class="bz-two bz-pkend"><div class="bz-pkck"><h5>' + ico('check') + esc(T({ en:'Checklist before you buy', th:'เช็กลิสต์ก่อนกดซื้อ' })) + '</h5><ul>' + PK_CHECK.map(function(x){ return '<li><i>☐</i>' + esc(T(x)) + '</li>'; }).join('') + '</ul></div>' +
+      '<div class="bz-pkdn"><h5>' + ico('alert') + esc(T({ en:'Do not', th:'สิ่งที่ไม่ควรทำ' })) + '</h5><ul>' + PK_DONT.map(function(x){ return '<li><i>✕</i>' + esc(T(x)) + '</li>'; }).join('') + '</ul></div></div>';
+    h += '<p class="bz-pknote">' + esc(T({ en:'For learning only — not investment advice. Scores and tests come from past data and can be wrong.', th:'เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน คะแนนและผลทดสอบมาจากข้อมูลในอดีตและอาจผิดพลาดได้' })) + '</p>';
+    return h + '</div>';
+  }
+  XV.pick = function(){ return pickGuideHTML(true); };
   XV.hb = function(){ return handbookHTML(true); };
 
   /* ============================================ ONE BRAIN FOR STOCK PICKS (2026-10-29)
