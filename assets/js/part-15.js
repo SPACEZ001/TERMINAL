@@ -1084,7 +1084,7 @@ var CL_UI = {
   /* Round AM: the CEWA Exam Arena is listed only for the tiers the admin allows
      (Terminal Admin > Exam Arena > "Who can see it"); default = admin only. */
   function navHid(id){ return !!NAV_HIDDEN[id] || id === 'arena'; }   /* Round AN: Exam Arena never in the top menu -- Terminal Admin panel only */
-  var NAV_HIDDEN = { connectedusers:1, printreport:1, announcements:1, pro:1, quietValue:1, adminnotes:1, gradebook:1, secmap:1, ebookreg:1, brain:1 }; /* Round Q: Institutional Pro Desk moved into Cockpit, see part-47.js; Round W (#223): Quiet Value Scanner + Website QR Code are admin-only, reached only via the Terminal Admin panel, never listed in public nav/hub. Round X (#234) briefly added Elliott Wave Classroom here too, but Round Y (#241) reversed that: she wants it listed in the Learn group like any other page, just shown locked (paintLockVeils' spz-locked-item badge, same as a member-only page) rather than invisible -- the actual protection (LOCKED_ROUTES/ADMIN_ONLY_ROUTES in part-46.js + the content-level window.__SPZ_TIER() check in part-65.js, both behind the same PBKDF2/SHA-256-hashed admin password as everything else here) is unchanged. */
+  var NAV_HIDDEN = { connectedusers:1, printreport:1, announcements:1, pro:1, adminnotes:1, gradebook:1, secmap:1, ebookreg:1, brain:1 }; /* Round Q: Institutional Pro Desk moved into Cockpit, see part-47.js; Round W (#223): Quiet Value Scanner + Website QR Code are admin-only, reached only via the Terminal Admin panel, never listed in public nav/hub. Round X (#234) briefly added Elliott Wave Classroom here too, but Round Y (#241) reversed that: she wants it listed in the Learn group like any other page, just shown locked (paintLockVeils' spz-locked-item badge, same as a member-only page) rather than invisible -- the actual protection (LOCKED_ROUTES/ADMIN_ONLY_ROUTES in part-46.js + the content-level window.__SPZ_TIER() check in part-65.js, both behind the same PBKDF2/SHA-256-hashed admin password as everything else here) is unchanged. */
 
   function buildHub(){
     var sec = el('section');
@@ -1620,7 +1620,8 @@ var CL_UI = {
              ("Asset Analysis Log") used to sit here as just another numbered
              row -- Round W (#228) pulls it out into its own badged entry at
              the very bottom of the whole menu instead, see journalItem(). */
-          ids:['directory', 'chartlab', 'stock', 'watchlist', 'bubble', 'proof'] },
+          /* 2026-10-29: the two scanners sit side by side right after the directory (user request) */
+          ids:['directory', 'earlysignal', 'quietValue', 'chartlab', 'stock', 'watchlist', 'bubble', 'proof'] },
         /* Round AD: the website QR code is public now (was admin-only). */
         { k:'share', t:{en:'Share',th:'แชร์เว็บ'}, ids:['qrcode'] }
       ];
