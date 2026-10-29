@@ -257,8 +257,8 @@
     window.__spzAddRoute({
       id:'quietValue', feat:true, after:'anomaly',
       t:{en:'Quiet Value Scanner',th:'สแกนหุ้นถูกที่ยังเงียบ'},
-      d:{en:'Cheap against the whole tracked universe, solid fundamentals, technically dead quiet, and sitting a meaningful but not catastrophic distance below its 52-week high. The opposite lens from the Early Signal Screener. Admin-only.',
-         th:'ถูกเทียบกับหุ้นทั้งหมดที่ติดตาม พื้นฐานแข็งแรง เทคนิคเงียบสนิท และอยู่ห่างจากจุดสูงสุดรอบ 52 สัปดาห์พอสมควรแต่ไม่ถึงขั้นพัง มองต่างมุมจากสแกนหุ้นก่อนกระแส เฉพาะแอดมิน'}
+      d:{en:'For long-term value: cheap stocks with solid fundamentals that nobody is watching yet — the chart is dead quiet and the price sits well below its 1-year high without having collapsed. Buy-and-wait, not short-term timing.',
+         th:'หาหุ้นคุณค่าไว้ถือยาว: ราคาถูก พื้นฐานแข็งแรง แต่ยังไม่มีใครสนใจ กราฟเงียบ ราคาย่อจากจุดสูงสุดรอบปีพอสมควรแต่ไม่พัง เหมาะซื้อแล้วรอ ไม่ใช่หาจังหวะสั้น'}
     });
 
     var input = sec.querySelector('[data-qv="qinput"]');
