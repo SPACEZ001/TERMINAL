@@ -3381,13 +3381,29 @@
     keep.sort(function(a, b){ return b.sc2 - a.sc2; });
     return keep.filter(function(x){ var k = x.s.sector || '?'; per[k] = (per[k] || 0) + 1; return per[k] <= 2; }).slice(0, 12);
   }
+  /* 2026-10-29: copy the shown picks as a plain ticker list (US / Thai / both) to paste into My portfolio or anywhere */
+  var WLIST = { us:[], th:[] }, WSEP = 'comma';
+  try { WSEP = localStorage.getItem('spz.brain.wsep') || 'comma'; } catch(e){}
+  var WSEPS = [['comma', { en:'comma ,', th:'จุลภาค ,' }, ', '], ['line', { en:'new line', th:'ขึ้นบรรทัดใหม่' }, '\n'], ['space', { en:'space', th:'เว้นวรรค' }, ' ']];
+  function copyBar(){
+    return '<div class="bz-wcopy"><span class="bz-wcopyh">' + ico('layers') + esc(T({ en:'Copy this list', th:'คัดลอกรายชื่อหุ้น' })) + '</span>' +
+      '<div class="bz-wcopyb"><button type="button" data-wcopy="us">' + esc(T({ en:'US', th:'สหรัฐฯ' })) + ' <i>' + WLIST.us.length + '</i></button><button type="button" data-wcopy="th">' + esc(T({ en:'Thai', th:'ไทย' })) + ' <i>' + WLIST.th.length + '</i></button><button type="button" data-wcopy="both">' + esc(T({ en:'Both', th:'ทั้งสองตลาด' })) + ' <i>' + (WLIST.us.length + WLIST.th.length) + '</i></button></div>' +
+      '<label class="bz-wsep"><span>' + esc(T({ en:'separate with', th:'คั่นด้วย' })) + '</span><select data-wsep>' + WSEPS.map(function(x){ return '<option value="' + x[0] + '"' + (WSEP === x[0] ? ' selected' : '') + '>' + esc(T(x[1])) + '</option>'; }).join('') + '</select></label>' +
+      '<em class="bz-wcopym" data-wcopymsg>' + esc(T({ en:'Paste it into My portfolio → “Paste a list of tickers”.', th:'นำไปวางได้ที่ พอร์ตของฉัน → “วางรายชื่อหุ้นทีละหลายตัว”' })) + '</em></div>';
+  }
+  function copyText(txt, done){
+    var fb = function(){ try { var ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); var ok = document.execCommand('copy'); document.body.removeChild(ta); done(ok); } catch(e){ done(false); } };
+    try { if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(function(){ done(true); }, fb); return; } } catch(e){}
+    fb();
+  }
   function stocksBlock(C){
     var cat = WCAT === 'res' ? 'all' : WCAT, hu = catPicks(C.probs, 'us', cat), ht = catPicks(C.probs, 'th', cat);
+    WLIST = { us:hu.map(function(x){ return tick(x.t); }), th:ht.map(function(x){ return tick(x.t); }) };
     var why = { all:{ en:'The 12 highest total scores in each market: 50% how the stock did vs its market in the scenarios likely over the next 6 months (weighted by their odds), 50% the five factors. Only stocks in an up-trend. This is the main list.', th:'12 ตัวที่คะแนนรวมสูงสุดของแต่ละตลาด: 50% สถิติว่าหุ้นเคยชนะตลาดแค่ไหนในฉากทัศน์ที่น่าจะเกิดใน 6 เดือนข้างหน้า (ถ่วงตามโอกาส) และ 50% จาก 5 ปัจจัย เฉพาะหุ้นที่เป็นขาขึ้น นี่คือรายชื่อหลัก' },
       big:{ en:'Same scoring, but only the biggest companies (top 20% by size in the US, 30% in Thailand) with solid quality — steadier, easier to trade, a good core.', th:'ใช้คะแนนเดียวกัน แต่เลือกเฉพาะบริษัทใหญ่สุด (20% แรกของสหรัฐฯ 30% แรกของไทย) ที่คุณภาพดี นิ่งกว่า ซื้อขายง่าย เหมาะเป็นแกนของพอร์ต' },
       div:{ en:'Same scoring, but only companies paying a solid dividend (2.5%+ US, 4%+ Thai, under 12% to avoid traps) with good quality — for income.', th:'ใช้คะแนนเดียวกัน แต่เลือกเฉพาะหุ้นที่จ่ายปันผลดี (สหรัฐฯ 2.5% ขึ้นไป ไทย 4% ขึ้นไป ไม่เกิน 12% เพื่อเลี่ยงกับดัก) และคุณภาพดี เหมาะกับคนอยากได้รายได้' },
       grow:{ en:'Same scoring, but only companies whose profits are growing fast (earnings grade A–B, profit up on a year ago) — more upside, more swing.', th:'ใช้คะแนนเดียวกัน แต่เลือกเฉพาะบริษัทที่กำไรโตเร็ว (เกรดกำไรโต A–B และกำไรสูงกว่าปีก่อน) โอกาสขึ้นมากกว่า แต่แกว่งมากกว่า' } }[cat];
-    return '<div class="bz-wcatw" data-wcatbox><div class="bz-wcat">' + CATS.map(function(c){ return '<button type="button" data-wcat="' + c[0] + '" class="' + (cat === c[0] ? 'on' : '') + '">' + ico(c[2]) + esc(T(c[1])) + '</button>'; }).join('') + '</div><p class="bz-wcatn">' + esc(T(why)) + '</p>' +
+    return '<div class="bz-wcatw" data-wcatbox><div class="bz-wcat">' + CATS.map(function(c){ return '<button type="button" data-wcat="' + c[0] + '" class="' + (cat === c[0] ? 'on' : '') + '">' + ico(c[2]) + esc(T(c[1])) + '</button>'; }).join('') + '</div><p class="bz-wcatn">' + esc(T(why)) + '</p>' + copyBar() +
       '<div class="bz-wpk"><div><h6>' + ico('flag') + esc(T({ en:'US stocks', th:'หุ้นสหรัฐฯ' })) + '</h6><div class="bz-wscg">' + (hu.length ? hu.map(function(x){ return holdCard(x, C, cat); }).join('') : note({ en:'None pass every filter right now.', th:'ตอนนี้ยังไม่มีตัวที่ผ่านทุกเงื่อนไข' })) + '</div></div><div><h6>' + ico('flag') + esc(T({ en:'Thai stocks', th:'หุ้นไทย' })) + '</h6><div class="bz-wscg">' + (ht.length ? ht.map(function(x){ return holdCard(x, C, cat); }).join('') : note({ en:'None pass every filter right now.', th:'ตอนนี้ยังไม่มีตัวที่ผ่านทุกเงื่อนไข' })) + '</div></div></div></div>';
   }
   function holdCard(x, C, cat){
@@ -3598,7 +3614,15 @@
     return h;
   }
   function wireWorld(root){
+    root.addEventListener('change', function(ev){ var sl = ev.target; if(sl && sl.hasAttribute && sl.hasAttribute('data-wsep')){ WSEP = sl.value; try { localStorage.setItem('spz.brain.wsep', WSEP); } catch(e){} } });
     root.addEventListener('click', function(ev){
+      var cp = ev.target.closest('[data-wcopy]');
+      if(cp && root.contains(cp)){
+        var k = cp.getAttribute('data-wcopy'), arr = k === 'both' ? WLIST.us.concat(WLIST.th) : (WLIST[k] || []), sep = (WSEPS.filter(function(x){ return x[0] === WSEP; })[0] || WSEPS[0])[2], msg = cp.closest('.bz-wcopy').querySelector('[data-wcopymsg]');
+        if(!arr.length){ if(msg) msg.textContent = T({ en:'Nothing to copy in this list.', th:'รายการนี้ยังไม่มีหุ้นให้คัดลอก' }); return; }
+        copyText(arr.join(sep), function(ok){ if(!msg) return; msg.className = 'bz-wcopym ' + (ok ? 'ok' : 'bad'); msg.textContent = ok ? T({ en:'Copied ' + arr.length + ' tickers ✓ — paste into My portfolio → “Paste a list of tickers”.', th:'คัดลอก ' + arr.length + ' ตัวแล้ว ✓ นำไปวางที่ พอร์ตของฉัน → “วางรายชื่อหุ้นทีละหลายตัว”' }) : T({ en:'Could not copy automatically: ', th:'คัดลอกอัตโนมัติไม่ได้ เลือกข้อความนี้แล้วคัดลอกเอง: ' }) + arr.join(sep); });
+        return;
+      }
       var wc = ev.target.closest('[data-wcat]');
       if(wc && root.contains(wc)){ WCAT = wc.getAttribute('data-wcat'); try { localStorage.setItem('spz.brain.wcat', WCAT); } catch(e){} var bx = wc.closest('[data-wcatbox]'), AC3 = autoCtx(); if(bx && AC3) bx.outerHTML = stocksBlock(AC3); return; }
       var fg = ev.target.closest('[data-fcgo]');
@@ -4073,7 +4097,7 @@
         return '<tr' + (I ? '' : ' class="miss"') + '><td><i class="dot" style="background:' + DCOL[k % DCOL.length] + '"></i><b>' + esc(t) + '</b><em>' + esc(I ? I.n : T({ en:'not in our data', th:'ไม่มีในข้อมูลของเว็บ' })) + '</em></td><td>' + (ed ? '<input type="number" min="0" step="1" value="' + (+W[t].toFixed(2)) + '" data-pfw="' + esc(t) + '">' : f(W[t], 1)) + '</td><td><b>' + f(W[t] / tot * 100, 1) + '%</b></td><td class="wb"><i style="width:' + (W[t] / maxW * 100).toFixed(0) + '%;background:' + DCOL[k % DCOL.length] + '"></i></td><td class="' + (m3 >= 0 ? 'up' : 'dn') + '">' + spc(m3, 1) + '</td><td>' + (ed ? '<button type="button" class="bz-x" data-pfdel="' + esc(t) + '" aria-label="remove">' + ico('x') + '</button>' : '') + '</td></tr>';
       }).join('') + '</tbody></table></div>' : note(s.mode === 'acct' ? { en:'Your account has no tickers yet — add some on the Watchlist page, or add them here (kept in this browser only).', th:'บัญชีนี้ยังไม่มีหุ้น เพิ่มได้ที่หน้า Watchlist หรือเพิ่มตรงนี้ (เก็บเฉพาะในเครื่องนี้)' } : { en:'Empty — add a ticker below.', th:'ยังว่าง เพิ่มหุ้นด้านล่างได้เลย' })) +
       (ed ? '<div class="bz-add">' + universeList() + '<input list="bzUni" data-pfnew placeholder="' + esc(T({ en:'Ticker, e.g. AAPL, PTT, SPY', th:'ชื่อหุ้น เช่น AAPL, PTT, SPY' })) + '"><input type="number" min="1" value="10" data-pfneww><button type="button" class="bz-btn sm" data-pfadd>' + ico('plus') + esc(T({ en:'Add', th:'เพิ่ม' })) + '</button><button type="button" class="bz-btn sm ghost" data-pfeq>' + esc(T({ en:'Equal weights', th:'แบ่งเท่ากันทุกตัว' })) + '</button></div>' : '') +
-      note({ en:'Weights are relative: 2 and 1 means two-thirds and one-third.', th:'สัดส่วนเป็นแบบเทียบกัน เช่น 2 กับ 1 คือ สองในสามกับหนึ่งในสาม' });
+      note({ en:'Weights are relative: 2 and 1 means two-thirds and one-third.', th:'สัดส่วนเป็นแบบเทียบกัน เช่น 2 กับ 1 คือ สองในสามกับหนึ่งในสาม' }) + pasteBox(ed);
     if(!ts.length) return h + row([cell(12, { en:'Holdings', th:'สินทรัพย์ในพอร์ต' }, holdInner, 'layers')]);
     h += '<details class="bz-more bz-pfcmpw"' + (s.cmpOpen === false ? '' : ' open') + '><summary>' + ico('scale') + esc(T({ en:'Compare every portfolio style — which suits you?', th:'เทียบพอร์ตทุกแบบ — แบบไหนดีกว่า และเหมาะกับใคร' })) + '</summary>' + pfCompare(s) + '</details>';
     var A = analyse(W); PF.last = A;
@@ -4121,11 +4145,44 @@
     }).join('') + '</div>', 'star');
     return h;
   }
+  /* 2026-10-29: paste a whole ticker list at once (e.g. copied from World outlook) */
+  function parseTickers(txt){
+    var seen = {}, ok = [], bad = [];
+    String(txt || '').toUpperCase().split(/[\s,;|\/]+/).forEach(function(w){
+      var t = w.replace(/[^A-Z0-9.&\-]/g, '').replace(/\.BK$/, '').replace(/^[.\-]+|[.\-]+$/g, '');
+      if(!t || seen[t]) return; seen[t] = 1;
+      if(info(t)) ok.push(t); else bad.push(t);
+    });
+    return { ok:ok, bad:bad };
+  }
+  function pasteBox(ed){
+    var m = PF.pasteMsg;
+    return '<details class="bz-paste"' + (m || PF.pasteOpen ? ' open' : '') + '><summary>' + ico('layers') + esc(T({ en:'Paste a list of tickers', th:'วางรายชื่อหุ้นทีละหลายตัว' })) + '</summary>' +
+      '<p>' + esc(T({ en:'Paste the list you copied (from World outlook or anywhere). Commas, spaces or new lines all work. Each stock gets an equal weight of 10 — adjust after.', th:'วางรายชื่อที่คัดลอกมา (จากหน้าแนวโน้มเศรษฐกิจโลกหรือที่ไหนก็ได้) คั่นด้วย , เว้นวรรค หรือขึ้นบรรทัดใหม่ก็ได้ ทุกตัวจะได้สัดส่วนเท่ากันที่ 10 ปรับทีหลังได้' })) +
+      (ed ? '' : ' ' + esc(T({ en:'This view is a model, so the list goes into “My simulation”.', th:'หน้านี้เป็นพอร์ตตัวอย่าง รายชื่อจะถูกใส่ใน “พอร์ตจำลองของฉัน” ให้อัตโนมัติ' }))) + '</p>' +
+      '<textarea data-pfpaste rows="3" placeholder="' + esc(T({ en:'e.g. NVDA, MSFT, PTT, AOT', th:'เช่น NVDA, MSFT, PTT, AOT' })) + '"></textarea>' +
+      '<div class="bz-pastebtn"><button type="button" class="bz-btn sm" data-pfpaste-go="add">' + ico('plus') + esc(T({ en:'Add to portfolio', th:'เพิ่มเข้าพอร์ต' })) + '</button><button type="button" class="bz-btn sm ghost" data-pfpaste-go="rep">' + esc(T({ en:'Replace the whole portfolio', th:'แทนที่ทั้งพอร์ต' })) + '</button><button type="button" class="bz-btn sm ghost" data-pfclip>' + esc(T({ en:'Paste from clipboard', th:'วางจากคลิปบอร์ด' })) + '</button></div>' +
+      (m ? '<p class="bz-pastemsg ' + (m.bad.length ? 'mid' : 'ok') + '">' + esc(T({ en:'Added ' + m.n + ' stocks.', th:'เพิ่มแล้ว ' + m.n + ' ตัว' })) + (m.bad.length ? ' ' + esc(T({ en:'Not in our data: ', th:'ไม่พบในข้อมูลของเว็บ: ' })) + esc(m.bad.join(', ')) : '') + '</p>' : '') + '</details>';
+  }
+  function applyPaste(s, txt, mode){
+    var P = parseTickers(txt);
+    if(!P.ok.length){ PF.pasteMsg = { n:0, bad:P.bad.length ? P.bad : [T({ en:'(nothing found)', th:'(ไม่พบชื่อหุ้น)' })] }; return; }
+    if(!editable(s)){ var cur = currentWeights(s); s.custom = {}; if(mode === 'add') Object.keys(cur).forEach(function(t){ if(cur[t] > 0) s.custom[t] = +cur[t].toFixed(2); }); s.mode = 'custom'; }
+    else if(mode === 'rep'){ var W0 = currentWeights(s); Object.keys(W0).forEach(function(t){ delTicker(s, t); }); }
+    var W1 = currentWeights(s);
+    P.ok.forEach(function(t){ if(!(W1[t] > 0)) setWeight(s, t, 10); });
+    lsSet(s); PF.pasteMsg = { n:P.ok.length, bad:P.bad };
+  }
   function wirePf(root){
+    root.addEventListener('toggle', function(ev){ if(ev.target.classList && ev.target.classList.contains('bz-paste')){ PF.pasteOpen = ev.target.open; if(!ev.target.open) PF.pasteMsg = null; } }, true);
     root.addEventListener('click', function(ev){
+      var pg = ev.target.closest('[data-pfpaste-go]');
+      if(pg && root.contains(pg)){ var ta = root.querySelector('[data-pfpaste]'); applyPaste(pfState(), ta ? ta.value : '', pg.getAttribute('data-pfpaste-go')); PF.pasteOpen = true; paint(); return; }
+      var pc = ev.target.closest('[data-pfclip]');
+      if(pc && root.contains(pc)){ var ta2 = root.querySelector('[data-pfpaste]'); try { navigator.clipboard.readText().then(function(t){ if(ta2){ ta2.value = t; ta2.focus(); } }, function(){ if(ta2){ ta2.focus(); ta2.placeholder = T({ en:'Press Ctrl/⌘ + V here', th:'กด Ctrl/⌘ + V ตรงนี้เพื่อวาง' }); } }); } catch(e){ if(ta2) ta2.focus(); } return; }
       var b = ev.target.closest('button,input[data-pftilt],tr[data-pfmode]'); if(!b || !root.contains(b)) return;
       var s = pfState();
-      if(b.hasAttribute('data-pfmode')){ s.mode = b.getAttribute('data-pfmode'); lsSet(s); if(s.mode === 'acct') PF.acctTickers = null; tab = 'pf'; paint(true); return; }
+      if(b.hasAttribute('data-pfmode')){ PF.pasteMsg = null; s.mode = b.getAttribute('data-pfmode'); lsSet(s); if(s.mode === 'acct') PF.acctTickers = null; tab = 'pf'; paint(true); return; }
       if(b.hasAttribute('data-pftilt')){ s.tilt = b.checked; lsSet(s); paint(); return; }
       if(b.hasAttribute('data-pfcopy')){ s.custom = {}; var W = currentWeights(s); Object.keys(W).forEach(function(t){ s.custom[t] = +W[t].toFixed(2); }); s.mode = 'custom'; lsSet(s); paint(); return; }
       if(b.hasAttribute('data-pfdel')){ delTicker(s, b.getAttribute('data-pfdel')); paint(); return; }
