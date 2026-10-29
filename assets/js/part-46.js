@@ -379,7 +379,7 @@
      มาใส่ตรงนี้ (สร้างด้วย ADMIN_GENERATOR.html) */
   var VAULT_FULL = {"v":6,"s1":"cseJWXwoXYhyvORR4JeXAw==","s2":"mL9VsCYq+aki3yac0Kuwsg==","s3":"Sanlhhy5bVOoG4C+9+2H9w==","s4":"D94o5hYySd7iqzMIVz5olA==","sched":"ZoUxvAGWFaeXfB7R8cjsBwB0StkhxSQ9UinYtHwEuQU=","gates":[{"iv":"dyzoKH9VNB7N+duuAMreow==","ct":"mq14pwi3lI5+uA8lh+/6UJxMRlVzB9lg02gMyEEX18A="},{"iv":"psrFdJMRQHr2cH6g/eDHjg==","ct":"UOnsoXYNDvXwEzb8WsysYPYZR+JpauNyg9N7PyPAPjg="},{"iv":"yF2fBzH5/HHv9V5KeQImHQ==","ct":"LLC+atdXSyRTwGj2DvOyrxS5+uq/4mr6Lsb0EwyDJEs="},{"iv":"PgYsAPHDgXVV36hRnVNf3g==","ct":"vHhvOaACobcnyhcK8LS0UkshV6cq/+YxlMvGewuqj84="},{"iv":"5f/vfPViiyPmrsoryUfwjQ==","ct":"ycYlZDk8UaYm9P2nihd2ehQrUTVSXbdfx6Ru7YnKi5I="},{"iv":"q5LIrV2QUSNUWJrKZhXpiw==","ct":"mmCKQfynMyJRe9tbVgtYy8jvi1Laskcgap1RA2byxDI="},{"iv":"UZhjc7QbPvq1bR8GPxKECA==","ct":"OgDvMs6WYm/ByPs5kxEucheCfcX9SIJswwfBB79jKMU="},{"iv":"llSa2nZun9o9532sZNz4RA==","ct":"JGZk5rJQ8qo7w5OM/Vn/GITXh/WUR3Y8+3yhHrHNGaI="},{"iv":"KCjQY8slkCnKNRLUYrjNog==","ct":"3p/TmkPO6jJM6I1bOfFe/KdTFsvsN0ZzENb0+jlHayE="},{"iv":"r3yvXtAOMjnHGFTO239BwQ==","ct":"hmXvkh6HysJNPgetPyWeHcMOl5hK4+HZgbheTGBm6mI="},{"iv":"DvirWlEFJRWYNF4m1R3uNg==","ct":"4zGuozK6iPkzB98S0sldE+vfmvJqXb7JtUmXZFsx5X8="},{"iv":"YU0A9Qz1OLjOMSvdSmy1tw==","ct":"hXxSEdygIMrNgcc8D61fXwmfX/rR666k0N+DGQ/PunY="}],"ctrIv":"ieP8cEn5gA4cMIw57v6ApQ==","cbcIv":"qkD/J1S6Qwfngh2zPiY9Wg==","iv":"BQZjoydxJV1dUQIe","ct":"TPfJr/aIrTR+0bZkr5bCgBoWD9RZHFZshq2RlzOrMwN6C6Htsjo3R8rEzG/pIPJ9cGLjGSKySym2pOIL6TjETA==","seal":"0/mrYPhi8tw8w+drFuLh1II0vLOF8vp315rIw+mUPleDN67yCUlU9rQLe2+ERosu"};
 
-  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','controlgrid','printreport','journalNew','connectedusers','announcements','quietValue','adminnotes','gradebook','secmap','autowave','universe','ebookreg','brain'];
+  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','controlgrid','printreport','journalNew','connectedusers','announcements','quietValue','adminnotes','gradebook','secmap','autowave','universe','ebookreg','brain','earlysignal'];
   /* 'journal' (the list) and 'journalView' (a single post) are deliberately
      NOT in this list -- anyone can open them. The paywall for those two
      lives inside the module itself instead: the list/titles always render,
@@ -717,10 +717,6 @@
                     '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>' +
                     '<span data-x="adminPro"></span>' +
                   '</button>' +
-                  '<button class="cag-admin-link" type="button" id="cagBtnQuietValue">' +
-                    '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M8.5 11h5"/></svg>' +
-                    '<span data-x="adminQuietValue"></span>' +
-                  '</button>' +
                   '<button class="cag-admin-link" type="button" id="cagBtnQrCode">' +
                     '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M20 14v3h-3"/><path d="M14 20h3"/><path d="M20 20v-2"/></svg>' +
                     '<span data-x="adminQrCode"></span>' +
@@ -982,7 +978,7 @@
          than its own #/cockpit route -- see part-47.js. */
       else location.hash = '#/pro';
     });
-    gate.querySelector('#cagBtnQuietValue').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/quietValue'; });
+    /* 2026-10-29: Quiet Value Scanner moved out of this panel into the normal top menu (Workbench), next to Early Signal (user request); access unchanged (admin + editor) */
     gate.querySelector('#cagBtnQrCode').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/qrcode'; });
     gate.querySelector('#cagBtnElliott').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/elliott'; });
     gate.querySelector('#cagBtnNotes').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/adminnotes'; });
@@ -1436,7 +1432,7 @@
     var m = href && /^#\/([a-z0-9_-]+)$/i.exec(href);
     return m ? m[1] : null;
   }
-  var MEMBER_ROUTES = ['stock','watchlist','bubble','chartlab','directory','regime'];
+  var MEMBER_ROUTES = ['stock','watchlist','bubble','chartlab','directory','regime','earlysignal'];
   /* Round U (#220): new "Editor" tier -- a separate, simpler login zone next
      to LINE/Telegram/Member/Admin, for a contributor who should be able to
      read everything Admin can (the full analysis/tools catalogue) but has
