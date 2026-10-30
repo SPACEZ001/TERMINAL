@@ -841,8 +841,8 @@
     window.__spzAddRoute({
       id:'correl', feat:true, after:'anomaly',
       t:{en:'Correlation Map',th:'แผนที่ความสัมพันธ์สินทรัพย์'},
-      d:{en:'A pairwise map of how 14 sector/asset-class ETFs and the S&P 500 have actually moved together — or not — week to week. Admin-only.',
-         th:'แผนที่เปรียบเทียบว่า ETF ตัวแทนกลุ่ม 14 กลุ่มกับ S&P 500 เคยขยับไปด้วยกันมากแค่ไหนในแต่ละสัปดาห์ เฉพาะแอดมิน'}
+      d:{en:'A pairwise map of how 14 sector/asset-class ETFs and the S&P 500 have actually moved together — or not — week to week.',
+         th:'แผนที่เปรียบเทียบว่า ETF ตัวแทนกลุ่ม 14 กลุ่มกับ S&P 500 เคยขยับไปด้วยกันมากแค่ไหนในแต่ละสัปดาห์'}
     });
 
     sec.__render = paint;

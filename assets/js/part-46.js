@@ -1432,7 +1432,13 @@
     var m = href && /^#\/([a-z0-9_-]+)$/i.exec(href);
     return m ? m[1] : null;
   }
-  var MEMBER_ROUTES = ['stock','watchlist','bubble','chartlab','directory','regime','earlysignal'];
+  /* 2026-10-30 (user request): every page listed in the top menu opens for a
+     signed-in member (LINE / Telegram / Facebook / Google / site account),
+     EXCEPT two that stay admin-only: 'autowave' (Auto Wave Count) and
+     'controlgrid' (Who Controls the World's Money?). Pages reached only from
+     the Terminal Admin panel (NAV_HIDDEN in part-15.js) are unchanged. */
+  var MEMBER_ROUTES = ['stock','watchlist','bubble','chartlab','directory','regime','earlysignal',
+    'globe','universe','desk','scenarios','anomaly','correl','rulelab','daily','proof'];
   /* Round U (#220): new "Editor" tier -- a separate, simpler login zone next
      to LINE/Telegram/Member/Admin, for a contributor who should be able to
      read everything Admin can (the full analysis/tools catalogue) but has
