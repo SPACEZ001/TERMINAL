@@ -216,8 +216,8 @@
     window.__spzAddRoute({
       id:'daily', feat:true, after:'rulelab',
       t:{en:'Daily Summary',th:'สรุปประจำวัน'},
-      d:{en:'A plain-language, auto-written readout of the latest snapshot — headline gauges, biggest movers, sector flow and anomaly count. Admin-only.',
-         th:'สรุปข้อมูลสแนปช็อตล่าสุดเป็นคำพูดแบบอัตโนมัติ — ตัวชี้วัดเด่น ขยับแรงที่สุด เงินไหลรายกลุ่ม และจำนวนสัญญาณผิดปกติ เฉพาะแอดมิน'}
+      d:{en:'A plain-language, auto-written readout of the latest snapshot — headline gauges, biggest movers, sector flow and anomaly count.',
+         th:'สรุปข้อมูลสแนปช็อตล่าสุดเป็นคำพูดแบบอัตโนมัติ — ตัวชี้วัดเด่น ขยับแรงที่สุด เงินไหลรายกลุ่ม และจำนวนสัญญาณผิดปกติ'}
     });
 
     sec.__render = paint;
