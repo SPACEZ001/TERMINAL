@@ -1350,6 +1350,17 @@ async function handleClassroomContent(request, env) {
   return localToolJson({ content });
 }
 
+// 2026-10-30: the Stock Classroom (#/stockclass) is open to everyone, no
+// sign-in. This public read returns ONLY the stock-room lessons (node ids
+// starting with "sk-"); the Elliott Wave lessons and the exam map stay behind
+// isAdminOrEditorRead() in handleClassroomContent() above.
+async function handleClassroomPublic(request, env) {
+  const all = await getClassroomContent(env);
+  const content = {};
+  Object.keys(all).forEach((k) => { if (k.indexOf("sk-") === 0) content[k] = all[k]; });
+  return localToolJson({ content });
+}
+
 async function handleAdminClassroomContentUpdate(request, env) {
   if (!(await isAdminKeyValid(request, env))) return localToolJson({ error: "unauthorized" }, 401);
   let body;
@@ -3223,7 +3234,7 @@ const SPZ_ROUTES = {
     // localToolCorsHeaders() above) -- add a new one here and its preflight,
     // dispatch and error-catch handling all pick it up automatically.
     const LOCAL_TOOL_PATHS = [
-      "/api/classroom/content", "/api/admin/classroom-content/update",
+      "/api/classroom/content", "/api/classroom/public", "/api/admin/classroom-content/update",
       "/api/controlgrid/content", "/api/admin/controlgrid-content/update",
       "/api/quietvalue/results", "/api/printreport/analysis",
       "/api/admin/quiz-bank/set", "/api/admin/quiz-bank/finalize",
@@ -3277,6 +3288,7 @@ const SPZ_ROUTES = {
       if (url.pathname === "/api/admin/announcements/update" && request.method === "POST") return withCorsOrigin(await handleAdminAnnouncementsUpdate(request, env), allowOrigin);
       if (url.pathname === "/api/admin/announcements/delete" && request.method === "POST") return withCorsOrigin(await handleAdminAnnouncementsDelete(request, env), allowOrigin);
       if (url.pathname === "/api/classroom/content" && request.method === "GET") return await handleClassroomContent(request, env);
+      if (url.pathname === "/api/classroom/public" && request.method === "GET") return await handleClassroomPublic(request, env);
       if (url.pathname === "/api/admin/classroom-content/update" && request.method === "POST") return await handleAdminClassroomContentUpdate(request, env);
       if (url.pathname === "/api/controlgrid/content" && request.method === "GET") return await handleControlGridContent(request, env);
       if (url.pathname === "/api/admin/controlgrid-content/update" && request.method === "POST") return await handleAdminControlGridContentUpdate(request, env);

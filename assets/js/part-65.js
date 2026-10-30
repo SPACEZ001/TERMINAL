@@ -72,7 +72,13 @@
   }
   function canRead(){
     var t = window.__SPZ_TIER ? window.__SPZ_TIER() : 'basic';
-    return t === 'full' || t === 'editor';
+    if(t === 'full' || t === 'editor') return true;
+    /* 2026-10-30 (user request): the Stock Classroom is readable by everyone,
+       no sign-in -- its lessons come from the Worker's public endpoint, which
+       returns only the 'sk-' (stock room) nodes. The Elliott room stays
+       admin/editor only. Until that endpoint is live this stays false and the
+       old scrambled preview shows, exactly as before. */
+    return room === 'stk' && !!pubStk;
   }
   /* Round AD: everyone can open the classroom now, but until it is ready
      only Admin / Editor see real lessons. Everyone else gets the real index
@@ -567,6 +573,21 @@
   var contentLoading = false;
   var contentErr = null; // null | 'bad' (401, key cleared) | 'net'
 
+  var pubStk = false, pubLoading = false, pubErr = false;
+  function fetchPublicStk(){
+    pubLoading = true;
+    fetch(WORKER_BASE + '/api/classroom/public')
+      .then(function(r){ if(!r.ok) throw new Error('bad_status'); return r.json(); })
+      .then(function(data){
+        var c = (data && data.content) || {}, n = 0;
+        for(var k in c) if(k.indexOf('sk-') === 0) n++;
+        pubLoading = false;
+        if(!n){ pubErr = true; return; }
+        if(!getAdminKey()){ contentCache = c; pubStk = true; renderShell(); }
+      })
+      .catch(function(){ pubLoading = false; pubErr = true; });
+  }
+
   function fetchClassroomContent(){
     var key = getAdminKey();
     if(!key) return;
@@ -581,6 +602,7 @@
       .then(function(data){
         if(!data) return;
         contentCache = data.content || {};
+        pubStk = false;
         contentLoading = false;
         renderShell();
       })
@@ -605,7 +627,7 @@
   }
 
   function detailBodyHTML(){
-    if(!getAdminKey()) return keyGateHTML();
+    if(!getAdminKey() && !(pubStk && room === 'stk')) return keyGateHTML();
     if(contentLoading) return '<div class="ewv-content-loading">' + esc(T(UI.loading)) + '</div>';
     if(contentErr === 'net') return netErrorHTML();
     if(!contentCache) return keyGateHTML(); // defensive fallback; renderShell() normally triggers a fetch before this is reached
@@ -690,12 +712,13 @@
   function renderShellOne(){
     if(!bodyEl) return;
     if(!NODE_TITLE[currentId]) currentId = ROOMS[room].first;
+    if(room === 'stk' && !getAdminKey() && !pubStk && !pubLoading && !pubErr) fetchPublicStk();
     var reader = canRead();
     // Kick off the one-time content fetch, then bail out of this render --
     // fetchClassroomContent() calls renderShell() itself right away to paint
     // the loading state, so falling through here would just rebuild the
     // same markup twice.
-    if(reader && getAdminKey() && !contentCache && !contentLoading && !contentErr){
+    if(reader && getAdminKey() && (!contentCache || pubStk) && !contentLoading && !contentErr){
       fetchClassroomContent();
     }
     /* a lesson that is in the menu but not on the server yet stays hidden until it is uploaded */
