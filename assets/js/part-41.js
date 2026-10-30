@@ -232,8 +232,8 @@
     window.__spzAddRoute({
       id:'anomaly', feat:true, after:'regime',
       t:{en:'Anomaly Scan',th:'สแกนสัญญาณผิดปกติ'},
-      d:{en:'Every tracked ticker checked against itself — RSI divergence, 200-day cross events, and stocks sitting right at a 52-week edge with momentum fading. Admin-only.',
-         th:'เช็คทุกตัวที่ติดตามกับตัวมันเอง — ไดเวอร์เจนซ์ของ RSI การตัดเส้นค่าเฉลี่ย 200 วัน และหุ้นที่อยู่ติดขอบ 52 สัปดาห์ทั้งที่โมเมนตัมเริ่มอ่อน เฉพาะแอดมิน'}
+      d:{en:'Every tracked ticker checked against itself — RSI divergence, 200-day cross events, and stocks sitting right at a 52-week edge with momentum fading.',
+         th:'เช็คทุกตัวที่ติดตามกับตัวมันเอง — ไดเวอร์เจนซ์ของ RSI การตัดเส้นค่าเฉลี่ย 200 วัน และหุ้นที่อยู่ติดขอบ 52 สัปดาห์ทั้งที่โมเมนตัมเริ่มอ่อน'}
     });
 
     sec.__render = paint;

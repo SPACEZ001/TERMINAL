@@ -360,8 +360,8 @@
     window.__spzAddRoute({
       id:'rulelab', feat:true, after:'correl',
       t:{en:'Rule Lab',th:'ห้องทดลองกฎ'},
-      d:{en:'Pick your own combination of early-warning gauges, choose how strict the rule is, and re-run 12-25 years of history to see what actually followed. Admin-only.',
-         th:'เลือกตัวชี้วัดเตือนล่วงหน้าผสมกันเอง กำหนดความเข้มของกฎ แล้วรันย้อนหลัง 12-25 ปีดูว่าหลังจากนั้นเกิดอะไรจริง เฉพาะแอดมิน'}
+      d:{en:'Pick your own combination of early-warning gauges, choose how strict the rule is, and re-run 12-25 years of history to see what actually followed.',
+         th:'เลือกตัวชี้วัดเตือนล่วงหน้าผสมกันเอง กำหนดความเข้มของกฎ แล้วรันย้อนหลัง 12-25 ปีดูว่าหลังจากนั้นเกิดอะไรจริง'}
     });
 
     sec.__render = paint;
