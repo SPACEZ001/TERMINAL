@@ -71,7 +71,7 @@ or re-inline everything back into one file unless the user asks for that.
 - `data/market.json` — GitHub Actions job `market-data`, every 30 min, `yfinance`.
 - `data/backtest.json` — GitHub Actions job `backtest`, daily.
 - `data/brain.json` + `data/brain_ext.json` — job `brain-data`, twice a day (`scripts/fetch_brain.py`,
-  `scripts/fetch_brain_ext.py`); feed the admin-only Market Brain (`#/brain`, source pieces were
+  `scripts/fetch_brain_ext.py`); feed the Market Brain (`#/brain`, admin + editor only since 2026-11-04, source pieces were
   concatenated into `assets/js/part-83.js`). `scripts/alerts_brain.py` sends its warning signals to
   the owner's Telegram (state in `data/alerts_state_brain.json`).
 - Built by `scripts/fetch_market.py` and `scripts/build_backtest.py`.
