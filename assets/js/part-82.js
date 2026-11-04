@@ -15,13 +15,14 @@
   function T(o){ return o ? (o[L()] || o.en) : ''; }
   var U = {
     h:{ en:'Market Brain', th:'สมองตลาด (Market Brain)' },
-    d:{ en:'Everything about the economy and your portfolio on one board. Admin only.', th:'สรุปเศรษฐกิจ แนวโน้ม และพอร์ตในบอร์ดเดียว เฉพาะแอดมิน' },
-    lock:{ en:'Admins only. Log in from the Terminal Admin panel to open the Market Brain.', th:'เฉพาะแอดมินค่ะ เข้าสู่ระบบจากแผงแอดมินเทอร์มินอลก่อน แล้วจึงเปิดสมองตลาดได้' },
+    d:{ en:'Everything about the economy and your portfolio on one board. Admin and editor only.', th:'สรุปเศรษฐกิจ แนวโน้ม และพอร์ตในบอร์ดเดียว เฉพาะแอดมินและ Editor' },
+    lock:{ en:'Admin and Editor only. Sign in from the Terminal Admin panel (Admin or Editor tab) to open the Market Brain.', th:'เฉพาะแอดมินและ Editor ค่ะ เข้าสู่ระบบจากแผงแอดมินเทอร์มินอล (แท็บแอดมินหรือ Editor) เพื่อเปิดสมองตลาด' },
     load:{ en:'Loading the Market Brain…', th:'กำลังเปิดสมองตลาด…' },
     fail:{ en:'Could not load the board. Check the connection and open this page again.', th:'โหลดบอร์ดไม่สำเร็จ ลองเช็กอินเทอร์เน็ตแล้วเปิดหน้านี้ใหม่อีกครั้งค่ะ' }
   };
   var sec = null, state = 'idle';   // idle | loading | ready | fail
-  function isAdmin(){ try { return typeof window.__SPZ_TIER === 'function' && window.__SPZ_TIER() === 'full'; } catch(e){ return false; } }
+  /* 2026-11-04: Admin and Editor both open the board */
+  function isAdmin(){ try { var t = typeof window.__SPZ_TIER === 'function' && window.__SPZ_TIER(); return t === 'full' || t === 'editor'; } catch(e){ return false; } }
   function msg(k){ if(sec && state !== 'ready') sec.querySelector('[data-bz="slot"]').innerHTML = '<div class="bz-stubmsg">' + T(U[k]) + '</div>'; }
   function load(){
     if(state === 'loading' || state === 'ready') return;

@@ -1084,7 +1084,7 @@ var CL_UI = {
   /* Round AM: the CEWA Exam Arena is listed only for the tiers the admin allows
      (Terminal Admin > Exam Arena > "Who can see it"); default = admin only. */
   function navHid(id){ return !!NAV_HIDDEN[id] || id === 'arena'; }   /* Round AN: Exam Arena never in the top menu -- Terminal Admin panel only */
-  var NAV_HIDDEN = { connectedusers:1, printreport:1, announcements:1, pro:1, adminnotes:1, gradebook:1, secmap:1, ebookreg:1, brain:1 }; /* Round Q: Institutional Pro Desk moved into Cockpit, see part-47.js; Round W (#223): Quiet Value Scanner + Website QR Code are admin-only, reached only via the Terminal Admin panel, never listed in public nav/hub. Round X (#234) briefly added Elliott Wave Classroom here too, but Round Y (#241) reversed that: she wants it listed in the Learn group like any other page, just shown locked (paintLockVeils' spz-locked-item badge, same as a member-only page) rather than invisible -- the actual protection (LOCKED_ROUTES/ADMIN_ONLY_ROUTES in part-46.js + the content-level window.__SPZ_TIER() check in part-65.js, both behind the same PBKDF2/SHA-256-hashed admin password as everything else here) is unchanged. */
+  var NAV_HIDDEN = { connectedusers:1, printreport:1, announcements:1, pro:1, adminnotes:1, gradebook:1, secmap:1, ebookreg:1 }; /* Round Q: Institutional Pro Desk moved into Cockpit, see part-47.js; Round W (#223): Quiet Value Scanner + Website QR Code are admin-only, reached only via the Terminal Admin panel, never listed in public nav/hub. Round X (#234) briefly added Elliott Wave Classroom here too, but Round Y (#241) reversed that: she wants it listed in the Learn group like any other page, just shown locked (paintLockVeils' spz-locked-item badge, same as a member-only page) rather than invisible -- the actual protection (LOCKED_ROUTES/ADMIN_ONLY_ROUTES in part-46.js + the content-level window.__SPZ_TIER() check in part-65.js, both behind the same PBKDF2/SHA-256-hashed admin password as everything else here) is unchanged. */
 
   function buildHub(){
     var sec = el('section');
@@ -1345,6 +1345,13 @@ var CL_UI = {
               : 'Elliott Wave Analyst — investing since 2023') + '</span>' +
           '</span>' +
         '</div>' +
+        /* 2026-11-04: a wide animated invitation to see her analysis work on Instagram (user request) */
+        '<a class="dev-works" href="https://www.instagram.com/spczterminal" target="_blank" rel="noopener noreferrer">' +
+          '<span class="dw-ico">' + DEV_IG_ICON + '</span>' +
+          '<span class="dw-t"><b>' + esc(th ? 'ดูผลงานการวิเคราะห์' : 'See my analysis work') + '</b><em>Instagram · @spczterminal</em></span>' +
+          '<span class="dw-tags"><i>Elliott Wave</i><i>' + esc(th ? 'กราฟจริง' : 'real charts') + '</i><i>' + esc(th ? 'อัปเดตตลาด' : 'market updates') + '</i></span>' +
+          '<span class="dw-go">→</span>' +
+        '</a>' +
         '<div class="dev-links">' +
           '<a class="dev-btn ig" href="https://www.instagram.com/spczterminal" target="_blank" rel="noopener noreferrer">' + DEV_IG_ICON + '<span>Instagram</span></a>' +
           '<a class="dev-btn fb" href="https://www.facebook.com/share/1GBykHfZ1V/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer">' + DEV_FB_ICON + '<span>Facebook</span></a>' +
@@ -1545,6 +1552,26 @@ var CL_UI = {
        list as its own destination rather than competing with the numbered
        table of contents above it. */
     var JOURNAL_BADGE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M9 7h7M9 11h5"/></svg>';
+    /* 2026-11-04: Market Brain sits at the very bottom of the menu as its own
+       featured entry. Admin + Editor open it; everyone else sees it locked
+       (part-46 lock badge) and the board itself refuses to load (part-82). */
+    var BRAIN_BADGE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4.5a3 3 0 0 0-3 3v.2A3 3 0 0 0 4 10.5a3 3 0 0 0 1 2.2A3 3 0 0 0 6.5 18 3 3 0 0 0 12 19V5.5a2.5 2.5 0 0 0-3-1z"/><path d="M15 4.5a3 3 0 0 1 3 3v.2a3 3 0 0 1 2 2.8 3 3 0 0 1-1 2.2A3 3 0 0 1 17.5 18 3 3 0 0 1 12 19"/><path d="M12 9h2.5M12 13h3"/></svg>';
+    function brainItem(){
+      if(!document.getElementById('brain')) return null;
+      var th = L() === 'th';
+      var a = el('a', 'np-item np-item-brain',
+        '<span class="np-head"><span class="np-n np-n-icon">' + BRAIN_BADGE_ICON + '</span>' +
+        '<span class="np-t">' + esc(th ? 'สมองตลาด' : 'Market Brain') + ' <i class="np-adm">ADMIN · EDITOR</i></span><span class="np-arrow">→</span></span>' +
+        '<span class="np-d">' + esc(th ? 'พยากรณ์ · เศรษฐกิจโลก · ทอง & บิตคอยน์ · คัดหุ้น · พอร์ต — เฉพาะแอดมินและ Editor' : 'Forecasts · world outlook · gold & bitcoin · stock picks · portfolio — admin and editor only') + '</span>');
+      a.href = '#/brain';
+      a.setAttribute('data-route-to', 'brain');
+      a.addEventListener('click', function(e){
+        e.preventDefault();
+        menu.classList.remove('open');
+        route('brain');
+      });
+      return a;
+    }
     function journalItem(){
       var jr = null;
       for(var ji = 0; ji < ROUTES.length; ji++){ if(ROUTES[ji].id === 'journal') jr = ROUTES[ji]; }
@@ -1625,7 +1652,7 @@ var CL_UI = {
         /* Round AD: the website QR code is public now (was admin-only). */
         { k:'share', t:{en:'Share',th:'แชร์เว็บ'}, ids:['qrcode'] }
       ];
-      var used = { membership:1, journal:1 }, n = 0, g, i, r;
+      var used = { membership:1, journal:1, brain:1 }, n = 0, g, i, r;
       for(g = 0; g < GROUPS.length; g++){
         var rows = [];
         for(i = 0; i < GROUPS[g].ids.length; i++){
@@ -1661,6 +1688,8 @@ var CL_UI = {
       }
       var ji2 = journalItem();
       if(ji2) pop.appendChild(ji2);
+      var bi2 = brainItem();
+      if(bi2) pop.appendChild(bi2);
       syncNav();
     }
     function syncNav(){
