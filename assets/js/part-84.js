@@ -1,5 +1,6 @@
 /* ============================================================================
    SPACEZ STOCK START (2026-11-04) -- "start from zero" course + spotlight tour
+   (v2 the same evening: 4 levels, 16 lessons, HTML infographics, calculators, one check question per lesson)
    ----------------------------------------------------------------------------
    User request: the Stock Classroom (#/stockclass, part-65.js) should teach a
    complete beginner step by step -- what a stock is, getting money ready,
@@ -57,179 +58,238 @@
     arrowR:'<path d="M5 12h14M13 6l6 6-6 6"/>',
     arrowL:'<path d="M19 12H5M11 6l-6 6 6 6"/>',
     x:'<path d="M6 6l12 12M18 6L6 18"/>',
+    scale:'<path d="M12 3v18M7 21h10"/><path d="M5 7h14"/><path d="M5 7l-3 6a3 3 0 006 0zM19 7l-3 6a3 3 0 006 0z"/>',
     star:'<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.5 9.7l5.9-.8z"/>'
   };
   function ico(k, cls){ return '<svg class="sk-i ' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (IC[k] || '') + '</svg>'; }
 
-  /* ---------------- animated infographics (240 x 160) ---------------- */
-  function svg(inner){ return '<svg class="sk-art" viewBox="0 0 240 160" aria-hidden="true">' + inner + '</svg>'; }
-  function txt(x, y, s, cls){ return '<text x="' + x + '" y="' + y + '" class="' + (cls || 'lb') + '" text-anchor="middle">' + esc(s) + '</text>'; }
-  var ART = [
-    /* 1 a company cut into pieces -- one piece is yours, it earns in two ways */
-    function(){ return svg(
-      '<rect x="34" y="40" width="86" height="96" rx="6" class="st"/>' +
-      [0, 1, 2, 3].map(function(r){ return [0, 1, 2].map(function(c){ return '<rect x="' + (46 + c * 24) + '" y="' + (52 + r * 18) + '" width="14" height="10" rx="2" class="win" style="animation-delay:' + ((r * 3 + c) * 0.15) + 's"/>'; }).join(''); }).join('') +
-      '<g class="pop"><path d="M150 96 L150 60 A36 36 0 0 1 184 84 Z" class="slice"/><circle cx="150" cy="96" r="36" class="ring"/></g>' +
-      txt(172, 146, T(B('your share', 'ส่วนของคุณ'))) +
-      '<g class="rise"><circle cx="196" cy="50" r="9" class="coin"/><text x="196" y="54" class="cs" text-anchor="middle">$</text></g>' +
-      '<g class="rise d2"><circle cx="214" cy="70" r="7" class="coin"/></g>' +
-      '<path d="M200 34 l8 -10 l8 10" class="up"/>' + txt(77, 30, T(B('a company', 'บริษัท')))); },
-    /* 2 three jars: emergency first, then spending, then investing */
-    function(){ var J = [[B('emergency', 'สำรองฉุกเฉิน'), 'j1', 0.95], [B('spending', 'ใช้จ่าย'), 'j2', 0.6], [B('investing', 'ลงทุน'), 'j3', 0.45]];
-      return svg(J.map(function(j, i){ var x = 22 + i * 74;
-        return '<path d="M' + (x + 6) + ' 44 h48 v8 c6 4 6 8 6 12 v62 a8 8 0 0 1 -8 8 h-52 a8 8 0 0 1 -8 -8 v-62 c0 -4 0 -8 6 -12 z" class="jar"/>' +
-          '<clipPath id="skj' + i + '"><path d="M' + (x + 1) + ' 64 h58 v62 a7 7 0 0 1 -7 7 h-44 a7 7 0 0 1 -7 -7 z"/></clipPath>' +
-          '<rect x="' + x + '" y="64" width="60" height="70" class="liq ' + j[1] + '" clip-path="url(#skj' + i + ')" style="--fl:' + j[2] + ';animation-delay:' + (i * 0.6) + 's"/>' +
-          txt(x + 30, 154, T(j[0])) + '<text x="' + (x + 30) + '" y="36" class="num" text-anchor="middle">' + (i + 1) + '</text>'; }).join('')); },
-    /* 3 the price swings, but over time the trend shows; spread across baskets */
-    function(){ return svg(
-      '<path d="M14 120 C 34 96, 44 132, 62 104 S 92 70, 108 92 S 138 60, 156 70 S 190 34, 226 30" class="draw"/>' +
-      '<path d="M14 128 L226 46" class="trend"/>' +
-      txt(60, 148, T(B('short run: bumpy', 'ระยะสั้น: แกว่ง'))) + txt(186, 148, T(B('long run: the trend', 'ระยะยาว: เห็นทิศ'))) +
-      [0, 1, 2].map(function(i){ var x = 24 + i * 30; return '<g class="bk" style="animation-delay:' + (i * 0.3) + 's"><path d="M' + x + ' 22 h22 l-3 14 h-16 z" class="basket"/><circle cx="' + (x + 7) + '" cy="20" r="3" class="ball"/><circle cx="' + (x + 15) + '" cy="20" r="3" class="ball b2"/></g>'; }).join('')); },
-    /* 4 phone + ID card + bank = an account */
-    function(){ return svg(
-      '<rect x="92" y="14" width="58" height="112" rx="10" class="st"/><rect x="99" y="26" width="44" height="76" rx="4" class="scr"/>' +
-      '<rect x="104" y="34" width="34" height="6" rx="3" class="bar"/><rect x="104" y="46" width="24" height="6" rx="3" class="bar b2"/><rect x="104" y="58" width="30" height="6" rx="3" class="bar b3"/>' +
-      '<path d="M108 84 l8 8 l14 -16" class="tick"/>' +
-      '<g class="slideL"><rect x="14" y="56" width="64" height="42" rx="6" class="card"/><circle cx="32" cy="74" r="7" class="st"/><path d="M46 70 h24 M46 80 h16" class="st"/></g>' +
-      '<g class="slideR"><path d="M168 66 l30 -16 l30 16 z" class="st"/><path d="M174 70 v24 M188 70 v24 M208 70 v24 M222 70 v24 M168 98 h60" class="st"/></g>' +
-      txt(46, 116, T(B('ID card', 'บัตรประชาชน'))) + txt(121, 146, T(B('broker app', 'แอปโบรกเกอร์'))) + txt(198, 116, T(B('bank account', 'บัญชีธนาคาร')))); },
-    /* 5 a magnifier sweeps a list and keeps the strong ones */
-    function(){ var rows = [0.9, 0.5, 0.75, 0.35, 0.85];
-      return svg(rows.map(function(v, i){ var y = 20 + i * 24, ok = v > 0.7; return '<rect x="20" y="' + y + '" width="150" height="16" rx="4" class="row' + (ok ? ' ok' : '') + '"/><rect x="24" y="' + (y + 4) + '" width="' + (v * 110) + '" height="8" rx="4" class="fill' + (ok ? ' ok' : '') + '" style="animation-delay:' + (i * 0.2) + 's"/>' + (ok ? '<path d="M178 ' + (y + 8) + ' l5 5 l9 -10" class="tick sm" style="animation-delay:' + (1 + i * 0.25) + 's"/>' : ''); }).join('') +
-        '<g class="scan"><circle cx="200" cy="40" r="16" class="lens"/><path d="M211 52 l14 14" class="st thick"/></g>' + txt(100, 148, T(B('keep only the strong ones', 'เก็บไว้เฉพาะตัวที่แข็งแรง')))); },
-    /* 6 a pie that fills in + coins dropping into a calendar every month */
-    function(){ var seg = [[0, 0.3, 'p1'], [0.3, 0.55, 'p2'], [0.55, 0.75, 'p3'], [0.75, 1, 'p4']];
-      var arc = function(a0, a1){ var r = 42, cx = 70, cy = 78, p = function(a){ var t = a * Math.PI * 2 - Math.PI / 2; return (cx + r * Math.cos(t)).toFixed(1) + ' ' + (cy + r * Math.sin(t)).toFixed(1); }; return 'M' + cx + ' ' + cy + ' L' + p(a0) + ' A' + r + ' ' + r + ' 0 ' + (a1 - a0 > 0.5 ? 1 : 0) + ' 1 ' + p(a1) + ' Z'; };
-      return svg(seg.map(function(s, i){ return '<path d="' + arc(s[0], s[1]) + '" class="seg ' + s[2] + '" style="animation-delay:' + (i * 0.35) + 's"/>'; }).join('') +
-        '<rect x="140" y="52" width="80" height="70" rx="6" class="st"/><path d="M140 70 h80" class="st"/>' + [0, 1, 2, 3].map(function(i){ return '<rect x="' + (148 + i * 18) + '" y="80" width="12" height="10" rx="2" class="day' + (i === 1 ? ' on' : '') + '"/>'; }).join('') +
-        '<g class="drop"><circle cx="180" cy="30" r="8" class="coin"/></g>' + txt(70, 146, T(B('split the money', 'แบ่งเงินเป็นส่วน'))) + txt(180, 146, T(B('same amount every month', 'ลงเท่ากันทุกเดือน')))); },
-    /* 7 the order ticket: search, amount, limit, confirm */
-    function(){ return svg(
-      '<rect x="70" y="8" width="100" height="144" rx="12" class="st"/>' +
-      '<rect x="80" y="22" width="80" height="14" rx="7" class="fieldx"/><circle cx="90" cy="29" r="3" class="st"/>' + '<text x="98" y="32" class="ft">PTT</text>' +
-      '<rect x="80" y="44" width="80" height="16" rx="4" class="fieldx"/><text x="86" y="55" class="ft">' + esc(T(B('Shares 100', 'จำนวน 100 หุ้น'))) + '</text>' +
-      '<rect x="80" y="66" width="38" height="16" rx="4" class="seg2 on"/><rect x="122" y="66" width="38" height="16" rx="4" class="seg2"/><text x="99" y="77" class="ft c" text-anchor="middle">Limit</text><text x="141" y="77" class="ft" text-anchor="middle">Market</text>' +
-      '<rect x="80" y="112" width="80" height="22" rx="11" class="buy"/><text x="120" y="127" class="ft w" text-anchor="middle">' + esc(T(B('Buy', 'ซื้อ'))) + '</text>' +
-      '<circle cx="132" cy="123" r="6" class="ripple"/>' +
-      txt(36, 34, '1') + txt(36, 56, '2') + txt(36, 78, '3') + txt(36, 128, '4') + '<path d="M44 30 h30 M44 52 h30 M44 74 h30 M44 124 h30" class="guide"/>'); },
-    /* 8 a monthly check on the calendar and a line that keeps going */
-    function(){ return svg(
-      '<rect x="16" y="26" width="96" height="96" rx="8" class="st"/><path d="M16 46 h96" class="st"/>' +
-      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(function(i){ var c = i % 4, r = Math.floor(i / 4); return '<rect x="' + (26 + c * 22) + '" y="' + (56 + r * 20) + '" width="14" height="12" rx="2" class="day' + (c === 0 ? ' on' : '') + '" style="animation-delay:' + (i * 0.12) + 's"/>'; }).join('') +
-      '<path d="M128 110 L148 96 L166 102 L186 78 L204 84 L226 56" class="draw"/>' + [[148, 96], [186, 78], [226, 56]].map(function(p, i){ return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="5" class="mk" style="animation-delay:' + (1.4 + i * 0.4) + 's"/>'; }).join('') +
-      txt(64, 142, T(B('check once a month', 'ทบทวนเดือนละครั้ง'))) + txt(180, 142, T(B('keep, add or switch', 'ถือต่อ เติม หรือสลับ')))); }
-  ];
+  /* ==================== course v2 (2026-11-04 evening): 4 levels, real-looking visuals,
+     small calculators and one check question per lesson ==================== */
+  function n0(v, d){ return isFinite(v) ? Number(v).toLocaleString('en-US', { minimumFractionDigits:d || 0, maximumFractionDigits:d || 0 }) : '—'; }
+  /* a live example stock for the "read a stock" lessons: PTT from the site's own snapshot, with a fixed fallback */
+  function ex(){
+    var s = null;
+    try { var sn = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot(); s = sn && sn.stocks && sn.stocks.PTT; } catch(e){}
+    var o = { t:'PTT', n:B('PTT Public Company', 'บริษัท ปตท. จำกัด (มหาชน)'), px:40.25, chg:-0.62, pe:9.65, div:6.96, mcap:1.14e12, hi:43.75, lo:30, ma:37.3, live:false };
+    if(s && isFinite(s.price)){ o.px = s.price; o.chg = s.chg_pct; o.pe = s.pe; o.div = s.div; o.mcap = s.mcap; o.hi = s.hi52; o.lo = s.lo52; o.ma = s.ma200; o.live = true; }
+    o.dps = o.px * (o.div || 0) / 100;
+    return o;
+  }
+  /* ---------------- visuals (HTML + CSS, animated) ---------------- */
+  var V = {
+    own:function(){ var cells = ''; for(var i = 0; i < 60; i++) cells += '<i' + (i === 27 ? ' class="me"' : '') + ' style="animation-delay:' + (i * 0.03).toFixed(2) + 's"></i>';
+      return '<div class="v v-own"><div class="v-cap">' + ico('building') + esc(T(B('One company = many small pieces', 'บริษัท 1 แห่ง = ชิ้นส่วนเล็กๆ จำนวนมาก'))) + '</div><div class="own-g">' + cells + '</div><div class="own-l"><span><i></i>' + esc(T(B('shares other people own', 'หุ้นที่คนอื่นถือ'))) + '</span><span><i class="me"></i>' + esc(T(B('your shares', 'หุ้นของคุณ'))) + '</span></div><p class="v-note">' + esc(T(B('Own more pieces → own more of the profit and the votes.', 'ถือหลายชิ้น = ได้ส่วนแบ่งกำไรและสิทธิ์โหวตมากขึ้น'))) + '</p></div>'; },
+    earn:function(){ return '<div class="v v-earn"><div class="earn-l"><div class="earn-h">' + ico('trend') + '<b>' + esc(T(B('1. Price goes up', '1. ราคาขึ้น'))) + '</b></div><svg viewBox="0 0 200 70" class="spark"><defs><linearGradient id="skEg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#34d399" stop-opacity=".45"/><stop offset="1" stop-color="#34d399" stop-opacity="0"/></linearGradient></defs><path d="M4 58 L30 50 L52 54 L80 38 L104 42 L132 26 L156 30 L196 10 L196 70 L4 70Z" fill="url(#skEg)"/><path class="dr" d="M4 58 L30 50 L52 54 L80 38 L104 42 L132 26 L156 30 L196 10"/><circle cx="4" cy="58" r="4" class="b"/><circle cx="196" cy="10" r="4" class="s"/></svg><div class="earn-f"><span>' + esc(T(B('buy 40', 'ซื้อ 40'))) + '</span>' + ico('arrowR') + '<span>' + esc(T(B('sell 44', 'ขาย 44'))) + '</span><b>+4 ' + esc(T(B('per share', 'ต่อหุ้น'))) + '</b></div></div>' +
+      '<div class="earn-r"><div class="earn-h">' + ico('coin') + '<b>' + esc(T(B('2. Dividends', '2. ปันผล'))) + '</b></div><div class="coins">' + [0, 1, 2, 3].map(function(i){ return '<i style="animation-delay:' + (i * 0.5) + 's">' + ico('coin') + '</i>'; }).join('') + '</div><div class="earn-f"><span>' + esc(T(B('company profit', 'กำไรบริษัท'))) + '</span>' + ico('arrowR') + '<span>' + esc(T(B('your account', 'บัญชีคุณ'))) + '</span></div></div></div>'; },
+    ready:function(){ var J = [[B('Emergency fund', 'เงินสำรองฉุกเฉิน'), B('3–6 months of costs', 'ค่าใช้จ่าย 3–6 เดือน'), 'g', 92], [B('Expensive debt', 'หนี้ดอกแพง'), B('pay it off', 'ปิดให้หมด'), 'r', 6], [B('Investing', 'เงินลงทุน'), B('cold money, 3–5 yrs+', 'เงินเย็น 3–5 ปีขึ้นไป'), 'c', 55]];
+      return '<div class="v v-ready">' + J.map(function(j, i){ return '<div class="jar"><div class="jar-b"><i class="' + j[2] + '" style="--h:' + j[3] + '%;animation-delay:' + (i * 0.4) + 's"></i><u>' + (i + 1) + '</u></div><b>' + esc(T(j[0])) + '</b><small>' + esc(T(j[1])) + '</small></div>'; }).join('<em>' + ico('arrowR') + '</em>') + '</div>'; },
+    risk:function(){ return '<div class="v v-risk"><svg viewBox="0 0 300 140"><defs><linearGradient id="skRg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#22d3ee" stop-opacity=".3"/><stop offset="1" stop-color="#22d3ee" stop-opacity="0"/></linearGradient></defs>' +
+      '<path d="M10 112 L290 40" class="tl"/><path d="M10 120 C30 96 44 130 62 104 S94 66 112 92 S144 58 162 70 S200 30 222 52 S262 20 290 34 L290 140 L10 140 Z" fill="url(#skRg)"/><path class="dr" d="M10 120 C30 96 44 130 62 104 S94 66 112 92 S144 58 162 70 S200 30 222 52 S262 20 290 34"/>' +
+      '<g class="dip"><circle cx="112" cy="92" r="5"/><text x="112" y="112">−25%</text></g></svg><div class="risk-l"><span><i class="a"></i>' + esc(T(B('day to day: bumpy', 'ระยะสั้น: ขึ้นลงแรง'))) + '</span><span><i class="b"></i>' + esc(T(B('over years: the trend', 'ระยะยาว: เห็นทิศทาง'))) + '</span></div><div class="baskets">' + [B('Tech', 'เทค'), B('Banks', 'ธนาคาร'), B('Energy', 'พลังงาน'), B('Food', 'อาหาร')].map(function(b, i){ return '<span style="animation-delay:' + (i * 0.2) + 's">' + ico('layers') + esc(T(b)) + '</span>'; }).join('') + '</div></div>'; },
+    quote:function(){ var o = ex(), tag = function(n){ return '<u class="qn">' + n + '</u>'; };
+      return '<div class="v v-quote"><div class="q-card"><div class="q-h"><div><b>' + o.t + '</b><span>' + esc(T(o.n)) + '</span></div>' + tag(1) + '</div>' +
+        '<div class="q-p"><b>฿' + n0(o.px, 2) + '</b><em class="' + (o.chg >= 0 ? 'up' : 'dn') + '">' + (o.chg >= 0 ? '+' : '') + n0(o.chg, 2) + '%</em>' + tag(2) + '</div>' +
+        '<div class="q-g"><div><small>' + esc(T(B('Market value', 'มูลค่าตลาด'))) + '</small><b>' + n0(o.mcap / 1e9, 0) + 'B</b>' + tag(3) + '</div><div><small>P/E</small><b>' + n0(o.pe, 1) + '</b>' + tag(4) + '</div><div><small>' + esc(T(B('Dividend yield', 'อัตราปันผล'))) + '</small><b class="up">' + n0(o.div, 2) + '%</b>' + tag(5) + '</div><div><small>' + esc(T(B('1-year range', 'ช่วงราคา 1 ปี'))) + '</small><b>' + n0(o.lo, 2) + '–' + n0(o.hi, 2) + '</b>' + tag(6) + '</div></div>' +
+        '<div class="q-r"><i style="left:' + Math.max(0, Math.min(100, (o.px - o.lo) / ((o.hi - o.lo) || 1) * 100)).toFixed(0) + '%"></i></div>' +
+        '<small class="q-src">' + esc(T(o.live ? B('live numbers from this site', 'ตัวเลขจริงจากเว็บนี้') : B('example numbers', 'ตัวเลขตัวอย่าง'))) + '</small></div></div>'; },
+    div:function(){ var o = ex(), M = ['J','F','M','A','M','J','J','A','S','O','N','D'], MT = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+      var row = function(lab, pays, cls){ return '<div class="dv-r"><b>' + esc(T(lab)) + '</b><div class="dv-m">' + (L() === 'th' ? MT : M).map(function(m, i){ var on = pays.indexOf(i) >= 0; return '<span class="' + (on ? 'on ' + cls : '') + '" style="animation-delay:' + (i * 0.08) + 's">' + (on ? ico('coin') : '') + '<em>' + m + '</em></span>'; }).join('') + '</div></div>'; };
+      return '<div class="v v-div"><div class="dv-f"><div><small>' + esc(T(B('Dividend per share / year', 'ปันผลต่อหุ้นต่อปี'))) + '</small><b>฿' + n0(o.dps, 2) + '</b></div><em>÷</em><div><small>' + esc(T(B('Share price', 'ราคาหุ้น'))) + '</small><b>฿' + n0(o.px, 2) + '</b></div><em>=</em><div class="hl"><small>' + esc(T(B('Dividend yield', 'อัตราปันผล'))) + '</small><b>' + n0(o.div, 2) + '%</b></div></div>' +
+        row(B('Thai stock, e.g. PTT: 2 times a year', 'หุ้นไทย เช่น PTT: ปีละ 2 ครั้ง'), [4, 8], 'th') + row(B('US stock, e.g. KO: every 3 months', 'หุ้นสหรัฐฯ เช่น KO: ทุก 3 เดือน'), [2, 5, 8, 11], 'us') +
+        '<p class="v-note">' + esc(T(B('Months are typical examples — each company announces its own dates.', 'เดือนเป็นตัวอย่างโดยประมาณ แต่ละบริษัทประกาศวันของตัวเอง'))) + '</p></div>'; },
+    pe:function(){ var R = [[B('This company', 'บริษัทนี้'), 12, 'me'], [B('Same-sector average', 'เฉลี่ยกลุ่มเดียวกัน'), 18, 'peer'], [B('Whole market', 'ทั้งตลาด'), 22, 'mkt']];
+      return '<div class="v v-pe"><div class="pe-f"><div><small>' + esc(T(B('Price', 'ราคา'))) + '</small><b>฿120</b></div><em>÷</em><div><small>' + esc(T(B('Profit per share (EPS)', 'กำไรต่อหุ้น (EPS)'))) + '</small><b>฿10</b></div><em>=</em><div class="hl"><small>P/E</small><b>12</b></div></div><div class="pe-b">' + R.map(function(r, i){ return '<div><span>' + esc(T(r[0])) + '</span><i class="' + r[2] + '" style="--w:' + (r[1] / 25 * 100) + '%;animation-delay:' + (i * 0.25) + 's"></i><b>' + r[1] + '</b></div>'; }).join('') + '</div><p class="v-note">' + esc(T(B('P/E 12 ≈ you pay 12 years of today\'s profit. Lower than its peers = cheaper, if the business is just as good.', 'P/E 12 ≈ จ่ายเท่ากับกำไร 12 ปีของวันนี้ ต่ำกว่าเพื่อนกลุ่มเดียวกัน = ถูกกว่า ถ้าธุรกิจดีพอกัน'))) + '</p></div>'; },
+    health:function(){ var G = [[B('Profit growth (EPS, yearly)', 'กำไรโต (EPS ต่อปี)'), B('above 10% = good', 'เกิน 10% = ดี'), 72, 'g'], [B('Return on equity (ROE)', 'ผลตอบแทนต่อทุน (ROE)'), B('above 15% = strong', 'เกิน 15% = แข็งแรง'), 64, 'g'], [B('Debt to equity (D/E)', 'หนี้ต่อทุน (D/E)'), B('under 1 = not heavy (banks differ)', 'ต่ำกว่า 1 = หนี้ไม่หนัก (ธนาคารต่างออกไป)'), 30, 'a']];
+      return '<div class="v v-health">' + G.map(function(g, i){ return '<div class="hg"><div class="hg-t"><b>' + esc(T(g[0])) + '</b><small>' + esc(T(g[1])) + '</small></div><div class="hg-b"><u class="z1"></u><u class="z2"></u><u class="z3"></u><i class="' + g[3] + '" style="--x:' + g[2] + '%;animation-delay:' + (i * 0.3) + 's"></i></div></div>'; }).join('') + '<div class="hg-l"><span><i class="z1"></i>' + esc(T(B('weak', 'อ่อน'))) + '</span><span><i class="z2"></i>' + esc(T(B('fair', 'พอใช้'))) + '</span><span><i class="z3"></i>' + esc(T(B('strong', 'แข็งแรง'))) + '</span></div></div>'; },
+    trend:function(){ return '<div class="v v-trend"><svg viewBox="0 0 300 150"><path d="M10 110 C60 104 90 96 130 86 S210 64 290 52" class="ma"/><path class="dr px" d="M10 118 L36 104 L58 112 L84 92 L110 98 L136 74 L160 82 L186 60 L210 70 L236 46 L262 58 L290 38"/><path class="dr px2" d="M290 38 L300 70"/>' +
+      '<g class="lab"><rect x="196" y="98" width="98" height="20" rx="6"/><text x="245" y="112">' + esc(T(B('200-day line', 'เส้น 200 วัน'))) + '</text></g></svg><div class="risk-l"><span><i class="b"></i>' + esc(T(B('price above the line = up-trend', 'ราคาอยู่เหนือเส้น = ขาขึ้น'))) + '</span><span><i class="r"></i>' + esc(T(B('closes below = trend broken', 'ปิดต่ำกว่าเส้น = ขาขึ้นเสีย'))) + '</span></div></div>'; },
+    check:function(){ var C = [B('A business I understand', 'ธุรกิจที่เข้าใจได้'), B('Profits growing', 'กำไรโต'), B('Debt not heavy', 'หนี้ไม่หนัก'), B('Not far pricier than peers', 'ไม่แพงกว่าเพื่อนมาก'), B('Price above its 200-day line', 'ราคาเหนือเส้น 200 วัน')];
+      return '<div class="v v-check"><div class="ck-h">' + ico('list') + '<b>' + esc(T(B('5-point check before you buy', 'เช็ก 5 ข้อก่อนซื้อ'))) + '</b></div>' + C.map(function(c, i){ return '<div class="ck" style="animation-delay:' + (0.2 + i * 0.35) + 's"><i>' + ico('check') + '</i><span>' + esc(T(c)) + '</span></div>'; }).join('') + '<div class="ck-s">' + ico('star') + esc(T(B('5 of 5 → put it on your short list', 'ผ่านครบ 5 ข้อ → ใส่ในรายชื่อที่จะซื้อ'))) + '</div></div>'; },
+    app:function(){ return '<div class="v v-app"><div class="ph"><div class="ph-s"><div class="ph-t"><i></i><b>' + esc(T(B('Open an account', 'เปิดบัญชี'))) + '</b></div>' + [[ 'id', B('ID card + selfie', 'บัตรประชาชน + ถ่ายหน้า')], ['list', B('Risk questionnaire', 'แบบประเมินความเสี่ยง')], ['bank', B('Link your bank', 'ผูกบัญชีธนาคาร')], ['check', B('Ready to buy', 'พร้อมซื้อขาย')]].map(function(x, i){ return '<div class="ph-r" style="animation-delay:' + (i * 0.45) + 's"><i>' + ico(x[0]) + '</i><span>' + esc(T(x[1])) + '</span><u>' + ico('check') + '</u></div>'; }).join('') + '</div></div><div class="apps"><span><b>Dime!</b><small>' + esc(T(B('US from 50 ฿ + Thai', 'หุ้นสหรัฐฯ เริ่ม 50 บาท + หุ้นไทย'))) + '</small></span><span><b>Streaming</b><small>' + esc(T(B('Thai stocks via a broker', 'หุ้นไทย ผ่านโบรกเกอร์'))) + '</small></span><span><b>' + esc(T(B('Broker / bank apps', 'แอปโบรกเกอร์ / ธนาคาร'))) + '</b><small>' + esc(T(B('compare fees', 'เทียบค่าธรรมเนียม'))) + '</small></span></div></div>'; },
+    split:function(){ return '<div class="v v-split"><div class="sp-d"><div class="sp-pie"></div><div class="sp-c"><b>100%</b><small>' + esc(T(B('your money', 'เงินทั้งหมด'))) + '</small></div></div><div class="sp-l">' + [['#34d399', B('Index fund / ETF core', 'กองทุนดัชนี / ETF แกนหลัก'), '40%'], ['#22d3ee', B('Stock A', 'หุ้น A'), '15%'], ['#a78bfa', B('Stock B', 'หุ้น B'), '15%'], ['#fbbf24', B('Stock C', 'หุ้น C'), '15%'], ['#f472b6', B('Stock D', 'หุ้น D'), '15%']].map(function(x){ return '<span><i style="background:' + x[0] + '"></i>' + esc(T(x[1])) + '<b>' + x[2] + '</b></span>'; }).join('') + '<div class="sp-m">' + ico('cal') + '<span>' + esc(T(B('Then the same amount on the same day every month', 'แล้วลงเงินเท่าเดิม วันเดิม ทุกเดือน'))) + '</span></div></div></div>'; },
+    order:function(){ return '<div class="v v-order"><div class="ph"><div class="ph-s"><div class="ord-s"><span>' + ico('search') + 'PTT</span></div><div class="ord-f"><small>' + esc(T(B('Order', 'คำสั่ง'))) + '</small><div class="ord-seg"><b class="on">' + esc(T(B('Buy', 'ซื้อ'))) + '</b><b>' + esc(T(B('Sell', 'ขาย'))) + '</b></div></div><div class="ord-f"><small>' + esc(T(B('Shares', 'จำนวนหุ้น'))) + '</small><b>100</b></div><div class="ord-f"><small>' + esc(T(B('Price (Limit)', 'ราคา (Limit)'))) + '</small><b>40.25</b></div><div class="ord-f tot"><small>' + esc(T(B('Total', 'รวม'))) + '</small><b>฿4,025 + ' + esc(T(B('fee', 'ค่าธรรมเนียม'))) + '</b></div><div class="ord-go">' + esc(T(B('Confirm', 'ยืนยันคำสั่ง'))) + '<i class="tap"></i></div></div></div><ol class="ord-n"><li>' + esc(T(B('search the ticker', 'ค้นชื่อย่อ'))) + '</li><li>' + esc(T(B('Buy · number of shares', 'ซื้อ · จำนวนหุ้น'))) + '</li><li>' + esc(T(B('Limit = your price', 'Limit = ตั้งราคาเอง'))) + '</li><li>' + esc(T(B('check the total, confirm', 'เช็กยอดรวม แล้วยืนยัน'))) + '</li></ol></div>'; },
+    track:function(){ var D2 = ''; for(var i = 1; i <= 28; i++) D2 += '<i class="' + (i === 1 ? 'on' : '') + '">' + i + '</i>';
+      return '<div class="v v-track"><div class="tr-c"><div class="tr-h">' + ico('cal') + esc(T(B('Review day: the 1st of each month', 'วันทบทวน: วันที่ 1 ของทุกเดือน'))) + '</div><div class="tr-g">' + D2 + '</div></div><div class="tr-a"><span class="g">' + ico('check') + esc(T(B('Keep', 'ถือต่อ'))) + '</span><span class="c">' + ico('coin') + esc(T(B('Add money', 'เติมเงิน'))) + '</span><span class="r">' + ico('alert') + esc(T(B('Switch', 'สลับ'))) + '</span></div></div>'; },
+    sell:function(){ var S = [[B('Profits shrinking 2 quarters in a row', 'กำไรลดลง 2 ไตรมาสติด'), 'r'], [B('Debt jumps', 'หนี้เพิ่มพรวด'), 'r'], [B('Closes below its 200-day line', 'ราคาปิดต่ำกว่าเส้น 200 วัน'), 'r'], [B('One scary red day', 'แดงแรงวันเดียว'), 'n']];
+      return '<div class="v v-sell">' + S.map(function(x, i){ return '<div class="sl ' + x[1] + '" style="animation-delay:' + (i * 0.3) + 's"><i>' + ico(x[1] === 'r' ? 'alert' : 'x') + '</i><span>' + esc(T(x[0])) + '</span><b>' + esc(T(x[1] === 'r' ? B('reason to sell', 'เหตุผลให้ขาย') : B('not a reason', 'ยังไม่ใช่เหตุผล'))) + '</b></div>'; }).join('') + '</div>'; },
+    tax:function(){ var X = [[B('Thai dividends', 'ปันผลหุ้นไทย'), '10%', B('withheld automatically', 'ถูกหัก ณ ที่จ่ายอัตโนมัติ')], [B('US dividends', 'ปันผลหุ้นสหรัฐฯ'), '15%', B('with a W-8BEN form (30% without)', 'เมื่อยื่นฟอร์ม W-8BEN (ไม่ยื่น 30%)')], [B('Thai shares sold at a profit', 'ขายหุ้นไทยได้กำไร (ในตลาด SET)'), '0%', B('no tax for individuals', 'บุคคลทั่วไปไม่เสียภาษี')], [B('Buying and selling', 'ทุกครั้งที่ซื้อขาย'), B('fee', 'ค่าธรรมเนียม'), B('varies by app — compare', 'แต่ละแอปต่างกัน ควรเทียบ')]];
+      return '<div class="v v-tax">' + X.map(function(x, i){ return '<div class="tx" style="animation-delay:' + (i * 0.2) + 's"><span>' + esc(T(x[0])) + '</span><b' + (typeof x[1] === 'string' ? '' : ' class="sm"') + '>' + esc(typeof x[1] === 'string' ? x[1] : T(x[1])) + '</b><small>' + esc(T(x[2])) + '</small></div>'; }).join('') + '<p class="v-note">' + esc(T(B('Rules can change — check with the Revenue Department or your broker.', 'กฎภาษีเปลี่ยนได้ ตรวจสอบกับกรมสรรพากรหรือโบรกเกอร์อีกครั้ง'))) + '</p></div>'; }
+  };
 
-  /* ---------------- the course ---------------- */
-  var STEPS = [
-    { i:'building', t:B('What is a stock?', 'หุ้นคืออะไร'), lead:B('A stock is a small piece of a real company. Buy it and you own a slice of that business.', 'หุ้นคือชิ้นส่วนเล็กๆ ของบริษัทจริง ซื้อหุ้น = เป็นเจ้าของบริษัทนั้นส่วนหนึ่ง'),
-      p:[['coin', B('You can earn in two ways: the price rises (you sell higher than you bought), and dividends (the company shares its profit with owners).', 'ได้เงิน 2 ทาง: ราคาขึ้น (ขายได้แพงกว่าที่ซื้อ) และปันผล (บริษัทแบ่งกำไรให้ผู้ถือหุ้น)')],
-         ['trend', B('Over time a price follows the company\'s profits; day to day it follows what people expect.', 'ระยะยาวราคาหุ้นวิ่งตามกำไรของบริษัท ส่วนรายวันวิ่งตามความคาดหวังของคน')],
-         ['alert', B('It can also fall. If the business does badly the price can drop a lot — that is the risk you take for the chance of a gain.', 'ราคาลงได้ด้วย ถ้าธุรกิจแย่ราคาอาจลงมาก นี่คือความเสี่ยงที่แลกกับโอกาสได้กำไร')]],
-      key:B('Buy businesses, not tickers: ask “would I want to own this company?”', 'ซื้อธุรกิจ ไม่ใช่ซื้อชื่อย่อ ถามตัวเองว่า “อยากเป็นเจ้าของบริษัทนี้ไหม”'), tour:'learn' },
-    { i:'shield', t:B('Get your money ready first', 'เตรียมเงินให้พร้อมก่อน'), lead:B('Invest only money you will not need soon, after a safety cushion is in place.', 'ลงทุนด้วยเงินที่ไม่ต้องใช้เร็วๆ นี้ และหลังจากมีเงินสำรองแล้ว'),
-      p:[['shield', B('Keep 3–6 months of living costs as an emergency fund in a savings account first.', 'มีเงินสำรองฉุกเฉิน 3–6 เดือนของค่าใช้จ่ายไว้ในบัญชีออมทรัพย์ก่อน')],
-         ['alert', B('Pay off high-interest debt (credit cards, cash loans) before investing — its interest is higher than what stocks usually earn.', 'ปิดหนี้ดอกเบี้ยสูง (บัตรเครดิต สินเชื่อเงินสด) ก่อน เพราะดอกเบี้ยแพงกว่าที่หุ้นมักให้')],
-         ['clock', B('Use “cold money” you can leave for 3–5 years or more.', 'ใช้ “เงินเย็น” ที่วางไว้ได้ 3–5 ปีขึ้นไป')],
-         ['coin', B('You can start small — some apps let you buy US stocks from 50 baht.', 'เริ่มน้อยๆ ได้ บางแอปซื้อหุ้นสหรัฐฯ ได้ตั้งแต่ 50 บาท')]],
-      key:B('Emergency fund → no expensive debt → then invest.', 'เงินสำรองฉุกเฉิน → ไม่มีหนี้ดอกแพง → แล้วค่อยลงทุน'), tour:null },
-    { i:'wave', t:B('Know the risk — and use time', 'รู้จักความเสี่ยง และใช้เวลาช่วย'), lead:B('Prices swing. Time and spreading out are your two best protections.', 'ราคาหุ้นแกว่งเป็นปกติ เวลาและการกระจายคือเกราะที่ดีที่สุด'),
-      p:[['wave', B('Falls of 20–30% in a bad year are normal for stocks. Expect them before they happen.', 'หุ้นลง 20–30% ในปีที่แย่ถือเป็นเรื่องปกติ ให้รู้ไว้ก่อนจะเจอ')],
-         ['clock', B('The longer you hold a spread of good companies, the more the swings tend to even out.', 'ยิ่งถือหุ้นดีหลายตัวได้นาน การแกว่งมักเฉลี่ยกันจนเห็นทิศชัดขึ้น')],
-         ['layers', B('Never put everything in one stock: hold several companies from different sectors.', 'อย่าใส่เงินทั้งหมดในหุ้นตัวเดียว ถือหลายบริษัท หลายกลุ่มอุตสาหกรรม')],
-         ['alert', B('Do not borrow to buy stocks while you are learning.', 'ช่วงที่ยังเรียนรู้ อย่ากู้เงินมาซื้อหุ้น')]],
-      key:B('Spread out + be patient = the beginner\'s edge.', 'กระจาย + อดทน = ข้อได้เปรียบของมือใหม่'), tour:null },
-    { i:'phone', t:B('Choose an app and open an account', 'เลือกแอปและเปิดบัญชี'), lead:B('To buy stocks you need a trading account with a broker. Most can be opened online in a day or two.', 'จะซื้อหุ้นได้ต้องมีบัญชีซื้อขายกับโบรกเกอร์ ส่วนใหญ่เปิดออนไลน์ได้ภายใน 1–2 วัน'),
-      p:[['phone', B('Examples: Dime! (US stocks as fractional shares from 50 baht, and Thai stocks), or a broker account used with the Streaming app for Thai stocks.', 'ตัวอย่างแอป: Dime! (หุ้นสหรัฐฯ แบบเศษหุ้นเริ่ม 50 บาท และหุ้นไทย) หรือเปิดบัญชีกับโบรกเกอร์แล้วใช้แอป Streaming ซื้อขายหุ้นไทย')],
-         ['id', B('Have your ID card and a phone ready; identity is checked online (for example through NDID or your bank app).', 'เตรียมบัตรประชาชนและมือถือ ยืนยันตัวตนออนไลน์ (เช่น ผ่าน NDID หรือแอปธนาคาร)')],
-         ['list', B('You will answer a short risk questionnaire (suitability test) — answer honestly.', 'จะมีแบบประเมินความเสี่ยงสั้นๆ (Suitability) ให้ตอบตามจริง')],
-         ['bank', B('Link a bank account to move money in and out. Compare fees before choosing.', 'ผูกบัญชีธนาคารไว้โอนเงินเข้าออก และเทียบค่าธรรมเนียมก่อนเลือกแอป')]],
-      key:B('One account to start is enough. Pick the app whose fees and markets fit you.', 'เริ่มจากบัญชีเดียวก็พอ เลือกแอปที่ค่าธรรมเนียมและตลาดที่ซื้อได้ตรงกับเรา'), tour:'apps' },
-    { i:'search', t:B('Pick stocks the simple way', 'เลือกหุ้นแบบมือใหม่'), lead:B('Start from what the market is doing, then check each company with a short checklist.', 'เริ่มจากดูภาพตลาด แล้วเช็กบริษัททีละตัวด้วยเช็กลิสต์สั้นๆ'),
-      p:[['eye', B('Look at the big picture first: “What to do now” tells you whether the market is calm or stormy.', 'ดูภาพใหญ่ก่อน: หน้า “ตอนนี้ควรทำอะไร” บอกว่าตลาดตอนนี้สงบหรือมีพายุ')],
-         ['check', B('A simple checklist: a business you understand, profits that grow, debt that is not high, a price not far above its peers, and a price above its 200-day line.', 'เช็กลิสต์ง่ายๆ: ธุรกิจที่เข้าใจได้ กำไรโต หนี้ไม่สูง ราคาไม่แพงกว่าเพื่อนมาก และราคาอยู่เหนือเส้น 200 วัน')],
-         ['search', B('Use “Stock Directory & Compare” and “One Stock, One Page” on this site to check those numbers.', 'ใช้หน้า “หุ้นตัวอย่างและเปรียบเทียบ” และ “ดูหุ้นรายตัว” ในเว็บนี้เช็กตัวเลขเหล่านี้')],
-         ['star', B('Make a short list of 5–10 names and keep it in your Watchlist.', 'จดรายชื่อสั้นๆ 5–10 ตัว แล้วเก็บไว้ในวอทช์ลิสต์')]],
-      key:B('Big picture → checklist → short list. No tips, no rumours.', 'ภาพใหญ่ → เช็กลิสต์ → รายชื่อสั้น ไม่ซื้อตามข่าวลือ'), tour:'pick' },
-    { i:'pie', t:B('Split the money and add monthly', 'แบ่งเงิน และลงทุนทุกเดือน'), lead:B('Decide how much goes into each holding before you buy, then add a fixed amount every month.', 'กำหนดก่อนซื้อว่าจะใส่เงินแต่ละตัวเท่าไร แล้วลงเงินเท่าๆ กันทุกเดือน'),
-      p:[['pie', B('Hold about 5–15 stocks; no single stock above 10–15% of the money, no sector above 30%.', 'ถือราว 5–15 ตัว หุ้นตัวเดียวไม่เกิน 10–15% ของเงิน และกลุ่มเดียวไม่เกิน 30%')],
-         ['layers', B('A broad index fund or ETF is a good steady core; individual stocks go around it.', 'กองทุนดัชนีหรือ ETF เป็นแกนพอร์ตที่นิ่ง แล้วค่อยมีหุ้นรายตัวรอบๆ')],
-         ['cal', B('Monthly investing (DCA): the same amount on the same day each month — no need to guess the perfect moment.', 'ลงทุนรายเดือน (DCA): ลงเงินเท่ากันวันเดิมทุกเดือน ไม่ต้องเดาจังหวะ')],
-         ['coin', B('Put new money into the holdings that are below their target % first, instead of selling the others.', 'เงินใหม่ให้เติมตัวที่ต่ำกว่า % เป้าหมายก่อน แทนการขายตัวอื่น')]],
-      key:B('Plan the % first, then let the monthly habit do the work.', 'วางสัดส่วนก่อน แล้วให้วินัยรายเดือนทำงานแทน'), tour:null },
-    { i:'tap', t:B('Place your first order', 'ส่งคำสั่งซื้อครั้งแรก'), lead:B('Every app follows the same four moves: find the ticker, enter the amount, choose the order type, confirm.', 'ทุกแอปทำเหมือนกัน 4 อย่าง: ค้นชื่อย่อ ใส่จำนวน เลือกประเภทคำสั่ง แล้วยืนยัน'),
-      p:[['search', B('Search the ticker (e.g. PTT, NVDA) and check the full company name matches.', 'ค้นชื่อย่อหุ้น (เช่น PTT, NVDA) แล้วเช็กชื่อบริษัทเต็มให้ตรง')],
-         ['list', B('Thai stocks trade in lots of 100 shares; fewer than 100 goes on the odd-lot board. US stocks in apps like Dime! can be bought by amount (fractional shares).', 'หุ้นไทยซื้อขาย lot ละ 100 หุ้น น้อยกว่านั้นซื้อในกระดานหุ้นเศษ ส่วนหุ้นสหรัฐฯ ในแอปอย่าง Dime! ใส่เป็นจำนวนเงินได้ (เศษหุ้น)')],
-         ['flag', B('Limit order = you set the price (safer for beginners). Market order = buy right now at the going price.', 'คำสั่ง Limit = ตั้งราคาเอง (ปลอดภัยกว่าสำหรับมือใหม่) คำสั่ง Market = ซื้อทันทีที่ราคาตลาด')],
-         ['check', B('Read the summary (price, amount, fee) before you confirm. Start with a small first order.', 'อ่านสรุป (ราคา จำนวน ค่าธรรมเนียม) ก่อนกดยืนยัน ครั้งแรกให้ซื้อน้อยๆ ก่อน')]],
-      key:B('Small first order + limit price = a calm first trade.', 'ซื้อครั้งแรกน้อยๆ + ตั้งราคาแบบ Limit = เริ่มแบบใจเย็น'), tour:null },
-    { i:'cal', t:B('Check it — but not every day', 'ติดตามผล แต่ไม่ต้องดูทุกวัน'), lead:B('Once a month is enough: is each company still the reason you bought it?', 'เดือนละครั้งก็พอ ถามตัวเองว่าเหตุผลที่ซื้อแต่ละตัวยังอยู่ไหม'),
-      p:[['cal', B('Pick a review day each month; look at results, news and your % split.', 'กำหนดวันทบทวนเดือนละครั้ง ดูผลประกอบการ ข่าว และสัดส่วนพอร์ต')],
-         ['alert', B('Sell when the reason changes (profits shrinking, debt jumping, the up-trend broken) — not because of one scary day.', 'ขายเมื่อเหตุผลเปลี่ยน (กำไรลด หนี้พุ่ง ขาขึ้นเสีย) ไม่ใช่เพราะตกใจวันเดียว')],
-         ['book', B('Write down why you bought each stock; it keeps you honest later.', 'จดเหตุผลที่ซื้อแต่ละตัวไว้ จะช่วยให้ตัดสินใจได้ตรงไปตรงมาภายหลัง')],
-         ['star', B('Keep learning: the lessons below go deeper into each topic.', 'เรียนต่อเรื่อยๆ: บทเรียนด้านล่างลงลึกทีละหัวข้อ')]],
-      key:B('Monthly check, written reasons, calm decisions.', 'ทบทวนรายเดือน จดเหตุผล ตัดสินใจอย่างใจเย็น'), tour:'track' }
+  /* ---------------- calculators ---------------- */
+  var CALC = {
+    gain:{ f:[['sh', B('Shares bought', 'จำนวนหุ้นที่ซื้อ'), 100], ['buy', B('Buy price (฿)', 'ราคาที่ซื้อ (บาท)'), 40], ['sell', B('Sell price (฿)', 'ราคาที่ขาย (บาท)'), 44], ['dps', B('Dividend per share (฿)', 'ปันผลต่อหุ้น (บาท)'), 2]],
+      out:function(v){ var cost = v.sh * v.buy, g = v.sh * (v.sell - v.buy), d = v.sh * v.dps; return [[B('Money in', 'เงินที่ลง'), '฿' + n0(cost)], [B('Price gain', 'กำไรจากราคา'), (g >= 0 ? '+฿' : '−฿') + n0(Math.abs(g))], [B('Dividends', 'ปันผลที่ได้'), '+฿' + n0(d)], [B('Total return', 'รวมผลตอบแทน'), (cost ? n0((g + d) / cost * 100, 1) : '0') + '%', 1]]; } },
+    div:{ f:[['px', B('Share price (฿)', 'ราคาหุ้น (บาท)'), 40.25], ['dps', B('Dividend per share per year (฿)', 'ปันผลต่อหุ้นต่อปี (บาท)'), 2.8], ['sh', B('Shares you hold', 'จำนวนหุ้นที่ถือ'), 500], ['times', B('Paid how many times a year', 'จ่ายปีละกี่ครั้ง'), 2], ['tax', B('Tax withheld (%)', 'ภาษีหัก ณ ที่จ่าย (%)'), 10]],
+      out:function(v){ var y = v.px ? v.dps / v.px * 100 : 0, gross = v.sh * v.dps, net = gross * (1 - v.tax / 100); return [[B('Dividend yield', 'อัตราปันผล'), n0(y, 2) + '%', 1], [B('Per year (before tax)', 'ต่อปี (ก่อนภาษี)'), '฿' + n0(gross)], [B('Per year (after tax)', 'ต่อปี (หลังภาษี)'), '฿' + n0(net)], [B('Each payment', 'ได้ต่อครั้ง'), '฿' + n0(v.times ? net / v.times : 0)]]; } },
+    pe:{ f:[['px', B('Share price (฿)', 'ราคาหุ้น (บาท)'), 120], ['eps', B('Profit per share per year, EPS (฿)', 'กำไรต่อหุ้นต่อปี EPS (บาท)'), 10], ['peer', B('Same-sector P/E', 'P/E เฉลี่ยกลุ่มเดียวกัน'), 18]],
+      out:function(v){ var pe = v.eps > 0 ? v.px / v.eps : 0, cheap = pe && v.peer ? (1 - pe / v.peer) * 100 : 0; return [[B('P/E', 'P/E'), pe ? n0(pe, 1) : '—', 1], [B('Profit yield', 'ผลตอบแทนจากกำไร'), pe ? n0(100 / pe, 1) + '%' : '—'], [B('vs its sector', 'เทียบกลุ่ม'), pe ? (cheap >= 0 ? n0(cheap, 0) + '% ' + T(B('cheaper', 'ถูกกว่า')) : n0(-cheap, 0) + '% ' + T(B('pricier', 'แพงกว่า'))) : '—']]; } }
+  };
+  var CV = {};
+  try { CV = JSON.parse(localStorage.getItem('spz.sks.calc') || '{}') || {}; } catch(e){}
+  function calcVals(k){ var c = CALC[k], v = {}; c.f.forEach(function(x){ var s = CV[k] && CV[k][x[0]]; v[x[0]] = isFinite(+s) && s !== '' && s != null ? +s : x[2]; }); return v; }
+  function calcOut(k){ return CALC[k].out(calcVals(k)).map(function(r){ return '<div class="' + (r[2] ? 'hl' : '') + '"><small>' + esc(T(r[0])) + '</small><b>' + esc(r[1]) + '</b></div>'; }).join(''); }
+  function calcHTML(k){ if(!k) return ''; var v = calcVals(k);
+    return '<div class="sk2-calc" data-calc="' + k + '"><div class="sk2-calch">' + ico('star') + esc(T(B('Try it — change the numbers', 'ลองคิดเอง — แก้ตัวเลขได้'))) + '</div><div class="sk2-calcf">' + CALC[k].f.map(function(x){ return '<label><span>' + esc(T(x[1])) + '</span><input type="number" step="any" value="' + v[x[0]] + '" data-cf="' + x[0] + '"></label>'; }).join('') + '</div><div class="sk2-calco" data-co>' + calcOut(k) + '</div></div>'; }
+
+  /* ---------------- the levels ---------------- */
+  var LV = [
+    { id:'L1', c:'#34d399', i:'compass', t:B('Level 1 · Meet stocks', 'ระดับ 1 · รู้จักหุ้น'), s:B('what a stock is, how it pays you, getting ready', 'หุ้นคืออะไร ได้เงินยังไง เตรียมตัวก่อนลงทุน'), L:[
+      { id:'own', i:'building', v:'own', t:B('What is a stock?', 'หุ้นคืออะไร'), lead:B('A stock is a small piece of a real company. Buy it and you own a slice of that business.', 'หุ้นคือชิ้นส่วนเล็กๆ ของบริษัทจริง ซื้อหุ้น = เป็นเจ้าของบริษัทนั้นส่วนหนึ่ง'),
+        p:[['trend', B('Over the long run a price follows the company\'s profits; day to day it follows what people expect.', 'ระยะยาวราคาหุ้นวิ่งตามกำไรบริษัท ส่วนรายวันวิ่งตามความคาดหวังของคน')], ['alert', B('Prices can also fall a lot if the business does badly — that is the risk.', 'ถ้าธุรกิจแย่ ราคาก็ลงได้มาก นี่คือความเสี่ยง')], ['eye', B('Each stock has a short code (ticker): PTT, CPALL, AAPL, NVDA.', 'หุ้นทุกตัวมีชื่อย่อ เช่น PTT, CPALL, AAPL, NVDA')]],
+        key:B('Buy businesses, not tickers: “would I want to own this company?”', 'ซื้อธุรกิจ ไม่ใช่ซื้อชื่อย่อ: “อยากเป็นเจ้าของบริษัทนี้ไหม”'), tour:'learn',
+        quiz:{ q:B('If you buy 100 shares of a company, you…', 'ถ้าซื้อหุ้นบริษัทหนึ่ง 100 หุ้น แปลว่า…'), o:[B('lend it money and get interest', 'ให้บริษัทกู้เงินแล้วได้ดอกเบี้ย'), B('own a small part of the company', 'เป็นเจ้าของบริษัทส่วนเล็กๆ'), B('get a fixed return every year', 'ได้ผลตอบแทนคงที่ทุกปี')], a:1, why:B('A share is ownership. Lending is a bond; returns from shares are never fixed.', 'หุ้นคือความเป็นเจ้าของ การให้กู้คือหุ้นกู้/พันธบัตร และหุ้นไม่มีผลตอบแทนคงที่') } },
+      { id:'earn', i:'coin', v:'earn', c:'gain', t:B('Two ways a stock pays you', 'หุ้นให้เงินเรา 2 ทาง'), lead:B('You earn when the price rises above what you paid, and when the company pays a dividend.', 'ได้เงินเมื่อราคาขึ้นเกินกว่าที่ซื้อ และเมื่อบริษัทจ่ายปันผล'),
+        p:[['trend', B('Price gain = (sell price − buy price) × shares. You only “have” it once you sell.', 'กำไรส่วนต่าง = (ราคาขาย − ราคาซื้อ) × จำนวนหุ้น จะได้จริงก็ต่อเมื่อขาย')], ['coin', B('Dividend = cash the company shares from its profit, paid into your account.', 'ปันผล = เงินที่บริษัทแบ่งจากกำไรให้ผู้ถือหุ้น โอนเข้าบัญชีเรา')], ['layers', B('Growth companies often pay little dividend and reinvest; mature ones pay more.', 'บริษัทที่กำลังโตมักปันผลน้อยเพราะเอาเงินไปขยายกิจการ บริษัทที่โตเต็มที่มักปันผลมากกว่า')]],
+        key:B('Total return = price gain + dividends.', 'ผลตอบแทนรวม = กำไรจากราคา + ปันผล'),
+        quiz:{ q:B('Bought 100 shares at ฿40, sold at ฿44, received ฿2 dividend per share. Total?', 'ซื้อ 100 หุ้นที่ 40 บาท ขาย 44 บาท และได้ปันผลหุ้นละ 2 บาท ได้ทั้งหมดเท่าไร'), o:[B('฿400', '400 บาท'), B('฿600', '600 บาท'), B('฿200', '200 บาท')], a:1, why:B('(44 − 40) × 100 = 400 from the price + 2 × 100 = 200 dividends = 600.', '(44 − 40) × 100 = 400 จากราคา + 2 × 100 = 200 จากปันผล รวม 600') } },
+      { id:'ready', i:'shield', v:'ready', t:B('Get your money ready first', 'เตรียมเงินให้พร้อมก่อน'), lead:B('Invest only money you will not need soon, after a safety cushion is in place.', 'ลงทุนด้วยเงินที่ไม่ต้องใช้เร็วๆ นี้ และหลังจากมีเงินสำรองแล้ว'),
+        p:[['shield', B('Keep 3–6 months of living costs as an emergency fund first.', 'มีเงินสำรองฉุกเฉิน 3–6 เดือนของค่าใช้จ่ายก่อน')], ['alert', B('Pay off high-interest debt (credit cards, cash loans) before investing.', 'ปิดหนี้ดอกเบี้ยสูง (บัตรเครดิต สินเชื่อเงินสด) ก่อนลงทุน')], ['clock', B('Use “cold money” you can leave for 3–5 years or more.', 'ใช้ “เงินเย็น” ที่วางได้ 3–5 ปีขึ้นไป')], ['coin', B('You can start small — some apps let you buy US stocks from 50 baht.', 'เริ่มน้อยๆ ได้ บางแอปซื้อหุ้นสหรัฐฯ ได้ตั้งแต่ 50 บาท')]],
+        key:B('Emergency fund → no expensive debt → then invest.', 'เงินสำรอง → ไม่มีหนี้ดอกแพง → แล้วค่อยลงทุน'),
+        quiz:{ q:B('Which money is best for stocks?', 'เงินก้อนไหนเหมาะกับการลงทุนหุ้นที่สุด'), o:[B('Rent due next month', 'ค่าเช่าที่ต้องจ่ายเดือนหน้า'), B('Savings you will not touch for 5 years', 'เงินเก็บที่ไม่ต้องใช้ 5 ปี'), B('A cash loan', 'เงินกู้สินเชื่อเงินสด')], a:1, why:B('Stocks can drop for a while; only money you can leave alone for years should be in them.', 'หุ้นอาจลงอยู่นาน จึงควรใช้เงินที่วางไว้ได้หลายปี') } },
+      { id:'risk', i:'wave', v:'risk', t:B('Risk, time and spreading out', 'ความเสี่ยง เวลา และการกระจาย'), lead:B('Prices swing. Time and holding several different companies are your best protection.', 'ราคาแกว่งเป็นปกติ เวลาและการถือหลายบริษัทคือเกราะที่ดีที่สุด'),
+        p:[['wave', B('A fall of 20–30% in a bad year is normal for stocks.', 'หุ้นลง 20–30% ในปีที่แย่ถือเป็นเรื่องปกติ')], ['layers', B('Hold several companies from different sectors — never all in one.', 'ถือหลายบริษัท หลายกลุ่มอุตสาหกรรม อย่าใส่ทั้งหมดในตัวเดียว')], ['clock', B('The longer you hold good companies, the more the swings even out.', 'ยิ่งถือบริษัทดีได้นาน การแกว่งยิ่งเฉลี่ยกันจนเห็นทิศ')], ['alert', B('Do not borrow to buy stocks while learning.', 'ช่วงที่ยังเรียนรู้ อย่ากู้เงินมาซื้อหุ้น')]],
+        key:B('Spread out + be patient = the beginner\'s edge.', 'กระจาย + อดทน = ข้อได้เปรียบของมือใหม่'),
+        quiz:{ q:B('Your stock fell 15% this month. A sensible first step is…', 'หุ้นลง 15% ในเดือนนี้ สิ่งแรกที่ควรทำคือ…'), o:[B('Sell everything at once', 'ขายทั้งหมดทันที'), B('Check whether the company\'s reasons changed', 'เช็กว่าเหตุผลของบริษัทเปลี่ยนไปไหม'), B('Borrow money to buy more', 'กู้เงินมาซื้อเพิ่ม')], a:1, why:B('Falls are normal. Decide on the business, not on one month of price.', 'การลงเป็นเรื่องปกติ ตัดสินใจจากธุรกิจ ไม่ใช่จากราคาเดือนเดียว') } }
+    ] },
+    { id:'L2', c:'#22d3ee', i:'search', t:B('Level 2 · Read a stock', 'ระดับ 2 · อ่านหุ้นเป็น'), s:B('price, dividends, P/E, profit and debt, the trend', 'ราคา ปันผล P/E กำไรและหนี้ เทรนด์'), L:[
+      { id:'quote', i:'eye', v:'quote', t:B('Reading one stock\'s page', 'อ่านหน้าข้อมูลหุ้น 1 ตัว'), lead:B('Every app shows the same handful of numbers. Here is what each one means.', 'ทุกแอปแสดงตัวเลขชุดเดียวกัน มาดูว่าแต่ละตัวหมายถึงอะไร'),
+        p:[['flag', B('① Ticker and name — check you have the right company.', '① ชื่อย่อและชื่อบริษัท เช็กให้ตรงตัว')], ['trend', B('② Price of one share and today\'s change.', '② ราคาหุ้น 1 หุ้น และขึ้น/ลงวันนี้กี่ %')], ['building', B('③ Market value = price × all shares: how big the company is.', '③ มูลค่าตลาด = ราคา × จำนวนหุ้นทั้งหมด บอกว่าบริษัทใหญ่แค่ไหน')], ['coin', B('④ P/E (price vs profit) and ⑤ dividend yield — see the next lessons.', '④ P/E (ราคาเทียบกำไร) และ ⑤ อัตราปันผล ดูบทถัดไป')], ['wave', B('⑥ 1-year range: the lowest and highest price of the past year.', '⑥ ช่วงราคา 1 ปี: ราคาต่ำสุดและสูงสุดในรอบปี')]],
+        key:B('Name → price → size → P/E → dividend → range: read in that order.', 'อ่านตามลำดับ: ชื่อ → ราคา → ขนาด → P/E → ปันผล → ช่วงราคา'), tour:'pick',
+        quiz:{ q:B('“Market value” tells you…', '“มูลค่าตลาด” บอกอะไร'), o:[B('how big the company is', 'บริษัทใหญ่แค่ไหน'), B('how much dividend it pays', 'จ่ายปันผลเท่าไร'), B('tomorrow\'s price', 'ราคาพรุ่งนี้')], a:0, why:B('Market value = share price × number of shares — the price of the whole company.', 'มูลค่าตลาด = ราคาหุ้น × จำนวนหุ้นทั้งหมด = มูลค่าของทั้งบริษัท') } },
+      { id:'div', i:'coin', v:'div', c:'div', t:B('Dividends: how much, how often', 'ปันผล: ได้เท่าไร จ่ายบ่อยแค่ไหน'), lead:B('Dividend yield tells you how much cash a year you get for every 100 baht invested.', 'อัตราปันผลบอกว่าลงเงิน 100 บาท จะได้เงินปันผลต่อปีราวกี่บาท'),
+        p:[['coin', B('Dividend yield = dividend per share per year ÷ share price. 5% ≈ 5 baht a year per 100 baht.', 'อัตราปันผล = ปันผลต่อหุ้นต่อปี ÷ ราคาหุ้น เช่น 5% ≈ ลง 100 บาท ได้ปีละ 5 บาท')], ['cal', B('Thai stocks usually pay 1–2 times a year (interim + annual). Many US stocks pay every 3 months.', 'หุ้นไทยส่วนใหญ่จ่ายปีละ 1–2 ครั้ง (ระหว่างกาล + ประจำปี) หุ้นสหรัฐฯ หลายตัวจ่ายทุก 3 เดือน')], ['flag', B('To get it you must own the stock before the XD date. On XD day the price usually drops by about the dividend.', 'ต้องถือหุ้นก่อนวัน XD ถึงจะได้ปันผลรอบนั้น วัน XD ราคามักลดลงราวเท่าปันผล')], ['search', B('Check dates in your app or on set.or.th (company → rights & benefits).', 'ดูวัน XD และวันจ่ายได้ในแอป หรือเว็บ set.or.th (หน้าหุ้น → สิทธิประโยชน์)')], ['alert', B('A very high yield (10%+) is often a warning: the price fell hard or profits may not last.', 'ปันผลสูงผิดปกติ (10% ขึ้นไป) มักเป็นสัญญาณเตือน ราคาอาจร่วงแรงหรือกำไรอาจไม่ยั่งยืน')]],
+        key:B('Good dividend = steady yield + profits that keep paying for it.', 'ปันผลที่ดี = จ่ายสม่ำเสมอ + กำไรพอจ่ายต่อเนื่อง'),
+        quiz:{ q:B('A ฿50 stock pays ฿2.50 a year in dividends. Its yield is…', 'หุ้นราคา 50 บาท จ่ายปันผลปีละ 2.50 บาท อัตราปันผลคือ…'), o:[B('2.5%', '2.5%'), B('5%', '5%'), B('20%', '20%')], a:1, why:B('2.50 ÷ 50 = 0.05 = 5% a year.', '2.50 ÷ 50 = 0.05 = 5% ต่อปี') } },
+      { id:'pe', i:'scale', v:'pe', c:'pe', t:B('P/E: cheap or expensive?', 'P/E: หุ้นแพงหรือถูก'), lead:B('P/E compares the price with the profit the company makes for each share.', 'P/E คือการเทียบราคาหุ้นกับกำไรที่บริษัททำได้ต่อหุ้น'),
+        p:[['scale', B('P/E = price ÷ profit per share (EPS). P/E 12 ≈ you pay 12 years of today\'s profit.', 'P/E = ราคา ÷ กำไรต่อหุ้น (EPS) เช่น P/E 12 ≈ จ่ายเท่ากับกำไร 12 ปีของวันนี้')], ['layers', B('Compare with companies in the same sector — banks and tech have very different normal P/Es.', 'เทียบกับบริษัทกลุ่มเดียวกันเท่านั้น ธนาคารกับเทคมี P/E ปกติต่างกันมาก')], ['trend', B('A higher P/E can be fine if profits grow fast; a low P/E can be a trap if profits are falling.', 'P/E สูงอาจไม่แพงถ้ากำไรโตเร็ว P/E ต่ำอาจเป็นกับดักถ้ากำไรกำลังลด')]],
+        key:B('Cheaper than its peers + profits still growing = interesting.', 'ถูกกว่าเพื่อนในกลุ่ม + กำไรยังโต = น่าสนใจ'),
+        quiz:{ q:B('Two banks: A has P/E 8, B has P/E 14, similar profits growth. Which looks cheaper?', 'ธนาคาร 2 แห่ง A มี P/E 8 B มี P/E 14 กำไรโตใกล้กัน ตัวไหนดูถูกกว่า'), o:[B('A', 'A'), B('B', 'B'), B('Can\'t compare banks', 'เทียบกันไม่ได้')], a:0, why:B('Same sector, similar growth: the lower P/E is the cheaper price for the same profit.', 'กลุ่มเดียวกันและโตพอกัน P/E ต่ำกว่า = จ่ายถูกกว่าสำหรับกำไรเท่ากัน') } },
+      { id:'health', i:'shield', v:'health', t:B('Profit and debt: is it healthy?', 'กำไรและหนี้: บริษัทแข็งแรงไหม'), lead:B('Three numbers tell you most of a company\'s health.', 'ตัวเลข 3 ตัวบอกสุขภาพบริษัทได้เกือบทั้งหมด'),
+        p:[['trend', B('Profit growth (EPS): rising year after year is what pushes the price up over time.', 'กำไรโต (EPS): โตต่อเนื่องทุกปี คือสิ่งที่ดันราคาขึ้นในระยะยาว')], ['star', B('ROE: profit made from the owners\' money. Above about 15% is strong.', 'ROE: กำไรที่ทำได้จากเงินของผู้ถือหุ้น เกินราว 15% ถือว่าแข็งแรง')], ['alert', B('Debt to equity (D/E): under about 1 is usually not heavy (banks and utilities are different).', 'หนี้ต่อทุน (D/E): ต่ำกว่าราว 1 มักไม่หนัก (ธนาคารและสาธารณูปโภคต่างออกไป)')]],
+        key:B('Growing profits, good ROE, manageable debt.', 'กำไรโต ROE ดี หนี้ไม่หนัก'), tour:'pick',
+        quiz:{ q:B('Which looks healthiest?', 'บริษัทไหนดูแข็งแรงที่สุด'), o:[B('Profit −10%, D/E 3', 'กำไร −10% หนี้ต่อทุน 3'), B('Profit +15%, ROE 18%, D/E 0.5', 'กำไร +15% ROE 18% หนี้ต่อทุน 0.5'), B('Profit +2%, ROE 4%, D/E 2', 'กำไร +2% ROE 4% หนี้ต่อทุน 2')], a:1, why:B('Growing profit, strong ROE and low debt together.', 'กำไรโต ROE สูง และหนี้ต่ำ ครบทั้ง 3 ข้อ') } },
+      { id:'trend', i:'trend', v:'trend', t:B('The trend: the 200-day line', 'ดูเทรนด์: เส้นเฉลี่ย 200 วัน'), lead:B('The 200-day line is the average price of the last 200 trading days — a simple trend filter.', 'เส้น 200 วัน คือราคาเฉลี่ยย้อนหลัง 200 วันทำการ ใช้กรองเทรนด์แบบง่าย'),
+        p:[['trend', B('Price above the line → up-trend. Many investors only buy then.', 'ราคาอยู่เหนือเส้น → ขาขึ้น นักลงทุนหลายคนซื้อเฉพาะตอนนี้')], ['alert', B('A close below the line is an early warning that the trend is breaking.', 'ราคาปิดต่ำกว่าเส้น = สัญญาณเตือนแรกว่าขาขึ้นกำลังเสีย')], ['eye', B('“One Stock, One Page” and “Chart Lab” on this site draw the line for you.', 'หน้า “ดูหุ้นรายตัว” และ “ห้องทดลองกราฟ” ในเว็บนี้วาดเส้นให้ดู')]],
+        key:B('Good company + price above its 200-day line.', 'บริษัทดี + ราคาอยู่เหนือเส้น 200 วัน'),
+        quiz:{ q:B('Price ฿50, its 200-day line ฿45. The trend is…', 'ราคา 50 บาท เส้น 200 วันอยู่ที่ 45 บาท เทรนด์ตอนนี้คือ…'), o:[B('up', 'ขาขึ้น'), B('down', 'ขาลง'), B('cannot tell', 'บอกไม่ได้')], a:0, why:B('Price above the 200-day average = up-trend.', 'ราคาเหนือเส้นเฉลี่ย 200 วัน = ขาขึ้น') } }
+    ] },
+    { id:'L3', c:'#a78bfa', i:'tap', t:B('Level 3 · Choose and buy', 'ระดับ 3 · เลือกและลงมือซื้อ'), s:B('checklist, app and account, splitting money, the first order', 'เช็กลิสต์ เปิดบัญชี แบ่งเงิน ส่งคำสั่งแรก'), L:[
+      { id:'check', i:'list', v:'check', t:B('A 5-point checklist', 'เช็กลิสต์ 5 ข้อก่อนซื้อ'), lead:B('Put each stock through the same five questions before it goes on your list.', 'ให้หุ้นทุกตัวผ่านคำถาม 5 ข้อเดียวกันก่อนจะใส่ในรายชื่อ'),
+        p:[['building', B('Do I understand how it makes money?', 'เข้าใจไหมว่าบริษัทหาเงินยังไง')], ['trend', B('Are profits growing?', 'กำไรโตไหม')], ['shield', B('Is debt not heavy?', 'หนี้ไม่หนักใช่ไหม')], ['scale', B('Is it not far pricier than its peers (P/E)?', 'ไม่แพงกว่าเพื่อนกลุ่มเดียวกันมาก (P/E) ใช่ไหม')], ['wave', B('Is the price above its 200-day line?', 'ราคาอยู่เหนือเส้น 200 วันไหม')]],
+        key:B('5 of 5 → short list. Fewer → wait.', 'ผ่าน 5 ข้อ → ใส่รายชื่อ ไม่ครบ → รอก่อน'), tour:'pick',
+        quiz:{ q:B('A stock passes 3 of the 5 checks. You should…', 'หุ้นผ่านเช็กลิสต์ 3 จาก 5 ข้อ ควร…'), o:[B('buy anyway', 'ซื้อเลย'), B('keep watching and wait', 'เฝ้าดูและรอก่อน'), B('buy double', 'ซื้อเป็น 2 เท่า')], a:1, why:B('The checklist is there to stop impulse buys; wait until it passes.', 'เช็กลิสต์มีไว้กันการซื้อตามอารมณ์ รอจนกว่าจะผ่าน') } },
+      { id:'app', i:'phone', v:'app', t:B('Choose an app and open an account', 'เลือกแอปและเปิดบัญชี'), lead:B('You need a trading account with a broker; most open online in a day or two.', 'ต้องมีบัญชีซื้อขายกับโบรกเกอร์ ส่วนใหญ่เปิดออนไลน์ได้ใน 1–2 วัน'),
+        p:[['phone', B('Examples: Dime! (US stocks as fractional shares from 50 baht, and Thai stocks), or a broker account used with the Streaming app for Thai stocks.', 'ตัวอย่าง: Dime! (หุ้นสหรัฐฯ แบบเศษหุ้นเริ่ม 50 บาท และหุ้นไทย) หรือเปิดบัญชีโบรกเกอร์แล้วใช้แอป Streaming ซื้อขายหุ้นไทย')], ['id', B('Identity is checked online with your ID card (e.g. through NDID or a bank app).', 'ยืนยันตัวตนออนไลน์ด้วยบัตรประชาชน (เช่น NDID หรือแอปธนาคาร)')], ['list', B('Answer the risk questionnaire honestly.', 'ตอบแบบประเมินความเสี่ยงตามจริง')], ['bank', B('Link a bank account, and compare fees before choosing.', 'ผูกบัญชีธนาคาร และเทียบค่าธรรมเนียมก่อนเลือกแอป')]],
+        key:B('One account is enough to start.', 'เริ่มจากบัญชีเดียวก็พอ'), tour:'apps',
+        quiz:{ q:B('To buy US stocks with a small amount, look for an app that offers…', 'ถ้าอยากซื้อหุ้นสหรัฐฯ ด้วยเงินน้อยๆ ควรหาแอปที่มี…'), o:[B('fractional shares', 'การซื้อเป็นเศษหุ้น'), B('only 100-share lots', 'ซื้อขั้นต่ำ 100 หุ้น'), B('margin loans', 'สินเชื่อมาร์จิ้น')], a:0, why:B('Fractional shares let you buy by amount, e.g. 500 baht of a $200 stock.', 'เศษหุ้นทำให้ซื้อตามจำนวนเงินได้ เช่น 500 บาทของหุ้นราคา 200 ดอลลาร์') } },
+      { id:'split', i:'pie', v:'split', t:B('Split the money, add monthly', 'แบ่งเงิน และลงทุนทุกเดือน'), lead:B('Decide how much goes into each holding before you buy, then add a fixed amount every month.', 'กำหนดก่อนซื้อว่าจะใส่เงินแต่ละตัวเท่าไร แล้วลงเงินเท่าๆ กันทุกเดือน'),
+        p:[['pie', B('About 5–15 stocks; no single stock above 10–15%, no sector above 30%.', 'ถือราว 5–15 ตัว ตัวเดียวไม่เกิน 10–15% กลุ่มเดียวไม่เกิน 30%')], ['layers', B('An index fund or ETF makes a steady core.', 'กองทุนดัชนีหรือ ETF เป็นแกนพอร์ตที่นิ่ง')], ['cal', B('DCA: the same amount on the same day each month — no guessing the moment.', 'DCA: ลงเงินเท่ากันวันเดิมทุกเดือน ไม่ต้องเดาจังหวะ')], ['coin', B('Top up the holdings below their target % first instead of selling the others.', 'เงินใหม่เติมตัวที่ต่ำกว่า % เป้าหมายก่อน แทนการขายตัวอื่น')]],
+        key:B('Plan the % first; let the monthly habit do the work.', 'วางสัดส่วนก่อน แล้วให้วินัยรายเดือนทำงาน'),
+        quiz:{ q:B('With 10,000 baht, the most a single stock should get is about…', 'มีเงิน 10,000 บาท หุ้นตัวเดียวไม่ควรเกินราว…'), o:[B('1,000–1,500 baht', '1,000–1,500 บาท'), B('5,000 baht', '5,000 บาท'), B('10,000 baht', '10,000 บาท')], a:0, why:B('10–15% of 10,000 = 1,000–1,500, so one bad stock cannot sink you.', '10–15% ของ 10,000 = 1,000–1,500 บาท หุ้นตัวเดียวพังก็ไม่ทำให้ทั้งพอร์ตพัง') } },
+      { id:'order', i:'tap', v:'order', t:B('Place your first order', 'ส่งคำสั่งซื้อครั้งแรก'), lead:B('Every app follows the same four moves.', 'ทุกแอปทำเหมือนกัน 4 อย่าง'),
+        p:[['search', B('Search the ticker; check the full name.', 'ค้นชื่อย่อ แล้วเช็กชื่อบริษัทเต็มให้ตรง')], ['list', B('Thai stocks trade in lots of 100 shares (fewer = odd-lot board). US stocks in apps like Dime! can be bought by amount.', 'หุ้นไทยซื้อขาย lot ละ 100 หุ้น (น้อยกว่านั้น = กระดานหุ้นเศษ) หุ้นสหรัฐฯ ในแอปอย่าง Dime! ใส่เป็นจำนวนเงินได้')], ['flag', B('Limit = you set the price (safer). Market = buy now at the going price.', 'Limit = ตั้งราคาเอง (ปลอดภัยกว่า) Market = ซื้อทันทีราคาตลาด')], ['check', B('Read the total and the fee, then confirm. Make the first order small.', 'อ่านยอดรวมและค่าธรรมเนียมก่อนยืนยัน ครั้งแรกซื้อน้อยๆ')]],
+        key:B('Small first order + Limit price.', 'ครั้งแรกซื้อน้อยๆ + ตั้งราคาแบบ Limit'),
+        quiz:{ q:B('You want to buy only if the price is ฿40 or lower. Use a…', 'อยากซื้อเฉพาะตอนราคา 40 บาทหรือต่ำกว่า ควรใช้คำสั่ง…'), o:[B('Limit order at 40', 'Limit ที่ราคา 40'), B('Market order', 'Market'), B('Sell order', 'คำสั่งขาย')], a:0, why:B('A limit order never pays more than the price you set.', 'คำสั่ง Limit จะไม่ซื้อแพงกว่าราคาที่ตั้งไว้') } }
+    ] },
+    { id:'L4', c:'#fbbf24', i:'cal', t:B('Level 4 · Look after it', 'ระดับ 4 · ดูแลพอร์ต'), s:B('monthly check, when to sell, tax and fees', 'ทบทวนรายเดือน เมื่อไรควรขาย ภาษีและค่าธรรมเนียม'), L:[
+      { id:'track', i:'cal', v:'track', t:B('Check once a month', 'ทบทวนเดือนละครั้ง'), lead:B('No need to watch every day. Once a month: is the reason you bought each stock still true?', 'ไม่ต้องดูทุกวัน เดือนละครั้งพอ ถามว่าเหตุผลที่ซื้อแต่ละตัวยังจริงอยู่ไหม'),
+        p:[['cal', B('Pick a review day; look at results, news and your % split.', 'กำหนดวันทบทวน ดูผลประกอบการ ข่าว และสัดส่วนพอร์ต')], ['book', B('Write down why you bought each stock.', 'จดเหตุผลที่ซื้อแต่ละตัวไว้')], ['coin', B('Use new money to bring each holding back to its %.', 'ใช้เงินใหม่ปรับแต่ละตัวให้กลับมาตรง %')]],
+        key:B('Monthly check, written reasons, calm decisions.', 'ทบทวนรายเดือน จดเหตุผล ตัดสินใจใจเย็น'), tour:'track',
+        quiz:{ q:B('How often does a beginner really need to review?', 'มือใหม่ควรทบทวนพอร์ตบ่อยแค่ไหน'), o:[B('every hour', 'ทุกชั่วโมง'), B('about once a month', 'ราวเดือนละครั้ง'), B('never', 'ไม่ต้องดูเลย')], a:1, why:B('Monthly is enough to catch real changes without reacting to noise.', 'เดือนละครั้งพอจับการเปลี่ยนแปลงจริงได้ โดยไม่ตกใจกับความผันผวนรายวัน') } },
+      { id:'sell', i:'alert', v:'sell', t:B('When to sell', 'เมื่อไรควรขาย'), lead:B('Sell when the reason changes, not because of one scary day.', 'ขายเมื่อเหตุผลเปลี่ยน ไม่ใช่เพราะตกใจวันเดียว'),
+        p:[['alert', B('Profits shrinking for two quarters, or debt jumping.', 'กำไรลดลง 2 ไตรมาสติด หรือหนี้เพิ่มพรวด')], ['wave', B('The price closes below its 200-day line.', 'ราคาปิดต่ำกว่าเส้น 200 วัน')], ['pie', B('One stock has grown far above its % — trim it back.', 'หุ้นตัวเดียวโตจนเกิน % ที่วางไว้มาก ขายบางส่วนให้กลับมาตรงแผน')]],
+        key:B('Sell on reasons; trim on weights; ignore noise.', 'ขายเพราะเหตุผล ลดเพราะสัดส่วน ไม่สนเสียงรบกวน'),
+        quiz:{ q:B('Which is a real reason to sell?', 'ข้อไหนคือเหตุผลจริงที่ควรขาย'), o:[B('The price was red today', 'วันนี้ราคาแดง'), B('Profits have fallen two quarters in a row', 'กำไรลดลง 2 ไตรมาสติด'), B('A friend sold theirs', 'เพื่อนขายไปแล้ว')], a:1, why:B('A change in the business is a reason; one red day or a rumour is not.', 'ธุรกิจเปลี่ยนคือเหตุผล ราคาแดงวันเดียวหรือข่าวลือไม่ใช่') } },
+      { id:'tax', i:'book', v:'tax', t:B('Tax and fees, the basics', 'ภาษีและค่าธรรมเนียมเบื้องต้น'), lead:B('A few simple rules decide how much of your gain you keep.', 'กฎง่ายๆ ไม่กี่ข้อที่บอกว่าเราจะเหลือกำไรเท่าไร'),
+        p:[['coin', B('Thai dividends: 10% tax is withheld before you receive them.', 'ปันผลหุ้นไทย: ถูกหักภาษี 10% ก่อนเข้าบัญชี')], ['flag', B('US dividends: 15% withheld if you filed a W-8BEN form (otherwise 30%) — most apps do this when you open the account.', 'ปันผลหุ้นสหรัฐฯ: ถูกหัก 15% เมื่อยื่นฟอร์ม W-8BEN (ไม่ยื่น 30%) ส่วนใหญ่แอปให้ยื่นตอนเปิดบัญชี')], ['trend', B('Profits from selling Thai shares on the SET are tax-free for individuals.', 'กำไรจากการขายหุ้นไทยในตลาด SET บุคคลทั่วไปไม่ต้องเสียภาษี')], ['alert', B('Every buy and sell has a fee; trading less keeps more money working.', 'ทุกครั้งที่ซื้อขายมีค่าธรรมเนียม ซื้อขายน้อยลง = เงินทำงานได้มากขึ้น')]],
+        key:B('Fewer trades, the right forms, and know what is withheld.', 'ซื้อขายไม่บ่อย ยื่นฟอร์มให้ครบ และรู้ว่าถูกหักอะไรบ้าง'),
+        quiz:{ q:B('A Thai stock pays you a ฿1,000 dividend. Roughly how much reaches your account?', 'หุ้นไทยจ่ายปันผลให้ 1,000 บาท จะเข้าบัญชีราวเท่าไร'), o:[B('฿1,000', '1,000 บาท'), B('฿900', '900 บาท'), B('฿700', '700 บาท')], a:1, why:B('10% is withheld: 1,000 − 100 = 900.', 'ถูกหัก 10%: 1,000 − 100 = 900 บาท') } }
+    ] }
   ];
+  var ALL = []; LV.forEach(function(lv){ lv.L.forEach(function(l){ l.lv = lv; ALL.push(l); }); });
+  function lessonById(id){ for(var i = 0; i < ALL.length; i++) if(ALL[i].id === id) return ALL[i]; return null; }
   var U = {
     eb:B('Start from zero', 'เริ่มจากศูนย์'),
-    h:B('8 steps from knowing nothing to your first stock', '8 ขั้น จากไม่รู้อะไรเลย สู่หุ้นตัวแรก'),
-    lede:B('One step at a time, in the order that works. Each step has a picture, the few things that matter, and a “show me on the site” tour that points at the real buttons.', 'เรียนทีละขั้นตามลำดับที่ใช้ได้จริง แต่ละขั้นมีภาพอธิบาย สิ่งสำคัญไม่กี่ข้อ และปุ่ม “พาดูในเว็บ” ที่ชี้ปุ่มจริงให้ดู'),
-    start:B('Start step 1', 'เริ่มขั้นที่ 1'), cont:B('Continue: step ', 'เรียนต่อขั้นที่ '), again:B('Review from step 1', 'ทบทวนตั้งแต่ขั้นที่ 1'),
-    tour:B('Tour the site for beginners', 'พาทัวร์เว็บสำหรับมือใหม่'), done:B('done', 'เรียนแล้ว'), step:B('Step ', 'ขั้นที่ '),
-    key:B('Remember', 'จำง่ายๆ'), next:B('Got it — next step', 'เข้าใจแล้ว ไปขั้นต่อไป'), finish:B('Finish the course', 'จบคอร์ส'), back:B('Back', 'ย้อนกลับ'),
-    show:B('Show me on the site', 'พาดูในเว็บ'), fin:B('All 8 steps done. You know the whole path — now take it slowly, one small order at a time.', 'เรียนครบ 8 ขั้นแล้ว รู้เส้นทางทั้งหมดแล้ว ต่อจากนี้ค่อยๆ ทำ เริ่มจากคำสั่งเล็กๆ ทีละครั้ง'),
-    lessons:B('Lessons by topic (below)', 'บทเรียนแยกหัวข้อ (ด้านล่าง)'), note:B('For learning only — not investment advice. App features and fees change; check the app itself before you open an account.', 'เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน ฟีเจอร์และค่าธรรมเนียมของแอปเปลี่ยนได้ เช็กกับแอปอีกครั้งก่อนเปิดบัญชี')
+    h:B('From knowing nothing to your first stock — 4 levels', 'จากไม่รู้อะไรเลย สู่หุ้นตัวแรก — 4 ระดับ'),
+    lede:B('Go level by level. Every lesson has a picture, the few things that matter, a small calculator where it helps, and one question to check you got it.', 'เรียนทีละระดับ แต่ละบทมีภาพอธิบาย สิ่งสำคัญไม่กี่ข้อ เครื่องคิดเลขเล็กๆ ให้ลองเอง และคำถาม 1 ข้อไว้เช็กความเข้าใจ'),
+    start:B('Start lesson 1', 'เริ่มบทที่ 1'), cont:B('Continue: ', 'เรียนต่อ: '), again:B('Review from the start', 'ทบทวนตั้งแต่ต้น'),
+    tour:B('Tour the site for beginners', 'พาทัวร์เว็บสำหรับมือใหม่'), done:B('lessons done', 'บทที่เรียนแล้ว'),
+    key:B('Remember', 'จำง่ายๆ'), next:B('Next lesson', 'บทถัดไป'), back:B('Back', 'ย้อนกลับ'), show:B('Show me on the site', 'พาดูในเว็บ'),
+    qh:B('Check yourself', 'เช็กความเข้าใจ'), qok:B('Correct', 'ถูกต้อง'), qno:B('Not quite', 'ยังไม่ใช่'),
+    fin:B('All levels done. Take it slowly — one small order at a time.', 'เรียนครบทุกระดับแล้ว ค่อยๆ เริ่มจากคำสั่งเล็กๆ ทีละครั้ง'),
+    lessons:B('Lessons by topic (below)', 'บทเรียนแยกหัวข้อ (ด้านล่าง)'), note:B('For learning only — not investment advice. App features, fees and tax rules change; check them before you act.', 'เพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำการลงทุน ฟีเจอร์ ค่าธรรมเนียม และกฎภาษีเปลี่ยนได้ ตรวจสอบอีกครั้งก่อนลงมือ')
   };
-  var ST = { done:{}, cur:0, open:false };
-  try { var s0 = JSON.parse(localStorage.getItem('spz.sks') || 'null'); if(s0){ ST.done = s0.done || {}; ST.cur = s0.cur || 0; } } catch(e){}
-  function save(){ try { localStorage.setItem('spz.sks', JSON.stringify({ done:ST.done, cur:ST.cur })); } catch(e){} }
-  function nDone(){ return STEPS.filter(function(_, i){ return ST.done[i]; }).length; }
+  var ST = { done:{}, lv:'L1', cur:null, open:false, ans:{} };
+  try { var s0 = JSON.parse(localStorage.getItem('spz.sks2') || 'null'); if(s0){ ST.done = s0.done || {}; ST.lv = s0.lv || 'L1'; ST.cur = s0.cur || null; } } catch(e){}
+  function save(){ try { localStorage.setItem('spz.sks2', JSON.stringify({ done:ST.done, lv:ST.lv, cur:ST.cur })); } catch(e){} }
+  function nDone(list){ return (list || ALL).filter(function(l){ return ST.done[l.id]; }).length; }
+  function firstOpen(){ for(var i = 0; i < ALL.length; i++) if(!ST.done[ALL[i].id]) return ALL[i]; return null; }
 
   function heroHTML(){
-    var n = nDone(), pct = Math.round(n / STEPS.length * 100), all = n === STEPS.length, first = STEPS.findIndex ? STEPS.findIndex(function(_, i){ return !ST.done[i]; }) : 0;
-    var btnT = all ? T(U.again) : n ? T(U.cont) + (first + 1) : T(U.start);
+    var n = nDone(), tot = ALL.length, pct = Math.round(n / tot * 100), fo = firstOpen();
+    var btn = !fo ? [ALL[0].id, T(U.again)] : n ? [fo.id, T(U.cont) + T(fo.t)] : [ALL[0].id, T(U.start)];
     return '<div class="sks-hero"><div class="sks-hart">' + heroArt() + '</div><div class="sks-ht"><span class="sks-eb">' + ico('compass') + esc(T(U.eb)) + '</span><h3>' + esc(T(U.h)) + '</h3><p>' + esc(T(U.lede)) + '</p>' +
-      '<div class="sks-prog"><i style="width:' + pct + '%"></i></div><small class="sks-pn">' + esc(T(U.done)) + ' ' + n + '/' + STEPS.length + '</small>' +
-      '<div class="sks-hb"><button type="button" class="sks-btn pri" data-sk-open="' + (all ? 0 : Math.max(0, first)) + '">' + ico('play') + esc(btnT) + '</button><button type="button" class="sks-btn" data-sk-tour="main">' + ico('eye') + esc(T(U.tour)) + '</button></div></div></div>';
+      '<div class="sks-prog"><i style="width:' + pct + '%"></i></div><small class="sks-pn">' + esc(T(U.done)) + ' ' + n + '/' + tot + '</small>' +
+      '<div class="sks-hb"><button type="button" class="sks-btn pri" data-sk2-open="' + btn[0] + '">' + ico('play') + esc(btn[1]) + '</button><button type="button" class="sks-btn" data-sk-tour="main">' + ico('eye') + esc(T(U.tour)) + '</button></div></div></div>';
   }
   function heroArt(){
     return '<svg class="sk-art sk-hart-svg" viewBox="0 0 220 150" aria-hidden="true"><defs><linearGradient id="skHg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#34d399" stop-opacity=".45"/><stop offset="1" stop-color="#34d399" stop-opacity="0"/></linearGradient></defs>' +
       '<path d="M10 120 L40 104 L62 110 L88 82 L112 90 L140 58 L164 66 L200 28 L200 140 L10 140 Z" fill="url(#skHg)" class="area"/>' +
       '<path d="M10 120 L40 104 L62 110 L88 82 L112 90 L140 58 L164 66 L200 28" class="draw"/>' +
-      [[40, 104], [88, 82], [140, 58], [200, 28]].map(function(p, i){ return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="5" class="mk" style="animation-delay:' + (0.5 + i * 0.45) + 's"/><text x="' + (i === 3 ? p[0] - 14 : p[0]) + '" y="' + (i === 3 ? p[1] + 4 : p[1] - 10) + '" class="num" text-anchor="middle" style="animation-delay:' + (0.5 + i * 0.45) + 's">' + (i * 2 + 2) + '</text>'; }).join('') +
+      [[40, 104], [88, 82], [140, 58], [200, 28]].map(function(p, i){ return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="5" class="mk" style="animation-delay:' + (0.5 + i * 0.45) + 's"/><text x="' + (i === 3 ? p[0] - 14 : p[0]) + '" y="' + (i === 3 ? p[1] + 4 : p[1] - 10) + '" class="num" text-anchor="middle" style="animation-delay:' + (0.5 + i * 0.45) + 's">' + (i + 1) + '</text>'; }).join('') +
       '<g class="flagup"><path d="M200 28 V6" class="st"/><path d="M200 6 h18 l-5 6 l5 6 h-18" class="flagf"/></g></svg>';
   }
-  function railHTML(){
-    return '<div class="sks-rail">' + STEPS.map(function(s, i){ var c = (ST.done[i] ? ' done' : '') + (ST.open && ST.cur === i ? ' on' : ''); return '<button type="button" class="sks-node' + c + '" data-sk-open="' + i + '"><i>' + ico(s.i) + '<u>' + (ST.done[i] ? ico('check') : i + 1) + '</u></i><span>' + esc(T(s.t)) + '</span></button>'; }).join('') + '</div>';
+  function levelsHTML(){
+    return '<div class="sk2-lv">' + LV.map(function(lv, i){ var n = nDone(lv.L), pc = Math.round(n / lv.L.length * 100), on = ST.lv === lv.id;
+      return '<button type="button" class="sk2-lc' + (on ? ' on' : '') + (n === lv.L.length ? ' full' : '') + '" data-sk2-lv="' + lv.id + '" style="--lc:' + lv.c + '"><span class="sk2-ring" style="--p:' + pc + '"><i>' + ico(lv.i) + '</i></span><span class="sk2-lt"><b>' + esc(T(lv.t)) + '</b><small>' + esc(T(lv.s)) + '</small><em>' + n + '/' + lv.L.length + ' ' + esc(T(B('lessons', 'บท'))) + '</em></span></button>'; }).join('') + '</div>';
+  }
+  function lessonsHTML(){
+    var lv = LV.filter(function(x){ return x.id === ST.lv; })[0] || LV[0];
+    return '<div class="sk2-ls" style="--lc:' + lv.c + '">' + lv.L.map(function(l, i){ var on = ST.open && ST.cur === l.id;
+      return '<button type="button" class="sk2-li' + (ST.done[l.id] ? ' done' : '') + (on ? ' on' : '') + '" data-sk2-open="' + l.id + '"><i>' + ico(ST.done[l.id] ? 'check' : l.i) + '</i><span><small>' + esc(T(B('Lesson ', 'บทที่ '))) + (i + 1) + '</small><b>' + esc(T(l.t)) + '</b></span></button>'; }).join('') + '</div>';
+  }
+  function quizHTML(l){
+    var q = l.quiz; if(!q) return ''; var a = ST.ans[l.id];
+    return '<div class="sk2-q' + (a != null ? (a === q.a ? ' ok' : ' no') : '') + '"><div class="sk2-qh">' + ico('star') + esc(T(U.qh)) + '</div><p>' + esc(T(q.q)) + '</p><div class="sk2-qo">' + q.o.map(function(o, i){ var c = a == null ? '' : i === q.a ? ' right' : i === a ? ' wrong' : ''; return '<button type="button" data-sk2-ans="' + i + '" class="' + c + '"' + (a != null ? ' disabled' : '') + '><u>' + 'ABC'.charAt(i) + '</u>' + esc(T(o)) + '</button>'; }).join('') + '</div>' +
+      (a != null ? '<div class="sk2-qr">' + ico(a === q.a ? 'check' : 'x') + '<div><b>' + esc(T(a === q.a ? U.qok : U.qno)) + '</b><span>' + esc(T(q.why)) + '</span></div>' + (a !== q.a ? '<button type="button" class="sks-btn" data-sk2-retry>' + esc(T(B('Try again', 'ลองใหม่'))) + '</button>' : '') + '</div>' : '') + '</div>';
   }
   function panelHTML(){
-    if(!ST.open) return '';
-    var i = ST.cur, s = STEPS[i], last = i === STEPS.length - 1;
-    return '<div class="sks-panel" data-sk-anim><div class="sks-pa">' + ART[i]() + '</div><div class="sks-pt"><span class="sks-ps">' + esc(T(U.step)) + (i + 1) + ' / ' + STEPS.length + '</span><h4>' + ico(s.i) + esc(T(s.t)) + '</h4><p class="sks-lead">' + esc(T(s.lead)) + '</p>' +
-      '<ul class="sks-pts">' + s.p.map(function(p, k){ return '<li style="animation-delay:' + (0.1 + k * 0.12) + 's"><i>' + ico(p[0]) + '</i><span>' + esc(T(p[1])) + '</span></li>'; }).join('') + '</ul>' +
-      '<div class="sks-key">' + ico('star') + '<div><b>' + esc(T(U.key)) + '</b><span>' + esc(T(s.key)) + '</span></div></div>' +
-      '<div class="sks-pb">' + (i > 0 ? '<button type="button" class="sks-btn" data-sk-open="' + (i - 1) + '">' + ico('arrowL') + esc(T(U.back)) + '</button>' : '') +
-      (s.tour ? '<button type="button" class="sks-btn" data-sk-tour="' + s.tour + '">' + ico('eye') + esc(T(U.show)) + '</button>' : '') +
-      '<button type="button" class="sks-btn pri" data-sk-next="' + i + '">' + esc(T(last ? U.finish : U.next)) + ico(last ? 'check' : 'arrowR') + '</button></div>' +
-      (last && nDone() === STEPS.length ? '<p class="sks-fin">' + ico('check') + esc(T(U.fin)) + '</p>' : '') + '</div></div>';
+    if(!ST.open || !ST.cur) return '';
+    var l = lessonById(ST.cur); if(!l) return '';
+    var idx = ALL.indexOf(l), last = idx === ALL.length - 1, prev = ALL[idx - 1], nx = ALL[idx + 1], li = l.lv.L.indexOf(l);
+    return '<div class="sk2-p" style="--lc:' + l.lv.c + '" data-sk-anim><div class="sk2-pv">' + (V[l.v] ? V[l.v]() : '') + '</div><div class="sk2-pt"><span class="sks-ps">' + esc(T(l.lv.t)) + ' · ' + esc(T(B('lesson ', 'บทที่ '))) + (li + 1) + '/' + l.lv.L.length + '</span><h4>' + ico(l.i) + esc(T(l.t)) + '</h4><p class="sks-lead">' + esc(T(l.lead)) + '</p>' +
+      '<ul class="sks-pts">' + l.p.map(function(p, k){ return '<li style="animation-delay:' + (0.08 + k * 0.1) + 's"><i>' + ico(p[0]) + '</i><span>' + esc(T(p[1])) + '</span></li>'; }).join('') + '</ul>' +
+      '<div class="sks-key">' + ico('star') + '<div><b>' + esc(T(U.key)) + '</b><span>' + esc(T(l.key)) + '</span></div></div>' + calcHTML(l.c) + quizHTML(l) +
+      '<div class="sks-pb">' + (prev ? '<button type="button" class="sks-btn" data-sk2-open="' + prev.id + '">' + ico('arrowL') + esc(T(U.back)) + '</button>' : '') + (l.tour ? '<button type="button" class="sks-btn" data-sk-tour="' + l.tour + '">' + ico('eye') + esc(T(U.show)) + '</button>' : '') +
+      (nx ? '<button type="button" class="sks-btn pri" data-sk2-next="' + l.id + '">' + esc(T(U.next)) + ': ' + esc(T(nx.t)) + ico('arrowR') + '</button>' : '<button type="button" class="sks-btn pri" data-sk2-next="' + l.id + '">' + esc(T(B('Finish', 'จบคอร์ส'))) + ico('check') + '</button>') + '</div>' +
+      (last && nDone() === ALL.length ? '<p class="sks-fin">' + ico('check') + esc(T(U.fin)) + '</p>' : '') + '</div></div>';
   }
   var root = null;
   function paint(){
     if(!root) return;
-    root.innerHTML = heroHTML() + railHTML() + panelHTML() + '<p class="sks-note">' + esc(T(U.note)) + '</p><h5 class="sks-lessons">' + ico('book') + esc(T(U.lessons)) + '</h5>';
+    root.innerHTML = heroHTML() + levelsHTML() + lessonsHTML() + panelHTML() + '<p class="sks-note">' + esc(T(U.note)) + '</p><h5 class="sks-lessons">' + ico('book') + esc(T(U.lessons)) + '</h5>';
   }
+  function openLesson(id){ var l = lessonById(id); if(!l) return; ST.cur = id; ST.lv = l.lv.id; ST.open = true; save(); paint(); scrollPanel(); }
   function wire(){
     root.addEventListener('click', function(ev){
-      var o = ev.target.closest('[data-sk-open]'), nx = ev.target.closest('[data-sk-next]'), tr = ev.target.closest('[data-sk-tour]');
-      if(o){ ST.cur = +o.getAttribute('data-sk-open'); ST.open = true; save(); paint(); scrollPanel(); return; }
-      if(nx){ var i = +nx.getAttribute('data-sk-next'); ST.done[i] = true; if(i < STEPS.length - 1){ ST.cur = i + 1; } save(); paint(); scrollPanel(); return; }
+      var lv = ev.target.closest('[data-sk2-lv]'), o = ev.target.closest('[data-sk2-open]'), nx = ev.target.closest('[data-sk2-next]'), an = ev.target.closest('[data-sk2-ans]'), rt = ev.target.closest('[data-sk2-retry]'), tr = ev.target.closest('[data-sk-tour]');
+      if(lv){ ST.lv = lv.getAttribute('data-sk2-lv'); var L0 = LV.filter(function(x){ return x.id === ST.lv; })[0]; var f = L0.L.filter(function(l){ return !ST.done[l.id]; })[0] || L0.L[0]; openLesson(f.id); return; }
+      if(o){ openLesson(o.getAttribute('data-sk2-open')); return; }
+      if(nx){ var id = nx.getAttribute('data-sk2-next'), l = lessonById(id); ST.done[id] = true; var n2 = ALL[ALL.indexOf(l) + 1]; if(n2) openLesson(n2.id); else { save(); paint(); } return; }
+      if(an){ var c = lessonById(ST.cur); var k = +an.getAttribute('data-sk2-ans'); ST.ans[ST.cur] = k; if(c && c.quiz && k === c.quiz.a) ST.done[ST.cur] = true; save(); var y = window.pageYOffset; paint(); window.scrollTo(0, y); return; }
+      if(rt){ delete ST.ans[ST.cur]; var y2 = window.pageYOffset; paint(); window.scrollTo(0, y2); return; }
       if(tr){ ev.stopPropagation(); TOUR.start(tr.getAttribute('data-sk-tour')); }
+    });
+    root.addEventListener('input', function(ev){
+      var i = ev.target; if(!i.hasAttribute || !i.hasAttribute('data-cf')) return;
+      var box = i.closest('[data-calc]'), k = box.getAttribute('data-calc'); CV[k] = CV[k] || {}; CV[k][i.getAttribute('data-cf')] = i.value;
+      try { localStorage.setItem('spz.sks.calc', JSON.stringify(CV)); } catch(e){}
+      box.querySelector('[data-co]').innerHTML = calcOut(k);
     });
   }
   function scrollPanel(){
-    var p = root.querySelector('.sks-panel'); if(!p) return;
+    var p = root.querySelector('.sk2-p'); if(!p) return;
     var top = p.getBoundingClientRect().top, topH = (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--spz-topH'), 10) || 90) + 12;
     if(top < topH || top > window.innerHeight * 0.6) window.scrollTo({ top:window.pageYOffset + top - topH, behavior:'smooth' });
   }

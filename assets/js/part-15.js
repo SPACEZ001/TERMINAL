@@ -1345,17 +1345,17 @@ var CL_UI = {
               : 'Elliott Wave Analyst — investing since 2023') + '</span>' +
           '</span>' +
         '</div>' +
-        /* 2026-11-04: a wide animated invitation to see her analysis work on Instagram (user request) */
-        '<a class="dev-works" href="https://www.instagram.com/spczterminal" target="_blank" rel="noopener noreferrer">' +
-          '<span class="dw-ico">' + DEV_IG_ICON + '</span>' +
-          '<span class="dw-t"><b>' + esc(th ? 'ดูผลงานการวิเคราะห์' : 'See my analysis work') + '</b><em>Instagram · @spczterminal</em></span>' +
-          '<span class="dw-tags"><i>Elliott Wave</i><i>' + esc(th ? 'กราฟจริง' : 'real charts') + '</i><i>' + esc(th ? 'อัปเดตตลาด' : 'market updates') + '</i></span>' +
-          '<span class="dw-go">→</span>' +
-        '</a>' +
         '<div class="dev-links">' +
           '<a class="dev-btn ig" href="https://www.instagram.com/spczterminal" target="_blank" rel="noopener noreferrer">' + DEV_IG_ICON + '<span>Instagram</span></a>' +
           '<a class="dev-btn fb" href="https://www.facebook.com/share/1GBykHfZ1V/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer">' + DEV_FB_ICON + '<span>Facebook</span></a>' +
           '<a class="dev-btn bio" href="https://linkbio.co/6120202qnLaXl" target="_blank" rel="noopener noreferrer">' + DEV_BIO_ICON + '<span>' + esc(th ? 'ลิงก์ทั้งหมด' : 'All Links') + '</span></a>' +
+        /* 2026-11-04: a slim animated bar under the link buttons (moved 2026-11-04 evening): an invitation to see her analysis work on Instagram (user request) */
+        '<a class="dev-works" href="https://www.instagram.com/spczterminal" target="_blank" rel="noopener noreferrer">' +
+          '<span class="dw-ico">' + DEV_IG_ICON + '</span>' +
+          '<span class="dw-t"><b>' + esc(th ? 'ดูผลงานการวิเคราะห์' : 'See my analysis work') + '</b><em>Instagram · @spczterminal</em></span>' +
+          '<span class="dw-tags"><i>Elliott Wave</i><i>' + esc(th ? 'อัปเดตตลาด' : 'market updates') + '</i></span>' +
+          '<span class="dw-go">→</span>' +
+        '</a>' +
         '</div>');
       return wrap;
     }
