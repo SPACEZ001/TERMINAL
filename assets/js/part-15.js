@@ -1618,7 +1618,11 @@ var CL_UI = {
              starting point -- so it now runs right after the orientation
              tour, before the risk-quiz/archetypes/glossary/signals that
              build on it. */
-          ids:['guided', 'basics', 'start', 'types', 'glossary', 'signals', 'elliott', 'stockclass', 'autowave'] },
+          /* 2026-11-05 (user request): one beginner path from zero to advanced. The Stock Classroom course
+             (6 levels, part-84.js) is the trunk and comes first; the older pages follow in the order the course
+             sends you to them, with clearer menu names (LEARN_MENU below) so "Start Investing" and
+             "Start Here" no longer read like the same page. */
+          ids:['stockclass', 'basics', 'start', 'types', 'glossary', 'signals', 'guided', 'elliott', 'autowave'] },
         /* Exam Arena (part-67.js): CEWA practice / ranked / blitz + leaderboard */
         { k:'arena', t:{en:'Test yourself',th:'ทดสอบตัวเอง'}, ids:['arena'] },
         { k:'market', t:{en:'Read the market',th:'อ่านตลาด'},
@@ -1652,6 +1656,17 @@ var CL_UI = {
         /* Round AD: the website QR code is public now (was admin-only). */
         { k:'share', t:{en:'Share',th:'แชร์เว็บ'}, ids:['qrcode'] }
       ];
+      /* menu-only names + a level chip for the learning path (page titles themselves are unchanged) */
+      var LEARN_MENU = {
+        stockclass:{ t:{en:'Stock Classroom: start from zero', th:'ห้องเรียนหุ้น: เริ่มจากศูนย์'}, d:{en:'The main course — 6 levels from "what is a stock" to the formulas behind the Market Brain. Start here.', th:'คอร์สหลัก 6 ระดับ ตั้งแต่ “หุ้นคืออะไร” จนถึงสูตรเบื้องหลังสมองตลาด เริ่มที่นี่'}, lv:{en:'Course',th:'คอร์สหลัก'}, c:'main' },
+        basics:{ t:{en:'Open an account & stock basics', th:'เปิดบัญชี & พื้นฐานหุ้น'}, d:{en:'How shares work, opening a brokerage account step by step, the five checks every stock must pass.', th:'หุ้นทำงานยังไง เปิดบัญชีหุ้นทีละขั้น และ 5 เรื่องที่หุ้นทุกตัวต้องผ่าน'}, lv:{en:'Basic',th:'พื้นฐาน'}, c:'b' },
+        start:{ t:{en:'Find your style (5 questions)', th:'หาแนวลงทุน (5 คำถาม)'}, d:{en:'Match your goal and risk tolerance to a stock style, with the order to build a first portfolio.', th:'จับคู่เป้าหมายและความเสี่ยงที่รับได้กับแนวหุ้น พร้อมลำดับการสร้างพอร์ตแรก'}, lv:{en:'Basic',th:'พื้นฐาน'}, c:'b' },
+        types:{ t:{en:'The 4 kinds of stock', th:'หุ้น 4 ประเภท'}, lv:{en:'Basic',th:'พื้นฐาน'}, c:'b' },
+        glossary:{ t:{en:'Key numbers explained (P/E, ROE…)', th:'ตัวเลขสำคัญ (P/E, ROE…)'}, lv:{en:'Intermediate',th:'กลาง'}, c:'m' },
+        signals:{ lv:{en:'Intermediate',th:'กลาง'}, c:'m' },
+        guided:{ t:{en:'Guided tour of the whole site', th:'โหมดพาเที่ยวทั้งเว็บ'}, lv:{en:'Any level',th:'ทุกระดับ'}, c:'m' },
+        elliott:{ lv:{en:'Advanced',th:'ขั้นสูง'}, c:'a' }, autowave:{ lv:{en:'Advanced',th:'ขั้นสูง'}, c:'a' }
+      };
       var used = { membership:1, journal:1, brain:1 }, n = 0, g, i, r;
       for(g = 0; g < GROUPS.length; g++){
         var rows = [];
@@ -1666,8 +1681,11 @@ var CL_UI = {
         pop.appendChild(el('div', 'np-sep', esc(tx(GROUPS[g].t))));
         for(i = 0; i < rows.length; i++){
           n++;
-          pop.appendChild(item(rows[i].id, (n < 10 ? '0' : '') + n,
-            tx(rows[i].t).split('—')[0].trim(), tx(rows[i].d)));
+          var lm = GROUPS[g].k === 'learn' ? LEARN_MENU[rows[i].id] : null;
+          var it2 = item(rows[i].id, (n < 10 ? '0' : '') + n,
+            lm && lm.t ? tx(lm.t) : tx(rows[i].t).split('—')[0].trim(), lm && lm.d ? tx(lm.d) : tx(rows[i].d));
+          if(lm && lm.lv){ var hd = it2.querySelector('.np-head'); if(hd){ var chip = document.createElement('span'); chip.className = 'np-lv ' + lm.c; chip.textContent = tx(lm.lv); hd.insertBefore(chip, hd.querySelector('.np-arrow')); } if(lm.c === 'main') it2.classList.add('np-item-course'); }
+          pop.appendChild(it2);
         }
       }
       /* anything not listed above still shows up, never silently dropped --
