@@ -79,6 +79,17 @@ or re-inline everything back into one file unless the user asks for that.
   carries a `.spz-src` badge saying live / mixed / frozen / teach / sim. If you change
   what a screen is built from, change its badge in the `STATUS` map too.
 
+## Added 2026-11-05
+
+- `scripts/brain_wf.py` -> `data/brain_wf.json` (brain-data job): 12-year prices-only walk-forward of the
+  stock rules, survivor-fair benchmark (equal-weight whole list), stop-loss study per market. The page's
+  stop-loss (`stopFor()` in the Brain sources) uses its `best_stop`.
+- Telegram alerts for the Brain run in `line-qr-worker.js` (BRAIN ALERTS + `scheduled()` handler), driven by a
+  Cloudflare Cron Trigger (every 30 min), not GitHub Actions. The page syncs holdings to
+  `/api/brain/alerts/pf`. The user must paste the Worker and add the Cron Trigger in the dashboard.
+- Brain sources now also include `w_alert.js` (between `v_pill` and `f_pf` in the build order).
+- Update guide PDF: `assets/docs/brain-update-2026-11-05.pdf` (linked from How-to-read).
+
 ## Testing
 
 Serve the **repo root** (not just the HTML file — it now needs `assets/`
@@ -110,8 +121,9 @@ When you changed `assets/js/*.js` or `assets/css/*.css` too, `git status`
 should show those alongside the HTML — a commit for a code change is very
 rarely just the HTML file anymore.
 
-**Mirror backup on the Mac (2026-10-29, user request):** after every `git pull`
-or file change in the Mac's TERMINAL folder, also refresh the full mirror
+**Mirror backup on the Mac (2026-10-29, changed 2026-11-05):** do NOT refresh it
+automatically any more. At the end of every task ASK the user whether to back up;
+only when she says yes ("สำรอง") refresh the full mirror
 `~/Documents/💾 TERMINAL BACKUP` (same file names; excludes `.git/` and
 `💾 BACKUP (สำรองไฟล์)/`) by running, in `device_bash`,
 `SPZ_NONINTERACTIVE=1 bash "$HOME/mnt/Documents/TERMINAL/⚙️ อัตโนมัติ (AUTOMATION)/🔄 เช็ก+ซิงก์สำรอง (SYNC BACKUP).command" --sync`
