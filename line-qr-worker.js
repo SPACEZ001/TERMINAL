@@ -1767,11 +1767,18 @@ async function handleTelegramWebhook(request, env) {
   const chat = msg && msg.chat;
   const from = msg && msg.from;
   const text = (msg && msg.text) || "";
+  if (chat && chat.id && /^\/stopalerts\b/.test(text)) {
+    const list = (await brainChats(env)).filter((c) => c !== chat.id);
+    await env.SESSIONS.put("brain:alert:chats", JSON.stringify(list));
+    await tgSend(chat.id, "ปิดการแจ้งเตือนสมองตลาดแล้วค่ะ ถ้าจะเปิดใหม่ ให้กดปุ่ม “เปิดแจ้งเตือน Telegram” ในหน้าพอร์ตของฉันอีกครั้งนะคะ", env);
+    return json({ ok: true }, env);
+  }
   if (!chat || !chat.id || !text.startsWith("/start")) {
     return json({ ok: true }, env); // some other update type (edited message, callback query, ...) -- ignore
   }
 
   const payload = text.split(/\s+/)[1] || "";
+  if (payload.startsWith("alerts_")) return await brainAlertSubscribe(payload.slice(7), chat.id, env);
   if (!payload.startsWith("login_")) {
     // someone opened the bot without the site's own deep link
     await tgSend(chat.id, "สวัสดีค่ะ 👋 บอทนี้ใช้สำหรับเข้าสู่ระบบเว็บ SPACEZ TERMINAL เท่านั้น กลับไปที่หน้าเว็บแล้วกดสแกน QR ใหม่อีกครั้งได้เลยค่ะ", env);
@@ -3256,6 +3263,10 @@ const SPZ_ROUTES = {
       if (url.pathname === "/api/session/new") return withCorsOrigin(await handleNewSession(request, env), allowOrigin);
       if (url.pathname === "/callback") return withCorsOrigin(await handleCallback(request, env), allowOrigin);
       if (url.pathname === "/telegram-webhook" && request.method === "POST") return withCorsOrigin(await handleTelegramWebhook(request, env), allowOrigin);
+      if (url.pathname === "/api/brain/alerts/link" && request.method === "POST") return withCorsOrigin(await handleBrainAlertLink(request, env), allowOrigin);
+      if (url.pathname === "/api/brain/alerts/pf" && request.method === "POST") return withCorsOrigin(await handleBrainAlertPf(request, env), allowOrigin);
+      if (url.pathname === "/api/brain/alerts/status" && request.method === "GET") return withCorsOrigin(await handleBrainAlertStatus(request, env), allowOrigin);
+      if (url.pathname === "/api/brain/alerts/test" && request.method === "POST") return withCorsOrigin(await handleBrainAlertTest(request, env), allowOrigin);
       if (url.pathname === "/api/telegram/avatar") return withCorsOrigin(await handleTelegramAvatar(request, env), allowOrigin);
       if (url.pathname === "/api/session/status") return withCorsOrigin(await handleStatus(request, env), allowOrigin);
       if (url.pathname === "/api/session/data") return withCorsOrigin(await handleData(request, env), allowOrigin);
@@ -3365,6 +3376,118 @@ const SPZ_ROUTES = {
    a key (normal visitors) are not affected at all. */
 const ADM_FAIL_PREFIX = "adm:fail:";
 const ADM_FAIL_MAX = 20;
+/* ===================================================== BRAIN ALERTS (2026-11-05)
+   Telegram alerts for the Market Brain that do NOT depend on GitHub Actions'
+   schedule (which GitHub delays or skips when busy). A Cloudflare Cron Trigger
+   on this Worker runs brainAlertRun() every 30 minutes:
+     * each holding of "My portfolio" (the page syncs them here with the
+       suggested stop-loss and the 200-day line): price at or under the stop,
+       within 3% of it, or a close under the 200-day line -> one message, and
+       it re-arms only after the price recovers
+     * a short morning digest at 08:00 Thai time: every holding vs its stop,
+       plus today's big US releases in Thai time
+   Prices come straight from Yahoo's chart API (small requests, no GitHub).
+   Uses the Telegram LOGIN bot that already exists (TELEGRAM_LOGIN_BOT_TOKEN /
+   TELEGRAM_LOGIN_BOT_USERNAME). Setup in the Cloudflare dashboard: this
+   Worker -> Settings -> Triggers -> Cron Triggers -> add  * /30 * * * *
+   (no space). Then on the site: My portfolio -> "Turn on Telegram alerts". */
+const BRAIN_LINK = "https://spacez001.github.io/TERMINAL/SPACEZ_TERMINAL.html#/brain";
+const BRAIN_ECON = "https://spacez001.github.io/TERMINAL/data/econ.json";
+async function brainChats(env) { try { const v = JSON.parse((await env.SESSIONS.get("brain:alert:chats")) || "[]"); return Array.isArray(v) ? v : []; } catch (e) { return []; } }
+async function brainSendAll(env, text) { const cs = await brainChats(env); for (const c of cs) await tgSend(c, text, env); return cs.length; }
+async function brainAlertSubscribe(code, chatId, env) {
+  const ok = code && /^[a-f0-9]{24}$/.test(code) && (await env.SESSIONS.get("brainlink:" + code));
+  if (!ok) { await tgSend(chatId, "ลิงก์นี้หมดอายุแล้วค่ะ กลับไปกดปุ่ม “เปิดแจ้งเตือน Telegram” ในหน้าพอร์ตของฉันอีกครั้งนะคะ", env); return json({ ok: true }, env); }
+  await env.SESSIONS.delete("brainlink:" + code);
+  const list = await brainChats(env);
+  if (list.indexOf(chatId) === -1) list.push(chatId);
+  await env.SESSIONS.put("brain:alert:chats", JSON.stringify(list.slice(-5)));
+  const pf = await brainPf(env);
+  await tgSend(chatId, "✅ เปิดแจ้งเตือนสมองตลาดแล้วค่ะ\n\nดิฉันจะส่งข้อความเมื่อ:\n• หุ้นในพอร์ตใกล้หรือหลุดจุดตัดขาดทุน\n• หุ้นปิดต่ำกว่าเส้นเฉลี่ย 200 วัน\n• ทุกเช้า 08:00 น. สรุปพอร์ตและตัวเลขสำคัญที่จะประกาศวันนี้\n\nตอนนี้ติดตามอยู่ " + pf.items.length + " ตัว (อัปเดตเองทุกครั้งที่เปิดหน้าพอร์ตของฉัน)\nปิดได้ทุกเมื่อ พิมพ์ /stopalerts", env);
+  return json({ ok: true }, env);
+}
+async function brainPf(env) { try { const v = JSON.parse((await env.SESSIONS.get("brain:alert:pf")) || "{}"); return { items: Array.isArray(v.items) ? v.items : [], at: v.at || 0 }; } catch (e) { return { items: [], at: 0 }; } }
+async function handleBrainAlertLink(request, env) {
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
+  if (!env.TELEGRAM_LOGIN_BOT_TOKEN || !env.TELEGRAM_LOGIN_BOT_USERNAME) return json({ error: "no_bot" }, env, 503);
+  const u8 = new Uint8Array(12); crypto.getRandomValues(u8);
+  const code = Array.from(u8).map((b) => b.toString(16).padStart(2, "0")).join("");
+  await env.SESSIONS.put("brainlink:" + code, "1", { expirationTtl: 900 });
+  return json({ url: "https://t.me/" + env.TELEGRAM_LOGIN_BOT_USERNAME + "?start=alerts_" + code }, env);
+}
+async function handleBrainAlertPf(request, env) {
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
+  let body; try { body = await request.json(); } catch (e) { return json({ error: "bad_request" }, env, 400); }
+  const items = (Array.isArray(body.items) ? body.items : []).slice(0, 30).map((x) => ({
+    t: String(x.t || "").slice(0, 16), y: String(x.y || "").replace(/[^A-Za-z0-9.^=\-]/g, "").slice(0, 16),
+    c: x.c === "฿" ? "฿" : "$", stop: +x.stop || 0, ma: +x.ma || 0, w: +x.w || 0,
+  })).filter((x) => x.t && x.y);
+  await env.SESSIONS.put("brain:alert:pf", JSON.stringify({ items, at: Date.now() }));
+  return json({ ok: true, n: items.length }, env);
+}
+async function handleBrainAlertStatus(request, env) {
+  if (!(await isAdminKeyValid(request, env, true))) return json({ error: "unauthorized" }, env, 401);
+  let st = {}; try { st = JSON.parse((await env.SESSIONS.get("brain:alert:state")) || "{}"); } catch (e) {}
+  const pf = await brainPf(env);
+  return json({ bot: !!env.TELEGRAM_LOGIN_BOT_TOKEN, chats: (await brainChats(env)).length, pf: pf.items.length, pfAt: pf.at, lastRun: st.run || 0, lastSent: st.sent || 0 }, env);
+}
+async function handleBrainAlertTest(request, env) {
+  if (!(await isAdminKeyValid(request, env))) return json({ error: "unauthorized" }, env, 401);
+  const n = await brainSendAll(env, "🔔 ทดสอบการแจ้งเตือนสมองตลาดค่ะ ถ้าเห็นข้อความนี้ แปลว่าระบบส่งถึงแล้ว\n" + BRAIN_LINK);
+  return json({ ok: true, sent: n }, env);
+}
+async function brainQuote(sym) {
+  for (const host of ["query1", "query2"]) {
+    try {
+      const r = await fetch("https://" + host + ".finance.yahoo.com/v8/finance/chart/" + encodeURIComponent(sym) + "?range=5d&interval=1d", { headers: { "User-Agent": "Mozilla/5.0 (spacez-brain-alerts)" } });
+      if (!r.ok) continue;
+      const j = await r.json(), res = j && j.chart && j.chart.result && j.chart.result[0], m = res && res.meta;
+      if (m && m.regularMarketPrice > 0) return { p: m.regularMarketPrice, prev: m.chartPreviousClose || m.previousClose || null };
+    } catch (e) {}
+  }
+  return null;
+}
+function brainFmt(c, v) { return c + (v >= 1000 ? Math.round(v).toLocaleString("en-US") : v.toFixed(2)); }
+async function brainAlertRun(env) {
+  const chats = await brainChats(env);
+  if (!chats.length || !env.TELEGRAM_LOGIN_BOT_TOKEN) return;
+  let st = {}; try { st = JSON.parse((await env.SESSIONS.get("brain:alert:state")) || "{}") || {}; } catch (e) { st = {}; }
+  st.stop = st.stop || {}; st.near = st.near || {}; st.ma = st.ma || {};
+  const pf = await brainPf(env), now = new Date(), th = new Date(now.getTime() + 7 * 3600e3), today = th.toISOString().slice(0, 10), hour = th.getUTCHours();
+  const lines = [], q = {};
+  for (const it of pf.items) {
+    const x = await brainQuote(it.y); if (!x) continue; q[it.t] = x;
+    const p = x.p;
+    if (it.stop > 0) {
+      if (p <= it.stop && !st.stop[it.t]) { lines.push("🔴 " + it.t + " หลุดจุดตัดขาดทุนแล้ว: ราคา " + brainFmt(it.c, p) + " (จุดตัด " + brainFmt(it.c, it.stop) + ") ตามแผนคือขายตัวนี้ค่ะ"); st.stop[it.t] = 1; st.near[it.t] = 1; }
+      else if (p > it.stop && p <= it.stop * 1.03 && !st.near[it.t]) { lines.push("⚠️ " + it.t + " ใกล้จุดตัดขาดทุน: ราคา " + brainFmt(it.c, p) + " ห่างจุดตัด " + brainFmt(it.c, it.stop) + " แค่ " + ((p / it.stop - 1) * 100).toFixed(1) + "%"); st.near[it.t] = 1; }
+      if (p > it.stop * 1.05) { st.stop[it.t] = 0; st.near[it.t] = 0; }
+    }
+    if (it.ma > 0) {
+      if (p < it.ma && !st.ma[it.t]) { lines.push("🟠 " + it.t + " ราคาต่ำกว่าเส้นเฉลี่ย 200 วัน (" + brainFmt(it.c, it.ma) + ") ขาขึ้นเริ่มเสีย ถ้าปิดใต้เส้นต่อเนื่อง ให้พิจารณาสลับตัวค่ะ"); st.ma[it.t] = 1; }
+      else if (p > it.ma * 1.02) st.ma[it.t] = 0;
+    }
+  }
+  let sent = false;
+  if (lines.length) { await brainSendAll(env, "🧠 สมองตลาด · แจ้งเตือนพอร์ต\n\n" + lines.join("\n\n") + "\n\nดูรายละเอียด: " + BRAIN_LINK); sent = true; }
+  if (hour >= 8 && hour < 12 && st.dg !== today && pf.items.length) {
+    const rows = pf.items.map((it) => { const x = q[it.t]; if (!x) return "• " + it.t + " — ไม่มีราคา"; const d1 = x.prev ? (x.p / x.prev - 1) * 100 : null;
+      return "• " + it.t + " " + brainFmt(it.c, x.p) + (d1 != null ? " (" + (d1 >= 0 ? "+" : "") + d1.toFixed(1) + "%)" : "") + (it.stop > 0 ? " · ห่างจุดตัด " + ((x.p / it.stop - 1) * 100).toFixed(0) + "%" : ""); });
+    let ev = [];
+    try {
+      const r = await fetch(BRAIN_ECON + "?t=" + Date.now()); const E = r.ok ? await r.json() : null;
+      ev = ((E && E.economicCalendar) || []).filter((e) => e.country === "US" && e.impact === "high" && e.time).map((e) => { const t = new Date(e.time.replace(" ", "T") + "Z"); const tt = new Date(t.getTime() + 7 * 3600e3); return { d: tt.toISOString().slice(0, 10), h: tt.toISOString().slice(11, 16), n: e.event, est: e.estimate, u: e.unit || "" }; })
+        .filter((e) => e.d === today || (e.d > today && e.h < "06:00" && (new Date(e.d + "T00:00:00Z") - new Date(today + "T00:00:00Z")) <= 864e5));
+    } catch (e) {}
+    const evTxt = ev.length ? "\n\n📅 ตัวเลขสำคัญของสหรัฐฯ (เวลาไทย)\n" + ev.slice(0, 6).map((e) => "• " + (e.d === today ? "" : "คืนนี้ตี ") + e.h + " น. " + e.n + (e.est != null ? " (คาด " + e.est + e.u + ")" : "")).join("\n") : "\n\n📅 วันนี้ไม่มีตัวเลขสำคัญของสหรัฐฯ";
+    await brainSendAll(env, "☀️ สรุปเช้านี้ · สมองตลาด\n\nพอร์ตของฉัน " + pf.items.length + " ตัว\n" + rows.join("\n") + evTxt + "\n\n" + BRAIN_LINK);
+    st.dg = today; sent = true;
+  }
+  st.run = Date.now(); if (sent) st.sent = Date.now();
+  /* write only when something changed or every ~6 hours, to stay well inside the free KV write quota */
+  if (sent || !st.w || Date.now() - st.w > 6 * 3600e3) { st.w = Date.now(); await env.SESSIONS.put("brain:alert:state", JSON.stringify(st)); }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const keyed = request.method !== "OPTIONS" && !!request.headers.get("X-Admin-Key");
@@ -3384,5 +3507,8 @@ export default {
       if (ctx && ctx.waitUntil) ctx.waitUntil(p); else await p;
     }
     return resp;
+  },
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(brainAlertRun(env).catch(() => {}));
   },
 };
