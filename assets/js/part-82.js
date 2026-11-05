@@ -72,6 +72,9 @@
     dot = document.createElement('button'); dot.type = 'button'; dot.className = 'bz-navdot'; dot.setAttribute('aria-label', 'menu');
     var paint = function(){ var open = document.documentElement.classList.contains('bz-navx'); dot.innerHTML = (open ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>') + '<span>' + T(open ? { en:'Close', th:'ปิด' } : { en:'Menu', th:'เมนู' }) + '</span>'; };
     dot.addEventListener('click', function(){ document.documentElement.classList.toggle('bz-navx'); paint(); });
+    /* 2026-11-05: with a mouse, just pointing at the folded menu opens it (a click still toggles) */
+    dot.addEventListener('mouseenter', function(){ try { if(!window.matchMedia('(hover:hover) and (pointer:fine)').matches) return; } catch(e){ return; } if(!document.documentElement.classList.contains('bz-navx')){ document.documentElement.classList.add('bz-navx'); paint(); dot.__hov = Date.now(); } });
+    dot.addEventListener('click', function(ev){ if(dot.__hov && Date.now() - dot.__hov < 800){ dot.__hov = 0; ev.stopImmediatePropagation(); } }, true);
     document.body.appendChild(dot); paint();
     new MutationObserver(paint).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
   }
