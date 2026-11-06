@@ -54,7 +54,7 @@
      right theme. initTheme() (later in the file) is unchanged and still
      builds the theme-switch UI; it just re-applies the same value. */
   try {
-    var THEMES_EARLY = ['void', 'lime', 'light'];
+    var THEMES_EARLY = ['void', 'light'];   /* 2026-11-07: 'lime' removed */
     var savedTheme = localStorage.getItem('ma.theme') || 'void';
     if (THEMES_EARLY.indexOf(savedTheme) === -1) savedTheme = 'void';
     document.documentElement.dataset.theme = savedTheme;

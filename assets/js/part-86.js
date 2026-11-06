@@ -45,11 +45,11 @@
 
   var TX = {
     eb:B('SPACEZ · Exam room', 'SPACEZ · ห้องสอบ'),
-    h:B('Mock exams: CEWA International · IC', 'ทดลองสอบ CEWA International · IC'),
+    h:B('Mock exams: CEWA International · IC Thailand', 'ทดลองสอบ CEWA International · IC Thailand'),
     p:B('Full-length, timed practice papers. Pick a set yourself, or let the room pick one for you. Each set opens in a new tab.', 'ข้อสอบจำลองเต็มชุด แบบจับเวลา เลือกชุดเอง หรือให้ระบบสุ่มให้ก็ได้ ทุกชุดเปิดในแถบใหม่'),
-    tCewa:B('CEWA International', 'CEWA International'), tIc:B('IC Plain', 'IC Plain'), tMore:B('More', 'เพิ่มเติม'),
+    tCewa:B('CEWA International', 'CEWA International'), tIc:B('IC Thailand (IC Plain)', 'IC Thailand (IC Plain)'), tMore:B('More', 'เพิ่มเติม'),
     cewaD:B('Elliott Wave International certification — timed practice papers.', 'ข้อสอบรับรอง Elliott Wave International — ฝึกทำแบบจับเวลา'),
-    icD:B('Thai investment consultant licence (IC Plain) — mock papers.', 'ใบอนุญาตผู้แนะนำการลงทุน (IC Plain) — ข้อสอบจำลอง'),
+    icD:B('Thai investment consultant licence (IC Plain) — 100 questions, 150 minutes, like the real exam.', 'ใบอนุญาตผู้แนะนำการลงทุนของไทย (IC Plain) — 100 ข้อ 150 นาที เหมือนสอบจริง'),
     sets:B('sets', 'ชุด'), set:B('Set', 'ข้อสอบชุดที่'), rnd:B('Random set', 'สุ่มข้อสอบ'), rndAll:B('all sets', 'ทุกชุด'), rndPage:B('this page', 'หน้านี้'),
     arena:B('Exam Arena', 'สนามสอบ CEWA'), arenaD:B('Random questions, ranked rounds and a leaderboard.', 'สุ่มข้อ แข่งจัดอันดับ และตารางคะแนน'),
     lockH:B('Admin and editor only', 'เฉพาะแอดมินและ Editor'), lockP:B('Log in as admin or editor to open the exam sets.', 'เข้าสู่ระบบเป็นแอดมินหรือ Editor เพื่อเปิดข้อสอบ'), login:B('Log in', 'เข้าสู่ระบบ'),
@@ -98,7 +98,7 @@
     return '<div class="ex-wrap"><div class="ex-hero"><div class="ex-logo">' + ico('cewa') + '</div><div><span class="ex-eb">' + esc(T(TX.eb)) + '</span><h1>' + esc(T(TX.h)) + '</h1><p>' + esc(T(TX.p)) + '</p></div>' +
         '<div class="ex-stats"><div><b>' + CEWA.length + '</b><span>CEWA</span></div><div><b>' + IC.length + '</b><span>IC</span></div></div></div>' +
       (ok ? '' : '<div class="ex-lock">' + ico('lock') + '<div><b>' + esc(T(TX.lockH)) + '</b><span>' + esc(T(TX.lockP)) + '</span></div><button type="button" class="ex-btn" data-ex-login="1">' + esc(T(TX.login)) + '</button></div>') +
-      '<div class="ex-top"><div class="ex-rnd"><span class="ex-rico">' + ico('dice') + '</span><div><b>' + esc(T(TX.rnd)) + '</b><small>' + esc(ST.tab === 'ic' ? 'IC Plain' : 'CEWA International') + ' · ' + L0.length + ' ' + esc(T(TX.sets)) + '</small></div><button type="button" class="ex-btn"' + (ok ? '' : ' disabled') + ' data-ex-rnd="all">' + esc(T(TX.rndAll)) + '</button><button type="button" class="ex-btn ghost"' + (ok ? '' : ' disabled') + ' data-ex-rnd="page">' + esc(T(TX.rndPage)) + '</button></div>' +
+      '<div class="ex-top"><div class="ex-rnd"><span class="ex-rico">' + ico('dice') + '</span><div><b>' + esc(T(TX.rnd)) + '</b><small>' + esc(ST.tab === 'ic' ? 'IC Thailand' : 'CEWA International') + ' · ' + L0.length + ' ' + esc(T(TX.sets)) + '</small></div><button type="button" class="ex-btn"' + (ok ? '' : ' disabled') + ' data-ex-rnd="all">' + esc(T(TX.rndAll)) + '</button><button type="button" class="ex-btn ghost"' + (ok ? '' : ' disabled') + ' data-ex-rnd="page">' + esc(T(TX.rndPage)) + '</button></div>' +
         '<button type="button" class="ex-arena" data-ex-go="arena"><span>' + ico('trophy') + '</span><div><b>' + esc(T(TX.arena)) + '</b><small>' + esc(T(TX.arenaD)) + '</small></div></button>' +
         '<button type="button" class="ex-arena apps" data-ex-go="apps"><span>' + ico('grid') + '</span><div><b>' + esc(T(B('SPACEZ apps', 'รวมเว็บ SPACEZ'))) + '</b><small>' + esc(T(B('Tax, IC guide, vocabulary…', 'ภาษี คู่มือ IC คำศัพท์…'))) + '</small></div></button></div>' +
       '<div class="ex-tabs">' + tabs + '<span class="ex-tabd">' + esc(T(ST.tab === 'ic' ? TX.icD : TX.cewaD)) + '</span></div>' +
@@ -118,7 +118,7 @@
     secE = document.createElement('section'); secE.id = 'exams'; secE.className = 'ex-sec'; secE.setAttribute('data-route', 'exams');
     secA = document.createElement('section'); secA.id = 'apps'; secA.className = 'ex-sec'; secA.setAttribute('data-route', 'apps');
     var foot = document.querySelector('body > footer'); [secE, secA].forEach(function(s){ if(foot) document.body.insertBefore(s, foot); else document.body.appendChild(s); });
-    window.__spzAddRoute({ id:'exams', after:'arena', t:B('Exam room — CEWA International · IC', 'ห้องสอบ — ทดลองสอบ CEWA International · IC'), d:B('Mock exam sets for CEWA International and IC Plain, with a random-set button. Admin and editor only.', 'ข้อสอบจำลอง CEWA International และ IC Plain พร้อมปุ่มสุ่มชุด เฉพาะแอดมินและ Editor') });
+    window.__spzAddRoute({ id:'exams', after:'arena', t:B('Exam room — CEWA International · IC Thailand', 'ห้องสอบ — ทดลองสอบ CEWA International · IC Thailand'), d:B('Mock exam sets for CEWA International and IC Thailand (IC Plain), with a random-set button. Admin and editor only.', 'ข้อสอบจำลอง CEWA International และ IC Thailand (IC Plain) พร้อมปุ่มสุ่มชุด เฉพาะแอดมินและ Editor') });
     window.__spzAddRoute({ id:'apps', after:'exams', t:B('SPACEZ apps', 'รวมเว็บ SPACEZ'), d:B('Tax calculator, IC licence guide, exam vocabulary and more — each opens in a new tab.', 'คำนวณภาษี คู่มือสอบ IC คำศัพท์เตรียมสอบ และอื่นๆ เปิดในแถบใหม่') });
     paintE(); paintA();
     secE.addEventListener('click', function(ev){
@@ -139,4 +139,108 @@
     return true;
   }
   var tries = 0, iv = setInterval(function(){ if(build() || ++tries > 60) clearInterval(iv); }, 300);
+  /* ---------- 2026-11-07: SPACEZ apps as an icon button in the top bar, next to the guide pill (user request) ---------- */
+  var appsBtn = null, appsPop = null;
+  function paintAppsPop(){
+    if(!appsPop) return;
+    appsPop.innerHTML = '<div class="sab-h">' + esc(T(B('SPACEZ apps · open in a new tab', 'รวมเว็บ SPACEZ · เปิดในแถบใหม่'))) + '</div>' +
+      APPS.map(function(a){ return '<a class="sab-i" href="' + a[0] + '" target="_blank" rel="noopener" style="--c:' + a[4] + '"><i>' + ico(a[1]) + '</i><span><b>' + esc(T(a[2])) + '</b><small>' + esc(T(a[3])) + '</small></span>' + ico('ext') + '</a>'; }).join('') +
+      '<a class="sab-all" href="#/apps">' + esc(T(B('See all on one page', 'ดูทั้งหมดในหน้าเดียว'))) + ' →</a>';
+    if(appsBtn){ var lab = T(B('SPACEZ apps', 'รวมเว็บ SPACEZ')); appsBtn.setAttribute('aria-label', lab); appsBtn.title = lab; }
+  }
+  function buildAppsBtn(){
+    if(appsBtn) return true;
+    var host = document.querySelector('.gmh-pill') || document.getElementById('langToggle');
+    if(!host || !host.parentNode || !document.querySelector('.nav-cluster')) return false;
+    var wrap = document.createElement('div'); wrap.className = 'spz-apps';
+    appsBtn = document.createElement('button'); appsBtn.type = 'button'; appsBtn.className = 'spz-apps-btn';
+    appsBtn.setAttribute('aria-haspopup', 'true'); appsBtn.setAttribute('aria-expanded', 'false');
+    appsBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="5" r="2.2"/><circle cx="12" cy="5" r="2.2"/><circle cx="19" cy="5" r="2.2"/><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/><circle cx="5" cy="19" r="2.2"/><circle cx="12" cy="19" r="2.2"/><circle cx="19" cy="19" r="2.2"/></svg>';
+    appsPop = document.createElement('div'); appsPop.className = 'spz-apps-pop';
+    wrap.appendChild(appsBtn); wrap.appendChild(appsPop);
+    host.parentNode.insertBefore(wrap, host);
+    function setOpen(on){ wrap.classList.toggle('open', on); appsBtn.setAttribute('aria-expanded', on ? 'true' : 'false'); }
+    appsBtn.addEventListener('click', function(e){ e.stopPropagation(); setOpen(!wrap.classList.contains('open')); });
+    document.addEventListener('click', function(e){ if(!wrap.contains(e.target)) setOpen(false); });
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape') setOpen(false); });
+    appsPop.addEventListener('click', function(e){ if(e.target.closest('a')) setOpen(false); });
+    paintAppsPop();
+    new MutationObserver(paintAppsPop).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+    return true;
+  }
+  var tb = 0, ivb = setInterval(function(){ if(buildAppsBtn() || ++tb > 80) clearInterval(ivb); }, 250);
+
+})();
+
+/* =====================================================================
+   LIGHT-THEME READABILITY GUARD (2026-11-07)
+   User report: in the white theme some text melts into the background.
+   Most pages were drawn for the black theme first, with neon text colours.
+   In the light theme only, this walks the text on the page you are looking
+   at, works out the real background behind it, and if the contrast is too
+   low it darkens that text's colour just enough (inline style, marked with
+   data-spzlc so it is undone when you switch back to black).
+   Gradient-filled text and text on images/gradients are left alone.
+   ===================================================================== */
+(function(){
+  'use strict';
+  var MARK = 'data-spzlc', busy = false, timer = null;
+  function light(){ return document.documentElement.dataset.theme === 'light'; }
+  function rgba(s){ var m = s && s.match(/rgba?\(([^)]+)\)/); if(!m) return null; var p = m[1].split(/[ ,\/]+/).filter(Boolean).map(parseFloat); return [p[0], p[1], p[2], p.length > 3 ? p[3] : 1]; }
+  function lum(c){ var a = [0, 1, 2].map(function(k){ var v = c[k] / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2]; }
+  function ratio(a, b){ var x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+  var cache = null;
+  function bgOf(el){
+    if(cache.has(el)) return cache.get(el);
+    var stack = [], e, res = null;
+    for(e = el; e && e.nodeType === 1; e = e.parentElement){
+      var cs = getComputedStyle(e);
+      if(cs.backgroundImage && cs.backgroundImage !== 'none'){ res = 'skip'; break; }
+      var c = rgba(cs.backgroundColor);
+      if(c && c[3] > 0){ stack.push(c); if(c[3] >= 0.95) break; }
+    }
+    if(res !== 'skip'){
+      var cb = stack.length && stack[stack.length - 1][3] >= 0.95 ? stack.pop().slice(0, 3) : [255, 255, 255];
+      for(var i = stack.length - 1; i >= 0; i--){ var s = stack[i]; cb = [0, 1, 2].map(function(k){ return s[k] * s[3] + cb[k] * (1 - s[3]); }); }
+      res = cb;
+    }
+    cache.set(el, res);
+    return res;
+  }
+  function undo(){ document.querySelectorAll('[' + MARK + ']').forEach(function(el){ el.style.removeProperty('color'); el.removeAttribute(MARK); }); }
+  function scopes(){ var a = Array.prototype.slice.call(document.querySelectorAll('section[data-route].route-on')); return a.length ? a : [document.body]; }
+  function pass(){
+    if(busy) return; busy = true;
+    try {
+      if(!light()){ undo(); return; }
+      cache = new WeakMap();
+      var roots = scopes().concat([document.querySelector('.top-fixed'), document.querySelector('.nav-pop')]).filter(Boolean), seen = new Set(), n = 0;
+      roots.forEach(function(root){
+        var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), t;
+        while((t = w.nextNode()) && n < 4000){
+          if(t.textContent.trim().length < 1) continue;
+          var el = t.parentElement; if(!el || seen.has(el)) continue; seen.add(el); n++;
+          if(el.closest('svg,canvas,.ex-win,.ex-prev,[data-nolc]')) continue;
+          var cs = getComputedStyle(el);
+          if(cs.visibility === 'hidden' || cs.display === 'none') continue;
+          var fill = cs.webkitTextFillColor; if(fill && /rgba\(0, 0, 0, 0\)/.test(fill)) continue;
+          var fg = rgba(cs.color); if(!fg || fg[3] < 0.3) continue;
+          var bg = bgOf(el); if(bg === 'skip') continue;
+          if(lum(bg) < 0.45) continue;                    /* dark box inside the light theme: its own colours are fine */
+          var f = [0, 1, 2].map(function(k){ return fg[k] * fg[3] + bg[k] * (1 - fg[3]); });
+          if(ratio(f, bg) >= 3.2) continue;
+          var k = 1, c = f;
+          while(k > 0.08 && ratio(c, bg) < 4.5){ k -= 0.08; c = f.map(function(v){ return v * k; }); }
+          el.style.setProperty('color', 'rgb(' + c.map(Math.round).join(',') + ')', 'important');
+          el.setAttribute(MARK, '1');
+        }
+      });
+    } catch(e){} finally { busy = false; }
+  }
+  function soon(ms){ clearTimeout(timer); timer = setTimeout(pass, ms || 500); }
+  new MutationObserver(function(){ if(light() || document.querySelector('[' + MARK + ']')) soon(450); })
+    .observe(document.body, { childList:true, subtree:true, attributes:true, attributeFilter:['class'] });
+  new MutationObserver(function(){ soon(60); }).observe(document.documentElement, { attributes:true, attributeFilter:['data-theme', 'lang'] });
+  window.addEventListener('hashchange', function(){ soon(500); });
+  soon(1500);
 })();
