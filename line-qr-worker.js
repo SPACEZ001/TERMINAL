@@ -26,6 +26,13 @@
  *                                real incoming request's Origin header --
  *                                see pickAllowedOrigin()/withCorsOrigin()
  *                                near the bottom of this file.)
+ *   BRAIN_CODE_KEY               (Secret, 2026-11-07 — the AES-256 key that
+ *                                unlocks the Market Brain's code, which is
+ *                                now stored encrypted in the public repo
+ *                                (assets/js/min/part-83.bin). Handed ONLY to
+ *                                an Admin (ADMIN_USERS_KEY) or an Editor (code
+ *                                or Editor account) by GET /api/brain/code-key.
+ *                                Never commit this value anywhere.)
  *   ADMIN_USERS_KEY              (Secret — a password you make up, used ONLY
  *                                by the site's "Connected Users" admin page.
  *                                Deliberately separate from the site's own
@@ -3263,6 +3270,7 @@ const SPZ_ROUTES = {
       if (url.pathname === "/api/session/new") return withCorsOrigin(await handleNewSession(request, env), allowOrigin);
       if (url.pathname === "/callback") return withCorsOrigin(await handleCallback(request, env), allowOrigin);
       if (url.pathname === "/telegram-webhook" && request.method === "POST") return withCorsOrigin(await handleTelegramWebhook(request, env), allowOrigin);
+      if (url.pathname === "/api/brain/code-key" && request.method === "GET") return withCorsOrigin(await handleBrainCodeKey(request, env), allowOrigin);
       if (url.pathname === "/api/brain/alerts/link" && request.method === "POST") return withCorsOrigin(await handleBrainAlertLink(request, env), allowOrigin);
       if (url.pathname === "/api/brain/alerts/pf" && request.method === "POST") return withCorsOrigin(await handleBrainAlertPf(request, env), allowOrigin);
       if (url.pathname === "/api/brain/alerts/status" && request.method === "GET") return withCorsOrigin(await handleBrainAlertStatus(request, env), allowOrigin);
@@ -3424,6 +3432,15 @@ async function handleBrainAlertPf(request, env) {
   })).filter((x) => x.t && x.y);
   await env.SESSIONS.put("brain:alert:pf", JSON.stringify({ items, at: Date.now() }));
   return json({ ok: true, n: items.length }, env);
+}
+/* 2026-11-07: the Market Brain's code is encrypted in the public repo; only Admin / Editor get the key.
+   no-store so neither the browser nor a proxy keeps a copy. */
+async function handleBrainCodeKey(request, env) {
+  if (!(await isAdminOrEditorRead(request, env))) return json({ error: "unauthorized" }, env, 401);
+  if (!env.BRAIN_CODE_KEY) return json({ error: "not_configured" }, env, 503);
+  const r = json({ ok: true, key: env.BRAIN_CODE_KEY, v: 1 }, env);
+  try { r.headers.set("Cache-Control", "no-store"); } catch (e) {}
+  return r;
 }
 async function handleBrainAlertStatus(request, env) {
   if (!(await isAdminKeyValid(request, env, true))) return json({ error: "unauthorized" }, env, 401);
