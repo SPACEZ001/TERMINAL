@@ -79,7 +79,9 @@
     new MutationObserver(paint).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
   }
   function routeFlag(){
-    var on = location.hash === '#/brain';
+    /* 2026-11-07: the site router often moves with history.pushState (no hashchange), so also trust the
+       section's own route-on class - otherwise arriving from the menu left the board without its bars */
+    var bs = document.getElementById('brain'), on = /^#\/brain\b/.test(location.hash) || !!(bs && bs.classList.contains('route-on'));
     document.documentElement.classList.toggle('bz-route', on);
     if(!on) document.documentElement.classList.remove('bz-navx');
     if(on) navDot();
@@ -93,6 +95,8 @@
     document.body.appendChild(sec);
     window.__spzAddRoute({ id:'brain', after:'secmap', t:U.h, d:U.d });
     window.addEventListener('hashchange', check); routeFlag();
+    new MutationObserver(function(){ routeFlag(); if(sec.classList.contains('route-on') && state !== 'ready' && state !== 'loading') check(); }).observe(sec, { attributes:true, attributeFilter:['class'] });
+    window.addEventListener('popstate', function(){ setTimeout(routeFlag, 0); });
     /* the admin may log in while already sitting on #/brain */
     setInterval(function(){ if(location.hash === '#/brain' && state !== 'ready' && state !== 'loading') check(); }, 1500);
     new MutationObserver(function(){ if(state !== 'ready' && state !== 'loading') check(); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
