@@ -173,6 +173,70 @@
         '<small>' + esc(L() === 'th' ? '(60 − 50) × 100 = 1,000 · 2 × 100 = 200 · 1,200 ÷ 5,000 = 24% (ยังไม่หักค่าธรรมเนียมและภาษี)' : '(60 − 50) × 100 = 1,000 · 2 × 100 = 200 · 1,200 ÷ 5,000 = 24% (before fees and tax)') + '</small></div>' + compound() + '</div>' +
       '<button type="button" class="spzb-more" data-spzh-go="stockclass">' + esc(T(BX.more)) + ico('arrow') + '</button></div>';
   }
+
+  /* ---------- 2026-11-07: five short lessons before entering the site (user request: "more basics") ---------- */
+  var LX = {
+    eb:B('Before you start · 5 short lessons', 'ก่อนเริ่ม · 5 บทสั้นๆ'),
+    h:B('The basics everyone should know first', 'พื้นฐานที่ควรรู้ก่อนเริ่มลงทุน'),
+    tabs:[B('Your first purchase', 'ซื้อหุ้นครั้งแรก'), B('Reading a candle', 'อ่านแท่งเทียน'), B('6 words you will see', '6 คำที่เจอบ่อย'), B('Risk vs return', 'ความเสี่ยง vs ผลตอบแทน'), B('Checklist', 'เช็กลิสต์ก่อนลงทุน')],
+    next:B('Next lesson', 'บทถัดไป'), go:B('Continue in the Stock Classroom', 'เรียนต่อในห้องเรียนหุ้น')
+  };
+  function stepsLesson(){
+    var S = [[B('Open a brokerage account', 'เปิดบัญชีกับโบรกเกอร์'), B('Through a licensed securities company\'s app. You need your ID card and a bank account; most apps take a few days to approve.', 'ผ่านแอปของบริษัทหลักทรัพย์ที่ได้รับอนุญาต ใช้บัตรประชาชนและบัญชีธนาคาร ส่วนใหญ่อนุมัติภายในไม่กี่วัน'), '#22d3ee'],
+      [B('Put money in', 'ฝากเงินเข้าบัญชี'), B('Start with money you will not need for years. There is no minimum to learn with — start small.', 'เริ่มจากเงินที่ไม่ต้องใช้ไปอีกหลายปี ไม่ต้องเริ่มเยอะ เริ่มน้อยๆ เพื่อเรียนรู้ก่อน'), '#34d399'],
+      [B('Choose what to buy', 'เลือกหุ้นที่จะซื้อ'), B('Pick a business you understand. Check its profit, debt and dividend — this site explains each number.', 'เลือกธุรกิจที่เข้าใจ ดูกำไร หนี้ และปันผล ทุกตัวเลขมีคำอธิบายในเว็บนี้'), '#a78bfa'],
+      [B('Place the order', 'ส่งคำสั่งซื้อ'), B('Thai shares trade in lots of 100. Set the price you are willing to pay (a limit order). Payment settles 2 working days later (T+2).', 'หุ้นไทยซื้อขั้นต่ำทีละ 100 หุ้น ตั้งราคาที่ยอมจ่าย (Limit Order) เงินตัดจริงอีก 2 วันทำการ (T+2)'), '#f472b6']];
+    return '<div class="spzl-steps">' + S.map(function(x, i){ return '<div class="spzl-step" style="--c:' + x[2] + ';--d:' + (i * 110) + 'ms"><span class="n">' + (i + 1) + '</span><b>' + esc(T(x[0])) + '</b><p>' + esc(T(x[1])) + '</p></div>'; }).join('') + '</div>';
+  }
+  function candleLesson(){
+    var lab = function(en, th){ return esc(T(B(en, th))); };
+    return '<div class="spzl-cd"><svg class="spzl-cdsvg" viewBox="0 0 360 200" aria-hidden="true">' +
+      '<line x1="95" y1="18" x2="95" y2="182" class="wk"/><rect x="72" y="52" width="46" height="96" rx="4" class="up"/>' +
+      '<line x1="265" y1="18" x2="265" y2="182" class="wk"/><rect x="242" y="52" width="46" height="96" rx="4" class="dn"/>' +
+      '<g class="lb"><text x="128" y="22">' + lab('High', 'ราคาสูงสุด') + '</text><text x="128" y="56">' + lab('Close', 'ราคาปิด') + '</text><text x="128" y="152">' + lab('Open', 'ราคาเปิด') + '</text><text x="128" y="184">' + lab('Low', 'ราคาต่ำสุด') + '</text></g>' +
+      '<g class="lb r"><text x="232" y="22">' + lab('High', 'สูงสุด') + '</text><text x="232" y="56">' + lab('Open', 'เปิด') + '</text><text x="232" y="152">' + lab('Close', 'ปิด') + '</text><text x="232" y="184">' + lab('Low', 'ต่ำสุด') + '</text></g>' +
+      '</svg><div class="spzl-cdt"><div><i class="u"></i><b>' + lab('Green candle = price went up', 'แท่งเขียว = ราคาขึ้น') + '</b><span>' + lab('It closed higher than it opened.', 'ปิดสูงกว่าตอนเปิด') + '</span></div>' +
+      '<div><i class="d"></i><b>' + lab('Red candle = price went down', 'แท่งแดง = ราคาลง') + '</b><span>' + lab('It closed lower than it opened.', 'ปิดต่ำกว่าตอนเปิด') + '</span></div>' +
+      '<div><i class="w"></i><b>' + lab('The thin lines (wicks)', 'เส้นบางด้านบน-ล่าง (ไส้เทียน)') + '</b><span>' + lab('The highest and lowest prices during that day. One candle = one day (or one week, one hour…).', 'ราคาสูงสุดและต่ำสุดระหว่างวัน 1 แท่ง = 1 วัน (หรือ 1 สัปดาห์ 1 ชั่วโมง แล้วแต่ที่เลือก)') + '</span></div></div></div>';
+  }
+  function wordsLesson(){
+    var W = [['฿', B('Price', 'ราคาหุ้น'), B('What one share costs right now. It moves every minute the market is open.', 'ราคาต่อ 1 หุ้นตอนนี้ ขยับตลอดเวลาที่ตลาดเปิด'), '#22d3ee'],
+      ['%', B('Dividend yield', 'อัตราปันผล'), B('Yearly dividend ÷ price. ฿2 a year on a ฿50 share = 4%.', 'ปันผลต่อปี ÷ ราคา เช่น ปันผล 2 บาท ราคา 50 บาท = 4%'), '#34d399'],
+      ['P/E', B('Price / earnings', 'P/E'), B('How many years of today\'s profit you pay for. Lower = cheaper, but compare within the same industry.', 'จ่ายแพงกี่เท่าของกำไร ยิ่งต่ำยิ่งถูก แต่ต้องเทียบในอุตสาหกรรมเดียวกัน'), '#a78bfa'],
+      ['M', B('Market cap', 'มูลค่าบริษัท (Market Cap)'), B('Price × number of shares = the whole company\'s price tag.', 'ราคา × จำนวนหุ้นทั้งหมด = ราคาของทั้งบริษัท'), '#fbbf24'],
+      ['V', B('Volume', 'ปริมาณซื้อขาย (Volume)'), B('How many shares changed hands. A big move on big volume matters more.', 'มีการซื้อขายกี่หุ้น ราคาขยับแรงพร้อมวอลุ่มสูง = น่าสนใจกว่า'), '#f472b6'],
+      ['∑', B('Index', 'ดัชนี (SET, S&P 500)'), B('One number for a whole market — the average move of many big stocks.', 'ตัวเลขเดียวแทนทั้งตลาด คือการขยับเฉลี่ยของหุ้นใหญ่หลายตัว'), '#60a5fa']];
+    return '<div class="spzl-words">' + W.map(function(w, i){ return '<div class="spzl-w" style="--c:' + w[3] + ';--d:' + (i * 70) + 'ms"><i>' + w[0] + '</i><div><b>' + esc(T(w[1])) + '</b><span>' + esc(T(w[2])) + '</span></div></div>'; }).join('') + '</div>';
+  }
+  function riskLesson(){
+    var R = [[B('Bank deposit', 'เงินฝากธนาคาร'), 1, 1], [B('Government bonds', 'พันธบัตรรัฐบาล'), 2, 2], [B('Mixed / bond funds', 'กองทุนผสม / ตราสารหนี้'), 3, 3], [B('Large, steady companies', 'หุ้นบริษัทใหญ่'), 4, 4], [B('Small companies, crypto', 'หุ้นเล็ก คริปโต'), 5, 5]];
+    return '<div class="spzl-risk"><div class="spzl-rh"><span>' + esc(T(B('Lower risk, lower expected return', 'เสี่ยงต่ำ ผลตอบแทนคาดหวังต่ำ'))) + '</span><span>' + esc(T(B('Higher risk, higher expected return', 'เสี่ยงสูง ผลตอบแทนคาดหวังสูง'))) + '</span></div>' +
+      R.map(function(r, i){ return '<div class="spzl-rr" style="--d:' + (i * 90) + 'ms"><span>' + esc(T(r[0])) + '</span><div class="bars"><i class="rk" style="--w:' + (r[1] * 20) + '%"></i><i class="rt" style="--w:' + (r[2] * 20) + '%"></i></div></div>'; }).join('') +
+      '<div class="spzl-rl"><span><i class="rk"></i>' + esc(T(B('How much it can swing', 'ขึ้นลงแรงแค่ไหน'))) + '</span><span><i class="rt"></i>' + esc(T(B('Return you can expect over many years', 'ผลตอบแทนที่คาดหวังในระยะยาว'))) + '</span></div>' +
+      '<p class="spzl-note">' + esc(T(B('Nothing pays more without more risk. Spreading money across several of these is called diversification.', 'ไม่มีอะไรให้ผลตอบแทนสูงโดยไม่มีความเสี่ยง การแบ่งเงินไว้หลายอย่างเรียกว่า "การกระจายความเสี่ยง"'))) + '</p></div>';
+  }
+  function checkLesson(){
+    var C = [B('I have 3–6 months of living costs saved for emergencies.', 'มีเงินสำรองฉุกเฉิน 3–6 เดือนของค่าใช้จ่าย'), B('I have no expensive debt (credit cards, cash loans).', 'ไม่มีหนี้ดอกเบี้ยแพง (บัตรเครดิต สินเชื่อเงินสด)'), B('This is money I will not need for at least 3–5 years.', 'เป็นเงินที่ไม่ต้องใช้อย่างน้อย 3–5 ปี'),
+      B('I can watch it drop 20–30% without selling in a panic.', 'รับได้ถ้าราคาลง 20–30% โดยไม่ตกใจขายทิ้ง'), B('I understand what the company does and how it makes money.', 'เข้าใจว่าบริษัททำธุรกิจอะไร และหาเงินยังไง'), B('I will spread my money, not put it all in one stock.', 'จะกระจายเงิน ไม่ทุ่มหุ้นตัวเดียว')];
+    return '<div class="spzl-chk">' + C.map(function(c, i){ return '<label class="spzl-ck"><input type="checkbox" data-spzl-ck="' + i + '"><span class="bx"></span><span>' + esc(T(c)) + '</span></label>'; }).join('') +
+      '<div class="spzl-ckr" data-spzl-ckr="1"></div></div>';
+  }
+  var LESSONS = [stepsLesson, candleLesson, wordsLesson, riskLesson, checkLesson], curL = 0;
+  function lessonsHTML(){
+    return '<div class="spzl" data-spzl="1"><div class="spzb-hd"><span class="spzb-eb">' + esc(T(LX.eb)) + '</span><h2>' + esc(T(LX.h)) + '</h2></div>' +
+      '<div class="spzl-tabs" role="tablist">' + LX.tabs.map(function(t, i){ return '<button type="button" role="tab" class="spzl-tab' + (i === curL ? ' on' : '') + '" data-spzl-tab="' + i + '"><span>' + (i + 1) + '</span>' + esc(T(t)) + '</button>'; }).join('') + '</div>' +
+      '<div class="spzl-body" data-spzl-body="1">' + LESSONS[curL]() + '</div>' +
+      '<div class="spzl-foot">' + (curL < LESSONS.length - 1 ? '<button type="button" class="spzl-next" data-spzl-tab="' + (curL + 1) + '">' + esc(T(LX.next)) + ': ' + esc(T(LX.tabs[curL + 1])) + ' →</button>' : '') +
+        '<button type="button" class="spzb-more" data-spzh-go="stockclass">' + esc(T(LX.go)) + ico('arrow') + '</button></div></div>';
+  }
+  function ckScore(){
+    var box = sec && sec.querySelector('[data-spzl-ckr]'); if(!box) return;
+    var n = sec.querySelectorAll('[data-spzl-ck]:checked').length;
+    box.className = 'spzl-ckr ' + (n === 6 ? 'g' : n >= 4 ? 'a' : 'r');
+    box.textContent = n === 6 ? T(B('6 / 6 — you are ready to start small. Begin with lesson 1 in the Stock Classroom.', '6 / 6 — พร้อมเริ่มแบบเงินน้อยๆ แล้วค่ะ เริ่มที่บทที่ 1 ในห้องเรียนหุ้นได้เลย')) :
+      n >= 4 ? T(B(n + ' / 6 — nearly there. Sort out the unticked items before putting in real money.', n + ' / 6 — ใกล้แล้ว จัดการข้อที่ยังไม่ติ๊กก่อนใส่เงินจริง')) :
+      T(B(n + ' / 6 — learn first, invest later. Read the lessons and practise without real money for now.', n + ' / 6 — เรียนก่อน ลงทุนทีหลัง ตอนนี้อ่านบทเรียนและฝึกโดยยังไม่ใช้เงินจริง'));
+  }
   function heroHTML(d){
     var cnt = d && d.counts && d.counts.stocks ? d.counts.stocks : 555;
     var st = [[cnt, TX.s1], [26, TX.s2], [T(TX.s3v), TX.s3], ['TH · EN', TX.s4]];
@@ -185,7 +249,7 @@
         '<div class="spzh-cta"><button type="button" class="spzh-go" data-spzh-go="stockclass">' + esc(T(TX.go1)) + ico('arrow') + '</button><button type="button" class="spzh-gh" data-spzh-go="now">' + esc(T(TX.go2)) + '</button></div>' +
         '<div class="spzh-stats">' + st.map(function(s, i){ return '<div style="animation-delay:' + (0.5 + i * 0.08).toFixed(2) + 's"><b>' + esc(s[0]) + '</b><span>' + esc(T(s[1])) + '</span></div>'; }).join('') + '</div>' +
       '</div><div class="spzh-r" data-spzh="pulse">' + pulseHTML(d) + '</div></div>' +
-      basicsHTML() +
+      basicsHTML() + lessonsHTML() +
       '<div class="spzh-path"><h2>' + esc(T(TX.pathH)) + '</h2><div class="spzh-pg">' + path.map(function(p, i){ return '<button type="button" class="spzh-step" data-spzh-go="' + p[0] + '" style="--c:' + p[4] + '"><span class="no">0' + (i + 1) + '</span><i>' + ico(p[1]) + '</i><b>' + esc(T(p[2])) + '</b><span class="d">' + esc(T(p[3])) + '</span><em>' + ico('arrow') + '</em></button>'; }).join('') + '</div>' +
       '<button type="button" class="spzh-all" data-spzh-all="1">' + esc(T(TX.all)) + ico('down') + '</button></div>';
   }
@@ -194,6 +258,7 @@
   function snap(){ try { return window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot(); } catch(e){ return null; } }
   var io = null;
   function reveal(){
+    var bl = sec && sec.querySelector('[data-spzl]'); if(bl && 'IntersectionObserver' in window){ var io2 = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io2.unobserve(e.target); } }); }, { threshold:0.1 }); io2.observe(bl); } else if(bl) bl.classList.add('in');
     var b = sec && sec.querySelector('[data-spzb]'); if(!b) return;
     if(!('IntersectionObserver' in window)){ b.classList.add('in'); return; }
     if(!io) io = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold:0.15 });
@@ -211,8 +276,11 @@
     paint();
     sec.addEventListener('click', function(ev){
       var g = ev.target.closest('[data-spzh-go]'); if(g){ location.hash = '#/' + g.getAttribute('data-spzh-go'); return; }
+      var lt = ev.target.closest('[data-spzl-tab]');
+      if(lt){ curL = +lt.getAttribute('data-spzl-tab'); var old = sec.querySelector('[data-spzl]'); if(old){ var nw = document.createElement('div'); nw.innerHTML = lessonsHTML(); var el2 = nw.firstChild; el2.classList.add('in'); old.parentNode.replaceChild(el2, old); var top = el2.getBoundingClientRect().top; if(top < 80) window.scrollBy({ top:top - 120, behavior:'smooth' }); } return; }
       if(ev.target.closest('[data-spzh-all]')){ var hub = document.getElementById('hub'); if(hub) hub.scrollIntoView({ behavior:'smooth', block:'start' }); }
     });
+    sec.addEventListener('change', function(ev){ if(ev.target.matches('[data-spzl-ck]')) ckScore(); });
     document.addEventListener('spz:snapshot', paintPulse);
     new MutationObserver(paint).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
     var n = 0, iv = setInterval(function(){ if(snap() || ++n > 40){ clearInterval(iv); paintPulse(); } }, 500);
