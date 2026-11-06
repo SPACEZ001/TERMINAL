@@ -24,6 +24,51 @@
   /* 2026-11-04: Admin and Editor both open the board */
   function isAdmin(){ try { var t = typeof window.__SPZ_TIER === 'function' && window.__SPZ_TIER(); return t === 'full' || t === 'editor'; } catch(e){ return false; } }
   function msg(k){ if(sec && state !== 'ready') sec.querySelector('[data-bz="slot"]').innerHTML = '<div class="bz-stubmsg">' + T(U[k]) + '</div>'; }
+  /* 2026-11-07 (user choice A): the board's code is stored ENCRYPTED in the public repo
+     (assets/js/min/part-83.bin, AES-256-GCM). The key is a Cloudflare Worker secret
+     (BRAIN_CODE_KEY) handed out by GET /api/brain/code-key only to an Admin (Worker admin
+     key) or an Editor (Editor code / Editor account). The browser decrypts it in memory and
+     runs it; nothing readable is ever published.
+     PLAIN_FALLBACK: while the Worker is not set up yet, the old readable file still loads so
+     the board keeps working. Turned off (and the readable file deleted) once she confirms. */
+  var PLAIN_FALLBACK = true;
+  var WORKER = 'https://spacez-line-link.spacezblack.workers.dev';
+  function authKey(){
+    try {
+      var k = sessionStorage.getItem('spz_admin_users_key') || '';
+      if(!k && window.__SPZ_TIER && window.__SPZ_TIER() === 'editor') k = sessionStorage.getItem('spz_editor_code') || '';
+      return k;
+    } catch(e){ return ''; }
+  }
+  function b64(s){ var b = atob(s), u = new Uint8Array(b.length); for(var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
+  function runCode(src, done){
+    var url = URL.createObjectURL(new Blob([src], { type:'text/javascript' }));
+    var s = document.createElement('script'); s.src = url; s.async = true;
+    s.onload = function(){ URL.revokeObjectURL(url); done(true); };
+    s.onerror = function(){ URL.revokeObjectURL(url); done(false); };
+    document.head.appendChild(s);
+  }
+  function mounted(ok){
+    if(ok && window.__SPZ_BRAIN && window.__SPZ_BRAIN.mount){ state = 'ready'; window.__SPZ_BRAIN.mount(sec.querySelector('[data-bz="slot"]')); }
+    else { state = 'fail'; msg('fail'); }
+  }
+  function loadPlain(){
+    var s = document.createElement('script'); s.src = 'assets/js/min/part-83.js'; s.async = true;
+    s.onload = function(){ mounted(true); };
+    s.onerror = function(){ s.remove(); mounted(false); };
+    document.head.appendChild(s);
+  }
+  function askKey(why){
+    state = 'need';
+    var slot = sec.querySelector('[data-bz="slot"]');
+    slot.innerHTML = '<div class="bz-stubmsg"><div style="max-width:440px;margin:0 auto;text-align:left">' +
+      '<b style="display:block;font-size:16px;margin-bottom:6px">' + T(why === 'cfg' ? { en:'The Market Brain key is not set up on the Worker yet', th:'ยังไม่ได้ตั้งกุญแจสมองตลาดใน Worker' } : { en:'Enter the Worker admin key', th:'ใส่รหัสแอดมินของ Worker' }) + '</b>' +
+      '<span style="display:block;font-size:13px;opacity:.8;line-height:1.6;margin-bottom:10px">' + T(why === 'cfg' ? { en:'Add the BRAIN_CODE_KEY secret in Cloudflare (Worker spacez-line-link → Settings → Variables and Secrets), then open this page again.', th:'เพิ่ม Secret ชื่อ BRAIN_CODE_KEY ใน Cloudflare (Worker spacez-line-link → Settings → Variables and Secrets) แล้วเปิดหน้านี้ใหม่ค่ะ' } : { en:'The board\'s code is encrypted. Admins unlock it with the same Worker admin key used on Connected Users (asked once per browser session).', th:'โค้ดของบอร์ดถูกเข้ารหัสไว้ แอดมินปลดล็อกด้วยรหัสแอดมินของ Worker ตัวเดียวกับหน้าผู้ใช้ที่เชื่อมต่อ (ถามครั้งเดียวต่อการเปิดเบราว์เซอร์)' }) + '</span>' +
+      (why === 'cfg' ? '' : '<form data-bz="kf" style="display:flex;gap:8px"><input type="password" autocomplete="off" data-bz="ki" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.05);color:inherit" placeholder="ADMIN_USERS_KEY"><button type="submit" style="padding:10px 14px;border-radius:10px;border:0;background:linear-gradient(90deg,#22d3ee,#a78bfa);color:#071019;font-weight:800;cursor:pointer">' + T({ en:'Unlock', th:'ปลดล็อก' }) + '</button></form>') +
+      '</div></div>';
+    var f = slot.querySelector('[data-bz="kf"]');
+    if(f) f.addEventListener('submit', function(e){ e.preventDefault(); var v = slot.querySelector('[data-bz="ki"]').value.trim(); if(!v) return; try { sessionStorage.setItem('spz_admin_users_key', v); } catch(x){} state = 'idle'; load(); });
+  }
   function load(){
     if(state === 'loading' || state === 'ready') return;
     state = 'loading'; msg('load');
@@ -31,18 +76,29 @@
       var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'assets/css/min/part-83.css'; l.setAttribute('data-bz-css', '1');
       document.head.appendChild(l);
     }
-    var s = document.createElement('script'); s.src = 'assets/js/min/part-83.js'; s.async = true;
-    s.onload = function(){
-      if(window.__SPZ_BRAIN && window.__SPZ_BRAIN.mount){ state = 'ready'; window.__SPZ_BRAIN.mount(sec.querySelector('[data-bz="slot"]')); }
-      else { state = 'fail'; msg('fail'); }
-    };
-    s.onerror = function(){ state = 'fail'; msg('fail'); s.remove(); };
-    document.head.appendChild(s);
+    var key = authKey();
+    var fallback = function(why){ if(PLAIN_FALLBACK) loadPlain(); else askKey(why); };
+    if(!key || !window.crypto || !crypto.subtle){ fallback('key'); return; }
+    fetch(WORKER + '/api/brain/code-key', { headers:{ 'X-Admin-Key':key }, cache:'no-store' })
+      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ j.__s = r.status; return j; }); })
+      .then(function(j){
+        if(!j || !j.key){ if(j && j.__s === 401){ try { sessionStorage.removeItem('spz_admin_users_key'); } catch(x){} } fallback(j && j.__s === 503 ? 'cfg' : 'key'); return; }
+        return Promise.all([
+          crypto.subtle.importKey('raw', b64(j.key), 'AES-GCM', false, ['decrypt']),
+          fetch('assets/js/min/part-83.bin', { cache:'no-cache' }).then(function(r){ if(!r.ok) throw new Error('bin'); return r.arrayBuffer(); })
+        ]).then(function(x){
+          var buf = new Uint8Array(x[1]);
+          if(String.fromCharCode.apply(null, buf.subarray(0, 5)) !== 'SPZB1') throw new Error('fmt');
+          return crypto.subtle.decrypt({ name:'AES-GCM', iv:buf.subarray(5, 17) }, x[0], buf.subarray(17));
+        }).then(function(plain){ runCode(new TextDecoder().decode(plain), mounted); });
+      })
+      .catch(function(){ fallback('key'); });
   }
   function check(){
     if(location.hash !== '#/brain') return;
     if(!isAdmin()){ if(state !== 'ready') msg('lock'); return; }
     if(state === 'fail') state = 'idle';
+    if(state === 'need') return;
     load();
   }
   /* 2026-10-25: on this page the site's floating nav pill would sit on top of
