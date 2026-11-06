@@ -379,7 +379,7 @@
      มาใส่ตรงนี้ (สร้างด้วย ADMIN_GENERATOR.html) */
   var VAULT_FULL = {"v":6,"s1":"cseJWXwoXYhyvORR4JeXAw==","s2":"mL9VsCYq+aki3yac0Kuwsg==","s3":"Sanlhhy5bVOoG4C+9+2H9w==","s4":"D94o5hYySd7iqzMIVz5olA==","sched":"ZoUxvAGWFaeXfB7R8cjsBwB0StkhxSQ9UinYtHwEuQU=","gates":[{"iv":"dyzoKH9VNB7N+duuAMreow==","ct":"mq14pwi3lI5+uA8lh+/6UJxMRlVzB9lg02gMyEEX18A="},{"iv":"psrFdJMRQHr2cH6g/eDHjg==","ct":"UOnsoXYNDvXwEzb8WsysYPYZR+JpauNyg9N7PyPAPjg="},{"iv":"yF2fBzH5/HHv9V5KeQImHQ==","ct":"LLC+atdXSyRTwGj2DvOyrxS5+uq/4mr6Lsb0EwyDJEs="},{"iv":"PgYsAPHDgXVV36hRnVNf3g==","ct":"vHhvOaACobcnyhcK8LS0UkshV6cq/+YxlMvGewuqj84="},{"iv":"5f/vfPViiyPmrsoryUfwjQ==","ct":"ycYlZDk8UaYm9P2nihd2ehQrUTVSXbdfx6Ru7YnKi5I="},{"iv":"q5LIrV2QUSNUWJrKZhXpiw==","ct":"mmCKQfynMyJRe9tbVgtYy8jvi1Laskcgap1RA2byxDI="},{"iv":"UZhjc7QbPvq1bR8GPxKECA==","ct":"OgDvMs6WYm/ByPs5kxEucheCfcX9SIJswwfBB79jKMU="},{"iv":"llSa2nZun9o9532sZNz4RA==","ct":"JGZk5rJQ8qo7w5OM/Vn/GITXh/WUR3Y8+3yhHrHNGaI="},{"iv":"KCjQY8slkCnKNRLUYrjNog==","ct":"3p/TmkPO6jJM6I1bOfFe/KdTFsvsN0ZzENb0+jlHayE="},{"iv":"r3yvXtAOMjnHGFTO239BwQ==","ct":"hmXvkh6HysJNPgetPyWeHcMOl5hK4+HZgbheTGBm6mI="},{"iv":"DvirWlEFJRWYNF4m1R3uNg==","ct":"4zGuozK6iPkzB98S0sldE+vfmvJqXb7JtUmXZFsx5X8="},{"iv":"YU0A9Qz1OLjOMSvdSmy1tw==","ct":"hXxSEdygIMrNgcc8D61fXwmfX/rR666k0N+DGQ/PunY="}],"ctrIv":"ieP8cEn5gA4cMIw57v6ApQ==","cbcIv":"qkD/J1S6Qwfngh2zPiY9Wg==","iv":"BQZjoydxJV1dUQIe","ct":"TPfJr/aIrTR+0bZkr5bCgBoWD9RZHFZshq2RlzOrMwN6C6Htsjo3R8rEzG/pIPJ9cGLjGSKySym2pOIL6TjETA==","seal":"0/mrYPhi8tw8w+drFuLh1II0vLOF8vp315rIw+mUPleDN67yCUlU9rQLe2+ERosu"};
 
-  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','controlgrid','printreport','journalNew','connectedusers','announcements','quietValue','adminnotes','gradebook','secmap','autowave','universe','ebookreg','brain','earlysignal','elliott'];
+  var LOCKED_ROUTES = ['stock','watchlist','bubble','chartlab','directory','pro','proof','regime','globe','desk','scenarios','anomaly','correl','rulelab','daily','controlgrid','printreport','journalNew','connectedusers','announcements','quietValue','adminnotes','gradebook','secmap','autowave','universe','ebookreg','brain','earlysignal','elliott','exams'];   /* 2026-11-07: 'exams' = exam room (part-86), admin + editor only */
   /* 'journal' (the list) and 'journalView' (a single post) are deliberately
      NOT in this list -- anyone can open them. The paywall for those two
      lives inside the module itself instead: the list/titles always render,
@@ -503,7 +503,7 @@
        page to admin-only -- same shortcut-grid treatment as every other
        admin-only page here. */
     adminElliott:{en:'Elliott Wave Classroom',th:'ห้องเรียน Elliott Wave'},
-    adminArena:{en:'CEWA Exam Arena',th:'สนามสอบ CEWA'},
+    adminArena:{en:'Mock exams: CEWA International · IC',th:'ทดลองสอบ CEWA International · IC'},
     /* Secret Notes: admin-only encrypted notebook (part-66.js). */
     adminNotes:{en:'Notes',th:'โน้ต'},
     adminGradebook:{en:'Gradebook',th:'สมุดคะแนน'},
@@ -957,7 +957,7 @@
     }
     gate.querySelector('#cagBtnAddAnalysis').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/journalNew'; });
     gate.querySelector('#cagBtnPrintReport').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/printreport'; });
-    gate.querySelector('#cagBtnArena').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/arena'; });
+    gate.querySelector('#cagBtnArena').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/exams'; });   /* 2026-11-07: now opens the exam room (part-86), which links on to the Arena */
     // Compare Stocks PDF is admin-only (see cmpIsAdmin()/cmpPaintDownloadGate()
     // in the comparator module) -- this shortcut just gets an already-logged-in
     // admin to the picker; the actual download still needs stocks selected there.
