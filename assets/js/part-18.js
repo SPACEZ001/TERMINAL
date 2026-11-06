@@ -202,33 +202,39 @@ var FLOW = {
         'กำลังต่อแผนที่กระแสเงินทุน','กำลังประมวลโมเดลวัฏจักร','พร้อมแล้ว']
   };
 
+  /* 2026-11-07: loader redrawn (user: the old one looked broken / stuck). The site logo sits in a
+     progress ring, the wordmark fades in, steps advance quickly and 100% waits for the page's own
+     "load" event (max 3.5s) so the bar never sits frozen and never claims "ready" too early. */
   function runBoot(done){
-    var b = el('div', 'boot');
+    var b = el('div', 'boot boot2');
+    var lp = function(d){ return '<path d="' + d + '" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>'; };
+    var lg = '<svg class="b2-logo" viewBox="0 0 100 128" aria-hidden="true">' + ['M48 6 L16 74 L48 118 L48 96 L32 78 L48 50 Z', 'M52 6 L84 74 L52 118 L52 96 L68 78 L52 50 Z', 'M12 64 L22 60 L14 78 L12 76 Z', 'M88 64 L78 60 L86 78 L88 76 Z', 'M14 80 L50 122 L50 116 L18 80 Z', 'M86 80 L50 122 L50 116 L82 80 Z'].map(lp).join('') + '</svg>';
+    var C = 2 * Math.PI * 54;
     b.innerHTML =
-      '<div class="boot-mark"><span class="boot-blip"></span><span class="boot-brand">SPACEZ</span></div>' +
-      '<div class="boot-bar"><div class="boot-fill" data-b="fill"></div></div>' +
-      '<div class="boot-log" data-b="log"></div><div class="boot-pct" data-b="pct">0%</div>';
+      '<div class="b2-bg"></div>' +
+      '<div class="b2-core"><svg class="b2-ring" viewBox="0 0 128 128"><defs><linearGradient id="b2g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset=".55" stop-color="#818cf8"/><stop offset="1" stop-color="#f472b6"/></linearGradient></defs>' +
+        '<circle class="b2-trk" cx="64" cy="64" r="54"/><circle class="b2-arc" data-b="arc" cx="64" cy="64" r="54" style="stroke-dasharray:0 ' + C.toFixed(1) + '"/><circle class="b2-orb" cx="64" cy="64" r="61"/></svg>' +
+        '<div class="b2-mark">' + lg + '</div></div>' +
+      '<div class="b2-word"><b>SPACEZ</b><i>//</i><span>TERMINAL</span></div>' +
+      '<div class="b2-row"><span class="b2-log" data-b="log"></span><span class="b2-pct" data-b="pct">0%</span></div>';
     document.body.appendChild(b);
-    var fill = b.querySelector('[data-b="fill"]'),
-        log = b.querySelector('[data-b="log"]'),
-        pct = b.querySelector('[data-b="pct"]');
-    var msgs = BOOT_LOG[L()] || BOOT_LOG.en;
-    var step = 0, total = msgs.length;
-    var tick = RM ? 90 : 265;
-
-    function next(){
-      log.textContent = msgs[step];
-      var p = Math.round((step + 1) / total * 100);
-      fill.style.width = p + '%';
+    var arc = b.querySelector('[data-b="arc"]'), log = b.querySelector('[data-b="log"]'), pct = b.querySelector('[data-b="pct"]');
+    var msgs = BOOT_LOG[L()] || BOOT_LOG.en, total = msgs.length, step = 0, tick = RM ? 70 : 170, t0 = Date.now();
+    var loaded = document.readyState === 'complete';
+    if(!loaded) window.addEventListener('load', function(){ loaded = true; }, { once:true });
+    function show(k){
+      var p = Math.round((k + 1) / total * 100);
+      arc.style.setProperty('stroke-dasharray', (C * p / 100).toFixed(1) + ' ' + C.toFixed(1), 'important');
       pct.textContent = p + '%';
-      step++;
-      if(step < total) setTimeout(next, tick);
-      else setTimeout(function(){
-        b.classList.add('off');
-        setTimeout(function(){ b.remove(); if(done) done(); }, 420);
-      }, tick);
+      log.classList.remove('in'); void log.offsetWidth; log.textContent = msgs[k]; log.classList.add('in');
     }
-    setTimeout(next, 60);
+    function next(){
+      if(step === total - 1 && !loaded && Date.now() - t0 < 3500){ setTimeout(next, 120); return; }
+      show(step); step++;
+      if(step < total) setTimeout(next, tick);
+      else setTimeout(function(){ b.classList.add('off'); setTimeout(function(){ b.remove(); if(done) done(); }, 560); }, RM ? 120 : 380);
+    }
+    setTimeout(next, 80);
   }
 
   function upgradeGate(){

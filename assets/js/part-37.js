@@ -19,7 +19,7 @@
          bubbleNextToday:'next update today', bubbleNextTomorrow:'next update tomorrow',
          loginSys:'Login system (LINE / Telegram)', loginOk:'Normal', loginWarn:'Delayed', loginPending:'Syncing…',
          postSys:'Analysis log (Firebase)', postOk:'Normal', postWarn:'Delayed', postOff:'Not connected',
-         sumNormal:'normal', grpFeeds:'Data feeds', grpMarkets:'Markets', grpSession:'Session & device' },
+         sumNormal:'normal', grpFeeds:'Data feeds', hpTitle:'Overall health', hpPing:'Response time', hpPingD:'round trip to the site, live', hpLoad:'Page load', hpLoadD:'from opening to ready', grpFiles:'Data files — how fresh', filesD:'bar = age vs how often it should update · green fresh · amber late · red stale', fMarket:'Prices & stocks', fEcon:'Economic calendar', fBrain:'Market Brain', fBrainX:'Brain forecasts', fWf:'Long backtest', fBt:'Strategy backtest', every:'every', checking:'checking…', ms:'ms', grpMarkets:'Markets', grpSession:'Session & device' },
     th:{ eb:'สถานะระบบ', note:'แต่ละส่วนของหน้านี้ตอนนี้กำลังทำงานยังไงบ้าง — ไม่ใช่สัญญาณลงทุน',
          quotes:'ระบบราคาหุ้น', quotesOk:'สด', quotesLoad:'กำลังซิงก์…', quotesWarn:'ใช้ค่าอ้างอิง — ยังไม่ต่อราคาสด',
          funda:'ข้อมูลพื้นฐานบริษัท', fundaOk:'ซิงก์แล้ว', fundaWarn:'ยังไม่โหลด',
@@ -36,7 +36,7 @@
          bubbleNextToday:'อัปเดตรอบถัดไปวันนี้', bubbleNextTomorrow:'อัปเดตรอบถัดไปพรุ่งนี้',
          loginSys:'ระบบล็อกอิน (LINE / Telegram)', loginOk:'ปกติ', loginWarn:'ล่าช้า', loginPending:'กำลังซิงก์…',
          postSys:'ระบบบทวิเคราะห์ (Firebase)', postOk:'ปกติ', postWarn:'ล่าช้า', postOff:'ยังไม่เชื่อมต่อ',
-         sumNormal:'ปกติ', grpFeeds:'ฟีดข้อมูล', grpMarkets:'ตลาดหุ้น', grpSession:'เซสชันและอุปกรณ์' }
+         sumNormal:'ปกติ', grpFeeds:'ฟีดข้อมูล', hpTitle:'สุขภาพระบบรวม', hpPing:'ความเร็วตอบสนอง', hpPingD:'เวลาไป-กลับถึงเว็บ (สด)', hpLoad:'เวลาโหลดหน้า', hpLoadD:'ตั้งแต่เปิดจนพร้อมใช้', grpFiles:'ไฟล์ข้อมูล — สดแค่ไหน', filesD:'แท่ง = อายุข้อมูลเทียบรอบที่ควรอัปเดต · เขียว สด · เหลือง ช้า · แดง ค้าง', fMarket:'ราคาและหุ้น', fEcon:'ปฏิทินเศรษฐกิจ', fBrain:'สมองตลาด', fBrainX:'คาดการณ์สมองตลาด', fWf:'ทดสอบย้อนหลังยาว', fBt:'ทดสอบกลยุทธ์', every:'ทุก', checking:'กำลังเช็ก…', ms:'มิลลิวินาที', grpMarkets:'ตลาดหุ้น', grpSession:'เซสชันและอุปกรณ์' }
   };
   var WD_EN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var MO_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -154,6 +154,50 @@
     return row(cls, S('bubble'), val, det);
   }
 
+  /* 2026-11-07: live checks shown at the top of the modal — a response-time sparkline (HEAD request to
+     this site every 3s while open), page-load time, and how fresh each data file is (Last-Modified). */
+  var PING = [], FILES = null, lastFiles = 0, pingT = 0;
+  var FLIST = [['data/market.json', 'fMarket', 0.5], ['data/econ.json', 'fEcon', 12], ['data/brain.json', 'fBrain', 12], ['data/brain_ext.json', 'fBrainX', 12], ['data/brain_wf.json', 'fWf', 12]];
+  function doPing(){
+    var t0 = performance.now();
+    fetch('data/econ.json?ping=' + Date.now(), { method:'HEAD', cache:'no-store' }).then(function(){ PING.push(Math.round(performance.now() - t0)); }, function(){ PING.push(-1); }).then(function(){ if(PING.length > 24) PING.shift(); if(back && back.classList.contains('on')) paint(); });
+  }
+  function doFiles(){
+    lastFiles = Date.now();
+    /* each file's own "generated_at" (first bytes only, via a Range request) - the server's Last-Modified
+       would only say when the site was last deployed. Prices come from the live feed's own sync time. */
+    Promise.all(FLIST.map(function(f, i){
+      if(i === 0){ try { var LV = window.__SPZ_LIVE, ag = LV && typeof LV.snapAgeH === 'function' ? LV.snapAgeH() : null; return Promise.resolve(ag == null ? null : Date.now() - ag * 3.6e6); } catch(e){ return Promise.resolve(null); } }
+      return fetch(f[0] + '?h=' + Date.now(), { headers:{ Range:'bytes=0-299' }, cache:'no-store' }).then(function(r){ return r.ok ? r.text() : ''; }).then(function(t){ var m = /"generated_at"\s*:\s*"([^"]+)"/.exec(t || ''); var v = m ? Date.parse(m[1]) : NaN; return isNaN(v) ? null : v; }, function(){ return null; }); }))
+      .then(function(v){ FILES = v; if(back && back.classList.contains('on')) paint(); });
+  }
+  function ringHTML(pctOk, cls){
+    var r = 34, c = 2 * Math.PI * r, col = cls === 'bad' ? '#ff5c5c' : cls === 'warn' ? '#ffd24a' : '#7CFFB2';
+    return '<svg class="sysx-ring" viewBox="0 0 84 84"><circle cx="42" cy="42" r="' + r + '" class="bg"/><circle cx="42" cy="42" r="' + r + '" class="fg" style="stroke:' + col + ';stroke-dasharray:' + (c * pctOk / 100).toFixed(1) + ' ' + c.toFixed(1) + '"/><text x="42" y="47">' + pctOk + '%</text></svg>';
+  }
+  function sparkHTML(){
+    var v = PING.filter(function(x){ return x >= 0; }); if(v.length < 2) return '<div class="sysx-spark empty">' + esc(S('checking')) + '</div>';
+    var mx = Math.max.apply(null, v.concat([120])), W = 160, H = 38, n = PING.length;
+    var pts = PING.map(function(x, i){ return [(i / (n - 1)) * W, x < 0 ? H : H - 3 - (x / mx) * (H - 8)]; });
+    var d = pts.map(function(q, i){ return (i ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1); }).join(' ');
+    return '<svg class="sysx-spark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none"><path class="a" d="' + d + ' L' + W + ' ' + H + ' L0 ' + H + 'Z"/><path class="l" d="' + d + '"/><circle cx="' + pts[n - 1][0].toFixed(1) + '" cy="' + pts[n - 1][1].toFixed(1) + '" r="2.6"/></svg>';
+  }
+  function heroHTML(okN, totalN, cls){
+    var v = PING.filter(function(x){ return x >= 0; }), last = v.length ? v[v.length - 1] : null, avg = v.length ? Math.round(v.reduce(function(a, b){ return a + b; }, 0) / v.length) : null;
+    var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0], loadS = nav && nav.loadEventEnd > 0 ? nav.loadEventEnd / 1000 : (nav && nav.domContentLoadedEventEnd ? nav.domContentLoadedEventEnd / 1000 : null);
+    var pc = last == null ? '' : last < 150 ? 'ok' : last < 400 ? 'warn' : 'bad';
+    return '<div class="sysx-hero"><div class="sysx-hc sysx-hcr">' + ringHTML(totalN ? Math.round(okN / totalN * 100) : 0, cls) + '<div><span class="sysx-l">' + esc(S('hpTitle')) + '</span><span class="sysx-v">' + okN + '/' + totalN + ' ' + esc(S('sumNormal')) + '</span></div></div>' +
+      '<div class="sysx-hc"><span class="sysx-l">' + esc(S('hpPing')) + '</span><span class="sysx-big ' + pc + '">' + (last == null ? '—' : last) + '<small> ' + esc(S('ms')) + '</small></span>' + sparkHTML() + '<span class="sysx-d">' + esc(S('hpPingD')) + (avg != null ? ' · avg ' + avg : '') + '</span></div>' +
+      '<div class="sysx-hc"><span class="sysx-l">' + esc(S('hpLoad')) + '</span><span class="sysx-big ' + (loadS == null ? '' : loadS < 3 ? 'ok' : loadS < 6 ? 'warn' : 'bad') + '">' + (loadS == null ? '—' : loadS.toFixed(1)) + '<small> s</small></span><div class="sysx-lbar"><i style="width:' + (loadS == null ? 0 : Math.min(100, loadS / 8 * 100)).toFixed(0) + '%"></i><u style="left:37.5%"></u><u style="left:75%"></u></div><span class="sysx-d">' + esc(S('hpLoadD')) + '</span></div></div>';
+  }
+  function filesHTML(){
+    var rows = FLIST.map(function(f, i){
+      var lm = FILES ? FILES[i] : undefined, ageH = lm ? (Date.now() - lm) / 3.6e6 : null, due = f[2], ratio = ageH == null ? 0 : ageH / due;
+      var cls = ageH == null ? '' : ratio <= 1.5 ? 'ok' : ratio <= 4 ? 'warn' : 'bad', w = ageH == null ? 0 : Math.min(100, ratio / 4 * 100);
+      return '<div class="sysx-fr"><span class="n">' + esc(S(f[1])) + '</span><div class="b"><i class="' + cls + '" style="width:' + w.toFixed(0) + '%"></i><u></u></div><span class="a ' + cls + '">' + (lm === undefined ? '…' : ageH == null ? '—' : formatElapsed(ageH)) + '</span><span class="e">' + esc(S('every')) + ' ' + (due < 1 ? formatDur(due * 60) : formatDur(due * 60)) + '</span></div>';
+    }).join('');
+    return '<div class="sysx-group">' + groupHead(ICO_FEED, S('grpFiles')) + '<div class="sysx-files">' + rows + '</div><div class="sysx-note" style="margin:6px 0 0">' + esc(S('filesD')) + '</div></div>';
+  }
   var trig, back, root, tick;
   var BOOT_TS = Date.now();
 
@@ -281,6 +325,7 @@
       '<div class="sysx-top"><span class="sysx-eb">' + esc(S('eb')) + '</span>' +
       '<button type="button" class="sysx-x" aria-label="' + esc(S('close')) + '">&times;</button></div>' +
       '<div class="sysx-note">' + esc(S('note')) + '</div>' +
+      heroHTML(okN, totalN, badN ? 'bad' : warnN ? 'warn' : 'ok') +
       summaryHTML +
       '<div class="sysx-group">' +
       groupHead(ICO_FEED, S('grpFeeds')) +
@@ -292,6 +337,7 @@
       row(loginCls, S('loginSys'), loginVal, null) +
       row(postCls, S('postSys'), postVal, null) +
       '</div></div>' +
+      filesHTML() +
       '<div class="sysx-group">' +
       groupHead(ICO_MKT, S('grpMarkets')) +
       '<div class="sysx-list">' +
@@ -316,6 +362,8 @@
   function openPop(){
     if(!back) return;
     back.classList.add('on');
+    if(Date.now() - lastFiles > 60000) doFiles();
+    doPing(); if(pingT) clearInterval(pingT); pingT = setInterval(doPing, 3000);
     paint();
     if(tick) clearInterval(tick);
     tick = setInterval(paint, 1000);
@@ -325,6 +373,7 @@
     if(!back) return;
     back.classList.remove('on');
     if(tick){ clearInterval(tick); tick = null; }
+    if(pingT){ clearInterval(pingT); pingT = 0; }
     document.removeEventListener('keydown', onKey);
   }
   function onKey(e){ if(e.key === 'Escape') closePop(); }
