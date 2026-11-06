@@ -113,6 +113,66 @@
       '<div class="spzh-float f2"><small>' + esc(T(TX.y10)) + '</small><b>' + fmt((M.us10y || {}).price, 2) + '%</b></div>' +
       '<div class="spzh-float f3"><small>' + esc(T(TX.usd)) + '</small><b>' + fmt((M.dxy || {}).price, 1) + '</b></div>';
   }
+
+  /* ---------- 2026-11-07: "stocks in one minute" infographic under the hero (user request) ---------- */
+  var BX = {
+    eb:B('The basics · one minute', 'พื้นฐาน · อ่าน 1 นาที'),
+    h:B('How stocks work, in four pictures', 'หุ้นทำงานยังไง ใน 4 ภาพ'),
+    c1:B('A share is a small piece of a company', 'หุ้น 1 หุ้น = เป็นเจ้าของบริษัทชิ้นเล็กๆ'),
+    c1d:B('A company splits itself into many equal pieces and sells some of them to raise money. Buy one and you own part of the business — its profits and its risks.', 'บริษัทแบ่งตัวเองเป็นชิ้นเท่าๆ กันจำนวนมาก แล้วขายบางส่วนเพื่อระดมเงิน ซื้อมา 1 ชิ้น คุณก็เป็นเจ้าของธุรกิจส่วนหนึ่ง ทั้งกำไรและความเสี่ยง'),
+    c1k:B('own 1 of 1,000 pieces = 0.1% of the company', 'ถือ 1 ใน 1,000 ชิ้น = เป็นเจ้าของ 0.1%'),
+    c2:B('Two ways to earn', 'ได้เงินจากหุ้น 2 ทาง'),
+    c2d:B('The price can rise above what you paid (a capital gain), and many companies share part of their profit as dividends.', 'ราคาขึ้นสูงกว่าที่ซื้อ (กำไรส่วนต่าง) และบริษัทจำนวนมากแบ่งกำไรให้ผู้ถือหุ้นเป็น "เงินปันผล"'),
+    c3:B('What moves the price', 'อะไรทำให้ราคาขยับ'),
+    c3d:B('Over years, profit growth matters most. Over weeks, interest rates and the crowd\'s mood — fear and greed — can push prices far from fair value.', 'ระยะยาว กำไรที่โตขึ้นสำคัญที่สุด ระยะสั้น ดอกเบี้ยและอารมณ์ของคนในตลาด (กลัว/โลภ) ดันราคาให้ห่างจากมูลค่าจริงได้มาก'),
+    f1:B('Profit', 'กำไรบริษัท'), f2:B('Interest rates', 'ดอกเบี้ย'), f3:B('Mood', 'อารมณ์ตลาด'), f1s:B('years', 'หลายปี'), f2s:B('months', 'หลายเดือน'), f3s:B('days', 'รายวัน'),
+    c4:B('Lower the risk', 'ลดความเสี่ยง'),
+    c4d:B('Prices can fall, sometimes a lot. Spread money across many companies, add money regularly, and give it years — not days.', 'ราคาลงได้ บางครั้งลงหนัก กระจายเงินไปหลายบริษัท ทยอยลงทุนสม่ำเสมอ และให้เวลาเป็นปี ไม่ใช่เป็นวัน'),
+    ex:B('Worked example', 'ตัวอย่างคิดเลข'),
+    exa:B('Buy 100 shares at ฿50', 'ซื้อ 100 หุ้น ราคา ฿50'), exb:B('Price rises to ฿60', 'ราคาขึ้นเป็น ฿60'), exc:B('Dividend ฿2 a share', 'ปันผลหุ้นละ ฿2'), exd:B('Total after one year', 'รวมผลตอบแทน 1 ปี'),
+    cp:B('Time does the heavy lifting', 'เวลาคือตัวช่วยที่ใหญ่ที่สุด'),
+    cpd:B('฿10,000 growing 7% a year, gains reinvested. An illustration of compounding, not a promise — real returns go up and down.', '฿10,000 โตปีละ 7% และนำผลตอบแทนลงทุนต่อ เป็นภาพอธิบายดอกเบี้ยทบต้น ไม่ใช่คำสัญญา ผลตอบแทนจริงขึ้นลงได้'),
+    yr:B('yr', 'ปี'), more:B('Learn this properly in lesson 1', 'เรียนเรื่องนี้แบบละเอียดในบทที่ 1')
+  };
+  function svgWrap(inner){ return '<svg class="spzb-art" viewBox="0 0 200 120" fill="none" aria-hidden="true">' + inner + '</svg>'; }
+  function art1(){
+    var cells = '';
+    for(var r = 0; r < 5; r++) for(var c = 0; c < 10; c++){ var on = r === 1 && c === 6; cells += '<rect x="' + (42 + c * 12) + '" y="' + (22 + r * 12) + '" width="9" height="9" rx="2" class="' + (on ? 'own' : 'cl') + '" style="--d:' + ((r * 10 + c) * 12) + 'ms"/>'; }
+    return svgWrap('<path d="M34 92 V18 l30 -10 30 10 30 -10 30 10 V92 Z" class="bld"/>' + cells + '<path d="M120 46 C140 56 152 74 160 96" class="lk"/><circle cx="166" cy="102" r="7" class="pp"/><path d="M155 118 c2-9 20-9 22 0" class="pp"/>');
+  }
+  function art2(){
+    return svgWrap('<path d="M14 100 L60 78 L92 86 L132 52 L176 30" class="ln2"/><path d="M164 28 l12 2 -2 12" class="ln2"/>' +
+      '<line x1="14" y1="100" x2="186" y2="100" class="ax"/><g class="coin c1"><circle cx="60" cy="58" r="11"/><text x="60" y="62">฿</text></g><g class="coin c2"><circle cx="132" cy="30" r="11"/><text x="132" y="34">฿</text></g>' +
+      '<rect x="140" y="64" width="40" height="18" rx="9" class="tag"/><text x="160" y="77" class="tt">+%</text>');
+  }
+  function art3(){
+    var g = function(x, col, v, d){ var a = -Math.PI + v * Math.PI, r = 20, cx = x, cy = 70; return '<path d="M' + (cx - r) + ' ' + cy + ' A' + r + ' ' + r + ' 0 0 1 ' + (cx + r) + ' ' + cy + '" class="ga"/><path d="M' + (cx - r) + ' ' + cy + ' A' + r + ' ' + r + ' 0 0 1 ' + (cx + r * Math.cos(a)).toFixed(1) + ' ' + (cy + r * Math.sin(a)).toFixed(1) + '" class="gv" style="stroke:' + col + ';--d:' + d + 'ms"/><line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + (r - 6) * Math.cos(a)).toFixed(1) + '" y2="' + (cy + (r - 6) * Math.sin(a)).toFixed(1) + '" class="nd"/>'; };
+    return svgWrap(g(40, '#34d399', 0.8, 0) + g(100, '#fbbf24', 0.45, 150) + g(160, '#f472b6', 0.62, 300) +
+      '<path d="M16 34 C40 14 56 40 78 26 S118 8 134 24 S170 30 186 12" class="ln3"/>');
+  }
+  function art4(){
+    var dots = '', cols = ['#22d3ee', '#a78bfa', '#34d399', '#fbbf24', '#f472b6', '#60a5fa', '#fb7185', '#2dd4bf'];
+    for(var i = 0; i < 8; i++){ dots += '<circle cx="' + (36 + (i % 4) * 18) + '" cy="' + (58 + Math.floor(i / 4) * 18) + '" r="6.5" style="fill:' + cols[i] + ';--d:' + (i * 70) + 'ms" class="dt"/>'; }
+    return svgWrap('<path d="M22 50 h96 l-10 52 h-76 z" class="bk"/>' + dots +
+      '<path d="M132 92 h50" class="ax"/><path d="M132 92 C146 88 150 70 160 74 S172 52 182 44" class="ln4"/><text x="157" y="110" class="tt2">' + esc(L() === 'th' ? 'เวลา' : 'time') + ' →</text>');
+  }
+  function compound(){
+    var ys = [0, 5, 10, 15, 20, 25, 30], v = ys.map(function(y){ return 10000 * Math.pow(1.07, y); }), mx = v[v.length - 1];
+    return '<div class="spzb-cp"><div class="spzb-cph"><b>' + esc(T(BX.cp)) + '</b><span>' + esc(T(BX.cpd)) + '</span></div><div class="spzb-bars">' +
+      ys.map(function(y, i){ var h = Math.max(4, v[i] / mx * 100); return '<div class="spzb-bar" style="--h:' + h.toFixed(1) + '%;--d:' + (i * 90) + 'ms"><em>฿' + Math.round(v[i]).toLocaleString('en-US') + '</em><i></i><span>' + y + ' ' + esc(T(BX.yr)) + '</span></div>'; }).join('') + '</div></div>';
+  }
+  function basicsHTML(){
+    var cards = [[art1(), BX.c1, BX.c1d, '<span class="spzb-k">' + esc(T(BX.c1k)) + '</span>', '#22d3ee'],
+      [art2(), BX.c2, BX.c2d, '', '#34d399'],
+      [art3(), BX.c3, BX.c3d, '<div class="spzb-fs"><span style="--c:#34d399">' + esc(T(BX.f1)) + '<small>' + esc(T(BX.f1s)) + '</small></span><span style="--c:#fbbf24">' + esc(T(BX.f2)) + '<small>' + esc(T(BX.f2s)) + '</small></span><span style="--c:#f472b6">' + esc(T(BX.f3)) + '<small>' + esc(T(BX.f3s)) + '</small></span></div>', '#fbbf24'],
+      [art4(), BX.c4, BX.c4d, '', '#a78bfa']];
+    var ex = [[BX.exa, '฿5,000', ''], [BX.exb, '+฿1,000', 'u'], [BX.exc, '+฿200', 'u'], [BX.exd, '+฿1,200 · +24%', 'g']];
+    return '<div class="spzb" data-spzb="1"><div class="spzb-hd"><span class="spzb-eb">' + esc(T(BX.eb)) + '</span><h2>' + esc(T(BX.h)) + '</h2></div>' +
+      '<div class="spzb-grid">' + cards.map(function(c, i){ return '<article class="spzb-c" style="--c:' + c[4] + ';--i:' + i + '"><span class="spzb-no">0' + (i + 1) + '</span>' + c[0] + '<h3>' + esc(T(c[1])) + '</h3><p>' + esc(T(c[2])) + '</p>' + c[3] + '</article>'; }).join('') + '</div>' +
+      '<div class="spzb-row"><div class="spzb-ex"><b class="spzb-exh">' + esc(T(BX.ex)) + '</b>' + ex.map(function(e, i){ return '<div class="spzb-exr ' + e[2] + '" style="--d:' + (i * 120) + 'ms"><span>' + esc(T(e[0])) + '</span><b>' + e[1] + '</b></div>'; }).join('') +
+        '<small>' + esc(L() === 'th' ? '(60 − 50) × 100 = 1,000 · 2 × 100 = 200 · 1,200 ÷ 5,000 = 24% (ยังไม่หักค่าธรรมเนียมและภาษี)' : '(60 − 50) × 100 = 1,000 · 2 × 100 = 200 · 1,200 ÷ 5,000 = 24% (before fees and tax)') + '</small></div>' + compound() + '</div>' +
+      '<button type="button" class="spzb-more" data-spzh-go="stockclass">' + esc(T(BX.more)) + ico('arrow') + '</button></div>';
+  }
   function heroHTML(d){
     var cnt = d && d.counts && d.counts.stocks ? d.counts.stocks : 555;
     var st = [[cnt, TX.s1], [26, TX.s2], [T(TX.s3v), TX.s3], ['TH · EN', TX.s4]];
@@ -125,13 +185,21 @@
         '<div class="spzh-cta"><button type="button" class="spzh-go" data-spzh-go="stockclass">' + esc(T(TX.go1)) + ico('arrow') + '</button><button type="button" class="spzh-gh" data-spzh-go="now">' + esc(T(TX.go2)) + '</button></div>' +
         '<div class="spzh-stats">' + st.map(function(s, i){ return '<div style="animation-delay:' + (0.5 + i * 0.08).toFixed(2) + 's"><b>' + esc(s[0]) + '</b><span>' + esc(T(s[1])) + '</span></div>'; }).join('') + '</div>' +
       '</div><div class="spzh-r" data-spzh="pulse">' + pulseHTML(d) + '</div></div>' +
+      basicsHTML() +
       '<div class="spzh-path"><h2>' + esc(T(TX.pathH)) + '</h2><div class="spzh-pg">' + path.map(function(p, i){ return '<button type="button" class="spzh-step" data-spzh-go="' + p[0] + '" style="--c:' + p[4] + '"><span class="no">0' + (i + 1) + '</span><i>' + ico(p[1]) + '</i><b>' + esc(T(p[2])) + '</b><span class="d">' + esc(T(p[3])) + '</span><em>' + ico('arrow') + '</em></button>'; }).join('') + '</div>' +
       '<button type="button" class="spzh-all" data-spzh-all="1">' + esc(T(TX.all)) + ico('down') + '</button></div>';
   }
 
   var sec = null;
   function snap(){ try { return window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot(); } catch(e){ return null; } }
-  function paint(){ if(sec) sec.innerHTML = heroHTML(snap()); }
+  var io = null;
+  function reveal(){
+    var b = sec && sec.querySelector('[data-spzb]'); if(!b) return;
+    if(!('IntersectionObserver' in window)){ b.classList.add('in'); return; }
+    if(!io) io = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold:0.15 });
+    io.observe(b);
+  }
+  function paint(){ if(sec){ sec.innerHTML = heroHTML(snap()); reveal(); } }
   function paintPulse(){ var r = sec && sec.querySelector('[data-spzh="pulse"]'); if(r) r.innerHTML = pulseHTML(snap()); var b = sec && sec.querySelector('.spzh-stats b'); var d = snap(); if(b && d && d.counts && d.counts.stocks) b.textContent = d.counts.stocks; }
   function mount(){
     if(document.getElementById('spzHome')) return;
