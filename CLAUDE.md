@@ -145,3 +145,14 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   and show score by part. IC question objects are `{s,q,c,a,e}` (s = part 1/2/3, a = answer index).
 - `SPACEZ_TAX_TERMINAL.html`: "SPACEZ TAX v2" block before `</body>` = tab shell + calculator board;
   it overrides the global `renderTaxResults()`; the engine (`computeTax`) is untouched.
+- Later on 2026-11-07: theme is a single moon/sun button (`.theme-toggle`, part-14) with only 'void' and
+  'light'; SPACEZ apps button in the top bar (part-86); menu has a featured block (Market Brain + exam
+  room, part-15 `examsItem()`) and an "Elliott Wave" group; part-86 also holds a light-theme
+  readability guard (darkens low-contrast text, marked `data-spzlc`). Home has 5 tabbed basics lessons
+  (`lessonsHTML()` in part-85).
+- Market Brain code encryption: `assets/js/min/part-83.bin` = "SPZB1" + iv + AES-256-GCM. Key is the
+  Worker secret BRAIN_CODE_KEY (never in the repo), served by `GET /api/brain/code-key` to Admin /
+  Editor only. part-82 decrypts in the browser. `PLAIN_FALLBACK` in part-82 is still true and the
+  readable part-83.js files still exist until the user confirms the Worker is set up; then set it to
+  false, `git rm` assets/js/part-83.js + assets/js/min/part-83.js, gitignore them, and (if she agrees)
+  scrub them from git history. Brain sources live OUTSIDE the repo (never commit them).
