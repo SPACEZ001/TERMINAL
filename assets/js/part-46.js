@@ -503,7 +503,7 @@
        page to admin-only -- same shortcut-grid treatment as every other
        admin-only page here. */
     adminElliott:{en:'Elliott Wave Classroom',th:'ห้องเรียน Elliott Wave'},
-    adminArena:{en:'Mock exams: CEWA International · IC',th:'ทดลองสอบ CEWA International · IC'},
+    adminArena:{en:'Mock exams',th:'ทดลองสอบ'}, adminArenaSub:{en:'CEWA International 70 sets · IC Thailand (IC Plain) 6 sets · random set · Exam Arena',th:'CEWA International 70 ชุด · IC Thailand (IC Plain) 6 ชุด · สุ่มข้อสอบ · สนามสอบ'}, adminArenaGo:{en:'Open the exam room',th:'เข้าห้องสอบ'},
     /* Secret Notes: admin-only encrypted notebook (part-66.js). */
     adminNotes:{en:'Notes',th:'โน้ต'},
     adminGradebook:{en:'Gradebook',th:'สมุดคะแนน'},
@@ -676,6 +676,14 @@
               '<span class="cbh-chips"><i data-x="adminBrainC1"></i><i data-x="adminBrainC2"></i><i data-x="adminBrainC3"></i><i data-x="adminBrainC4"></i><i data-x="adminBrainC5"></i></span>' +
               '<span class="cbh-cta"><span data-x="adminBrainGo"></span><span class="cbh-go">→</span></span>' +
             '</button>' +
+            /* 2026-11-07: mock-exam room as its own featured button under Market Brain (user request: make it stand out) */
+            '<button class="cag-admin-link cag-brain-hero cag-exam-hero" type="button" id="cagBtnArena">' +
+              '<span class="cbh-top"><span class="cbh-pill"><i></i><span>ADMIN · EDITOR</span></span><span class="cbh-ver">EXAM ROOM</span></span>' +
+              '<span class="cbh-main"><span class="cbh-ico"><span class="cbh-ring"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 01-10 0V4z"/><path d="M17 5h3v2a3 3 0 01-3 3"/><path d="M7 5H4v2a3 3 0 003 3"/></svg></span>' +
+                '<span class="cbh-t"><small>SPACEZ · MOCK EXAMS</small><b data-x="adminArena"></b><em data-x="adminArenaSub"></em></span></span>' +
+              '<span class="cbh-chips"><i>CEWA International</i><i>IC Thailand</i></span>' +
+              '<span class="cbh-cta"><span data-x="adminArenaGo"></span><span class="cbh-go">→</span></span>' +
+            '</button>' +
               '<div class="cag-admin-group">' +
                 '<div class="cag-admin-group-h" data-x="adminGroupPublish"></div>' +
                 '<div class="cag-admin-grid">' +
@@ -724,10 +732,6 @@
                   '<button class="cag-admin-link" type="button" id="cagBtnElliott">' +
                     '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19 7 11 11 14 15 6 18 10 22 5"/><circle cx="7" cy="11" r="1.3" fill="currentColor" stroke="none"/><circle cx="11" cy="14" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="6" r="1.3" fill="currentColor" stroke="none"/></svg>' +
                     '<span data-x="adminElliott"></span>' +
-                  '</button>' +
-                  '<button class="cag-admin-link" type="button" id="cagBtnArena">' +
-                    '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 01-10 0V4z"/><path d="M17 5h3v2a3 3 0 01-3 3"/><path d="M7 5H4v2a3 3 0 003 3"/></svg>' +
-                    '<span data-x="adminArena"></span>' +
                   '</button>' +
                   '<button class="cag-admin-link" type="button" id="cagBtnNotes">' +
                     '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/><circle cx="12" cy="15.5" r="1.2" fill="currentColor" stroke="none"/></svg>' +
@@ -1307,7 +1311,7 @@
         adminCompareDownload: TXT.adminCompareDownload, adminConnectedUsers: TXT.adminConnectedUsers,
         adminAnnouncements: TXT.adminAnnouncements,
         adminPro: TXT.adminPro, adminBriefing: TXT.adminBriefing, adminQuietValue: TXT.adminQuietValue,
-        adminQrCode: TXT.adminQrCode, adminElliott: TXT.adminElliott, adminArena: TXT.adminArena, adminNotes: TXT.adminNotes, adminGradebook: TXT.adminGradebook, adminEbook: TXT.adminEbook, adminBrain: TXT.adminBrain, adminBrainSub: TXT.adminBrainSub, adminBrainTag: TXT.adminBrainTag, adminBrainGo: TXT.adminBrainGo, adminBrainC1: TXT.adminBrainC1, adminBrainC2: TXT.adminBrainC2, adminBrainC3: TXT.adminBrainC3, adminBrainC4: TXT.adminBrainC4, adminBrainC5: TXT.adminBrainC5, adminSecMap: TXT.adminSecMap,
+        adminQrCode: TXT.adminQrCode, adminElliott: TXT.adminElliott, adminArena: TXT.adminArena, adminArenaSub: TXT.adminArenaSub, adminArenaGo: TXT.adminArenaGo, adminNotes: TXT.adminNotes, adminGradebook: TXT.adminGradebook, adminEbook: TXT.adminEbook, adminBrain: TXT.adminBrain, adminBrainSub: TXT.adminBrainSub, adminBrainTag: TXT.adminBrainTag, adminBrainGo: TXT.adminBrainGo, adminBrainC1: TXT.adminBrainC1, adminBrainC2: TXT.adminBrainC2, adminBrainC3: TXT.adminBrainC3, adminBrainC4: TXT.adminBrainC4, adminBrainC5: TXT.adminBrainC5, adminSecMap: TXT.adminSecMap,
         adminGroupPublish: TXT.adminGroupPublish, adminGroupReports: TXT.adminGroupReports, adminGroupTools: TXT.adminGroupTools,
         tabMember: TXT.tabMember, tabFull: TXT.tabFull, tabLine: TXT.tabLine, tabTg: TXT.tabTg, tabEditor: TXT.tabEditor,
         editorT: TXT.editorT, editorS: TXT.editorS, editorNote: TXT.editorNote, editorSubmit: TXT.editorSubmit,

@@ -1075,36 +1075,43 @@
   }
 
   /* ---------- theme switch ---------- */
-  var THEMES = ['void', 'lime', 'light'];
+  /* 2026-11-07 (user request): one icon button instead of three colour dots.
+     Only two themes now: 'void' (the black default) and 'light'. The old
+     middle 'lime' theme is gone; a saved 'lime' falls back to 'void'. */
+  var THEMES = ['void', 'light'];
+  var THEME_ICON = {
+    moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg>',
+    sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>'
+  };
   function initTheme(){
     var nav = document.querySelector('.nav');
     var langBtn = document.getElementById('langToggle');
     if(!nav) return;
-    var box = document.createElement('div');
-    box.className = 'theme-switch';
     var saved = 'void';
     try { saved = localStorage.getItem('ma.theme') || 'void'; } catch(e){}
     if(THEMES.indexOf(saved) === -1) saved = 'void';
     document.documentElement.dataset.theme = saved;
-
-    for(var i = 0; i < THEMES.length; i++){
-      (function(t){
-        var b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'theme-dot' + (t === saved ? ' active' : '');
-        b.dataset.theme = t;
-        b.setAttribute('aria-label', 'Theme ' + t);
-        b.addEventListener('click', function(){
-          document.documentElement.dataset.theme = t;
-          try { localStorage.setItem('ma.theme', t); } catch(e){}
-          var dots = box.querySelectorAll('.theme-dot');
-          for(var d = 0; d < dots.length; d++){ dots[d].classList.toggle('active', dots[d].dataset.theme === t); }
-        });
-        box.appendChild(b);
-      })(THEMES[i]);
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'theme-switch theme-toggle';   /* keeps the .theme-switch hook part-15 / part-17 use to place it */
+    function paint(){
+      var light = document.documentElement.dataset.theme === 'light', th = document.documentElement.lang === 'th';
+      /* show what you will switch TO: moon while light, sun while dark */
+      b.innerHTML = light ? THEME_ICON.moon : THEME_ICON.sun;
+      var lab = light ? (th ? 'เปลี่ยนเป็นธีมมืด' : 'Switch to dark theme') : (th ? 'เปลี่ยนเป็นธีมสว่าง' : 'Switch to light theme');
+      b.setAttribute('aria-label', lab); b.title = lab;
     }
-    if(langBtn && langBtn.parentNode === nav) nav.insertBefore(box, langBtn);
-    else nav.appendChild(box);
+    b.addEventListener('click', function(){
+      var t = document.documentElement.dataset.theme === 'light' ? 'void' : 'light';
+      document.documentElement.dataset.theme = t;
+      try { localStorage.setItem('ma.theme', t); } catch(e){}
+      b.classList.remove('spin'); void b.offsetWidth; b.classList.add('spin');
+      paint();
+    });
+    paint();
+    new MutationObserver(paint).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+    if(langBtn && langBtn.parentNode === nav) nav.insertBefore(b, langBtn);
+    else nav.appendChild(b);
   }
 
   /* ---------- language memory ---------- */

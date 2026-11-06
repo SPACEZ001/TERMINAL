@@ -1572,6 +1572,23 @@ var CL_UI = {
       });
       return a;
     }
+    var EXAMS_BADGE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4z"/><path d="M17 5h3v2a3 3 0 01-3 3M7 5H4v2a3 3 0 003 3"/></svg>';
+    function examsItem(){
+      if(!document.getElementById('exams')) return null;
+      var th = L() === 'th';
+      var a = el('a', 'np-item np-item-brain np-item-exams',
+        '<span class="np-head"><span class="np-n np-n-icon">' + EXAMS_BADGE_ICON + '</span>' +
+        '<span class="np-t">' + esc(th ? 'ห้องสอบ' : 'Exam room') + ' <i class="np-adm">ADMIN · EDITOR</i></span><span class="np-arrow">→</span></span>' +
+        '<span class="np-d"><span class="np-xcs"><span class="np-xc">CEWA International</span><span class="np-xc ic">IC Thailand</span></span>' + esc(th ? 'ทดลองสอบ 76 ชุด · สุ่มข้อสอบ · สนามสอบ' : '76 mock exam sets · random set · Exam Arena') + '</span>');
+      a.href = '#/exams';
+      a.setAttribute('data-route-to', 'exams');
+      a.addEventListener('click', function(e){
+        e.preventDefault();
+        menu.classList.remove('open');
+        route('exams');
+      });
+      return a;
+    }
     function journalItem(){
       var jr = null;
       for(var ji = 0; ji < ROUTES.length; ji++){ if(ROUTES[ji].id === 'journal') jr = ROUTES[ji]; }
@@ -1622,9 +1639,11 @@ var CL_UI = {
              (6 levels, part-84.js) is the trunk and comes first; the older pages follow in the order the course
              sends you to them, with clearer menu names (LEARN_MENU below) so "Start Investing" and
              "Start Here" no longer read like the same page. */
-          ids:['stockclass', 'basics', 'start', 'types', 'glossary', 'signals', 'guided', 'elliott', 'autowave'] },
+          ids:['stockclass', 'basics', 'start', 'types', 'glossary', 'signals', 'guided'] },
+        /* 2026-11-07 (user request): Elliott Wave pages get their own group so they are easy to find */
+        { k:'wave', t:{en:'Elliott Wave',th:'Elliott Wave · คลื่นราคา'}, ids:['elliott', 'autowave'] },
         /* Exam Arena (part-67.js): CEWA practice / ranked / blitz + leaderboard */
-        { k:'arena', t:{en:'Test yourself',th:'ทดสอบตัวเอง'}, ids:['arena', 'exams', 'apps'] },   /* 2026-11-07: exam room (admin + editor) and the SPACEZ apps page, part-86.js */
+        { k:'arena', t:{en:'Test yourself',th:'ทดสอบตัวเอง'}, ids:['arena'] },   /* 2026-11-07: the exam room is a featured card at the bottom (featItems) and SPACEZ apps sit in the top bar (part-86) */
         { k:'market', t:{en:'Read the market',th:'อ่านตลาด'},
           /* Round S9: full site-wide reorder, easiest/shortest -> hardest/
              longest. Was now/outlook/regime/anomaly/correl/rulelab/daily/
@@ -1681,7 +1700,7 @@ var CL_UI = {
         pop.appendChild(el('div', 'np-sep', esc(tx(GROUPS[g].t))));
         for(i = 0; i < rows.length; i++){
           n++;
-          var lm = GROUPS[g].k === 'learn' ? LEARN_MENU[rows[i].id] : null;
+          var lm = (GROUPS[g].k === 'learn' || GROUPS[g].k === 'wave') ? LEARN_MENU[rows[i].id] : null;
           var it2 = item(rows[i].id, (n < 10 ? '0' : '') + n,
             lm && lm.t ? tx(lm.t) : tx(rows[i].t).split('—')[0].trim(), lm && lm.d ? tx(lm.d) : tx(rows[i].d));
           if(lm && lm.lv){ var hd = it2.querySelector('.np-head'); if(hd){ var chip = document.createElement('span'); chip.className = 'np-lv ' + lm.c; chip.textContent = tx(lm.lv); hd.insertBefore(chip, hd.querySelector('.np-arrow')); } if(lm.c === 'main') it2.classList.add('np-item-course'); }
@@ -1691,6 +1710,7 @@ var CL_UI = {
       /* anything not listed above still shows up, never silently dropped --
          except NAV_HIDDEN routes (Connected Users), which stay reachable
          only through the admin login gate's own panel, never this menu. */
+      used.exams = used.apps = used.brain = 1;   /* featured card / top-bar button instead */
       var rest = [];
       for(i = 0; i < ROUTES.length; i++){
         r = ROUTES[i];
@@ -1706,8 +1726,14 @@ var CL_UI = {
       }
       var ji2 = journalItem();
       if(ji2) pop.appendChild(ji2);
-      var bi2 = brainItem();
-      if(bi2) pop.appendChild(bi2);
+      var bi2 = brainItem(), ei2 = examsItem();
+      if(bi2 || ei2){
+        /* 2026-11-07: Market Brain + exam room as two big featured cards (admin + editor; others see them locked) */
+        var feat = el('div', 'np-feat', '<div class="np-feat-h"><span>' + esc(L() === 'th' ? 'พิเศษ · แอดมินและ Editor' : 'Featured · admin and editor') + '</span></div>');
+        if(bi2) feat.appendChild(bi2);
+        if(ei2) feat.appendChild(ei2);
+        pop.appendChild(feat);
+      }
       syncNav();
     }
     function syncNav(){
