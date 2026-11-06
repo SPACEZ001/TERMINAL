@@ -1624,7 +1624,7 @@ var CL_UI = {
              "Start Here" no longer read like the same page. */
           ids:['stockclass', 'basics', 'start', 'types', 'glossary', 'signals', 'guided', 'elliott', 'autowave'] },
         /* Exam Arena (part-67.js): CEWA practice / ranked / blitz + leaderboard */
-        { k:'arena', t:{en:'Test yourself',th:'ทดสอบตัวเอง'}, ids:['arena'] },
+        { k:'arena', t:{en:'Test yourself',th:'ทดสอบตัวเอง'}, ids:['arena', 'exams', 'apps'] },   /* 2026-11-07: exam room (admin + editor) and the SPACEZ apps page, part-86.js */
         { k:'market', t:{en:'Read the market',th:'อ่านตลาด'},
           /* Round S9: full site-wide reorder, easiest/shortest -> hardest/
              longest. Was now/outlook/regime/anomaly/correl/rulelab/daily/
