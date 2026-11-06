@@ -3135,5 +3135,278 @@
 })();
 </script>
 
+<!-- ================= SPACEZ TAX v2 (2026-11-07) =================
+     User request: redesign the layout in the Market Brain style, keep the infographics.
+     * one tab per topic instead of one 13,000px scroll; the calculator is the first tab
+     * calculator: inputs grouped into cards, quick presets, results update as you type
+     * new results board: tax due + effective-rate ring, where your income goes,
+       the 8-step staircase, refund / pay more, and how much each unused deduction would save
+     * remembers EN/TH from the Terminal (localStorage ma.lang)
+     The tax engine (computeTax / bandSplit / taxOn) and every section's content are unchanged. -->
+<style>
+  body.txv2 .hero{display:none;}
+  body.txv2 .nav-links-wrap{visibility:hidden;}
+  body.txv2 section{display:none;padding-top:calc(var(--txTop,96px) + 92px);padding-bottom:70px;}
+  body.txv2 section.tx-on{display:block;animation:txIn .45s cubic-bezier(.2,.8,.2,1);}
+  @keyframes txIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  body.txv2 .section-head{margin-bottom:26px;}
+  body.txv2 .section-head h2{font-size:clamp(26px,3.4vw,42px);}
+  /* tab strip — glass pills, same family as the Market Brain strip */
+  .tx-tabs{position:fixed;left:0;right:0;top:var(--txTop,96px);z-index:49;display:flex;justify-content:center;padding:10px 14px;pointer-events:none;}
+  .tx-tabs-in{pointer-events:auto;display:flex;gap:4px;padding:5px;border-radius:999px;max-width:100%;overflow-x:auto;scrollbar-width:none;
+    background:rgba(10,13,22,.82);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 14px 40px -18px rgba(0,0,0,.8);}
+  .tx-tabs-in::-webkit-scrollbar{display:none;}
+  .tx-tab{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;padding:9px 14px;border-radius:999px;font-size:13px;font-weight:600;color:#aab2c3;cursor:pointer;transition:background .2s,color .2s;}
+  .tx-tab svg{width:16px;height:16px;flex:0 0 auto;opacity:.85;}
+  .tx-tab:hover{color:#fff;background:rgba(255,255,255,.06);}
+  .tx-tab.on{color:#fff;background:linear-gradient(120deg,rgba(10,132,255,.45),rgba(167,139,250,.38));box-shadow:inset 0 0 0 1px rgba(147,197,253,.45),0 0 18px rgba(10,132,255,.3);}
+  .tx-tab .n{font:700 10px var(--mono);opacity:.55;}
+  /* calculator layout */
+  body.txv2 #calc{max-width:1360px;}
+  body.txv2 .calc-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:18px;}
+  @media(max-width:1000px){body.txv2 .calc-grid{grid-template-columns:1fr;}}
+  body.txv2 .calc-panel{padding:20px;border-radius:22px;background:rgba(10,13,22,.6);border-color:rgba(255,255,255,.08);}
+  body.txv2 .calc-panel>.tag{display:none;}
+  .tx-pre{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px;}
+  .tx-pre b{width:100%;font:700 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--grey);margin-bottom:2px;}
+  .tx-pre button{padding:7px 12px;border-radius:999px;font-size:12.5px;font-weight:600;color:#cbd5e1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);cursor:pointer;transition:all .18s;}
+  .tx-pre button:hover{color:#fff;border-color:rgba(10,132,255,.6);background:rgba(10,132,255,.14);}
+  .tx-grp{border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:12px 14px 4px;margin-bottom:10px;background:rgba(255,255,255,.015);}
+  .tx-grp>.calc-sep{margin:0 0 10px !important;}
+  .tx-grp>.calc-sep span{font:700 11px var(--mono);letter-spacing:.14em;color:#93c5fd;}
+  .tx-grp>.calc-sep::after,.tx-grp>.calc-sep::before{display:none;}
+  .tx-fl{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;}
+  @media(max-width:560px){.tx-fl{grid-template-columns:1fr;}}
+  body.txv2 .calc-field{margin-bottom:12px;}
+  body.txv2 .calc-field label{font-size:11.5px;letter-spacing:.04em;}
+  body.txv2 .calc-hint{font-size:11px;line-height:1.45;}
+  body.txv2 .calc-input{border-radius:11px;}
+  body.txv2 .calc-results{position:sticky;top:calc(var(--txTop,96px) + 76px);}
+  @media(max-width:1000px){body.txv2 .calc-results{position:static;}}
+  /* result board */
+  .tr-card{position:relative;border-radius:22px;padding:18px 20px;background:rgba(10,13,22,.66);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(8px);overflow:hidden;}
+  .tr-card h4{font:700 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--grey);margin-bottom:12px;}
+  .tr-top{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;background:radial-gradient(120% 140% at 0% 0%,rgba(10,132,255,.2),transparent 55%),radial-gradient(90% 120% at 100% 100%,rgba(167,139,250,.16),transparent 55%),rgba(10,13,22,.72);}
+  .tr-big{font:800 clamp(34px,4.4vw,52px)/1.05 var(--sans);letter-spacing:-.02em;color:#fff;}
+  .tr-big.zero{color:#30d158;}
+  .tr-sub{margin-top:6px;font-size:13px;color:#a7b0c2;line-height:1.6;}
+  .tr-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+  .tr-chip{padding:5px 10px;border-radius:999px;font:600 12px var(--mono);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#dbe3f0;}
+  .tr-chip.b{border-color:rgba(10,132,255,.45);color:#93c5fd;background:rgba(10,132,255,.1);}
+  .tr-ring{width:124px;height:124px;}
+  .tr-ring circle{fill:none;stroke-width:11;}
+  .tr-ring .v{font:800 20px var(--mono);fill:#fff;text-anchor:middle;}
+  .tr-ring .l{font:600 9.5px var(--sans);fill:#8b9186;text-anchor:middle;}
+  .tr-ring .arc{transition:stroke-dasharray .8s cubic-bezier(.2,.8,.2,1);}
+  .tr-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:620px){.tr-grid{grid-template-columns:1fr;}}
+  .tr-flow{display:flex;height:22px;border-radius:8px;overflow:hidden;background:rgba(255,255,255,.05);}
+  .tr-flow i{display:block;height:100%;transition:width .7s cubic-bezier(.2,.8,.2,1);}
+  .tr-leg{display:grid;gap:7px;margin-top:12px;}
+  .tr-leg div{display:grid;grid-template-columns:12px 1fr auto;gap:9px;align-items:center;font-size:13px;color:#cbd5e1;}
+  .tr-leg i{width:12px;height:12px;border-radius:4px;}
+  .tr-leg b{font:600 13px var(--mono);color:#fff;}
+  .tr-stair{display:flex;align-items:flex-end;gap:5px;height:150px;padding-top:18px;}
+  .tr-st{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative;}
+  .tr-st .bx{width:100%;border-radius:7px 7px 3px 3px;background:rgba(255,255,255,.06);position:relative;overflow:hidden;}
+  .tr-st .bx i{position:absolute;left:0;right:0;bottom:0;transition:height .7s cubic-bezier(.2,.8,.2,1);}
+  .tr-st em{font-style:normal;font:700 10.5px var(--mono);color:#8b9186;margin-top:5px;}
+  .tr-st.on em{color:#fff;}
+  .tr-st small{position:absolute;top:-16px;font:600 9.5px var(--mono);color:#dbe3f0;white-space:nowrap;}
+  .tr-st.here .bx{box-shadow:0 0 0 2px #fff,0 0 18px rgba(255,255,255,.35);}
+  .tr-stl{display:flex;justify-content:space-between;margin-top:6px;font-size:11.5px;color:#8b9186;}
+  .tr-bal{display:flex;align-items:center;gap:14px;}
+  .tr-bal .ic{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;flex:0 0 auto;}
+  .tr-bal .ic svg{width:24px;height:24px;}
+  .tr-bal b{display:block;font:800 26px var(--sans);}
+  .tr-bal span{font-size:12.5px;color:#a7b0c2;line-height:1.55;}
+  .tr-bal.g .ic{background:rgba(48,209,88,.14);color:#30d158;}.tr-bal.g b{color:#30d158;}
+  .tr-bal.r .ic{background:rgba(255,69,58,.14);color:#ff453a;}.tr-bal.r b{color:#ff6b61;}
+  .tr-bal.a .ic{background:rgba(255,159,10,.14);color:#ff9f0a;}.tr-bal.a b{color:#ffb340;}
+  .tr-room{display:grid;gap:6px;}
+  .tr-rm{display:grid;grid-template-columns:1fr 92px auto;gap:10px;align-items:center;padding:9px 11px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);font-size:13px;}
+  .tr-rm span{color:#dbe3f0;}
+  .tr-rm span small{display:block;font-size:11px;color:#8b9186;}
+  .tr-rm .bar{height:6px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;}
+  .tr-rm .bar i{display:block;height:100%;background:linear-gradient(90deg,#0a84ff,#30d158);border-radius:99px;}
+  .tr-rm b{font:700 13px var(--mono);color:#30d158;text-align:right;white-space:nowrap;}
+  .tr-tip{margin-top:10px;font-size:12px;line-height:1.6;color:#8b9186;}
+  .tr-ph{border-radius:22px;padding:34px 24px;text-align:center;background:rgba(10,13,22,.6);border:1px dashed rgba(255,255,255,.14);color:#a7b0c2;font-size:14px;line-height:1.7;}
+  .tr-ph svg{width:46px;height:46px;color:#0a84ff;margin-bottom:10px;}
+  .tr-board{display:flex;flex-direction:column;gap:12px;}
+  .tx-mini{display:none;position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:60;align-items:center;gap:10px;padding:11px 18px;border-radius:999px;font:700 14px var(--sans);color:#fff;cursor:pointer;
+    background:linear-gradient(120deg,rgba(10,132,255,.92),rgba(124,58,237,.9));box-shadow:0 14px 34px -10px rgba(10,132,255,.7);white-space:nowrap;}
+  body.txv2 #calcResults{scroll-margin-top:calc(var(--txTop,96px) + 70px);}
+  .tx-mini small{font-weight:600;opacity:.85;}
+  @media(max-width:1000px){body.txv2.tx-has .tx-mini.show{display:inline-flex;}}
+  @media(max-width:700px){body.txv2 section{padding-left:16px;padding-right:16px;padding-top:calc(var(--txTop,96px) + 80px);} .tx-tab{padding:8px 11px;font-size:12.5px;} .tx-tab .n{display:none;}}
+</style>
+<script>
+(function(){
+  'use strict';
+  if(typeof computeTax !== 'function' || typeof bandSplit !== 'function') return;
+  var TH = function(){ return currentLang === 'th'; };
+  var X = function(en, th){ return TH() ? th : en; };
+  var ICO = {
+    calc:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M8 18h2M12 18h4"/>',
+    bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/>',
+    layers:'<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/>',
+    fx:'<path d="M5 19L19 5M7 5h4M5 7V3M15 17h4"/>',
+    stairs:'<path d="M3 20h5v-5h5v-5h5V5h3"/>',
+    gift:'<rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-2-4-6-4-6-1s6 1 6 1 6 2 6-1-4-3-6 1z"/>',
+    cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>',
+    quiz:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 015 .5c0 1.5-2.5 2-2.5 3.5M12 17h0"/>',
+    up:'<path d="M12 19V5M6 11l6-6 6 6"/>', down:'<path d="M12 5v14M6 13l6 6 6-6"/>', ok:'<path d="M5 12l5 5 9-10"/>'
+  };
+  function ico(k){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICO[k] + '</svg>'; }
+  var TABS = [['calc', 'calc', 'Calculator', 'คำนวณภาษี'], ['basics', 'bulb', 'Basics', 'พื้นฐาน'], ['income', 'layers', 'Income types', 'ประเภทเงินได้'],
+    ['formula', 'fx', 'Formula', 'สูตรคิดภาษี'], ['brackets', 'stairs', 'Tax steps', 'ขั้นบันไดภาษี'], ['allowances', 'gift', 'Deductions', 'ค่าลดหย่อน'],
+    ['filing', 'cal', 'Filing', 'ยื่นภาษี'], ['quiz', 'quiz', 'Quiz', 'ควิซ']];
+  var ids = TABS.map(function(t){ return t[0]; });
+
+  document.body.classList.add('txv2');
+  var top = document.querySelector('.top-fixed');
+  function setTop(){ if(top) document.documentElement.style.setProperty('--txTop', top.offsetHeight + 'px'); }
+  setTop(); window.addEventListener('resize', setTop);
+
+  var bar = document.createElement('div'); bar.className = 'tx-tabs';
+  document.body.appendChild(bar);
+  var cur = 'calc';
+  function paintTabs(){
+    bar.innerHTML = '<div class="tx-tabs-in" role="tablist">' + TABS.map(function(t, i){ return '<button type="button" role="tab" class="tx-tab' + (t[0] === cur ? ' on' : '') + '" data-tx="' + t[0] + '" aria-selected="' + (t[0] === cur) + '">' + ico(t[1]) + '<span>' + (TH() ? t[3] : t[2]) + '</span></button>'; }).join('') + '</div>';
+    var on = bar.querySelector('.tx-tab.on'); if(on && on.scrollIntoView) try { on.scrollIntoView({ block:'nearest', inline:'center' }); } catch(e){}
+  }
+  function show(id, push){
+    if(ids.indexOf(id) < 0) id = 'calc';
+    cur = id;
+    ids.forEach(function(k){ var s = document.getElementById(k); if(s) s.classList.toggle('tx-on', k === id); });
+    var s = document.getElementById(id);
+    if(s) s.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in-view'); });
+    paintTabs();
+    window.scrollTo(0, 0);
+    if(push !== false) try { history.replaceState(null, '', '#' + id); } catch(e){}
+    setTimeout(function(){ window.dispatchEvent(new Event('scroll')); window.dispatchEvent(new Event('resize')); }, 60);
+  }
+  bar.addEventListener('click', function(e){ var b = e.target.closest('[data-tx]'); if(b) show(b.getAttribute('data-tx')); });
+  document.addEventListener('click', function(e){
+    var a = e.target.closest('a[href^="#"]'); if(!a) return;
+    var id = a.getAttribute('href').slice(1);
+    if(ids.indexOf(id) >= 0){ e.preventDefault(); show(id); }
+  }, true);
+  window.addEventListener('hashchange', function(){ var id = location.hash.slice(1); if(ids.indexOf(id) >= 0 && id !== cur) show(id, false); });
+
+  /* ---- calculator: group the fields into cards, add presets, recalc as you type ---- */
+  var paintPre = function(){};
+  var panel = document.querySelector('.calc-panel');
+  if(panel){
+    var kids = Array.prototype.slice.call(panel.children), grp = null, fl = null;
+    kids.forEach(function(k){
+      if(k.classList.contains('calc-sep')){ grp = document.createElement('div'); grp.className = 'tx-grp'; fl = document.createElement('div'); fl.className = 'tx-fl'; panel.insertBefore(grp, k); grp.appendChild(k); grp.appendChild(fl); return; }
+      if(!grp) return;
+      if(k.classList.contains('calc-field') || k.classList.contains('cur-row') || k.classList.contains('cur-note')){ (k.classList.contains('calc-field') ? fl : grp).appendChild(k); }
+      else grp = null;
+    });
+    panel.querySelectorAll('.cur-row').forEach(function(r){ r.style.gridColumn = '1/-1'; });
+    var pre = document.createElement('div'); pre.className = 'tx-pre';
+    panel.insertBefore(pre, panel.firstChild);
+    var PRE = [[25000, 0, B('Salary ฿25,000/mo', 'เงินเดือน 25,000')], [50000, 0, B('฿50,000/mo', 'เงินเดือน 50,000')], [100000, 0, B('฿100,000/mo', 'เงินเดือน 100,000')], [100000, 1, B('฿100,000/mo + family + funds', '100,000 + ครอบครัว + กองทุน')]];
+    function B(en, th){ return { en:en, th:th }; }
+    paintPre = function(){ pre.innerHTML = '<b>' + X('Quick start', 'เริ่มเร็ว · ลองตัวอย่าง') + '</b>' + PRE.map(function(p, i){ return '<button type="button" data-pre="' + i + '">' + (TH() ? p[2].th : p[2].en) + '</button>'; }).join(''); };
+    paintPre();
+    pre.addEventListener('click', function(e){
+      var b = e.target.closest('[data-pre]'); if(!b) return;
+      var p = PRE[+b.getAttribute('data-pre')], set = function(id, v){ var f = document.getElementById('f_' + id); if(f) f.value = v ? v : ''; };
+      if(curCode !== 'THB'){ var cs = document.getElementById('curSelect'); cs.value = 'THB'; cs.dispatchEvent(new Event('change')); }
+      ['other', 'spouse', 'children', 'children2', 'parents', 'lifeins', 'parentins', 'retire', 'esg', 'mortgage', 'donation', 'donation2', 'stimulus'].forEach(function(id){ set(id, 0); });
+      set('salary', p[0] * 12); set('sso', 9000);
+      var t = taxOn(Math.max(0, p[0] * 12 - 100000 - 69000));
+      if(p[1]){ set('spouse', 1); set('children', 1); set('lifeins', 25000); set('retire', 120000); set('esg', 60000); }
+      set('withheld', Math.round(t));
+      runCalc();
+    });
+    var tmr = null;
+    panel.addEventListener('input', function(e){
+      if(!e.target.matches('input')) return;
+      clearTimeout(tmr);
+      tmr = setTimeout(function(){
+        var s = parseFloat(document.getElementById('f_salary').value) || 0, o = parseFloat(document.getElementById('f_other').value) || 0;
+        if(s + o > 0) runCalc();
+      }, 260);
+    });
+  }
+
+  /* ---- result board (replaces the old result cards; same numbers from computeTax) ---- */
+  function money(n){ return fmtCur(n); }
+  function readMoney(id){ var v = parseFloat(document.getElementById('f_' + id).value); return isFinite(v) && v > 0 ? v * (curCode === 'THB' ? 1 : activeRate()) : 0; }
+  function rooms(r){
+    var inc = r.income, list = [
+      ['retire', X('Provident fund / RMF / pension insurance', 'PVD / RMF / ประกันบำนาญ'), Math.min(500000, inc * 0.3), X('RMF up to 30% of income, all three together ฿500,000', 'RMF ไม่เกิน 30% ของเงินได้ รวมกันไม่เกิน 500,000')],
+      ['esg', X('Thai ESG fund', 'กองทุน Thai ESG'), Math.min(300000, inc * 0.3), X('30% of income, max ฿300,000', '30% ของเงินได้ สูงสุด 300,000')],
+      ['lifeins', X('Life + own health insurance', 'ประกันชีวิต + สุขภาพตัวเอง'), 100000, X('max ฿100,000 (health part ฿25,000)', 'สูงสุด 100,000 (สุขภาพไม่เกิน 25,000)')],
+      ['parentins', X('Parents\' health insurance', 'ประกันสุขภาพพ่อแม่'), 15000, X('max ฿15,000', 'สูงสุด 15,000')],
+      ['mortgage', X('Home loan interest', 'ดอกเบี้ยบ้าน'), 100000, X('max ฿100,000', 'สูงสุด 100,000')]
+    ];
+    return list.map(function(x){
+      var used = readMoney(x[0]), room = Math.max(0, x[2] - used), save = room > 0 ? taxOn(r.net) - taxOn(Math.max(0, r.net - room)) : 0;
+      return { id:x[0], name:x[1], cap:x[2], used:used, room:room, save:save, note:x[3] };
+    }).filter(function(x){ return x.room > 0 && x.save > 0.5; }).sort(function(a, b){ return b.save - a.save; });
+  }
+  var mini = document.createElement('button'); mini.type = 'button'; mini.className = 'tx-mini'; document.body.appendChild(mini);
+  mini.addEventListener('click', function(){ var bx = document.getElementById('calcResults'); if(bx) bx.scrollIntoView({ behavior:'smooth', block:'start' }); });
+  var vis = false;
+  if('IntersectionObserver' in window){ var rb = document.getElementById('calcResults'); if(rb) new IntersectionObserver(function(es){ vis = es[0].isIntersecting; mini.classList.toggle('show', !vis && cur === 'calc'); }).observe(rb); }
+  window.renderTaxResults = function(r){
+    var box = document.getElementById('calcResults'); if(!box) return;
+    document.body.classList.toggle('tx-has', !!r);
+    if(r) mini.innerHTML = X('Tax ', 'ภาษี ') + fmtCur(r.tax) + ' <small>' + X('· see result ↓', '· ดูผล ↓') + '</small>';
+    mini.classList.toggle('show', !!r && !vis && cur === 'calc');
+    if(!r){
+      box.innerHTML = '<div class="tr-ph">' + ico('calc') + '<div>' + X('Type your yearly salary on the left, or tap a quick-start example. The result updates as you type — nothing leaves this page.', 'ใส่เงินเดือนทั้งปีทางซ้าย หรือกดตัวอย่างด้านบน ผลลัพธ์จะเปลี่ยนทันทีที่พิมพ์ ข้อมูลไม่ถูกส่งออกจากหน้านี้') + '</div></div>';
+      return;
+    }
+    var eff = r.income > 0 ? r.tax / r.income : 0, C = 2 * Math.PI * 48, zero = r.tax <= 0.5;
+    var keep = Math.max(0, r.income - r.tax), parts = [[r.expense, '#64748b', X('Expense deduction', 'หักค่าใช้จ่าย')], [r.allowances, '#a78bfa', X('Allowances', 'ค่าลดหย่อน')], [Math.max(0, r.net - r.tax), '#0a84ff', X('Taxable, kept', 'เงินได้สุทธิ (ส่วนที่เหลือ)')], [r.tax, '#ff9f0a', X('Tax', 'ภาษี')]];
+    var tot = r.income || 1;
+    var flow = parts.map(function(p){ return '<i style="width:' + (p[0] / tot * 100).toFixed(2) + '%;background:' + p[1] + '"></i>'; }).join('');
+    var leg = parts.map(function(p){ return '<div><i style="background:' + p[1] + '"></i><span>' + p[2] + '</span><b>' + money(p[0]) + '</b></div>'; }).join('');
+    var here = -1; r.bands.forEach(function(b, i){ if(b.amount > 0) here = i; });
+    var stair = r.bands.map(function(b, i){
+      var cap = b.hi === Infinity ? Math.max(b.amount, 1) : b.hi - b.lo, fill = Math.min(1, b.amount / cap), h = 22 + i * 11;
+      return '<div class="tr-st' + (b.amount > 0 ? ' on' : '') + (i === here ? ' here' : '') + '" title="' + bandLabel(b) + ' · ' + (b.rate * 100).toFixed(0) + '% = ' + fmtTHB(b.tax) + '"><div class="bx" style="height:' + h + '%">' + '<i style="height:' + (fill * 100).toFixed(1) + '%;background:' + BAND_COLORS[i] + '"></i></div>' + (i === here && b.tax > 0.5 ? '<small>' + fmtTHB(b.tax) + '</small>' : '') + '<em>' + (b.rate * 100).toFixed(0) + '%</em></div>';
+    }).join('');
+    var balCls = r.balance > 0.5 ? 'g' : r.balance < -0.5 ? 'r' : 'a';
+    var balT = r.balance > 0.5 ? X('Refund due to you', 'ได้เงินคืน') : r.balance < -0.5 ? X('Still to pay when filing', 'ต้องจ่ายเพิ่มตอนยื่น') : X('Withholding matches', 'หัก ณ ที่จ่ายพอดี');
+    var balS = r.withheld > 0 ? X('Withheld during the year: ', 'ถูกหัก ณ ที่จ่ายทั้งปี: ') + money(r.withheld) : X('Enter the tax withheld (form 50 Tawi) to see this.', 'ใส่ภาษีที่ถูกหัก ณ ที่จ่าย (ตามหนังสือ 50 ทวิ) เพื่อดูยอดนี้');
+    var rm = zero ? [] : rooms(r);
+    var roomHTML = rm.length ? rm.slice(0, 5).map(function(x){ return '<div class="tr-rm"><span>' + x.name + '<small>' + X('room left ', 'ใส่เพิ่มได้อีก ') + money(x.room) + ' · ' + x.note + '</small></span><div class="bar"><i style="width:' + (x.used / x.cap * 100).toFixed(0) + '%"></i></div><b>−' + money(x.save) + '</b></div>'; }).join('') :
+      '<div class="tr-rm"><span>' + (zero ? X('No tax to save — you already pay ฿0.', 'ไม่มีภาษีให้ประหยัดแล้ว — คุณจ่าย 0 บาท') : X('Every common deduction is already used up.', 'ใช้สิทธิลดหย่อนหลักครบแล้ว')) + '</span><span></span><b></b></div>';
+    var per10 = r.marginal * 10000;
+    box.innerHTML = '<div class="tr-board">' +
+      '<div class="tr-card tr-top"><div><h4>' + X('Tax for the year', 'ภาษีที่ต้องเสียทั้งปี') + '</h4><div class="tr-big' + (zero ? ' zero' : '') + '">' + money(r.tax) + '</div>' +
+        '<div class="tr-sub">' + (zero ? X('Your taxable income sits inside the 0% step.', 'เงินได้สุทธิอยู่ในขั้นภาษี 0%') : X('about ', 'เฉลี่ยเดือนละ ') + money(r.tax / 12) + X(' a month', '')) + '</div>' +
+        '<div class="tr-chips"><span class="tr-chip b">' + X('Top step ', 'ขั้นสูงสุด ') + (r.marginal * 100).toFixed(0) + '%</span><span class="tr-chip">' + X('Taxable ', 'เงินได้สุทธิ ') + money(r.net) + '</span><span class="tr-chip">' + X('You keep ', 'เหลือจริง ') + money(keep) + '</span></div></div>' +
+        '<svg class="tr-ring" viewBox="0 0 124 124"><circle cx="62" cy="62" r="48" stroke="rgba(255,255,255,.07)"/><circle class="arc" cx="62" cy="62" r="48" stroke="url(#trG)" stroke-linecap="round" stroke-dasharray="' + Math.max(0.01, Math.min(1, eff / 0.35)) * C + ' ' + C + '" transform="rotate(-90 62 62)"/><defs><linearGradient id="trG" x1="0" x2="1"><stop offset="0" stop-color="#0a84ff"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs><text class="v" x="62" y="64">' + (eff * 100).toFixed(1) + '%</text><text class="l" x="62" y="80">' + X('effective rate', 'อัตราจริง') + '</text></svg></div>' +
+      '<div class="tr-card"><h4>' + X('Where your income goes', 'รายได้ของคุณไปไหนบ้าง') + '</h4><div class="tr-flow">' + flow + '</div><div class="tr-leg">' + leg + '</div>' +
+        (r.capped.length ? '<div class="tr-tip">⚠ ' + (translations[currentLang]['res.capped'] || '') + '</div>' : '') + '</div>' +
+      '<div class="tr-grid">' +
+        '<div class="tr-card"><h4>' + X('The 8 tax steps', 'ขั้นบันไดภาษี 8 ขั้น') + '</h4><div class="tr-stair">' + stair + '</div><div class="tr-stl"><span>฿0</span><span>' + X('white ring = your top step', 'กรอบขาว = ขั้นที่คุณอยู่') + '</span><span>5M+</span></div></div>' +
+        '<div class="tr-card"><h4>' + X('When you file', 'ตอนยื่นภาษี') + '</h4><div class="tr-bal ' + balCls + '"><div class="ic">' + ico(balCls === 'g' ? 'down' : balCls === 'r' ? 'up' : 'ok') + '</div><div><span>' + balT + '</span><b>' + money(Math.abs(r.balance)) + '</b><span>' + balS + '</span></div></div>' +
+          '<div class="tr-tip">' + (zero ? '' : X('Each extra ฿10,000 of deduction saves about ', 'ลดหย่อนเพิ่มทุก 10,000 บาท ประหยัดภาษีได้ราว ') + '<b style="color:#fff">' + money(per10) + '</b>' + X(' at your top step.', ' ตามขั้นที่คุณอยู่')) + '</div></div>' +
+      '</div>' +
+      '<div class="tr-card"><h4>' + X('Deductions you have not used yet', 'สิทธิลดหย่อนที่ยังใช้ไม่เต็ม') + '</h4><div class="tr-room">' + roomHTML + '</div>' +
+        '<div class="tr-tip">' + X('Tax saved if you filled the remaining room of each one on its own. Only claim what you really pay or buy — funds have holding rules. Not tax advice.', 'ภาษีที่ประหยัดได้ ถ้าใช้สิทธิแต่ละอย่างจนเต็มเพดาน (คิดทีละอย่าง) ใช้สิทธิได้เฉพาะเงินที่จ่ายหรือซื้อจริง และกองทุนมีเงื่อนไขการถือ ไม่ใช่คำแนะนำทางภาษี') + '</div></div>' +
+    '</div>';
+  };
+
+  /* language: follow the Terminal's choice, and keep the tab strip / presets in step */
+  try { var ml = localStorage.getItem('ma.lang'); if((ml === 'th' || ml === 'en') && ml !== currentLang) applyLang(ml); } catch(e){}
+  paintPre();
+  new MutationObserver(function(){ paintTabs(); paintPre(); try { localStorage.setItem('ma.lang', currentLang); } catch(e){} })
+    .observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+  renderTaxResults(lastResult);
+  show(ids.indexOf(location.hash.slice(1)) >= 0 ? location.hash.slice(1) : 'calc', false);
+})();
+</script>
+
 </body>
 </html>
