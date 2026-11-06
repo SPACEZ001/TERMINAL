@@ -131,3 +131,17 @@ only when she says yes ("สำรอง") refresh the full mirror
 
 **Always mask credentials in shell output:** pipe anything that could print the
 remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
+
+## Added 2026-11-07
+
+- Site root: `index.html` is now only a redirect to `SPACEZ_TERMINAL.html` (keeps `#/route`). The old
+  password exam portal moved to `SPACEZ_EXAM_PORTAL.html` (git mv, unchanged inside).
+- `assets/js/part-86.js` + `assets/css/part-86.css`: `#/exams` exam room (CEWA International sets +
+  IC_1–6, old-portal cards + hover, 12 per page, random set; 'exams' is in LOCKED_ROUTES = admin +
+  editor) and `#/apps` (other SPACEZ sites, new tab). The CEWA file list in part-86 is only scrambled,
+  not secret. Admin panel button `#cagBtnArena` ("ทดลองสอบ CEWA International · IC") opens `#/exams`.
+- Home (part-85): "how stocks work in four pictures" infographic under the hero (`basicsHTML()`).
+- IC: `IC_License.html#sec00` start-here plan; IC_1–6 save results to localStorage `spz.ic.results`
+  and show score by part. IC question objects are `{s,q,c,a,e}` (s = part 1/2/3, a = answer index).
+- `SPACEZ_TAX_TERMINAL.html`: "SPACEZ TAX v2" block before `</body>` = tab shell + calculator board;
+  it overrides the global `renderTaxResults()`; the engine (`computeTax`) is untouched.
