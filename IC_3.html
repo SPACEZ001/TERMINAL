@@ -227,6 +227,18 @@ button{font-family:inherit;cursor:pointer;}
 body.calc-open{margin-right:min(360px,92vw);}
 body{transition:margin-right .32s cubic-bezier(.2,.9,.25,1);}
 @media(max-width:760px){body.calc-open{margin-right:0;}}
+
+/* 2026-11-07: score by part + saved results (read by IC_License.html's readiness panel) */
+.sec-break{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:-8px 0 22px;}
+@media(max-width:640px){.sec-break{grid-template-columns:1fr;}}
+.sb-i{background:var(--panel);border:1px solid var(--border-dim);border-radius:12px;padding:12px 14px;}
+.sb-t{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12.5px;color:var(--grey);}
+.sb-t b{font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--white);}
+.sb-bar{height:7px;border-radius:99px;background:rgba(255,255,255,.07);margin-top:8px;overflow:hidden;}
+.sb-bar i{display:block;height:100%;border-radius:99px;background:var(--mint);transition:width .8s ease;}
+.sb-i.low .sb-bar i{background:var(--red);}.sb-i.mid .sb-bar i{background:var(--amber);}
+.sb-tip{display:block;margin-top:7px;font-size:12px;color:var(--grey);line-height:1.5;}
+.sb-tip a{color:var(--lime);}
 </style>
 </head>
 <body>
@@ -281,6 +293,7 @@ body{transition:margin-right .32s cubic-bezier(.2,.9,.25,1);}
       <div class="res-card" id="rcEthics"><span class="rc-l">จรรยาบรรณ</span><div class="rc-v" id="rcEthicsV"></div><span class="rc-d">เกณฑ์ผ่าน ≥ 14 / 20</span></div>
       <div class="res-card"><span class="rc-l">เวลาที่ใช้</span><div class="rc-v" id="rcTime"></div><span class="rc-d">จากทั้งหมด 2.5 ชั่วโมง</span></div>
     </div>
+    <div class="sec-break" id="secBreak"></div>
     <button class="review-toggle" id="reviewToggle">ดูเฉลยรายข้อ</button>
     <div class="review-list" id="reviewList"></div>
     <button class="restart-btn" id="btnRestart">ทำใหม่อีกครั้ง</button>
@@ -675,6 +688,25 @@ function finishExam(){
 
   document.getElementById('rcTime').textContent = fmtTime(DURATION - timeLeft);
   document.getElementById('reviewList').innerHTML = reviewHTML;
+
+  /* 2026-11-07: score by part, a hint where to read next, and the result saved for IC_License.html */
+  (function(){
+    var NAME = ['', 'ส่วนที่ 1 · พื้นฐาน + คำนวณ', 'ส่วนที่ 2 · จรรยาบรรณ', 'ส่วนที่ 3 · ผลิตภัณฑ์'];
+    var GO = ['', 'IC_License.html#sec02', 'IC_License.html#sec03', 'IC_License.html#sec04'];
+    var got = [0, 0, 0, 0], tot = [0, 0, 0, 0];
+    QUESTIONS.forEach(function(item, i){ tot[item.s]++; if(answers[i] === item.a) got[item.s]++; });
+    var box = document.getElementById('secBreak');
+    if(box) box.innerHTML = [1, 2, 3].map(function(k){
+      var pct = tot[k] ? Math.round(got[k] / tot[k] * 100) : 0, cls = pct < 60 ? 'low' : pct < 70 ? 'mid' : '';
+      return '<div class="sb-i ' + cls + '"><div class="sb-t"><span>' + NAME[k] + '</span><b>' + got[k] + ' / ' + tot[k] + '</b></div><div class="sb-bar"><i style="width:' + pct + '%"></i></div>' +
+        (pct < 70 ? '<span class="sb-tip">ได้ ' + pct + '% — ทบทวน <a href="' + GO[k] + '">สรุปเนื้อหาส่วนนี้</a> แล้วลองชุดถัดไป</span>' : '<span class="sb-tip">ได้ ' + pct + '% — ส่วนนี้พร้อมแล้ว</span>') + '</div>';
+    }).join('');
+    try {
+      var KEY = 'spz.ic.results', all = JSON.parse(localStorage.getItem(KEY) || '{}'), id = 'IC_3', prev = all[id] || {};
+      var rec = { last:overallCorrect, best:Math.max(overallCorrect, prev.best || 0), eth:ethicsCorrect, s1:got[1], s2:got[2], s3:got[3], pass:finalPass, n:(prev.n || 0) + 1, at:Date.now() };
+      all[id] = rec; localStorage.setItem(KEY, JSON.stringify(all));
+    } catch(e){}
+  })();
 }
 
 document.getElementById('reviewToggle').addEventListener('click', function(){

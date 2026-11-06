@@ -227,6 +227,18 @@ button{font-family:inherit;cursor:pointer;}
 body.calc-open{margin-right:min(360px,92vw);}
 body{transition:margin-right .32s cubic-bezier(.2,.9,.25,1);}
 @media(max-width:760px){body.calc-open{margin-right:0;}}
+
+/* 2026-11-07: score by part + saved results (read by IC_License.html's readiness panel) */
+.sec-break{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:-8px 0 22px;}
+@media(max-width:640px){.sec-break{grid-template-columns:1fr;}}
+.sb-i{background:var(--panel);border:1px solid var(--border-dim);border-radius:12px;padding:12px 14px;}
+.sb-t{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12.5px;color:var(--grey);}
+.sb-t b{font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--white);}
+.sb-bar{height:7px;border-radius:99px;background:rgba(255,255,255,.07);margin-top:8px;overflow:hidden;}
+.sb-bar i{display:block;height:100%;border-radius:99px;background:var(--mint);transition:width .8s ease;}
+.sb-i.low .sb-bar i{background:var(--red);}.sb-i.mid .sb-bar i{background:var(--amber);}
+.sb-tip{display:block;margin-top:7px;font-size:12px;color:var(--grey);line-height:1.5;}
+.sb-tip a{color:var(--lime);}
 </style>
 </head>
 <body>
@@ -281,6 +293,7 @@ body{transition:margin-right .32s cubic-bezier(.2,.9,.25,1);}
       <div class="res-card" id="rcEthics"><span class="rc-l">จรรยาบรรณ</span><div class="rc-v" id="rcEthicsV"></div><span class="rc-d">เกณฑ์ผ่าน ≥ 14 / 20</span></div>
       <div class="res-card"><span class="rc-l">เวลาที่ใช้</span><div class="rc-v" id="rcTime"></div><span class="rc-d">จากทั้งหมด 2.5 ชั่วโมง</span></div>
     </div>
+    <div class="sec-break" id="secBreak"></div>
     <button class="review-toggle" id="reviewToggle">ดูเฉลยรายข้อ</button>
     <div class="review-list" id="reviewList"></div>
     <button class="restart-btn" id="btnRestart">ทำใหม่อีกครั้ง</button>
@@ -420,8 +433,8 @@ var RAW = [
 {s:3,q:"กลไกการสร้างและไถ่ถอนหน่วยลงทุนของ ETF (Creation/Redemption in Kind) โดยทั่วไปเกี่ยวข้องกับผู้เล่นประเภทใดเป็นหลัก",c:["นักลงทุนรายย่อยทั่วไปโดยตรง","ผู้ร่วมค้าหน่วยลงทุนรายใหญ่ (Authorized Participant) ที่แลกเปลี่ยนตะกร้าหลักทรัพย์กับหน่วยลงทุน ETF","ธนาคารกลางเท่านั้น","ตลาดหลักทรัพย์เท่านั้นโดยไม่มีตัวกลางอื่น"],a:1,e:"กลไก Creation/Redemption ของ ETF ดำเนินการผ่านผู้ร่วมค้าหน่วยลงทุนรายใหญ่ (Authorized Participant) ซึ่งแลกเปลี่ยนตะกร้าหลักทรัพย์อ้างอิงกับหน่วยลงทุน ETF เป็นกลุ่มก้อนใหญ่ ช่วยให้ราคาซื้อขาย ETF ในตลาดใกล้เคียงกับ NAV"},
 {s:3,q:"ทรัสต์เพื่อการลงทุนในอสังหาริมทรัพย์ (REIT) โดยทั่วไปมีข้อกำหนดเกี่ยวกับการจ่ายผลตอบแทนแก่ผู้ถือหน่วยอย่างไร",c:["ห้ามจ่ายเงินปันผลหรือประโยชน์ตอบแทนใด ๆ แก่ผู้ถือหน่วย","โดยทั่วไปต้องจ่ายส่วนแบ่งกำไรหรือประโยชน์ตอบแทนในสัดส่วนที่สูงของกำไรที่ทำได้ให้แก่ผู้ถือหน่วยตามเกณฑ์ที่กำหนด","จ่ายเฉพาะเมื่อขาดทุนเท่านั้น","ไม่มีข้อกำหนดใด ๆ เกี่ยวกับการจ่ายผลตอบแทน"],a:1,e:"REIT มักมีข้อกำหนดให้ต้องจ่ายส่วนแบ่งกำไรหรือประโยชน์ตอบแทนในสัดส่วนที่สูงของกำไรสุทธิที่ทำได้ในแต่ละปีให้แก่ผู้ถือหน่วย ซึ่งเป็นจุดเด่นที่ทำให้ REIT มักให้กระแสเงินสดสม่ำเสมอแก่ผู้ลงทุน"},
 {s:3,q:"กองทุนรวมโครงสร้างพื้นฐาน (Infrastructure Fund) โดยทั่วไปนำเงินไปลงทุนในสินทรัพย์ประเภทใด",c:["หุ้นเทคโนโลยีขนาดเล็กที่เพิ่งเข้าตลาด","โครงการหรือกิจการโครงสร้างพื้นฐาน เช่น ไฟฟ้า ประปา ทางด่วน ระบบขนส่งมวลชน ที่มักให้กระแสเงินสดสม่ำเสมอในระยะยาว","เงินฝากธนาคารระยะสั้นเท่านั้น","สินค้าโภคภัณฑ์ล่วงหน้าเท่านั้น"],a:1,e:"กองทุนรวมโครงสร้างพื้นฐานลงทุนในโครงการหรือกิจการโครงสร้างพื้นฐาน เช่น พลังงาน ประปา ทางด่วน หรือระบบขนส่งมวลชน ซึ่งมักมีลักษณะให้กระแสเงินสดที่สม่ำเสมอในระยะยาวจากการดำเนินงานของสินทรัพย์นั้น"},
-{s:3,q:"ในการซื้อขายสัญญาซื้อขายล่วงหน้า (Futures) กลไกการปรับปรุงกำไรขาดทุนตามราคาตลาดทุกวันทำการ เรียกว่าอะไร",c:["Settlement เพียงครั้งเดียวเมื่อครบสัญญาเท่านั้น","Mark-to-Market (การปรับมูลค่าบัญชีตามราคาตลาดรายวัน)","Book Building","Underwriting"],a:1,e:"Mark-to-Market คือกลไกที่สำนักหักบัญชีปรับปรุงกำไรขาดทุนของสัญญาซื้อขายล่วงหน้าตามราคาปิดตลาดในแต่ละวันทำการ พร้อมเรียกเงินประกัน (Margin) เพิ่มเติมหากจำเป็น เพื่อบริหารความเสี่ยงด้านเครดิตของคู่สัญญา"},
-{s:3,q:"สิทธิในการซื้อสินทรัพย์อ้างอิงในราคาที่กำหนดไว้ล่วงหน้าภายในหรือเมื่อครบกำหนดอายุสัญญา เรียกว่าออปชันประเภทใด",c:["Call Option","Put Option","Forward Contract","Swap"],a:0,e:"Call Option คือสัญญาที่ให้สิทธิ (ไม่ใช่ข้อผูกพัน) แก่ผู้ถือในการซื้อสินทรัพย์อ้างอิงในราคาใช้สิทธิ (Strike Price) ที่กำหนดไว้ล่วงหน้า ภายในหรือเมื่อครบกำหนดอายุสัญญา ต่างจาก Put Option ซึ่งเป็นสิทธิในการขาย"},
+{s:3,q:"การซื้อหุ้นในตลาดหลักทรัพย์แห่งประเทศไทย ผู้ซื้อต้องชำระราคาและได้รับหลักทรัพย์เมื่อใด",c:["ภายในวันเดียวกัน (T+0)","1 วันทำการหลังวันซื้อขาย (T+1)","2 วันทำการหลังวันซื้อขาย (T+2)","3 วันทำการหลังวันซื้อขาย (T+3)"],a:2,e:"ตลาดหลักทรัพย์แห่งประเทศไทยชำระราคาและส่งมอบหลักทรัพย์แบบ T+2 คือ 2 วันทำการหลังวันที่ซื้อขาย (เปลี่ยนจาก T+3 ตั้งแต่ปี 2560)"},
+{s:3,q:"ช่วงการเปลี่ยนแปลงราคาสูงสุด (Ceiling) และต่ำสุด (Floor) ของหุ้นสามัญที่ซื้อขายในกระดานหลักของตลาดหลักทรัพย์ฯ ใน 1 วัน คือเท่าใด",c:["±10% จากราคาปิดวันก่อนหน้า","±15% จากราคาปิดวันก่อนหน้า","±30% จากราคาปิดวันก่อนหน้า","ไม่มีการจำกัดช่วงราคา"],a:2,e:"หุ้นสามัญในกระดานหลักขยับได้ไม่เกิน ±30% จากราคาปิดของวันทำการก่อนหน้า (ราคาฐาน) แล้วปัดให้ลงช่วงราคา (Tick Size) ที่ถูกต้อง เช่น ราคาปิด 10 บาท → Ceiling 13 บาท Floor 7 บาท"},
 {s:3,q:"การใช้ตราสารอนุพันธ์เพื่อจำกัดผลขาดทุนที่อาจเกิดขึ้นจากการถือครองสินทรัพย์อ้างอิงอยู่แล้ว แตกต่างจากการใช้ตราสารอนุพันธ์เพื่อเก็งกำไรอย่างไร",c:["ทั้งสองแบบมีวัตถุประสงค์และระดับความเสี่ยงเหมือนกันทุกประการ","การป้องกันความเสี่ยง (Hedging) มีวัตถุประสงค์เพื่อลดความเสี่ยงจากสถานะที่มีอยู่ ขณะที่การเก็งกำไร (Speculation) มุ่งสร้างผลตอบแทนจากการคาดการณ์ทิศทางราคาโดยไม่จำเป็นต้องมีสถานะเดิมอยู่ก่อน","การเก็งกำไรไม่มีความเสี่ยงใด ๆ เลย","Hedging ใช้ได้เฉพาะกับหุ้นเท่านั้น"],a:1,e:"การป้องกันความเสี่ยง (Hedging) มุ่งใช้ตราสารอนุพันธ์เพื่อลดผลกระทบจากความผันผวนของราคาต่อสถานะสินทรัพย์ที่มีอยู่แล้ว ขณะที่การเก็งกำไร (Speculation) คือการเข้าทำสัญญาเพื่อสร้างผลตอบแทนจากการคาดการณ์ทิศทางราคาโดยยอมรับความเสี่ยงเพิ่มขึ้น"},
 {s:3,q:"สำนักหักบัญชี (Clearing House) ในตลาดตราสารอนุพันธ์ทำหน้าที่หลักใด",c:["เป็นคู่สัญญากลางให้กับทั้งฝ่ายซื้อและฝ่ายขาย เพื่อลดความเสี่ยงด้านเครดิตของคู่สัญญาแต่ละฝ่าย","กำหนดราคาสินค้าโภคภัณฑ์ทั่วโลก","ทำหน้าที่เป็นผู้จัดการกองทุนรวม","ให้สินเชื่อแก่นักลงทุนรายย่อยโดยตรง"],a:0,e:"สำนักหักบัญชีทำหน้าที่เป็นคู่สัญญากลาง (Central Counterparty) ให้กับทั้งฝ่ายซื้อและฝ่ายขายในสัญญาซื้อขายล่วงหน้า ช่วยลดความเสี่ยงที่คู่สัญญาฝ่ายใดฝ่ายหนึ่งจะผิดนัดชำระ และบริหารระบบวางหลักประกันของตลาด"},
 {s:3,q:"การชำระราคาและส่งมอบหลักทรัพย์ในตลาดหลักทรัพย์ที่ดำเนินการภายใน 2 วันทำการหลังจากวันซื้อขาย มักเรียกด้วยสัญลักษณ์ใด",c:["T+0","T+2","T+7","T+30"],a:1,e:"T+2 หมายถึงรอบการชำระราคาและส่งมอบหลักทรัพย์ที่ดำเนินการให้แล้วเสร็จภายใน 2 วันทำการนับจากวันที่ทำรายการซื้อขาย (Trade Date) ซึ่งเป็นมาตรฐานการชำระราคาที่ใช้กันแพร่หลายในหลายตลาดหลักทรัพย์"},
@@ -675,6 +688,25 @@ function finishExam(){
 
   document.getElementById('rcTime').textContent = fmtTime(DURATION - timeLeft);
   document.getElementById('reviewList').innerHTML = reviewHTML;
+
+  /* 2026-11-07: score by part, a hint where to read next, and the result saved for IC_License.html */
+  (function(){
+    var NAME = ['', 'ส่วนที่ 1 · พื้นฐาน + คำนวณ', 'ส่วนที่ 2 · จรรยาบรรณ', 'ส่วนที่ 3 · ผลิตภัณฑ์'];
+    var GO = ['', 'IC_License.html#sec02', 'IC_License.html#sec03', 'IC_License.html#sec04'];
+    var got = [0, 0, 0, 0], tot = [0, 0, 0, 0];
+    QUESTIONS.forEach(function(item, i){ tot[item.s]++; if(answers[i] === item.a) got[item.s]++; });
+    var box = document.getElementById('secBreak');
+    if(box) box.innerHTML = [1, 2, 3].map(function(k){
+      var pct = tot[k] ? Math.round(got[k] / tot[k] * 100) : 0, cls = pct < 60 ? 'low' : pct < 70 ? 'mid' : '';
+      return '<div class="sb-i ' + cls + '"><div class="sb-t"><span>' + NAME[k] + '</span><b>' + got[k] + ' / ' + tot[k] + '</b></div><div class="sb-bar"><i style="width:' + pct + '%"></i></div>' +
+        (pct < 70 ? '<span class="sb-tip">ได้ ' + pct + '% — ทบทวน <a href="' + GO[k] + '">สรุปเนื้อหาส่วนนี้</a> แล้วลองชุดถัดไป</span>' : '<span class="sb-tip">ได้ ' + pct + '% — ส่วนนี้พร้อมแล้ว</span>') + '</div>';
+    }).join('');
+    try {
+      var KEY = 'spz.ic.results', all = JSON.parse(localStorage.getItem(KEY) || '{}'), id = 'IC_2', prev = all[id] || {};
+      var rec = { last:overallCorrect, best:Math.max(overallCorrect, prev.best || 0), eth:ethicsCorrect, s1:got[1], s2:got[2], s3:got[3], pass:finalPass, n:(prev.n || 0) + 1, at:Date.now() };
+      all[id] = rec; localStorage.setItem(KEY, JSON.stringify(all));
+    } catch(e){}
+  })();
 }
 
 document.getElementById('reviewToggle').addEventListener('click', function(){
