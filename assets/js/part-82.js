@@ -29,9 +29,8 @@
      (BRAIN_CODE_KEY) handed out by GET /api/brain/code-key only to an Admin (Worker admin
      key) or an Editor (Editor code / Editor account). The browser decrypts it in memory and
      runs it; nothing readable is ever published.
-     PLAIN_FALLBACK: while the Worker is not set up yet, the old readable file still loads so
-     the board keeps working. Turned off (and the readable file deleted) once she confirms. */
-  var PLAIN_FALLBACK = true;
+     PLAIN_FALLBACK was true only while the Worker was being set up (off since 2026-11-07). */
+  var PLAIN_FALLBACK = false;   /* 2026-11-07: Worker + BRAIN_CODE_KEY set up by the user; the readable bundle is no longer published */
   var WORKER = 'https://spacez-line-link.spacezblack.workers.dev';
   function authKey(){
     try {
