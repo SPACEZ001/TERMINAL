@@ -152,7 +152,10 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   (`lessonsHTML()` in part-85).
 - Market Brain code encryption: `assets/js/min/part-83.bin` = "SPZB1" + iv + AES-256-GCM. Key is the
   Worker secret BRAIN_CODE_KEY (never in the repo), served by `GET /api/brain/code-key` to Admin /
-  Editor only. part-82 decrypts in the browser. `PLAIN_FALLBACK` in part-82 is still true and the
-  readable part-83.js files still exist until the user confirms the Worker is set up; then set it to
-  false, `git rm` assets/js/part-83.js + assets/js/min/part-83.js, gitignore them, and (if she agrees)
-  scrub them from git history. Brain sources live OUTSIDE the repo (never commit them).
+  Editor only. part-82 decrypts in the browser (`PLAIN_FALLBACK = false` since the user set up the
+  Worker on 2026-11-07). The readable bundle `assets/js/part-83.js` / `min/part-83.js` is gitignored and
+  must never be committed. Brain sources + build.sh + encrypt.js + the key live OUTSIDE the repo, on the
+  Mac in `~/Documents/🔒 SPACEZ PRIVATE (ห้ามอัปขึ้น GitHub)/brain-sources-*.tgz`. To change the Brain:
+  unpack to /tmp/bz, edit, run build.sh (it builds then encrypts into part-83.bin), commit only the .bin
+  (+ min/part-83.css). Older git history still contains readable copies unless the user agrees to a
+  history rewrite.
