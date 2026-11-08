@@ -180,3 +180,7 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   FTA/gifts in the World tab, settling empty islands (needs a shipyard), cargo ships on BFS sea routes, free smooth zoom
   + minimap, 3×3 wonders (airport, stadium, space port), 22 news events (5-year cooldown) whose quick check draws a real
   IC question on the same topic, and a "start from zero" path + memory tips + step calculators in the study room.
+- `IC_License.html` (2026-11-09): new section `#sec01b` "สรุปครบทุกบท" (22 chapters of the IC Plain syllabus with question
+  counts, points, formulas, memory hooks, exam traps — built from the syllabus sheet the user sent), a TVM card (#16,
+  `#tvmCard`) and a step-by-step teaching box + calculator inside the bond-pricing card. Styles/script are the
+  "SPACEZ IC STUDY v2" block before `</body>` (`ys-` classes).
