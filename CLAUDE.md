@@ -169,3 +169,9 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   ★ to unlock research (banks, central bank, exchange, regulator...). Saves: localStorage `spz.island.slot.1..3`
   + `spz.island.last`, plus export/import of a .json file. Linked from the SPACEZ apps list (part-86 `APPS`)
   and from `IC_License.html` section 06.
+- Later on 2026-11-08/09: the game's "Council" is now a full-screen IC study room (lessons for 13 topics across
+  the 3 exam parts, practice by part/topic, 20- and 100-question mock exams with the real pass rule, fix-mistakes,
+  progress by topic). Questions are tagged with a topic by keyword (`topicOf`). News events are rarer (≥18 months
+  apart) and each choice now shows a textbook verdict, its effects and a quick-check question. Also: building
+  levels 1–3, roads, day/night with lit windows, birds, need bubbles, town rank. Source pieces are concatenated
+  into the one HTML file — edit `SPACEZ_ISLAND.html` directly.
