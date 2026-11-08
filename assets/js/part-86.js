@@ -26,6 +26,7 @@
     ['SPACEZ_TAX_TERMINAL.html', 'calc', B('Tax calculator', 'คำนวณภาษี'), B('Thai personal income tax, explained step by step and calculated for you.', 'ภาษีเงินได้บุคคลธรรมดา อธิบายทีละขั้น และคำนวณให้'), '#fbbf24'],
     ['IC_License.html', 'badge', B('IC licence guide', 'สอบใบอนุญาต IC'), B('Everything for the IC Plain exam: topics, summaries and practice.', 'ทุกอย่างสำหรับสอบ IC Plain: หัวข้อ สรุปเนื้อหา และแบบฝึก'), '#34d399'],
     ['SPACEZ_VOCAB_LAB.html', 'book', B('Exam vocabulary', 'คำศัพท์เตรียมสอบ'), B('CEWA terms in English and Thai, with flashcards.', 'ศัพท์ CEWA อังกฤษ-ไทย พร้อมแฟลชการ์ด'), '#a78bfa'],
+    ['SPACEZ_ISLAND.html', 'game', B('SPACEZ ISLAND (game)', 'เกม SPACEZ ISLAND'), B('Build a pixel island nation, run its economy and answer IC questions to unlock policies.', 'สร้างประเทศบนเกาะพิกเซล บริหารเศรษฐกิจ และตอบข้อสอบ IC เพื่อปลดล็อกนโยบาย'), '#fb923c'],
     ['SPPG.html', 'key', B('Passphrase generator', 'ระบบสุ่มพาสเวิร์ด'), B('Strong, easy-to-remember passwords made on your own device.', 'สร้างรหัสผ่านที่แข็งแรงและจำง่าย บนเครื่องของคุณเอง'), '#22d3ee'],
     ['SPACEZ_EXAM_PORTAL.html', 'grid', B('Classic exam portal', 'หน้าข้อสอบแบบเดิม'), B('The original password-protected exam catalogue.', 'คลังข้อสอบแบบเดิมที่ใช้รหัสผ่าน'), '#f472b6']
   ];
@@ -35,6 +36,7 @@
     book:'<path d="M4 5a2 2 0 012-2h12v16H6a2 2 0 00-2 2z"/><path d="M4 19V5"/>',
     key:'<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/>',
     grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    game:'<rect x="2" y="7" width="20" height="11" rx="4"/><path d="M7 11v3M5.5 12.5h3"/><circle cx="15.5" cy="11.5" r="1"/><circle cx="18" cy="14" r="1"/>',
     dice:'<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.3"/><circle cx="16" cy="16" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="16" cy="8" r="1.3"/><circle cx="8" cy="16" r="1.3"/>',
     trophy:'<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4z"/><path d="M17 5h3v2a3 3 0 01-3 3M7 5H4v2a3 3 0 003 3"/>',
     lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>',

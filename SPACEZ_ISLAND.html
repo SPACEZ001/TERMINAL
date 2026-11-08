@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SPACEZ ISLAND · เกาะเศรษฐกิจ</title>
+<meta name="description" content="A pixel-art island nation game: build cities, run the economy, and answer IC Plain exam questions to unlock policies. EN/TH.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Kanit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- =====================================================================
+     SPACEZ ISLAND · เกาะเศรษฐกิจ (2026-11-08)
+     User request: a WorldBox-like pixel island game that teaches economics
+     and IC Plain exam content, with save slots. Everything (map, sprites,
+     UI icons) is drawn by this file's own code — no outside art.
+     * one self-contained page, linked from the Terminal's SPACEZ apps button
+       and from IC_License.html
+     * questions come from IC_1–6.html (same site); a small built-in set is
+       used if those files cannot be read
+     * saves: 3 slots in this browser (localStorage spz.island.*) + export /
+       import a .json save file
+     ===================================================================== -->
+<style>
+:root{
+  --ink:#141a2e; --ink2:#1d2540; --panel:#232c4d; --panel2:#2c3760; --line:#0b0f1d;
+  --cream:#fff3d6; --mute:#a9b3d6; --dim:#7883aa;
+  --gold:#ffcc4d; --gold2:#e09a1f; --grass:#5bd16a; --sea:#3aa7ff; --red:#ff5d5d; --pink:#ff8ad8; --violet:#a78bfa;
+  --px:4px;
+  --sans:'Kanit','Segoe UI',system-ui,sans-serif; --pxf:'Silkscreen','Kanit',monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#0b1430;color:var(--cream);font-family:var(--sans);overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+button{font:inherit;color:inherit;cursor:pointer}
+canvas{image-rendering:pixelated;image-rendering:crisp-edges}
+#world{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;background:#14306b}
+.hidden{display:none!important}
+
+/* ---------- pixel UI kit ---------- */
+.pxbox{background:var(--panel);border:var(--px) solid var(--line);box-shadow:inset 0 0 0 2px rgba(255,255,255,.08),0 var(--px) 0 var(--line);border-radius:6px}
+.pxbtn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 16px;border:3px solid var(--line);border-radius:6px;background:linear-gradient(#ffd866,#f2a926);color:#3a2203;font-weight:700;font-size:15px;
+  box-shadow:inset 0 -4px 0 rgba(0,0,0,.18),inset 0 2px 0 rgba(255,255,255,.5),0 4px 0 var(--line);transition:transform .06s,box-shadow .06s;white-space:nowrap}
+.pxbtn:hover{filter:brightness(1.06)}
+.pxbtn:active{transform:translateY(3px);box-shadow:inset 0 -2px 0 rgba(0,0,0,.18),0 1px 0 var(--line)}
+.pxbtn.blue{background:linear-gradient(#73c7ff,#2f86e0);color:#06213f}
+.pxbtn.green{background:linear-gradient(#8ff09a,#36b24a);color:#062b0d}
+.pxbtn.dark{background:linear-gradient(#45517f,#2b3460);color:var(--cream)}
+.pxbtn.red{background:linear-gradient(#ff9a8a,#e0473c);color:#3b0705}
+.pxbtn[disabled]{filter:grayscale(.8) brightness(.7);cursor:not-allowed}
+.pxbtn.sm{padding:6px 10px;font-size:13px}
+.pxt{font-family:var(--pxf);letter-spacing:.5px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:5px;background:rgba(0,0,0,.28);border:2px solid rgba(0,0,0,.35);font-size:12px}
+.ico{width:16px;height:16px;flex:0 0 auto}
+.ico.lg{width:24px;height:24px}
+
+/* ---------- title screen ---------- */
+#title{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:20px;
+  background:radial-gradient(120% 80% at 50% 0%,rgba(10,20,60,.1),rgba(5,10,30,.55));}
+.logo{position:relative;text-align:center;filter:drop-shadow(0 6px 0 var(--line))}
+.logo .l1{font-family:var(--pxf);font-weight:700;font-size:clamp(40px,9vw,96px);line-height:.95;letter-spacing:2px;
+  background:linear-gradient(#fff6c9 0 30%,#ffd34d 30% 62%,#f08a24 62%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  -webkit-text-stroke:3px #2a1702;paint-order:stroke fill}
+.logo .l2{font-family:var(--pxf);font-weight:700;font-size:clamp(28px,6vw,60px);margin-top:4px;
+  background:linear-gradient(#e9fbff 0 40%,#7fd6ff 40% 70%,#3a8ff0 70%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:3px #06213f;paint-order:stroke fill}
+.logo .l3{display:inline-block;margin-top:10px;padding:5px 14px;border-radius:6px;background:var(--line);color:var(--gold);font-size:clamp(13px,2.4vw,17px);font-weight:600}
+.logo .sun{position:absolute;right:-28px;top:-18px;width:44px;height:44px;image-rendering:pixelated}
+.tmenu{display:flex;flex-direction:column;gap:10px;min-width:min(320px,86vw)}
+.tmenu .pxbtn{width:100%;font-size:17px;padding:12px 18px}
+.tfoot{position:fixed;bottom:10px;left:0;right:0;text-align:center;font-size:12px;color:#cfd8ff;opacity:.85;text-shadow:0 2px 0 #000}
+.tfoot a{color:var(--gold)}
+.lang{position:fixed;top:12px;right:12px;z-index:60}
+.back-t{position:fixed;top:12px;left:12px;z-index:60}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed;left:8px;right:8px;top:8px;z-index:20;display:flex;gap:8px;align-items:stretch;pointer-events:none}
+#hud>*{pointer-events:auto}
+.hud-l{display:flex;align-items:center;gap:10px;padding:6px 12px}
+.hud-l b{font-size:15px}
+.hud-l small{display:block;font-size:11px;color:var(--mute);font-family:var(--pxf)}
+.hud-stats{flex:1;display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 8px;min-width:0}
+.st{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border-radius:5px;background:rgba(0,0,0,.25);font-size:13px;white-space:nowrap;cursor:help}
+.st b{font-family:var(--pxf);font-size:12px}
+.st.up b{color:#8ff09a}.st.dn b{color:#ff9a8a}.st.warn b{color:var(--gold)}
+.hud-r{display:flex;align-items:center;gap:4px;padding:5px 6px}
+.spd{width:34px;height:30px;padding:0;border:2px solid var(--line);border-radius:5px;background:var(--panel2);font-family:var(--pxf);font-size:11px}
+.spd.on{background:var(--gold);color:#3a2203}
+#tabs{position:fixed;right:8px;top:72px;z-index:20;display:flex;flex-direction:column;gap:6px}
+.tab{width:52px;height:52px;padding:0;display:grid;place-items:center;border:3px solid var(--line);border-radius:8px;background:var(--panel2);box-shadow:0 3px 0 var(--line);position:relative}
+.tab:hover{background:#3a4677}
+.tab.on{background:var(--gold);}
+.tab .ico{width:28px;height:28px}
+.tab .badge{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:var(--red);border:2px solid var(--line);font-size:10px;font-weight:700;display:grid;place-items:center}
+.tab .tip{position:absolute;right:60px;top:50%;transform:translateY(-50%);background:var(--line);color:var(--cream);padding:4px 8px;border-radius:5px;font-size:12px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s}
+.tab:hover .tip{opacity:1}
+
+/* ---------- build bar (bottom, WorldBox style) ---------- */
+#bar{position:fixed;left:50%;transform:translateX(-50%);bottom:8px;z-index:20;max-width:calc(100vw - 16px);padding:6px}
+.bar-cats{display:flex;gap:4px;margin:-2px 0 6px 2px}
+.bcat{padding:4px 10px;border:2px solid var(--line);border-radius:5px 5px 0 0;background:var(--panel2);font-size:12px;font-weight:600}
+.bcat.on{background:var(--gold);color:#3a2203}
+.bar-items{display:flex;gap:5px;overflow-x:auto;scrollbar-width:thin;padding-bottom:2px}
+.bi{position:relative;flex:0 0 auto;width:62px;height:66px;padding:4px 2px 2px;border:3px solid var(--line);border-radius:7px;background:#3a4677;display:flex;flex-direction:column;align-items:center;justify-content:space-between}
+.bi canvas{width:40px;height:40px}
+.bi span{font-size:10.5px;line-height:1.1;text-align:center;max-width:58px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.bi em{position:absolute;top:2px;right:3px;font-style:normal;font-family:var(--pxf);font-size:9px;color:var(--gold);text-shadow:1px 1px 0 #000}
+.bi.on{background:var(--gold);color:#3a2203}
+.bi.on em{color:#3a2203;text-shadow:none}
+.bi.lock{filter:grayscale(1) brightness(.6)}
+.bi.lock::after{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffcc4d' d='M2 3h4v4H2zM3 1h2v1H3zM2 2h1v1H2zM5 2h1v1H5z'/%3E%3Cpath fill='%23000' d='M4 4h1v2H4z'/%3E%3C/svg%3E") center/24px no-repeat;filter:none}
+.bi.cant{opacity:.55}
+
+/* ---------- side panel ---------- */
+#panel{position:fixed;top:72px;right:68px;bottom:96px;z-index:25;width:min(440px,calc(100vw - 84px));display:flex;flex-direction:column;overflow:hidden}
+#panel .ph{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--panel2);border-bottom:3px solid var(--line)}
+#panel .ph h2{margin:0;font-size:18px;flex:1}
+#panel .pb{flex:1;overflow:auto;padding:12px;scrollbar-width:thin}
+.x{width:32px;height:32px;padding:0;border:3px solid var(--line);border-radius:6px;background:linear-gradient(#ff9a8a,#e0473c);color:#3b0705;font-weight:800;font-size:16px;line-height:1}
+.sec{margin-bottom:14px}
+.sec h3{margin:0 0 8px;font-size:14px;color:var(--gold);display:flex;align-items:center;gap:6px}
+.p{margin:0 0 8px;font-size:13.5px;line-height:1.65;color:#dfe5ff}
+.small{font-size:12px;color:var(--mute);line-height:1.55}
+.kv{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:13.5px}
+.kv b{font-family:var(--pxf);font-size:12.5px;text-align:right}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.card{background:rgba(0,0,0,.22);border:2px solid rgba(0,0,0,.4);border-radius:7px;padding:10px}
+.card b.big{display:block;font-family:var(--pxf);font-size:20px;margin-top:2px}
+.card small{font-size:11.5px;color:var(--mute)}
+.chart{width:100%;height:110px;display:block;background:#141c38;border:2px solid var(--line);border-radius:6px}
+.slider{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;margin-bottom:12px}
+.slider label{font-size:13.5px;font-weight:600}
+.slider output{font-family:var(--pxf);font-size:13px;color:var(--gold)}
+.slider input{grid-column:1/-1;width:100%;accent-color:var(--gold);height:22px}
+.slider .small{grid-column:1/-1}
+.hint{display:flex;gap:8px;padding:9px 10px;border-radius:7px;background:rgba(58,167,255,.12);border:2px dashed rgba(58,167,255,.45);font-size:12.5px;line-height:1.6;color:#d6ecff}
+.hint.warn{background:rgba(255,204,77,.1);border-color:rgba(255,204,77,.5);color:#ffe9b3}
+.lockbox{text-align:center;padding:16px;border:2px dashed rgba(255,255,255,.2);border-radius:8px;color:var(--mute);font-size:13.5px;line-height:1.7}
+
+/* quiz */
+.q-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.q-text{font-size:15px;line-height:1.7;margin:0 0 12px;font-weight:500}
+.q-ch{display:flex;flex-direction:column;gap:7px}
+.q-c{text-align:left;padding:10px 12px;border:3px solid var(--line);border-radius:7px;background:#3a4677;font-size:14px;line-height:1.5;box-shadow:0 3px 0 var(--line)}
+.q-c:hover{background:#47558c}
+.q-c.ok{background:#2f8f3f}.q-c.bad{background:#a83a33}.q-c.dim{opacity:.55}
+.q-exp{margin-top:12px;padding:10px 12px;border-radius:7px;background:rgba(0,0,0,.25);border-left:4px solid var(--gold);font-size:13.5px;line-height:1.7}
+.topics{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.topic{padding:6px 10px;border:2px solid var(--line);border-radius:6px;background:var(--panel2);font-size:12.5px}
+.topic.on{background:var(--gold);color:#3a2203;font-weight:700}
+.meter{height:10px;border-radius:3px;background:rgba(0,0,0,.35);border:2px solid var(--line);overflow:hidden}
+.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--grass),var(--gold))}
+
+/* research */
+.tech{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;padding:10px;border:3px solid var(--line);border-radius:8px;background:#2f3a66;margin-bottom:8px}
+.tech.done{background:#245a34}
+.tech.na{opacity:.6}
+.tech .ti{width:44px;height:44px;border-radius:7px;background:rgba(0,0,0,.3);display:grid;place-items:center}
+.tech .ti canvas{width:36px;height:36px}
+.tech b{font-size:14px}
+.tech p{margin:2px 0 0;font-size:12px;color:var(--mute);line-height:1.5}
+
+/* fund */
+.alloc{display:grid;grid-template-columns:90px 1fr 46px;gap:8px;align-items:center;margin-bottom:6px;font-size:13px}
+.alloc input{width:100%;accent-color:var(--gold)}
+.alloc b{font-family:var(--pxf);font-size:12px;text-align:right}
+
+/* codex & goals */
+.cx{padding:10px;border-radius:7px;background:rgba(0,0,0,.22);border:2px solid rgba(0,0,0,.4);margin-bottom:8px}
+.cx b{font-size:14px;color:var(--gold)}
+.cx p{margin:4px 0 0;font-size:13px;line-height:1.65}
+.cx.lock b{color:var(--dim)}
+.goal{display:grid;grid-template-columns:28px 1fr auto;gap:8px;align-items:center;padding:8px 10px;border-radius:7px;background:rgba(0,0,0,.22);margin-bottom:6px;font-size:13px}
+.goal.done{background:rgba(91,209,106,.18)}
+.goal i{font-style:normal;font-family:var(--pxf);font-size:11px;color:var(--gold)}
+
+/* modal / toast / inspect */
+#modal{position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:rgba(3,6,18,.6);padding:16px}
+#modal .mb{width:min(520px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:18px}
+#modal h2{margin:0 0 4px;font-size:20px}
+#modal .tag{display:inline-block;margin-bottom:10px;padding:3px 8px;border-radius:5px;background:var(--line);color:var(--gold);font-size:12px;font-family:var(--pxf)}
+#modal .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+.ev-art{display:block;width:96px;height:96px;margin:0 auto 10px}
+#toasts{position:fixed;left:50%;top:76px;transform:translateX(-50%);z-index:80;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none}
+.toast{padding:8px 14px;border-radius:7px;background:var(--line);border:2px solid #39446f;font-size:13.5px;box-shadow:0 4px 0 rgba(0,0,0,.4);animation:tin .25s ease,tout .4s ease 2.6s forwards}
+.toast.good{border-color:#36b24a}.toast.bad{border-color:#e0473c}.toast.gold{border-color:var(--gold)}
+@keyframes tin{from{transform:translateY(-8px);opacity:0}}
+@keyframes tout{to{opacity:0;transform:translateY(-6px)}}
+#inspect{position:fixed;z-index:30;min-width:200px;max-width:260px;padding:10px 12px;font-size:13px;pointer-events:auto}
+#inspect h4{margin:0 0 6px;font-size:15px}
+#help{position:fixed;left:8px;top:72px;z-index:21;max-width:min(360px,calc(100vw - 16px));padding:10px 12px;font-size:13px;line-height:1.6}
+#help b{color:var(--gold)}
+.tut-n{font-family:var(--pxf);color:var(--gold);font-size:11px}
+.slot{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;padding:10px;border:3px solid var(--line);border-radius:8px;background:#2f3a66;margin-bottom:8px}
+.slot b{font-size:15px}
+.slot small{display:block;color:var(--mute);font-size:12px}
+.slot .acts{display:flex;gap:6px}
+.fld{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;font-size:13.5px}
+.fld input{padding:9px 10px;border:3px solid var(--line);border-radius:6px;background:#141c38;color:var(--cream);font:inherit}
+@media(max-width:760px){
+  #hud{left:6px;right:6px;top:6px;flex-wrap:wrap;gap:5px}
+  .hud-l{padding:4px 8px;gap:7px;flex:1;min-width:0}
+  .hud-l b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:44vw}
+  .hud-r{padding:4px}
+  .spd{width:30px;height:26px;font-size:10px}
+  .hud-stats{order:3;flex-basis:100%;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:4px 6px;scrollbar-width:none}
+  .hud-stats::-webkit-scrollbar{display:none}
+  .st{font-size:11px;padding:2px 5px}.st b{font-size:10.5px}.st .ico{width:13px;height:13px}
+  #toasts{top:96px;width:calc(100vw - 24px)}
+  .toast{font-size:12.5px;text-align:center}
+  #bar{left:6px;right:6px;transform:none;max-width:none;bottom:6px;padding:5px}
+  .bar-cats{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:-1px 0 5px}
+  .bar-cats::-webkit-scrollbar{display:none}
+  .bcat{flex:0 0 auto;white-space:nowrap;font-size:11.5px;padding:4px 9px}
+  .bi{width:56px;height:60px}.bi canvas{width:34px;height:34px}.bi span{font-size:10px;max-width:52px}
+  #tabs{top:auto;bottom:112px;left:6px;right:6px;flex-direction:row;justify-content:center;gap:4px;transform:none}
+  .tab{width:40px;height:40px;border-width:2px}.tab .ico{width:22px;height:22px}.tab .tip{display:none}
+  #panel{left:6px;right:6px;width:auto;top:96px;bottom:160px}
+  #panel .ph{padding:7px 10px}#panel .ph h2{font-size:16px}
+  #help{top:96px;left:6px;right:6px;max-width:none;padding:8px 10px;font-size:12px;line-height:1.5}
+  #help .pxbtn.sm{padding:4px 9px;font-size:12px}
+  #inspect{left:6px!important;right:6px;max-width:none;top:auto!important;bottom:160px!important}
+  .grid2{gap:6px}.card b.big{font-size:17px}
+  body.pop #bar{display:none}
+  body.pop #tabs{bottom:6px}
+  body.pop #panel{bottom:54px}
+}
+</style>
+</head>
+<body>
+<canvas id="world"></canvas>
+
+<!-- title screen -->
+<div id="title">
+  <a class="pxbtn dark sm back-t" href="SPACEZ_TERMINAL.html" data-t="back"></a>
+  <button class="pxbtn dark sm lang" data-act="lang">EN / TH</button>
+  <div class="logo">
+    <canvas class="sun" width="11" height="11" id="sunArt"></canvas>
+    <div class="l1">SPACEZ</div>
+    <div class="l2">ISLAND</div>
+    <div class="l3" data-t="tag"></div>
+  </div>
+  <div class="tmenu pxbox" style="padding:14px">
+    <button class="pxbtn green" data-act="continue" id="btnCont"></button>
+    <button class="pxbtn" data-act="new" data-t="newGame"></button>
+    <button class="pxbtn blue" data-act="slots" data-t="loadGame"></button>
+    <button class="pxbtn dark" data-act="howto" data-t="howTo"></button>
+  </div>
+  <div class="tfoot"><span data-t="foot"></span> · <a href="IC_License.html" data-t="icLink"></a></div>
+</div>
+
+<!-- game HUD -->
+<div id="hud" class="hidden">
+  <div class="pxbox hud-l"><canvas class="ico lg" id="flagArt" width="8" height="8"></canvas><div><b id="hName">—</b><small id="hDate">—</small></div></div>
+  <div class="pxbox hud-stats" id="hStats"></div>
+  <div class="pxbox hud-r">
+    <button class="spd" data-spd="0" title="pause">II</button>
+    <button class="spd" data-spd="1">1x</button>
+    <button class="spd" data-spd="2">2x</button>
+    <button class="spd" data-spd="4">4x</button>
+  </div>
+</div>
+<div id="tabs" class="hidden"></div>
+<div id="bar" class="pxbox hidden"><div class="bar-cats" id="barCats"></div><div class="bar-items" id="barItems"></div></div>
+<div id="panel" class="pxbox hidden"><div class="ph"><canvas class="ico lg" id="pIco" width="8" height="8"></canvas><h2 id="pTitle"></h2><button class="x" data-act="closePanel">×</button></div><div class="pb" id="pBody"></div></div>
+<div id="inspect" class="pxbox hidden"></div>
+<div id="help" class="pxbox hidden"></div>
+<div id="modal" class="hidden"><div class="mb pxbox" id="mBody"></div></div>
+<div id="toasts"></div>
+<input type="file" id="fileIn" accept=".json,application/json" class="hidden">
+<script>
+"use strict";
+'use strict';
+/* ======================= core helpers ======================= */
+var LANG = 'th';
+try { var _l = localStorage.getItem('spz.island.lang') || localStorage.getItem('ma.lang'); if(_l === 'en' || _l === 'th') LANG = _l; } catch(e){}
+function B(en, th){ return { en:en, th:th }; }
+function T(o){ return o == null ? '' : typeof o === 'string' ? o : (o[LANG] || o.en || ''); }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; }); }
+function clamp(v, a, b){ return v < a ? a : v > b ? b : v; }
+function lerp(a, b, t){ return a + (b - a) * t; }
+function $(id){ return document.getElementById(id); }
+function fmt(n, d){ if(n == null || !isFinite(n)) return '—'; var a = Math.abs(n); if(a >= 1e9) return (n / 1e9).toFixed(1) + 'B'; if(a >= 1e6) return (n / 1e6).toFixed(1) + 'M'; if(a >= 1e4) return (n / 1e3).toFixed(1) + 'k'; return n.toFixed(d || 0); }
+function pct(n, d){ return n == null || !isFinite(n) ? '—' : (n >= 0 ? '+' : '') + n.toFixed(d == null ? 1 : d) + '%'; }
+function pct0(n, d){ return n == null || !isFinite(n) ? '—' : n.toFixed(d == null ? 1 : d) + '%'; }
+function mulberry(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function hash2(x, y, s){ var h = (x * 374761393 + y * 668265263 + (s || 0) * 2147483647) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
+function gauss(r){ var u = 1 - r(), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+var MONTHS = { th:['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'], en:['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] };
+function dateStr(m){ return MONTHS[LANG][m % 12] + ' ' + T(B('Year ', 'ปีที่ ')) + (Math.floor(m / 12) + 1); }
+
+/* ======================= tiny 8x8 icons (pixel strings) ======================= */
+var ICP = { k:'#141a2e', y:'#ffcc4d', Y:'#e09a1f', w:'#fff3d6', g:'#5bd16a', G:'#2f8f3f', b:'#3aa7ff', B:'#1f5fbf', r:'#ff5d5d', R:'#b8322c', p:'#ff8ad8', v:'#a78bfa', V:'#6d4bd1', s:'#c3cbe6', S:'#7883aa', o:'#ff9b3d', n:'#7a4a2a', c:'#8ee8ff' };
+var ICONS = {
+  coin:['..kkkk..', '.kyyyyk.', 'kyywwyYk', 'kyywyyYk', 'kyywyyYk', 'kyyyyyYk', '.kYYYYk.', '..kkkk..'],
+  pop:['..kkk...', '.kwwwk..', '.kwwwk..', '..kkk...', '.kbbbk..', 'kbbbbbk.', 'kbbbbbk.', 'kkkkkkk.'],
+  gdp:['......gk', '.....gk.', '..g.gk..', '.gkgk...', 'gk.k....', 'k.......', 'kkkkkkkk', '........'],
+  infl:['...rk...', '..rrk...', '.rrorrk.', '.rooork.', 'roooyrk.', 'royyyrk.', '.ryyyk..', '..kkk...'],
+  job:['..kkkk..', '.kn..nk.', 'kkkkkkkk', 'kooooook', 'kookkook', 'koooooook', 'koooooook', 'kkkkkkkk'],
+  bank:['...kk...', '..kyyk..', '.kyyyyk.', 'kkkkkkkk', '.kwkwkw.', '.kwkwkw.', '.kwkwkw.', 'kkkkkkkk'],
+  happy:['..kkkk..', '.kyyyyk.', 'kyykykyk', 'kyyyyyyk', 'kykyykyk', 'kyykkyyk', '.kyyyyk.', '..kkkk..'],
+  star:['...kk...', '...yk...', '..kyyk..', 'kkyyyykk', '.kyyyyk.', '..kyyk..', '.kyk.kyk', '.kk...kk'],
+  chart:['kkkkkkkk', 'k......k', 'k....g.k', 'k...g.gk', 'k.g.g..k', 'kg.g...k', 'k......k', 'kkkkkkkk'],
+  policy:['..kkkk..', '.kssssk.', 'kkkkkkkk', '.kskskk.', '.kskskk.', '.kskskk.', 'kkkkkkkk', 'kSSSSSSk'],
+  market:['.......g', '......gk', '.r...gk.', 'rkr.gk..', 'k.rgk...', '...k....', 'kkkkkkkk', '........'],
+  brain:['..kkkk..', '.kppppk.', 'kpvppvpk', 'kppvvppk', 'kpvppvpk', '.kppppk.', '..kvvk..', '..kkkk..'],
+  flask:['..kkkk..', '...kk...', '...kk...', '..kbbk..', '.kbcbbk.', 'kbbbcbbk', 'kbbbbbbk', '.kkkkkk.'],
+  book:['kkkkkkk.', 'kwwkwwwk', 'kwwkwwwk', 'kwwkwwwk', 'kwwkwwwk', 'kwwkwwwk', 'kkkkkkkk', '........'],
+  trophy:['kkkkkkkk', 'kyyyyyyk', '.kyyyyk.', '.kyyyyk.', '..kyyk..', '...kk...', '..kyyk..', '.kkkkkk.'],
+  disk:['kkkkkkk.', 'kbswwbbk', 'kbswwbbk', 'kbbbbbbk', 'kbkkkkbk', 'kbkwwkbk', 'kbkwwkbk', 'kkkkkkkk'],
+  eye:['........', '..kkkk..', '.kwwwwk.', 'kwwbbwwk', 'kwwbkwwk', '.kwwwwk.', '..kkkk..', '........'],
+  dem:['kk....kk', 'krk..krk', '.krkkrk.', '..krrk..', '..krrk..', '.krkkrk.', 'krk..krk', 'kk....kk'],
+  flag:['kk......', 'kgggggk.', 'kgwwggk.', 'kggggggk', 'kgggggk.', 'kk......', 'kk......', 'kk......'],
+  rate:['kk....kk', 'kyk..kyk', '.kk.kyk.', '...kyk..', '..kyk...', '.kyk.kk.', 'kyk..kyk', 'kk....kk'],
+  food:['...kk...', '..kgGk..', '.kggGGk.', '..kyyk..', '.kyyyyk.', 'kyyyyyyk', 'kyyyyyyk', '.kkkkkk.'],
+  power:['....kk..', '...kyk..', '..kyk...', '.kyyyyk.', '...kyk..', '..kyk...', '..kk....', '........'],
+  alert:['...kk...', '..kyyk..', '..kykk..', '.kykkyk.', '.kyyyyk.', 'kyykkyyk', 'kyyyyyyk', 'kkkkkkkk']
+};
+function iconCanvas(name, cv){
+  var p = ICONS[name] || ICONS.star; cv = cv || document.createElement('canvas'); cv.width = 8; cv.height = 8;
+  var c = cv.getContext('2d'); c.clearRect(0, 0, 8, 8);
+  for(var y = 0; y < 8; y++) for(var x = 0; x < 8; x++){ var ch = (p[y] || '')[x]; if(ch && ch !== '.' && ICP[ch]){ c.fillStyle = ICP[ch]; c.fillRect(x, y, 1, 1); } }
+  return cv;
+}
+var _icoURL = {};
+function icoImg(name, cls){
+  if(!_icoURL[name]) _icoURL[name] = iconCanvas(name).toDataURL();
+  return '<img class="ico ' + (cls || '') + '" style="image-rendering:pixelated" src="' + _icoURL[name] + '" alt="">';
+}
+
+/* ======================= value noise ======================= */
+function makeNoise(seed){
+  var r = mulberry(seed), P = new Float32Array(256 * 256);
+  for(var i = 0; i < P.length; i++) P[i] = r();
+  function v(x, y){ return P[((y & 255) << 8) | (x & 255)]; }
+  function sm(t){ return t * t * (3 - 2 * t); }
+  function n2(x, y){ var xi = Math.floor(x), yi = Math.floor(y), xf = sm(x - xi), yf = sm(y - yi);
+    return lerp(lerp(v(xi, yi), v(xi + 1, yi), xf), lerp(v(xi, yi + 1), v(xi + 1, yi + 1), xf), yf); }
+  return function fbm(x, y, oct){ var a = 0, amp = 0.5, f = 1, n = 0; for(var o = 0; o < (oct || 5); o++){ a += n2(x * f, y * f) * amp; n += amp; amp *= 0.5; f *= 2.03; } return a / n; };
+}
+
+/* ======================= world / terrain ======================= */
+var MW = 112, MH = 72, TS = 8;            /* tiles, pixels per tile */
+var TT = { DEEP:0, SEA:1, SAND:2, GRASS:3, FOREST:4, HILL:5, MOUNT:6, SNOW:7 };
+var WORLD = null;   /* { seed, elev[], moist[], type[], tree[] } */
+function genWorld(seed){
+  var nE = makeNoise(seed), nM = makeNoise(seed * 7 + 13), r = mulberry(seed * 3 + 1);
+  var elev = new Float32Array(MW * MH), moist = new Float32Array(MW * MH), type = new Uint8Array(MW * MH), tree = new Uint8Array(MW * MH);
+  /* 2-3 lumps so islands vary */
+  var lumps = [], nl = 2 + Math.floor(r() * 2);
+  for(var l = 0; l < nl; l++) lumps.push([MW * (0.32 + r() * 0.36), MH * (0.34 + r() * 0.32), 0.55 + r() * 0.35]);
+  for(var y = 0; y < MH; y++) for(var x = 0; x < MW; x++){
+    var i = y * MW + x, e = nE(x / 22, y / 22, 5), m = nM(x / 18, y / 18, 4), fall = 0;
+    lumps.forEach(function(L){ var dx = (x - L[0]) / (MW * 0.42), dy = (y - L[1]) / (MH * 0.42), d = Math.sqrt(dx * dx + dy * dy); fall = Math.max(fall, L[2] * (1 - d)); });
+    var edge = Math.min(x, y, MW - 1 - x, MH - 1 - y) / 10; if(edge < 1) fall *= edge;
+    e = e * 0.95 + fall * 0.85 - 0.42 - (edge < 1 ? (1 - edge) * 0.6 : 0);
+    elev[i] = e; moist[i] = m;
+  }
+  /* sea level and mountains by share of the map, so every seed is a real island (~45% sea) */
+  var so = Array.from(elev).sort(function(a, b){ return a - b; }), N = so.length;
+  function q(f){ return so[Math.min(N - 1, Math.floor(f * N))]; }
+  var qD = q(0.30), qS = q(0.46), qB = q(0.51), qH = q(0.88), qM = q(0.95), qN = q(0.985);
+  for(y = 0; y < MH; y++) for(x = 0; x < MW; x++){
+    i = y * MW + x; e = elev[i]; m = moist[i];
+    var t = e < qD ? TT.DEEP : e < qS ? TT.SEA : e < qB ? TT.SAND : e < qH ? (m > 0.56 ? TT.FOREST : TT.GRASS) : e < qM ? TT.HILL : e < qN ? TT.MOUNT : TT.SNOW;
+    type[i] = t; if(t === TT.FOREST || (t === TT.GRASS && hash2(x, y, seed) > 0.93) || (t === TT.HILL && hash2(x, y, seed + 5) > 0.75)) tree[i] = 1 + Math.floor(hash2(x, y, seed + 9) * 3);
+  }
+  WORLD = { seed:seed, elev:elev, moist:moist, type:type, tree:tree };
+  return WORLD;
+}
+function T_at(x, y){ return x < 0 || y < 0 || x >= MW || y >= MH ? TT.DEEP : WORLD.type[y * MW + x]; }
+function isLand(t){ return t >= TT.SAND; }
+var PAL = {
+  0:['#1a3f8f', '#1d4699', '#18398a'], 1:['#2f6fd0', '#3479da', '#2a66c4'], 2:['#f0d48a', '#e8c877', '#f6dd9c'],
+  3:['#5cc44f', '#52b847', '#66cf58', '#4aac40'], 4:['#3e9a3b', '#378f35', '#45a541'], 5:['#7fae4a', '#739f43', '#8bbb53'],
+  6:['#8c8f9c', '#7c7f8c', '#9a9daa'], 7:['#eef4ff', '#dce6f7', '#ffffff']
+};
+var HC = [0, 1, 2, 3, 3, 4, 5, 6];
+var terrainCv = null, staticCv = null, waterTiles = [];
+function renderTerrain(){
+  terrainCv = document.createElement('canvas'); terrainCv.width = MW * TS; terrainCv.height = MH * TS;
+  var c = terrainCv.getContext('2d'), img = c.createImageData(MW * TS, MH * TS), d = img.data, s = WORLD.seed;
+  function hex(h){ return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
+  var P = {}; Object.keys(PAL).forEach(function(k){ P[k] = PAL[k].map(hex); });
+  waterTiles = [];
+  for(var ty = 0; ty < MH; ty++) for(var tx = 0; tx < MW; tx++){
+    var t = T_at(tx, ty), e = WORLD.elev[ty * MW + tx], eNW = WORLD.elev[Math.max(0, ty - 1) * MW + Math.max(0, tx - 1)];
+    var landN = isLand(T_at(tx, ty - 1)), landS = isLand(T_at(tx, ty + 1)), landW = isLand(T_at(tx - 1, ty)), landE = isLand(T_at(tx + 1, ty));
+    if(!isLand(t)) waterTiles.push(ty * MW + tx);
+    var hc = HC[t], hN = HC[T_at(tx, ty - 1)], hS = HC[T_at(tx, ty + 1)], hW = HC[T_at(tx - 1, ty)], hE = HC[T_at(tx + 1, ty)];
+    for(var py = 0; py < TS; py++) for(var px = 0; px < TS; px++){
+      var X = tx * TS + px, Y = ty * TS + py, h = hash2(X, Y, s), pal = P[t], col = pal[Math.floor(h * pal.length) % pal.length].slice();
+      /* relief light from the top-left like WorldBox */
+      if(t >= TT.GRASS){ var sl = (e - eNW) * 140; col = col.map(function(v){ return clamp(v + sl, 0, 255); }); }
+      if(t === TT.MOUNT || t === TT.SNOW){ var ridge = (px + py) % 7 === 0 ? -18 : (px - py + 8) % 9 === 0 ? 14 : 0; col = col.map(function(v){ return clamp(v + ridge, 0, 255); }); }
+      if(t === TT.GRASS && h > 0.965){ col = [126, 214, 96]; }
+      if(t === TT.GRASS && h < 0.02){ col = [255, 236, 120]; }               /* tiny flowers */
+      if(t === TT.SAND && h > 0.97){ col = [214, 186, 112]; }
+      /* water: depth stripes + foam next to land */
+      if(t === TT.SEA){ var foam = (landN && py < 2) || (landS && py > TS - 3) || (landW && px < 2) || (landE && px > TS - 3);
+        if(foam && h > 0.35) col = [196, 232, 255]; else if(((X + Y * 2) % 13) === 0) col = [80, 150, 235]; }
+      if(t === TT.DEEP && ((X * 3 + Y) % 23) === 0) col = [40, 86, 176];
+      /* shore darkening on sand next to water (wet sand) */
+      if(t === TT.SAND){ var wet = (!landN && py < 1) || (!landS && py > TS - 2) || (!landW && px < 1) || (!landE && px > TS - 2); if(wet) col = [214, 188, 118]; }
+      /* terraces: cliffs on the low side of hills and mountains (WorldBox-like blocky relief) */
+      if(hc >= 4){ var sh = 0;
+        if(hS < hc && py >= TS - 2) sh = py === TS - 1 ? -55 : -32; else if(hE < hc && px === TS - 1) sh = -26;
+        else if(hN < hc && py === 0) sh = 30; else if(hW < hc && px === 0) sh = 18;
+        if(sh) col = col.map(function(v){ return clamp(v + sh, 0, 255); }); }
+      var o = (Y * MW * TS + X) * 4; d[o] = col[0]; d[o + 1] = col[1]; d[o + 2] = col[2]; d[o + 3] = 255;
+    }
+  }
+  c.putImageData(img, 0, 0);
+  /* trees are drawn later by rebuildStatic(), so clearing land never needs a terrain re-render */
+}
+function drawTree(c, x, y, kind, t){
+  var dk = '#1c4a22', g1 = t === TT.HILL ? '#3f8a3a' : '#2f7d34', g2 = t === TT.HILL ? '#63ad4e' : '#4fa64a', tr = '#6b4428';
+  c.fillStyle = 'rgba(0,0,0,.22)'; c.fillRect(x + 1, y + 7, 5, 1);
+  if(kind === 1){ /* pine */
+    c.fillStyle = dk; c.fillRect(x + 2, y, 2, 1); c.fillRect(x + 1, y + 1, 4, 2); c.fillRect(x, y + 3, 6, 3);
+    c.fillStyle = g1; c.fillRect(x + 2, y + 1, 2, 1); c.fillRect(x + 1, y + 3, 4, 2);
+    c.fillStyle = g2; c.fillRect(x + 2, y + 3, 1, 1); c.fillRect(x + 1, y + 1, 1, 1);
+    c.fillStyle = tr; c.fillRect(x + 2, y + 6, 2, 1);
+  } else { /* round */
+    c.fillStyle = dk; c.fillRect(x + 1, y, 4, 1); c.fillRect(x, y + 1, 6, 4); c.fillRect(x + 1, y + 5, 4, 1);
+    c.fillStyle = kind === 3 ? '#3b8f3b' : g1; c.fillRect(x + 1, y + 1, 4, 4);
+    c.fillStyle = kind === 3 ? '#7dcf5d' : g2; c.fillRect(x + 1, y + 1, 2, 2);
+    if(kind === 3){ c.fillStyle = '#ff6b6b'; c.fillRect(x + 4, y + 2, 1, 1); c.fillRect(x + 2, y + 4, 1, 1); }
+    c.fillStyle = tr; c.fillRect(x + 2, y + 6, 2, 1);
+  }
+}
+
+/* ======================= building sprites (16x16, drawn with primitives + outline) ======================= */
+function makeSprite(draw, w, h){
+  w = w || 16; h = h || 16;
+  var cv = document.createElement('canvas'); cv.width = w; cv.height = h; var c = cv.getContext('2d');
+  var R = function(x, y, ww, hh, col){ c.fillStyle = col; c.fillRect(x, y, ww, hh); };
+  var roof = function(x, y, ww, hh, col, dark){ for(var i = 0; i < hh; i++){ var inset = Math.round((hh - 1 - i) * (ww / 2) / hh); R(x + inset, y + i, ww - inset * 2, 1, i === hh - 1 ? dark : col); if(ww - inset * 2 > 2) R(x + inset, y + i, 1, 1, dark); } };
+  draw(R, roof, c);
+  /* 1px outline around everything that was drawn */
+  var img = c.getImageData(0, 0, w, h), d = img.data, out = c.createImageData(w, h), o = out.data;
+  for(var y = 0; y < h; y++) for(var x = 0; x < w; x++){
+    var i = (y * w + x) * 4;
+    if(d[i + 3] > 0){ o[i] = d[i]; o[i + 1] = d[i + 1]; o[i + 2] = d[i + 2]; o[i + 3] = 255; continue; }
+    var nb = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(function(q){ var X = x + q[0], Y = y + q[1]; return X >= 0 && Y >= 0 && X < w && Y < h && d[(Y * w + X) * 4 + 3] > 0; });
+    if(nb){ o[i] = 20; o[i + 1] = 22; o[i + 2] = 40; o[i + 3] = 255; }
+  }
+  c.putImageData(out, 0, 0);
+  return cv;
+}
+function windows(R, x, y, cols, rows, gx, gy, col){ for(var j = 0; j < rows; j++) for(var i = 0; i < cols; i++) R(x + i * gx, y + j * gy, 2, 2, col); }
+var SPR = {};
+function buildSprites(){
+  var WALL = '#f6e7c4', WS = '#d9c094', WIN = '#9fe4ff', DOOR = '#6d4428';
+  SPR.house = makeSprite(function(R, roof){ R(3, 8, 10, 7, WALL); R(10, 8, 3, 7, WS); roof(2, 3, 12, 6, '#d9463b', '#8f2a22'); R(10, 2, 2, 3, '#8c8f9c'); windows(R, 4, 10, 2, 1, 4, 0, WIN); R(7, 11, 2, 4, DOOR); });
+  SPR.house2 = makeSprite(function(R, roof){ R(2, 6, 12, 9, WALL); R(10, 6, 4, 9, WS); roof(1, 1, 14, 6, '#3f78c9', '#22477f'); windows(R, 3, 8, 3, 2, 3, 3, WIN); R(7, 12, 2, 3, DOOR); });
+  SPR.farm = makeSprite(function(R, roof){ for(var i = 0; i < 4; i++){ R(1, 8 + i * 2, 8, 1, '#c9e36a'); R(1, 9 + i * 2, 8, 1, '#8fbf3a'); } R(10, 7, 5, 8, '#c0392b'); roof(9, 3, 7, 5, '#8f2a22', '#5e1a14'); R(11, 11, 3, 4, '#f6e7c4'); R(12, 11, 1, 4, '#8f2a22'); R(2, 4, 2, 3, '#f1c94b'); R(5, 5, 2, 2, '#f1c94b'); });
+  SPR.factory = makeSprite(function(R){ R(1, 8, 14, 7, '#9aa3b5'); R(11, 8, 4, 7, '#7d8698'); for(var i = 0; i < 3; i++){ R(1 + i * 4, 6, 4, 2, '#7d8698'); R(1 + i * 4, 5, 2, 1, '#7d8698'); } R(11, 1, 3, 7, '#b04a3a'); R(11, 2, 3, 1, '#f6e7c4'); windows(R, 2, 10, 3, 1, 3, 0, '#ffd866'); R(7, 12, 3, 3, '#4b5163'); });
+  SPR.market = makeSprite(function(R){ R(2, 9, 12, 6, '#f6e7c4'); for(var i = 0; i < 6; i++){ R(1 + i * 2, 5, 2, 3, i % 2 ? '#ffffff' : '#e8473b'); } R(1, 8, 14, 1, '#b8322c'); R(3, 11, 3, 3, '#ffcc4d'); R(7, 11, 2, 3, '#5bd16a'); R(10, 11, 3, 3, '#ff8ad8'); R(7, 2, 2, 3, '#6d4428'); R(6, 1, 4, 1, '#ffcc4d'); });
+  SPR.school = makeSprite(function(R, roof){ R(1, 8, 14, 7, '#f2d9a4'); R(11, 8, 4, 7, '#d6b97a'); roof(0, 4, 16, 5, '#5a8f3a', '#335a20'); R(7, 1, 2, 4, '#f2d9a4'); R(7, 2, 2, 1, '#ffcc4d'); windows(R, 2, 10, 4, 1, 3, 0, WIN); R(7, 11, 2, 4, DOOR); });
+  SPR.hospital = makeSprite(function(R){ R(2, 4, 12, 11, '#ffffff'); R(11, 4, 3, 11, '#dfe6f2'); R(2, 3, 12, 1, '#c7d0e0'); R(6, 6, 4, 1, '#e53935'); R(7, 5, 2, 3, '#e53935'); windows(R, 3, 10, 3, 1, 3, 0, WIN); R(7, 12, 2, 3, '#3aa7ff'); });
+  SPR.power = makeSprite(function(R){ R(2, 4, 6, 11, '#c3cbe6'); R(3, 3, 4, 1, '#c3cbe6'); R(2, 4, 1, 11, '#9aa3b5'); R(3, 7, 4, 1, '#e8473b'); R(9, 8, 6, 7, '#7d8698'); R(10, 10, 4, 2, '#ffd866'); R(13, 5, 1, 3, '#ffd866'); R(12, 6, 3, 1, '#ffd866'); });
+  SPR.port = makeSprite(function(R){ R(0, 11, 16, 4, '#8a5a32'); R(0, 11, 16, 1, '#b07a48'); for(var i = 0; i < 4; i++) R(1 + i * 4, 15, 1, 1, '#5e3d22'); R(2, 6, 5, 5, '#e8473b'); R(7, 7, 4, 4, '#3aa7ff'); R(11, 6, 4, 5, '#ffcc4d'); R(12, 1, 1, 6, '#6b7480'); R(9, 1, 6, 1, '#6b7480'); R(10, 2, 1, 3, '#c3cbe6'); });
+  SPR.bank = makeSprite(function(R, roof){ R(1, 13, 14, 2, '#c3cbe6'); R(2, 7, 12, 6, '#f6e7c4'); for(var i = 0; i < 4; i++) R(3 + i * 3, 7, 1, 6, '#c9ae78'); roof(1, 3, 14, 4, '#ffcc4d', '#c99a1e'); R(7, 4, 2, 1, '#8f6a10'); });
+  SPR.office = makeSprite(function(R){ R(4, 1, 8, 14, '#5d7fb8'); R(9, 1, 3, 14, '#476497'); R(5, 0, 6, 1, '#476497'); windows(R, 5, 3, 3, 5, 2, 2, '#bde8ff'); R(7, 13, 2, 2, '#2b3a5c'); R(1, 9, 3, 6, '#8ea6cf'); windows(R, 1, 10, 1, 2, 0, 2, '#bde8ff'); });
+  SPR.exchange = makeSprite(function(R){ R(1, 6, 14, 9, '#2c3760'); R(1, 6, 14, 1, '#45517f'); R(2, 7, 12, 5, '#0f1630'); R(3, 10, 1, 1, '#5bd16a'); R(4, 9, 1, 1, '#5bd16a'); R(5, 10, 1, 1, '#5bd16a'); R(6, 8, 1, 1, '#5bd16a'); R(7, 9, 1, 1, '#ff5d5d'); R(8, 8, 1, 1, '#5bd16a'); R(9, 7, 1, 1, '#5bd16a'); R(10, 8, 1, 1, '#5bd16a'); R(11, 7, 2, 1, '#5bd16a'); R(6, 13, 4, 2, '#ffcc4d'); R(4, 2, 8, 4, '#3aa7ff'); R(5, 3, 6, 2, '#ffffff'); });
+  SPR.central = makeSprite(function(R){ R(1, 13, 14, 2, '#c3cbe6'); R(2, 8, 12, 5, '#f6e7c4'); for(var i = 0; i < 5; i++) R(3 + i * 2 + (i > 1 ? 1 : 0), 8, 1, 5, '#c9ae78'); R(4, 4, 8, 4, '#5bd16a'); R(5, 3, 6, 1, '#5bd16a'); R(6, 2, 4, 1, '#5bd16a'); R(7, 0, 2, 2, '#ffcc4d'); R(4, 7, 8, 1, '#2f8f3f'); });
+  SPR.regulator = makeSprite(function(R, roof){ R(2, 7, 12, 8, '#e9ecf5'); R(11, 7, 3, 8, '#c3cbe6'); roof(1, 2, 14, 6, '#6d4bd1', '#3f2a85'); R(6, 9, 4, 4, '#a78bfa'); R(7, 10, 2, 2, '#ffffff'); R(7, 13, 2, 2, DOOR); });
+  SPR.park = makeSprite(function(R){ R(1, 9, 14, 6, '#6fd15e'); R(2, 13, 12, 1, '#e8c877'); R(3, 4, 4, 4, '#2f8f3f'); R(4, 3, 2, 1, '#2f8f3f'); R(4, 8, 2, 2, '#6b4428'); R(10, 6, 4, 3, '#3e9a3b'); R(11, 9, 2, 1, '#6b4428'); R(8, 10, 2, 2, '#3aa7ff'); R(12, 11, 1, 1, '#ff8ad8'); });
+  SPR.lab = makeSprite(function(R, roof){ R(2, 7, 12, 8, '#dfe6f2'); R(10, 7, 4, 8, '#b9c3d6'); roof(1, 3, 14, 5, '#3aa7ff', '#1f5fbf'); R(5, 9, 2, 3, '#8ee8ff'); R(9, 9, 2, 3, '#ff8ad8'); R(7, 1, 2, 3, '#6b7480'); R(7, 12, 2, 3, DOOR); });
+}
+/* ======================= buildings ======================= */
+/* out = output per month (GDP coins), food/energy per month, cap = homes, jobs, happy/poll = points, edu = productivity, up = upkeep */
+var BLD = {
+  house:   { n:B('House', 'บ้าน'), spr:'house', cost:60, up:1, cap:12, en:-1, cat:'home', d:B('Homes for 12 people. People need homes before the island can grow.', 'ที่อยู่ของคน 12 คน ประชากรจะเพิ่มได้ต้องมีบ้านก่อน') },
+  house2:  { n:B('Apartment', 'อพาร์ตเมนต์'), spr:'house2', cost:170, up:3, cap:32, en:-3, cat:'home', d:B('Homes for 32 people on the same land.', 'ที่อยู่ 32 คนบนพื้นที่เท่าเดิม') },
+  farm:    { n:B('Farm', 'ฟาร์ม'), spr:'farm', cost:80, up:1, jobs:6, food:42, out:9, cat:'work', d:B('Food for 45 people + 6 jobs. Too little food = imports and rising prices.', 'อาหารพอสำหรับ ~45 คน และงาน 6 ตำแหน่ง ถ้าอาหารไม่พอต้องนำเข้า ราคาสินค้าจะสูงขึ้น') },
+  factory: { n:B('Factory', 'โรงงาน'), spr:'factory', cost:220, up:3, jobs:18, out:44, en:-12, poll:3, cat:'work', d:B('Big output and 18 jobs, but needs power and makes pollution.', 'ผลผลิตสูง งาน 18 ตำแหน่ง แต่ใช้ไฟมากและสร้างมลพิษ') },
+  office:  { n:B('Office tower', 'อาคารสำนักงาน'), spr:'office', cost:380, up:4, jobs:20, out:76, en:-8, cat:'work', req:'fin', d:B('Service jobs with the highest output. Works best with schools.', 'งานบริการที่สร้างมูลค่าสูงสุด ยิ่งมีโรงเรียนยิ่งดี') },
+  port:    { n:B('Port', 'ท่าเรือ'), spr:'port', cost:260, up:3, jobs:10, out:26, trade:1, cat:'work', req:'trade', water:true, d:B('Exports to the world. Must touch the sea. Earns more when the world economy is strong.', 'ส่งออกไปต่างประเทศ ต้องติดทะเล รายได้ขึ้นกับเศรษฐกิจโลก') },
+  market:  { n:B('Market', 'ตลาด'), spr:'market', cost:120, up:1, jobs:6, out:15, happy:3, cat:'service', d:B('Shops and 6 jobs; people are happier.', 'ร้านค้า งาน 6 ตำแหน่ง คนมีความสุขขึ้น') },
+  school:  { n:B('School', 'โรงเรียน'), spr:'school', cost:180, up:6, jobs:5, edu:1, happy:2, cat:'service', d:B('+6% productivity for every school (up to 10).', 'เพิ่มผลิตภาพ 6% ต่อโรงเรียน (สูงสุด 10 แห่ง)') },
+  hospital:{ n:B('Hospital', 'โรงพยาบาล'), spr:'hospital', cost:260, up:8, jobs:8, happy:4, health:1, cat:'service', d:B('Happier, healthier people; softens pandemics.', 'คนมีสุขภาพและความสุข ลดความเสียหายจากโรคระบาด') },
+  park:    { n:B('Park', 'สวนสาธารณะ'), spr:'park', cost:70, up:1, happy:3, poll:-2, cat:'service', d:B('Happiness and cleaner air.', 'เพิ่มความสุขและลดมลพิษ') },
+  power:   { n:B('Power plant', 'โรงไฟฟ้า'), spr:'power', cost:200, up:4, jobs:4, en:45, poll:2, cat:'service', d:B('Electricity for factories and offices.', 'ไฟฟ้าสำหรับโรงงานและสำนักงาน') },
+  lab:     { n:B('Research lab', 'ศูนย์วิจัย'), spr:'lab', cost:340, up:6, jobs:8, edu:1, lab:1, cat:'service', d:B('+1 ★ knowledge every 4 months and a little productivity.', 'ได้ดาวความรู้ +1 ทุก 4 เดือน และเพิ่มผลิตภาพเล็กน้อย') },
+  bank:    { n:B('Commercial bank', 'ธนาคารพาณิชย์'), spr:'bank', cost:300, up:3, jobs:10, out:30, credit:1, cat:'finance', req:'fin', d:B('Loans help businesses grow (+3% demand each, up to 4) — but a bank run is possible without a regulator.', 'สินเชื่อช่วยธุรกิจโต (+3% ต่อแห่ง สูงสุด 4) แต่ถ้าไม่มีหน่วยงานกำกับ อาจเกิดแห่ถอนเงินได้') },
+  central: { n:B('Central bank', 'ธนาคารกลาง'), spr:'central', cost:500, up:5, jobs:8, unique:true, cat:'finance', req:'mon', d:B('You set the policy interest rate yourself (Policy tab).', 'คุณตั้งอัตราดอกเบี้ยนโยบายได้เอง (แท็บนโยบาย)') },
+  exchange:{ n:B('Stock exchange', 'ตลาดหลักทรัพย์'), spr:'exchange', cost:600, up:5, jobs:12, out:22, unique:true, cat:'finance', req:'eq', d:B('Opens the island stock index — your fund can buy shares.', 'เปิดดัชนีหุ้นของเกาะ กองทุนของคุณซื้อหุ้นได้') },
+  regulator:{ n:B('Securities regulator', 'สำนักงานกำกับหลักทรัพย์'), spr:'regulator', cost:400, up:5, jobs:8, unique:true, cat:'finance', req:'eth', d:B('Stops fraud scandals and bank runs; trust +.', 'ป้องกันการโกงในตลาดและการแห่ถอนเงิน เพิ่มความเชื่อมั่น') }
+};
+var BCATS = [['home', B('Homes', 'ที่อยู่')], ['work', B('Work', 'งาน')], ['service', B('Services', 'บริการ')], ['finance', B('Finance', 'การเงิน')], ['tools', B('Tools', 'เครื่องมือ')]];
+
+/* ======================= research (paid with ★, and you must have answered enough questions of that exam part) ======================= */
+var TECH = [
+  { k:'fin', n:B('Financial system', 'ระบบการเงินและตลาดทุน'), ic:'bank', s:1, cost:3, need:2, d:B('Unlocks commercial banks and office towers. IC part 1: money market vs capital market, primary vs secondary market.', 'ปลดล็อกธนาคารพาณิชย์และอาคารสำนักงาน · IC ส่วนที่ 1: ตลาดเงิน/ตลาดทุน ตลาดแรก/ตลาดรอง') },
+  { k:'trade', n:B('Trade & exchange rates', 'การค้าและอัตราแลกเปลี่ยน'), ic:'market', s:1, cost:3, need:2, d:B('Unlocks ports. A weaker currency helps exports but makes imports dearer.', 'ปลดล็อกท่าเรือ · ค่าเงินอ่อนช่วยส่งออก แต่ของนำเข้าแพงขึ้น') },
+  { k:'fis', n:B('Fiscal policy', 'นโยบายการคลัง'), ic:'policy', s:1, cost:4, need:3, d:B('You control the tax rate and government spending.', 'คุณคุมอัตราภาษีและการใช้จ่ายภาครัฐได้เอง') },
+  { k:'mon', n:B('Monetary policy', 'นโยบายการเงิน'), ic:'rate', s:1, cost:5, need:4, pre:'fin', d:B('Unlocks the central bank: higher rates cool inflation, lower rates boost growth.', 'ปลดล็อกธนาคารกลาง · ขึ้นดอกเบี้ยลดเงินเฟ้อ ลดดอกเบี้ยกระตุ้นเศรษฐกิจ') },
+  { k:'risk', n:B('Risk & return', 'ผลตอบแทนและความเสี่ยง'), ic:'chart', s:1, cost:4, need:4, d:B('Shows volatility, worst drop and Sharpe ratio for your fund.', 'แสดงความผันผวน การร่วงหนักสุด และ Sharpe Ratio ของกองทุน') },
+  { k:'bond', n:B('Debt instruments', 'ตราสารหนี้'), ic:'book', s:3, cost:5, need:4, pre:'mon', d:B('Bonds open: your fund can hold them and the government can issue bonds. Price ↓ when yield ↑ (duration).', 'เปิดตลาดพันธบัตร: กองทุนถือพันธบัตรได้ และรัฐออกพันธบัตรระดมเงินได้ · ยีลด์ขึ้น ราคาลง (Duration)') },
+  { k:'eq', n:B('Equity instruments', 'ตราสารทุน'), ic:'market', s:3, cost:6, need:5, pre:'fin', d:B('Unlocks the stock exchange. Price = earnings × P/E.', 'ปลดล็อกตลาดหลักทรัพย์ · ราคาหุ้น = กำไร × P/E') },
+  { k:'fund', n:B('Mutual funds', 'กองทุนรวม'), ic:'coin', s:3, cost:6, need:6, pre:'bond', d:B('Opens the national fund: split money between deposits, bonds, stocks and gold.', 'เปิดกองทุนแห่งชาติ: แบ่งเงินลงเงินฝาก พันธบัตร หุ้น และทองคำ') },
+  { k:'eth', n:B('Ethics & regulation', 'จรรยาบรรณและการกำกับดูแล'), ic:'policy', s:2, cost:5, need:4, d:B('Unlocks the securities regulator. IC part 2: fair dealing, conflicts of interest, insider trading.', 'ปลดล็อกสำนักงานกำกับหลักทรัพย์ · IC ส่วนที่ 2: Fair Dealing ผลประโยชน์ทับซ้อน การใช้ข้อมูลภายใน') },
+  { k:'kyc', n:B('Know your customer', 'รู้จักลูกค้าและความเหมาะสม'), ic:'eye', s:2, cost:4, need:6, pre:'eth', d:B('Suitable advice → +5% bank output and fewer bad-loan events.', 'แนะนำอย่างเหมาะสม → ธนาคารผลิตเพิ่ม 5% และหนี้เสียน้อยลง') }
+];
+function techOf(k){ for(var i = 0; i < TECH.length; i++) if(TECH[i].k === k) return TECH[i]; return null; }
+
+/* ======================= knowledge book (codex) ======================= */
+var CODEX = {
+  gdp:B('GDP — the value of everything the island produces. Growth = how much more than a year ago.', 'GDP — มูลค่าสินค้าและบริการทั้งหมดที่เกาะผลิตได้ การเติบโต = เพิ่มขึ้นกี่ % จากปีก่อน'),
+  infl:B('Inflation — prices rising in general. A little (1–3%) is healthy; too much eats savings, below 0 (deflation) stalls spending.', 'เงินเฟ้อ — ราคาสินค้าโดยรวมสูงขึ้น ระดับ 1–3% ถือว่าดี ถ้าสูงเกินเงินออมจะด้อยค่า ถ้าติดลบ (เงินฝืด) คนจะชะลอการใช้จ่าย'),
+  demand:B('Demand-pull inflation — too much spending chasing too few goods (economy running hot).', 'เงินเฟ้อจากอุปสงค์ — คนใช้จ่ายมากกว่าสินค้าที่ผลิตได้ (เศรษฐกิจร้อนแรง)'),
+  cost:B('Cost-push inflation — costs such as oil or food jump, so prices rise even when the economy is weak.', 'เงินเฟ้อจากต้นทุน — ต้นทุน เช่น น้ำมันหรืออาหาร พุ่งขึ้น ราคาจึงสูงขึ้นแม้เศรษฐกิจไม่ดี'),
+  stag:B('Stagflation — high inflation and weak growth together. Hard for a central bank: raising rates hurts growth further.', 'Stagflation — เงินเฟ้อสูงพร้อมเศรษฐกิจซบเซา ธนาคารกลางรับมือยาก เพราะขึ้นดอกเบี้ยจะยิ่งกดเศรษฐกิจ'),
+  rate:B('Policy rate — the central bank\'s interest rate. Higher → borrowing costs more → spending and inflation fall (with a lag).', 'อัตราดอกเบี้ยนโยบาย — ดอกเบี้ยของธนาคารกลาง ขึ้นดอกเบี้ย → กู้แพงขึ้น → ใช้จ่ายและเงินเฟ้อลดลง (มีผลช้า)'),
+  real:B('Real interest rate = interest rate − inflation. Negative real rates push people to spend and borrow.', 'ดอกเบี้ยที่แท้จริง = ดอกเบี้ย − เงินเฟ้อ ถ้าติดลบ คนจะอยากกู้และใช้จ่ายมากขึ้น'),
+  fiscal:B('Fiscal policy — government taxes and spending. Spending more / taxing less stimulates; the opposite cools the economy.', 'นโยบายการคลัง — ภาษีและการใช้จ่ายของรัฐ ใช้จ่ายมาก/เก็บภาษีน้อย = กระตุ้น ตรงข้าม = ชะลอ'),
+  deficit:B('Budget deficit — the government spends more than it collects and borrows the gap by selling bonds.', 'งบประมาณขาดดุล — รัฐใช้จ่ายมากกว่ารายได้ และกู้ส่วนต่างด้วยการขายพันธบัตร'),
+  debt:B('Public debt / GDP — the higher it is, the more lenders ask for (higher bond yields).', 'หนี้สาธารณะต่อ GDP — ยิ่งสูง ผู้ให้กู้ยิ่งขอผลตอบแทนสูงขึ้น (ยีลด์พันธบัตรสูงขึ้น)'),
+  yield:B('Bond yield and price move in opposite directions. Duration ≈ % price change for a 1% change in yield.', 'ยีลด์และราคาพันธบัตรสวนทางกัน Duration ≈ ราคาเปลี่ยนกี่ % เมื่อยีลด์เปลี่ยน 1%'),
+  rating:B('Credit rating — a grade of how likely the borrower repays. A downgrade raises borrowing costs.', 'อันดับความน่าเชื่อถือ — เกรดว่าผู้กู้มีโอกาสคืนเงินแค่ไหน ถูกลดอันดับ = ต้นทุนกู้สูงขึ้น'),
+  pe:B('Share price = earnings per share × P/E. When interest rates rise, investors pay a lower P/E.', 'ราคาหุ้น = กำไรต่อหุ้น × P/E เมื่อดอกเบี้ยขึ้น นักลงทุนยอมจ่าย P/E ต่ำลง'),
+  erp:B('Equity risk premium — the extra return investors demand for holding shares instead of safe bonds.', 'ส่วนชดเชยความเสี่ยงหุ้น — ผลตอบแทนส่วนเพิ่มที่นักลงทุนต้องการเพื่อถือหุ้นแทนพันธบัตรที่ปลอดภัย'),
+  divers:B('Diversification — mixing assets that do not move together lowers risk without giving up much return.', 'การกระจายความเสี่ยง — ถือสินทรัพย์ที่ไม่ขึ้นลงพร้อมกัน ลดความเสี่ยงได้โดยไม่เสียผลตอบแทนมาก'),
+  sysrisk:B('Systematic risk — hits the whole market (recession, rates) and cannot be diversified away. Unsystematic risk can.', 'ความเสี่ยงที่เป็นระบบ — กระทบทั้งตลาด (เศรษฐกิจถดถอย ดอกเบี้ย) กระจายลดไม่ได้ ส่วนความเสี่ยงเฉพาะตัวกระจายลดได้'),
+  sharpe:B('Sharpe ratio = (return − risk-free rate) ÷ volatility. Higher = more return per unit of risk.', 'Sharpe Ratio = (ผลตอบแทน − ผลตอบแทนไร้ความเสี่ยง) ÷ ความผันผวน ยิ่งสูง = ได้ผลตอบแทนต่อความเสี่ยงดี'),
+  bankrun:B('Bank run — many depositors withdraw at once. Banks keep only part of deposits as cash (liquidity risk).', 'การแห่ถอนเงิน — ผู้ฝากถอนพร้อมกัน ธนาคารเก็บเงินสดไว้เพียงบางส่วน (ความเสี่ยงสภาพคล่อง)'),
+  insider:B('Insider trading — trading on non-public information. Illegal; regulators exist to stop it.', 'การใช้ข้อมูลภายใน — ซื้อขายด้วยข้อมูลที่ยังไม่เปิดเผย ผิดกฎหมาย หน่วยงานกำกับมีไว้ป้องกัน'),
+  fair:B('Fair dealing — put the client\'s interest first, disclose conflicts, give suitable advice (KYC).', 'Fair Dealing — ยึดประโยชน์ลูกค้าเป็นหลัก เปิดเผยผลประโยชน์ทับซ้อน และแนะนำอย่างเหมาะสม (KYC)'),
+  fx:B('Exchange rate — a weaker currency makes exports cheaper abroad but imports and foreign debt dearer.', 'อัตราแลกเปลี่ยน — ค่าเงินอ่อนทำให้สินค้าส่งออกถูกลงในสายตาต่างชาติ แต่ของนำเข้าและหนี้ต่างประเทศแพงขึ้น'),
+  cycle:B('Business cycle — expansion, peak, recession, trough. Policy tries to smooth the swings.', 'วัฏจักรเศรษฐกิจ — ขยายตัว จุดสูงสุด ถดถอย จุดต่ำสุด นโยบายพยายามลดความผันผวน'),
+  unemp:B('Unemployment — people who want work but have none. About 3–5% is normal (people changing jobs).', 'การว่างงาน — คนที่อยากทำงานแต่ไม่มีงาน ราว 3–5% ถือว่าปกติ (คนเปลี่ยนงาน)'),
+  comp:B('Compounding — returns earn returns. Time is the strongest force in investing.', 'ผลตอบแทนทบต้น — ผลตอบแทนงอกผลตอบแทน เวลาคือพลังที่แรงที่สุดในการลงทุน')
+};
+
+/* ======================= goals ======================= */
+var GOALS = [
+  { k:'h5', n:B('Build 5 houses', 'สร้างบ้าน 5 หลัง'), r:100, f:function(S){ return cnt('house') + cnt('house2') >= 5; } },
+  { k:'p100', n:B('Reach 100 people', 'ประชากรถึง 100 คน'), r:150, f:function(S){ return S.pop >= 100; } },
+  { k:'q1', n:B('Answer your first council question right', 'ตอบคำถามสภาที่ปรึกษาถูกครั้งแรก'), r:50, f:function(S){ return S.quiz.ok >= 1; } },
+  { k:'t1', n:B('Finish your first research', 'วิจัยสำเร็จครั้งแรก'), r:120, f:function(S){ return Object.keys(S.tech).length >= 1; } },
+  { k:'p300', n:B('Reach 300 people', 'ประชากรถึง 300 คน'), r:300, f:function(S){ return S.pop >= 300; } },
+  { k:'cb', n:B('Build a central bank', 'สร้างธนาคารกลาง'), r:250, f:function(S){ return cnt('central') > 0; } },
+  { k:'ex', n:B('Open a stock exchange', 'เปิดตลาดหลักทรัพย์'), r:300, f:function(S){ return cnt('exchange') > 0; } },
+  { k:'inf12', n:B('Keep inflation 1–3% for 12 months in a row', 'คุมเงินเฟ้อ 1–3% ติดต่อกัน 12 เดือน'), r:500, f:function(S){ return S.stk.infOk >= 12; } },
+  { k:'u12', n:B('Unemployment under 5% for 12 months', 'คนว่างงานต่ำกว่า 5% ติดต่อกัน 12 เดือน'), r:400, f:function(S){ return S.stk.uOk >= 12; } },
+  { k:'q50', n:B('50 correct council answers', 'ตอบสภาที่ปรึกษาถูก 50 ข้อ'), r:600, f:function(S){ return S.quiz.ok >= 50; } },
+  { k:'acc', n:B('80% correct over at least 40 questions', 'ตอบถูก 80% ขึ้นไป อย่างน้อย 40 ข้อ'), r:800, f:function(S){ return S.quiz.ans >= 40 && S.quiz.ok / S.quiz.ans >= 0.8; } },
+  { k:'fund20', n:B('National fund up 20% in total', 'กองทุนแห่งชาติกำไรรวม 20%'), r:600, f:function(S){ return S.fund.on && S.fund.inv > 0 && S.fund.v >= S.fund.inv * 1.2; } },
+  { k:'p800', n:B('Reach 800 people', 'ประชากรถึง 800 คน'), r:800, f:function(S){ return S.pop >= 800; } },
+  { k:'gdp', n:B('Monthly GDP of 3,000', 'GDP ต่อเดือนถึง 3,000'), r:800, f:function(S){ return S.Y >= 3000; } },
+  { k:'all', n:B('Finish every research', 'วิจัยครบทุกหัวข้อ'), r:1500, f:function(S){ return TECH.every(function(t){ return S.tech[t.k]; }); } }
+];
+
+/* ======================= built-in questions (used only if IC_1–6.html cannot be read) ======================= */
+var Q_FALLBACK = [
+  { s:1, q:'ข้อใดเป็นเครื่องมือของนโยบายการเงิน', c:['อัตราดอกเบี้ยนโยบาย', 'อัตราภาษีเงินได้', 'งบประมาณรายจ่าย', 'การก่อหนี้สาธารณะ'], a:0, e:'ธนาคารกลางใช้อัตราดอกเบี้ยนโยบายเป็นเครื่องมือหลักของนโยบายการเงิน ส่วนภาษีและงบประมาณเป็นนโยบายการคลัง' },
+  { s:1, q:'เงินเฟ้อจากต้นทุน (Cost-push) เกิดจากสาเหตุใด', c:['ราคาน้ำมันและวัตถุดิบสูงขึ้น', 'คนใช้จ่ายมากเกินไป', 'ธนาคารกลางลดดอกเบี้ย', 'รัฐลดภาษี'], a:0, e:'Cost-push inflation เกิดจากต้นทุนการผลิตสูงขึ้น เช่น น้ำมัน ค่าแรง วัตถุดิบ' },
+  { s:1, q:'ความเสี่ยงประเภทใดลดได้ด้วยการกระจายการลงทุน', c:['ความเสี่ยงที่ไม่เป็นระบบ', 'ความเสี่ยงที่เป็นระบบ', 'ความเสี่ยงจากดอกเบี้ยทั้งตลาด', 'ความเสี่ยงจากเศรษฐกิจถดถอย'], a:0, e:'ความเสี่ยงที่ไม่เป็นระบบ (เฉพาะตัวบริษัท) ลดได้ด้วยการกระจายการลงทุน ส่วนความเสี่ยงที่เป็นระบบกระทบทั้งตลาด' },
+  { s:2, q:'หลักการสำคัญที่สุดของผู้แนะนำการลงทุนคือข้อใด', c:['คำนึงถึงประโยชน์ของลูกค้าเป็นหลัก', 'ทำยอดขายให้สูงที่สุด', 'แนะนำกองทุนที่ค่าธรรมเนียมสูง', 'ซื้อขายบ่อยเพื่อค่านายหน้า'], a:0, e:'Fair Dealing: ยึดประโยชน์ของลูกค้าเป็นหลัก แนะนำอย่างเหมาะสม และเปิดเผยข้อมูลครบถ้วน' },
+  { s:2, q:'การซื้อขายหุ้นโดยใช้ข้อมูลภายในที่ยังไม่เปิดเผยต่อสาธารณะ ถือว่า', c:['ผิดกฎหมาย', 'ทำได้ถ้ากำไรไม่มาก', 'ทำได้ถ้าเป็นผู้บริหาร', 'ทำได้ถ้าแจ้งโบรกเกอร์'], a:0, e:'Insider Trading ผิดกฎหมาย เพราะเอาเปรียบผู้ลงทุนรายอื่นที่ไม่รู้ข้อมูล' },
+  { s:3, q:'หากอัตราผลตอบแทนในตลาดเพิ่มขึ้น ราคาพันธบัตรเดิมจะเป็นอย่างไร', c:['ลดลง', 'เพิ่มขึ้น', 'ไม่เปลี่ยนแปลง', 'เพิ่มขึ้นเป็นสองเท่า'], a:0, e:'ราคาพันธบัตรเคลื่อนไหวสวนทางกับอัตราผลตอบแทน (Yield)' },
+  { s:3, q:'ราคาหุ้น 50 บาท กำไรต่อหุ้น 5 บาท P/E เท่ากับเท่าใด', c:['10 เท่า', '5 เท่า', '50 เท่า', '0.1 เท่า'], a:0, e:'P/E = ราคา ÷ กำไรต่อหุ้น = 50 ÷ 5 = 10 เท่า' },
+  { s:3, q:'NAV ของกองทุนรวมหมายถึงอะไร', c:['มูลค่าทรัพย์สินสุทธิของกองทุน', 'ค่าธรรมเนียมการจัดการ', 'จำนวนผู้ถือหน่วย', 'ราคาหุ้นในพอร์ต'], a:0, e:'NAV (Net Asset Value) = มูลค่าทรัพย์สินทั้งหมดของกองทุนหักหนี้สิน' }
+];
+/* ======================= game state ======================= */
+var S = null;          /* the whole save */
+var OCC = null;        /* tile -> building index + 1 */
+function cnt(k){ if(!S) return 0; var n = 0; for(var i = 0; i < S.bld.length; i++) if(S.bld[i][0] === k) n++; return n; }
+function blankState(name, seed){
+  return {
+    v:1, name:name, seed:seed, month:0, created:Date.now(), playMs:0,
+    treasury:900, debt:0, pop:20, H:62, infl:2.0, rate:2.0, rateCtl:false, myRate:2.0, tax:20, spend:10,
+    d:1.0, sent:0, Y:0, Ylast:[], foodBal:0, enBal:0, u:0.05, bondY:3.0, rating:'A',
+    shock:{ infl:0, infl_m:0, dem:0, dem_m:0, exp:0, exp_m:0, food:0, food_m:0, pop:0, pop_m:0, rat:0 },
+    bld:[], cleared:[], tech:{}, codex:{ gdp:1, infl:1, unemp:1 }, goals:{}, stars:2,
+    quiz:{ ans:0, ok:0, streak:0, best:0, sec:{ 1:[0, 0], 2:[0, 0], 3:[0, 0] }, seen:{} },
+    mk:{ eps:10, pe:15, idx:150, bond:100, gold:100 },
+    fund:{ on:false, v:0, inv:0, w:{ dep:40, bond:30, stock:20, gold:10 }, hist:[] },
+    hist:{ g:[], i:[], u:[], r:[], idx:[], by:[], pop:[], Y:[], H:[] },
+    stk:{ infOk:0, uOk:0 }, evLast:0, evLog:[], tut:0, labTick:0, speed:1
+  };
+}
+function rebuildOcc(){
+  OCC = new Int16Array(MW * MH);
+  S.bld.forEach(function(b, i){ for(var dy = 0; dy < 2; dy++) for(var dx = 0; dx < 2; dx++) OCC[(b[2] + dy) * MW + b[1] + dx] = i + 1; });
+}
+function canPlace(key, tx, ty){
+  var D = BLD[key]; if(!D) return { ok:false };
+  if(tx < 0 || ty < 0 || tx + 1 >= MW || ty + 1 >= MH) return { ok:false, why:B('Off the map', 'นอกแผนที่') };
+  if(D.req && !S.tech[D.req]){ var tq = techOf(D.req); return { ok:false, why:{ en:'Needs research: ' + tq.n.en, th:'ต้องวิจัยก่อน: ' + tq.n.th } }; }
+  if(D.unique && cnt(key) > 0) return { ok:false, why:B('Only one allowed', 'สร้างได้แห่งเดียว') };
+  if(S.treasury < D.cost) return { ok:false, why:B('Not enough money', 'เงินไม่พอ') };
+  var nearWater = false;
+  for(var dy = 0; dy < 2; dy++) for(var dx = 0; dx < 2; dx++){
+    var x = tx + dx, y = ty + dy, t = T_at(x, y);
+    if(!isLand(t) || t >= TT.MOUNT) return { ok:false, why:B('Needs flat land (not sea or mountain)', 'ต้องเป็นพื้นราบ (ไม่ใช่ทะเลหรือภูเขา)') };
+    if(OCC[y * MW + x]) return { ok:false, why:B('Something is already here', 'มีสิ่งก่อสร้างอยู่แล้ว') };
+  }
+  if(D.water){ for(var yy = ty - 1; yy <= ty + 2; yy++) for(var xx = tx - 1; xx <= tx + 2; xx++) if(!isLand(T_at(xx, yy))) nearWater = true;
+    if(!nearWater) return { ok:false, why:B('A port must touch the sea', 'ท่าเรือต้องติดทะเล') }; }
+  return { ok:true };
+}
+function place(key, tx, ty, free){
+  var D = BLD[key];
+  if(!free){ S.treasury -= D.cost; }
+  S.bld.push([key, tx, ty, S.month]);
+  for(var dy = 0; dy < 2; dy++) for(var dx = 0; dx < 2; dx++){ var i = (ty + dy) * MW + tx + dx; if(WORLD.tree[i]){ WORLD.tree[i] = 0; S.cleared.push(i); } }
+  rebuildOcc(); rebuildStatic();
+}
+function demolish(idx){
+  var b = S.bld[idx]; if(!b) return;
+  S.treasury += Math.round(BLD[b[0]].cost * 0.3);
+  S.bld.splice(idx, 1); rebuildOcc(); rebuildStatic();
+}
+function starterTown(){
+  /* find a flat spot near the island centre for the first village */
+  var best = null, cx = MW / 2, cy = MH / 2;
+  for(var y = 4; y < MH - 6; y++) for(var x = 4; x < MW - 8; x++){
+    var ok = true; for(var yy = y; yy < y + 6 && ok; yy++) for(var xx = x; xx < x + 8 && ok; xx++){ var t = T_at(xx, yy); if(t !== TT.GRASS && t !== TT.SAND && t !== TT.FOREST) ok = false; }
+    if(ok){ var dd = (x - cx) * (x - cx) + (y - cy) * (y - cy); if(!best || dd < best[2]) best = [x, y, dd]; }
+  }
+  if(!best) return;
+  var x0 = best[0], y0 = best[1];
+  [['house', 0, 0], ['house', 2, 0], ['farm', 4, 0], ['market', 0, 2], ['farm', 6, 0], ['house', 2, 2], ['power', 4, 2]].forEach(function(p){
+    { var ok = true; for(var dy = 0; dy < 2; dy++) for(var dx = 0; dx < 2; dx++) if(OCC[(y0 + p[2] + dy) * MW + x0 + p[1] + dx]) ok = false; if(ok) place(p[0], x0 + p[1], y0 + p[2], true); }
+  });
+  S.home = [x0 + 4, y0 + 2];
+}
+
+/* ======================= monthly economy ======================= */
+var RNG = Math.random;
+function sumOf(f){ var v = 0; for(var i = 0; i < S.bld.length; i++){ var D = BLD[S.bld[i][0]]; v += D[f] || 0; } return v; }
+function tick(){
+  var s = S, sh = s.shock;
+  /* shocks run out */
+  ['infl', 'dem', 'exp', 'food', 'pop'].forEach(function(k){ if(sh[k + '_m'] > 0){ sh[k + '_m']--; if(sh[k + '_m'] === 0) sh[k] = 0; } });
+  var cap = sumOf('cap'), jobs = sumOf('jobs'), labor = s.pop * 0.62;
+  var enSup = 8, enNeed = 0;
+  S.bld.forEach(function(b){ var e = BLD[b[0]].en || 0; if(e > 0) enSup += e; else enNeed -= e; });
+  var ef = enNeed > 0 ? clamp(enSup / enNeed, 0.35, 1) : 1;
+  var edu = Math.min(10, sumOf('edu')), prod = 1 + 0.06 * edu + 0.01 * Object.keys(s.tech).length;
+  var foodProd = sumOf('food') * (1 + sh.food), foodNeed = s.pop * 0.95, foodBal = foodProd - foodNeed;
+  var banks = Math.min(4, cnt('bank')), credit = 0.03 * banks * (s.tech.kyc ? 1.05 : 1);
+  var hasCB = cnt('central') > 0;
+  /* policy rate: automatic rule until you own a central bank and take control */
+  var autoRate = clamp(1.5 + 1.4 * (s.infl - 2) + 30 * (s.d - 1), 0.25, 14);
+  s.rateCtl = hasCB; var target = hasCB ? s.myRate : autoRate; s.rate = s.rate + (target - s.rate) * (hasCB ? 0.6 : 0.3);
+  var tax = s.tech.fis ? s.tax : 20, spend = s.tech.fis ? s.spend : 10; s.taxE = tax; s.spendE = spend;
+  var real = s.rate - s.infl;
+  var dT = 1 + 0.035 * (1.5 - real) + 0.9 * ((spend - 10) - (tax - 20)) / 100 + credit + s.sent + sh.dem;
+  s.d = s.d + (clamp(dT, 0.6, 1.4) - s.d) * 0.22;
+  var used = Math.min(1.08, s.d), laborF = jobs > 0 ? Math.min(1, labor / jobs) : 1;
+  var employed = Math.min(labor, jobs * Math.min(1, s.d));
+  s.u = labor > 0 ? clamp(0.03 + 0.97 * (1 - employed / labor), 0.02, 0.6) : 0.05;
+  var out = 0; S.bld.forEach(function(b){ var D = BLD[b[0]]; var o = D.out || 0; if(b[0] === 'bank' && s.tech.kyc) o *= 1.05; if(D.trade) o *= (1 + sh.exp) * (s.tech.trade ? 1.1 : 1); out += o; });
+  var Y = (out * prod * ef * used * (0.4 + 0.6 * laborF) + s.pop * 0.6) * 2.5;
+  var exportsFood = foodBal > 0 ? foodBal * 0.5 : foodBal * 1.3;
+  /* inflation */
+  var gap = (s.d - 1) + (0.04 - s.u) * 1.2 + (laborF < 1 ? (1 - laborF) * 0.12 : 0);
+  var debtR = s.debt / Math.max(1, Y * 12);
+  var inflT = 2 + 14 * gap + sh.infl + (foodBal < 0 ? Math.min(4, -foodBal / Math.max(10, foodNeed) * 10) : 0) + (ef < 1 ? (1 - ef) * 5 : 0) + Math.max(0, debtR - 1.2) * 4;
+  s.infl = clamp(s.infl + (inflT - s.infl) * 0.14 + gauss(RNG) * 0.08, -6, 40);
+  /* budget */
+  var rev = Y * tax / 100, gov = Y * spend / 100, up = sumOf('up'), interest = s.debt * s.bondY / 100 / 12;
+  var bal = rev - gov - up - interest + exportsFood * 0.4;
+  s.lastBudget = { rev:rev, gov:gov, up:up, interest:interest, trade:exportsFood * 0.4, bal:bal };
+  s.treasury += bal;
+  if(s.treasury < 0){ s.debt += -s.treasury; s.treasury = 0; }
+  /* bonds, rating */
+  var prevBY = s.bondY;
+  s.bondY = clamp(0.7 * s.rate + 1.4 + Math.max(0, s.infl - 2) * 0.3 + Math.max(0, debtR - 0.6) * 5 + sh.rat, 0.3, 25);
+  s.rating = debtR < 0.4 ? 'AA' : debtR < 0.7 ? 'A' : debtR < 1.0 ? 'BBB' : debtR < 1.4 ? 'BB' : 'B';
+  /* markets (they run even before the exchange opens; you only see them after) */
+  var gM = s.Ylast.length ? Y / Math.max(1, s.Ylast[s.Ylast.length - 1]) - 1 : 0;
+  var mk = s.mk, epsG = clamp(gM * 0.9 + 0.002 + gauss(RNG) * 0.01, -0.12, 0.12);
+  mk.eps *= 1 + epsG;
+  var fairPE = 100 / (s.bondY + 4.2); mk.pe = clamp(mk.pe + (fairPE * (1 + s.sent * 2) - mk.pe) * 0.12 + gauss(RNG) * 0.35, 4, 40);
+  var idxPrev = mk.idx; mk.idx = mk.eps * mk.pe;
+  var rStock = mk.idx / idxPrev - 1 + 0.0015;  /* + small dividend */
+  var rBond = s.bondY / 100 / 12 - 6.5 * (s.bondY - prevBY) / 100; mk.bond *= 1 + rBond;
+  var rGold = 0.002 + (s.infl - 3) * 0.0012 + Math.max(0, -s.sent) * 0.02 + gauss(RNG) * 0.025; mk.gold *= 1 + rGold;
+  var rDep = Math.max(0, s.rate - 0.25) / 100 / 12;
+  s.lastR = { dep:rDep, bond:rBond, stock:rStock, gold:rGold };
+  if(s.fund.on && s.fund.v > 0){ var w = s.fund.w, tw = w.dep + w.bond + w.stock + w.gold || 1;
+    var r = (w.dep * rDep + w.bond * (s.tech.bond ? rBond : rDep) + w.stock * (cnt('exchange') ? rStock : rDep) + w.gold * rGold) / tw; s.fund.v *= 1 + r; s.fund.lastR = r; (s.fund.rets = s.fund.rets || []).push(+r.toFixed(5)); if(s.fund.rets.length > 120) s.fund.rets.shift(); }
+  s.fund.hist.push(s.fund.on ? +s.fund.v.toFixed(1) : 0); if(s.fund.hist.length > 240) s.fund.hist.shift();
+  /* happiness and people */
+  var svc = sumOf('happy') * 9 / Math.max(1, Math.sqrt(s.pop)), poll = sumOf('poll') * 6 / Math.max(1, Math.sqrt(s.pop));
+  var Ht = 58 + 12 * clamp(foodProd / Math.max(1, foodNeed), 0, 1.1) - 12 - 160 * Math.max(0, s.u - 0.045) - 2.2 * Math.max(0, Math.abs(s.infl - 2) - 1) - 0.7 * (tax - 20) + 0.5 * (spend - 10) + Math.min(18, svc) - Math.max(0, poll) + (cap < s.pop ? -10 : 0) + s.sent * 40 + (cnt('regulator') ? 2 : 0);
+  s.H = clamp(s.H + (Ht - s.H) * 0.2, 0, 100);
+  var room = cap - s.pop;
+  if(room > 0 && foodBal > -foodNeed * 0.1 && s.H > 35) s.pop += Math.min(room, Math.max(0.5, room * 0.12 * (s.H / 65)) + (s.jobs > labor ? 0.4 : 0));
+  else if(room < 0 || s.H < 28 || foodBal < -foodNeed * 0.25) s.pop -= Math.max(0.3, s.pop * 0.015);
+  if(sh.pop) s.pop *= 1 + sh.pop;
+  s.pop = Math.max(5, s.pop);
+  /* knowledge from labs */
+  if(cnt('lab')){ s.labTick += cnt('lab'); if(s.labTick >= 4){ s.labTick -= 4; s.stars += 1; toast(B('+1 ★ from the research lab', '+1 ★ จากศูนย์วิจัย'), 'gold'); } }
+  /* sentiment fades */
+  s.sent *= 0.9; if(Math.abs(s.sent) < 0.002) s.sent = 0;
+  s.Y = Y; s.foodBal = foodBal; s.enBal = enSup - enNeed; s.ef = ef; s.prod = prod; s.cap = cap; s.jobs = jobs; s.labor = labor;
+  s.Ylast.push(Y); if(s.Ylast.length > 24) s.Ylast.shift();
+  var g12 = s.Ylast.length >= 13 ? (Y / s.Ylast[s.Ylast.length - 13] - 1) * 100 : (s.Ylast.length >= 2 ? (Y / s.Ylast[0] - 1) * 100 : 0);
+  s.g = clamp(g12, -60, 200);
+  var H = s.hist; [['g', s.g], ['i', s.infl], ['u', s.u * 100], ['r', s.rate], ['idx', mk.idx], ['by', s.bondY], ['pop', s.pop], ['Y', Y], ['H', s.H]].forEach(function(p){ H[p[0]].push(+p[1].toFixed(2)); if(H[p[0]].length > 240) H[p[0]].shift(); });
+  s.stk.infOk = (s.infl >= 1 && s.infl <= 3) ? s.stk.infOk + 1 : 0;
+  s.stk.uOk = s.u < 0.05 ? s.stk.uOk + 1 : 0;
+  s.month++;
+  maybeEvent();
+  checkGoals();
+  if(s.month % 3 === 0) autosave();
+}
+
+/* ======================= events (with choices that teach) ======================= */
+var EVENTS = [
+  { k:'oil', art:'infl', p:1, min:8, n:B('Oil prices jump', 'ราคาน้ำมันโลกพุ่ง'), cx:['cost', 'stag'],
+    t:B('A war far away doubles the oil price. Transport and electricity cost more everywhere.', 'สงครามที่ต่างประเทศทำให้ราคาน้ำมันพุ่งเกือบเท่าตัว ค่าขนส่งและค่าไฟแพงขึ้นทุกที่'),
+    go:function(){ S.shock.infl = 3.5; S.shock.infl_m = 8; S.shock.dem = -0.04; S.shock.dem_m = 8; },
+    ch:[{ n:B('Raise interest rates', 'ขึ้นดอกเบี้ย'), f:function(){ S.myRate = Math.min(15, S.myRate + 1.5); S.sent -= 0.02; }, w:B('Inflation comes down faster, but growth slows even more — the classic stagflation dilemma.', 'เงินเฟ้อลดเร็วขึ้น แต่เศรษฐกิจยิ่งชะลอ นี่คือทางเลือกยากของภาวะ Stagflation') },
+        { n:B('Wait — it is a supply shock', 'รอดูก่อน เพราะเป็นปัญหาด้านต้นทุน'), f:function(){}, w:B('Cost-push inflation often fades by itself once oil stops rising; many central banks “look through” it if expectations stay calm.', 'เงินเฟ้อจากต้นทุนมักลดเองเมื่อน้ำมันหยุดขึ้น ธนาคารกลางหลายแห่งจึงรอดู ถ้าคนยังไม่คาดว่าเงินเฟ้อจะสูงต่อ') },
+        { n:B('Subsidise fuel', 'อุดหนุนราคาน้ำมัน'), f:function(){ S.shock.infl = 1.5; S.treasury -= 250; }, w:B('Prices rise less, but the budget pays — subsidies cost money and can last longer than planned.', 'ราคาขึ้นน้อยลง แต่รัฐต้องจ่ายเงินอุดหนุน ซึ่งมักใช้เงินมากและยืดเยื้อ') }] },
+  { k:'recession', art:'gdp', p:1, min:14, n:B('Global recession', 'เศรษฐกิจโลกถดถอย'), cx:['cycle', 'sysrisk'],
+    t:B('Big trading partners slip into recession. Exports fall and businesses get nervous.', 'คู่ค้ารายใหญ่เข้าสู่ภาวะถดถอย การส่งออกลดลง ธุรกิจเริ่มกังวล'),
+    go:function(){ S.shock.exp = -0.35; S.shock.exp_m = 10; S.shock.dem = -0.08; S.shock.dem_m = 8; S.sent -= 0.06; S.mk.pe *= 0.85; },
+    ch:[{ n:B('Cut rates', 'ลดดอกเบี้ย'), f:function(){ S.myRate = Math.max(0, S.myRate - 1.5); }, w:B('Cheaper loans support spending — monetary easing. It works with a lag of months.', 'กู้ถูกลง ช่วยพยุงการใช้จ่าย (ผ่อนคลายนโยบายการเงิน) แต่ได้ผลช้า หลายเดือน') },
+        { n:B('Spend more (stimulus)', 'อัดฉีดงบประมาณ'), f:function(){ S.spend = Math.min(40, S.spend + 5); S.sent += 0.03; }, w:B('Fiscal stimulus lifts demand quickly, but adds to the deficit and debt.', 'กระตุ้นทางการคลังได้ผลเร็ว แต่ขาดดุลและหนี้สาธารณะเพิ่มขึ้น') },
+        { n:B('Do nothing', 'ไม่ทำอะไร'), f:function(){}, w:B('Recessions end on their own eventually, but unemployment stays higher for longer.', 'ภาวะถดถอยจะจบเองในที่สุด แต่คนว่างงานจะสูงนานกว่า') }] },
+  { k:'boom', art:'chart', p:1, min:6, n:B('Tech boom', 'ยุคเทคโนโลยีเฟื่องฟู'), cx:['pe', 'erp'],
+    t:B('Island start-ups take off. Everyone wants shares; prices race ahead of profits.', 'สตาร์ทอัพบนเกาะเติบโตเร็ว ทุกคนแห่ซื้อหุ้น ราคาวิ่งนำกำไรไปไกล'),
+    go:function(){ S.sent += 0.08; S.mk.pe *= 1.2; S.shock.dem = 0.05; S.shock.dem_m = 6; },
+    ch:[{ n:B('Ride it', 'ปล่อยให้ร้อนแรง'), f:function(){}, w:B('Booms feel great — but a higher P/E means more risk if earnings disappoint.', 'ช่วงบูมรู้สึกดี แต่ P/E ยิ่งสูง ความเสี่ยงยิ่งมาก ถ้ากำไรไม่เป็นไปตามคาด') },
+        { n:B('Rebalance the fund', 'ปรับสัดส่วนกองทุน'), f:function(){ if(S.fund.on){ S.fund.w.stock = Math.max(0, S.fund.w.stock - 10); S.fund.w.bond += 10; } }, w:B('Taking some profit back to target weights is “rebalancing” — it keeps risk where you planned.', 'ขายส่วนที่ขึ้นมากกลับสู่สัดส่วนเดิม เรียกว่า Rebalancing ช่วยคุมความเสี่ยงให้อยู่ตามแผน') }] },
+  { k:'drought', art:'food', p:1, min:6, n:B('Drought', 'ภัยแล้ง'), cx:['cost'],
+    t:B('No rain for months. Harvests fall by half.', 'ฝนไม่ตกหลายเดือน ผลผลิตเกษตรลดลงครึ่งหนึ่ง'),
+    go:function(){ S.shock.food = -0.5; S.shock.food_m = 5; S.shock.infl = Math.max(S.shock.infl, 1.5); S.shock.infl_m = Math.max(S.shock.infl_m, 5); },
+    ch:[{ n:B('Import food', 'นำเข้าอาหาร'), f:function(){ S.treasury -= 150; S.shock.food = -0.2; }, w:B('Imports keep food prices calmer, paid for by the treasury (and the trade balance).', 'นำเข้าช่วยให้ราคาอาหารไม่พุ่ง แต่ต้องใช้เงินคลัง (ดุลการค้าแย่ลง)') },
+        { n:B('Let prices adjust', 'ปล่อยให้ราคาปรับ'), f:function(){}, w:B('Higher food prices are cost-push inflation; poorer families are hit hardest.', 'ราคาอาหารแพงขึ้นคือเงินเฟ้อจากต้นทุน ครอบครัวรายได้น้อยได้รับผลกระทบมากที่สุด') }] },
+  { k:'tourism', art:'happy', p:0.8, min:6, n:B('Tourists discover the island', 'นักท่องเที่ยวแห่มาเที่ยวเกาะ'), cx:['fx'],
+    t:B('A travel show features your beaches. Foreign money flows in.', 'รายการท่องเที่ยวพูดถึงชายหาดของคุณ เงินตราต่างประเทศไหลเข้า'),
+    go:function(){ S.treasury += 200 + cnt('market') * 40; S.sent += 0.03; S.shock.exp = 0.2; S.shock.exp_m = 6; },
+    ch:[{ n:B('Great!', 'เยี่ยมเลย!'), f:function(){}, w:B('Tourism is an export of services: foreigners buy your currency to spend here, which tends to strengthen it.', 'การท่องเที่ยวคือการส่งออกบริการ ต่างชาติต้องแลกเงินของเรามาใช้ ค่าเงินจึงมักแข็งขึ้น') }] },
+  { k:'bankrun', art:'bank', p:1, min:10, need:function(){ return cnt('bank') > 0 && !cnt('regulator'); }, n:B('Bank run!', 'แห่ถอนเงินจากธนาคาร!'), cx:['bankrun'],
+    t:B('A rumour says one bank is in trouble. Long queues form as people pull out their savings.', 'มีข่าวลือว่าธนาคารแห่งหนึ่งมีปัญหา คนต่อคิวยาวเพื่อถอนเงินออม'),
+    go:function(){ S.sent -= 0.1; S.mk.pe *= 0.9; S.shock.dem = -0.06; S.shock.dem_m = 5; },
+    ch:[{ n:B('Central bank lends cash', 'ธนาคารกลางปล่อยกู้ฉุกเฉิน'), f:function(){ if(cnt('central')){ S.sent += 0.07; S.treasury -= 100; } }, w:B('A lender of last resort gives banks cash so withdrawals can be paid — panic stops. (Only works if you have a central bank.)', 'ธนาคารกลางเป็นผู้ให้กู้แหล่งสุดท้าย ให้เงินสดธนาคารจ่ายคืนผู้ฝาก ความตื่นตระหนกจึงหยุด (ต้องมีธนาคารกลาง)') },
+        { n:B('Guarantee deposits', 'ประกันเงินฝาก'), f:function(){ S.sent += 0.05; S.debt += 200; }, w:B('Deposit protection removes the reason to run, but the state takes on the risk.', 'การคุ้มครองเงินฝากทำให้คนไม่ต้องรีบถอน แต่รัฐรับความเสี่ยงแทน') }] },
+  { k:'scandal', art:'alert', p:1, min:10, need:function(){ return cnt('exchange') > 0 && !cnt('regulator'); }, n:B('Insider trading scandal', 'อื้อฉาวใช้ข้อมูลภายใน'), cx:['insider', 'fair'],
+    t:B('Executives sold their shares days before bad news. Trust in the market collapses.', 'ผู้บริหารขายหุ้นก่อนข่าวร้ายไม่กี่วัน ความเชื่อมั่นในตลาดพังลง'),
+    go:function(){ S.mk.pe *= 0.8; S.sent -= 0.06; },
+    ch:[{ n:B('Punish and build rules', 'ลงโทษและออกกฎ'), f:function(){ S.sent += 0.03; }, w:B('Insider trading is illegal: regulators, disclosure rules and punishment protect fair markets. Build a regulator to stop repeats.', 'การใช้ข้อมูลภายในผิดกฎหมาย การกำกับดูแล การเปิดเผยข้อมูล และบทลงโทษช่วยให้ตลาดยุติธรรม สร้างสำนักงานกำกับฯ เพื่อป้องกันซ้ำ') }] },
+  { k:'downgrade', art:'alert', p:1.4, min:8, need:function(){ return S.debt / Math.max(1, S.Y * 12) > 0.9; }, n:B('Credit rating cut', 'ถูกลดอันดับความน่าเชื่อถือ'), cx:['rating', 'debt'],
+    t:B('Rating agencies say your debt is too high and cut the island\'s grade.', 'บริษัทจัดอันดับเห็นว่าหนี้สูงเกินไป จึงลดอันดับความน่าเชื่อถือของเกาะ'),
+    go:function(){ S.shock.rat = 1.5; S.mk.bond *= 0.96; },
+    ch:[{ n:B('Cut spending', 'ลดรายจ่าย'), f:function(){ S.spend = Math.max(5, S.spend - 4); S.shock.rat = 0.8; }, w:B('Austerity rebuilds trust and lowers yields, but slows the economy now.', 'รัดเข็มขัดช่วยกู้ความเชื่อมั่นและลดยีลด์ แต่เศรษฐกิจตอนนี้จะชะลอ') },
+        { n:B('Raise taxes', 'ขึ้นภาษี'), f:function(){ S.tax = Math.min(40, S.tax + 4); S.shock.rat = 0.8; }, w:B('More revenue shrinks the deficit; people are a bit less happy.', 'รายได้มากขึ้นลดการขาดดุล แต่คนมีความสุขน้อยลง') }] },
+  { k:'pandemic', art:'alert', p:0.6, min:20, n:B('Pandemic', 'โรคระบาด'), cx:['sysrisk'],
+    t:B('A new illness spreads. Shops close and people stay home.', 'โรคอุบัติใหม่ระบาด ร้านค้าปิด คนอยู่บ้าน'),
+    go:function(){ var hos = cnt('hospital'); S.shock.dem = -0.12 + hos * 0.02; S.shock.dem_m = 6; S.shock.pop = -0.01 + hos * 0.003; S.shock.pop_m = 4; S.sent -= 0.08; S.mk.pe *= 0.85; },
+    ch:[{ n:B('Support incomes', 'แจกเงินช่วยเหลือ'), f:function(){ S.treasury -= 300; S.sent += 0.04; }, w:B('Income support limits the damage; it is paid for with debt later.', 'การช่วยเหลือรายได้ลดความเสียหาย แต่ต้องจ่ายด้วยหนี้ในอนาคต') },
+        { n:B('Cut rates to near zero', 'ลดดอกเบี้ยใกล้ศูนย์'), f:function(){ S.myRate = 0.25; }, w:B('Very low rates help borrowers and lift asset prices, but cannot reopen closed shops.', 'ดอกเบี้ยต่ำมากช่วยผู้กู้และดันราคาสินทรัพย์ แต่เปิดร้านที่ปิดไปไม่ได้') }] },
+  { k:'hot', art:'infl', p:1.5, min:6, need:function(){ return S.infl > 5; }, n:B('Prices are running away', 'ข้าวของแพงขึ้นเรื่อยๆ'), cx:['demand', 'real', 'rate'],
+    t:B('Inflation is above 5%. Workers ask for big pay rises and shops raise prices again.', 'เงินเฟ้อเกิน 5% แรงงานขอขึ้นค่าแรงมาก ร้านค้าขึ้นราคาอีก'),
+    go:function(){},
+    ch:[{ n:B('Raise rates firmly', 'ขึ้นดอกเบี้ยแรงๆ'), f:function(){ S.myRate = Math.min(15, S.myRate + 2); }, w:B('Making the real rate positive is how central banks break an inflation spiral.', 'ทำให้ดอกเบี้ยที่แท้จริงเป็นบวก คือวิธีที่ธนาคารกลางหยุดวงจรเงินเฟ้อ') },
+        { n:B('Cut government spending', 'ลดการใช้จ่ายรัฐ'), f:function(){ S.spend = Math.max(5, S.spend - 4); }, w:B('Less demand from the government also cools prices — fiscal tightening.', 'ลดอุปสงค์จากภาครัฐก็ช่วยลดเงินเฟ้อได้ (นโยบายการคลังแบบหดตัว)') }] }
+];
+function maybeEvent(){
+  if(S.month < 6 || S.month - S.evLast < 7) return;
+  if(RNG() > 0.16) return;
+  var pool = EVENTS.filter(function(e){ return (!e.need || e.need()) && S.month >= e.min; });
+  if(!pool.length) return;
+  var tot = pool.reduce(function(a, e){ return a + e.p; }, 0), x = RNG() * tot, ev = pool[0];
+  for(var i = 0; i < pool.length; i++){ x -= pool[i].p; if(x <= 0){ ev = pool[i]; break; } }
+  S.evLast = S.month; ev.go(); (ev.cx || []).forEach(function(k){ S.codex[k] = 1; });
+  S.evLog.unshift([S.month, ev.k]); if(S.evLog.length > 30) S.evLog.pop();
+  showEvent(ev);
+}
+
+/* ======================= quiz bank ======================= */
+var QB = [], QB_ready = false;
+function loadQuestions(){
+  var files = [1, 2, 3, 4, 5, 6], got = 0, all = [];
+  return Promise.all(files.map(function(n){
+    return fetch('IC_' + n + '.html', { cache:'force-cache' }).then(function(r){ return r.ok ? r.text() : ''; }).then(function(t){
+      var i = t.indexOf('var RAW'); if(i < 0) return;
+      var a = t.indexOf('[', i), j = t.indexOf('];', a); if(a < 0 || j < 0) return;
+      try { var raw = (new Function('return ' + t.slice(a, j + 1)))(); raw.forEach(function(q, k){ if(q && q.q && q.c && q.c.length) all.push({ id:n + '-' + (k + 1), s:q.s || 1, q:q.q, c:q.c, a:q.a, e:q.e || '', src:n }); }); got++; } catch(e){}
+    }).catch(function(){});
+  })).then(function(){
+    if(all.length < 20) all = Q_FALLBACK.map(function(q, k){ return { id:'f-' + k, s:q.s, q:q.q, c:q.c, a:q.a, e:q.e, src:0 }; });
+    QB = all; QB_ready = true; return all.length;
+  });
+}
+function pickQuestion(sec){
+  var pool = QB.filter(function(q){ return !sec || q.s === sec; }); if(!pool.length) pool = QB;
+  var fresh = pool.filter(function(q){ return !S.quiz.seen[q.id]; });
+  if(!fresh.length){ pool.forEach(function(q){ delete S.quiz.seen[q.id]; }); fresh = pool; }
+  return fresh[Math.floor(RNG() * fresh.length)];
+}
+function answerQuestion(q, picked){
+  var ok = picked === q.a, z = S.quiz;
+  z.ans++; z.sec[q.s][0]++; z.seen[q.id] = ok ? 2 : 1;
+  if(ok){ z.ok++; z.sec[q.s][1]++; z.streak++; z.best = Math.max(z.best, z.streak);
+    var st = 1 + (z.streak > 0 && z.streak % 5 === 0 ? 1 : 0), coins = Math.round(25 * (1 + Math.min(5, z.streak) * 0.2));
+    S.stars += st; S.treasury += coins; return { ok:true, stars:st, coins:coins };
+  }
+  z.streak = 0; return { ok:false };
+}
+function readiness(){
+  var z = S.quiz.sec, parts = [[1, 30], [2, 20], [3, 50]], tot = 0, w = 0;
+  parts.forEach(function(p){ var a = z[p[0]][0], o = z[p[0]][1]; if(a){ tot += o / a * p[1]; w += p[1]; } });
+  return w ? tot / w * 100 : null;
+}
+
+/* ======================= research ======================= */
+function techState(t){
+  if(S.tech[t.k]) return 'done';
+  if(t.pre && !S.tech[t.pre]) return 'pre';
+  var have = S.quiz.sec[t.s][1];
+  if(have < t.need) return 'need';
+  if(S.stars < t.cost) return 'stars';
+  return 'ready';
+}
+function research(k){
+  var t = techOf(k); if(!t || techState(t) !== 'ready') return false;
+  S.stars -= t.cost; S.tech[k] = 1;
+  ({ fin:['real'], mon:['rate', 'real'], fis:['fiscal', 'deficit'], bond:['yield', 'debt', 'rating'], eq:['pe', 'erp'], fund:['divers', 'comp'], risk:['sharpe', 'sysrisk', 'divers'], eth:['fair', 'insider'], kyc:['fair'], trade:['fx'] }[k] || []).forEach(function(c){ S.codex[c] = 1; });
+  if(k === 'fund' && !S.fund.on){ S.fund.on = true; }
+  return true;
+}
+
+/* ======================= goals ======================= */
+function checkGoals(){
+  GOALS.forEach(function(g){ if(!S.goals[g.k] && g.f(S)){ S.goals[g.k] = S.month; S.treasury += g.r; toast({ en:'Goal done: ' + g.n.en + '  +' + g.r, th:'สำเร็จเป้าหมาย: ' + g.n.th + '  +' + g.r }, 'gold'); } });
+}
+
+/* ======================= saving ======================= */
+var SLOT = 1;
+function slotKey(n){ return 'spz.island.slot.' + n; }
+function serial(){ return JSON.stringify(S); }
+function autosave(){ try { localStorage.setItem(slotKey(SLOT), serial()); localStorage.setItem('spz.island.last', String(SLOT)); } catch(e){} }
+function readSlot(n){ try { var t = localStorage.getItem(slotKey(n)); return t ? JSON.parse(t) : null; } catch(e){ return null; } }
+function loadState(obj, slot){
+  var base = blankState(obj.name || 'Island', obj.seed || 1);
+  S = Object.assign(base, obj);
+  ['shock', 'quiz', 'mk', 'fund', 'hist', 'stk', 'codex', 'goals', 'tech'].forEach(function(k){ S[k] = Object.assign(base[k], obj[k] || {}); });
+  S.fund.w = Object.assign({ dep:40, bond:30, stock:20, gold:10 }, (obj.fund || {}).w || {});
+  S.quiz.sec = Object.assign({ 1:[0, 0], 2:[0, 0], 3:[0, 0] }, (obj.quiz || {}).sec || {});
+  SLOT = slot || SLOT;
+  genWorld(S.seed); (S.cleared || []).forEach(function(i){ WORLD.tree[i] = 0; });
+  renderTerrain(); rebuildOcc(); rebuildStatic();
+}
+/* ======================= static map layer (terrain + trees + buildings) ======================= */
+function rebuildStatic(){
+  if(!terrainCv) return;
+  if(!staticCv){ staticCv = document.createElement('canvas'); }
+  staticCv.width = MW * TS; staticCv.height = MH * TS;
+  var c = staticCv.getContext('2d'); c.imageSmoothingEnabled = false;
+  c.drawImage(terrainCv, 0, 0);
+  for(var y = 0; y < MH; y++) for(var x = 0; x < MW; x++){
+    var i = y * MW + x, tr = WORLD.tree[i]; if(tr && !(OCC && OCC[i])) drawTree(c, x * TS + 1 + Math.floor(hash2(x, y, 3) * 2), y * TS, tr, T_at(x, y));
+  }
+  if(!S) return;
+  var list = S.bld.slice().sort(function(a, b){ return a[2] - b[2] || a[1] - b[1]; });
+  list.forEach(function(b){
+    var px = b[1] * TS, py = b[2] * TS, spr = SPR[BLD[b[0]].spr];
+    /* a little yard so buildings sit on the ground */
+    c.fillStyle = 'rgba(70,46,20,.28)'; c.fillRect(px + 1, py + 12, 14, 4);
+    c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(px + 2, py + 15, 13, 1);
+    if(spr) c.drawImage(spr, px, py);
+  });
+}
+
+/* ======================= camera + canvas ======================= */
+var CV = null, CX = null, DPR = 1, VW = 0, VH = 0;
+var cam = { x:MW * TS / 2, y:MH * TS / 2, z:3 };
+function resize(){
+  DPR = Math.min(2, window.devicePixelRatio || 1); VW = window.innerWidth; VH = window.innerHeight;
+  CV.width = Math.round(VW * DPR); CV.height = Math.round(VH * DPR); clampCam();
+}
+function clampCam(){
+  var hw = VW / 2 / cam.z, hh = VH / 2 / cam.z, W = MW * TS, H = MH * TS;
+  cam.x = W > hw * 2 ? clamp(cam.x, hw - 40, W - hw + 40) : W / 2;
+  cam.y = H > hh * 2 ? clamp(cam.y, hh - 40, H - hh + 60) : H / 2;
+}
+function screenToWorld(sx, sy){ return [(sx - VW / 2) / cam.z + cam.x, (sy - VH / 2) / cam.z + cam.y]; }
+function zoomAt(nz, sx, sy){
+  nz = clamp(nz, 1, 8); var w = screenToWorld(sx, sy); cam.z = nz;
+  cam.x = w[0] - (sx - VW / 2) / nz; cam.y = w[1] - (sy - VH / 2) / nz; clampCam();
+}
+
+/* ======================= living things drawn every frame ======================= */
+var FX = { walkers:[], boats:[], smoke:[], spark:[], clouds:[] };
+var CLOUD_SPR = [];
+function makeClouds(){
+  var r = mulberry(77); CLOUD_SPR = [];
+  for(var k = 0; k < 4; k++){
+    var w = 40 + Math.floor(r() * 30), h = 18 + Math.floor(r() * 8), cv = document.createElement('canvas'); cv.width = w; cv.height = h; var c = cv.getContext('2d');
+    var blobs = []; for(var b = 0; b < 5 + k; b++) blobs.push([6 + r() * (w - 12), h * 0.55 + (r() - 0.5) * 4, 5 + r() * 6]);
+    for(var y = 0; y < h; y++) for(var x = 0; x < w; x++){
+      var inside = blobs.some(function(B0){ var dx = x - B0[0], dy = (y - B0[1]) * 1.3; return dx * dx + dy * dy < B0[2] * B0[2]; });
+      if(inside){ var below = !blobs.some(function(B0){ var dx = x - B0[0], dy = (y + 2 - B0[1]) * 1.3; return dx * dx + dy * dy < B0[2] * B0[2]; });
+        c.fillStyle = below ? '#c9d6f2' : '#ffffff'; c.fillRect(x, y, 1, 1); }
+    }
+    CLOUD_SPR.push(cv);
+  }
+  FX.clouds = []; for(var i = 0; i < 7; i++) FX.clouds.push({ x:r() * MW * TS, y:r() * MH * TS, s:CLOUD_SPR[i % CLOUD_SPR.length], v:0.04 + r() * 0.05 });
+}
+var SHIRTS = ['#ff5d5d', '#3aa7ff', '#ffcc4d', '#5bd16a', '#ff8ad8', '#a78bfa', '#ffffff', '#ff9b3d'];
+function bCenter(b){ return [b[1] * TS + 8, b[2] * TS + 14]; }
+function updateFX(running){
+  if(!S) return;
+  /* people walking between buildings */
+  var want = S.bld.length ? Math.min(160, Math.round(S.pop / 4)) : 0;
+  while(FX.walkers.length < want){ var b0 = S.bld[Math.floor(Math.random() * S.bld.length)], p0 = bCenter(b0);
+    FX.walkers.push({ x:p0[0], y:p0[1], tx:p0[0], ty:p0[1], c:SHIRTS[Math.floor(Math.random() * SHIRTS.length)], w:Math.random() * 60, v:0.12 + Math.random() * 0.14 }); }
+  if(FX.walkers.length > want) FX.walkers.length = want;
+  if(running) FX.walkers.forEach(function(p){
+    if(p.w > 0){ p.w--; return; }
+    var dx = p.tx - p.x, dy = p.ty - p.y, d = Math.hypot(dx, dy);
+    if(d < 0.6){ var b = S.bld[Math.floor(Math.random() * S.bld.length)]; if(!b) return; var c = bCenter(b);
+      /* walk to nearby buildings mostly, so people stay in town */
+      if(Math.hypot(c[0] - p.x, c[1] - p.y) > 90 && Math.random() < 0.7) return; p.tx = c[0] + (Math.random() - 0.5) * 8; p.ty = c[1] + (Math.random() - 0.5) * 3; p.w = 30 + Math.random() * 120; return; }
+    var nx = p.x + dx / d * p.v, ny = p.y + dy / d * p.v;
+    if(!isLand(T_at(Math.floor(nx / TS), Math.floor(ny / TS)))){ p.tx = p.x; p.ty = p.y; return; }
+    p.x = nx; p.y = ny;
+  });
+  /* boats around ports */
+  var ports = S.bld.filter(function(b){ return b[0] === 'port'; }), wantB = Math.min(6, ports.length * 2);
+  if(FX.boats.length > wantB) FX.boats.length = wantB;
+  while(FX.boats.length < wantB){ var pb = ports[FX.boats.length % ports.length], st = nearWater(pb[1], pb[2]); if(!st) break; FX.boats.push({ x:st[0], y:st[1], tx:st[0], ty:st[1], hx:st[0], hy:st[1] }); }
+  if(running) FX.boats.forEach(function(o){
+    var dx = o.tx - o.x, dy = o.ty - o.y, d = Math.hypot(dx, dy);
+    if(d < 1){ for(var k = 0; k < 8; k++){ var a = Math.random() * 6.28, r = 20 + Math.random() * 90, X = o.hx + Math.cos(a) * r, Y = o.hy + Math.sin(a) * r; if(!isLand(T_at(Math.floor(X / TS), Math.floor(Y / TS)))){ o.tx = X; o.ty = Y; break; } } return; }
+    var nx = o.x + dx / d * 0.18, ny = o.y + dy / d * 0.18;
+    if(isLand(T_at(Math.floor(nx / TS), Math.floor(ny / TS)))){ o.tx = o.hx; o.ty = o.hy; if(Math.hypot(o.hx - o.x, o.hy - o.y) < 2) return; }
+    o.x = nx; o.y = ny; o.dir = dx < 0 ? -1 : 1;
+  });
+  /* smoke from factories and power plants */
+  if(running) S.bld.forEach(function(b){
+    if((b[0] === 'factory' || b[0] === 'power') && Math.random() < 0.06){
+      var sx = b[1] * TS + (b[0] === 'factory' ? 12 : 4), sy = b[2] * TS + (b[0] === 'factory' ? 0 : 2);
+      FX.smoke.push({ x:sx + Math.random(), y:sy, l:120 + Math.random() * 60, m:180 }); }
+  });
+  FX.smoke = FX.smoke.filter(function(p){ if(running){ p.y -= 0.06; p.x += 0.03 + Math.sin(p.l / 15) * 0.02; p.l--; } return p.l > 0; });
+  if(FX.smoke.length > 220) FX.smoke.splice(0, FX.smoke.length - 220);
+  /* sparkles on the sea */
+  if(waterTiles.length && FX.spark.length < 70 && Math.random() < 0.5){ var wt = waterTiles[Math.floor(Math.random() * waterTiles.length)]; FX.spark.push({ x:(wt % MW) * TS + Math.random() * TS, y:Math.floor(wt / MW) * TS + Math.random() * TS, l:50 + Math.random() * 60 }); }
+  FX.spark = FX.spark.filter(function(p){ p.l--; return p.l > 0; });
+  FX.clouds.forEach(function(c){ c.x += c.v * (running ? 1 : 0.3); if(c.x > MW * TS + 60) c.x = -80; });
+}
+function nearWater(tx, ty){
+  for(var r = 1; r < 5; r++) for(var y = ty - r; y <= ty + 1 + r; y++) for(var x = tx - r; x <= tx + 1 + r; x++) if(!isLand(T_at(x, y)) && x >= 0 && y >= 0 && x < MW && y < MH) return [x * TS + 4, y * TS + 4];
+  return null;
+}
+
+/* ======================= draw ======================= */
+var hover = null;   /* { tx, ty, wx, wy } */
+var tool = null;    /* building key | 'inspect' | 'demolish' | null */
+function draw(){
+  var c = CX; c.setTransform(1, 0, 0, 1, 0, 0); c.imageSmoothingEnabled = false;
+  c.fillStyle = '#163a85'; c.fillRect(0, 0, CV.width, CV.height);
+  if(!staticCv) return;
+  var sc = cam.z * DPR, ox = Math.round(CV.width / 2 - cam.x * sc), oy = Math.round(CV.height / 2 - cam.y * sc);
+  c.setTransform(sc, 0, 0, sc, ox, oy); c.imageSmoothingEnabled = false;
+  /* deep-sea frame pattern outside the map */
+  c.fillStyle = '#1a3f8f'; c.fillRect(-2000, -2000, MW * TS + 4000, MH * TS + 4000);
+  c.drawImage(staticCv, 0, 0);
+  var t = performance.now();
+  /* sea sparkles */
+  FX.spark.forEach(function(p){ c.globalAlpha = Math.min(1, p.l / 30) * 0.8; c.fillStyle = '#e8f6ff'; c.fillRect(Math.floor(p.x), Math.floor(p.y), p.l > 40 ? 2 : 1, 1); });
+  c.globalAlpha = 1;
+  /* boats */
+  FX.boats.forEach(function(o){ var x = Math.floor(o.x), y = Math.floor(o.y);
+    c.fillStyle = 'rgba(255,255,255,.5)'; c.fillRect(x - 4 * (o.dir || 1), y + 1, 2, 1);
+    c.fillStyle = '#141a2e'; c.fillRect(x - 3, y, 7, 2); c.fillStyle = '#8a5a32'; c.fillRect(x - 2, y, 5, 1);
+    c.fillStyle = '#6b7480'; c.fillRect(x, y - 4, 1, 4); c.fillStyle = '#fff3d6'; c.fillRect(x + 1, y - 4, 2, 3); });
+  /* people */
+  FX.walkers.forEach(function(p, i){ var x = Math.floor(p.x), y = Math.floor(p.y), step = p.w > 0 ? 0 : (Math.floor(t / 180 + i) % 2);
+    c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(x, y + 1, 2, 1);
+    c.fillStyle = '#3a2a1a'; c.fillRect(x + step, y, 1, 1);
+    c.fillStyle = p.c; c.fillRect(x, y - 1, 1, 1);
+    c.fillStyle = '#ffd9b0'; c.fillRect(x, y - 2, 1, 1); });
+  /* smoke */
+  FX.smoke.forEach(function(p){ var a = p.l / p.m; c.globalAlpha = 0.55 * a; c.fillStyle = a > 0.6 ? '#5b6170' : '#9aa3b5'; var s = a > 0.5 ? 1 : 2; c.fillRect(Math.floor(p.x), Math.floor(p.y), s, s); });
+  c.globalAlpha = 1;
+  /* placement ghost / hover */
+  if(hover && S && mode === 'game'){
+    if(tool && BLD[tool]){ var ok = canPlace(tool, hover.tx, hover.ty).ok;
+      c.globalAlpha = 0.35; c.fillStyle = ok ? '#5bd16a' : '#ff5d5d'; c.fillRect(hover.tx * TS, hover.ty * TS, 16, 16);
+      c.globalAlpha = ok ? 0.85 : 0.45; c.drawImage(SPR[BLD[tool].spr], hover.tx * TS, hover.ty * TS); c.globalAlpha = 1;
+      c.strokeStyle = ok ? '#c8ffd0' : '#ffd0d0'; c.lineWidth = 1 / cam.z; c.strokeRect(hover.tx * TS + 0.5 / cam.z, hover.ty * TS + 0.5 / cam.z, 16 - 1 / cam.z, 16 - 1 / cam.z);
+    } else if(tool === 'inspect' || tool === 'demolish' || !tool){
+      var bi = OCC ? OCC[hover.my * MW + hover.mx] : 0;
+      if(bi){ var b = S.bld[bi - 1]; c.strokeStyle = tool === 'demolish' ? '#ff5d5d' : '#ffcc4d'; c.lineWidth = 1 / cam.z * 2; c.strokeRect(b[1] * TS, b[2] * TS, 16, 16); }
+    }
+  }
+  /* clouds float above everything (with their shadows) */
+  var ca = cam.z >= 5 ? 0.35 : cam.z >= 3 ? 0.7 : 0.9;
+  FX.clouds.forEach(function(k){ c.globalAlpha = 0.13; c.filter = 'none';
+    c.drawImage(shadowOf(k.s), Math.floor(k.x + 14), Math.floor(k.y + 22)); c.globalAlpha = ca; c.drawImage(k.s, Math.floor(k.x), Math.floor(k.y)); });
+  c.globalAlpha = 1;
+}
+var _shadow = new Map();
+function shadowOf(cv){
+  if(_shadow.has(cv)) return _shadow.get(cv);
+  var s = document.createElement('canvas'); s.width = cv.width; s.height = cv.height; var c = s.getContext('2d');
+  c.drawImage(cv, 0, 0); c.globalCompositeOperation = 'source-in'; c.fillStyle = '#000'; c.fillRect(0, 0, s.width, s.height);
+  _shadow.set(cv, s); return s;
+}
+
+/* ======================= small pixel art for the HUD ======================= */
+function drawFlag(){
+  var cv = $('flagArt'), c = cv.getContext('2d'), r = mulberry(S.seed * 11 + 3);
+  var cols = ['#e8473b', '#3aa7ff', '#5bd16a', '#ffcc4d', '#a78bfa', '#ff8ad8', '#ffffff', '#1f5fbf'];
+  var a = cols[Math.floor(r() * cols.length)], b = cols[Math.floor(r() * cols.length)]; if(a === b) b = '#ffffff';
+  c.clearRect(0, 0, 8, 8); c.fillStyle = '#141a2e'; c.fillRect(0, 0, 8, 8);
+  c.fillStyle = a; c.fillRect(1, 1, 6, 3); c.fillStyle = b; c.fillRect(1, 4, 6, 3);
+  c.fillStyle = r() > 0.5 ? '#ffcc4d' : '#fff3d6'; c.fillRect(3, 3, 2, 2);
+}
+function drawSun(){
+  var cv = $('sunArt'), c = cv.getContext('2d');
+  var p = ['....y....', '.y..y..y.', '..yyyyy..', '.yyYyyyy.', 'yyyYYyyyy', '.yyyyyYy.', '..yyyyy..', '.y..y..y.', '....y....'];
+  cv.width = 9; cv.height = 9; p.forEach(function(row, y){ for(var x = 0; x < 9; x++){ var ch = row[x]; if(ch !== '.'){ c.fillStyle = ch === 'Y' ? '#ff9b3d' : '#ffd34d'; c.fillRect(x, y, 1, 1); } } });
+}
+function drawChart(cv, series, o){
+  o = o || {}; var dpr = Math.min(2, window.devicePixelRatio || 1), w = cv.clientWidth || 300, h = cv.clientHeight || 110;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); var c = cv.getContext('2d'); c.scale(dpr, dpr);
+  var all = []; series.forEach(function(s){ all = all.concat(s.d); }); if(!all.length){ c.fillStyle = '#7883aa'; c.font = '12px Kanit'; c.fillText(T(B('No data yet — let a few months pass', 'ยังไม่มีข้อมูล รอสักไม่กี่เดือน')), 10, h / 2); return; }
+  var mn = Math.min.apply(null, all), mx = Math.max.apply(null, all); if(o.zero){ mn = Math.min(mn, 0); mx = Math.max(mx, 0); } if(mx - mn < 1e-6){ mx += 1; mn -= 1; }
+  var pad = (mx - mn) * 0.1; mn -= pad; mx += pad;
+  var L = 6, R = 44, Tp = 18, Bt = 6, n = Math.max.apply(null, series.map(function(s){ return s.d.length; }));
+  function X(i){ return L + (w - L - R) * (n <= 1 ? 1 : i / (n - 1)); } function Y(v){ return Tp + (h - Tp - Bt) * (1 - (v - mn) / (mx - mn)); }
+  c.strokeStyle = 'rgba(255,255,255,.07)'; c.lineWidth = 1; for(var g = 0; g <= 3; g++){ var yy = Math.round(Tp + (h - Tp - Bt) * g / 3) + 0.5; c.beginPath(); c.moveTo(L, yy); c.lineTo(w - R, yy); c.stroke(); }
+  if(mn < 0 && mx > 0){ c.strokeStyle = 'rgba(255,255,255,.28)'; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(L, Math.round(Y(0)) + 0.5); c.lineTo(w - R, Math.round(Y(0)) + 0.5); c.stroke(); c.setLineDash([]); }
+  if(o.band){ c.fillStyle = 'rgba(91,209,106,.12)'; c.fillRect(L, Y(o.band[1]), w - L - R, Y(o.band[0]) - Y(o.band[1])); }
+  c.font = '600 11px Kanit'; var lx = L + 2;
+  series.forEach(function(s){
+    c.strokeStyle = s.c; c.lineWidth = 2; c.lineJoin = 'round'; c.beginPath();
+    var off = n - s.d.length; s.d.forEach(function(v, i){ var x = X(i + off), y = Y(v); if(i) c.lineTo(x, y); else c.moveTo(x, y); }); c.stroke();
+    if(s.d.length){ var lv = s.d[s.d.length - 1]; c.fillStyle = s.c; c.fillRect(X(n - 1) - 2, Y(lv) - 2, 4, 4); c.font = '11px Silkscreen, monospace'; c.fillText((o.f || function(v){ return v.toFixed(1); })(lv), w - R + 5, Y(lv) + 4); }
+    c.font = '600 11px Kanit'; c.fillStyle = s.c; c.fillRect(lx, 5, 8, 8); c.fillStyle = '#dfe5ff'; c.fillText(T(s.n), lx + 11, 13); lx += c.measureText(T(s.n)).width + 24;
+  });
+}
+/* ======================= words used by the page ======================= */
+var TX = {
+  back:B('← Terminal', '← กลับเทอร์มินอล'), tag:B('Build an island nation · learn economics · pass the IC', 'สร้างประเทศบนเกาะ · เรียนเศรษฐศาสตร์ · เตรียมสอบ IC'),
+  newGame:B('New island', 'เริ่มเกาะใหม่'), loadGame:B('Load / save slots', 'โหลดเกม / ช่องเซฟ'), howTo:B('How to play', 'วิธีเล่น'),
+  foot:B('Questions come from the IC Plain practice sets', 'คำถามมาจากชุดฝึกสอบ IC Plain'), icLink:B('IC study guide', 'คู่มือสอบ IC'),
+  cont:B('Continue', 'เล่นต่อ')
+};
+var SECN = { 1:B('Part 1 · Basics + maths', 'ส่วนที่ 1 · พื้นฐาน+คำนวณ'), 2:B('Part 2 · Ethics & rules', 'ส่วนที่ 2 · จรรยาบรรณ'), 3:B('Part 3 · Products', 'ส่วนที่ 3 · ผลิตภัณฑ์') };
+function applyLang(){
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-t]').forEach(function(el){ var k = el.getAttribute('data-t'); if(TX[k]) el.textContent = T(TX[k]); });
+  refreshTitle();
+  if(mode === 'game'){ buildTabs(); buildBar(); hud(); if(panelKey) renderPanel(); showHelp(); }
+}
+function toast(msg, cls){
+  var d = document.createElement('div'); d.className = 'toast ' + (cls || ''); d.innerHTML = esc(T(msg)); $('toasts').appendChild(d);
+  setTimeout(function(){ d.remove(); }, 3100);
+  var all = $('toasts').children; if(all.length > 4) all[0].remove();
+}
+
+/* ======================= modes ======================= */
+var mode = 'title', speed = 1, acc = 0, MONTH_MS = 2600, panelKey = null, modalOpen = false, panelBusy = false;
+function showGame(){
+  mode = 'game'; $('title').classList.add('hidden');
+  ['hud', 'tabs', 'bar'].forEach(function(id){ $(id).classList.remove('hidden'); });
+  $('hName').textContent = S.name; drawFlag(); buildTabs(); buildBar(); setSpeed(S.speed == null ? 1 : S.speed); hud();
+  FX.walkers = []; FX.boats = []; FX.smoke = [];
+  if(S.home){ cam.x = S.home[0] * TS; cam.y = S.home[1] * TS; } cam.z = VW < 640 ? 3 : 4; clampCam();
+  showHelp();
+}
+function showTitle(){
+  autosaveIfGame(); mode = 'title'; closePanel(); closeModal(); tool = null; hideInspect();
+  ['hud', 'tabs', 'bar', 'help'].forEach(function(id){ $(id).classList.add('hidden'); });
+  $('title').classList.remove('hidden');
+  /* a random demo island behind the menu */
+  var seed = 1 + Math.floor(Math.random() * 99999); S = blankState('', seed); genWorld(seed); renderTerrain(); rebuildOcc(); starterTown(); rebuildStatic();
+  S.pop = 120; cam.z = VW < 640 ? 2 : 3; cam.x = (S.home ? S.home[0] * TS : MW * TS / 2); cam.y = (S.home ? S.home[1] * TS : MH * TS / 2); clampCam();
+  FX.walkers = []; FX.boats = []; refreshTitle();
+}
+function autosaveIfGame(){ if(mode === 'game' && S) autosave(); }
+function refreshTitle(){
+  var last = +(localStorage.getItem('spz.island.last') || 0), sv = last ? readSlot(last) : null, b = $('btnCont');
+  if(sv){ b.classList.remove('hidden'); b.textContent = T(TX.cont) + ': ' + sv.name + ' · ' + dateStr(sv.month || 0); b.dataset.slot = last; }
+  else b.classList.add('hidden');
+}
+function setSpeed(n){ speed = n; if(S) S.speed = n; document.querySelectorAll('.spd').forEach(function(b){ b.classList.toggle('on', +b.dataset.spd === n); }); }
+
+/* ======================= HUD ======================= */
+function stat(ic, val, cls, tip, key){ return '<span class="st ' + (cls || '') + '" title="' + esc(T(tip)) + '" data-act="panel" data-k="' + (key || 'econ') + '">' + icoImg(ic) + '<b>' + esc(val) + '</b></span>'; }
+function hud(){
+  if(!S || mode !== 'game') return;
+  $('hDate').textContent = dateStr(S.month);
+  var cap = sumOf('cap'), u = S.u * 100, g = S.g || 0;
+  $('hStats').innerHTML =
+    stat('coin', fmt(S.treasury), S.treasury < 100 ? 'warn' : '', B('Treasury (coins). Debt: ' + fmt(S.debt), 'เงินคลัง (เหรียญ) · หนี้: ' + fmt(S.debt))) +
+    stat('pop', fmt(S.pop) + '/' + fmt(cap), S.pop > cap - 2 ? 'warn' : '', B('People / homes', 'ประชากร / ที่อยู่')) +
+    stat('gdp', pct(g, 1), g >= 0 ? 'up' : 'dn', B('GDP growth vs a year ago', 'GDP โตจากปีก่อน')) +
+    stat('infl', pct0(S.infl, 1), S.infl > 4 || S.infl < 0 ? 'dn' : S.infl >= 1 && S.infl <= 3 ? 'up' : 'warn', B('Inflation (goal 1–3%)', 'เงินเฟ้อ (เป้า 1–3%)')) +
+    stat('job', pct0(u, 1), u > 7 ? 'dn' : u < 5 ? 'up' : 'warn', B('Unemployment', 'อัตราการว่างงาน')) +
+    stat('happy', Math.round(S.H), S.H < 45 ? 'dn' : S.H > 65 ? 'up' : '', B('Happiness 0–100', 'ความสุข 0–100')) +
+    stat('rate', pct0(S.rate, 2), '', B('Policy interest rate', 'ดอกเบี้ยนโยบาย'), 'policy') +
+    stat('star', S.stars, 'warn', B('Knowledge stars ★ — earn them in the Council', 'ดาวความรู้ ★ ได้จากการตอบคำถามในสภา'), 'council');
+  var rb = document.querySelector('.tab[data-k="research"] .badge'), n = TECH.filter(function(t){ return techState(t) === 'ready'; }).length;
+  if(rb){ rb.textContent = n; rb.classList.toggle('hidden', !n); }
+  document.querySelectorAll('.bi[data-b]').forEach(function(el){ var D = BLD[el.dataset.b]; el.classList.toggle('cant', S.treasury < D.cost); });
+}
+var TABS = [['econ', 'chart', B('Economy', 'เศรษฐกิจ')], ['policy', 'policy', B('Policy', 'นโยบาย')], ['market', 'market', B('Markets & fund', 'ตลาดและกองทุน')],
+  ['council', 'brain', B('Council · IC quiz', 'สภาที่ปรึกษา · ข้อสอบ IC')], ['research', 'flask', B('Research', 'วิจัย')], ['codex', 'book', B('Knowledge book', 'สมุดความรู้')],
+  ['goals', 'trophy', B('Goals', 'เป้าหมาย')], ['menu', 'disk', B('Save & menu', 'เซฟและเมนู')]];
+function buildTabs(){
+  $('tabs').innerHTML = TABS.map(function(t){ return '<button class="tab' + (panelKey === t[0] ? ' on' : '') + '" data-act="panel" data-k="' + t[0] + '" aria-label="' + esc(T(t[2])) + '">' + icoImg(t[1]) + '<span class="tip">' + esc(T(t[2])) + '</span>' + (t[0] === 'research' ? '<span class="badge hidden">0</span>' : '') + '</button>'; }).join('');
+}
+
+/* ======================= build bar ======================= */
+var barCat = 'home';
+function sprThumb(key){ var cv = document.createElement('canvas'); cv.width = 16; cv.height = 16; cv.getContext('2d').drawImage(SPR[BLD[key].spr], 0, 0); return cv; }
+function buildBar(){
+  $('barCats').innerHTML = BCATS.map(function(c){ return '<button class="bcat' + (barCat === c[0] ? ' on' : '') + '" data-act="cat" data-k="' + c[0] + '">' + esc(T(c[1])) + '</button>'; }).join('');
+  var box = $('barItems'); box.innerHTML = '';
+  if(barCat === 'tools'){
+    [['inspect', 'eye', B('Inspect', 'ดูข้อมูล')], ['demolish', 'dem', B('Demolish', 'รื้อถอน')]].forEach(function(t){
+      var b = document.createElement('button'); b.className = 'bi' + (tool === t[0] ? ' on' : ''); b.dataset.act = 'tool'; b.dataset.k = t[0];
+      b.innerHTML = icoImg(t[1], 'lg') + '<span>' + esc(T(t[2])) + '</span>'; b.querySelector('img').style.cssText += ';width:36px;height:36px;margin-top:3px'; box.appendChild(b); });
+    return;
+  }
+  Object.keys(BLD).forEach(function(k){
+    var D = BLD[k]; if(D.cat !== barCat) return;
+    var lock = D.req && !S.tech[D.req], b = document.createElement('button');
+    b.className = 'bi' + (tool === k ? ' on' : '') + (lock ? ' lock' : ''); b.dataset.act = 'tool'; b.dataset.k = k; b.dataset.b = k;
+    b.title = T(D.n) + ' — ' + T(D.d);
+    b.appendChild(sprThumb(k)); var sp = document.createElement('span'); sp.textContent = T(D.n); b.appendChild(sp);
+    var em = document.createElement('em'); em.textContent = D.cost; b.appendChild(em); box.appendChild(b);
+  });
+  hud();
+}
+function pickTool(k){
+  if(tool === k){ tool = null; buildBar(); toolHint(); return; }
+  var D = BLD[k];
+  if(D && D.req && !S.tech[D.req]){ var t = techOf(D.req); toast({ en:'Locked — research “' + t.n.en + '” first', th:'ยังล็อกอยู่ — ต้องวิจัย “' + t.n.th + '” ก่อน' }, 'bad'); openPanel('research'); return; }
+  tool = k; buildBar(); toolHint();
+}
+function toolHint(){
+  if(!tool){ hideInspect(); return; }
+  if(BLD[tool]){ var D = BLD[tool], parts = [];
+    if(D.cap) parts.push(T(B('homes ', 'ที่อยู่ ')) + D.cap); if(D.jobs) parts.push(T(B('jobs ', 'งาน ')) + D.jobs); if(D.out) parts.push('GDP +' + D.out);
+    if(D.food) parts.push(T(B('food ', 'อาหาร ')) + D.food); if(D.en) parts.push(T(B('power ', 'ไฟ ')) + (D.en > 0 ? '+' : '') + D.en); if(D.up) parts.push(T(B('upkeep ', 'ค่าดูแล ')) + D.up + '/' + T(B('mo', 'ด.')));
+    toast({ en:D.n.en + ' · ' + D.cost + ' — tap land to build', th:D.n.th + ' · ' + D.cost + ' เหรียญ — แตะพื้นดินเพื่อสร้าง' });
+    if(VW < 760) return;
+    showInspectHTML('<h4>' + esc(T(D.n)) + ' · ' + icoImg('coin') + ' ' + D.cost + '</h4><div class="small">' + esc(parts.join(' · ')) + '</div><p class="p" style="margin-top:6px">' + esc(T(D.d)) + '</p>', null);
+  }
+}
+
+/* ======================= inspect popup ======================= */
+function showInspectHTML(html, at){
+  var el = $('inspect'); el.innerHTML = html; el.classList.remove('hidden');
+  if(at){ el.style.left = clamp(at[0] + 14, 8, VW - 270) + 'px'; el.style.top = clamp(at[1] - 20, 70, VH - 220) + 'px'; el.style.bottom = 'auto'; }
+  else { el.style.left = '8px'; el.style.top = 'auto'; el.style.bottom = (VW < 760 ? 152 : 96) + 'px'; }
+}
+function hideInspect(){ $('inspect').classList.add('hidden'); }
+function inspectBuilding(idx, at){
+  var b = S.bld[idx], D = BLD[b[0]], rows = [];
+  [['cap', B('Homes', 'ที่อยู่')], ['jobs', B('Jobs', 'งาน')], ['out', B('Output / month', 'ผลผลิต/เดือน')], ['food', B('Food', 'อาหาร')], ['en', B('Power', 'ไฟฟ้า')], ['up', B('Upkeep / month', 'ค่าดูแล/เดือน')], ['happy', B('Happiness', 'ความสุข')]].forEach(function(r){ if(D[r[0]]) rows.push('<span>' + esc(T(r[1])) + '</span><b>' + D[r[0]] + '</b>'); });
+  showInspectHTML('<h4>' + esc(T(D.n)) + '</h4><div class="kv">' + rows.join('') + '<span>' + esc(T(B('Built', 'สร้างเมื่อ'))) + '</span><b>' + esc(dateStr(b[3] || 0)) + '</b></div><p class="small" style="margin:8px 0">' + esc(T(D.d)) + '</p>' +
+    '<button class="pxbtn red sm" data-act="demo" data-i="' + idx + '">' + esc(T(B('Demolish (+30% back)', 'รื้อถอน (คืนเงิน 30%)'))) + '</button> <button class="pxbtn dark sm" data-act="hideInspect">OK</button>', at);
+}
+
+/* ======================= tutorial ======================= */
+var TUT = [
+  { t:B('<b>Welcome, leader!</b> Drag to move the map, scroll or pinch to zoom. Pick a <b>House</b> in the bar below and tap green land to build one.', '<b>ยินดีต้อนรับท่านผู้นำ!</b> ลากเพื่อเลื่อนแผนที่ เลื่อนลูกกลิ้งหรือถ่างนิ้วเพื่อซูม เลือก <b>บ้าน</b> ที่แถบด้านล่าง แล้วแตะพื้นหญ้าเพื่อสร้าง'), f:function(){ return cnt('house') + cnt('house2') >= 4; } },
+  { t:B('People need <b>food and jobs</b>. Open <b>Work</b> and build a <b>Farm</b>.', 'คนต้องมี <b>อาหารและงาน</b> เปิดหมวด <b>งาน</b> แล้วสร้าง <b>ฟาร์ม</b>'), f:function(){ return cnt('farm') >= 3; } },
+  { t:B('Open the <b>Council</b> (brain button) and answer an IC question. Right answers give <b>★</b> and coins.', 'เปิด <b>สภาที่ปรึกษา</b> (ปุ่มสมอง) แล้วตอบข้อสอบ IC ตอบถูกได้ <b>★</b> และเหรียญ'), f:function(){ return S.quiz.ans >= 1; } },
+  { t:B('Spend ★ in <b>Research</b> (flask) to unlock banks, a central bank, the stock market and more.', 'ใช้ ★ ใน <b>วิจัย</b> (ปุ่มขวดทดลอง) เพื่อปลดล็อกธนาคาร ธนาคารกลาง ตลาดหุ้น และอื่นๆ'), f:function(){ return Object.keys(S.tech).length >= 1; } },
+  { t:B('Watch the <b>Economy</b> tab: keep inflation 1–3% and unemployment low. News events will test your policy. Good luck!', 'ดูแท็บ <b>เศรษฐกิจ</b>: คุมเงินเฟ้อ 1–3% และคนว่างงานให้ต่ำ ข่าวเหตุการณ์ต่างๆ จะทดสอบนโยบายของคุณ โชคดีค่ะ!'), f:function(){ return false; } }
+];
+function showHelp(){
+  var h = $('help'); if(!S || mode !== 'game' || S.tut >= TUT.length || (panelKey && VW < 760)){ h.classList.add('hidden'); return; }
+  var st = TUT[S.tut]; h.classList.remove('hidden');
+  h.innerHTML = '<div class="tut-n">' + (S.tut + 1) + ' / ' + TUT.length + '</div><div>' + T(st.t) + '</div><div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end"><button class="pxbtn dark sm" data-act="tutSkip">' + esc(T(B('Hide tips', 'ซ่อนคำแนะนำ'))) + '</button><button class="pxbtn sm" data-act="tutNext">' + esc(T(S.tut === TUT.length - 1 ? B('Done', 'เข้าใจแล้ว') : B('Next', 'ถัดไป'))) + '</button></div>';
+}
+function tutCheck(){ if(S.tut < TUT.length && TUT[S.tut].f()){ S.tut++; showHelp(); } }
+
+/* ======================= side panel ======================= */
+function openPanel(k){
+  if(panelKey === k){ closePanel(); return; }
+  panelKey = k; document.body.classList.add('pop'); $('panel').classList.remove('hidden'); renderPanel(); buildTabs(); hud(); showHelp();
+}
+function closePanel(){ panelKey = null; document.body.classList.remove('pop'); $('panel').classList.add('hidden'); if(mode === 'game'){ buildTabs(); hud(); showHelp(); } }
+function renderPanel(){
+  if(!panelKey) return;
+  var t = TABS.filter(function(x){ return x[0] === panelKey; })[0];
+  $('pTitle').textContent = T(t[2]); iconCanvas(t[1], $('pIco'));
+  var body = $('pBody'), keep = body.scrollTop;
+  body.innerHTML = PANELS[panelKey]();
+  body.scrollTop = keep;
+  body.querySelectorAll('canvas[data-chart]').forEach(function(cv){ var f = CHARTS[cv.dataset.chart]; if(f) f(cv); });
+}
+function liveRefresh(){ if(panelKey && !panelBusy && ['econ', 'market', 'policy', 'goals', 'research'].indexOf(panelKey) >= 0 && !($('pBody').contains(document.activeElement) && document.activeElement.tagName === 'INPUT')) renderPanel(); }
+function card(lbl, val, sub, cls){ return '<div class="card"><small>' + esc(T(lbl)) + '</small><b class="big ' + (cls || '') + '">' + esc(val) + '</b>' + (sub ? '<small>' + esc(T(sub)) + '</small>' : '') + '</div>'; }
+function sec(title, ic, html){ return '<div class="sec"><h3>' + (ic ? icoImg(ic) : '') + esc(T(title)) + '</h3>' + html + '</div>'; }
+function lock(html){ return '<div class="lockbox">' + html + '</div>'; }
+function advise(){
+  var a = [], hasCB = cnt('central') > 0, debtR = S.debt / Math.max(1, S.Y * 12);
+  if(S.foodBal < 0) a.push([1, B('Not enough food — build farms. Imported food pushes prices up.', 'อาหารไม่พอ — สร้างฟาร์มเพิ่ม การนำเข้าอาหารทำให้ราคาสินค้าสูงขึ้น')]);
+  if(S.ef < 1) a.push([1, B('Power shortage — factories and offices slow down. Build a power plant.', 'ไฟฟ้าไม่พอ — โรงงานและสำนักงานผลิตได้น้อยลง สร้างโรงไฟฟ้าเพิ่ม')]);
+  if(sumOf('cap') - S.pop < 3) a.push([0, B('Homes are full — build houses so more people can move in.', 'ที่อยู่เต็มแล้ว — สร้างบ้านเพิ่มเพื่อให้คนย้ายเข้ามาได้')]);
+  if(S.u > 0.08) a.push([1, B('Many people have no work — build workplaces (farm, factory, market, office).', 'คนว่างงานมาก — สร้างที่ทำงานเพิ่ม (ฟาร์ม โรงงาน ตลาด สำนักงาน)')]);
+  if(S.jobs > S.labor * 1.2) a.push([0, B('More jobs than workers — build homes to attract people.', 'งานมากกว่าคน — สร้างบ้านเพื่อให้มีแรงงานเพิ่ม')]);
+  if(S.infl > 4) a.push([1, hasCB ? B('Inflation is high — raise the policy rate in the Policy tab (or cut spending).', 'เงินเฟ้อสูง — ขึ้นดอกเบี้ยนโยบายในแท็บนโยบาย (หรือลดการใช้จ่ายรัฐ)') : B('Inflation is high — research Monetary policy and build a central bank to set rates yourself.', 'เงินเฟ้อสูง — วิจัยนโยบายการเงินแล้วสร้างธนาคารกลาง เพื่อตั้งดอกเบี้ยเอง')]);
+  if(S.infl < 0.5) a.push([1, B('Prices are barely rising (deflation risk) — lower rates or spend more to lift demand.', 'ราคาแทบไม่ขึ้น (เสี่ยงเงินฝืด) — ลดดอกเบี้ยหรือเพิ่มการใช้จ่ายเพื่อกระตุ้นอุปสงค์')]);
+  if(S.lastBudget && S.lastBudget.bal < 0 && debtR > 0.5) a.push([1, B('The budget is in deficit and debt is growing — bond yields will rise.', 'งบประมาณขาดดุลและหนี้เพิ่มขึ้น — ยีลด์พันธบัตรจะสูงขึ้น')]);
+  if(S.H < 45) a.push([1, B('People are unhappy — parks, markets and hospitals help; so do lower taxes.', 'คนไม่ค่อยมีความสุข — สร้างสวน ตลาด โรงพยาบาล หรือลดภาษี')]);
+  if(S.quiz.ans < 5) a.push([0, B('Answer Council questions to earn ★ for research.', 'ตอบคำถามในสภาที่ปรึกษาเพื่อรับ ★ ไปใช้วิจัย')]);
+  if(!a.length) a.push([0, B('Everything looks balanced. Keep growing!', 'ทุกอย่างสมดุลดี เติบโตต่อไปได้เลย!')]);
+  return a.slice(0, 4).map(function(x){ return '<div class="hint' + (x[0] ? ' warn' : '') + '" style="margin-bottom:6px">' + icoImg(x[0] ? 'alert' : 'brain') + '<span>' + esc(T(x[1])) + '</span></div>'; }).join('');
+}
+var CHARTS = {
+  gi:function(cv){ drawChart(cv, [{ n:B('GDP growth %', 'GDP โต %'), c:'#5bd16a', d:S.hist.g.slice(-60) }, { n:B('Inflation %', 'เงินเฟ้อ %'), c:'#ff9b3d', d:S.hist.i.slice(-60) }], { zero:true, band:[1, 3] }); },
+  ur:function(cv){ drawChart(cv, [{ n:B('Unemployment %', 'ว่างงาน %'), c:'#ff5d5d', d:S.hist.u.slice(-60) }, { n:B('Policy rate %', 'ดอกเบี้ย %'), c:'#3aa7ff', d:S.hist.r.slice(-60) }], { zero:true }); },
+  pop:function(cv){ drawChart(cv, [{ n:B('People', 'ประชากร'), c:'#a78bfa', d:S.hist.pop.slice(-120) }], { f:function(v){ return fmt(v); } }); },
+  idx:function(cv){ drawChart(cv, [{ n:B('Stock index', 'ดัชนีหุ้น'), c:'#5bd16a', d:S.hist.idx.slice(-120) }], { f:function(v){ return fmt(v); } }); },
+  by:function(cv){ drawChart(cv, [{ n:B('Bond yield %', 'ยีลด์พันธบัตร %'), c:'#ffcc4d', d:S.hist.by.slice(-120) }, { n:B('Policy rate %', 'ดอกเบี้ย %'), c:'#3aa7ff', d:S.hist.r.slice(-120) }]); },
+  fund:function(cv){ drawChart(cv, [{ n:B('Fund value', 'มูลค่ากองทุน'), c:'#ff8ad8', d:S.fund.hist.slice(-120) }], { f:function(v){ return fmt(v); } }); }
+};
+var PANELS = {};
+PANELS.econ = function(){
+  var lb = S.lastBudget || { rev:0, gov:0, up:0, interest:0, trade:0, bal:0 }, debtR = S.debt / Math.max(1, S.Y * 12) * 100;
+  return sec(B('Advisor', 'ที่ปรึกษาบอกว่า'), 'brain', advise()) +
+    '<div class="grid2 sec">' +
+      card(B('GDP per month', 'GDP ต่อเดือน'), fmt(S.Y), B('value produced', 'มูลค่าที่ผลิตได้')) +
+      card(B('Growth (yearly)', 'การเติบโต (ต่อปี)'), pct(S.g || 0), null, (S.g || 0) >= 0 ? '' : '') +
+      card(B('Inflation', 'เงินเฟ้อ'), pct0(S.infl), B('goal 1–3%', 'เป้าหมาย 1–3%')) +
+      card(B('Unemployment', 'คนว่างงาน'), pct0(S.u * 100), B('jobs ' + fmt(S.jobs) + ' · workers ' + fmt(S.labor), 'งาน ' + fmt(S.jobs) + ' · แรงงาน ' + fmt(S.labor))) +
+      card(B('Food balance', 'อาหารเหลือ/ขาด'), (S.foodBal >= 0 ? '+' : '') + fmt(S.foodBal), B('per month', 'ต่อเดือน')) +
+      card(B('Power balance', 'ไฟฟ้าเหลือ/ขาด'), (S.enBal >= 0 ? '+' : '') + fmt(S.enBal), B('productivity ×' + (S.prod || 1).toFixed(2), 'ผลิตภาพ ×' + (S.prod || 1).toFixed(2))) +
+    '</div>' +
+    sec(B('Growth and inflation', 'การเติบโตและเงินเฟ้อ'), 'gdp', '<canvas class="chart" data-chart="gi"></canvas><p class="small">' + esc(T(B('Green band = the 1–3% inflation target.', 'แถบเขียว = เป้าหมายเงินเฟ้อ 1–3%'))) + '</p>') +
+    sec(B('Jobs and interest rate', 'การจ้างงานและดอกเบี้ย'), 'job', '<canvas class="chart" data-chart="ur"></canvas>') +
+    sec(B('Government budget (last month)', 'งบประมาณรัฐ (เดือนล่าสุด)'), 'policy', '<div class="kv">' +
+      '<span>' + esc(T(B('Tax revenue', 'รายได้ภาษี'))) + '</span><b>+' + fmt(lb.rev) + '</b>' +
+      '<span>' + esc(T(B('Government spending', 'รายจ่ายรัฐ'))) + '</span><b>−' + fmt(lb.gov) + '</b>' +
+      '<span>' + esc(T(B('Building upkeep', 'ค่าดูแลอาคาร'))) + '</span><b>−' + fmt(lb.up) + '</b>' +
+      '<span>' + esc(T(B('Interest on debt', 'ดอกเบี้ยหนี้'))) + '</span><b>−' + fmt(lb.interest, 1) + '</b>' +
+      '<span>' + esc(T(B('Food trade', 'การค้าอาหาร'))) + '</span><b>' + (lb.trade >= 0 ? '+' : '') + fmt(lb.trade, 1) + '</b>' +
+      '<span><b style="font-family:inherit">' + esc(T(B('Balance', 'ดุลงบประมาณ'))) + '</b></span><b style="color:' + (lb.bal >= 0 ? '#8ff09a' : '#ff9a8a') + '">' + (lb.bal >= 0 ? '+' : '') + fmt(lb.bal, 1) + '</b>' +
+      '<span>' + esc(T(B('Public debt / GDP', 'หนี้สาธารณะ / GDP'))) + '</span><b>' + pct0(debtR, 0) + ' · ' + S.rating + '</b></div>') +
+    sec(B('People', 'ประชากร'), 'pop', '<canvas class="chart" data-chart="pop"></canvas>');
+};
+PANELS.policy = function(){
+  var hasCB = cnt('central') > 0, real = S.rate - S.infl, h = '';
+  h += sec(B('Interest rate (monetary policy)', 'ดอกเบี้ย (นโยบายการเงิน)'), 'rate', hasCB ?
+    '<div class="slider"><label>' + esc(T(B('Policy rate', 'ดอกเบี้ยนโยบาย'))) + '</label><output id="oRate">' + pct0(S.myRate, 2) + '</output><input type="range" min="0" max="15" step="0.25" value="' + S.myRate + '" data-in="rate"><div class="small">' + esc(T(B('Higher = cools spending and inflation (takes months). Lower = boosts growth.', 'ขึ้น = ชะลอการใช้จ่ายและเงินเฟ้อ (ได้ผลช้าหลายเดือน) · ลด = กระตุ้นเศรษฐกิจ'))) + '</div></div>' +
+    '<div class="kv"><span>' + esc(T(B('Real rate = rate − inflation', 'ดอกเบี้ยที่แท้จริง = ดอกเบี้ย − เงินเฟ้อ'))) + '</span><b style="color:' + (real >= 0 ? '#8ff09a' : '#ffcc4d') + '">' + pct(real, 2) + '</b></div>'
+    : lock(icoImg('rate', 'lg') + '<br>' + esc(T(B('An automatic rule sets the rate now: ', 'ตอนนี้ดอกเบี้ยถูกตั้งอัตโนมัติ: '))) + '<b>' + pct0(S.rate, 2) + '</b><br>' + esc(T(B('Research “Monetary policy”, then build a Central bank to set it yourself.', 'วิจัย “นโยบายการเงิน” แล้วสร้างธนาคารกลาง เพื่อตั้งดอกเบี้ยเอง')))));
+  h += sec(B('Taxes and spending (fiscal policy)', 'ภาษีและการใช้จ่าย (นโยบายการคลัง)'), 'policy', S.tech.fis ?
+    '<div class="slider"><label>' + esc(T(B('Tax rate', 'อัตราภาษี'))) + '</label><output id="oTax">' + S.tax + '%</output><input type="range" min="5" max="40" step="1" value="' + S.tax + '" data-in="tax"><div class="small">' + esc(T(B('More tax = more revenue, but less spending money and lower happiness.', 'ภาษีสูง = รัฐได้เงินมาก แต่คนมีเงินใช้น้อยลงและความสุขลด'))) + '</div></div>' +
+    '<div class="slider"><label>' + esc(T(B('Government spending', 'การใช้จ่ายภาครัฐ'))) + '</label><output id="oSpend">' + S.spend + '%</output><input type="range" min="5" max="40" step="1" value="' + S.spend + '" data-in="spend"><div class="small">' + esc(T(B('Spending above 10% (or tax below 20%) boosts demand now; a budget deficit adds debt.', 'ใช้จ่ายเกิน 10% (หรือภาษีต่ำกว่า 20%) = กระตุ้นเศรษฐกิจ ถ้างบขาดดุล หนี้จะเพิ่ม'))) + '</div></div>'
+    : lock(esc(T(B('Tax is fixed at 20% and spending at 10% of GDP. Research “Fiscal policy” to control them.', 'ภาษีถูกตั้งไว้ที่ 20% และรายจ่ายรัฐ 10% ของ GDP วิจัย “นโยบายการคลัง” เพื่อปรับเอง')))));
+  h += '<div class="hint">' + icoImg('book') + '<span>' + esc(T(B('Exam tip: monetary policy = central bank & interest rates; fiscal policy = government taxes & spending.', 'ทริคข้อสอบ: นโยบายการเงิน = ธนาคารกลางและดอกเบี้ย · นโยบายการคลัง = ภาษีและรายจ่ายของรัฐบาล'))) + '</span></div>';
+  return h;
+};
+function fundStats(){
+  var r = S.fund.rets || []; if(r.length < 3) return null;
+  var m = r.reduce(function(a, b){ return a + b; }, 0) / r.length, v = Math.sqrt(r.reduce(function(a, b){ return a + (b - m) * (b - m); }, 0) / (r.length - 1));
+  var peak = 1, cur = 1, dd = 0; r.forEach(function(x){ cur *= 1 + x; peak = Math.max(peak, cur); dd = Math.min(dd, cur / peak - 1); });
+  var rf = Math.max(0, S.rate - 0.25) / 100, annR = m * 12, annV = v * Math.sqrt(12);
+  return { ret:annR * 100, vol:annV * 100, dd:dd * 100, sharpe:annV > 0 ? (annR - rf) / annV : 0 };
+}
+PANELS.market = function(){
+  var ex = cnt('exchange') > 0, mk = S.mk, h = '<div class="grid2 sec">';
+  h += ex ? card(B('Stock index', 'ดัชนีหุ้น'), fmt(mk.idx, 1), B('P/E ' + mk.pe.toFixed(1) + ' · EPS ' + mk.eps.toFixed(2), 'P/E ' + mk.pe.toFixed(1) + ' · กำไรต่อหุ้น ' + mk.eps.toFixed(2))) : card(B('Stock index', 'ดัชนีหุ้น'), '—', B('needs a stock exchange', 'ต้องมีตลาดหลักทรัพย์'));
+  h += card(B('Gov. bond yield', 'ยีลด์พันธบัตรรัฐ'), pct0(S.bondY, 2), B('rating ' + S.rating, 'อันดับเครดิต ' + S.rating));
+  h += card(B('Deposit rate', 'ดอกเบี้ยเงินฝาก'), pct0(Math.max(0, S.rate - 0.25), 2), B('safest, lowest return', 'ปลอดภัยสุด ผลตอบแทนต่ำสุด'));
+  h += card(B('Gold price', 'ราคาทองคำ'), fmt(mk.gold, 1), B('likes fear & inflation', 'ขึ้นเมื่อคนกลัวหรือเงินเฟ้อสูง'));
+  h += '</div>';
+  if(ex) h += sec(B('Stock index', 'ดัชนีหุ้น'), 'market', '<canvas class="chart" data-chart="idx"></canvas><p class="small">' + esc(T(B('Price = earnings × P/E. When bond yields rise, the fair P/E falls — so shares can drop even when profits grow.', 'ราคา = กำไร × P/E เมื่อยีลด์พันธบัตรขึ้น P/E ที่เหมาะสมจะลดลง หุ้นจึงลงได้แม้กำไรโต'))) + '</p>');
+  h += sec(B('Bond yield vs policy rate', 'ยีลด์พันธบัตรกับดอกเบี้ยนโยบาย'), 'book', '<canvas class="chart" data-chart="by"></canvas><p class="small">' + esc(T(B('Yield up → bond price down (duration ≈ 7: +1% yield ≈ −7% price).', 'ยีลด์ขึ้น → ราคาพันธบัตรลง (Duration ≈ 7: ยีลด์ +1% ราคา ≈ −7%)'))) + '</p>');
+  if(!S.tech.fund){ h += sec(B('National fund', 'กองทุนแห่งชาติ'), 'coin', lock(esc(T(B('Research “Mutual funds” to open a national fund and invest the treasury across assets.', 'วิจัย “กองทุนรวม” เพื่อเปิดกองทุนแห่งชาติ แล้วนำเงินคลังไปลงทุนกระจายในสินทรัพย์ต่างๆ'))))); return h; }
+  var f = S.fund, w = f.w, tw = (w.dep + w.bond + w.stock + w.gold) || 1, gain = f.inv > 0 ? (f.v / f.inv - 1) * 100 : 0;
+  h += sec(B('National fund', 'กองทุนแห่งชาติ'), 'coin', '<div class="grid2" style="margin-bottom:10px">' + card(B('Value', 'มูลค่า'), fmt(f.v), B('invested ' + fmt(f.inv), 'เงินลงทุน ' + fmt(f.inv))) + card(B('Total return', 'ผลตอบแทนรวม'), pct(gain), B('since you started', 'ตั้งแต่เริ่มลงทุน')) + '</div>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"><button class="pxbtn green sm" data-act="fundIn" data-v="100">+100</button><button class="pxbtn green sm" data-act="fundIn" data-v="500">+500</button><button class="pxbtn dark sm" data-act="fundOut" data-v="100">−100</button><button class="pxbtn dark sm" data-act="fundOut" data-v="all">' + esc(T(B('Withdraw all', 'ถอนทั้งหมด'))) + '</button></div>' +
+    [['dep', B('Deposits', 'เงินฝาก'), true], ['bond', B('Bonds', 'พันธบัตร'), !!S.tech.bond], ['stock', B('Stocks', 'หุ้น'), ex], ['gold', B('Gold', 'ทองคำ'), true]].map(function(a){
+      return '<div class="alloc"><span>' + esc(T(a[1])) + (a[2] ? '' : ' 🔒') + '</span><input type="range" min="0" max="100" step="5" value="' + w[a[0]] + '" data-in="w" data-k="' + a[0] + '"' + (a[2] ? '' : ' disabled') + '><b>' + Math.round(w[a[0]] / tw * 100) + '%</b></div>'; }).join('') +
+    '<p class="small">' + esc(T(B('Locked assets earn the deposit rate until unlocked. Mixing assets that move differently lowers risk (diversification).', 'สินทรัพย์ที่ยังล็อกจะได้ดอกเบี้ยเงินฝากแทน การผสมสินทรัพย์ที่ขึ้นลงต่างกันช่วยลดความเสี่ยง (กระจายการลงทุน)'))) + '</p>' +
+    '<canvas class="chart" data-chart="fund"></canvas>');
+  if(S.tech.risk){ var st = fundStats(); h += sec(B('Risk check', 'ตรวจความเสี่ยง'), 'chart', st ? '<div class="kv"><span>' + esc(T(B('Return per year', 'ผลตอบแทนต่อปี'))) + '</span><b>' + pct(st.ret) + '</b><span>' + esc(T(B('Volatility (SD) per year', 'ความผันผวน (SD) ต่อปี'))) + '</span><b>' + pct0(st.vol) + '</b><span>' + esc(T(B('Worst drop (max drawdown)', 'ร่วงหนักสุด (Max drawdown)'))) + '</span><b>' + pct(st.dd) + '</b><span>Sharpe ratio</span><b>' + st.sharpe.toFixed(2) + '</b></div><p class="small">' + esc(T(B('Sharpe = (return − deposit rate) ÷ volatility. Above 0.5 is decent; above 1 is very good.', 'Sharpe = (ผลตอบแทน − ดอกเบี้ยเงินฝาก) ÷ ความผันผวน เกิน 0.5 ถือว่าดี เกิน 1 ดีมาก'))) + '</p>' : '<p class="small">' + esc(T(B('Needs a few months of fund history.', 'ต้องมีประวัติกองทุนสักไม่กี่เดือน'))) + '</p>'); }
+  return h;
+};
+var quizSec = 0, quizCur = null;
+PANELS.council = function(){
+  var z = S.quiz, rd = readiness(), h = '';
+  h += '<div class="topics">' + [[0, B('All parts', 'ทุกส่วน')], [1, SECN[1]], [2, SECN[2]], [3, SECN[3]]].map(function(t){ return '<button class="topic' + (quizSec === t[0] ? ' on' : '') + '" data-act="qsec" data-k="' + t[0] + '">' + esc(T(t[1])) + '</button>'; }).join('') + '</div>';
+  h += '<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><small>' + esc(T(B('Exam readiness (weighted 30/20/50 like the real test)', 'ความพร้อมสอบ (ถ่วงน้ำหนัก 30/20/50 แบบข้อสอบจริง)'))) + '</small><b class="pxt" style="color:var(--gold)">' + (rd == null ? '—' : Math.round(rd) + '%') + '</b></div><div class="meter"><i style="width:' + (rd || 0) + '%"></i></div>' +
+    '<div class="kv" style="margin-top:8px">' + [1, 2, 3].map(function(s){ var a = z.sec[s][0], o = z.sec[s][1]; return '<span>' + esc(T(SECN[s])) + '</span><b>' + o + '/' + a + (a ? ' · ' + Math.round(o / a * 100) + '%' : '') + '</b>'; }).join('') +
+    '<span>' + esc(T(B('Streak (best)', 'ตอบถูกติดกัน (สูงสุด)'))) + '</span><b>' + z.streak + ' (' + z.best + ')</b></div><p class="small" style="margin:6px 0 0">' + esc(T(B('Pass mark in the real exam: 70% overall. Every 5 in a row gives a bonus ★.', 'เกณฑ์ผ่านข้อสอบจริง: 70% ขึ้นไป · ตอบถูกติดกันทุก 5 ข้อได้ ★ โบนัส'))) + '</p></div>';
+  if(!QB_ready) return h + '<p class="p">' + esc(T(B('Loading questions…', 'กำลังโหลดคำถาม…'))) + '</p>';
+  if(!quizCur) quizCur = { q:pickQuestion(quizSec), picked:null, res:null };
+  var q = quizCur.q, done = quizCur.picked != null;
+  h += '<div class="q-meta"><span class="chip">' + esc(T(SECN[q.s] || SECN[1])) + '</span>' + (q.src ? '<span class="chip">IC_' + q.src + '</span>' : '') + '<span class="chip">' + icoImg('star') + ' +1</span></div>';
+  h += '<p class="q-text">' + esc(q.q) + '</p><div class="q-ch">' + q.c.map(function(c, i){ var cls = done ? (i === q.a ? ' ok' : i === quizCur.picked ? ' bad' : ' dim') : ''; return '<button class="q-c' + cls + '" data-act="qans" data-i="' + i + '"' + (done ? ' disabled' : '') + '>' + 'ABCD'[i] + '. ' + esc(c) + '</button>'; }).join('') + '</div>';
+  if(done){ var r = quizCur.res;
+    h += '<div class="q-exp"><b style="color:' + (r.ok ? '#8ff09a' : '#ff9a8a') + '">' + esc(T(r.ok ? { en:'Correct! +' + r.stars + ' ★ +' + r.coins + ' coins', th:'ถูกต้อง! +' + r.stars + ' ★ +' + r.coins + ' เหรียญ' } : B('Not quite — the right answer is ', 'ยังไม่ถูก — คำตอบที่ถูกคือ ') )) + (r.ok ? '' : 'ABCD'[q.a]) + '</b><br>' + esc(q.e || '') + '</div>' +
+      '<div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="pxbtn green" data-act="qnext">' + esc(T(B('Next question', 'ข้อถัดไป'))) + ' →</button></div>'; }
+  return h;
+};
+PANELS.research = function(){
+  return '<p class="small" style="margin-top:0">' + esc(T(B('Each research costs ★ and needs enough correct answers in that exam part — so you learn the topic before you use it.', 'การวิจัยแต่ละอย่างใช้ ★ และต้องตอบถูกในส่วนของข้อสอบนั้นให้พอ — ได้เรียนเรื่องนั้นก่อนนำไปใช้'))) + '</p>' +
+    '<div class="chip" style="margin-bottom:10px">' + icoImg('star') + ' ' + S.stars + ' ★</div>' +
+    TECH.map(function(t){
+      var st = techState(t), have = S.quiz.sec[t.s][1], cv = iconCanvas(t.ic).toDataURL();
+      var need = { en:'★ ' + t.cost + ' · ' + have + '/' + t.need + ' correct in ' + SECN[t.s].en + (t.pre ? ' · after “' + techOf(t.pre).n.en + '”' : ''), th:'★ ' + t.cost + ' · ตอบถูก ' + have + '/' + t.need + ' ข้อใน' + SECN[t.s].th + (t.pre ? ' · ต้องวิจัย “' + techOf(t.pre).n.th + '” ก่อน' : '') };
+      var btn = st === 'done' ? '<span class="chip" style="color:#8ff09a">✓</span>' : st === 'ready' ? '<button class="pxbtn green sm" data-act="research" data-k="' + t.k + '">' + esc(T(B('Research', 'วิจัย'))) + '</button>' :
+        st === 'need' ? '<button class="pxbtn blue sm" data-act="qgo" data-k="' + t.s + '">' + esc(T(B('Practise', 'ไปฝึก'))) + '</button>' : '<span class="chip">' + esc(T(st === 'pre' ? B('Locked', 'ล็อก') : B('Need ★', 'ดาวไม่พอ'))) + '</span>';
+      return '<div class="tech' + (st === 'done' ? ' done' : st === 'pre' ? ' na' : '') + '"><div class="ti"><img src="' + cv + '" style="width:32px;height:32px;image-rendering:pixelated" alt=""></div><div><b>' + esc(T(t.n)) + '</b><p>' + esc(T(t.d)) + '</p><p style="color:var(--gold)">' + esc(T(need)) + '</p></div>' + btn + '</div>';
+    }).join('');
+};
+PANELS.codex = function(){
+  var keys = Object.keys(CODEX), got = keys.filter(function(k){ return S.codex[k]; });
+  return '<p class="small" style="margin-top:0">' + esc(T({ en:'Pages unlock through news events and research. ' + got.length + ' / ' + keys.length + ' found.', th:'หน้าความรู้จะปลดล็อกจากเหตุการณ์ข่าวและการวิจัย · พบแล้ว ' + got.length + ' / ' + keys.length + ' หน้า' })) + '</p>' +
+    keys.map(function(k){ return S.codex[k] ? '<div class="cx"><b>' + esc(T(CODEX[k]).split(' — ')[0].split(' = ')[0]) + '</b><p>' + esc(T(CODEX[k])) + '</p></div>' : '<div class="cx lock"><b>???</b><p class="small">' + esc(T(B('Not discovered yet.', 'ยังไม่ค้นพบ'))) + '</p></div>'; }).join('');
+};
+PANELS.goals = function(){
+  var n = GOALS.filter(function(g){ return S.goals[g.k] != null; }).length;
+  return '<p class="small" style="margin-top:0">' + n + ' / ' + GOALS.length + '</p>' + GOALS.map(function(g){ var d = S.goals[g.k] != null;
+    return '<div class="goal' + (d ? ' done' : '') + '">' + icoImg(d ? 'trophy' : 'star') + '<span>' + esc(T(g.n)) + '</span><i>' + (d ? '✓' : '+' + g.r) + '</i></div>'; }).join('');
+};
+function slotRow(n, inGame){
+  var sv = readSlot(n), cur = inGame && n === SLOT;
+  return '<div class="slot"><div><b>' + esc(T(B('Slot ', 'ช่อง '))) + n + (cur ? ' · ' + esc(T(B('playing', 'กำลังเล่น'))) : '') + '</b><small>' + (sv ? esc(sv.name) + ' · ' + esc(dateStr(sv.month || 0)) + ' · ' + T(B('people ', 'ประชากร ')) + fmt(sv.pop) + ' · ★' + (sv.quiz ? sv.quiz.ok : 0) + ' ' + T(B('correct', 'ข้อถูก')) : esc(T(B('Empty', 'ว่าง')))) + '</small></div><div class="acts">' +
+    (inGame ? '<button class="pxbtn green sm" data-act="saveTo" data-n="' + n + '">' + esc(T(B('Save', 'เซฟ'))) + '</button>' : '') +
+    (sv && !cur ? '<button class="pxbtn blue sm" data-act="loadSlot" data-n="' + n + '">' + esc(T(B('Load', 'โหลด'))) + '</button>' : '') +
+    (!inGame && !sv ? '<button class="pxbtn sm" data-act="newIn" data-n="' + n + '">' + esc(T(B('New', 'ใหม่'))) + '</button>' : '') +
+    (sv && !cur ? '<button class="pxbtn red sm" data-act="delSlot" data-n="' + n + '">✕</button>' : '') + '</div></div>';
+}
+PANELS.menu = function(){
+  return sec(B('Save slots', 'ช่องเซฟ'), 'disk', '<p class="small" style="margin-top:0">' + esc(T(B('The game saves itself every 3 months and when you leave. Saves live in this browser — export a file to move them to another device.', 'เกมเซฟเองทุก 3 เดือนและตอนออกจากหน้า เซฟอยู่ในเบราว์เซอร์นี้ ถ้าจะย้ายไปเครื่องอื่นให้ส่งออกเป็นไฟล์'))) + '</p>' + [1, 2, 3].map(function(n){ return slotRow(n, true); }).join('') +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="pxbtn blue sm" data-act="export">' + esc(T(B('Export save file', 'ส่งออกไฟล์เซฟ'))) + '</button><button class="pxbtn dark sm" data-act="import">' + esc(T(B('Import save file', 'นำเข้าไฟล์เซฟ'))) + '</button></div>') +
+    sec(B('Island', 'เกาะ'), 'flag', '<div class="fld"><label>' + esc(T(B('Island name', 'ชื่อเกาะ'))) + '</label><input id="rename" maxlength="24" value="' + esc(S.name) + '"></div><button class="pxbtn sm" data-act="rename">' + esc(T(B('Rename', 'เปลี่ยนชื่อ'))) + '</button>') +
+    sec(B('More', 'อื่นๆ'), 'star', '<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="pxbtn dark sm" data-act="howto">' + esc(T(TX.howTo)) + '</button><button class="pxbtn dark sm" data-act="lang">EN / TH</button><button class="pxbtn dark sm" data-act="tutReset">' + esc(T(B('Show tips again', 'แสดงคำแนะนำอีกครั้ง'))) + '</button><button class="pxbtn dark sm" data-act="toTitle">' + esc(T(B('Title screen', 'หน้าแรกของเกม'))) + '</button><a class="pxbtn dark sm" href="IC_License.html">' + esc(T(TX.icLink)) + '</a><a class="pxbtn dark sm" href="SPACEZ_TERMINAL.html">' + esc(T(TX.back)) + '</a></div>');
+};
+
+/* ======================= modals ======================= */
+function modal(html){ $('mBody').innerHTML = html; $('modal').classList.remove('hidden'); modalOpen = true; }
+function closeModal(){ $('modal').classList.add('hidden'); modalOpen = false; }
+var curEvent = null;
+function showEvent(ev){
+  curEvent = ev;
+  modal('<img class="ev-art" style="image-rendering:pixelated" src="' + iconCanvas(ev.art).toDataURL() + '" alt=""><span class="tag">' + esc(T(B('NEWS', 'ข่าวด่วน'))) + ' · ' + esc(dateStr(S.month)) + '</span><h2>' + esc(T(ev.n)) + '</h2><p class="p">' + esc(T(ev.t)) + '</p><p class="small">' + esc(T(B('What will you do?', 'คุณจะทำอย่างไร?'))) + '</p><div class="q-ch">' +
+    ev.ch.map(function(c, i){ return '<button class="q-c" data-act="evc" data-i="' + i + '">' + esc(T(c.n)) + '</button>'; }).join('') + '</div>');
+}
+function eventChoice(i){
+  var ev = curEvent, c = ev.ch[i]; c.f();
+  var cx = (ev.cx || []).map(function(k){ return '<div class="cx"><p>' + esc(T(CODEX[k])) + '</p></div>'; }).join('');
+  modal('<span class="tag">' + esc(T(B('LESSON', 'บทเรียน'))) + '</span><h2>' + esc(T(c.n)) + '</h2><p class="p">' + esc(T(c.w)) + '</p>' + (cx ? '<p class="small">' + esc(T(B('New pages in your knowledge book:', 'หน้าใหม่ในสมุดความรู้:'))) + '</p>' + cx : '') + '<div class="acts"><button class="pxbtn green" data-act="closeModal">OK</button></div>');
+  hud(); if(panelKey) renderPanel();
+}
+function howToModal(){
+  modal('<span class="tag">SPACEZ ISLAND</span><h2>' + esc(T(TX.howTo)) + '</h2>' + [
+    B('<b>1. Build.</b> Pick a building in the bottom bar and tap land. Homes bring people, farms bring food, workplaces bring jobs and GDP.', '<b>1. สร้าง</b> เลือกสิ่งก่อสร้างที่แถบด้านล่างแล้วแตะพื้นดิน บ้านให้คนอยู่ ฟาร์มให้อาหาร ที่ทำงานให้งานและ GDP'),
+    B('<b>2. Learn.</b> The Council asks real IC Plain practice questions. Right answers give ★ knowledge stars and coins.', '<b>2. เรียน</b> สภาที่ปรึกษาจะถามข้อสอบฝึก IC Plain จริง ตอบถูกได้ดาวความรู้ ★ และเหรียญ'),
+    B('<b>3. Unlock.</b> Spend ★ in Research to open banks, the central bank, bonds, the stock exchange and the national fund.', '<b>3. ปลดล็อก</b> ใช้ ★ ในหน้าวิจัย เพื่อเปิดธนาคาร ธนาคารกลาง พันธบัตร ตลาดหลักทรัพย์ และกองทุนแห่งชาติ'),
+    B('<b>4. Steer the economy.</b> Keep inflation 1–3%, unemployment low and people happy. Use interest rates, taxes and spending.', '<b>4. บริหารเศรษฐกิจ</b> คุมเงินเฟ้อ 1–3% คนว่างงานต่ำ และให้คนมีความสุข ด้วยดอกเบี้ย ภาษี และการใช้จ่ายรัฐ'),
+    B('<b>5. Survive the news.</b> Oil shocks, recessions, bank runs… each choice teaches a lesson and adds a page to your knowledge book.', '<b>5. รับมือข่าว</b> น้ำมันแพง เศรษฐกิจถดถอย แห่ถอนเงิน… ทุกการตัดสินใจมีบทเรียนและเพิ่มหน้าในสมุดความรู้'),
+    B('<b>Saving:</b> 3 slots in this browser + export/import a save file. Speed buttons top-right; Space = pause.', '<b>การเซฟ:</b> 3 ช่องในเบราว์เซอร์นี้ + ส่งออก/นำเข้าไฟล์เซฟ ปุ่มความเร็วอยู่มุมขวาบน กด Space = หยุดชั่วคราว')
+  ].map(function(x){ return '<p class="p">' + T(x) + '</p>'; }).join('') + '<div class="acts"><button class="pxbtn green" data-act="closeModal">OK</button></div>');
+}
+var nsSeed = 1, nsSlot = 1;
+function newGameModal(slot){
+  nsSeed = 1 + Math.floor(Math.random() * 99999);
+  if(!slot){ slot = 1; for(var n = 1; n <= 3; n++) if(!readSlot(n)){ slot = n; break; } }
+  nsSlot = slot; renderNewModal(T(B('My Island', 'เกาะของฉัน')));
+}
+function renderNewModal(name){
+  var sv = readSlot(nsSlot);
+  modal('<span class="tag">' + esc(T(TX.newGame)) + '</span><h2>' + esc(T(B('Found your nation', 'ก่อตั้งประเทศของคุณ'))) + '</h2>' +
+    '<div class="fld"><label>' + esc(T(B('Island name', 'ชื่อเกาะ'))) + '</label><input id="nName" maxlength="24" value="' + esc(name) + '"></div>' +
+    '<div class="fld"><label>' + esc(T(B('Save slot', 'ช่องเซฟ'))) + '</label><div style="display:flex;gap:6px">' + [1, 2, 3].map(function(n){ var s = readSlot(n); return '<button class="topic' + (n === nsSlot ? ' on' : '') + '" data-act="nsSlot" data-n="' + n + '">' + n + ' · ' + esc(s ? s.name : T(B('empty', 'ว่าง'))) + '</button>'; }).join('') + '</div>' +
+    (sv ? '<div class="hint warn">' + esc(T(B('This slot has a save — starting here replaces it.', 'ช่องนี้มีเซฟอยู่ เริ่มใหม่ที่นี่จะเขียนทับ'))) + '</div>' : '') + '</div>' +
+    '<div class="fld"><label>' + esc(T(B('Map', 'แผนที่'))) + '</label><div style="display:flex;gap:8px;align-items:center"><canvas id="nPrev" width="112" height="72" style="width:224px;height:144px;border:3px solid var(--line);border-radius:6px"></canvas><button class="pxbtn dark sm" data-act="reroll">' + esc(T(B('Another island', 'สุ่มเกาะใหม่'))) + '</button></div></div>' +
+    '<div class="acts"><button class="pxbtn dark" data-act="closeModal">' + esc(T(B('Cancel', 'ยกเลิก'))) + '</button><button class="pxbtn green" data-act="startNew">' + esc(T(B('Start', 'เริ่มเลย'))) + '</button></div>');
+  previewMap();
+}
+function previewMap(){
+  var keep = WORLD; genWorld(nsSeed); var cv = $('nPrev'), c = cv.getContext('2d'), img = c.createImageData(MW, MH);
+  for(var i = 0; i < MW * MH; i++){ var p = PAL[WORLD.type[i]][0], o = i * 4; img.data[o] = parseInt(p.slice(1, 3), 16); img.data[o + 1] = parseInt(p.slice(3, 5), 16); img.data[o + 2] = parseInt(p.slice(5, 7), 16); img.data[o + 3] = 255; if(WORLD.tree[i]){ img.data[o] = 47; img.data[o + 1] = 125; img.data[o + 2] = 52; } }
+  c.putImageData(img, 0, 0); WORLD = keep;
+}
+function startNew(){
+  var name = ($('nName').value || '').trim() || T(B('My Island', 'เกาะของฉัน'));
+  closeModal(); SLOT = nsSlot; S = blankState(name, nsSeed); genWorld(nsSeed); renderTerrain(); rebuildOcc(); starterTown(); rebuildStatic();
+  S.treasury = 900; tick0(); autosave(); quizCur = null; showGame(); toast(B('Your island is founded!', 'ก่อตั้งเกาะสำเร็จ!'), 'gold');
+}
+function tick0(){ /* fill the numbers once so the HUD is not blank on month 0 */ var m = S.month, t = S.treasury; tick(); S.month = m; S.treasury = t; S.hist = blankState('', 1).hist; S.Ylast = [S.Y]; S.g = 0; }
+function slotsModal(){
+  modal('<span class="tag">' + esc(T(TX.loadGame)) + '</span><h2>' + esc(T(B('Save slots', 'ช่องเซฟ'))) + '</h2>' + [1, 2, 3].map(function(n){ return slotRow(n, false); }).join('') +
+    '<div class="acts"><button class="pxbtn dark" data-act="import">' + esc(T(B('Import save file', 'นำเข้าไฟล์เซฟ'))) + '</button><button class="pxbtn" data-act="closeModal">' + esc(T(B('Close', 'ปิด'))) + '</button></div>');
+}
+function loadSlot(n){
+  var sv = readSlot(n); if(!sv){ toast(B('That slot is empty', 'ช่องนี้ว่าง'), 'bad'); return; }
+  autosaveIfGame(); closeModal(); closePanel(); loadState(sv, n); quizCur = null; try { localStorage.setItem('spz.island.last', String(n)); } catch(e){}
+  showGame(); toast({ en:'Loaded ' + S.name, th:'โหลด ' + S.name + ' แล้ว' }, 'good');
+}
+function exportSave(){
+  autosave(); var blob = new Blob([serial()], { type:'application/json' }), a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'spacez-island-' + (S.name || 'save').replace(/[^\w฀-๿-]+/g, '_') + '-' + dateStr(S.month).replace(/\s+/g, '') + '.json';
+  document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  toast(B('Save file downloaded', 'ดาวน์โหลดไฟล์เซฟแล้ว'), 'good');
+}
+var pendingImport = null;
+function importFile(file){
+  var r = new FileReader();
+  r.onload = function(){ try { var o = JSON.parse(r.result); if(!o || !o.seed || !Array.isArray(o.bld)) throw 0; pendingImport = o;
+      modal('<span class="tag">' + esc(T(B('Import', 'นำเข้า'))) + '</span><h2>' + esc(o.name || 'Island') + '</h2><p class="p">' + esc(dateStr(o.month || 0)) + ' · ' + T(B('people ', 'ประชากร ')) + fmt(o.pop) + '</p><p class="small">' + esc(T(B('Put it in which slot?', 'จะใส่ไว้ช่องไหน?'))) + '</p><div class="acts" style="justify-content:flex-start">' + [1, 2, 3].map(function(n){ var s = readSlot(n); return '<button class="pxbtn blue sm" data-act="impTo" data-n="' + n + '">' + n + ' · ' + esc(s ? s.name : T(B('empty', 'ว่าง'))) + '</button>'; }).join('') + '<button class="pxbtn dark sm" data-act="closeModal">' + esc(T(B('Cancel', 'ยกเลิก'))) + '</button></div>');
+    } catch(e){ toast(B('That file is not a SPACEZ ISLAND save', 'ไฟล์นี้ไม่ใช่ไฟล์เซฟของ SPACEZ ISLAND'), 'bad'); } };
+  r.readAsText(file);
+}
+
+/* ======================= clicks (one delegated handler) ======================= */
+var delArm = 0;
+document.addEventListener('click', function(e){
+  var el = e.target.closest('[data-act]'); if(!el) return;
+  var a = el.dataset.act, k = el.dataset.k, n = +el.dataset.n;
+  switch(a){
+    case 'lang': LANG = LANG === 'th' ? 'en' : 'th'; try { localStorage.setItem('spz.island.lang', LANG); } catch(_){} applyLang(); if(modalOpen && $('nName')) renderNewModal($('nName').value); break;
+    case 'continue': loadSlot(+el.dataset.slot); break;
+    case 'new': newGameModal(); break;
+    case 'newIn': newGameModal(n); break;
+    case 'slots': slotsModal(); break;
+    case 'howto': howToModal(); break;
+    case 'closeModal': closeModal(); break;
+    case 'nsSlot': nsSlot = n; renderNewModal($('nName').value); break;
+    case 'reroll': nsSeed = 1 + Math.floor(Math.random() * 99999); previewMap(); break;
+    case 'startNew': startNew(); break;
+    case 'loadSlot': loadSlot(n); break;
+    case 'delSlot': if(delArm !== n){ delArm = n; el.textContent = T(B('Sure?', 'แน่ใจ?')); setTimeout(function(){ delArm = 0; }, 3000); break; }
+      try { localStorage.removeItem(slotKey(n)); if(localStorage.getItem('spz.island.last') === String(n)) localStorage.removeItem('spz.island.last'); } catch(_){}
+      delArm = 0; if(mode === 'game') renderPanel(); else slotsModal(); refreshTitle(); break;
+    case 'saveTo': SLOT = n; autosave(); toast({ en:'Saved to slot ' + n, th:'เซฟลงช่อง ' + n + ' แล้ว' }, 'good'); renderPanel(); break;
+    case 'export': exportSave(); break;
+    case 'import': $('fileIn').value = ''; $('fileIn').click(); break;
+    case 'impTo': if(pendingImport){ try { localStorage.setItem(slotKey(n), JSON.stringify(pendingImport)); } catch(_){} pendingImport = null; loadSlot(n); } break;
+    case 'rename': var nm = ($('rename').value || '').trim(); if(nm){ S.name = nm; $('hName').textContent = nm; autosave(); toast(B('Renamed', 'เปลี่ยนชื่อแล้ว'), 'good'); } break;
+    case 'toTitle': showTitle(); break;
+    case 'tutNext': S.tut++; showHelp(); break;
+    case 'tutSkip': S.tut = 99; showHelp(); break;
+    case 'tutReset': S.tut = 0; showHelp(); closePanel(); break;
+    case 'panel': openPanel(k); break;
+    case 'closePanel': closePanel(); break;
+    case 'cat': barCat = k; if(k !== 'tools' && (tool === 'inspect' || tool === 'demolish')) tool = null; buildBar(); break;
+    case 'tool': pickTool(k); break;
+    case 'demo': demolish(+el.dataset.i); hideInspect(); hud(); toast(B('Demolished', 'รื้อถอนแล้ว')); break;
+    case 'hideInspect': hideInspect(); break;
+    case 'qsec': quizSec = +k; quizCur = null; renderPanel(); break;
+    case 'qgo': quizSec = +k; quizCur = null; panelKey = null; openPanel('council'); break;
+    case 'qans': if(quizCur && quizCur.picked == null){ quizCur.picked = +el.dataset.i; quizCur.res = answerQuestion(quizCur.q, quizCur.picked); renderPanel(); hud(); checkGoals(); tutCheck(); } break;
+    case 'qnext': quizCur = null; renderPanel(); break;
+    case 'research': if(research(k)){ var t = techOf(k); toast({ en:'Research done: ' + t.n.en, th:'วิจัยสำเร็จ: ' + t.n.th }, 'gold'); buildBar(); renderPanel(); hud(); checkGoals(); tutCheck(); } break;
+    case 'fundIn': var v = Math.min(+el.dataset.v, Math.floor(S.treasury)); if(v <= 0){ toast(B('Not enough money', 'เงินไม่พอ'), 'bad'); break; } S.treasury -= v; S.fund.v += v; S.fund.inv += v; S.fund.on = true; renderPanel(); hud(); break;
+    case 'fundOut': var o = el.dataset.v === 'all' ? S.fund.v : Math.min(100, S.fund.v); if(o <= 0) break; var share = S.fund.v > 0 ? o / S.fund.v : 0; S.fund.inv -= S.fund.inv * share; S.fund.v -= o; S.treasury += o; renderPanel(); hud(); break;
+    case 'evc': eventChoice(+el.dataset.i); break;
+  }
+});
+document.addEventListener('input', function(e){
+  var el = e.target; if(!el.dataset || !el.dataset.in || !S) return; var v = +el.value;
+  if(el.dataset.in === 'rate'){ S.myRate = v; $('oRate').textContent = pct0(v, 2); }
+  else if(el.dataset.in === 'tax'){ S.tax = v; $('oTax').textContent = v + '%'; }
+  else if(el.dataset.in === 'spend'){ S.spend = v; $('oSpend').textContent = v + '%'; }
+  else if(el.dataset.in === 'w'){ S.fund.w[el.dataset.k] = v; var w = S.fund.w, tw = (w.dep + w.bond + w.stock + w.gold) || 1; document.querySelectorAll('.alloc').forEach(function(row){ var inp = row.querySelector('input'); row.querySelector('b').textContent = Math.round(w[inp.dataset.k] / tw * 100) + '%'; }); }
+});
+document.addEventListener('change', function(e){ if(e.target.dataset && e.target.dataset.in) liveRefresh(); });
+$('fileIn').addEventListener('change', function(){ if(this.files && this.files[0]) importFile(this.files[0]); });
+document.querySelectorAll('.spd').forEach(function(b){ b.addEventListener('click', function(){ setSpeed(+b.dataset.spd); }); });
+$('panel').addEventListener('pointerdown', function(){ panelBusy = true; });
+window.addEventListener('pointerup', function(){ panelBusy = false; });
+$('modal').addEventListener('click', function(e){ if(e.target === $('modal') && !curEventOpen()) closeModal(); });
+function curEventOpen(){ return !!$('mBody').querySelector('[data-act="evc"]'); }
+document.addEventListener('keydown', function(e){
+  if(e.target.tagName === 'INPUT') return;
+  if(e.key === 'Escape'){ if(modalOpen && !curEventOpen()) closeModal(); else if(tool){ tool = null; buildBar(); hideInspect(); } else closePanel(); }
+  if(mode !== 'game') return;
+  if(e.key === ' '){ e.preventDefault(); setSpeed(speed ? 0 : 1); }
+  if(e.key === '1') setSpeed(1); if(e.key === '2') setSpeed(2); if(e.key === '3' || e.key === '4') setSpeed(4);
+});
+
+/* ======================= map input: drag, zoom, pinch, tap ======================= */
+var ptrs = new Map(), drag = null, pinch = null;
+function setHover(sx, sy){
+  var w = screenToWorld(sx, sy);
+  hover = { wx:w[0], wy:w[1], mx:Math.floor(w[0] / TS), my:Math.floor(w[1] / TS), tx:Math.floor(w[0] / TS - 0.5), ty:Math.floor(w[1] / TS - 0.5) };
+}
+function initInput(){
+  CV.addEventListener('pointerdown', function(e){
+    CV.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+    if(ptrs.size === 1){ drag = { sx:e.clientX, sy:e.clientY, cx:cam.x, cy:cam.y, moved:false }; }
+    if(ptrs.size === 2){ var p = Array.from(ptrs.values()); pinch = { d:Math.hypot(p[0][0] - p[1][0], p[0][1] - p[1][1]), z:cam.z }; drag = null; }
+  });
+  CV.addEventListener('pointermove', function(e){
+    if(ptrs.has(e.pointerId)) ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+    if(pinch && ptrs.size === 2){ var p = Array.from(ptrs.values()), d = Math.hypot(p[0][0] - p[1][0], p[0][1] - p[1][1]); zoomAt(pinch.z * d / Math.max(20, pinch.d), (p[0][0] + p[1][0]) / 2, (p[0][1] + p[1][1]) / 2); return; }
+    if(drag){ var dx = e.clientX - drag.sx, dy = e.clientY - drag.sy; if(Math.abs(dx) + Math.abs(dy) > 6) drag.moved = true;
+      if(drag.moved){ cam.x = drag.cx - dx / cam.z; cam.y = drag.cy - dy / cam.z; clampCam(); } }
+    if(e.pointerType === 'mouse' || !drag) setHover(e.clientX, e.clientY);
+  });
+  function up(e){
+    var was = drag; ptrs.delete(e.pointerId);
+    if(pinch && ptrs.size < 2){ pinch = null; cam.z = clamp(Math.round(cam.z), 1, 8); clampCam(); drag = null; return; }
+    drag = null;
+    if(was && !was.moved && e.type === 'pointerup') mapTap(e.clientX, e.clientY);
+  }
+  CV.addEventListener('pointerup', up); CV.addEventListener('pointercancel', up);
+  CV.addEventListener('pointerleave', function(e){ if(e.pointerType === 'mouse') hover = null; });
+  CV.addEventListener('wheel', function(e){ e.preventDefault(); zoomAt(cam.z + (e.deltaY < 0 ? 1 : -1), e.clientX, e.clientY); }, { passive:false });
+}
+function mapTap(sx, sy){
+  if(mode !== 'game') return;
+  setHover(sx, sy); var h = hover;
+  if(tool && BLD[tool]){
+    var r = canPlace(tool, h.tx, h.ty);
+    if(!r.ok){ if(r.why) toast(r.why, 'bad'); return; }
+    place(tool, h.tx, h.ty);
+    if(tool === 'central') S.myRate = Math.round(S.rate * 4) / 4;
+    FX.walkers.length = Math.max(0, FX.walkers.length - 3);
+    puff(h.tx, h.ty); hud(); checkGoals(); tutCheck();
+    if(BLD[tool].unique){ tool = null; buildBar(); hideInspect(); }
+    return;
+  }
+  var bi = OCC[h.my * MW + h.mx];
+  if(tool === 'demolish'){ if(bi){ demolish(bi - 1); puff(h.tx, h.ty); hud(); toast(B('Demolished', 'รื้อถอนแล้ว')); } return; }
+  if(bi) inspectBuilding(bi - 1, [sx, sy]); else hideInspect();
+}
+function puff(tx, ty){ for(var i = 0; i < 14; i++) FX.smoke.push({ x:tx * TS + 2 + Math.random() * 12, y:ty * TS + 8 + Math.random() * 8, l:40 + Math.random() * 30, m:70 }); }
+
+/* ======================= main loop ======================= */
+var lastT = 0, hudT = 0;
+function loop(t){
+  var dt = Math.min(100, t - (lastT || t)); lastT = t;
+  if(mode === 'title'){ cam.x += 0.06 * dt / 16; if(cam.x > MW * TS - VW / 2 / cam.z) cam.x = VW / 2 / cam.z; updateFX(true); }
+  else if(mode === 'game'){
+    var running = speed > 0 && !modalOpen;
+    if(running){ acc += dt * speed; S.playMs += dt;
+      if(acc >= MONTH_MS){ acc -= MONTH_MS; if(acc > MONTH_MS) acc = 0; tick(); hud(); tutCheck(); liveRefresh(); } }
+    updateFX(running);
+  }
+  draw(); requestAnimationFrame(loop);
+}
+
+/* ======================= boot ======================= */
+(function boot(){
+  try { var l = localStorage.getItem('spz.island.lang') || localStorage.getItem('ma.lang'); if(l === 'en' || l === 'th') LANG = l; } catch(e){}
+  CV = $('world'); CX = CV.getContext('2d');
+  buildSprites(); makeClouds(); drawSun(); resize(); initInput();
+  window.addEventListener('resize', function(){ resize(); });
+  document.addEventListener('visibilitychange', function(){ if(document.hidden) autosaveIfGame(); });
+  window.addEventListener('pagehide', autosaveIfGame);
+  applyLang(); showTitle();
+  loadQuestions().then(function(){ if(panelKey === 'council') renderPanel(); });
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

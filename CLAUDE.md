@@ -159,3 +159,13 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   unpack to /tmp/bz, edit, run build.sh (it builds then encrypts into part-83.bin), commit only the .bin
   (+ min/part-83.css). Older git history still contains readable copies unless the user agrees to a
   history rewrite.
+
+## Added 2026-11-08
+
+- `SPACEZ_ISLAND.html`: pixel-art island-nation game (open to everyone), one self-contained file, all art
+  drawn by its own code. Build on the map, a monthly economy sim (GDP, inflation, unemployment, policy rate,
+  tax/spending, bonds, stock index, national fund), news events with lessons, and a "Council" quiz that reads
+  the `var RAW` question arrays from `IC_1–6.html` (falls back to a small built-in set). Correct answers give
+  ★ to unlock research (banks, central bank, exchange, regulator...). Saves: localStorage `spz.island.slot.1..3`
+  + `spz.island.last`, plus export/import of a .json file. Linked from the SPACEZ apps list (part-86 `APPS`)
+  and from `IC_License.html` section 06.
