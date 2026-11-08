@@ -175,3 +175,8 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   apart) and each choice now shows a textbook verdict, its effects and a quick-check question. Also: building
   levels 1–3, roads, day/night with lit windows, birds, need bubbles, town rank. Source pieces are concatenated
   into the one HTML file — edit `SPACEZ_ISLAND.html` directly.
+- 2026-11-09 (game v3): new saves use a 240×160 archipelago (`mapv:3`); old saves keep the 112×72 map (`setMapSize`).
+  Other nations (`S.nat`, AI towns with owner in building slot 5, borders `OWNT`), exports/imports + currency (`tradeTick`),
+  FTA/gifts in the World tab, settling empty islands (needs a shipyard), cargo ships on BFS sea routes, free smooth zoom
+  + minimap, 3×3 wonders (airport, stadium, space port), 22 news events (5-year cooldown) whose quick check draws a real
+  IC question on the same topic, and a "start from zero" path + memory tips + step calculators in the study room.
