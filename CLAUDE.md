@@ -184,3 +184,10 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   counts, points, formulas, memory hooks, exam traps — built from the syllabus sheet the user sent), a TVM card (#16,
   `#tvmCard`) and a step-by-step teaching box + calculator inside the bond-pricing card. Styles/script are the
   "SPACEZ IC STUDY v2" block before `</body>` (`ys-` classes).
+- 2026-11-09 (later): `IC_License.html` hero has a print bar (`.icp-bar`): "พิมพ์ / บันทึกเป็น PDF (A4)" + download links to
+  `assets/docs/IC_Plain_Formulas_A4.pdf` (book 1: 43 formula cards, cheat sheet, 16 practice questions) and
+  `assets/docs/IC_Plain_Summary_A4.pdf` (book 2: all 22 chapters, ethics, 23 reference tables, the 11 sub-topic pop-ups,
+  plan, checklist). The "SPACEZ IC PRINT" block before `</body>` has the A4 `@media print` CSS and a beforeprint script
+  that opens every `<details>`, copies each sub-topic pop-up inline (`.icp-sub`) and repaints dark colours light; afterprint undoes it.
+  The two PDFs are rendered by Playwright from generator scripts kept outside the repo (Brain print palette); to change them,
+  regenerate and replace the files. Risk-spectrum pop-up now uses the SEC 1–8 + 8+ scale (3 = government bond, 4 = fixed income).
