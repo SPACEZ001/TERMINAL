@@ -191,3 +191,21 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   that opens every `<details>`, copies each sub-topic pop-up inline (`.icp-sub`) and repaints dark colours light; afterprint undoes it.
   The two PDFs are rendered by Playwright from generator scripts kept outside the repo (Brain print palette); to change them,
   regenerate and replace the files. Risk-spectrum pop-up now uses the SEC 1–8 + 8+ scale (3 = government bond, 4 = fixed income).
+
+## Added 2026-11-11
+
+- Market Brain v2 (`x_smart.js`, built between `w_alert` and `f_pf`; styles at the end of `assets/css/part-83.css`):
+  "Ask the Brain" box on every tab (`bqBar`, ~20 keyword topics EN/TH answered from the board's own numbers — no AI
+  service), a confidence meter (`bqConf`), tripwires = the score-rule thresholds closest to being crossed (`bqTrip`,
+  weights `BQ_W` must match `compute()` in `c_engine.js`), and a daily snapshot in localStorage `spz.brain.mem.v1`
+  ("since you last looked" + score history). The three cards sit in the Summary tab under the verdict (`bqPanel`).
+- `calibrate()` in `n_ext.js`: a forecast model whose own track record (60+ checks) is worse than "nothing changes"
+  by more than 3% falls back to today's value (`q.fb`, `it.fb`; today that is unemployment). A general learned-shrinkage
+  layer was tested walk-forward on `brain_ext.json` track points and NOT adopted — it made the other models worse.
+- Latest Brain sources archive: `brain-sources-2026-11-11.tgz` (same private folder on the Mac).
+- Local Brain testing: set sessionStorage `spacez.auth` = `{tier:'full',t:Date.now()}` + `spz_admin_users_key`, set
+  localStorage `spacez.ack` to a timestamp, and mock `GET /api/brain/code-key` to return the key.
+- Home (part-85, "HOME v3 polish" block at the end of part-85.css): aurora + dot grid + drawn price line behind the hero,
+  trust line under the buttons, stats as one glass bar, topic ribbon (`tagsHTML`), section titles with a gradient rule,
+  the path section has a real heading, and a closing band (`.spzh-end`) with links to `IC_License.html` and `SPACEZ_ISLAND.html`.
+
