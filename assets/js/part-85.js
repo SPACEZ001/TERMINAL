@@ -31,19 +31,33 @@
     sec:B('Sectors today', 'กลุ่มอุตสาหกรรมวันนี้'), mov:B('Biggest moves today', 'ขยับแรงสุดวันนี้'),
     fear:B('Fear gauge (VIX)', 'ดัชนีความกลัว (VIX)'), y10:B('US 10-year yield', 'บอนด์สหรัฐฯ 10 ปี'), usd:B('Dollar index', 'ดัชนีดอลลาร์'),
     open:B('open', 'เปิด'), closed:B('closed', 'ปิด'), wait:B('Loading live data…', 'กำลังโหลดข้อมูลสด…'),
-    pathH:B('Your path — four steps', 'เส้นทางของคุณ — 4 ขั้น'),
+    pathH:B('Your path', 'เส้นทางของคุณ'), pathH2:B('Four steps from beginner to reading the market', '4 ขั้น จากมือใหม่ สู่การอ่านตลาดเป็น'),
+    /* 2026-11-11 (home v3): trust line, topic ribbon, closing band */
+    t1:B('Start from zero', 'เริ่มจากศูนย์ได้'), t2:B('Every number explained', 'ทุกตัวเลขมีคำอธิบาย'), t3:B('Education only — not investment advice', 'เพื่อการศึกษา ไม่ใช่คำแนะนำการลงทุน'),
+    endE:B('Ready when you are', 'พร้อมเมื่อไหร่ เริ่มได้เลย'), endH:B('Start with lesson 1 today', 'เริ่มบทเรียนแรกวันนี้'),
+    endP:B('Short lessons, real market numbers and tools that explain themselves. Go at your own pace.', 'บทเรียนสั้นๆ ตัวเลขตลาดจริง และเครื่องมือที่อธิบายตัวเอง เรียนตามจังหวะของคุณได้เลย'),
+    endI:B('IC licence exam prep', 'ติวสอบใบอนุญาต IC'), endG:B('SPACEZ ISLAND — the economy game', 'SPACEZ ISLAND — เกมสร้างเศรษฐกิจ'),
     p1:B('Learn the basics', 'เรียนพื้นฐาน'), p1d:B('What a stock is, dividends, P/E — 26 short lessons with quizzes.', 'หุ้นคืออะไร ปันผล P/E — 26 บทสั้นๆ พร้อมคำถามเช็กความเข้าใจ'),
     p2:B('Read the market', 'อ่านภาพรวมตลาด'), p2d:B('Is now a good time? The economy, rates and risk in one screen.', 'ตอนนี้ดีไหม เศรษฐกิจ ดอกเบี้ย และความเสี่ยงในหน้าเดียว'),
     p3:B('Check one stock', 'เช็กหุ้นรายตัว'), p3d:B('Price, dividend, valuation and trend of any stock, explained.', 'ราคา ปันผล ความแพง และแนวโน้มของหุ้นทุกตัว พร้อมคำอธิบาย'),
     p4:B('Build a watchlist', 'สร้างรายการหุ้นของฉัน'), p4d:B('Follow the stocks you like and see when something changes.', 'ติดตามหุ้นที่สนใจ และดูว่ามีอะไรเปลี่ยนไป')
   };
 
+  var TAGS = [B('What is a stock', 'หุ้นคืออะไร'), B('Dividends', 'เงินปันผล'), B('P/E & valuation', 'P/E และความแพง'), B('Candlesticks', 'กราฟแท่งเทียน'), B('Financial statements', 'งบการเงิน'), B('Interest rates', 'ดอกเบี้ย'), B('Inflation', 'เงินเฟ้อ'), B('Market cycles', 'วัฏจักรตลาด'), B('Elliott Wave', 'Elliott Wave'), B('Risk & diversification', 'ความเสี่ยงและการกระจาย'), B('Funds & ETFs', 'กองทุนและ ETF'), B('Bonds', 'ตราสารหนี้'), B('Watchlist', 'รายการหุ้นของฉัน'), B('IC exam prep', 'ติวสอบ IC')];
+  var TAGC = ['#22d3ee', '#818cf8', '#f472b6', '#34d399', '#fbbf24'];
+  function tagsHTML(){
+    var one = function(hid){ return TAGS.map(function(t, i){ return '<span' + (hid ? ' aria-hidden="true"' : '') + ' style="--c:' + TAGC[i % TAGC.length] + '"><i></i>' + esc(T(t)) + '</span>'; }).join(''); };
+    return '<div class="spzh-mq"><div class="spzh-mqt">' + one(false) + one(true) + '</div></div>';
+  }
   var IC = {
     book:'<path d="M4 5a2 2 0 012-2h12v16H6a2 2 0 00-2 2z"/><path d="M4 19V5"/>',
     globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/>',
     search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
     star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
-    arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>', down:'<path d="M12 5v14M6 13l6 6 6-6"/>'
+    arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>', down:'<path d="M12 5v14M6 13l6 6 6-6"/>',
+    check:'<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.8"/>',
+    cap:'<path d="M2.5 9.5L12 5l9.5 4.5L12 14 2.5 9.5z"/><path d="M6.5 11.6V16c1.6 1.4 3.4 2 5.5 2s3.9-.6 5.5-2v-4.4M21.5 9.5V15"/>',
+    game:'<rect x="2.5" y="7" width="19" height="11" rx="5"/><path d="M7.5 11v3M6 12.5h3M15.5 11.6v.1M18 13.4v.1"/>'
   };
   function ico(k){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (IC[k] || '') + '</svg>'; }
 
@@ -241,17 +255,24 @@
     var cnt = d && d.counts && d.counts.stocks ? d.counts.stocks : 555;
     var st = [[cnt, TX.s1], [26, TX.s2], [T(TX.s3v), TX.s3], ['TH · EN', TX.s4]];
     var path = [['stockclass', 'book', TX.p1, TX.p1d, '#34d399'], ['now', 'globe', TX.p2, TX.p2d, '#22d3ee'], ['stock', 'search', TX.p3, TX.p3d, '#a78bfa'], ['watchlist', 'star', TX.p4, TX.p4d, '#f472b6']];
-    return '<div class="spzh-bg" aria-hidden="true"><i class="o1"></i><i class="o2"></i><i class="o3"></i><div class="spzh-floor"></div></div>' +
+    return '<div class="spzh-bg" aria-hidden="true"><div class="spzh-aur"></div><i class="o1"></i><i class="o2"></i><i class="o3"></i><div class="spzh-dots"></div>' +
+      '<svg class="spzh-wave" viewBox="0 0 1440 260" preserveAspectRatio="none"><defs><linearGradient id="spzhWg" x1="0" x2="1"><stop offset="0" stop-color="#22d3ee" stop-opacity="0"/><stop offset=".25" stop-color="#22d3ee"/><stop offset=".6" stop-color="#818cf8"/><stop offset="1" stop-color="#f472b6"/></linearGradient><linearGradient id="spzhWa" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#818cf8" stop-opacity=".16"/><stop offset="1" stop-color="#818cf8" stop-opacity="0"/></linearGradient></defs>' +
+      '<path class="ar" d="M0 214 C120 206 170 176 260 184 S400 226 500 192 S640 120 740 146 S880 196 980 130 S1140 44 1230 76 S1380 30 1440 18 L1440 260 L0 260Z" fill="url(#spzhWa)"/><path class="ln" pathLength="1" d="M0 214 C120 206 170 176 260 184 S400 226 500 192 S640 120 740 146 S880 196 980 130 S1140 44 1230 76 S1380 30 1440 18" fill="none" stroke="url(#spzhWg)" stroke-width="2" stroke-linecap="round"/></svg>' +
+      '<div class="spzh-floor"></div></div>' +
       '<div class="spzh-in"><div class="spzh-l">' +
         '<div class="spzh-eb"><span class="dot"></span>' + esc(T(TX.eb)) + '</div>' +
         '<h1><span class="a">' + esc(T(TX.h1a)) + '</span><span class="b">' + esc(T(TX.h1b)) + '</span></h1>' +
         '<p class="spzh-p">' + esc(T(TX.p)) + '</p>' +
         '<div class="spzh-cta"><button type="button" class="spzh-go" data-spzh-go="stockclass">' + esc(T(TX.go1)) + ico('arrow') + '</button><button type="button" class="spzh-gh" data-spzh-go="now">' + esc(T(TX.go2)) + '</button></div>' +
+        '<ul class="spzh-trust">' + [TX.t1, TX.t2, TX.t3].map(function(t){ return '<li>' + ico('check') + esc(T(t)) + '</li>'; }).join('') + '</ul>' +
         '<div class="spzh-stats">' + st.map(function(s, i){ return '<div style="animation-delay:' + (0.5 + i * 0.08).toFixed(2) + 's"><b>' + esc(s[0]) + '</b><span>' + esc(T(s[1])) + '</span></div>'; }).join('') + '</div>' +
       '</div><div class="spzh-r" data-spzh="pulse">' + pulseHTML(d) + '</div></div>' +
-      basicsHTML() + lessonsHTML() +
-      '<div class="spzh-path"><h2>' + esc(T(TX.pathH)) + '</h2><div class="spzh-pg">' + path.map(function(p, i){ return '<button type="button" class="spzh-step" data-spzh-go="' + p[0] + '" style="--c:' + p[4] + '"><span class="no">0' + (i + 1) + '</span><i>' + ico(p[1]) + '</i><b>' + esc(T(p[2])) + '</b><span class="d">' + esc(T(p[3])) + '</span><em>' + ico('arrow') + '</em></button>'; }).join('') + '</div>' +
-      '<button type="button" class="spzh-all" data-spzh-all="1">' + esc(T(TX.all)) + ico('down') + '</button></div>';
+      tagsHTML() + basicsHTML() + lessonsHTML() +
+      '<div class="spzh-path"><div class="spzb-hd"><span class="spzb-eb">' + esc(T(TX.pathH)) + '</span><h2>' + esc(T(TX.pathH2)) + '</h2></div><div class="spzh-pg">' + path.map(function(p, i){ return '<button type="button" class="spzh-step" data-spzh-go="' + p[0] + '" style="--c:' + p[4] + '"><span class="no">0' + (i + 1) + '</span><i>' + ico(p[1]) + '</i><b>' + esc(T(p[2])) + '</b><span class="d">' + esc(T(p[3])) + '</span><em>' + ico('arrow') + '</em></button>'; }).join('') + '</div>' +
+      '</div><div class="spzh-end"><span class="spzb-eb">' + esc(T(TX.endE)) + '</span><h2>' + esc(T(TX.endH)) + '</h2><p>' + esc(T(TX.endP)) + '</p>' +
+      '<div class="spzh-cta"><button type="button" class="spzh-go" data-spzh-go="stockclass">' + esc(T(TX.go1)) + ico('arrow') + '</button><button type="button" class="spzh-gh" data-spzh-go="now">' + esc(T(TX.go2)) + '</button></div>' +
+      '<div class="spzh-endl"><a href="IC_License.html">' + ico('cap') + esc(T(TX.endI)) + '</a><a href="SPACEZ_ISLAND.html">' + ico('game') + esc(T(TX.endG)) + '</a></div></div>' +
+      '<div class="spzh-allw"><button type="button" class="spzh-all" data-spzh-all="1">' + esc(T(TX.all)) + ico('down') + '</button></div>';
   }
 
   var sec = null;
