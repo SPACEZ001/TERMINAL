@@ -209,3 +209,28 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   trust line under the buttons, stats as one glass bar, topic ribbon (`tagsHTML`), section titles with a gradient rule,
   the path section has a real heading, and a closing band (`.spzh-end`) with links to `IC_License.html` and `SPACEZ_ISLAND.html`.
 
+
+## Added 2026-11-12
+
+- **Official-document (formal) print theme for the Market Brain.** `k_print.js` (Brain source) gained a third document
+  style `formal` (now the default, stored in localStorage `spz.brain.prtheme`): white A4, black ink, thin rules — the
+  admin Print-Report look. Print-settings also expose a chart "ink" choice (`spz.brain.prink`: `formal` deep hues vs
+  `brain` bright). The formal cover (`coverFormal`) is plain ruled tables, not coloured cards; when the printed report is
+  the price report only, the cover shows a per-asset forecast table (`pxCoverHTML` in `o_px.js`).
+- **Gold & bitcoin price report is downloadable in one click.** The `px` tab (o_px.js `vPx`) now ends with a download
+  bar (`.bz-pxdl`, buttons `data-pxdl="pdf|print|set"`) that builds the formal cover + full gold + full bitcoin document
+  and saves a PDF without visiting the Print tab. `set` jumps to the Print tab for options.
+- **PDF engine fix (applies to every Brain PDF button).** html2canvas 1.4.1 can't parse `color-mix()` / `color(srgb …)`
+  (Chrome serialises mixed colours that way) and also threw `addColorStop non-finite` on some CSS gradients. `deModern()`
+  in `k_print.js` (runs in the off-screen render copy inside `prep()`) rewrites every element's computed colour props to
+  plain `rgb()/rgba()`, and in formal mode flattens leftover CSS gradients. Before this, the in-browser PDF was broken.
+- **Forecast number box fixed.** The "now → 6M → 12M" chip in the forecast cards (and the macro-map header) used class
+  `bz-fq`, which collided with another rule and rendered as a broken stacked box (the one in the user's photo). Renamed to
+  `bz-hq` (`.bz-hq.st` on-screen = a clean horizontal pill with labels + arrows); the forecast range label `rg` → `bz-rg`.
+  New on-screen styles are at the end of `assets/css/part-83.css` ("2026-11-11 (b)" block).
+- A `PR_GUARD` script is embedded in every light/formal print document: darkens too-pale text for white paper and (formal
+  only) flattens big tinted/gradient panels. Chart lines/text/legend swatches get a deeper shade via `inkify()` when
+  ink = formal.
+- Downloaded reports: new Mac folder `~/Documents/📄 SPACEZ REPORTS (เอกสารดาวน์โหลด)` for keeping the Brain PDFs (the
+  browser still downloads to ~/Downloads first; this is just a tidy home for them). Not in the repo.
+- Latest Brain sources archive: `brain-sources-2026-11-12.tgz` (same private folder on the Mac).
