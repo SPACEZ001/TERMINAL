@@ -234,3 +234,17 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
 - Downloaded reports: new Mac folder `~/Documents/📄 SPACEZ REPORTS (เอกสารดาวน์โหลด)` for keeping the Brain PDFs (the
   browser still downloads to ~/Downloads first; this is just a tidy home for them). Not in the repo.
 - Latest Brain sources archive: `brain-sources-2026-11-12.tgz` (same private folder on the Mac).
+
+## Added 2026-11-13
+
+- Loading screen v3 (`runBoot()` in `part-18.js`, styles "boot loader v3" at the end of `part-03.css`): glass card, logo in a
+  progress ring, tagline (EN/TH), glowing bar, step dots; ring/bar/number glide with **time-based** easing (frame-based easing
+  crawled when the page was busy). "Ready" only shows once the number is ~100.
+- `part-01.js` (head, runs first): (1) `html.spz-pre` covers the very first paint for returning visitors so the bare page no
+  longer flashes before the loader (CSS in `part-01.css`; runBoot removes it; 7 s safety timer). (2) `window.fetch` wrapper
+  shares identical same-origin `data/*.json` GETs (each caller gets a clone, kept 60 s) — `data/backtest.json` used to be
+  downloaded 3× per load (≈1.7 MB saved). (3) An IntersectionObserver pauses infinite CSS animations while they are off screen
+  (class `.spz-anim-off`), ~150 were running below the fold.
+- Mac (not in repo): `⚙️ อัตโนมัติ (AUTOMATION)/🗑 ลบรายงาน (CLEAR REPORTS).command` now covers TERMINAL/REPORTS **and**
+  `~/Documents/📄 SPACEZ REPORTS (เอกสารดาวน์โหลด)` (list / delete all / pick folders, to Trash). The SYNC BACKUP command also
+  copies `📄 SPACEZ REPORTS (…)` and `🔒 SPACEZ PRIVATE (…)` into `💾 TERMINAL BACKUP` with the same names (`SIDE` array).
