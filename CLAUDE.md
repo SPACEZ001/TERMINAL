@@ -248,3 +248,7 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
 - Mac (not in repo): `⚙️ อัตโนมัติ (AUTOMATION)/🗑 ลบรายงาน (CLEAR REPORTS).command` now covers TERMINAL/REPORTS **and**
   `~/Documents/📄 SPACEZ REPORTS (เอกสารดาวน์โหลด)` (list / delete all / pick folders, to Trash). The SYNC BACKUP command also
   copies `📄 SPACEZ REPORTS (…)` and `🔒 SPACEZ PRIVATE (…)` into `💾 TERMINAL BACKUP` with the same names (`SIDE` array).
+- **Project manual** (2026-11-13): `📖 คู่มือระบบ (PROJECT DOCS)/` inside the Mac's TERMINAL folder (gitignored — it contains the
+  Market Brain formulas; never publish) and mirrored into `💾 TERMINAL BACKUP` by the sync. Files `00_START_HERE.md` … `07_HOW_TO_WORK.md`
+  + `SPACEZ_MANUAL_ALL_IN_ONE.md`: architecture, every file, every screen's formulas, the full Brain method, data pipeline, other apps,
+  working rules. Update it when you change how something works.
