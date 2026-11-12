@@ -202,39 +202,75 @@ var FLOW = {
         'กำลังต่อแผนที่กระแสเงินทุน','กำลังประมวลโมเดลวัฏจักร','พร้อมแล้ว']
   };
 
-  /* 2026-11-07: loader redrawn (user: the old one looked broken / stuck). The site logo sits in a
-     progress ring, the wordmark fades in, steps advance quickly and 100% waits for the page's own
-     "load" event (max 3.5s) so the bar never sits frozen and never claims "ready" too early. */
+  /* 2026-11-13: loader v3 (user: make the loading page prettier and smoother). Same flow as v2 —
+     logo in a progress ring, steps advance quickly, 100% waits for the page's own "load" event
+     (max 3.5s) — but the ring, the bar and the number now glide smoothly (requestAnimationFrame)
+     instead of jumping, with a tagline, a step counter, a glowing bar and a calmer exit. The
+     first-paint cover from part-01 (html.spz-pre) is removed as soon as this screen is up. */
+  var BOOT_TAG = { en:'Learn stocks from zero to reading the market', th:'เรียนหุ้นจากศูนย์จนอ่านตลาดเป็น' };
   function runBoot(done){
-    var b = el('div', 'boot boot2');
+    var b = el('div', 'boot boot2 boot3');
     var lp = function(d){ return '<path d="' + d + '" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>'; };
     var lg = '<svg class="b2-logo" viewBox="0 0 100 128" aria-hidden="true">' + ['M48 6 L16 74 L48 118 L48 96 L32 78 L48 50 Z', 'M52 6 L84 74 L52 118 L52 96 L68 78 L52 50 Z', 'M12 64 L22 60 L14 78 L12 76 Z', 'M88 64 L78 60 L86 78 L88 76 Z', 'M14 80 L50 122 L50 116 L18 80 Z', 'M86 80 L50 122 L50 116 L82 80 Z'].map(lp).join('') + '</svg>';
     var C = 2 * Math.PI * 54;
+    var msgs = BOOT_LOG[L()] || BOOT_LOG.en, total = msgs.length;
+    var dots = ''; for(var di = 0; di < total; di++) dots += '<i></i>';
+    b.setAttribute('role', 'status'); b.setAttribute('aria-live', 'polite');
     b.innerHTML =
-      '<div class="b2-bg"></div>' +
-      '<div class="b2-core"><svg class="b2-ring" viewBox="0 0 128 128"><defs><linearGradient id="b2g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset=".55" stop-color="#818cf8"/><stop offset="1" stop-color="#f472b6"/></linearGradient></defs>' +
-        '<circle class="b2-trk" cx="64" cy="64" r="54"/><circle class="b2-arc" data-b="arc" cx="64" cy="64" r="54" style="stroke-dasharray:0 ' + C.toFixed(1) + '"/><circle class="b2-orb" cx="64" cy="64" r="61"/></svg>' +
-        '<div class="b2-mark">' + lg + '</div></div>' +
-      '<div class="b2-word"><b>SPACEZ</b><i>//</i><span>TERMINAL</span></div>' +
-      '<div class="b2-row"><span class="b2-log" data-b="log"></span><span class="b2-pct" data-b="pct">0%</span></div>';
+      '<div class="b2-bg"></div><div class="b3-grid"></div><div class="b3-sky"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>' +
+      '<div class="b3-card">' +
+        '<div class="b2-core"><div class="b3-halo"></div><svg class="b2-ring" viewBox="0 0 128 128"><defs><linearGradient id="b2g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset=".55" stop-color="#818cf8"/><stop offset="1" stop-color="#f472b6"/></linearGradient></defs>' +
+          '<circle class="b2-trk" cx="64" cy="64" r="54"/><circle class="b2-arc" data-b="arc" cx="64" cy="64" r="54" style="stroke-dasharray:0 ' + C.toFixed(1) + '"/><circle class="b2-orb" cx="64" cy="64" r="61"/></svg>' +
+          '<div class="b2-mark">' + lg + '</div></div>' +
+        '<div class="b2-word"><b>SPACEZ</b><i>//</i><span>TERMINAL</span></div>' +
+        '<p class="b3-tag">' + esc(T(BOOT_TAG)) + '</p>' +
+        '<div class="b3-bar"><div class="b3-fill" data-b="fill"></div></div>' +
+        '<div class="b3-meta"><span class="b2-log" data-b="log"></span><span class="b3-num"><b data-b="pct">0</b>%</span></div>' +
+        '<div class="b3-steps" data-b="steps">' + dots + '</div>' +
+      '</div>';
     document.body.appendChild(b);
-    var arc = b.querySelector('[data-b="arc"]'), log = b.querySelector('[data-b="log"]'), pct = b.querySelector('[data-b="pct"]');
-    var msgs = BOOT_LOG[L()] || BOOT_LOG.en, total = msgs.length, step = 0, tick = RM ? 70 : 170, t0 = Date.now();
+    try { document.documentElement.classList.remove('spz-pre'); } catch(e){}
+    var arc = b.querySelector('[data-b="arc"]'), log = b.querySelector('[data-b="log"]'), pct = b.querySelector('[data-b="pct"]'),
+        fill = b.querySelector('[data-b="fill"]'), stepEls = b.querySelectorAll('[data-b="steps"] i');
+    var step = 0, tick = RM ? 70 : 190, t0 = Date.now(), target = 0, shown = 0, raf = 0, finished = false;
     var loaded = document.readyState === 'complete';
     if(!loaded) window.addEventListener('load', function(){ loaded = true; }, { once:true });
+    function paint(v){
+      arc.style.setProperty('stroke-dasharray', (C * v / 100).toFixed(1) + ' ' + C.toFixed(1), 'important');
+      fill.style.transform = 'scaleX(' + (v / 100).toFixed(4) + ')';
+      pct.textContent = Math.round(v);
+    }
+    var lastF = 0;
+    function frame(now){
+      /* time-based easing (~90 ms time constant): reaches the target on time even when the page is busy and frames are scarce */
+      var dt = lastF ? Math.min(400, now - lastF) : 16; lastF = now;
+      shown += (target - shown) * (RM ? 1 : 1 - Math.exp(-dt / 90));
+      if(Math.abs(target - shown) < 0.25) shown = target;
+      paint(shown);
+      if(shown < 100 || !finished) raf = requestAnimationFrame(frame); else raf = 0;
+    }
     function show(k){
-      var p = Math.round((k + 1) / total * 100);
-      arc.style.setProperty('stroke-dasharray', (C * p / 100).toFixed(1) + ' ' + C.toFixed(1), 'important');
-      pct.textContent = p + '%';
-      log.classList.remove('in'); void log.offsetWidth; log.textContent = msgs[k]; log.classList.add('in');
+      target = Math.round((k + 1) / total * 100);
+      for(var j = 0; j < stepEls.length; j++) stepEls[j].className = j < k ? 'ok' : j === k ? 'on' : '';
+      var setLog = function(){ log.classList.remove('in'); void log.offsetWidth; log.textContent = msgs[k]; log.classList.add('in'); };
+      if(k === total - 1){ var waitLbl = function(){ if(shown < 94 && Date.now() - t0 < 6000){ setTimeout(waitLbl, 30); return; } setLog(); }; waitLbl(); } else setLog();
+      if(!raf) raf = requestAnimationFrame(frame);
     }
     function next(){
-      if(step === total - 1 && !loaded && Date.now() - t0 < 3500){ setTimeout(next, 120); return; }
+      if(step === total - 1 && !loaded && Date.now() - t0 < 3500){ target = Math.min(target + 1.2, 96); setTimeout(next, 120); return; }
       show(step); step++;
       if(step < total) setTimeout(next, tick);
-      else setTimeout(function(){ b.classList.add('off'); setTimeout(function(){ b.remove(); if(done) done(); }, 560); }, RM ? 120 : 380);
+      else {
+        finished = true;
+        var waitFull = function(){
+          if(shown < 99.5 && Date.now() - t0 < 6000){ setTimeout(waitFull, 40); return; }
+          b.classList.add('ready');
+          setTimeout(function(){ b.classList.add('off'); setTimeout(function(){ if(raf) cancelAnimationFrame(raf); b.remove(); if(done) done(); }, 620); }, RM ? 140 : 420);
+        };
+        waitFull();
+      }
     }
-    setTimeout(next, 80);
+    setTimeout(next, 60);
   }
 
   function upgradeGate(){
