@@ -252,3 +252,9 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   Market Brain formulas; never publish) and mirrored into `💾 TERMINAL BACKUP` by the sync. Files `00_START_HERE.md` … `07_HOW_TO_WORK.md`
   + `SPACEZ_MANUAL_ALL_IN_ONE.md`: architecture, every file, every screen's formulas, the full Brain method, data pipeline, other apps,
   working rules. Update it when you change how something works.
+- Later 2026-11-13: (a) Brain print — dark document style uses a white copy of the site logo (`PR_LOGO_WHITE` / `prLogo()` in
+  `k_print.js`); formal and light keep the black logo. Sources archive `brain-sources-2026-11-14.tgz`. (b) **Markets 101**
+  (`assets/js/part-87.js` + `assets/css/part-87.css`, loaded right after part-86): "รู้จัก 4 ตลาด" lessons — stocks, forex, options,
+  crypto — each with a drawn SVG infographic, how you earn / lose, a worked example, key terms, a safe-start list, plus a comparison
+  table. It is inserted into the Guided Mode page `#/guided` (the "แนะนำ" pill, top right) before its note; part-23 is untouched.
+  Facts checked 2026-11-13: BOT has licensed no retail forex in Thailand; TFEX SET50 options = 200 THB/point, European.
