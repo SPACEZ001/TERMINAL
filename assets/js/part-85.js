@@ -64,6 +64,8 @@
   /* ---------- numbers from the snapshot ---------- */
   function ewLine(d, n){
     var S = d && d.stocks; if(!S) return null;
+    /* 2026-11-15: the lite snapshot has no closes; it carries this line ready-made (same maths, scripts/fetch_market.py) */
+    if(d.lite && d.home_line && d.home_line.v && d.home_line.v.length === n + 1) return { v:d.home_line.v, n:d.home_line.n };
     var series = [], k;
     for(k in S){ var s = S[k]; if(s.cal !== 'us' || !s.c) continue; var c = typeof s.c === 'string' ? s.c.split(',').map(Number) : s.c; if(c.length >= n + 1) series.push(c.slice(-(n + 1))); }
     if(series.length < 20) return null;

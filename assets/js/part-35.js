@@ -42,7 +42,7 @@
     now:'mixed', regime:'live', stock:'live', proof:'daily', anomaly:'live',
     correl:'daily', rulelab:'daily', daily:'live',
     flow:'mixed', globe:'mixed', infl:'mixed', macrolab:'mixed', directory:'mixed', desk:'mixed',
-    outlook:'frozen', scenarios:'frozen', pro:'frozen',
+    outlook:'mixed', scenarios:'mixed', pro:'frozen',   /* 2026-11-15: outlook + scenarios get live readings from data/brain.json (part-90) */
     types:'teach', glossary:'teach', signals:'teach', start:'teach', guided:'teach',
     chartlab:'sim', brain:'mixed'
   };

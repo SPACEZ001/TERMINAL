@@ -24,6 +24,13 @@
     dayDetailPick:{en:'Tap a day above to see its releases.',th:'แตะวันที่ด้านบนเพื่อดูรายการประกาศของวันนั้น'},
     dayDetailEmpty:{en:'No tracked releases that day.',th:'วันนี้ไม่มีการประกาศตัวเลขที่ติดตาม'},
     weekH:{en:'This Week',th:'สัปดาห์นี้'},
+    /* 2026-11-15 (user request): calendar on the left, the chosen day's schedule on the right */
+    todayBtn:{en:'Today',th:'วันนี้'},
+    tzLbl:{en:'Times in your local time',th:'เวลาตามเครื่องของคุณ'},
+    tzTh:{en:'Thai time (UTC+7)',th:'เวลาประเทศไทย'},
+    legHigh:{en:'High impact',th:'กระทบแรง'}, legMed:{en:'Medium',th:'ปานกลาง'}, legLow:{en:'Low',th:'น้อย'},
+    nEvents:{en:' releases',th:' รายการ'}, nHigh:{en:' high impact',th:' กระทบแรง'},
+    dayH:{en:'Schedule for the day',th:'กำหนดการของวัน'},
     weekEmpty:{en:'Nothing on the tracked calendar for the next 7 days.',th:'7 วันข้างหน้ายังไม่มีรายการในปฏิทินที่ติดตาม'},
     estLbl:{en:'Forecast',th:'คาดการณ์'},
     actLbl:{en:'Actual',th:'ค่าจริง'},
@@ -181,7 +188,15 @@
     });
   }
 
-  function eventDay(ev){ return String(ev.time || '').slice(0, 10); }
+  /* times in the feed are UTC ("YYYY-MM-DD HH:MM:SS"); show and group them in the visitor's own time zone */
+  function evDate(ev){
+    var t = String(ev.time || '');
+    var d = new Date(t.replace(' ', 'T') + (/[zZ]|[+-]\d\d:?\d\d$/.test(t) ? '' : 'Z'));
+    return isNaN(d) ? null : d;
+  }
+  function eventDay(ev){ var d = evDate(ev); return d ? ymd(d) : String(ev.time || '').slice(0, 10); }
+  function hhmm(ev){ var d = evDate(ev); if(!d) return String(ev.time || '').slice(11, 16); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+  var FLAG = { US:'🇺🇸', EU:'🇪🇺', GB:'🇬🇧', JP:'🇯🇵', CN:'🇨🇳', DE:'🇩🇪', TH:'🇹🇭' };
 
   /* one event row, shared by the day-detail panel and This Week */
   function eventRowHTML(ev){
@@ -198,10 +213,11 @@
       : '<span class="ec-row-actual">' + esc(tx(C.pendingLbl)) + '</span>';
     var noteHTML = (dir && dir !== 'inline' && NOTES[cat] && NOTES[cat][dir])
       ? '<div class="ec-row-note">' + esc(tx(NOTES[cat][dir])) + '</div>' : '';
-    return '<div class="ec-row">' +
+    var showDate = arguments[1];
+    return '<div class="ec-row imp-' + esc(ev.impact || 'low') + '">' +
       '<div class="ec-row-top">' +
-        '<span class="ec-row-time">' + esc(String(ev.time||'').slice(0,16)) + '</span>' +
-        '<span class="ec-row-country">' + esc(ev.country||'') + '</span>' +
+        '<span class="ec-row-time">' + (showDate ? esc(new Date(eventDay(ev) + 'T00:00:00').toLocaleDateString(L()==='th'?'th-TH':'en-US', {weekday:'short', day:'numeric', month:'short'})) + ' · ' : '') + esc(hhmm(ev)) + '</span>' +
+        '<span class="ec-row-country">' + (FLAG[ev.country] ? FLAG[ev.country] + ' ' : '') + esc(ev.country||'') + '</span>' +
         '<span class="ec-row-event">' + esc(ev.event||'') + '</span>' +
         impactStarsHTML(ev.impact) +
       '</div>' +
@@ -232,9 +248,13 @@
     var box = sec.querySelector('[data-ec="daydetail"]');
     if(!selDay){ box.innerHTML = '<div class="ec-daydetail-empty">' + esc(tx(C.dayDetailPick)) + '</div>'; return; }
     var evs = (byDay[selDay] || []).slice().sort(function(a,b){ return String(a.time||'').localeCompare(String(b.time||'')); });
-    var d = new Date(selDay + 'T00:00:00');
-    var hdr = '<div class="ec-daydetail-h">' + esc(d.toLocaleDateString(L()==='th'?'th-TH':'en-US', {weekday:'long', month:'long', day:'numeric'})) + '</div>';
-    box.innerHTML = hdr + (evs.length ? evs.map(eventRowHTML).join('') : '<div class="ec-daydetail-empty">' + esc(tx(C.dayDetailEmpty)) + '</div>');
+    var d = new Date(selDay + 'T00:00:00'), loc = L()==='th'?'th-TH':'en-US';
+    var nHi = evs.filter(function(e){ return e.impact === 'high'; }).length;
+    var tzTh = -new Date().getTimezoneOffset() === 420;
+    var hdr = '<div class="ec-dd-head"><div class="ec-dd-date"><b>' + d.getDate() + '</b><span>' + esc(d.toLocaleDateString(loc, {month:'short'})) + '</span></div>' +
+      '<div class="ec-dd-t"><small>' + esc(tx(C.dayH)) + '</small><div class="ec-daydetail-h">' + esc(d.toLocaleDateString(loc, {weekday:'long', month:'long', day:'numeric', year:'numeric'})) + '</div>' +
+      '<div class="ec-dd-meta"><span>' + evs.length + esc(tx(C.nEvents)) + '</span>' + (nHi ? '<span class="hi">' + nHi + esc(tx(C.nHigh)) + '</span>' : '') + '<span class="tz">' + esc(tx(tzTh ? C.tzTh : C.tzLbl)) + '</span></div></div></div>';
+    box.innerHTML = hdr + '<div class="ec-dd-list">' + (evs.length ? evs.map(function(e){ return eventRowHTML(e); }).join('') : '<div class="ec-daydetail-empty">' + esc(tx(C.dayDetailEmpty)) + '</div>') + '</div>';
   }
 
   function paintGrid(events){
@@ -260,8 +280,8 @@
         (hasMed ? '<span class="ec-dot medium"></span>' : '') +
         (hasLow ? '<span class="ec-dot low"></span>' : '') +
       '</span>') : '';
-      html += '<div class="ec-daybox' + (dStr === todayStr ? ' today' : '') + (dStr === selDay ? ' sel' : '') +
-        '" data-ec-day="' + dStr + '"><span>' + day + '</span>' + dotsHTML + '</div>';
+      html += '<button type="button" class="ec-daybox' + (dStr === todayStr ? ' today' : '') + (dStr === selDay ? ' sel' : '') + (hasHigh ? ' has-high' : evs.length ? ' has-ev' : '') +
+        (new Date(curY, curM, day).getDay() % 6 === 0 ? ' wkend' : '') + '" data-ec-day="' + dStr + '"><span class="ec-dn">' + day + '</span>' + (evs.length ? '<span class="ec-cnt">' + evs.length + '</span>' : '') + dotsHTML + '</button>';
     }
     sec.querySelector('[data-ec="grid"]').innerHTML = html;
     paintDayDetail(byDay);
@@ -269,8 +289,10 @@
     for(var i=0;i<boxes.length;i++){
       boxes[i].addEventListener('click', function(){
         var d = this.getAttribute('data-ec-day');
-        selDay = (selDay === d) ? null : d;
+        selDay = d;
         paintGrid(events);
+        var side = sec.querySelector('.ec-side');
+        if(side && window.innerWidth < 900){ var y = side.getBoundingClientRect().top + window.pageYOffset - 90; window.scrollTo({ top:y, behavior:'smooth' }); }
       });
     }
   }
@@ -282,7 +304,7 @@
     fetchRange(from, to, 'week-' + from).then(function(events){
       events = events.slice().sort(function(a,b){ return String(a.time||'').localeCompare(String(b.time||'')); });
       var box = sec.querySelector('[data-ec="weeklist"]');
-      box.innerHTML = events.length ? events.map(eventRowHTML).join('') : '<div class="ec-week-empty">' + esc(tx(C.weekEmpty)) + '</div>';
+      box.innerHTML = events.length ? events.map(function(e){ return eventRowHTML(e, true); }).join('') : '<div class="ec-week-empty">' + esc(tx(C.weekEmpty)) + '</div>';
     }, function(){
       /* the month fetch already surfaces the shared error/keygate state;
          This Week just stays quietly empty rather than duplicating it. */
@@ -302,6 +324,11 @@
       sec.querySelector('[data-ec="loading"]').style.display = 'none';
       sec.querySelector('[data-ec="content"]').style.display = '';
       renderGridSkeleton();
+      if(!selDay){
+        var tStr = ymd(today), mPre = curY + '-' + pad2(curM+1);
+        if(tStr.slice(0, 7) === mPre) selDay = tStr;
+        else { var ds = events.map(eventDay).filter(function(x){ return x.slice(0, 7) === mPre; }).sort(); selDay = ds[0] || (mPre + '-01'); }
+      }
       paintGrid(events);
       paintWeek();
     }, function(err){
@@ -323,6 +350,8 @@
     sec.querySelector('[data-ec="loading"]').textContent = tx(C.loading);
     sec.querySelector('[data-ec="error"]').textContent = tx(C.error);
     sec.querySelector('[data-ec="weekh"]').textContent = tx(C.weekH);
+    sec.querySelector('[data-ec="today"]').textContent = tx(C.todayBtn);
+    sec.querySelector('[data-ec="legend"]').innerHTML = '<span><i class="ec-dot high"></i>' + esc(tx(C.legHigh)) + '</span><span><i class="ec-dot medium"></i>' + esc(tx(C.legMed)) + '</span><span><i class="ec-dot low"></i>' + esc(tx(C.legLow)) + '</span>';
     sec.querySelector('[data-ec="keygate"]').style.display = 'none';
     loadMonth();
   }
@@ -331,6 +360,10 @@
     sec.querySelector('[data-ec="prevMonth"]').addEventListener('click', function(){
       curM--; if(curM < 0){ curM = 11; curY--; }
       selDay = null;
+      loadMonth();
+    });
+    sec.querySelector('[data-ec="today"]').addEventListener('click', function(){
+      today = new Date(); curY = today.getFullYear(); curM = today.getMonth(); selDay = ymd(today);
       loadMonth();
     });
     sec.querySelector('[data-ec="nextMonth"]').addEventListener('click', function(){
@@ -363,16 +396,24 @@
         '<div class="ec-loading" data-ec="loading" style="display:none;"></div>' +
         '<div class="ec-error" data-ec="error" style="display:none;"></div>' +
         '<div data-ec="content" style="display:none;">' +
-          '<div class="ec-monthbar">' +
-            '<button type="button" class="ec-monthbtn" data-ec="prevMonth">‹</button>' +
-            '<span class="ec-monthlbl" data-ec="monthlbl"></span>' +
-            '<button type="button" class="ec-monthbtn" data-ec="nextMonth">›</button>' +
+          '<div class="ec-layout">' +
+            '<div class="ec-cal">' +
+              '<div class="ec-monthbar">' +
+                '<button type="button" class="ec-monthbtn" data-ec="prevMonth" aria-label="‹">‹</button>' +
+                '<span class="ec-monthlbl" data-ec="monthlbl"></span>' +
+                '<button type="button" class="ec-monthbtn" data-ec="nextMonth" aria-label="›">›</button>' +
+                '<button type="button" class="ec-todaybtn" data-ec="today"></button>' +
+              '</div>' +
+              '<div class="ec-weekdays" data-ec="weekdays"></div>' +
+              '<div class="ec-grid" data-ec="grid"></div>' +
+              '<div class="ec-legend" data-ec="legend"></div>' +
+            '</div>' +
+            '<div class="ec-side">' +
+              '<div class="ec-daydetail" data-ec="daydetail"></div>' +
+              '<div class="ec-week-head"><span class="ec-week-h" data-ec="weekh"></span></div>' +
+              '<div class="ec-weeklist" data-ec="weeklist"></div>' +
+            '</div>' +
           '</div>' +
-          '<div class="ec-weekdays" data-ec="weekdays"></div>' +
-          '<div class="ec-grid" data-ec="grid"></div>' +
-          '<div class="ec-daydetail" data-ec="daydetail"></div>' +
-          '<div class="ec-week-head"><span class="ec-week-h" data-ec="weekh"></span></div>' +
-          '<div data-ec="weeklist"></div>' +
         '</div>' +
       '</div>';
     document.body.appendChild(sec);

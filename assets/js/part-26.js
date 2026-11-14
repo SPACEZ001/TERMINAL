@@ -304,10 +304,42 @@
     } catch(e){}
   }
 
-  function loadSnapshot(){
-    return getJSON(SNAP_URL + '?v=' + Math.floor(Date.now() / 300000), 12000)
-      .then(applySnapshot, function(){ /* file not deployed yet — fine */ });
+  /* 2026-11-15: data/market_lite.json is the same snapshot without the ~2 years of
+     daily closes per stock (~360 KB instead of ~2.1 MB). Home and the reading-only
+     pages get the lite file; the full one is fetched the first time a screen that
+     may draw price history is opened (any route not in LITE_ROUTES). */
+  var LITE_URL = 'data/market_lite.json';
+  var LITE_ROUTES = { home:1, stockclass:1, basics:1, start:1, types:1, glossary:1, guided:1,
+    arena:1, exams:1, apps:1, qrcode:1, ecocal:1, membership:1, brain:1, journal:1 };
+  var wantFull = false, haveFull = false, fullBusy = null;
+  function curRoute(){ return (location.hash || '').replace(/^#\/?/, '').split(/[?\/]/)[0] || 'home'; }
+  function needsFull(){ return wantFull || !LITE_ROUTES[curRoute()]; }
+  function vq(){ return '?v=' + Math.floor(Date.now() / 300000); }
+  function loadFull(){
+    if (fullBusy) return fullBusy;
+    wantFull = true;
+    fullBusy = getJSON(SNAP_URL + vq(), 15000).then(function(d){ haveFull = true; applySnapshot(d); },
+      function(){ /* file not deployed yet — fine */ }).then(function(){ fullBusy = null; });
+    return fullBusy;
   }
+  function loadSnapshot(){
+    if (needsFull()) return loadFull();
+    return getJSON(LITE_URL + vq(), 12000).then(function(d){
+      if (!d || !d.stocks) throw new Error('lite');
+      if (haveFull && lastSnap && lastSnap.generated_at === d.generated_at) return;
+      applySnapshot(d);
+      if (needsFull() && !haveFull) loadFull();   /* the visitor moved on while it loaded */
+    }).catch(function(){ return loadFull(); });
+  }
+  function routeCheck(){ if (!haveFull && !fullBusy && snapTs && !LITE_ROUTES[curRoute()]) loadFull(); }  /* before the first file lands, loadSnapshot itself checks the route again */
+  window.addEventListener('hashchange', routeCheck);
+  window.addEventListener('popstate', routeCheck);
+  /* the router (part-15) moves with history.pushState / replaceState, which fire no event */
+  ['pushState', 'replaceState'].forEach(function(k){
+    var orig = history[k];
+    if (typeof orig !== 'function') return;
+    history[k] = function(){ var r = orig.apply(this, arguments); try { setTimeout(routeCheck, 0); } catch(e){} return r; };
+  });
 
   /* ---------------------------------------------------------------
      5. status bar

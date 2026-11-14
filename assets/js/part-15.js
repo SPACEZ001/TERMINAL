@@ -670,8 +670,8 @@ var CL_UI = {
         th:'ห้าคำถามที่จับคู่เป้าหมายและความทนความเสี่ยงของคุณเข้ากับแนวหุ้น พร้อมลำดับขั้นในการสร้างพอร์ตแรก'}},
     {id:'outlook', feat:true,
      t:{en:'Market Outlook — Cycle & 2026',th:'ภาพรวมตลาด — วัฏจักรและปี 2026'},
-     d:{en:'The four-phase business cycle, where the data says we sit in August 2026, and three scenarios for what comes next.',
-        th:'วัฏจักรธุรกิจสี่ช่วง ข้อมูลบอกว่าเดือนสิงหาคม 2026 เราอยู่ตรงไหน และสามฉากทัศน์ว่าอะไรจะตามมา'}},
+     d:{en:'The four-phase business cycle, where the latest data says we sit (updates itself), and three scenarios for what comes next.',
+        th:'วัฏจักรธุรกิจสี่ช่วง ข้อมูลล่าสุดบอกว่าเราอยู่ตรงไหน (อัปเดตเอง) และสามฉากทัศน์ว่าอะไรจะตามมา'}},
     {id:'types',
      t:{en:'Stock Archetypes',th:'ประเภทหุ้น'},
      d:{en:'The four ways to own a company — value, growth, dividend, defensive — and where they overlap.',
@@ -1046,6 +1046,8 @@ var CL_UI = {
       sel = window.SPZ_CYCLE.phase;
       try { paintAll(); } catch(e){}
     });
+    /* 2026-11-15: the live layer (part-90) rewrites OUTLOOK.here / ind / snapDate from data/brain.json, then repaints */
+    window.__SPZ_OUTLOOK = { data:OUTLOOK, repaint:function(){ sel = (window.SPZ_CYCLE && window.SPZ_CYCLE.phase) || OUTLOOK.here; try { paintAll(); } catch(e){} } };
     paintAll();
     return sec;
   }
@@ -2484,6 +2486,16 @@ var CL_UI = {
       route(current, true);
     }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
 
+    /* 2026-11-15: read-only list of the routes shown in the menu, for the top-bar search (part-88) */
+    window.__spzRouteList = function(){
+      var out = [];
+      for(var i = 0; i < ROUTES.length; i++){
+        var r = ROUTES[i];
+        if(navHid(r.id) || !document.getElementById(r.id)) continue;
+        out.push({ id:r.id, t:r.t, d:r.d });
+      }
+      return out;
+    };
     /* let later layers register their own route without touching this file */
     window.__spzAddRoute = function(r){
       for(var i = 0; i < ROUTES.length; i++){ if(ROUTES[i].id === r.id) return; }

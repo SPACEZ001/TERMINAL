@@ -268,3 +268,30 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   `terminal-history-before-cleanup-2026-11-15.bundle` (`git clone <bundle>` restores it). Any old clone must
   `git fetch && git reset --hard origin/main` (never push from an old clone — it would bring the file back).
   To edit the Worker: edit the Mac copy, paste into the dashboard, keep it out of git.
+
+## Added 2026-11-15 (later)
+
+- **Faster home:** `scripts/fetch_market.py` also writes `data/market_lite.json` (= market.json without each stock's `c`
+  closes, ~360 KB vs ~2.1 MB, plus a ready-made `home_line` for the home hero line; the market-data workflow commits it).
+  part-26 loads the lite file on home + reading-only routes (`LITE_ROUTES`) and fetches the full file the first time any
+  other route opens (it wraps `history.pushState/replaceState` to notice router moves). part-85 `ewLine()` uses `home_line`.
+- **Search + app install:** `assets/js/part-88.js` + `css/part-88.css`: top-bar search button (also "/" and Ctrl/Cmd+K) over
+  menu pages (`window.__spzRouteList()` in part-15), stocks in the snapshot and other SPACEZ sites. PWA: `manifest.webmanifest`,
+  `sw.js` (network-first, cache only as offline fallback; skips cross-origin, Range, no-store and `.bin`), icons in
+  `assets/icons/`. "Install as an app" in the palette footer and at the end of the SPACEZ apps pop-up (browser prompt when
+  offered, otherwise iPhone / Android / computer steps).
+- **Locks:** `earlysignal` and `quietValue` are admin-only (`ADMIN_ONLY_ROUTES`, earlysignal left `MEMBER_ROUTES`). The
+  locked-page pop-up (`.cag-toast`, part-46 + part-30.css) is a card with the page name; its button remembers the page
+  (`pendingRoute`, 10 min) and opens it after sign-in (on `spz:tier` / `spz:line` / `spz:acc` …).
+- **Beginner course:** `assets/js/part-89.js` + `css/part-89.css` mount one chapter (`.spzc`) under the heading of Learn
+  pages 01 stockclass, 02 basics, 03 start, 04 types, 06 signals, 07 guided (05 glossary untouched): course bar, lesson,
+  SVG drawings, calculators (`CALC`: grow, trade, dca, value, size), quick check, "next chapter". Progress localStorage
+  `spz.course.v1`, folded state `spz.course.fold`. Thai market facts were checked 2026-11-15 (see the header comment).
+  The Stock Classroom lessons themselves were already public (Worker `/api/classroom/public`).
+- **Economic calendar v2** (part-58 + end of part-40.css): calendar left (sticky), chosen day's schedule + this week right;
+  feed times are UTC and are now shown/grouped in the visitor's local time; today pre-selected; "Today" button; legend.
+- **Live outlook + shock watch:** `assets/js/part-90.js` + `css/part-90.css` read `data/brain.json` (raw FRED series only):
+  a printed rule-of-thumb cycle reading sets `SPZ_CYCLE.live` (+ asOf, confidence), rewrites `OUTLOOK.ind/snapDate/disc/src`
+  and each outlook scenario's watch list with live ✓ checks (part-15 exposes `window.__SPZ_OUTLOOK`). #/scenarios gets a
+  "what the data points at now" strip (heat 0–3 per measurable shock, opens it via `__SPZ_SCENARIOS.open`). STATUS badges
+  for outlook + scenarios are now 'mixed'.

@@ -551,7 +551,14 @@
     toastMember:{en:'Member access — open it with the short member code, or by connecting LINE.',
                  th:'เฉพาะสมาชิก — เปิดได้ด้วยรหัสสมาชิกแบบสั้น หรือเชื่อมต่อผ่าน LINE'},
     toastAdmin:{en:'Admin access only.',th:'เฉพาะแอดมินเท่านั้น'},
-    toastBtn:{en:'Unlock',th:'ปลดล็อก'}
+    toastBtn:{en:'Unlock',th:'ปลดล็อก'},
+    toastGo:{en:'Unlock & open',th:'ปลดล็อกแล้วเปิดหน้านี้'},
+    toastClose:{en:'Not now',th:'ไว้ก่อน'},
+    toastPage:{en:'This page',th:'หน้านี้'},
+    toastAdminWhy:{en:'Sign in with the admin key — you will land on this page right after.',
+                   th:'เข้าสู่ระบบด้วยรหัสแอดมิน แล้วระบบจะพาไปหน้านี้ให้ทันที'},
+    toastMemberWhy:{en:'Sign in (LINE, Telegram, Google or a site account) — you will land on this page right after.',
+                    th:'เข้าสู่ระบบ (LINE, Telegram, Google หรือบัญชีเว็บ) แล้วระบบจะพาไปหน้านี้ให้ทันที'}
   };
 
   /* ---------------- boot sequence ---------------- */
@@ -1444,7 +1451,8 @@
      'elliott' (Elliott Wave Classroom, 2026-10-30). The Stock Classroom
      ('stockclass') is open to everyone, no sign-in needed. Pages reached only from
      the Terminal Admin panel (NAV_HIDDEN in part-15.js) are unchanged. */
-  var MEMBER_ROUTES = ['stock','watchlist','bubble','chartlab','directory','regime','earlysignal',
+  /* 2026-11-15 (user request): 'earlysignal' left this list -- both scanners are admin-only now (ADMIN_ONLY_ROUTES) */
+  var MEMBER_ROUTES = ['stock','watchlist','bubble','chartlab','directory','regime',
     'globe','universe','desk','scenarios','anomaly','correl','rulelab','daily','proof'];
   /* Round U (#220): new "Editor" tier -- a separate, simpler login zone next
      to LINE/Telegram/Member/Admin, for a contributor who should be able to
@@ -1460,7 +1468,7 @@
      'editor' always fails, same as 'member' or 'basic' -- so Editor lands
      on the same "Admins only." placeholder a logged-out visitor would. */
   /* 2026-11-04: 'brain' (Market Brain) and 'secmap' (Security map) opened to Editor too (user request); Connected Users stays admin-only */
-  var ADMIN_ONLY_ROUTES = ['journalNew','connectedusers','announcements','gradebook','adminnotes','printreport','ebookreg'];
+  var ADMIN_ONLY_ROUTES = ['journalNew','connectedusers','announcements','gradebook','adminnotes','printreport','ebookreg','earlysignal','quietValue'];
   var EDITOR_ROUTES = LOCKED_ROUTES.filter(function(id){ return ADMIN_ONLY_ROUTES.indexOf(id) === -1; });
   /* A LINE-linked visitor gets the same MEMBER_ROUTES access as a Member-code
      login, without also having to paste that code in -- a stand-in for a
@@ -1548,25 +1556,70 @@
     });
   }
 
-  var toastEl = null;
-  function toast(id){
+  /* 2026-11-15 (user request): the locked-page pop-up is a proper card -- lock icon, which page,
+     what opens it -- and its button remembers the page, so after a successful sign-in the visitor
+     lands on it (pendingRoute, checked on 'spz:tier' and when the gate closes). */
+  var toastEl = null, pendingRoute = null, pendingT = 0;
+  function routeTitle(id, elm){
+    var t = '';
+    try {
+      var n = elm && elm.querySelector && elm.querySelector('.np-t, .hv-t, .hub-t, h3, h4, b, strong');
+      t = (n ? n.textContent : (elm && elm.textContent) || '').replace(/\s+/g, ' ').trim();
+      if(!t || t.length > 70){ var h = document.querySelector('#' + id + ' .section-head h2, #' + id + ' h2'); t = h ? h.textContent.replace(/\s+/g, ' ').trim() : ''; }
+    } catch(e){}
+    if(t.length > 70) t = t.slice(0, 68) + '…';
+    return t;
+  }
+  function hideToast(){ if(toastEl){ toastEl.classList.remove('show'); clearTimeout(toastEl.__t); } }
+  function toast(id, elm){
     if(!toastEl){
       toastEl = document.createElement('div');
       toastEl.className = 'cag-toast';
-      toastEl.innerHTML = '<span data-t></span><button type="button" data-b></button>';
+      toastEl.setAttribute('role', 'dialog');
+      toastEl.setAttribute('aria-live', 'polite');
+      toastEl.innerHTML =
+        '<span class="cag-tz-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.6"/><path d="M8 10.5V7.6a4 4 0 0 1 8 0v2.9"/><circle cx="12" cy="15.4" r="1.3"/><path d="M12 16.7v1.6"/></svg></span>' +
+        '<span class="cag-tz-body"><span class="cag-tz-k" data-t></span><span class="cag-tz-pg" data-p></span><span class="cag-tz-why" data-w></span>' +
+        '<span class="cag-tz-btns"><button type="button" class="cag-tz-go" data-b></button><button type="button" class="cag-tz-no" data-x></button></span></span>' +
+        '<span class="cag-tz-bar" aria-hidden="true"></span>';
       document.body.appendChild(toastEl);
-      toastEl.querySelector('button').addEventListener('click', function(){
-        toastEl.classList.remove('show');
+      toastEl.querySelector('[data-b]').addEventListener('click', function(){
+        hideToast();
+        pendingRoute = toastEl.__id && toastEl.__id.indexOf('__') !== 0 ? toastEl.__id : null;
+        pendingT = Date.now();
         openGate();
       });
+      toastEl.querySelector('[data-x]').addEventListener('click', hideToast);
+      toastEl.addEventListener('mouseenter', function(){ clearTimeout(toastEl.__t); toastEl.classList.add('hold'); });
+      toastEl.addEventListener('mouseleave', function(){ toastEl.classList.remove('hold'); toastEl.__t = setTimeout(hideToast, 3500); });
     }
-    toastEl.querySelector('[data-t]').textContent =
-      Tt(id && neededTier(id) === 'admin' ? TXT.toastAdmin : TXT.toastMember);
-    toastEl.querySelector('[data-b]').textContent = Tt(TXT.toastBtn);
+    var adm = !(id && neededTier(id) === 'member');
+    toastEl.__id = id || '';
+    toastEl.classList.toggle('is-admin', adm);
+    toastEl.classList.toggle('is-member', !adm);
+    toastEl.querySelector('[data-t]').textContent = Tt(adm ? TXT.toastAdmin : TXT.lockMember);
+    var ttl = id && id.indexOf('__') !== 0 ? routeTitle(id, elm) : '';
+    var pg = toastEl.querySelector('[data-p]');
+    pg.textContent = ttl ? Tt(TXT.toastPage) + ' · ' + ttl : '';
+    pg.hidden = !ttl;
+    toastEl.querySelector('[data-w]').textContent = Tt(adm ? TXT.toastAdminWhy : TXT.toastMemberWhy);
+    toastEl.querySelector('[data-b]').textContent = Tt(ttl ? TXT.toastGo : TXT.toastBtn);
+    toastEl.querySelector('[data-x]').textContent = Tt(TXT.toastClose);
+    toastEl.classList.remove('show'); void toastEl.offsetWidth;
     toastEl.classList.add('show');
     clearTimeout(toastEl.__t);
-    toastEl.__t = setTimeout(function(){ toastEl.classList.remove('show'); }, 4000);
+    toastEl.__t = setTimeout(hideToast, 7000);
   }
+  function goPending(){
+    if(!pendingRoute) return;
+    if(Date.now() - pendingT > 10 * 60 * 1000){ pendingRoute = null; return; }
+    if(isLockedRoute(pendingRoute)) return;
+    var id = pendingRoute; pendingRoute = null;
+    setTimeout(function(){ location.hash = '#/' + id; }, 60);
+  }
+  ['spz:tier', 'spz:line', 'spz:tg', 'spz:fb', 'spz:google', 'spz:acc'].forEach(function(ev){
+    document.addEventListener(ev, function(){ setTimeout(goPending, 0); });
+  });
 
   function openGate(){
     if(!gate) return;
@@ -1647,7 +1700,7 @@
     if(id && isLockedRoute(id)){
       ev.preventDefault(); ev.stopPropagation();
       if(ev.stopImmediatePropagation) ev.stopImmediatePropagation();
-      toast(id);
+      toast(id, elm);
     }
   }, true);
 

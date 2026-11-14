@@ -880,6 +880,57 @@ def build_charts(stocks):
                      "did not trade")}
 
 
+LITE = os.path.join(ROOT, "data", "market_lite.json")
+
+
+def home_line(stocks, n=126):
+    """Equal-weight line of US stocks over the last n sessions -- the same
+    maths the home page's hero line runs on the full closes (part-85 ewLine)."""
+    series = []
+    for s in stocks.values():
+        if s.get("cal") != "us" or not s.get("c"):
+            continue
+        c = s["c"]
+        if isinstance(c, str):
+            try:
+                c = [float(x) for x in c.split(",")]
+            except ValueError:
+                continue
+        if len(c) >= n + 1:
+            series.append(c[-(n + 1):])
+    if len(series) < 20:
+        return None
+    out = [1.0]
+    for i in range(1, n + 1):
+        r = m = 0
+        for c in series:
+            a, b = c[i - 1], c[i]
+            if a and b and a > 0 and b > 0:
+                x = b / a - 1
+                if abs(x) < 0.5:
+                    r += x
+                    m += 1
+        out.append(out[-1] * (1 + (r / m if m else 0)))
+    return {"v": [round(x, 5) for x in out], "n": len(series)}
+
+
+def write_lite(payload):
+    """data/market_lite.json = market.json without the ~2 years of daily
+    closes per stock (about 85 % of the bytes). The page loads this first and
+    only fetches the full file on screens that draw price history."""
+    stocks = {}
+    for t, s in payload.get("stocks", {}).items():
+        stocks[t] = {k: v for k, v in s.items() if k != "c"}
+    lite = dict(payload)
+    lite["stocks"] = stocks
+    lite["lite"] = True
+    hl = home_line(payload.get("stocks", {}))
+    if hl:
+        lite["home_line"] = hl
+    with open(LITE, "w", encoding="utf-8") as f:
+        json.dump(lite, f, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+
+
 def main():
     prev = {}
     if os.path.exists(OUT):
@@ -967,6 +1018,7 @@ def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=1, sort_keys=True)
+    write_lite(payload)
     print("wrote %s — %d stocks, %d fx rates, %d flow rows, %d currencies, "
           "%d macro, %d divergences"
           % (OUT, len(stocks), len(fx),
