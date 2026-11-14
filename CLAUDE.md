@@ -157,8 +157,7 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   must never be committed. Brain sources + build.sh + encrypt.js + the key live OUTSIDE the repo, on the
   Mac in `~/Documents/🔒 SPACEZ PRIVATE (ห้ามอัปขึ้น GitHub)/brain-sources-*.tgz`. To change the Brain:
   unpack to /tmp/bz, edit, run build.sh (it builds then encrypts into part-83.bin), commit only the .bin
-  (+ min/part-83.css). Older git history still contains readable copies unless the user agrees to a
-  history rewrite.
+  (+ min/part-83.css). (Checked 2026-11-15 across all 1,079 commits: the readable Brain code was never in the GitHub history.)
 
 ## Added 2026-11-08
 
@@ -258,3 +257,14 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   crypto — each with a drawn SVG infographic, how you earn / lose, a worked example, key terms, a safe-start list, plus a comparison
   table. It is inserted into the Guided Mode page `#/guided` (the "แนะนำ" pill, top right) before its note; part-23 is untouched.
   Facts checked 2026-11-13: BOT has licensed no retail forex in Thailand; TFEX SET50 options = 200 THB/point, European.
+
+## Added 2026-11-15
+
+- **The Worker source left the public repo.** `line-qr-worker.js` (Cloudflare Worker `spacez-line-link`: logins, admin APIs, Quiet
+  Value formula, Brain key + alerts) now lives only on the Mac in `~/Documents/TERMINAL/☁️ WORKER (Cloudflare)/line-qr-worker.js`
+  (gitignored folder) and is pasted into the Cloudflare dashboard from there. It is in `.gitignore`. Git history was rewritten with
+  `git filter-repo --path line-qr-worker.js --invert-paths` (force-pushed 2026-11-15; all commit hashes changed). It never contained
+  tokens — every secret comes from `env.*`. A full pre-cleanup backup is in the private folder:
+  `terminal-history-before-cleanup-2026-11-15.bundle` (`git clone <bundle>` restores it). Any old clone must
+  `git fetch && git reset --hard origin/main` (never push from an old clone — it would bring the file back).
+  To edit the Worker: edit the Mac copy, paste into the dashboard, keep it out of git.
