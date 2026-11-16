@@ -295,3 +295,24 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   and each outlook scenario's watch list with live ✓ checks (part-15 exposes `window.__SPZ_OUTLOOK`). #/scenarios gets a
   "what the data points at now" strip (heat 0–3 per measurable shock, opens it via `__SPZ_SCENARIOS.open`). STATUS badges
   for outlook + scenarios are now 'mixed'.
+
+## Added 2026-11-16
+
+- **Brain gold & bitcoin charts** (`o_px.js` `pxChart`, sources archive `brain-sources-2026-11-16.tgz`): thinner, calmer lines in
+  the style of the "gold vs real yields" chart — price 1.7, MAs 1, forecast 1.6 dashed, sample paths .8 at 28%, lighter fan,
+  smaller markers, height 580 → 470. `cycleChart` lines 2 / 1.1.
+- **Sign-in on first visit:** `maybeAutoOpenGate()` (part-46) now waits for the disclaimer however long it is read (it gave up after
+  30 s) and for the loading screen (`.boot3`, + 1.2 s grace), then opens the gate once per tab session for basic visitors.
+- **Reviewer tier** (ผู้ประเมิน — lecturers, deans, teachers, directors): its own tab in the gate, **same code as Editor**
+  (`editorCodeMatches`), same rights (tier stays `'editor'`); sessionStorage `spz.role = 'reviewer'` changes the labels, lands on
+  `#/home` and shows a gold "Reviewer mode" pill bottom-left (`.spz-rev-badge`). Logout clears it. Empty admin groups are hidden.
+- **Admin panel tiles v2** (end of part-30.css): publish / reports / tools buttons as dark cards with a glowing icon tile and an
+  animated gradient edge on hover (cyan-violet / amber-pink / emerald-cyan per group).
+- Menu / admin developer card text: "Creator of SPACEZ TERMINAL" + "Elliott Wave Analyst · Fintech Web Developer" (part-15).
+- part-88: search opens on mouse hover (260 ms); top bar is translucent navy glass with a gradient hairline; the bottom-right
+  sign-in / status buttons glow on hover and show a preview card (`.spzd-card`, mouse only; click still opens the real panel).
+- part-89: Stock Classroom chooser (`.spzc-hub`) shows ONE of the three tracks at a time — beginner course / 6 levels (part-84
+  `#skStart`) / topic lessons — localStorage `spz.class.pane`.
+- **Bubble Radar wide layout:** `assets/js/part-91.js` + `css/part-91.css` group part-40's flat blocks into sections on a 12-column
+  grid (gauge | meaning, sticky risk shape | 5 signals, other signals, flows | money map, burst, playbook, archetypes | scenario
+  link); re-runs after every part-40 repaint (it rebuilds with innerHTML). part-40 is untouched.

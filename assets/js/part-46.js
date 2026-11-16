@@ -475,6 +475,16 @@
     editorSubmit:{en:'Enter',th:'เข้าสู่ระบบ'},
     editorLoggedT:{en:'EDITOR',th:'EDITOR'},
     editorLoggedS:{en:'You have read-only Editor access.',th:'คุณมีสิทธิ์ EDITOR แบบอ่านอย่างเดียว'},
+    /* 2026-11-16 (user request): Reviewer tier for deans, lecturers, teachers and school directors who evaluate the site.
+       Same rights as Editor (internally tier 'editor' + sessionStorage 'spz.role' = 'reviewer'), same access code. */
+    tabReviewer:{en:'REVIEWER',th:'ผู้ประเมิน'},
+    reviewerT:{en:'REVIEWER ACCESS',th:'สิทธิ์ผู้ประเมิน'},
+    reviewerS:{en:'For lecturers, deans, teachers and school directors evaluating this work',th:'สำหรับอาจารย์ คณบดี คณะครู และผู้อำนวยการที่มาประเมินผลงาน'},
+    reviewerNote:{en:'Enter the reviewer code you were given. It opens every analysis page the owner can read (read-only) so you can see the whole site. Thank you for taking the time to review it.',
+                  th:'กรอกรหัสผู้ประเมินที่ได้รับ ระบบจะเปิดหน้าวิเคราะห์ทุกหน้าที่เจ้าของเว็บอ่านได้ (อ่านอย่างเดียว) เพื่อให้ดูผลงานได้ครบทั้งเว็บ ขอบคุณที่สละเวลามาประเมินค่ะ'},
+    reviewerLoggedT:{en:'REVIEWER',th:'ผู้ประเมิน'},
+    reviewerLoggedS:{en:'Reviewer mode — every analysis page is open to you (read-only).',th:'โหมดผู้ประเมิน — เปิดดูหน้าวิเคราะห์ได้ทุกหน้า (อ่านอย่างเดียว)'},
+    reviewerBadge:{en:'Reviewer mode',th:'โหมดผู้ประเมิน'},
     fullT:{en:'ADMIN LOGIN',th:'ADMIN LOGIN'},
     fullS:{en:'50 fields · import the .txt file or type them in',th:'รหัสผ่าน 50 ช่อง · นำเข้าไฟล์ .txt หรือพิมพ์เอง'},
     loggedT:{en:'ADMIN',th:'ADMIN'},
@@ -665,6 +675,9 @@
             '<button class="cag-tier e" type="button" data-tab="editor">' +
               '<svg class="cag-tier-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>' +
               '<b data-x="tabEditor"></b></button>' +
+            '<button class="cag-tier r" type="button" data-tab="reviewer">' +
+              '<svg class="cag-tier-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>' +
+              '<b data-x="tabReviewer"></b></button>' +
             '<button class="cag-tier f" type="button" data-tab="full">' +
               '<svg class="cag-tier-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6l7-3z"/><path d="M9.3 12.3l1.9 1.9 3.5-3.5"/></svg>' +
               '<b data-x="tabFull"></b></button>' +
@@ -1218,11 +1231,15 @@
       ['#cagBtnAddAnalysis','#cagBtnAnnouncements','#cagBtnConnectedUsers','#cagBtnCompareDownload','#cagBtnNotes','#cagBtnGradebook','#cagBtnPrintReport','#cagBtnEbook'].forEach(function(sel){
         var b = adminLinks.querySelector(sel); if(b) b.classList.toggle('hidden', currentTier === 'editor');
       });
+      /* 2026-11-16: an Editor / Reviewer saw empty "publish" and "reports" headings -- hide a group with nothing in it */
+      adminLinks.querySelectorAll('.cag-admin-group').forEach(function(g){
+        g.style.display = g.querySelector('.cag-admin-link:not(.hidden)') ? '' : 'none';
+      });
     }
     var adminBioEl = gate.querySelector('#cagAdminBio');
     if(adminBioEl) adminBioEl.classList.toggle('hidden', currentTier !== 'full');
     if(paneMember) paneMember.classList.toggle('active', !loggedIn && activeTab === 'member');
-    if(paneEditor) paneEditor.classList.toggle('active', !loggedIn && activeTab === 'editor');
+    if(paneEditor) paneEditor.classList.toggle('active', !loggedIn && (activeTab === 'editor' || activeTab === 'reviewer'));
     if(paneAdv) paneAdv.classList.toggle('active', !loggedIn && activeTab === 'full');
     if(tabsEl){
       tabsEl.querySelectorAll('[data-tab]').forEach(function(btn){
@@ -1310,8 +1327,8 @@
         // Priority when more than one is true at once (rare -- e.g. someone
         // linked both LINE and Telegram): real tier first, then LINE (it
         // alone also carries a personal watchlist), then Telegram.
-        loggedT: currentTier === 'full' ? TXT.loggedT : currentTier === 'editor' ? TXT.editorLoggedT : currentTier === 'member' ? TXT.memberLoggedT : accLinked ? TXT.accLoggedT : lineLinked ? TXT.lineLoggedT : TXT.tgLoggedT,
-        loggedS: currentTier === 'full' ? TXT.loggedS : currentTier === 'editor' ? TXT.editorLoggedS : currentTier === 'member' ? TXT.memberLoggedS : accLinked ? TXT.accLoggedS : lineLinked ? TXT.lineLoggedS : TXT.tgLoggedS,
+        loggedT: currentTier === 'full' ? TXT.loggedT : currentTier === 'editor' ? (isReviewer() ? TXT.reviewerLoggedT : TXT.editorLoggedT) : currentTier === 'member' ? TXT.memberLoggedT : accLinked ? TXT.accLoggedT : lineLinked ? TXT.lineLoggedT : TXT.tgLoggedT,
+        loggedS: currentTier === 'full' ? TXT.loggedS : currentTier === 'editor' ? (isReviewer() ? TXT.reviewerLoggedS : TXT.editorLoggedS) : currentTier === 'member' ? TXT.memberLoggedS : accLinked ? TXT.accLoggedS : lineLinked ? TXT.lineLoggedS : TXT.tgLoggedS,
         accH: TXT.accH, accGo: TXT.accGo, accOr: TXT.accOr,
         logoutBtn: TXT.logoutBtn, upgradeBtn: TXT.upgradeBtn,
         adminAddAnalysis: TXT.adminAddAnalysis, adminPrintReport: TXT.adminPrintReport,
@@ -1321,7 +1338,7 @@
         adminQrCode: TXT.adminQrCode, adminElliott: TXT.adminElliott, adminArena: TXT.adminArena, adminArenaSub: TXT.adminArenaSub, adminArenaGo: TXT.adminArenaGo, adminNotes: TXT.adminNotes, adminGradebook: TXT.adminGradebook, adminEbook: TXT.adminEbook, adminBrain: TXT.adminBrain, adminBrainSub: TXT.adminBrainSub, adminBrainTag: TXT.adminBrainTag, adminBrainGo: TXT.adminBrainGo, adminBrainC1: TXT.adminBrainC1, adminBrainC2: TXT.adminBrainC2, adminBrainC3: TXT.adminBrainC3, adminBrainC4: TXT.adminBrainC4, adminBrainC5: TXT.adminBrainC5, adminSecMap: TXT.adminSecMap,
         adminGroupPublish: TXT.adminGroupPublish, adminGroupReports: TXT.adminGroupReports, adminGroupTools: TXT.adminGroupTools,
         tabMember: TXT.tabMember, tabFull: TXT.tabFull, tabLine: TXT.tabLine, tabTg: TXT.tabTg, tabEditor: TXT.tabEditor,
-        editorT: TXT.editorT, editorS: TXT.editorS, editorNote: TXT.editorNote, editorSubmit: TXT.editorSubmit,
+        editorT: activeTab === 'reviewer' ? TXT.reviewerT : TXT.editorT, editorS: activeTab === 'reviewer' ? TXT.reviewerS : TXT.editorS, editorNote: activeTab === 'reviewer' ? TXT.reviewerNote : TXT.editorNote, editorSubmit: TXT.editorSubmit, tabReviewer: TXT.tabReviewer,
         lineName: lineNameTxt, lineStatus: lineStatusTxt, lineBtn: lineBtnTxt,
         tgName: tgNameTxt, tgStatus: tgStatusTxt, tgBtn: tgBtnTxt,
         fbName: fbNameTxt, fbStatus: fbStatusTxt, fbBtn: fbBtnTxt,
@@ -1357,8 +1374,23 @@
     applyTier(tier);
   }
 
+  function isReviewer(){ try { return sessionStorage.getItem('spz.role') === 'reviewer'; } catch(e){ return false; } }
+  var revBadge = null;
+  function paintReviewerBadge(){
+    var on = currentTier === 'editor' && isReviewer();
+    if(!on){ if(revBadge) revBadge.hidden = true; return; }
+    if(!revBadge){
+      revBadge = document.createElement('button'); revBadge.type = 'button'; revBadge.className = 'spz-rev-badge';
+      revBadge.addEventListener('click', function(){ openGate(); });
+      document.body.appendChild(revBadge);
+    }
+    revBadge.hidden = false;
+    revBadge.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg><span>' + Tt(TXT.reviewerBadge) + '</span>';
+  }
+  document.addEventListener('spz:tier', paintReviewerBadge);
+  new MutationObserver(paintReviewerBadge).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
   function logout(){
-    try { sessionStorage.removeItem('spacez.auth'); sessionStorage.removeItem(EDITOR_CODE_KEY); } catch(e){}
+    try { sessionStorage.removeItem('spacez.auth'); sessionStorage.removeItem(EDITOR_CODE_KEY); sessionStorage.removeItem('spz.role'); } catch(e){}
     try { if(window.__SPZ_ACC) window.__SPZ_ACC.logout(); } catch(e){}
     applyTier('basic');
   }
@@ -1418,10 +1450,13 @@
       clearErr(errEditor);
       editorInput.value = '';
       try { sessionStorage.setItem(EDITOR_CODE_KEY, pw); } catch(e){}
+      var asRev = activeTab === 'reviewer';
+      try { if(asRev) sessionStorage.setItem('spz.role', 'reviewer'); else sessionStorage.removeItem('spz.role'); } catch(e){}
       finishUnlock('editor');
-      /* Round AD: an Editor lands straight on the Asset Analysis Log -- no
-         LINE / Telegram link needed to read it (see isUnlocked() in part-57). */
-      location.hash = '#/journal';
+      /* a pending locked page (from the lock pop-up) wins; otherwise Editor lands on the Asset Analysis Log
+         (Round AD) and a Reviewer on the home page, to start the tour from the top */
+      if(pendingRoute) return;
+      location.hash = asRev ? '#/home' : '#/journal';
     });
   }
 
@@ -1637,12 +1672,18 @@
      decides whether the gate offers itself once, not whether it's required. */
   function maybeAutoOpenGate(){
     try { if(sessionStorage.getItem('spz_auth_gate_auto_shown')) return; } catch(e){}
-    var tries = 0;
+    var tries = 0, clearAt = 0;
     var iv = setInterval(function(){
       tries++;
       var dg = document.getElementById('spzGate');
       var disclaimerOpen = !!(dg && !dg.hidden);
-      if(disclaimerOpen && tries < 300) return; // keep waiting (up to ~30s)
+      /* 2026-11-15 (user request: show the sign-in on the first visit): wait for the disclaimer however long
+         it takes to read -- it used to give up after 30 s, so a first-time visitor who read it properly never
+         saw the sign-in at all. Also wait for the loading screen to finish. */
+      var booting = document.documentElement.classList.contains('spz-pre') || !!document.querySelector('.boot3:not(.off)');
+      if(disclaimerOpen) clearAt = 0; else if(!clearAt) clearAt = Date.now();
+      /* the loading screen starts a moment after the disclaimer closes, so wait 1.2 s of "clear" before trusting it */
+      if((disclaimerOpen || booting || Date.now() - clearAt < 1200) && tries < 36000) return; // keep waiting (up to an hour)
       clearInterval(iv);
       try { sessionStorage.setItem('spz_auth_gate_auto_shown', '1'); } catch(e){}
       if(disclaimerOpen) return; // gave up waiting -- don't stack on top of it

@@ -325,4 +325,82 @@
     if(pop){ clearInterval(iva); paintAppsInstall(); new MutationObserver(function(){ if(!pop.querySelector('.spzq-appinst')) paintAppsInstall(); }).observe(pop, { childList:true }); }
     else if(++ta > 80) clearInterval(iva);
   }, 300);
+  /* ---------------- 2026-11-16: search opens on hover (mouse) ---------------- */
+  (function(){
+    var t = 0;
+    document.addEventListener('pointerover', function(e){
+      var b = e.target && e.target.closest && e.target.closest('.spzq-btn');
+      if(!b || e.pointerType !== 'mouse') return;
+      clearTimeout(t); t = setTimeout(function(){ if(!ov || ov.hidden) open(); }, 260);
+    });
+    document.addEventListener('pointerout', function(e){
+      var b = e.target && e.target.closest && e.target.closest('.spzq-btn');
+      if(b && (!e.relatedTarget || !b.contains(e.relatedTarget))) clearTimeout(t);
+    });
+  })();
+
+  /* ---------------- 2026-11-16: bottom-right dock (sign-in + system status) ----------------
+     User request: more life when the pointer comes near them, and a little panel of their own.
+     Hover (mouse only) shows a glass preview card above the button; click still opens the full
+     sign-in gate / status panel exactly as before. */
+  (function(){
+    if(!window.matchMedia || !window.matchMedia('(hover:hover) and (pointer:fine)').matches) return;
+    var card = null, hideT = 0, cur = null;
+    var TIERN = { full:B('Admin', 'แอดมิน'), editor:B('Editor', 'Editor'), member:B('Member', 'สมาชิก'), basic:B('Visitor', 'ผู้เยี่ยมชม') };
+    function tier(){ try { return window.__SPZ_TIER ? window.__SPZ_TIER() : 'basic'; } catch(e){ return 'basic'; } }
+    function reviewer(){ try { return sessionStorage.getItem('spz.role') === 'reviewer'; } catch(e){ return false; } }
+    function ago(ts){ var m = Math.round((Date.now() - ts) / 60000); if(!isFinite(m)) return ''; if(m < 1) return T(B('just now', 'เมื่อสักครู่')); if(m < 60) return m + T(B(' min ago', ' นาทีที่แล้ว')); var h = Math.round(m / 60); return h + T(B(' h ago', ' ชม.ที่แล้ว')); }
+    function loginHTML(){
+      var tr = tier(), name = tr === 'editor' && reviewer() ? B('Reviewer', 'ผู้ประเมิน') : TIERN[tr] || TIERN.basic, inn = tr !== 'basic';
+      return '<div class="spzd-h"><i class="' + (inn ? 'ok' : '') + '"></i><b>' + esc(T(inn ? B('Signed in', 'เข้าสู่ระบบแล้ว') : B('Sign in', 'เข้าสู่ระบบ'))) + '</b><span>' + esc(T(name)) + '</span></div>' +
+        '<p>' + esc(T(inn ? B('Open your panel: shortcuts, Market Brain, sign out.', 'เปิดแผงของคุณ: ทางลัด สมองตลาด และออกจากระบบ') : B('Unlock the analysis pages and save your watchlist.', 'ปลดล็อกหน้าวิเคราะห์ และบันทึกหุ้นที่ติดตามไว้'))) + '</p>' +
+        (inn ? '' : '<div class="spzd-chips">' + ['LINE', 'Telegram', 'Google', 'Editor', T(B('Reviewer', 'ผู้ประเมิน')), T(B('Admin', 'แอดมิน'))].map(function(x){ return '<em>' + esc(x) + '</em>'; }).join('') + '</div>') +
+        '<div class="spzd-go">' + esc(T(B('Click to open', 'คลิกเพื่อเปิด'))) + ' →</div>';
+    }
+    function statusHTML(){
+      var dot = document.querySelector('.sysx-trig-dot'), h = dot ? (/\bbad\b/.test(dot.className) ? 'bad' : /\bwarn\b/.test(dot.className) ? 'warn' : 'ok') : 'ok';
+      var snap = null; try { snap = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot && window.__SPZ_LIVE.snapshot(); } catch(e){}
+      var gt = snap && snap.generated_at ? Date.parse(snap.generated_at) : NaN, ok = navigator.onLine !== false;
+      var lab = { ok:B('All systems normal', 'ระบบทำงานปกติ'), warn:B('Some data is late', 'ข้อมูลบางส่วนมาช้า'), bad:B('A data source has a problem', 'แหล่งข้อมูลบางตัวมีปัญหา') }[h];
+      return '<div class="spzd-h"><i class="' + (h === 'ok' ? 'ok' : h) + '"></i><b>' + esc(T(B('System status', 'สถานะระบบ'))) + '</b><span>' + esc(T(lab)) + '</span></div>' +
+        '<ul class="spzd-l"><li><span>' + esc(T(B('Market data', 'ข้อมูลตลาด'))) + '</span><b>' + (isFinite(gt) ? esc(ago(gt)) : '–') + '</b></li>' +
+        '<li><span>' + esc(T(B('Internet', 'อินเทอร์เน็ต'))) + '</span><b>' + esc(T(ok ? B('online', 'เชื่อมต่ออยู่') : B('offline', 'ออฟไลน์'))) + '</b></li>' +
+        '<li><span>' + esc(T(B('App mode', 'โหมดแอป'))) + '</span><b>' + esc(T(isStandalone() ? B('installed', 'ติดตั้งแล้ว') : B('browser', 'เบราว์เซอร์'))) + '</b></li></ul>' +
+        '<div class="spzd-go">' + esc(T(B('Click for the full report', 'คลิกเพื่อดูรายละเอียดทั้งหมด'))) + ' →</div>';
+    }
+    function show(btn, kind){
+      if(!card){
+        card = document.createElement('div'); card.className = 'spzd-card'; card.setAttribute('role', 'tooltip');
+        card.addEventListener('mouseenter', function(){ clearTimeout(hideT); });
+        card.addEventListener('mouseleave', function(){ hide(); });
+        card.addEventListener('click', function(){ var b = cur; hide(true); if(b) b.click(); });
+        document.body.appendChild(card);
+      }
+      clearTimeout(hideT);
+      cur = btn;
+      card.className = 'spzd-card k-' + kind;
+      card.innerHTML = kind === 'login' ? loginHTML() : statusHTML();
+      var r = btn.getBoundingClientRect();
+      card.style.right = Math.max(10, window.innerWidth - r.right - 4) + 'px';
+      card.style.bottom = (window.innerHeight - r.top + 12) + 'px';
+      card.style.setProperty('--ax', Math.max(18, window.innerWidth - r.right + r.width / 2 - Math.max(10, window.innerWidth - r.right - 4)) + 'px');
+      requestAnimationFrame(function(){ card.classList.add('on'); });
+      btn.classList.add('spzd-hot');
+    }
+    function hide(now){
+      clearTimeout(hideT);
+      hideT = setTimeout(function(){ if(card) card.classList.remove('on'); if(cur) cur.classList.remove('spzd-hot'); cur = null; }, now ? 0 : 180);
+    }
+    document.addEventListener('mouseover', function(e){
+      var b = e.target && e.target.closest && e.target.closest('#spzAdminTrigger, .sysx-trig');
+      if(!b) return;
+      if(cur === b){ clearTimeout(hideT); return; }
+      show(b, b.id === 'spzAdminTrigger' ? 'login' : 'status');
+    });
+    document.addEventListener('mouseout', function(e){
+      var b = e.target && e.target.closest && e.target.closest('#spzAdminTrigger, .sysx-trig');
+      if(b && !(e.relatedTarget && (b.contains(e.relatedTarget) || (card && card.contains(e.relatedTarget))))) hide();
+    });
+    document.addEventListener('click', function(e){ if(card && cur && !card.contains(e.target)) hide(true); }, true);
+  })();
 })();

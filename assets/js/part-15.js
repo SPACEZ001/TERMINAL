@@ -1340,11 +1340,11 @@ var CL_UI = {
           '<span class="dev-ava"><img src="' + DEV_AVATAR + '" alt="" loading="lazy">' +
             '<span class="dev-ring"></span><span class="dev-live"></span></span>' +
           '<span class="dev-info">' +
-            '<span class="dev-lab">' + esc(th ? 'นักพัฒนาเว็บ' : 'Web Developer') + '</span>' +
+            '<span class="dev-lab">' + esc(th ? 'ผู้สร้าง SPACEZ TERMINAL' : 'Creator of SPACEZ TERMINAL') + '</span>' +
             '<span class="dev-name">Noraset Boikaw <span class="dev-nick">"Focus"</span></span>' +
             '<span class="dev-role">' + esc(th
-              ? 'นักวิเคราะห์ Elliott Wave — ลงทุนมาตั้งแต่ปี 2023'
-              : 'Elliott Wave Analyst — investing since 2023') + '</span>' +
+              ? 'นักวิเคราะห์ Elliott Wave · นักพัฒนาเว็บการเงิน'
+              : 'Elliott Wave Analyst · Fintech Web Developer') + '</span>' +
           '</span>' +
         '</div>' +
         '<div class="dev-links">' +

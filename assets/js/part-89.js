@@ -454,6 +454,62 @@
     });
     return all;
   }
+  /* ------------------------------------------------------------------
+     2026-11-16 (user request): the Stock Classroom page showed three beginner tracks one after another
+     (this course chapter, the 6-level "start from zero" block from part-84, and the topic lessons), which
+     read as repeats. A small chooser on top now shows ONE of them at a time, each described in a line.
+     Remembered in localStorage 'spz.class.pane'.
+     ------------------------------------------------------------------ */
+  var HUB = [
+    { k:'course', ic:'flag', t:B('Beginner course · 7 chapters', 'คอร์สมือใหม่ · 7 บท'), d:B('Start here if you know nothing yet. One chapter per Learn menu, in order.', 'เริ่มตรงนี้ถ้ายังไม่รู้อะไรเลย เรียนบทละเมนู เรียงตามลำดับ'), tag:B('Recommended', 'แนะนำ') },
+    { k:'levels', ic:'layers', t:B('Step-by-step · 6 levels', 'เรียนละเอียด · 6 ระดับ'), d:B('Short lessons with a picture, key points and a mini calculator, level by level.', 'บทสั้นๆ มีภาพ สรุปสำคัญ และเครื่องคิดเลขเล็ก ไล่ทีละระดับ'), tag:null },
+    { k:'topics', ic:'doc', t:B('Lessons by topic', 'คลังบทเรียนตามหัวข้อ'), d:B('Pick any topic — business, statements, value, economy, risk — and read just that.', 'เลือกอ่านเฉพาะหัวข้อที่อยากรู้ ธุรกิจ งบการเงิน มูลค่า เศรษฐกิจ ความเสี่ยง'), tag:null }
+  ];
+  function hubPanes(wrap){
+    var out = { course:[], levels:[], topics:[] };
+    Array.prototype.forEach.call(wrap.children, function(c){
+      if(c.classList.contains('section-head') || c.classList.contains('spzc-hub')) return;
+      if(c.classList.contains('spzc')) out.course.push(c);
+      else if(c.id === 'skStart') out.levels.push(c);
+      else out.topics.push(c);
+    });
+    return out;
+  }
+  function hubApply(wrap){
+    var cur = lsGet('spz.class.pane', 'course'); if(!HUB.some(function(h){ return h.k === cur; })) cur = 'course';
+    var P = hubPanes(wrap);
+    Object.keys(P).forEach(function(k){ P[k].forEach(function(el){ el.classList.toggle('spzc-off', k !== cur); }); });
+    var hub = wrap.querySelector('.spzc-hub');
+    if(hub) hub.querySelectorAll('[data-pane]').forEach(function(b){ var on = b.getAttribute('data-pane') === cur; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); });
+  }
+  function hubPaint(hub){
+    hub.innerHTML = '<div class="spzc-hub-h"><b>' + esc(T(B('Where do you want to start?', 'อยากเริ่มเรียนแบบไหน?'))) + '</b><span>' + esc(T(B('Three ways to learn the same thing — choose one, switch any time.', 'มี 3 แบบให้เลือก เนื้อหาเรื่องเดียวกัน เลือกแบบที่ชอบ สลับได้ตลอด'))) + '</span></div>' +
+      '<div class="spzc-hub-g" role="tablist">' + HUB.map(function(h, i){
+        return '<button type="button" role="tab" class="spzc-hub-c" data-pane="' + h.k + '"><i>' + ico(h.ic) + '</i><span class="spzc-hub-n">' + (i + 1) + '</span><b>' + esc(T(h.t)) + '</b><small>' + esc(T(h.d)) + '</small>' + (h.tag ? '<em>' + esc(T(h.tag)) + '</em>' : '') + '</button>';
+      }).join('') + '</div>';
+  }
+  function hubMount(){
+    var sec = document.getElementById('stockclass'); if(!sec) return false;
+    var box = sec.querySelector('.spzc[data-ch="stockclass"]'); if(!box) return false;
+    var wrap = box.parentNode;
+    var hub = wrap.querySelector('.spzc-hub');
+    if(!hub){
+      hub = document.createElement('div'); hub.className = 'spzc-hub';
+      wrap.insertBefore(hub, box);
+      hubPaint(hub);
+      hub.addEventListener('click', function(e){
+        var b = e.target.closest('[data-pane]'); if(!b) return;
+        lsSet('spz.class.pane', b.getAttribute('data-pane')); hubApply(wrap);
+        try { var y = hub.getBoundingClientRect().bottom + window.pageYOffset - 80; if(window.pageYOffset > y) window.scrollTo({ top:y - 200, behavior:'smooth' }); } catch(err){}
+      });
+      new MutationObserver(function(){ hubApply(wrap); }).observe(wrap, { childList:true });
+      new MutationObserver(function(){ hubPaint(hub); hubApply(wrap); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+    }
+    hubApply(wrap);
+    return !!document.getElementById('skStart');
+  }
+  var ht = 0, hiv = setInterval(function(){ if(hubMount() || ++ht > 120) clearInterval(hiv); }, 400);
+
   window.__SPZ_COURSE = { repaint:paintAll };
   var tries = 0, iv = setInterval(function(){ if(mount() || ++tries > 120) clearInterval(iv); }, 300);
   new MutationObserver(function(){ paintAll(); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
