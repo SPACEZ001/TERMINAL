@@ -405,3 +405,21 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
 - Menu special block: the three cards stay full colour for everyone (no grey lock look inside `.np-feat`); one line under the title
   (`.np-feat-lock`, part-93 `featLock()`) says "ล็อกไว้ · เฉพาะแอดมิน Editor และผู้ประเมิน" for visitors. Access is unchanged. The
   board card text is now "โครงสร้างองค์กร · คณะกรรมการ · ฝ่ายงาน".
+
+## Added 2026-11-17 (d)
+
+- **Board v4 (part-93):** one page "โครงสร้างและอำนาจ" with six fold-open sections (`.bd-s`, state localStorage `spz.board.open`):
+  org chart (count chips, each department opens 4 sub-teams `SUBS`, 3 board committees `COMMIT`), founder-control planner,
+  dilution path (Seed → A → B → IPO, `ROUNDS`), 6 "what if" scenarios (`SCEN`, `spz.board.scen`), 5 real cases (`CASES`: Jobs,
+  Altman, Zuckerberg, Huang, Musk), board size + 6 sample clauses (`CLAUSES`). Second tab = the web dashboard. "พิมพ์เอกสาร
+  โครงสร้างบริษัท (A4)" (`printDoc()`, iframe) prints an official company-structure document (ref `SPZ-OR-…`; founder name optional,
+  `spz.board.prname`). Facts as of 2026-11-17; general information, not legal advice.
+- **Print guard (end of part-92, `window.__SPZ_PRINTGUARD`):** anyone who is not the admin (Editor, Reviewer, member) prints drafts:
+  red diagonal "ฉบับร่าง · ไม่ใช่ฉบับจริง" on every page + a red "พิมพ์โดย: <role>" line at the top; report codes are `SPZ-XX-DRAFT`
+  (no serial) — part-70 `make()` / `forPrintReport()` return `G.ref(code)` when limited. Ctrl/Cmd+P on the site: `html.spz-pdraft`
+  `@media print` rules hide the Market Brain page (notice instead), the Elliott Wave lesson nav and all but the first 3 blocks of an
+  open lesson, and floating widgets. API: role / who / limited / ref / texts / docCSS(sel) / docMark / withMark(html).
+- **Brain print tab for limited roles** (k_print.js, sources archive `brain-sources-2026-11-17c.tgz`): only `PR_OPEN` types
+  (brief, weekly, handbook, custom) and `PR_OPEN_SECS` (sum, over, cal, hb); red notice `.bz-prlim`; no .md button; preview + print
+  frame get `withMark`; the PDF gets a canvas watermark per page (`prMarkPng`). The px tab one-click report bar is admin-only.
+  Print Report (`#/printreport`) stays admin-only (it needs the admin key).

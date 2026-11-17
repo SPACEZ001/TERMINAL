@@ -49,6 +49,8 @@
     return s;
   }
   function make(code){
+    /* 2026-11-17 print guard (part-92): non-admin prints carry a draft code with no serial number */
+    var G = window.__SPZ_PRINTGUARD; if(G && G.limited()) return G.ref(code);
     var d = new Date();
     return 'SPZ-' + code + '-' +
       String(d.getFullYear()).slice(2) + p2(d.getMonth() + 1) + p2(d.getDate()) + '-' +
@@ -61,6 +63,7 @@
   var prCache = {};
   function forPrintReport(type){
     var c = prCache[type], now = Date.now();
+    var G = window.__SPZ_PRINTGUARD; if(G && G.limited()) return G.ref(PR_CODES[type] || 'PR');
     if(c && now - c.t < 15 * 60000) return c.ref;
     var ref = make(PR_CODES[type] || 'PR');
     prCache[type] = { ref:ref, t:now };

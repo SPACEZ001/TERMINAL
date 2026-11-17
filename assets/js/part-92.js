@@ -479,3 +479,81 @@
   }
   var n = 0, iv = setInterval(function(){ if(build() || ++n > 80) clearInterval(iv); }, 250);
 })();
+/* =====================================================================
+   SPACEZ PRINT GUARD (2026-11-17) — user request: Editors / Reviewers (and
+   anyone who is not the admin) may print, but (a) every printed page carries
+   a red diagonal "DRAFT — not an official copy, printed by …" mark, (b) report
+   codes show as "SPZ-XX-DRAFT" without a serial number, and (c) the deep pages
+   (Market Brain, Elliott Wave classroom) print only a short excerpt. The admin
+   prints clean, official copies as before.
+   window.__SPZ_PRINTGUARD: role(), limited(), who(), ref(code), docCSS(sel), docMark()
+   Used by the Market Brain print tab (k_print.js) and by browser printing (Ctrl/Cmd+P).
+   ===================================================================== */
+(function(){
+  'use strict';
+  if(window.__SPZ_PRINTGUARD) return;
+  function L(){ return document.documentElement.getAttribute('lang') === 'th' ? 'th' : 'en'; }
+  function role(){
+    var t = ''; try { t = window.__SPZ_TIER ? window.__SPZ_TIER() : ''; } catch(e){}
+    if(t === 'full') return 'admin';
+    var rv = false; try { rv = sessionStorage.getItem('spz.role') === 'reviewer'; } catch(e){}
+    if(t === 'editor') return rv ? 'reviewer' : 'editor';
+    return t === 'member' ? 'member' : 'guest';
+  }
+  var WHO = { editor:['Editor', 'Editor'], reviewer:['Reviewer', 'ผู้ประเมิน'], member:['Member', 'สมาชิก'], guest:['Visitor', 'ผู้เยี่ยมชม'], admin:['Admin', 'แอดมิน'] };
+  function who(){ var w = WHO[role()] || WHO.guest; return L() === 'th' ? w[1] : w[0]; }
+  function limited(){ return role() !== 'admin'; }
+  function cssStr(x){ return '"' + String(x).replace(/["\\]/g, '\\$&') + '"'; }
+  function texts(){
+    var th = L() === 'th';
+    return { big: th ? 'ฉบับร่าง · ไม่ใช่ฉบับจริง' : 'DRAFT · NOT AN OFFICIAL COPY',
+      small: (th ? 'พิมพ์โดย: ' : 'Printed by: ') + who() + (th ? ' · เพื่อทดสอบ/ประเมินเท่านั้น · ห้ามนำไปอ้างอิงหรือเผยแพร่' : ' · for testing / review only · do not quote or share') };
+  }
+  /* CSS for a generated print document: a fixed overlay repeats on every printed page; `sel` (e.g. ".pg") also gets its own mark for PDF engines that capture page boxes */
+  function docCSS(sel){
+    var t = texts();
+    var mark = 'content:' + cssStr(t.big) + ' "\\A" ' + cssStr(t.small) + ';white-space:pre;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-30deg);z-index:50;pointer-events:none;text-align:center;' +
+      'font:900 46px/1.25 "Sarabun","Noto Sans Thai","Inter",sans-serif;color:rgba(220,38,38,.17);border:5px solid rgba(220,38,38,.15);border-radius:16px;padding:14px 28px;';
+    return '.spz-dmark{position:fixed;inset:0;pointer-events:none;z-index:2147483000;display:flex;align-items:center;justify-content:center;}' +
+      '.spz-dmark > div{transform:rotate(-30deg);text-align:center;color:rgba(220,38,38,.17);font:900 52px/1.2 "Sarabun","Noto Sans Thai","Inter",sans-serif;border:6px solid rgba(220,38,38,.15);border-radius:18px;padding:14px 34px;}' +
+      '.spz-dmark small{display:block;margin-top:6px;font-size:16px;font-weight:700;color:rgba(220,38,38,.32);}' +
+      '.spz-dstrip{position:fixed;left:0;right:0;top:0;z-index:2147483001;padding:4px 10px;text-align:center;font:700 10px/1.3 "Sarabun","Noto Sans Thai",sans-serif;color:#b91c1c;background:#fee2e2;border-bottom:1px solid #fca5a5;}' +
+      (sel ? sel + '{position:relative;}' + sel + '::after{' + mark + '}' : '') +
+      '@media screen{.spz-dmark{position:absolute;min-height:100%;}}';
+  }
+  function docMark(){ var t = texts(); return '<div class="spz-dmark" aria-hidden="true"><div>' + t.big + '<small>' + t.small + '</small></div></div><div class="spz-dstrip">' + t.small + '</div>'; }
+  function ref(code){ return 'SPZ-' + (code || 'XX') + '-DRAFT'; }
+  /* put the mark into a whole generated document string (no-op for the admin) */
+  function withMark(html){
+    if(!limited()) return html;
+    return String(html).replace('</head>', '<style>' + docCSS('') + '</style></head>').replace(/<body([^>]*)>/i, function(m){ return m + docMark(); });
+  }
+  window.__SPZ_PRINTGUARD = { role:role, who:who, limited:limited, ref:ref, docCSS:docCSS, docMark:docMark, texts:texts, withMark:withMark };
+
+  /* browser printing of the site itself (Ctrl/Cmd+P) */
+  var st = document.createElement('style'); st.id = 'spzPrintGuard'; document.head.appendChild(st);
+  function paintCSS(){
+    var t = texts(), th = L() === 'th';
+    var cut = th ? 'ฉบับย่อสำหรับ ' + who() + ' — เนื้อหาเต็มของหน้านี้พิมพ์ได้เฉพาะแอดมิน' : 'Short excerpt for ' + who() + ' — the full page can only be printed by the admin';
+    var none = th ? 'หน้านี้เป็นข้อมูลเชิงลึก พิมพ์ได้เฉพาะแอดมิน · ' + who() + ' ใช้ปุ่ม "พิมพ์" ในแท็บพิมพ์ของสมองตลาดเพื่อพิมพ์ฉบับสรุปได้' : 'This page holds in-depth data and can only be printed by the admin · ' + who() + 's can print a summary from the Market Brain Print tab';
+    st.textContent = '@media print{' +
+      /* big diagonal mark in the middle of every page + a small red line at the top of every page (position:fixed repeats per printed page) */
+      'html.spz-pdraft body::after{content:' + cssStr(t.big) + ';white-space:nowrap;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-30deg);z-index:2147483000;pointer-events:none;text-align:center;' +
+        'font:900 44px/1.3 "Sarabun","Noto Sans Thai","Inter",sans-serif;color:rgba(220,38,38,.2);border:5px solid rgba(220,38,38,.18);border-radius:16px;padding:12px 28px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
+      'html.spz-pdraft body::before{content:' + cssStr(t.small) + ';position:fixed;left:0;right:0;top:0;z-index:2147483001;pointer-events:none;padding:4px 10px;text-align:center;' +
+        'font:700 10px/1.35 "Sarabun","Noto Sans Thai",sans-serif;color:#b91c1c;background:#fee2e2;border-bottom:1px solid #fca5a5;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
+      'html.spz-pdraft .spz-rev-badge,html.spz-pdraft #spzAdminTrigger,html.spz-pdraft .sysx-trig,html.spz-pdraft #spzAlertBar,html.spz-pdraft #spzLoginHint,html.spz-pdraft .gm-cue,html.spz-pdraft .spzc-tp,html.spz-pdraft .spz-void-comet,html.spz-pdraft .spz-void-stars{display:none !important;}' +
+      'html.spz-pdraft section#brain > *{display:none !important;}' +
+      'html.spz-pdraft section#brain::before{content:' + cssStr(none) + ';display:block;margin:120px 40px;padding:24px;border:2px solid #b91c1c;border-radius:14px;font:700 18px/1.6 "Sarabun","Noto Sans Thai",sans-serif;color:#b91c1c;}' +
+      'html.spz-pdraft #elliott .gl-nav,html.spz-pdraft #elliott .ewv-pagebg{display:none !important;}' +
+      'html.spz-pdraft #elliott .gl-detail-body > :nth-child(n+4){display:none !important;}' +
+      'html.spz-pdraft #elliott .gl-detail-body::after{content:' + cssStr(cut) + ';display:block;margin-top:18px;padding:12px 14px;border:1.5px dashed #b91c1c;border-radius:10px;font:700 13px/1.5 "Sarabun","Noto Sans Thai",sans-serif;color:#b91c1c;}' +
+    '}';
+  }
+  function sync(){ document.documentElement.classList.toggle('spz-pdraft', limited()); }
+  paintCSS(); sync();
+  setInterval(sync, 1500);
+  document.addEventListener('spz:tier', sync);
+  window.addEventListener('beforeprint', function(){ sync(); paintCSS(); });
+  new MutationObserver(paintCSS).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+})();
