@@ -377,7 +377,9 @@
         document.body.appendChild(card);
       }
       clearTimeout(hideT);
+      if(cur && cur !== btn) linger(cur);
       cur = btn;
+      btn.classList.remove('spzd-fade');
       card.className = 'spzd-card k-' + kind;
       card.innerHTML = kind === 'login' ? loginHTML() : statusHTML();
       var r = btn.getBoundingClientRect();
@@ -387,10 +389,32 @@
       requestAnimationFrame(function(){ card.classList.add('on'); });
       btn.classList.add('spzd-hot');
     }
+    /* 2026-11-17 (user request): the preview card sometimes stayed open after the pointer left. Now the card closes as soon
+       as the pointer is off both the button and the card (a short 140 ms grace to cross the gap), a watchdog closes it if a
+       mouseout was missed, and only the glowing ring stays a moment and fades out (.spzd-fade). */
+    var fadeT = {};
+    function linger(b){
+      b.classList.remove('spzd-hot'); b.classList.add('spzd-fade');
+      var k = b.id || 'sys'; clearTimeout(fadeT[k]);
+      fadeT[k] = setTimeout(function(){ b.classList.remove('spzd-fade'); }, 1100);
+    }
     function hide(now){
       clearTimeout(hideT);
-      hideT = setTimeout(function(){ if(card) card.classList.remove('on'); if(cur) cur.classList.remove('spzd-hot'); cur = null; }, now ? 0 : 180);
+      hideT = setTimeout(function(){ if(card) card.classList.remove('on'); if(cur) linger(cur); cur = null; }, now ? 0 : 140);
     }
+    document.addEventListener('pointermove', function(e){
+      if(!cur || !card || e.pointerType !== 'mouse') return;
+      var t = e.target;
+      if(cur.contains(t) || card.contains(t)){ clearTimeout(hideT); return; }
+      var r = cur.getBoundingClientRect(), c = card.getBoundingClientRect(), x = e.clientX, y = e.clientY, P = 10;
+      var inBox = function(q){ return x >= q.left - P && x <= q.right + P && y >= q.top - P && y <= q.bottom + P; };
+      var inGap = x >= Math.min(r.left, c.left) - P && x <= Math.max(r.right, c.right) + P && y >= c.bottom - P && y <= r.top + P;
+      if(inBox(r) || inBox(c) || inGap){ clearTimeout(hideT); return; }
+      hide();
+    }, { passive:true });
+    window.addEventListener('scroll', function(){ if(cur) hide(true); }, { passive:true });
+    window.addEventListener('blur', function(){ if(cur) hide(true); });
+    document.documentElement.addEventListener('mouseleave', function(){ if(cur) hide(true); });
     document.addEventListener('mouseover', function(e){
       var b = e.target && e.target.closest && e.target.closest('#spzAdminTrigger, .sysx-trig');
       if(!b) return;

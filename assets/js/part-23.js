@@ -271,7 +271,7 @@ var GM = {
       s += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="17" fill="' +
         (done ? 'rgba(0,255,102,.16)' : (cur ? 'rgba(204,255,0,.18)' : 'rgba(255,255,255,.05)')) +
         '" stroke="' + col + '" stroke-width="' + (cur ? 2 : 1.2) + '"/>' +
-        '<text class="gm-ic" x="' + p[0] + '" y="' + (p[1] + 6) + '" text-anchor="middle">' + st.ic + '</text>' +
+        gmIcG(st, p[0], p[1], done ? 'var(--neon-2)' : (cur ? 'var(--neon)' : '#c7d2fe')) +
         (done ? '<text x="' + (p[0] + 13) + '" y="' + (p[1] - 11) + '" font-size="11" fill="var(--neon-2)">✓</text>' : '') +
         '<text class="gm-lbl" x="' + p[0] + '" y="' + (p[1] + (i % 2 ? -26 : 34)) + '" text-anchor="middle">' +
         esc(String(i + 1).padStart(2, '0')) + '</text></g>';
@@ -279,6 +279,10 @@ var GM = {
     return '<svg class="gmp-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">' + s + '</svg>';
   }
 
+  /* 2026-11-17: line icons instead of emoji (user request) */
+  var GM_IC = {"start": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M15.5 8.5l-2 5-5 2 2-5z\"/>", "outlook": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3 2\"/>", "radar": "<path d=\"M12 12l6-6\"/><circle cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"5\"/><circle cx=\"12\" cy=\"12\" r=\"1\"/>", "flow": "<path d=\"M4 8h12l-3-3M20 16H8l3 3\"/>", "globe": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18\"/>", "desk": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"5\"/><circle cx=\"12\" cy=\"12\" r=\"1.5\"/>", "compare": "<path d=\"M5 20V10M12 20V4M19 20v-7\"/>", "gloss": "<path d=\"M4 5.5A2.5 2.5 0 016.5 3H20v15H6.5A2.5 2.5 0 004 20.5z\"/><path d=\"M4 20.5A2.5 2.5 0 016.5 18H20v3H6.5\"/>", "shock": "<path d=\"M13 2L4 14h7l-1 8 9-12h-7z\"/>", "size": "<path d=\"M3 21L21 3M7 21l-4-4M11 21l-2-2M15 21l-4-4M3 13l2 2M3 9l4 4\"/>"};
+  function gmIc(st){ var d = GM_IC[st.id]; return d ? '<svg class="gm-svgic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>' : st.ic; }
+  function gmIcG(st, x, y, col){ var d = GM_IC[st.id]; return d ? '<g class="gm-ic-g" transform="translate(' + (x - 8.5) + ',' + (y - 8.5) + ') scale(.71)" fill="none" stroke="' + col + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + d + '</g>' : '<text class="gm-ic" x="' + x + '" y="' + (y + 6) + '" text-anchor="middle">' + st.ic + '</text>'; }
   /* ---------------- the page ---------------- */
   var sec;
   function build(){
@@ -305,7 +309,7 @@ var GM = {
     q('lede').textContent = T(GM.lede).replace('%N', N);
     q('sm').textContent = T(GM.sMap);
     q('ss').textContent = T(GM.sSteps);
-    q('note').innerHTML = '<b>⚠</b> ' + esc(T(GM.note));
+    q('note').innerHTML = '<b>' + '<svg class="gm-svgic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg>' + '</b> ' + esc(T(GM.note));
 
     /* toggle */
     var tog = q('tog');
@@ -345,7 +349,7 @@ var GM = {
         var done = isDone(idx);
         var c = el('div', 'gm-c' + (idx === S.cur ? ' cur' : '') + (done ? ' done' : ''),
           '<div class="gm-hd"><span class="gm-num">' + String(idx + 1).padStart(2, '0') + '</span>' +
-            '<span class="gm-ic">' + st.ic + '</span>' +
+            '<span class="gm-ic">' + gmIc(st) + '</span>' +
             '<span class="gm-t">' + esc(T(st.t)) + '</span>' +
             '<button type="button" class="gm-chk" data-a="chk">' +
               (done ? '✓ ' + esc(T(GM.undoBtn)) : esc(T(GM.doneBtn))) + '</button></div>' +
@@ -416,7 +420,7 @@ var GM = {
 
     var last = S.cur >= N - 1;
     cue.innerHTML =
-      '<div class="gm-cue-h">' + st.ic +
+      '<div class="gm-cue-h">' + gmIc(st) +
         '<b>' + esc(T(st.t)) + '</b>' +
         '<button type="button" class="gm-cue-x" data-c="x" title="' + esc(T(GM.cueHide)) + '">✕</button>' +
       '</div>' +
@@ -460,7 +464,7 @@ var GM = {
       dots += '<span class="gm-dot' + (isDone(i) ? ' done' : '') + (i === S.cur ? ' cur' : '') + '"></span>';
     }
     bar.innerHTML =
-      '<span class="gm-bar-l"><span class="gm-bar-s">' + st.ic + ' ' +
+      '<span class="gm-bar-l"><span class="gm-bar-s">' + gmIc(st) + ' ' +
         esc(T(GM.stepOf).replace('%A', S.cur + 1).replace('%B', N)) + '</span>' +
         '<span class="gm-bar-t">' + esc(T(st.t)) + '</span></span>' +
       '<span class="gm-bar-b">' +
@@ -500,7 +504,7 @@ var GM = {
 
     if(!all && !S.peek){
       var lock = el('div', 'gm-lock',
-        '<div class="gm-lock-t">🔒 ' + esc(T(GM.sumLock).replace('%N', N)) + '</div>' +
+        '<div class="gm-lock-t"><svg class="gm-svgic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg> ' + esc(T(GM.sumLock).replace('%N', N)) + '</div>' +
         '<button type="button" class="gm-b pri">' + esc(T(GM.sumOpen)) + '</button>');
       lock.querySelector('button').addEventListener('click', function(){ S.peek = true; paintSum(); });
       host.appendChild(lock);

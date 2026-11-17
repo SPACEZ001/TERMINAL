@@ -673,12 +673,12 @@
             '<button class="cag-tier m" type="button" data-tab="member">' +
               '<svg class="cag-tier-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/></svg>' +
               '<b data-x="tabMember"></b></button>' +
-            '<button class="cag-tier e" type="button" data-tab="editor">' +
-              '<svg class="cag-tier-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>' +
-              '<b data-x="tabEditor"></b></button>' +
             '<button class="cag-tier r" type="button" data-tab="reviewer">' +
               '<svg class="cag-tier-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>' +
               '<b data-x="tabReviewer"></b></button>' +
+            '<button class="cag-tier e" type="button" data-tab="editor">' +
+              '<svg class="cag-tier-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>' +
+              '<b data-x="tabEditor"></b></button>' +
             '<button class="cag-tier f" type="button" data-tab="full">' +
               '<svg class="cag-tier-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6l7-3z"/><path d="M9.3 12.3l1.9 1.9 3.5-3.5"/></svg>' +
               '<b data-x="tabFull"></b></button>' +
@@ -1509,7 +1509,7 @@
      'editor' always fails, same as 'member' or 'basic' -- so Editor lands
      on the same "Admins only." placeholder a logged-out visitor would. */
   /* 2026-11-04: 'brain' (Market Brain) and 'secmap' (Security map) opened to Editor too (user request); Connected Users stays admin-only */
-  var ADMIN_ONLY_ROUTES = ['journalNew','connectedusers','announcements','gradebook','adminnotes','printreport','ebookreg','earlysignal','quietValue','printall'];
+  var ADMIN_ONLY_ROUTES = ['journalNew','connectedusers','announcements','gradebook','adminnotes','printreport','ebookreg','earlysignal','quietValue','printall','board'];
   var EDITOR_ROUTES = LOCKED_ROUTES.filter(function(id){ return ADMIN_ONLY_ROUTES.indexOf(id) === -1; });
   /* A LINE-linked visitor gets the same MEMBER_ROUTES access as a Member-code
      login, without also having to paste that code in -- a stand-in for a

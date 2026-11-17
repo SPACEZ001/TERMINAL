@@ -228,20 +228,20 @@
         '<ul class="pa-safe"><li>' + ico('code') + esc(T(B('No source code, scripts, keys or form values go into the file — only what a reader sees.', 'ไม่มีซอร์สโค้ด สคริปต์ รหัส หรือค่าที่พิมพ์ในช่องกรอก ติดไปในไฟล์ มีแต่สิ่งที่คนอ่านเห็นบนจอ'))) + '</li>' +
         '<li>' + ico('lock') + esc(T(B('This page and every button check the admin sign-in again before they run.', 'หน้านี้และทุกปุ่มจะเช็กว่าเป็นแอดมินอีกครั้งก่อนทำงาน'))) + '</li></ul></header>' +
       '<div class="pa-grid">' +
-        '<section class="pa-card"><div class="pa-ch"><b>1 · ' + esc(T(B('What to include', 'เลือกเนื้อหา'))) + '</b><span>' + nOn + ' / ' + nAll + '</span>' +
+        '<div class="pa-card"><div class="pa-ch"><b>1 · ' + esc(T(B('What to include', 'เลือกเนื้อหา'))) + '</b><span>' + nOn + ' / ' + nAll + '</span>' +
           '<button type="button" data-pa-all="1">' + esc(T(B('All', 'ทั้งหมด'))) + '</button><button type="button" data-pa-all="0">' + esc(T(B('None', 'ไม่เลือก'))) + '</button></div>' +
           '<h4>' + esc(T(B('Classrooms, Brain and guides', 'ห้องเรียน สมองตลาด และคู่มือ'))) + '</h4><div class="pa-list pa-ex">' +
             EXTRA.map(function(x){ return '<label class="' + (sel[x.k] ? 'on' : '') + '"><input type="checkbox" data-pa-k="' + x.k + '"' + (sel[x.k] ? ' checked' : '') + '><span>' + esc(T(x.t)) + '</span></label>'; }).join('') + '</div>' +
           '<h4>' + esc(T(B('Every page in the menu', 'ทุกหน้าในเมนู'))) + ' <input type="search" class="pa-filter" placeholder="' + esc(T(B('filter…', 'ค้นหา…'))) + '"></h4><div class="pa-list pa-rt">' +
             rs.map(function(r){ var k = 'r:' + r.id; return '<label class="' + (sel[k] ? 'on' : '') + '" data-pa-name="' + esc((T(r.t) + ' ' + r.id).toLowerCase()) + '"><input type="checkbox" data-pa-k="' + k + '"' + (sel[k] ? ' checked' : '') + '><span>' + esc(T(r.t) || r.id) + '</span><em>#/' + esc(r.id) + '</em></label>'; }).join('') + '</div>' +
-        '</section>' +
-        '<section class="pa-card pa-go"><div class="pa-ch"><b>2 · ' + esc(T(B('Make the file', 'สร้างไฟล์'))) + '</b></div>' +
+        '</div>' +
+        '<div class="pa-card pa-go"><div class="pa-ch"><b>2 · ' + esc(T(B('Make the file', 'สร้างไฟล์'))) + '</b></div>' +
           '<button type="button" class="pa-btn pri" data-pa-run="print">' + ico('print') + '<span><b>' + esc(T(B('Print / Save as PDF', 'พิมพ์ / บันทึกเป็น PDF'))) + '</b><small>' + esc(T(B('A4, white paper, cover + contents', 'A4 กระดาษขาว มีหน้าปกและสารบัญ'))) + '</small></span></button>' +
           '<button type="button" class="pa-btn" data-pa-run="html">' + ico('doc') + '<span><b>' + esc(T(B('Download one .html file', 'ดาวน์โหลดไฟล์ .html ไฟล์เดียว'))) + '</b><small>' + esc(T(B('opens in any browser, keeps the charts', 'เปิดได้ทุกเบราว์เซอร์ กราฟยังอยู่ครบ'))) + '</small></span></button>' +
           '<button type="button" class="pa-btn" data-pa-run="md">' + ico('ai') + '<span><b>' + esc(T(B('Download as text (.md) for AI', 'ดาวน์โหลดเป็นข้อความ (.md) ไว้ถาม AI'))) + '</b><small>' + esc(T(B('headings, text and tables only — small and easy to paste', 'เฉพาะหัวข้อ ข้อความ และตาราง ไฟล์เล็ก วางง่าย'))) + '</small></span></button>' +
           '<div class="pa-prog" hidden><div class="pa-bar"><i></i></div><p data-pa-msg></p><button type="button" class="pa-stop" data-pa-stop>' + ico('stop') + esc(T(B('Stop', 'หยุด'))) + '</button></div>' +
           '<p class="pa-note">' + esc(T(B('Takes about 1 second per page (a full run ≈ 1–2 minutes). Keep this tab open. Pages that are still loading their data are printed as they look at that moment.', 'ใช้เวลาราว 1 วินาทีต่อหน้า (ทั้งเว็บราว 1–2 นาที) เปิดแท็บนี้ค้างไว้ หน้าที่ยังโหลดข้อมูลไม่เสร็จจะถูกเก็บตามที่เห็นในตอนนั้น'))) + '</p>' +
-        '</section>' +
+        '</div>' +
       '</div></div>';
   }
   function setMsg(t, pct){

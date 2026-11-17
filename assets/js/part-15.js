@@ -1086,7 +1086,7 @@ var CL_UI = {
   /* Round AM: the CEWA Exam Arena is listed only for the tiers the admin allows
      (Terminal Admin > Exam Arena > "Who can see it"); default = admin only. */
   function navHid(id){ return !!NAV_HIDDEN[id] || id === 'arena'; }   /* Round AN: Exam Arena never in the top menu -- Terminal Admin panel only */
-  var NAV_HIDDEN = { connectedusers:1, printreport:1, printall:1, announcements:1, pro:1, adminnotes:1, gradebook:1, secmap:1, ebookreg:1 }; /* Round Q: Institutional Pro Desk moved into Cockpit, see part-47.js; Round W (#223): Quiet Value Scanner + Website QR Code are admin-only, reached only via the Terminal Admin panel, never listed in public nav/hub. Round X (#234) briefly added Elliott Wave Classroom here too, but Round Y (#241) reversed that: she wants it listed in the Learn group like any other page, just shown locked (paintLockVeils' spz-locked-item badge, same as a member-only page) rather than invisible -- the actual protection (LOCKED_ROUTES/ADMIN_ONLY_ROUTES in part-46.js + the content-level window.__SPZ_TIER() check in part-65.js, both behind the same PBKDF2/SHA-256-hashed admin password as everything else here) is unchanged. */
+  var NAV_HIDDEN = { connectedusers:1, printreport:1, printall:1, board:1, announcements:1, pro:1, adminnotes:1, gradebook:1, secmap:1, ebookreg:1 }; /* Round Q: Institutional Pro Desk moved into Cockpit, see part-47.js; Round W (#223): Quiet Value Scanner + Website QR Code are admin-only, reached only via the Terminal Admin panel, never listed in public nav/hub. Round X (#234) briefly added Elliott Wave Classroom here too, but Round Y (#241) reversed that: she wants it listed in the Learn group like any other page, just shown locked (paintLockVeils' spz-locked-item badge, same as a member-only page) rather than invisible -- the actual protection (LOCKED_ROUTES/ADMIN_ONLY_ROUTES in part-46.js + the content-level window.__SPZ_TIER() check in part-65.js, both behind the same PBKDF2/SHA-256-hashed admin password as everything else here) is unchanged. */
 
   function buildHub(){
     var sec = el('section');
@@ -1334,7 +1334,8 @@ var CL_UI = {
       var wrap = el('div', 'dev-card ' + (cls || ''),
         '<span class="dev-grid"></span>' +
         '<span class="dev-stars"></span>' +
-        '<span class="dev-hole"></span>' +
+        '<span class="dev-meteors" aria-hidden="true"><i></i><i></i><i></i><i></i></span>' +
+        '<span class="dev-spot" aria-hidden="true"></span>' +
         wm +
         '<div class="dev-top">' +
           '<span class="dev-ava"><img src="' + DEV_AVATAR + '" alt="" loading="lazy">' +
@@ -1359,6 +1360,8 @@ var CL_UI = {
           '<span class="dw-go">→</span>' +
         '</a>' +
         '</div>');
+      /* 2026-11-17: a soft light follows the pointer inside the card (user request: more life in this card) */
+      wrap.addEventListener('pointermove', function(e){ var r = wrap.getBoundingClientRect(); wrap.style.setProperty('--dmx', (e.clientX - r.left) + 'px'); wrap.style.setProperty('--dmy', (e.clientY - r.top) + 'px'); });
       return wrap;
     }
     window.__spzBioCard = bioCard;
@@ -1591,6 +1594,24 @@ var CL_UI = {
       });
       return a;
     }
+    /* 2026-11-17: executive board (admin only) — third card in the menu's special block */
+    var BOARD_BADGE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>';
+    function boardItem(){
+      if(!document.getElementById('board')) return null;
+      var th = L() === 'th';
+      var a = el('a', 'np-item np-item-brain np-item-board',
+        '<span class="np-head"><span class="np-n np-n-icon">' + BOARD_BADGE_ICON + '</span>' +
+        '<span class="np-t">' + esc(th ? 'บอร์ดบริหาร' : 'Executive board') + ' <i class="np-adm">ADMIN</i></span><span class="np-arrow">→</span></span>' +
+        '<span class="np-d">' + esc(th ? 'ภาพรวมเว็บ · ความสดของข้อมูล · ทางลัด · งานที่ต้องทำ — เฉพาะแอดมิน' : 'Site at a glance · data freshness · shortcuts · to-do — admin only') + '</span>');
+      a.href = '#/board';
+      a.setAttribute('data-route-to', 'board');
+      a.addEventListener('click', function(e){
+        e.preventDefault();
+        menu.classList.remove('open');
+        route('board');
+      });
+      return a;
+    }
     function journalItem(){
       var jr = null;
       for(var ji = 0; ji < ROUTES.length; ji++){ if(ROUTES[ji].id === 'journal') jr = ROUTES[ji]; }
@@ -1712,7 +1733,7 @@ var CL_UI = {
       /* anything not listed above still shows up, never silently dropped --
          except NAV_HIDDEN routes (Connected Users), which stay reachable
          only through the admin login gate's own panel, never this menu. */
-      used.exams = used.apps = used.brain = 1;   /* featured card / top-bar button instead */
+      used.exams = used.apps = used.brain = used.board = 1;   /* featured card / top-bar button instead */
       var rest = [];
       for(i = 0; i < ROUTES.length; i++){
         r = ROUTES[i];
@@ -1728,12 +1749,13 @@ var CL_UI = {
       }
       var ji2 = journalItem();
       if(ji2) pop.appendChild(ji2);
-      var bi2 = brainItem(), ei2 = examsItem();
-      if(bi2 || ei2){
+      var bi2 = brainItem(), ei2 = examsItem(), bd2 = boardItem();
+      if(bi2 || ei2 || bd2){
         /* 2026-11-07: Market Brain + exam room as two big featured cards (admin + editor; others see them locked) */
-        var feat = el('div', 'np-feat', '<div class="np-feat-h"><span>' + esc(L() === 'th' ? 'พิเศษ · แอดมินและ Editor' : 'Featured · admin and editor') + '</span></div>');
+        var feat = el('div', 'np-feat', '<div class="np-feat-h"><span>' + esc(L() === 'th' ? 'พื้นที่ผู้บริหาร · แอดมิน · Editor · ผู้ประเมิน' : 'Executive suite · Admin · Editor · Reviewer') + '</span></div>');
         if(bi2) feat.appendChild(bi2);
         if(ei2) feat.appendChild(ei2);
+        if(bd2) feat.appendChild(bd2);
         pop.appendChild(feat);
       }
       syncNav();

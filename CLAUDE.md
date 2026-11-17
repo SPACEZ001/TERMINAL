@@ -339,3 +339,34 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   `window.__SPZ_HTML2MD(node)` (DOM → Markdown) is shared with the Brain.
 - **Brain print tab:** new first type "Everything + all manuals" (`all` in `PR_TYPES`) and a "Download as text (.md) for AI"
   button (`data-prmd`, `prMd()`). Sources archive `brain-sources-2026-11-17b.tgz`.
+
+## Added 2026-11-17 (evening)
+
+- **Bubble Radar:** the sticky "risk shape" radar no longer slides over the sections below — part-91 puts it and the 5 signals
+  in one row box (`.bbx-pair`), so the sticky stays inside that row.
+- **Top bar:** `.top-fixed .nav` has no background box any more (part-88.css end); the rounded `.nav-cluster` pill is the only surface.
+- **Stock Classroom learning path (part-89):** the chooser is now "เรียนหุ้น 3 ขั้น" — step 1 beginner course (7 chapters) → step 2
+  6 levels (part-84 `#skStart`) → step 3 lesson library (part-65 topic shell). Chapter 7 ends with "ไปขั้นที่ 2"; a band after the
+  6 levels / the library (`.spzc-nb`, `data-pane-of`) links to the next step; any `[data-gopane="course|levels|topics"]` link opens
+  the classroom on that step (`__SPZ_COURSE.goPane`). Chapter 5 "ตัวเลขสำคัญ" now exists (`CH.glossary`, mounted on `#glossary`
+  above the terms) so every chapter has a "next" button.
+- **Course pill (part-89 `pillMount`):** once the course bar / path is scrolled past, a pill like the Market Brain tab pill appears top
+  left (after the LIVE chip, before the nav pill; below the top row when there is no room): ‹ chapters › and ▾ for the whole path
+  (7 chapters + step 2 + step 3). Classes `.spzc-tp`, `.spzc-tpm`.
+- **Guided page (#/guided):** order is chapter 7 → Markets 101 (`#markets101`) → the 10-step tour folded into one card
+  (`.spzg-tour`, localStorage `spz.guided.tour`) → the note. part-23 still drives its own elements inside the card. Emoji → line icons
+  in part-23 (`GM_IC`, `gmIc`, `gmIcG`) and part-87 (`mk4-svg`). The Stock Classroom page no longer draws the candle/price-line
+  background (`.ewv-page-stk .ewv-pagebg` hidden). A shared "course page skin" for #basics / #start / #guided and the lesson-library
+  sidebar is at the end of part-89.css.
+- **Executive board (admin only):** `assets/js/part-93.js` + `css/part-93.css`, route `#/board` (ADMIN_ONLY_ROUTES, NAV_HIDDEN): site
+  numbers, data freshness (HEAD + Last-Modified of data/*.json), admin shortcuts, a to-do list (localStorage `spz.board.todo`). Menu:
+  third card in the special block (`boardItem()` in part-15); the block is now titled "พื้นที่ผู้บริหาร · แอดมิน · Editor · ผู้ประเมิน" /
+  "Executive suite · Admin · Editor · Reviewer".
+- **Sign-in tabs:** order LINE · Telegram · Member · Reviewer · Editor · Admin; reviewer tab gold gradient; reviewer pane text a bit
+  bigger (end of part-30.css, uses `:has`).
+- **Developer card (part-15 `bioCard`, end of part-03.css):** black-hole disc removed; shooting stars (`.dev-meteors`), pointer light
+  (`.dev-spot`, `--dmx/--dmy`), aurora hover per link button (IG pink, FB violet, links green) instead of plain blue.
+- **Dock preview cards (part-88):** close as soon as the pointer leaves button + card (140 ms grace, pointermove watchdog, scroll/blur);
+  the ring lingers ~1 s and fades (`.spzd-fade`). Switching buttons no longer leaves the old one glowing.
+- `#printall` / `#board` sections use the site's 130px top padding; their inner cards are `div`s (a nested `<section>` picked up the
+  global section padding).

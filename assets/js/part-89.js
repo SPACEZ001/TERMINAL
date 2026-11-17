@@ -8,8 +8,8 @@
    where to go next — basic to advanced, with calculators.
    * One lesson block (.spzc) is mounted at the top of each page, right under
      its heading: 01 #stockclass, 02 #basics, 03 #start, 04 #types,
-     06 #signals, 07 #guided. Page 05 (#glossary) is untouched; the course bar
-     only links to it.
+     06 #signals, 07 #guided, and (since 2026-11-17) 05 #glossary — chapter 5
+     "Key numbers", above the glossary terms.
    * Each block: course bar (7 steps, ticks for finished chapters), the
      lesson, a quick check question, a calculator where it helps, and
      "next chapter". Progress = localStorage 'spz.course.v1' (this browser
@@ -345,6 +345,39 @@
       },
       q:{ q:B('Price 40 baht, EPS 4 baht. The P/E is…', 'ราคา 40 บาท EPS 4 บาท P/E เท่ากับ…'), c:[B('4', '4'), B('10', '10'), B('160', '160')], a:1, e:B('P/E = 40 ÷ 4 = 10: you pay ten years of today\'s profit.', 'P/E = 40 ÷ 4 = 10 คือจ่ายเท่ากับกำไรปัจจุบัน 10 ปี') }
     },
+    glossary:{
+      lv:B('Basic → intermediate', 'พื้นฐาน → กลาง'),
+      h:B('Chapter 5 — Key numbers: read a company in one minute', 'บทที่ 5 — ตัวเลขสำคัญ: อ่านบริษัทให้เข้าใจใน 1 นาที'),
+      lede:B('Every stock page shows a wall of numbers. You only need about ten, in four groups: how big, how profitable, how expensive, how safe. The full glossary is right below this chapter.', 'ทุกหน้าหุ้นมีตัวเลขเต็มไปหมด แต่ที่ต้องดูจริงๆ มีราว 10 ตัว แบ่งเป็น 4 กลุ่ม: ใหญ่แค่ไหน ทำกำไรเก่งไหม แพงไหม ปลอดภัยไหม ส่วนคำศัพท์ครบทุกตัวอยู่ใต้บทนี้'),
+      body:function(){
+        return h3(B('5.1 Four questions, four groups of numbers', '5.1 ถาม 4 ข้อ ดูตัวเลข 4 กลุ่ม')) +
+          cards([
+            ['basket', B('How big?', 'ใหญ่แค่ไหน?'), B('<b>Market cap</b> = price × number of shares. Big companies usually move less; small ones can grow faster but swing harder.', '<b>มาร์เก็ตแคป</b> = ราคา × จำนวนหุ้นทั้งหมด บริษัทใหญ่มักแกว่งน้อยกว่า บริษัทเล็กโตเร็วได้แต่แกว่งแรง')],
+            ['trend', B('How profitable?', 'ทำกำไรเก่งไหม?'), B('<b>Revenue growth</b>, <b>net margin</b> (profit ÷ revenue), <b>EPS</b> (profit per share) and <b>ROE</b> (profit ÷ shareholders\' money).', '<b>การเติบโตของรายได้</b> <b>อัตรากำไรสุทธิ</b> (กำไร ÷ รายได้) <b>EPS</b> (กำไรต่อหุ้น) และ <b>ROE</b> (กำไร ÷ เงินของผู้ถือหุ้น)')],
+            ['target', B('How expensive?', 'แพงไหม?'), B('<b>P/E</b> (price ÷ EPS), <b>P/BV</b> (price ÷ book value per share) and <b>dividend yield</b> (dividend ÷ price).', '<b>P/E</b> (ราคา ÷ EPS) <b>P/BV</b> (ราคา ÷ มูลค่าทางบัญชีต่อหุ้น) และ <b>อัตราปันผล</b> (ปันผล ÷ ราคา)')],
+            ['shield', B('How safe?', 'ปลอดภัยไหม?'), B('<b>D/E</b> (debt ÷ equity), <b>operating cash flow</b> and the <b>payout ratio</b> (dividend ÷ EPS).', '<b>D/E</b> (หนี้ ÷ ทุน) <b>กระแสเงินสดจากการดำเนินงาน</b> และ <b>สัดส่วนการจ่ายปันผล</b> (ปันผล ÷ EPS)')]
+          ]) +
+          h3(B('5.2 The ten numbers, one line each', '5.2 ตัวเลข 10 ตัว ตัวละบรรทัด')) +
+          table([B('Number', 'ตัวเลข'), B('What it tells you', 'บอกอะไร'), B('A rough beginner reading', 'อ่านแบบมือใหม่คร่าวๆ')], [
+            [B('Market cap', 'มาร์เก็ตแคป'), B('Size of the whole company at today\'s price', 'ขนาดของทั้งบริษัทที่ราคาวันนี้'), B('Large caps for the core, small caps only a little', 'หุ้นใหญ่เป็นแกนหลัก หุ้นเล็กแค่ส่วนน้อย')],
+            [B('Revenue growth', 'รายได้โต'), B('Are more customers paying more?', 'ลูกค้าจ่ายเงินมากขึ้นไหม'), B('Steady growth over 3–5 years beats one big jump', 'โตสม่ำเสมอ 3–5 ปี ดีกว่าพุ่งปีเดียว')],
+            [B('Net margin', 'อัตรากำไรสุทธิ'), B('How much of each 100 baht of sales is kept as profit', 'ขายได้ 100 บาท เหลือเป็นกำไรกี่บาท'), B('Compare within the same industry only', 'เทียบเฉพาะธุรกิจเดียวกัน')],
+            [B('EPS', 'EPS'), B('Profit per share', 'กำไรต่อหุ้น'), B('Rising over years is what pushes the price up long term', 'โตต่อเนื่องหลายปี คือแรงดันราคาในระยะยาว')],
+            [B('ROE', 'ROE'), B('Profit made from shareholders\' money', 'กำไรที่ทำได้จากเงินผู้ถือหุ้น'), B('Around 12–15%+ for years is strong', 'ราว 12–15% ขึ้นไปต่อเนื่องหลายปี ถือว่าเก่ง')],
+            [B('P/E', 'P/E'), B('Years of today\'s profit you pay for', 'จ่ายเท่ากับกำไรวันนี้กี่ปี'), B('Compare with its own past and with peers', 'เทียบกับอดีตตัวเองและบริษัทคล้ายกัน')],
+            [B('P/BV', 'P/BV'), B('Price compared with the accounting value', 'ราคาเทียบกับมูลค่าทางบัญชี'), B('Useful for banks and asset-heavy firms', 'ใช้ได้ดีกับธนาคารและธุรกิจที่มีสินทรัพย์มาก')],
+            [B('Dividend yield', 'อัตราปันผล'), B('Cash back per year for each 100 baht', 'ได้เงินสดคืนต่อปีเท่าไรต่อเงิน 100 บาท'), B('Very high (8%+) often means the market expects a cut', 'สูงมาก (8%+) มักแปลว่าตลาดคาดว่าจะถูกลดปันผล')],
+            [B('D/E', 'D/E'), B('Debt compared with owners\' money', 'หนี้เทียบกับเงินของเจ้าของ'), B('Below about 1–1.5 for most firms (banks differ)', 'ส่วนใหญ่ควรต่ำกว่าราว 1–1.5 (ธนาคารต่างออกไป)')],
+            [B('Operating cash flow', 'เงินสดจากการดำเนินงาน'), B('Real cash the business brings in', 'เงินสดจริงที่ธุรกิจหาได้'), B('Should be positive and close to profit', 'ควรเป็นบวก และใกล้เคียงกำไร')]
+          ]) +
+          h3(B('5.3 Read one together', '5.3 ลองอ่านด้วยกัน 1 ตัว')) +
+          p(B('Company A (made-up numbers): price 40, EPS 3.2, P/E 12.5, ROE 16%, D/E 0.6, dividend 1.6 (yield 4%, payout 50%), revenue up every year for 5 years. Reading: profitable (ROE 16%), not heavily indebted (D/E 0.6), paying half its profit as dividends (room to keep paying), at a P/E that looks normal — <b>worth a closer look</b>, not an automatic buy. Next: compare P/E with its own 5-year range and with two similar companies.', 'บริษัท ก. (ตัวเลขสมมุติ): ราคา 40 EPS 3.2 P/E 12.5 ROE 16% D/E 0.6 ปันผล 1.6 (อัตราปันผล 4% จ่าย 50% ของกำไร) รายได้โตทุกปีมา 5 ปี อ่านว่า: ทำกำไรเก่ง (ROE 16%) หนี้ไม่มาก (D/E 0.6) จ่ายปันผลครึ่งหนึ่งของกำไร (ยังจ่ายต่อได้) P/E ดูปกติ — <b>น่าดูต่อ</b> ไม่ได้แปลว่าต้องซื้อทันที ขั้นต่อไปคือเทียบ P/E กับช่วง 5 ปีของตัวเองและกับบริษัทคล้ายกัน 2 ตัว')) +
+          calcHTML('value') +
+          tip('warn', B('One number is never enough', 'ตัวเลขตัวเดียวไม่เคยพอ'), B('A low P/E can mean "cheap" or "profits are about to fall". A high yield can mean "generous" or "the price crashed". Always read the groups together, and always read the trend over several years.', 'P/E ต่ำอาจแปลว่า "ถูก" หรือ "กำไรกำลังจะลด" อัตราปันผลสูงอาจแปลว่า "ใจดี" หรือ "ราคาเพิ่งร่วงแรง" ต้องอ่านทั้ง 4 กลุ่มพร้อมกัน และดูแนวโน้มหลายปีเสมอ')) +
+          tip('info', B('Every term, with examples', 'คำศัพท์ครบทุกตัว พร้อมตัวอย่าง'), B('The glossary just below explains each number with a picture and a what-if example you can play with.', 'หน้าคำศัพท์ด้านล่างอธิบายตัวเลขแต่ละตัว มีภาพและตัวอย่างลองเปลี่ยนค่าเล่นได้'));
+      },
+      q:{ q:B('A stock yields 9% but pays out 140% of its profit as dividends. Most likely…', 'หุ้นตัวหนึ่งอัตราปันผล 9% แต่จ่ายปันผลเท่ากับ 140% ของกำไร แปลว่าน่าจะ…'), c:[B('the dividend is safe', 'ปันผลปลอดภัยแน่นอน'), B('the dividend may be cut', 'ปันผลอาจถูกลดลง'), B('the stock is surely cheap', 'หุ้นถูกแน่นอน')], a:1, e:B('Paying more than it earns cannot last; the high yield is a warning, not a gift.', 'จ่ายเกินกว่าที่หาได้ อยู่ได้ไม่นาน อัตราปันผลสูงจึงเป็นสัญญาณเตือน ไม่ใช่ของขวัญ') }
+    },
     signals:{
       lv:B('Intermediate', 'กลาง'),
       h:B('Chapter 6 — Reading a chart: candles, trend, support and moving averages', 'บทที่ 6 — อ่านกราฟเบื้องต้น: แท่งเทียน แนวโน้ม แนวรับแนวต้าน เส้นค่าเฉลี่ย'),
@@ -409,7 +442,8 @@
           '<button type="button" class="spzc-fold" data-fold aria-expanded="' + (f ? 'false' : 'true') + '">' + ico('chev') + '<span>' + esc(T(f ? B('Open lesson', 'เปิดบทเรียน') : B('Hide', 'ย่อ'))) + '</span></button></header>' +
         '<div class="spzc-body">' + c.body() + quizHTML(c.q) +
           '<div class="spzc-end"><button type="button" class="spzc-done' + (d ? ' is' : '') + '" data-done>' + ico('check') + '<span>' + esc(T(d ? B('Chapter finished', 'อ่านบทนี้จบแล้ว') : B('Mark this chapter finished', 'ทำเครื่องหมายว่าอ่านจบแล้ว'))) + '</span></button>' +
-          (nx ? '<a class="spzc-next" href="#/' + nx.r + '" data-route-to="' + nx.r + '"><span>' + esc(T(B('Next: chapter ', 'ถัดไป: บทที่ '))) + nx.n + ' · ' + esc(T(nx.t)) + '</span>' + ico('arrow') + '</a>' : '') + '</div>' +
+          (nx ? '<a class="spzc-next" href="#/' + nx.r + '" data-route-to="' + nx.r + '"><span>' + esc(T(B('Next: chapter ', 'ถัดไป: บทที่ '))) + nx.n + ' · ' + esc(T(nx.t)) + '</span>' + ico('arrow') + '</a>'
+            : '<a class="spzc-next spzc-next2" href="#/stockclass" data-gopane="levels"><span>' + esc(T(B('Step 2: Step-by-step · 6 levels', 'ไปขั้นที่ 2: เรียนละเอียด · 6 ระดับ'))) + '</span>' + ico('arrow') + '</a>') + '</div>' +
         '</div>' +
       '</div>';
   }
@@ -437,7 +471,7 @@
     });
   }
   var boxes = [];
-  function paintAll(){ boxes.forEach(paint); }
+  function paintAll(){ boxes.forEach(paint); var hb = document.querySelector('#stockclass .spzc-hub'); if(hb){ hubPaint(hb); hubApply(hb.parentNode); } paintPill(); }
   function mount(){
     var all = true;
     Object.keys(CH).forEach(function(id){
@@ -460,34 +494,72 @@
      read as repeats. A small chooser on top now shows ONE of them at a time, each described in a line.
      Remembered in localStorage 'spz.class.pane'.
      ------------------------------------------------------------------ */
+  /* 2026-11-17 (user request): the three tracks read as one LEARNING PATH now — step 1 beginner course (7 chapters,
+     one per Learn menu) → step 2 step-by-step 6 levels → step 3 lessons by topic. Each step card shows where you are,
+     chapter 7 ends with "go to step 2", the 6 levels end with "go to step 3", and any [data-gopane] link anywhere
+     opens the Stock Classroom on that step. */
   var HUB = [
-    { k:'course', ic:'flag', t:B('Beginner course · 7 chapters', 'คอร์สมือใหม่ · 7 บท'), d:B('Start here if you know nothing yet. One chapter per Learn menu, in order.', 'เริ่มตรงนี้ถ้ายังไม่รู้อะไรเลย เรียนบทละเมนู เรียงตามลำดับ'), tag:B('Recommended', 'แนะนำ') },
-    { k:'levels', ic:'layers', t:B('Step-by-step · 6 levels', 'เรียนละเอียด · 6 ระดับ'), d:B('Short lessons with a picture, key points and a mini calculator, level by level.', 'บทสั้นๆ มีภาพ สรุปสำคัญ และเครื่องคิดเลขเล็ก ไล่ทีละระดับ'), tag:null },
-    { k:'topics', ic:'doc', t:B('Lessons by topic', 'คลังบทเรียนตามหัวข้อ'), d:B('Pick any topic — business, statements, value, economy, risk — and read just that.', 'เลือกอ่านเฉพาะหัวข้อที่อยากรู้ ธุรกิจ งบการเงิน มูลค่า เศรษฐกิจ ความเสี่ยง'), tag:null }
+    { k:'course', ic:'flag', t:B('Beginner course', 'คอร์สมือใหม่'), u:B('7 chapters', '7 บท'), d:B('Start here if you know nothing yet — one chapter per Learn menu, in order.', 'เริ่มตรงนี้ถ้ายังไม่รู้อะไรเลย เรียนบทละเมนู ไล่ตามลำดับ'), tag:B('Start here', 'เริ่มที่นี่') },
+    { k:'levels', ic:'layers', t:B('Step-by-step', 'เรียนละเอียด'), u:B('6 levels', '6 ระดับ'), d:B('Short lessons with a picture, key points and a mini calculator, level by level.', 'บทสั้นๆ มีภาพ สรุปสำคัญ และเครื่องคิดเลขเล็ก ไล่ทีละระดับ'), tag:null },
+    { k:'topics', ic:'doc', t:B('Lesson library', 'คลังบทเรียน'), u:B('by topic', 'ตามหัวข้อ'), d:B('Read just the topic you need — business, statements, value, economy, risk.', 'เลือกอ่านเฉพาะเรื่องที่อยากรู้ ธุรกิจ งบการเงิน มูลค่า เศรษฐกิจ ความเสี่ยง'), tag:null }
   ];
+  function curPane(){ var c = lsGet('spz.class.pane', 'course'); return HUB.some(function(h){ return h.k === c; }) ? c : 'course'; }
   function hubPanes(wrap){
     var out = { course:[], levels:[], topics:[] };
     Array.prototype.forEach.call(wrap.children, function(c){
       if(c.classList.contains('section-head') || c.classList.contains('spzc-hub')) return;
-      if(c.classList.contains('spzc')) out.course.push(c);
+      var of = c.getAttribute('data-pane-of');
+      if(of && out[of]) out[of].push(c);
+      else if(c.classList.contains('spzc')) out.course.push(c);
       else if(c.id === 'skStart') out.levels.push(c);
       else out.topics.push(c);
     });
     return out;
   }
   function hubApply(wrap){
-    var cur = lsGet('spz.class.pane', 'course'); if(!HUB.some(function(h){ return h.k === cur; })) cur = 'course';
+    var cur = curPane();
     var P = hubPanes(wrap);
     Object.keys(P).forEach(function(k){ P[k].forEach(function(el){ el.classList.toggle('spzc-off', k !== cur); }); });
     var hub = wrap.querySelector('.spzc-hub');
     if(hub) hub.querySelectorAll('[data-pane]').forEach(function(b){ var on = b.getAttribute('data-pane') === cur; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); });
+    paintPill();
   }
+  function courseCount(){ var d = done(), n = 0; STEPS.forEach(function(s){ if(d[s.r]) n++; }); return n; }
   function hubPaint(hub){
-    hub.innerHTML = '<div class="spzc-hub-h"><b>' + esc(T(B('Where do you want to start?', 'อยากเริ่มเรียนแบบไหน?'))) + '</b><span>' + esc(T(B('Three ways to learn the same thing — choose one, switch any time.', 'มี 3 แบบให้เลือก เนื้อหาเรื่องเดียวกัน เลือกแบบที่ชอบ สลับได้ตลอด'))) + '</span></div>' +
+    var n = courseCount();
+    hub.innerHTML = '<div class="spzc-hub-h"><span class="spzc-hub-k">' + esc(T(B('Learning path', 'เส้นทางเรียน'))) + '</span><b>' + esc(T(B('Learn stocks in 3 steps', 'เรียนหุ้น 3 ขั้น'))) + '</b><span>' + esc(T(B('Go 1 → 2 → 3, or jump to any step — your place is remembered.', 'เรียนตามลำดับ 1 → 2 → 3 หรือกดข้ามไปขั้นไหนก็ได้ ระบบจำไว้ให้'))) + '</span></div>' +
       '<div class="spzc-hub-g" role="tablist">' + HUB.map(function(h, i){
-        return '<button type="button" role="tab" class="spzc-hub-c" data-pane="' + h.k + '"><i>' + ico(h.ic) + '</i><span class="spzc-hub-n">' + (i + 1) + '</span><b>' + esc(T(h.t)) + '</b><small>' + esc(T(h.d)) + '</small>' + (h.tag ? '<em>' + esc(T(h.tag)) + '</em>' : '') + '</button>';
+        var prog = h.k === 'course' ? '<span class="spzc-hub-p"><i style="width:' + Math.round(n / STEPS.length * 100) + '%"></i></span><span class="spzc-hub-s">' + esc(T(B('Read ', 'อ่านแล้ว '))) + n + ' / ' + STEPS.length + '</span>' : '<span class="spzc-hub-s">' + esc(T(h.u)) + '</span>';
+        return '<button type="button" role="tab" class="spzc-hub-c" data-pane="' + h.k + '"><span class="spzc-hub-n">' + esc(T(B('Step ', 'ขั้นที่ '))) + (i + 1) + '</span><i>' + ico(h.ic) + '</i><b>' + esc(T(h.t)) + ' <u>· ' + esc(T(h.u)) + '</u></b><small>' + esc(T(h.d)) + '</small>' + prog + (h.tag ? '<em>' + esc(T(h.tag)) + '</em>' : '') + '</button>' + (i < HUB.length - 1 ? '<span class="spzc-hub-a" aria-hidden="true">' + ico('arrow') + '</span>' : '');
       }).join('') + '</div>';
   }
+  function nextBand(k){
+    var go = k === 'levels' ? { p:'topics', t:B('Finished the 6 levels? Step 3: the lesson library', 'เรียนครบ 6 ระดับแล้ว? ไปขั้นที่ 3: คลังบทเรียนตามหัวข้อ') } : { p:'course', t:B('New here? Step 1: the beginner course', 'เพิ่งเริ่ม? กลับไปขั้นที่ 1: คอร์สมือใหม่') };
+    var back = k === 'levels' ? { p:'course', t:B('Step 1 · Beginner course', 'ขั้นที่ 1 · คอร์สมือใหม่') } : { p:'levels', t:B('Step 2 · 6 levels', 'ขั้นที่ 2 · เรียนละเอียด 6 ระดับ') };
+    return '<a class="spzc-nb-b" href="#/stockclass" data-gopane="' + back.p + '">' + ico('chev') + '<span>' + esc(T(back.t)) + '</span></a>' +
+      '<a class="spzc-next" href="#/stockclass" data-gopane="' + go.p + '"><span>' + esc(T(go.t)) + '</span>' + ico('arrow') + '</a>';
+  }
+  function bandMount(wrap){
+    ['levels', 'topics'].forEach(function(k){
+      var el = wrap.querySelector(':scope > .spzc-nb[data-pane-of="' + k + '"]');
+      if(!el){ el = document.createElement('div'); el.className = 'spzc-nb'; el.setAttribute('data-pane-of', k); }
+      el.innerHTML = nextBand(k);
+      if(k === 'levels'){ var sk = document.getElementById('skStart'); if(sk && sk.parentNode === wrap && sk.nextSibling !== el) wrap.insertBefore(el, sk.nextSibling); }
+      else if(el.parentNode !== wrap || el !== wrap.lastElementChild) wrap.appendChild(el);
+    });
+  }
+  function goPane(k){
+    lsSet('spz.class.pane', k);
+    var go = function(){
+      var sec = document.getElementById('stockclass'), hub = sec && sec.querySelector('.spzc-hub');
+      if(hub){ hubApply(hub.parentNode); try { window.scrollTo({ top:Math.max(0, hub.getBoundingClientRect().top + window.pageYOffset - 110), behavior:'smooth' }); } catch(e){} }
+    };
+    if(location.hash !== '#/stockclass'){ location.hash = '#/stockclass'; setTimeout(go, 380); } else go();
+  }
+  document.addEventListener('click', function(e){
+    var a = e.target.closest && e.target.closest('[data-gopane]'); if(!a) return;
+    e.preventDefault(); e.stopPropagation(); pillClose(); goPane(a.getAttribute('data-gopane'));
+  }, true);
   function hubMount(){
     var sec = document.getElementById('stockclass'); if(!sec) return false;
     var box = sec.querySelector('.spzc[data-ch="stockclass"]'); if(!box) return false;
@@ -502,15 +574,135 @@
         lsSet('spz.class.pane', b.getAttribute('data-pane')); hubApply(wrap);
         try { var y = hub.getBoundingClientRect().bottom + window.pageYOffset - 80; if(window.pageYOffset > y) window.scrollTo({ top:y - 200, behavior:'smooth' }); } catch(err){}
       });
-      new MutationObserver(function(){ hubApply(wrap); }).observe(wrap, { childList:true });
-      new MutationObserver(function(){ hubPaint(hub); hubApply(wrap); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+      var busy = false;
+      new MutationObserver(function(){ if(busy) return; busy = true; bandMount(wrap); hubApply(wrap); busy = false; }).observe(wrap, { childList:true });
+      new MutationObserver(function(){ hubPaint(hub); bandMount(wrap); hubApply(wrap); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
     }
+    bandMount(wrap);
     hubApply(wrap);
     return !!document.getElementById('skStart');
   }
+
+  /* ------------------------------------------------------------------
+     2026-11-17 (user request): once you scroll past the course bar, the chapters fold into one oval pill at the top
+     left — the same look as the Market Brain's tab pill: ‹ prev · chapters · next › and ▾ for the whole path.
+     ------------------------------------------------------------------ */
+  var PILL = null;
+  var PATH_EXTRA = [{ p:'levels', ic:'layers', t:B('Step 2 · 6 levels', 'ขั้นที่ 2 · เรียนละเอียด 6 ระดับ') }, { p:'topics', ic:'doc', t:B('Step 3 · Lesson library', 'ขั้นที่ 3 · คลังบทเรียนตามหัวข้อ') }];
+  function routeNow(){ var h = (location.hash || '').replace(/^#\/?/, '').split(/[?&]/)[0]; return h; }
+  function pillCurIdx(){
+    var r = routeNow();
+    if(r === 'stockclass'){ var c = curPane(); if(c === 'levels') return 7; if(c === 'topics') return 8; return 0; }
+    for(var i = 0; i < STEPS.length; i++) if(STEPS[i].r === r) return i;
+    return -1;
+  }
+  function pillItems(){ return STEPS.map(function(s){ return { r:s.r, n:s.n, t:s.t }; }).concat(PATH_EXTRA.map(function(x, j){ return { p:x.p, n:j === 0 ? '2' : '3', t:x.t, ic:x.ic }; })); }
+  function pillClose(){ if(PILL){ PILL.menu.hidden = true; PILL.el.classList.remove('open'); } }
+  function pillGo(i){
+    var it = pillItems()[i]; if(!it) return; pillClose();
+    if(it.p){ goPane(it.p); return; }
+    if(it.r === 'stockclass') lsSet('spz.class.pane', 'course');
+    if(location.hash === '#/' + it.r){ var sec = document.getElementById(it.r), bx = sec && sec.querySelector('.spzc'); if(bx) window.scrollTo({ top:Math.max(0, bx.getBoundingClientRect().top + window.pageYOffset - 100), behavior:'smooth' }); if(it.r === 'stockclass'){ var hb = sec && sec.querySelector('.spzc-hub'); if(hb) hubApply(hb.parentNode); } }
+    else { location.hash = '#/' + it.r; setTimeout(function(){ window.scrollTo(0, 0); }, 60); }
+  }
+  function paintPill(){
+    if(!PILL) return;
+    var i = pillCurIdx(), items = pillItems(), d = done();
+    PILL.strip.innerHTML = items.slice(0, STEPS.length).map(function(x, j){ return '<button type="button" data-cpgo="' + j + '" class="' + (j === i ? 'on' : '') + (d[x.r] ? ' ok' : '') + '"><u>' + (d[x.r] && j !== i ? ico('check') : x.n) + '</u><span>' + esc(T(x.t)) + '</span></button>'; }).join('') +
+      '<span class="spzc-tp-sep"></span>' + items.slice(STEPS.length).map(function(x, j){ var k = STEPS.length + j; return '<button type="button" data-cpgo="' + k + '" class="nx' + (k === i ? ' on' : '') + '">' + ico(x.ic) + '<span>' + esc(T(x.t)) + '</span></button>'; }).join('');
+    PILL.menu.innerHTML = '<div class="spzc-tpmh">' + esc(T(B('Step 1 · Beginner course — 7 chapters', 'ขั้นที่ 1 · คอร์สมือใหม่ 7 บท'))) + '</div><div class="spzc-tpmg">' +
+      items.slice(0, STEPS.length).map(function(x, j){ return '<button type="button" data-cpgo="' + j + '" class="' + (j === i ? 'on' : '') + (d[x.r] ? ' ok' : '') + '"><u>' + x.n + '</u><span>' + esc(T(x.t)) + '</span>' + (d[x.r] ? ico('check') : '') + '</button>'; }).join('') + '</div>' +
+      '<div class="spzc-tpmh">' + esc(T(B('Keep going', 'เรียนต่อ'))) + '</div><div class="spzc-tpmg">' +
+      items.slice(STEPS.length).map(function(x, j){ var k = STEPS.length + j; return '<button type="button" data-cpgo="' + k + '" class="nx' + (k === i ? ' on' : '') + '">' + ico(x.ic) + '<span>' + esc(T(x.t)) + '</span></button>'; }).join('') + '</div>';
+    setTimeout(function(){ var on = PILL.strip.querySelector('.on'); if(on){ var sr = PILL.strip.getBoundingClientRect(), r = on.getBoundingClientRect(); if(r.left < sr.left + 20 || r.right > sr.right - 20) PILL.strip.scrollLeft += (r.left - sr.left) - sr.width / 2 + r.width / 2; } }, 30);
+    pillPlace();
+  }
+  function pillPlace(){
+    if(!PILL) return;
+    var R = document.documentElement, i = pillCurIdx();
+    var sec = i >= 0 ? document.getElementById(routeNow()) : null, bar = sec && sec.querySelector('.spzc-bar:not(.spzc-off .spzc-bar)'), hub = sec && sec.querySelector('.spzc-hub');
+    var ref = routeNow() === 'stockclass' ? hub : bar;
+    var past = ref ? ref.getBoundingClientRect().bottom < 70 : false;
+    var show = i >= 0 && past && !document.body.classList.contains('menu-open');
+    PILL.el.classList.toggle('show', show);
+    if(!show){ pillClose(); return; }
+    var chip = document.querySelector('#spzLiveBar .lb-status'), cr = chip && chip.getBoundingClientRect(), left = cr && cr.width ? Math.round(cr.right + 10) : 16;
+    var nav = document.querySelector('.top-fixed .nav-cluster'), nr = nav && nav.getBoundingClientRect();
+    var right = nr && nr.width ? Math.round(nr.left - 10) : window.innerWidth - 16;
+    var room = right - left, low = room < 230;
+    if(low){ left = 12; right = window.innerWidth - 12; }
+    R.style.setProperty('--cp-l', left + 'px');
+    R.style.setProperty('--cp-w', Math.max(150, Math.min(right - left, 760)) + 'px');
+    PILL.el.classList.toggle('low', low);
+    PILL.menu.classList.toggle('low', low);
+    PILL.el.classList.toggle('tight', Math.min(right - left, 760) < 360);
+  }
+  function pillMount(){
+    if(PILL) return;
+    var el = document.createElement('div'); el.className = 'spzc-tp'; el.setAttribute('role', 'navigation');
+    el.innerHTML = '<button type="button" class="spzc-tpa" data-cpstep="-1" aria-label="previous">' + ico('chev') + '</button><div class="spzc-tps"></div><button type="button" class="spzc-tpa nx" data-cpstep="1" aria-label="next">' + ico('chev') + '</button><button type="button" class="spzc-tpc" data-cpopen aria-label="' + esc(T(B('All chapters', 'ทุกบท'))) + '">' + ico('layers') + '<i class="car">▾</i></button>';
+    var menu = document.createElement('div'); menu.className = 'spzc-tpm'; menu.hidden = true;
+    document.body.appendChild(el); document.body.appendChild(menu);
+    PILL = { el:el, strip:el.querySelector('.spzc-tps'), menu:menu };
+    PILL.strip.addEventListener('wheel', function(ev){ if(Math.abs(ev.deltaY) > Math.abs(ev.deltaX)){ PILL.strip.scrollLeft += ev.deltaY; ev.preventDefault(); } }, { passive:false });
+    el.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      var st = ev.target.closest('[data-cpstep]'); if(st){ var k = pillCurIdx() + (+st.getAttribute('data-cpstep')); if(k >= 0 && k < pillItems().length) pillGo(k); return; }
+      var g = ev.target.closest('[data-cpgo]'); if(g){ pillGo(+g.getAttribute('data-cpgo')); return; }
+      if(ev.target.closest('[data-cpopen]')){ var open = menu.hidden; menu.hidden = !open; el.classList.toggle('open', open); }
+    });
+    menu.addEventListener('click', function(ev){ ev.stopPropagation(); var b = ev.target.closest('[data-cpgo]'); if(b) pillGo(+b.getAttribute('data-cpgo')); });
+    document.addEventListener('click', pillClose);
+    document.addEventListener('keydown', function(ev){ if(ev.key === 'Escape') pillClose(); });
+    var raf = 0, sched = function(){ if(raf) return; raf = requestAnimationFrame(function(){ raf = 0; pillPlace(); }); };
+    window.addEventListener('scroll', sched, { passive:true });
+    window.addEventListener('resize', sched);
+    window.addEventListener('hashchange', function(){ setTimeout(paintPill, 80); setTimeout(pillPlace, 500); });
+    new MutationObserver(function(){ paintPill(); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+    paintPill();
+  }
+
+  /* ------------------------------------------------------------------
+     2026-11-17 (user request): the Guided Mode page (#/guided, chapter 7) read as a jumble — the four-market lessons sat
+     below the 10-step tour and its notes. Order now: chapter 7 → the four markets → the guided tour, which is one folded
+     card ("Site tour · 10 steps") you open when you want it. part-23 keeps working on its own elements inside the card.
+     ------------------------------------------------------------------ */
+  function gFold(){ return lsGet('spz.guided.tour', 0); }
+  function guidedArrange(){
+    var g = document.getElementById('guided'); if(!g) return false;
+    var box = g.querySelector(':scope > .spzc[data-ch="guided"]'), mk = document.getElementById('markets101');
+    var tog = g.querySelector(':scope > .gm-toggle');
+    if(!box || !tog || (!mk && gt < 25)) return false;
+    if(mk && mk.parentNode === g && box.nextElementSibling !== mk) g.insertBefore(mk, box.nextSibling);
+    var tour = g.querySelector(':scope > .spzg-tour');
+    if(!tour){
+      tour = document.createElement('div'); tour.className = 'spzg-tour';
+      tour.innerHTML = '<button type="button" class="spzg-th" data-gtour aria-expanded="false"><i>' + ico('flag') + '</i><span class="spzg-tt"><b></b><small></small></span><span class="spzg-tc">' + ico('chev') + '<em></em></span></button><div class="spzg-tb"></div>';
+      var body = tour.querySelector('.spzg-tb');
+      var anchor = mk && mk.parentNode === g ? mk.nextSibling : box.nextSibling;
+      g.insertBefore(tour, anchor);
+      var n = tog; while(n){ var nx = n.nextElementSibling; if(n.classList.contains('v8-note')) break; body.appendChild(n); n = nx; }
+      tour.querySelector('[data-gtour]').addEventListener('click', function(){ lsSet('spz.guided.tour', gFold() ? 0 : 1); tourPaint(); });
+    }
+    var note = g.querySelector(':scope > .v8-note'); if(note) g.appendChild(note);
+    tourPaint();
+    return true;
+  }
+  function tourPaint(){
+    var g = document.getElementById('guided'), tour = g && g.querySelector('.spzg-tour'); if(!tour) return;
+    var open = !!gFold();
+    tour.classList.toggle('open', open);
+    tour.querySelector('[data-gtour]').setAttribute('aria-expanded', open ? 'true' : 'false');
+    tour.querySelector('.spzg-tt b').textContent = T(B('Site tour · 10 steps (Guided Mode)', 'พาใช้เว็บทีละขั้น · 10 ขั้น (โหมดแนะนำ)'));
+    tour.querySelector('.spzg-tt small').textContent = T(B('Turn on Guided Mode and the site walks you from "who am I as an investor" to sizing a first trade, one page at a time.', 'เปิดโหมดแนะนำ แล้วเว็บจะพาไปทีละหน้า ตั้งแต่รู้จักตัวเองจนถึงคำนวณขนาดการซื้อครั้งแรก'));
+    tour.querySelector('.spzg-tc em').textContent = T(open ? B('Hide', 'ย่อ') : B('Open the 10 steps', 'เปิดดู 10 ขั้น'));
+  }
+  var gt = 0, giv = setInterval(function(){ if(guidedArrange() || ++gt > 120) clearInterval(giv); }, 400);
+  new MutationObserver(function(){ tourPaint(); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
   var ht = 0, hiv = setInterval(function(){ if(hubMount() || ++ht > 120) clearInterval(hiv); }, 400);
 
-  window.__SPZ_COURSE = { repaint:paintAll };
+  window.__SPZ_COURSE = { repaint:paintAll, goPane:goPane };
+  pillMount();
   var tries = 0, iv = setInterval(function(){ if(mount() || ++tries > 120) clearInterval(iv); }, 300);
   new MutationObserver(function(){ paintAll(); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
 })();

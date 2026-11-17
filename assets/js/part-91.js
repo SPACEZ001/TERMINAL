@@ -45,6 +45,15 @@
       frag.appendChild(w);
     });
     body.appendChild(frag);
+    /* risk shape + the 5 signals share one row box, so the sticky radar stays
+       inside that row instead of sliding over the sections below it (2026-11-17) */
+    var rad = body.querySelector(':scope > .bbx-radar'), sig = body.querySelector(':scope > .bbx-sig');
+    if(rad && sig){
+      var pair = document.createElement('div');
+      pair.className = 'bbx-sec bbx-pair';
+      body.insertBefore(pair, rad);
+      pair.appendChild(rad); pair.appendChild(sig);
+    }
     body.classList.add('bbx-body');
     busy = false;
   }
