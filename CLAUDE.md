@@ -391,3 +391,17 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   longer reset to 0 on repaint; the section is inserted before the footer.
 - **Footer + route strip (part-88):** the footer is kept after the last `body > section[data-route]` (some screens appended their section
   after it, so it showed at the top); the old `#v8Bar` "back · page name" strip is hidden (it showed through the see-through top bar).
+
+## Added 2026-11-17 (late night)
+
+- **Board (part-93) v3:** header with a founder card (avatar, shares % / votes %); three tabs — โครงสร้างองค์กร (owner level now built from
+  the cap table: founder node with "สิทธิ์ผู้ก่อตั้ง" badge + other shareholders when the founder holds < 100%), **อำนาจผู้ก่อตั้ง**
+  (founder-control planner: 100/75/51/50/25/5% or a slider, investor share type = ordinary / preference 10 shares = 1 vote /
+  non-voting; rings for shares vs votes, verdict, the four resolution checks, six control tools, a legal note — state in
+  localStorage `spz.board.ctrl`), and แผงควบคุมเว็บ. Thai CCC facts used (checked 2026-11-17): ordinary resolution = majority, special
+  resolution ≥ 3/4 of votes present, directors removable by the meeting unless the articles/SHA add protection, preference shares
+  may carry fewer votes. Shown as general information, not legal advice.
+- Admin panel: new Tools button `#cagBtnBoard` ("บอร์ดบริหาร", hidden for editors) → `#/board`.
+- Menu special block: the three cards stay full colour for everyone (no grey lock look inside `.np-feat`); one line under the title
+  (`.np-feat-lock`, part-93 `featLock()`) says "ล็อกไว้ · เฉพาะแอดมิน Editor และผู้ประเมิน" for visitors. Access is unchanged. The
+  board card text is now "โครงสร้างองค์กร · คณะกรรมการ · ฝ่ายงาน".

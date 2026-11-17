@@ -493,6 +493,7 @@
     adminAddAnalysis:{en:'Add Analysis',th:'เพิ่มบทวิเคราะห์'},
     adminPrintReport:{en:'Print Report',th:'พิมพ์รายงาน'},
     adminPrintAll:{en:'Print the whole site · one file',th:'พิมพ์ทั้งเว็บ · รวมเป็นไฟล์เดียว'},
+    adminBoard:{en:'Executive board',th:'บอร์ดบริหาร'},
     adminCompareDownload:{en:'Compare Stocks PDF',th:'ดาวน์โหลด PDF เปรียบเทียบหุ้น'},
     adminConnectedUsers:{en:'Connected Users',th:'ผู้ใช้ที่เชื่อมต่อ'},
     adminAnnouncements:{en:'Announcements',th:'ประกาศ'},
@@ -746,6 +747,10 @@
               '<div class="cag-admin-group">' +
                 '<div class="cag-admin-group-h" data-x="adminGroupTools"></div>' +
                 '<div class="cag-admin-grid">' +
+                  '<button class="cag-admin-link" type="button" id="cagBtnBoard">' +
+                    '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>' +
+                    '<span data-x="adminBoard"></span>' +
+                  '</button>' +
                   '<button class="cag-admin-link" type="button" id="cagBtnPro">' +
                     '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>' +
                     '<span data-x="adminPro"></span>' +
@@ -986,6 +991,7 @@
     }
     gate.querySelector('#cagBtnAddAnalysis').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/journalNew'; });
     gate.querySelector('#cagBtnPrintAll').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/printall'; });
+    gate.querySelector('#cagBtnBoard').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/board'; });
     gate.querySelector('#cagBtnPrintReport').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/printreport'; });
     gate.querySelector('#cagBtnArena').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/exams'; });   /* 2026-11-07: now opens the exam room (part-86), which links on to the Arena */
     // Compare Stocks PDF is admin-only (see cmpIsAdmin()/cmpPaintDownloadGate()
@@ -1234,7 +1240,7 @@
     var adminLinks = gate.querySelector('#cagAdminLinks');
     if(adminLinks){
       adminLinks.classList.toggle('hidden', currentTier !== 'full' && currentTier !== 'editor');
-      ['#cagBtnAddAnalysis','#cagBtnAnnouncements','#cagBtnConnectedUsers','#cagBtnCompareDownload','#cagBtnNotes','#cagBtnGradebook','#cagBtnPrintReport','#cagBtnPrintAll','#cagBtnEbook'].forEach(function(sel){
+      ['#cagBtnAddAnalysis','#cagBtnAnnouncements','#cagBtnConnectedUsers','#cagBtnCompareDownload','#cagBtnNotes','#cagBtnGradebook','#cagBtnPrintReport','#cagBtnPrintAll','#cagBtnBoard','#cagBtnEbook'].forEach(function(sel){
         var b = adminLinks.querySelector(sel); if(b) b.classList.toggle('hidden', currentTier === 'editor');
       });
       /* 2026-11-16: an Editor / Reviewer saw empty "publish" and "reports" headings -- hide a group with nothing in it */
@@ -1337,7 +1343,7 @@
         loggedS: currentTier === 'full' ? TXT.loggedS : currentTier === 'editor' ? (isReviewer() ? TXT.reviewerLoggedS : TXT.editorLoggedS) : currentTier === 'member' ? TXT.memberLoggedS : accLinked ? TXT.accLoggedS : lineLinked ? TXT.lineLoggedS : TXT.tgLoggedS,
         accH: TXT.accH, accGo: TXT.accGo, accOr: TXT.accOr,
         logoutBtn: TXT.logoutBtn, upgradeBtn: TXT.upgradeBtn,
-        adminAddAnalysis: TXT.adminAddAnalysis, adminPrintReport: TXT.adminPrintReport, adminPrintAll: TXT.adminPrintAll,
+        adminAddAnalysis: TXT.adminAddAnalysis, adminPrintReport: TXT.adminPrintReport, adminPrintAll: TXT.adminPrintAll, adminBoard: TXT.adminBoard,
         adminCompareDownload: TXT.adminCompareDownload, adminConnectedUsers: TXT.adminConnectedUsers,
         adminAnnouncements: TXT.adminAnnouncements,
         adminPro: TXT.adminPro, adminBriefing: TXT.adminBriefing, adminQuietValue: TXT.adminQuietValue,

@@ -29,7 +29,11 @@
     check:'<path d="M4 12l5 5L20 6"/>',
     x:'<path d="M6 6l12 12M18 6L6 18"/>',
     plus:'<path d="M12 5v14M5 12h14"/>',
-    arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>'
+    arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
+    crown:'<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/>',
+    shield:'<path d="M12 3l8 3v6c0 4.5-3.5 7.5-8 9-4.5-1.5-8-4.5-8-9V6z"/>',
+    key:'<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/>',
+    layers:'<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>'
   };
   function ico(k){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (IC[k] || '') + '</svg>'; }
   var DATA = [
@@ -91,10 +95,17 @@
     var o = orgData(), out = '<div class="bd-org' + (editing ? ' edit' : '') + '">';
     for(var lv = 0; lv < 4; lv++){
       var row = ORG.filter(function(x){ return x.lv === lv; });
-      out += '<div class="bd-lvl lv' + lv + '"><div class="bd-lvh">' + esc(T(LV[lv])) + '</div><div class="bd-row n' + row.length + '">' +
+      if(lv === 0){
+        var cc = ctrl(), vv = votesOf(cc);
+        row = [{ k:'sh', lv:0, t:B('Founder · shareholder', 'ผู้ก่อตั้ง · ผู้ถือหุ้น'), d:B('Shares ' + fmtP(cc.f) + ' · votes ' + fmtP(vv) + ' · founder rights in the articles', 'หุ้น ' + fmtP(cc.f) + ' · เสียง ' + fmtP(vv) + ' · มีสิทธิ์ผู้ก่อตั้งในข้อบังคับ'), n:'Noraset Boikaw', tone:'gold', me:1 }];
+        if(cc.f < 100) row.push({ k:'inv', lv:0, t:B('Other shareholders / investors', 'ผู้ถือหุ้นรายอื่น · นักลงทุน'), d:B('Shares ' + fmtP(100 - cc.f) + ' · votes ' + fmtP(100 - vv), 'หุ้น ' + fmtP(100 - cc.f) + ' · เสียง ' + fmtP(100 - vv)), n:'', tone:'violet' });
+      }
+      out += '<div class="bd-lvl lv' + lv + '"><div class="bd-lvh">' + esc(T(LV[lv])) + '</div><div class="bd-row n' + row.length + '"' + (row.length === 2 ? ' style="--c:2"' : '') + '>' +
         row.map(function(x){
           var name = o[x.k] != null ? o[x.k] : x.n;
-          return '<div class="bd-node t-' + x.tone + '" data-node="' + x.k + '"><span class="bd-av">' + esc((name || '?').replace(/[^A-Za-zก-๙]/g, '').slice(0, 1).toUpperCase() || '?') + '</span>' +
+          var me = x.me || x.k === 'ceo';
+          var av = me && window.__SPZ_DEV_AVATAR && !(o[x.k]) ? '<span class="bd-av ph"><img src="' + window.__SPZ_DEV_AVATAR + '" alt=""></span>' : '<span class="bd-av">' + esc((name || '?').replace(/[^A-Za-zก-๙]/g, '').slice(0, 1).toUpperCase() || '?') + '</span>';
+          return '<div class="bd-node t-' + x.tone + (me ? ' me' : '') + '" data-node="' + x.k + '">' + (x.me ? '<span class="bd-badge">' + ico('crown') + esc(T(B('Founder control', 'สิทธิ์ผู้ก่อตั้ง'))) + '</span>' : '') + av +
             '<div class="bd-nt"><b>' + esc(T(x.t)) + '</b>' +
             (editing ? '<input type="text" maxlength="60" data-org="' + x.k + '" value="' + esc(name) + '" placeholder="' + esc(T(B('Name', 'ชื่อ'))) + '">' : '<span class="bd-nm' + (name ? '' : ' vac') + '">' + esc(name || T(B('Vacant — to be appointed', 'ว่าง · รอแต่งตั้ง'))) + '</span>') +
             '<small>' + esc(T(x.d)) + '</small></div></div>';
@@ -120,20 +131,87 @@
           '<ul class="bd-list">' + (todo.length ? todo.map(function(t, i){ return '<li class="' + (t.d ? 'done' : '') + '"><button type="button" data-bd-tg="' + i + '" class="bd-ck">' + ico('check') + '</button><span>' + esc(t.t) + '</span><button type="button" data-bd-rm="' + i + '" class="bd-rm" aria-label="remove">' + ico('x') + '</button></li>'; }).join('') : '<li class="bd-empty">' + esc(T(B('Nothing yet — add the first task above.', 'ยังไม่มีงาน เพิ่มงานแรกได้ด้านบน'))) + '</li>') + '</ul></div>' +
       '</div>';
   }
+  /* ------------------------------------------------------------------
+     2026-11-17 (c) (user request): "I own it — if others buy shares, how do I keep full control, even at 5%?"
+     A founder-control planner: pick how much of the company you own (100 / 75 / 51 / 50 / 25 / 5 % or any number)
+     and how investors' shares vote, and see shares vs votes side by side, which decisions you can carry or block,
+     and the tools that keep a founder in charge. General education about Thai private limited companies under the
+     Civil and Commercial Code — not legal advice (checked 2026-11-17: ordinary resolution = majority of votes,
+     special resolution = at least 3/4 of the votes of shareholders present, directors can be removed by the meeting
+     at any time unless the articles / a shareholders' agreement add protection; preference shares may carry fewer
+     votes if the articles say so).
+     ------------------------------------------------------------------ */
+  var MODES = [
+    { k:'common', v:1, t:B('All ordinary shares (1 share = 1 vote)', 'หุ้นสามัญทั้งหมด (1 หุ้น = 1 เสียง)') },
+    { k:'pref10', v:0.1, t:B('Investors get preference shares: 10 shares = 1 vote', 'นักลงทุนถือหุ้นบุริมสิทธิ: 10 หุ้น = 1 เสียง') },
+    { k:'nonvote', v:0, t:B('Investors get non-voting preference shares', 'นักลงทุนถือหุ้นบุริมสิทธิไม่มีสิทธิออกเสียง') }
+  ];
+  function ctrl(){ var c = lsGet('spz.board.ctrl', null) || {}; var f = +c.f; if(!(f > 0 && f <= 100)) f = 100; var m = MODES.some(function(x){ return x.k === c.m; }) ? c.m : 'common'; return { f:f, m:m }; }
+  function votesOf(c){ var md = MODES.filter(function(x){ return x.k === c.m; })[0], inv = 100 - c.f, tot = c.f + inv * md.v; return tot > 0 ? c.f / tot * 100 : 100; }
+  function fmtP(x){ return (Math.round(x * 10) / 10).toLocaleString(L() === 'th' ? 'th-TH' : 'en-US') + '%'; }
+  function ring(pct, cls, r){ var C = 2 * Math.PI * r, d = Math.max(0, Math.min(100, pct)) / 100 * C; return '<circle r="' + r + '" cx="60" cy="60" class="bg"/><circle r="' + r + '" cx="60" cy="60" class="' + cls + '" stroke-dasharray="' + d.toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 60 60)"/>'; }
+  function ctrlHTML(){
+    var c = ctrl(), v = votesOf(c), inv = 100 - c.f;
+    var checks = [
+      { ok:v > 50, t:B('Carry an ordinary resolution (more than 50% of votes)', 'ผ่านมติธรรมดาได้เอง (เสียงเกิน 50%)'), d:B('Appoint or remove directors, approve the accounts, pay dividends.', 'แต่งตั้ง/ถอดถอนกรรมการ อนุมัติงบการเงิน จ่ายปันผล') },
+      { ok:v >= 75, t:B('Carry a special resolution (at least 3/4 of votes present)', 'ผ่านมติพิเศษได้เอง (เสียงอย่างน้อย 3/4)'), d:B('Change the articles, raise or cut capital, merge, close the company.', 'แก้ข้อบังคับ เพิ่ม/ลดทุน ควบรวม เลิกบริษัท') },
+      { ok:v > 25, t:B('Block any special resolution (more than 1/4 of votes)', 'ขวางมติพิเศษได้ (เสียงเกิน 1/4)'), d:B('Nobody can rewrite the articles — or take away your protections — without you.', 'ไม่มีใครแก้ข้อบังคับ หรือลบสิทธิ์คุ้มครองของเราได้ถ้าเราไม่ยอม') },
+      { ok:v > 50, t:B('Nobody can vote you off the board', 'ไม่มีใครโหวตถอดเราออกจากกรรมการได้'), d:B(v > 50 ? 'You hold the majority of votes yourself.' : 'Only if the articles / shareholders\' agreement require your consent to remove the founder (see the tools below).', v > 50 ? 'เพราะเราถือเสียงข้างมากเอง' : 'ทำได้ถ้าข้อบังคับ/สัญญาผู้ถือหุ้นเขียนว่า ถอดผู้ก่อตั้งต้องได้รับความยินยอมจากผู้ก่อตั้ง (ดูเครื่องมือด้านล่าง)') }
+    ];
+    var level = v >= 75 ? { k:'full', t:B('Full control', 'คุมได้เบ็ดเสร็จ'), d:B('You decide everything alone, including changing the rules.', 'ตัดสินใจได้เองทุกเรื่อง รวมถึงแก้กติกาบริษัท') }
+      : v > 50 ? { k:'major', t:B('Control — but not the rulebook', 'คุมบริษัทได้ แต่แก้ข้อบังคับคนเดียวไม่ได้'), d:B('You run the board; changing the articles needs others too. Lock your protections into the articles now.', 'คุมกรรมการได้ แต่การแก้ข้อบังคับต้องมีคนอื่นร่วม ควรเขียนสิทธิ์ผู้ก่อตั้งลงข้อบังคับไว้ก่อน') }
+      : v > 25 ? { k:'block', t:B('Veto power', 'มีสิทธิ์ยับยั้ง (วีโต้)'), d:B('Others can outvote you on everyday matters, but cannot change the rules without you — protections in the articles stay.', 'คนอื่นโหวตชนะเราเรื่องทั่วไปได้ แต่แก้ข้อบังคับโดยไม่มีเราไม่ได้ สิทธิ์ที่เขียนไว้จึงอยู่ครบ') }
+      : { k:'weak', t:B('Needs protection in writing', 'ต้องมีข้อบังคับคุ้มครอง'), d:B('With this many votes your power comes only from the articles and the shareholders\' agreement — set them up before anyone else buys in.', 'เสียงเท่านี้ อำนาจของเรามาจากข้อบังคับและสัญญาผู้ถือหุ้นเท่านั้น ต้องทำให้เสร็จก่อนมีผู้ถือหุ้นคนอื่น') };
+    var tools = [
+      ['layers', B('Two classes of shares', 'หุ้น 2 ชั้น'), B('Founder holds ordinary voting shares; investors get preference shares with fewer (or no) votes but a priority dividend. Written into the memorandum / articles from day one.', 'ผู้ก่อตั้งถือหุ้นสามัญที่มีสิทธิออกเสียง นักลงทุนได้หุ้นบุริมสิทธิที่เสียงน้อยกว่า (หรือไม่มีเสียง) แต่ได้ปันผลก่อน เขียนไว้ในหนังสือบริคณห์สนธิ/ข้อบังคับตั้งแต่แรก')],
+      ['crown', B('Founder board seats', 'สิทธิ์แต่งตั้งกรรมการส่วนใหญ่'), B('The articles or a shareholders\' agreement let the founder name the chairman and most of the directors, whatever the share count.', 'ข้อบังคับหรือสัญญาผู้ถือหุ้นให้ผู้ก่อตั้งแต่งตั้งประธานและกรรมการส่วนใหญ่ได้ ไม่ว่าจะถือหุ้นเท่าไร')],
+      ['shield', B('Founder cannot be removed without consent', 'ถอดผู้ก่อตั้งต้องได้ความยินยอมผู้ก่อตั้ง'), B('Articles may set a higher bar than a simple majority to remove a director — e.g. the founder\'s written consent, or a unanimous vote.', 'ข้อบังคับกำหนดเกณฑ์ถอดถอนกรรมการให้สูงกว่ามติธรรมดาได้ เช่น ต้องมีหนังสือยินยอมจากผู้ก่อตั้ง หรือเสียงเอกฉันท์')],
+      ['key', B('Reserved matters (veto list)', 'เรื่องที่ต้องผ่านผู้ก่อตั้ง (Reserved matters)'), B('A list in the shareholders\' agreement — new shares, selling the business, changing the CEO, big loans — that need the founder\'s yes.', 'รายการในสัญญาผู้ถือหุ้น เช่น ออกหุ้นใหม่ ขายกิจการ เปลี่ยน CEO กู้เงินก้อนใหญ่ ต้องได้รับความเห็นชอบจากผู้ก่อตั้ง')],
+      ['grid', B('Hold through your own holding company', 'ถือผ่านบริษัทโฮลดิ้งของเรา 100%'), B('Your shares sit in a company you own completely, so you can bring partners in at the holding level without diluting your vote below.', 'ถือหุ้นผ่านบริษัทที่เราเป็นเจ้าของ 100% ชวนหุ้นส่วนเข้ามาที่ชั้นโฮลดิ้งได้ โดยเสียงในบริษัทลูกยังเป็นของเรา')],
+      ['lock', B('Never drop below 1/4 of the votes', 'อย่าให้เสียงต่ำกว่า 1/4'), B('Above 25% you can block any change to the articles — so every protection above stays locked in.', 'ถ้ามีเสียงเกิน 25% เราขวางการแก้ข้อบังคับได้ สิทธิ์คุ้มครองทั้งหมดข้างบนจึงไม่มีใครลบได้')]
+    ];
+    var presets = [100, 75, 51, 50, 25, 5];
+    return '<div class="bd-ctrl">' +
+      '<div class="bd-cin"><h3>' + ico('crown') + esc(T(B('Founder control planner', 'วางแผนอำนาจผู้ก่อตั้ง'))) + '</h3>' +
+        '<p>' + esc(T(B('How much of the company do you own, and how do investors\' shares vote?', 'เราถือหุ้นกี่เปอร์เซ็นต์ และหุ้นของนักลงทุนออกเสียงแบบไหน?'))) + '</p>' +
+        '<div class="bd-pre">' + presets.map(function(x){ return '<button type="button" data-bd-f="' + x + '" class="' + (c.f === x ? 'on' : '') + '">' + x + '%</button>'; }).join('') + '</div>' +
+        '<label class="bd-sl"><span>' + esc(T(B('Your shares', 'หุ้นของเรา'))) + ' <b>' + fmtP(c.f) + '</b></span><input type="range" min="1" max="100" step="1" value="' + c.f + '" data-bd-fr></label>' +
+        '<div class="bd-modes">' + MODES.map(function(m){ return '<button type="button" data-bd-m="' + m.k + '" class="' + (c.m === m.k ? 'on' : '') + '"><i></i>' + esc(T(m.t)) + '</button>'; }).join('') + '</div>' +
+      '</div>' +
+      '<div class="bd-cout">' +
+        '<div class="bd-rings"><div class="bd-ring"><svg viewBox="0 0 120 120">' + ring(c.f, 'sh', 50) + '</svg><b>' + fmtP(c.f) + '</b><span>' + esc(T(B('of the shares (money)', 'ของหุ้น (เงินลงทุน)'))) + '</span></div>' +
+          '<span class="bd-arrow">' + ico('arrow') + '</span>' +
+          '<div class="bd-ring"><svg viewBox="0 0 120 120">' + ring(v, 'vt', 50) + '</svg><b>' + fmtP(v) + '</b><span>' + esc(T(B('of the votes (power)', 'ของเสียงโหวต (อำนาจ)'))) + '</span></div></div>' +
+        '<div class="bd-verdict v-' + level.k + '"><b>' + esc(T(level.t)) + '</b><span>' + esc(T(level.d)) + '</span></div>' +
+        '<ul class="bd-checks">' + checks.map(function(x){ return '<li class="' + (x.ok ? 'ok' : 'no') + '"><i>' + ico(x.ok ? 'check' : 'x') + '</i><div><b>' + esc(T(x.t)) + '</b><span>' + esc(T(x.d)) + '</span></div></li>'; }).join('') + '</ul>' +
+        (inv > 0 ? '<p class="bd-inv">' + esc(T(B('Investors: ', 'นักลงทุน: '))) + fmtP(inv) + T(B(' of the shares · ', ' ของหุ้น · ')) + fmtP(100 - v) + T(B(' of the votes', ' ของเสียง')) + '</p>' : '') +
+      '</div></div>' +
+      '<h3 class="bd-h3">' + ico('shield') + esc(T(B('Six tools that keep a founder in charge', '6 เครื่องมือที่ทำให้ผู้ก่อตั้งยังคุมบริษัทได้'))) + '</h3>' +
+      '<div class="bd-tools">' + tools.map(function(t, i){ return '<div class="bd-tool"><span class="bd-tn">' + (i + 1) + '</span><i>' + ico(t[0]) + '</i><b>' + esc(T(t[1])) + '</b><p>' + esc(T(t[2])) + '</p></div>'; }).join('') + '</div>' +
+      '<div class="bd-law">' + ico('lock') + '<p><b>' + esc(T(B('Good to know', 'ควรรู้'))) + '</b> ' + esc(T(B('General information about Thai private limited companies (Civil and Commercial Code), not legal advice. No structure is 100% bullet-proof — a director who breaks the law or their duties can still be removed by a court. Public companies (PLC) follow stricter one-share-one-vote rules. Before anyone else buys shares, have a Thai lawyer write the memorandum, the articles and the shareholders\' agreement.', 'ข้อมูลทั่วไปเกี่ยวกับบริษัทจำกัดตามประมวลกฎหมายแพ่งและพาณิชย์ ไม่ใช่คำปรึกษาทางกฎหมาย ไม่มีโครงสร้างไหนกันได้ 100% เช่น กรรมการที่ทำผิดกฎหมายหรือผิดหน้าที่ยังถูกศาลสั่งให้พ้นตำแหน่งได้ ส่วนบริษัทมหาชนมีกฎเข้มกว่า (โดยหลักหนึ่งหุ้นหนึ่งเสียง) ก่อนรับผู้ถือหุ้นรายอื่น ควรให้ทนายความเขียนหนังสือบริคณห์สนธิ ข้อบังคับ และสัญญาผู้ถือหุ้นให้'))) + '</p></div>';
+  }
   function paint(){
     if(!sec) return;
     if(!isAdmin()){
       sec.innerHTML = '<div class="bd-wrap"><div class="bd-lock">' + ico('lock') + '<b>' + esc(T(B('Admin only', 'เฉพาะแอดมิน'))) + '</b><p>' + esc(T(B('Sign in with the admin key to open the executive board.', 'เข้าสู่ระบบด้วยรหัสแอดมินเพื่อเปิดบอร์ดบริหาร'))) + '</p></div></div>';
       return;
     }
-    var tb = tab();
+    var tb = tab(); if(['org', 'ctrl', 'dash'].indexOf(tb) < 0) tb = 'org';
+    var c = ctrl(), v = votesOf(c);
+    var ava = window.__SPZ_DEV_AVATAR ? '<img src="' + window.__SPZ_DEV_AVATAR + '" alt="">' : '<span>N</span>';
+    var TABS = [['org', 'grid', B('Organisation chart', 'โครงสร้างองค์กร')], ['ctrl', 'crown', B('Founder control', 'อำนาจผู้ก่อตั้ง')], ['dash', 'bolt', B('Site control panel', 'แผงควบคุมเว็บ')]];
     sec.innerHTML = '<div class="bd-wrap">' +
-      '<header class="bd-head"><div class="bd-kick"><span class="bd-pill">' + ico('lock') + esc(T(B('Admin only', 'เฉพาะแอดมิน'))) + '</span><span>' + esc(T(B('Executive suite · draft', 'พื้นที่ผู้บริหาร · ฉบับร่าง'))) + '</span></div>' +
+      '<header class="bd-head"><div class="bd-hgrid"><div>' +
+        '<div class="bd-kick"><span class="bd-pill">' + ico('lock') + esc(T(B('Admin only', 'เฉพาะแอดมิน'))) + '</span><span>' + esc(T(B('Executive suite', 'พื้นที่ผู้บริหาร'))) + '</span></div>' +
         '<h2>' + esc(T(B('Executive board', 'บอร์ดบริหาร'))) + '</h2>' +
-        '<p>' + esc(T(B('Who owns SPACEZ TERMINAL and who is in charge of what — from the shareholders and the board down to each department. A first outline; fill the names in as the team grows.', 'ใครเป็นเจ้าของ SPACEZ TERMINAL และใครดูแลอะไร ตั้งแต่ผู้ถือหุ้น คณะกรรมการ จนถึงแต่ละฝ่าย เป็นโครงร่างแรก เติมชื่อได้เมื่อทีมโตขึ้น'))) + '</p>' +
-        '<div class="bd-tabs" role="tablist"><button type="button" data-bd-tab="org" class="' + (tb === 'org' ? 'on' : '') + '">' + ico('grid') + esc(T(B('Organisation chart', 'โครงสร้างองค์กร'))) + '</button><button type="button" data-bd-tab="dash" class="' + (tb === 'dash' ? 'on' : '') + '">' + ico('bolt') + esc(T(B('Site control panel', 'แผงควบคุมเว็บ'))) + '</button>' +
+        '<p>' + esc(T(B('Who owns SPACEZ TERMINAL, who runs what, and how the founder keeps control as the company grows.', 'ใครเป็นเจ้าของ SPACEZ TERMINAL ใครดูแลอะไร และผู้ก่อตั้งจะคุมบริษัทไว้ได้อย่างไรเมื่อบริษัทโตขึ้น'))) + '</p></div>' +
+        '<div class="bd-founder"><span class="bd-fava">' + ava + '</span><div><small>' + esc(T(B('Founder · CEO', 'ผู้ก่อตั้ง · CEO'))) + '</small><b>Noraset Boikaw "Focus"</b><span class="bd-fst"><em>' + esc(T(B('Shares', 'หุ้น'))) + ' ' + fmtP(c.f) + '</em><em class="v">' + esc(T(B('Votes', 'เสียง'))) + ' ' + fmtP(v) + '</em></span></div></div>' +
+      '</div>' +
+        '<div class="bd-tabs" role="tablist">' + TABS.map(function(x){ return '<button type="button" data-bd-tab="' + x[0] + '" class="' + (tb === x[0] ? 'on' : '') + '">' + ico(x[1]) + esc(T(x[2])) + '</button>'; }).join('') +
           (tb === 'org' ? '<button type="button" class="bd-edit' + (editing ? ' on' : '') + '" data-bd-edit>' + esc(T(editing ? B('Save names', 'บันทึกรายชื่อ') : B('Edit names', 'แก้ไขรายชื่อ'))) + '</button>' : '') + '</div>' +
-      '</header>' + (tb === 'org' ? orgHTML() + '<p class="bd-note bd-onote">' + esc(T(B('Names are kept in this browser only. Titles follow a common Thai company structure (shareholders appoint the board, the board appoints the CEO).', 'รายชื่อเก็บไว้ในเบราว์เซอร์นี้เท่านั้น ตำแหน่งเรียงตามโครงสร้างบริษัททั่วไป (ผู้ถือหุ้นแต่งตั้งกรรมการ กรรมการแต่งตั้ง CEO)'))) + '</p>' : dashHTML()) +
+      '</header>' +
+      (tb === 'org' ? orgHTML() + '<p class="bd-note bd-onote">' + esc(T(B('Names are kept in this browser only. Shareholders appoint the board, the board appoints the CEO — the founder-control tab shows how to keep that chain in your hands.', 'รายชื่อเก็บไว้ในเบราว์เซอร์นี้เท่านั้น ผู้ถือหุ้นแต่งตั้งกรรมการ กรรมการแต่งตั้ง CEO — แท็บ "อำนาจผู้ก่อตั้ง" แสดงวิธีคุมทั้งสายนี้ไว้ในมือเรา'))) + '</p>'
+        : tb === 'ctrl' ? ctrlHTML() : dashHTML()) +
       '</div>';
   }
   function build(){
@@ -142,6 +220,11 @@
     sec = document.createElement('section'); sec.id = 'board'; sec.className = 'bd-sec'; sec.setAttribute('data-route', 'board');
     var foot = document.querySelector('body > footer'); if(foot) document.body.insertBefore(sec, foot); else document.body.appendChild(sec);
     window.__spzAddRoute({ id:'board', after:'printall', t:B('Executive board', 'บอร์ดบริหาร'), d:B('Admin only: organisation chart (shareholders, board, CEO, departments) and the site control panel.', 'เฉพาะแอดมิน: โครงสร้างองค์กร (ผู้ถือหุ้น คณะกรรมการ CEO ฝ่ายงาน) และแผงควบคุมเว็บ') });
+    sec.addEventListener('input', function(e){
+      var r = e.target.closest('[data-bd-fr]'); if(!r) return;
+      var c2 = ctrl(); c2.f = +r.value; lsSet('spz.board.ctrl', c2);
+      clearTimeout(sec.__rt); sec.__rt = setTimeout(function(){ paint(); var r2 = sec.querySelector('[data-bd-fr]'); if(r2) r2.focus(); }, 60);
+    });
     sec.addEventListener('submit', function(e){
       var f = e.target.closest('[data-bd-add]'); if(!f) return; e.preventDefault();
       if(!isAdmin()) return paint();
@@ -151,6 +234,8 @@
     });
     sec.addEventListener('click', function(e){
       var t = lsGet('spz.board.todo', []) || [], b;
+      if((b = e.target.closest('[data-bd-f]'))){ var c0 = ctrl(); c0.f = +b.getAttribute('data-bd-f'); lsSet('spz.board.ctrl', c0); paint(); return; }
+      if((b = e.target.closest('[data-bd-m]'))){ var c1 = ctrl(); c1.m = b.getAttribute('data-bd-m'); lsSet('spz.board.ctrl', c1); paint(); return; }
       if((b = e.target.closest('[data-bd-tab]'))){ lsSet('spz.board.tab', b.getAttribute('data-bd-tab')); editing = false; paint(); return; }
       if((b = e.target.closest('[data-bd-edit]'))){
         if(editing){ var o = orgData(); sec.querySelectorAll('[data-org]').forEach(function(i){ o[i.getAttribute('data-org')] = i.value.trim(); }); lsSet('spz.board.org', o); }
@@ -170,5 +255,23 @@
     paint(); onRoute();
     return true;
   }
+  /* 2026-11-17 (c) (user request): the menu's special block shows its three cards in full colour for everyone (no grey
+     "locked" look); a single line above them says who can open them. Access itself is unchanged (part-46 locks). */
+  function featLock(){
+    var tier = ''; try { tier = window.__SPZ_TIER ? window.__SPZ_TIER() : ''; } catch(e){}
+    var staff = tier === 'full' || tier === 'editor';
+    document.querySelectorAll('.np-feat').forEach(function(f){
+      f.classList.toggle('np-feat-open', staff);
+      var h = f.querySelector('.np-feat-h'); if(!h) return;
+      var k = h.querySelector('.np-feat-lock');
+      if(!k){ k = document.createElement('em'); k.className = 'np-feat-lock'; h.appendChild(k); }
+      var txt = T(B('Locked · Admin, Editor and Reviewer only', 'ล็อกไว้ · เฉพาะแอดมิน Editor และผู้ประเมิน'));
+      var html = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>' + esc(txt);
+      if(k.innerHTML !== html) k.innerHTML = html;
+      k.hidden = staff;
+    });
+  }
+  setInterval(featLock, 800);
+  document.addEventListener('spz:tier', featLock);
   var n = 0, iv = setInterval(function(){ if(build() || ++n > 80) clearInterval(iv); }, 250);
 })();

@@ -1602,7 +1602,7 @@ var CL_UI = {
       var a = el('a', 'np-item np-item-brain np-item-board',
         '<span class="np-head"><span class="np-n np-n-icon">' + BOARD_BADGE_ICON + '</span>' +
         '<span class="np-t">' + esc(th ? 'บอร์ดบริหาร' : 'Executive board') + ' <i class="np-adm">ADMIN</i></span><span class="np-arrow">→</span></span>' +
-        '<span class="np-d">' + esc(th ? 'โครงสร้างองค์กร · ผู้ถือหุ้น · คณะกรรมการ · CEO · ฝ่ายงาน — เฉพาะแอดมิน' : 'Organisation chart · shareholders · board · CEO · departments — admin only') + '</span>');
+        '<span class="np-d">' + esc(th ? 'โครงสร้างองค์กร · คณะกรรมการ · ฝ่ายงาน' : 'Organisation chart · board · departments') + '</span>');
       a.href = '#/board';
       a.setAttribute('data-route-to', 'board');
       a.addEventListener('click', function(e){
