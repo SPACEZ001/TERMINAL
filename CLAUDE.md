@@ -316,3 +316,13 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
 - **Bubble Radar wide layout:** `assets/js/part-91.js` + `css/part-91.css` group part-40's flat blocks into sections on a 12-column
   grid (gauge | meaning, sticky risk shape | 5 signals, other signals, flows | money map, burst, playbook, archetypes | scenario
   link); re-runs after every part-40 repaint (it rebuilds with innerHTML). part-40 is untouched.
+
+## Added 2026-11-17
+
+- **Brain Summary tab polish** (sources archive `brain-sources-2026-11-17.tgz`). The "everything in one table" was broken —
+  each value cell stacked into tall boxes — because part-84.css had a bare global `.v{display:flex…}` (Stock Classroom visual
+  card) that also matched the Brain's `td.v` / `div.v`. It is now `:where(#skStart) .v` (same specificity). Also, at the end of
+  part-83.css ("2026-11-17 Summary tab polish"): guide grid 3 columns, forecast cards 4 per row, rows of the big table with a
+  coloured left edge by impact + tinted forecast cells, money-flow card sticky beside the long return list, section-title rules,
+  mobile: "now → 6M" on one line, sticky first column in the table, no word-by-word wraps in the score block, BTC-USD no wrap.
+  Heatmap header no longer prints the last month on top of the "latest" column (`n_ext.js`).
