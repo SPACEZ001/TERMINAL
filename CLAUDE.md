@@ -326,3 +326,16 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   coloured left edge by impact + tinted forecast cells, money-flow card sticky beside the long return list, section-title rules,
   mobile: "now → 6M" on one line, sticky first column in the table, no word-by-word wraps in the score block, BTC-USD no wrap.
   Heatmap header no longer prints the last month on top of the "latest" column (`n_ext.js`).
+
+## Added 2026-11-17 (later)
+
+- **Print the whole site (admin only):** `assets/js/part-92.js` + `css/part-92.css`, route `#/printall` (in `ADMIN_ONLY_ROUTES`
+  and `NAV_HIDDEN`), opened from the admin panel Reports button `#cagBtnPrintAll` (hidden for editors). It visits every menu page
+  (+ home), keeps only what is visible (text, lists, tables, SVG charts with colours inlined, canvases as images; no buttons,
+  inputs, scripts, styles), adds both classrooms (part-65 `window.__SPZ_CLASSROOM_PRINT`: rooms / title / load with the admin key),
+  the Market Brain "everything + all manuals" (`window.__SPZ_BRAIN_PRINT.html('all')` from k_print.js; its CSS + part-83.css are
+  scoped under `.spa-brain` by `scopeCss`) and `IC_License.html`. Output: print / PDF (white A4, cover, contents, ref `SPZ-AL-…`),
+  one .html file, or one .md text file for AI. Selection in localStorage `spz.printall.sel`. A full run takes ~45 s (~220 pages).
+  `window.__SPZ_HTML2MD(node)` (DOM → Markdown) is shared with the Brain.
+- **Brain print tab:** new first type "Everything + all manuals" (`all` in `PR_TYPES`) and a "Download as text (.md) for AI"
+  button (`data-prmd`, `prMd()`). Sources archive `brain-sources-2026-11-17b.tgz`.

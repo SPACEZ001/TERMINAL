@@ -542,6 +542,21 @@
     for(var i = 0; i < TREE.length; i++) if(TREE[i].id === 'scn'){ TREE.splice(i + 1, 0, { id:'ex', children:exKids }); break; }
   })();
   var ROOMS = { ew:{ tree:TREE, t:UX.roomEw, first:'overview' }, stk:{ tree:STK_TREE, t:UX.roomStk, first:'sk-overview' } };
+  /* 2026-11-17: read-only helper for the admin "print the whole site" page (part-92). It hands out the lesson ORDER and
+     TITLES only (both already client-side) and fetches the lesson bodies with the same admin / editor key this page uses --
+     nothing new is exposed to anyone who could not already open the classroom. */
+  window.__SPZ_CLASSROOM_PRINT = {
+    rooms:function(){
+      function flat(tree){ var out = []; tree.forEach(function(n){ out.push({ id:n.id, lv:0 }); (n.children || []).forEach(function(c){ out.push({ id:c, lv:1 }); }); }); return out; }
+      return [{ k:'stk', t:UX.roomStk, ids:flat(STK_TREE) }, { k:'ew', t:UX.roomEw, ids:flat(TREE) }];
+    },
+    title:function(id){ return NODE_TITLE[id] || { en:id, th:id }; },
+    load:function(){
+      var key = getAdminKey();
+      if(!key) return fetch(WORKER_BASE + '/api/classroom/public').then(function(r){ if(!r.ok) throw new Error('status ' + r.status); return r.json(); }).then(function(d){ return { content:(d && d.content) || {}, scope:'public' }; });
+      return fetch(WORKER_BASE + '/api/classroom/content', { headers:{ 'X-Admin-Key': key } }).then(function(r){ if(!r.ok) throw new Error('status ' + r.status); return r.json(); }).then(function(d){ return { content:(d && d.content) || {}, scope:'full' }; });
+    }
+  };
   function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
   function lsSet(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
   var room = 'ew';

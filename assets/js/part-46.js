@@ -492,6 +492,7 @@
     logoutBtn:{en:'Log out',th:'ออกจากระบบ'},
     adminAddAnalysis:{en:'Add Analysis',th:'เพิ่มบทวิเคราะห์'},
     adminPrintReport:{en:'Print Report',th:'พิมพ์รายงาน'},
+    adminPrintAll:{en:'Print the whole site · one file',th:'พิมพ์ทั้งเว็บ · รวมเป็นไฟล์เดียว'},
     adminCompareDownload:{en:'Compare Stocks PDF',th:'ดาวน์โหลด PDF เปรียบเทียบหุ้น'},
     adminConnectedUsers:{en:'Connected Users',th:'ผู้ใช้ที่เชื่อมต่อ'},
     adminAnnouncements:{en:'Announcements',th:'ประกาศ'},
@@ -720,6 +721,10 @@
               '<div class="cag-admin-group">' +
                 '<div class="cag-admin-group-h" data-x="adminGroupReports"></div>' +
                 '<div class="cag-admin-grid">' +
+                  '<button class="cag-admin-link" type="button" id="cagBtnPrintAll">' +
+                    '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h11l5 5V20a.5.5 0 01-.5.5H4.5A.5.5 0 014 20z"/><path d="M15 4.5V9.5h5"/><path d="M7.5 12h9M7.5 15h9M7.5 18h5"/><path d="M2 7v14.5a1 1 0 001 1h13"/></svg>' +
+                    '<span data-x="adminPrintAll"></span>' +
+                  '</button>' +
                   '<button class="cag-admin-link" type="button" id="cagBtnPrintReport">' +
                     '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9V3.5h11V9"/><path d="M5.5 17.5h-2a1 1 0 01-1-1v-6a1 1 0 011-1h17a1 1 0 011 1v6a1 1 0 01-1 1h-2"/><path d="M6.5 14h11v6.5h-11z"/></svg>' +
                     '<span data-x="adminPrintReport"></span>' +
@@ -980,6 +985,7 @@
       });
     }
     gate.querySelector('#cagBtnAddAnalysis').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/journalNew'; });
+    gate.querySelector('#cagBtnPrintAll').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/printall'; });
     gate.querySelector('#cagBtnPrintReport').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/printreport'; });
     gate.querySelector('#cagBtnArena').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/exams'; });   /* 2026-11-07: now opens the exam room (part-86), which links on to the Arena */
     // Compare Stocks PDF is admin-only (see cmpIsAdmin()/cmpPaintDownloadGate()
@@ -1228,7 +1234,7 @@
     var adminLinks = gate.querySelector('#cagAdminLinks');
     if(adminLinks){
       adminLinks.classList.toggle('hidden', currentTier !== 'full' && currentTier !== 'editor');
-      ['#cagBtnAddAnalysis','#cagBtnAnnouncements','#cagBtnConnectedUsers','#cagBtnCompareDownload','#cagBtnNotes','#cagBtnGradebook','#cagBtnPrintReport','#cagBtnEbook'].forEach(function(sel){
+      ['#cagBtnAddAnalysis','#cagBtnAnnouncements','#cagBtnConnectedUsers','#cagBtnCompareDownload','#cagBtnNotes','#cagBtnGradebook','#cagBtnPrintReport','#cagBtnPrintAll','#cagBtnEbook'].forEach(function(sel){
         var b = adminLinks.querySelector(sel); if(b) b.classList.toggle('hidden', currentTier === 'editor');
       });
       /* 2026-11-16: an Editor / Reviewer saw empty "publish" and "reports" headings -- hide a group with nothing in it */
@@ -1331,7 +1337,7 @@
         loggedS: currentTier === 'full' ? TXT.loggedS : currentTier === 'editor' ? (isReviewer() ? TXT.reviewerLoggedS : TXT.editorLoggedS) : currentTier === 'member' ? TXT.memberLoggedS : accLinked ? TXT.accLoggedS : lineLinked ? TXT.lineLoggedS : TXT.tgLoggedS,
         accH: TXT.accH, accGo: TXT.accGo, accOr: TXT.accOr,
         logoutBtn: TXT.logoutBtn, upgradeBtn: TXT.upgradeBtn,
-        adminAddAnalysis: TXT.adminAddAnalysis, adminPrintReport: TXT.adminPrintReport,
+        adminAddAnalysis: TXT.adminAddAnalysis, adminPrintReport: TXT.adminPrintReport, adminPrintAll: TXT.adminPrintAll,
         adminCompareDownload: TXT.adminCompareDownload, adminConnectedUsers: TXT.adminConnectedUsers,
         adminAnnouncements: TXT.adminAnnouncements,
         adminPro: TXT.adminPro, adminBriefing: TXT.adminBriefing, adminQuietValue: TXT.adminQuietValue,
@@ -1503,7 +1509,7 @@
      'editor' always fails, same as 'member' or 'basic' -- so Editor lands
      on the same "Admins only." placeholder a logged-out visitor would. */
   /* 2026-11-04: 'brain' (Market Brain) and 'secmap' (Security map) opened to Editor too (user request); Connected Users stays admin-only */
-  var ADMIN_ONLY_ROUTES = ['journalNew','connectedusers','announcements','gradebook','adminnotes','printreport','ebookreg','earlysignal','quietValue'];
+  var ADMIN_ONLY_ROUTES = ['journalNew','connectedusers','announcements','gradebook','adminnotes','printreport','ebookreg','earlysignal','quietValue','printall'];
   var EDITOR_ROUTES = LOCKED_ROUTES.filter(function(id){ return ADMIN_ONLY_ROUTES.indexOf(id) === -1; });
   /* A LINE-linked visitor gets the same MEMBER_ROUTES access as a Member-code
      login, without also having to paste that code in -- a stand-in for a
