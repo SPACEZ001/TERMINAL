@@ -22,7 +22,8 @@
 
   var COPY = {
     eyebrow:{en:'Membership',th:'สมัครสมาชิก'},
-    demo:{en:'Demo — this page is still being tested',th:'เดโม — หน้านี้ยังอยู่ในช่วงทดสอบ'},
+    demo:{en:'DEMO · Under development — sign-ups are not open yet',th:'เดโม · อยู่ระหว่างพัฒนา — ยังไม่เปิดรับสมัครจริง'},
+    demoSub:{en:'Every price, perk and payment step on this page is a sample and may change before launch. The Free tier works in full today.',th:'ราคา สิทธิ์ และขั้นตอนชำระเงินทั้งหมดในหน้านี้ยังเป็นตัวอย่าง อาจเปลี่ยนก่อนเปิดใช้จริง ตอนนี้ใช้แพ็กฟรีได้เต็มที่'},
     h:{en:'Choose the plan that fits how you use this terminal',th:'เลือกแพ็กเกจที่ใช่กับวิธีที่คุณใช้เว็บนี้'},
     lede:{en:'Everything below already exists on the site — this page previews what each tier will unlock. Paid tiers are not open for sign-ups yet, so explore the Free tier while the rest is being finished.',
           th:'ทุกอย่างด้านล่างมีอยู่จริงในเว็บนี้แล้ว หน้านี้แค่พรีวิวว่าแต่ละแพ็กจะปลดล็อกอะไรบ้าง แพ็กเสียเงินยังไม่เปิดรับสมัครจริง ลองใช้แพ็กฟรีไปก่อนระหว่างที่กำลังพัฒนาส่วนที่เหลือ'},
@@ -193,13 +194,14 @@
       /* paid tiers aren't open for sign-ups yet -- a testing badge and a
          nudge back to the Free tier instead of a "message us" CTA */
       ctaHTML = '<div class="mem-testing">' +
-        '<span class="mem-testing-badge">🧪 ' + esc(tx(COPY.testing)) + '</span>' +
+        '<span class="mem-testing-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>' + esc(tx(COPY.testing)) + '</span>' +
         '<p class="mem-testing-note">' + esc(tx(COPY.testingNote)) + '</p>' +
         '<a class="mem-cta-btn mem-cta-ghost" href="#/guided">' + esc(tx(COPY.exploreFree)) + '</a>' +
       '</div>';
     }
 
-    return '<div class="mem-card mem-' + tier.theme + (tier.top ? ' mem-top' : '') + ' reveal" style="transition-delay:' + (idx * 70) + 'ms">' +
+    return '<div class="mem-card mem-' + tier.theme + (tier.top ? ' mem-top' : '') + ' reveal" data-tier="' + tier.id + '" style="transition-delay:' + (idx * 70) + 'ms"><span class="mem-spot" aria-hidden="true"></span>' +
+      (tier.id === 'pass' ? '<span class="mem-ribbon">' + esc(th ? 'คุ้มที่สุด' : 'Best value') + '</span>' : '') +
       (tier.theme === 'black' ? '<span class="mem-flagship">' + esc(th ? 'เด่นสุด' : 'Flagship') + '</span><span class="mem-grid"></span><span class="mem-stars"></span><span class="mem-wave"></span><span class="mem-sweep"></span><span class="mem-sweep2"></span>' :
        (tier.theme === 'gold' || tier.theme === 'red' || tier.theme === 'purple' || tier.theme === 'cyan' || tier.theme === 'emerald' || tier.theme === 'silver' || tier.theme === 'bronze') ? '<span class="mem-sweep"></span><span class="mem-sweep2"></span>' : '') +
       '<div class="mem-icon">' + tier.icon + '</div>' +
@@ -262,6 +264,7 @@
     var q = function(k){ return sec.querySelector('[data-mem="' + k + '"]'); };
     if (q('eb')) q('eb').textContent = tx(COPY.eyebrow);
     if (q('demoText')) q('demoText').textContent = tx(COPY.demo);
+    if (q('demoSub')) q('demoSub').textContent = tx(COPY.demoSub);
     if (q('h')) q('h').textContent = tx(COPY.h);
     if (q('lede')) q('lede').textContent = tx(COPY.lede);
     if (q('cmpH')) q('cmpH').textContent = tx(COPY.cmpH);
@@ -273,7 +276,7 @@
       var sHtml = '';
       for (var i = 0; i < STATS.length; i++){
         sHtml += '<div class="mem-stat reveal in-view" style="transition-delay:' + (i * 90) + 'ms">' +
-          '<div class="mem-stat-n" data-target="' + STATS[i].n + '">0</div>' +
+          '<div class="mem-stat-n" data-target="' + STATS[i].n + '">' + (statsAnimated ? STATS[i].n : 0) + '</div>' +
           '<div class="mem-stat-l">' + esc(tx(STATS[i].s)) + '</div></div>';
       }
       statsHost.innerHTML = sHtml;
@@ -310,7 +313,7 @@
     sec.setAttribute('data-route', 'membership');
     sec.innerHTML =
       '<div class="mem-wrap">' +
-        '<div class="mem-demo-banner reveal in-view"><span class="mem-demo-dot"></span><span data-mem="demoText"></span></div>' +
+        '<div class="mem-demo-banner reveal in-view" role="note"><span class="mem-demo-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg></span><span class="mem-demo-tx"><b data-mem="demoText"></b><span data-mem="demoSub"></span></span><span class="mem-demo-tag"><span class="mem-demo-dot"></span>BETA</span></div>' +
         '<div class="section-head reveal in-view">' +
           '<div class="eyebrow"><span class="cursor"></span><span data-mem="eb"></span></div>' +
           '<h2 data-mem="h"></h2>' +
@@ -328,7 +331,8 @@
         '<div class="mem-table-scroll"><table class="mem-table" data-mem="table"></table></div>' +
         '<p class="mem-foot" data-mem="foot"></p>' +
       '</div>';
-    document.body.appendChild(sec);
+    var footEl = document.querySelector('body > footer');
+    if (footEl) document.body.insertBefore(sec, footEl); else document.body.appendChild(sec);
 
     window.__spzAddRoute({
       id:'membership', after:'home',
@@ -339,6 +343,11 @@
 
     sec.__render = paint;
     paint();
+    /* 2026-11-17: a soft light follows the pointer across each plan card */
+    sec.addEventListener('pointermove', function(e){
+      var c = e.target.closest && e.target.closest('.mem-card'); if(!c) return;
+      var r = c.getBoundingClientRect(); c.style.setProperty('--mx', (e.clientX - r.left) + 'px'); c.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    });
     return true;
   }
 

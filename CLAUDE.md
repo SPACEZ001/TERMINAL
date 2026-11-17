@@ -370,3 +370,24 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   the ring lingers ~1 s and fades (`.spzd-fade`). Switching buttons no longer leaves the old one glowing.
 - `#printall` / `#board` sections use the site's 130px top padding; their inner cards are `div`s (a nested `<section>` picked up the
   global section padding).
+
+## Added 2026-11-17 (night)
+
+- **Course pill (part-89):** shows only while a course page is the active route (follows the router via `__spzNav.at()`, polled every
+  400 ms — the site menu moves with pushState, no hashchange) and sits on the same line as the nav pill (`--cp-t`).
+- **Page 2 (#basics):** under chapter 2 the old page's repeats (what a share is, the four first-order words) and the four link boxes are
+  hidden; account opening + broker apps + the "5 checks" tab sit in one folded card (`.spzb-more`, localStorage `spz.basics.more`).
+  Page 5 (#glossary) gets a title card above the 44-term explorer (`.spzc-libh`) and the library card look.
+- **Search (part-88):** opening by hover is a "peek" (`.spzq.peek`) that closes when the pointer leaves the button + box; a click or typing
+  pins it. New ✕ button (`.spzq-x`).
+- **Sign-in tabs:** the reviewer tab is gold only when selected.
+- **Board (part-93):** two tabs — "โครงสร้างองค์กร" (shareholders → board → CEO → six departments; names editable, localStorage
+  `spz.board.org`, tab in `spz.board.tab`) and "แผงควบคุมเว็บ" (the earlier cards).
+- **Tools modal v2:** `assets/js/part-94.js` + `css/part-94.css` (loaded after part-93): one-screen layout for Position size / Currency /
+  Wealth builder, example numbers filled the first time, recalculates 300 ms after typing (presses the tool's own button), a price
+  ladder under the position-size result (`.t2-ladder`), Paper Trading folded (`.t2-fold`). The calculators themselves are untouched.
+- **Membership (part-52 + end of part-36.css "MEMBERSHIP v2"):** big demo / under-development notice (`demo` + `demoSub` copy), plan cards
+  with an accent per plan (`--acc`), pointer light (`.mem-spot`), animated edge, check icons, "คุ้มที่สุด" ribbon on Pass; stats no
+  longer reset to 0 on repaint; the section is inserted before the footer.
+- **Footer + route strip (part-88):** the footer is kept after the last `body > section[data-route]` (some screens appended their section
+  after it, so it showed at the top); the old `#v8Bar` "back · page name" strip is hidden (it showed through the see-through top bar).

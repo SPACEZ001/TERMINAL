@@ -589,7 +589,7 @@
      ------------------------------------------------------------------ */
   var PILL = null;
   var PATH_EXTRA = [{ p:'levels', ic:'layers', t:B('Step 2 · 6 levels', 'ขั้นที่ 2 · เรียนละเอียด 6 ระดับ') }, { p:'topics', ic:'doc', t:B('Step 3 · Lesson library', 'ขั้นที่ 3 · คลังบทเรียนตามหัวข้อ') }];
-  function routeNow(){ var h = (location.hash || '').replace(/^#\/?/, '').split(/[?&]/)[0]; return h; }
+  function routeNow(){ try { if(window.__spzNav && window.__spzNav.at) return window.__spzNav.at() || ''; } catch(e){} return (location.hash || '').replace(/^#\/?/, '').split(/[?&]/)[0]; }
   function pillCurIdx(){
     var r = routeNow();
     if(r === 'stockclass'){ var c = curPane(); if(c === 'levels') return 7; if(c === 'topics') return 8; return 0; }
@@ -623,7 +623,8 @@
     var sec = i >= 0 ? document.getElementById(routeNow()) : null, bar = sec && sec.querySelector('.spzc-bar:not(.spzc-off .spzc-bar)'), hub = sec && sec.querySelector('.spzc-hub');
     var ref = routeNow() === 'stockclass' ? hub : bar;
     var past = ref ? ref.getBoundingClientRect().bottom < 70 : false;
-    var show = i >= 0 && past && !document.body.classList.contains('menu-open');
+    var onPage = !!(sec && sec.classList.contains('route-on'));
+    var show = i >= 0 && onPage && past && !document.body.classList.contains('menu-open');
     PILL.el.classList.toggle('show', show);
     if(!show){ pillClose(); return; }
     var chip = document.querySelector('#spzLiveBar .lb-status'), cr = chip && chip.getBoundingClientRect(), left = cr && cr.width ? Math.round(cr.right + 10) : 16;
@@ -631,6 +632,8 @@
     var right = nr && nr.width ? Math.round(nr.left - 10) : window.innerWidth - 16;
     var room = right - left, low = room < 230;
     if(low){ left = 12; right = window.innerWidth - 12; }
+    /* 2026-11-17 (b): sit on the same line as the site's nav pill on the right */
+    if(!low && nr && nr.height) R.style.setProperty('--cp-t', Math.round(nr.top + (nr.height - 40) / 2) + 'px'); else R.style.removeProperty('--cp-t');
     R.style.setProperty('--cp-l', left + 'px');
     R.style.setProperty('--cp-w', Math.max(150, Math.min(right - left, 760)) + 'px');
     PILL.el.classList.toggle('low', low);
@@ -658,6 +661,9 @@
     window.addEventListener('scroll', sched, { passive:true });
     window.addEventListener('resize', sched);
     window.addEventListener('hashchange', function(){ setTimeout(paintPill, 80); setTimeout(pillPlace, 500); });
+    /* the site menu moves between pages with history.pushState (no hashchange) — follow the router itself */
+    var lastR = routeNow(), lastP = curPane();
+    setInterval(function(){ var r = routeNow(), pn = curPane(); if(r !== lastR || pn !== lastP){ lastR = r; lastP = pn; paintPill(); } else if(PILL.el.classList.contains('show')) pillPlace(); }, 400);
     new MutationObserver(function(){ paintPill(); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
     paintPill();
   }
@@ -698,6 +704,49 @@
     tour.querySelector('.spzg-tc em').textContent = T(open ? B('Hide', 'ย่อ') : B('Open the 10 steps', 'เปิดดู 10 ขั้น'));
   }
   var gt = 0, giv = setInterval(function(){ if(guidedArrange() || ++gt > 120) clearInterval(giv); }, 400);
+  /* 2026-11-17 (b) (user request: page 2 had too much — "just the content"): under chapter 2, the old page's own parts
+     that repeat the chapter (what a share is, the four first-order words) and the four link boxes are hidden; what is left
+     (opening an account step by step, the broker apps, and the "5 checks" intermediate tab) sits in ONE folded card. */
+  function bFold(){ return lsGet('spz.basics.more', 0); }
+  function basicsArrange(){
+    var g = document.getElementById('basics'); if(!g) return false;
+    var box = g.querySelector(':scope > .spzc[data-ch="basics"]'), tabs = g.querySelector(':scope > .bsc-tabs');
+    if(!box || !tabs) return false;
+    var more = g.querySelector(':scope > .spzg-tour.spzb-more');
+    if(!more){
+      more = document.createElement('div'); more.className = 'spzg-tour spzb-more';
+      more.innerHTML = '<button type="button" class="spzg-th" data-bmore aria-expanded="false"><i>' + ico('bank') + '</i><span class="spzg-tt"><b></b><small></small></span><span class="spzg-tc">' + ico('chev') + '<em></em></span></button><div class="spzg-tb"></div>';
+      g.insertBefore(more, tabs);
+      var body = more.querySelector('.spzg-tb'), n = tabs;
+      while(n){ var nx = n.nextElementSibling; if(n.classList.contains('bsc-cta') || n.getAttribute('data-b') === 'sizeH') break; body.appendChild(n); n = nx; }
+      more.querySelector('[data-bmore]').addEventListener('click', function(){ lsSet('spz.basics.more', bFold() ? 0 : 1); morePaint(); });
+    }
+    morePaint();
+    return true;
+  }
+  function morePaint(){
+    var g = document.getElementById('basics'), more = g && g.querySelector('.spzb-more'); if(!more) return;
+    var open = !!bFold();
+    more.classList.toggle('open', open);
+    more.querySelector('[data-bmore]').setAttribute('aria-expanded', open ? 'true' : 'false');
+    more.querySelector('.spzg-tt b').textContent = T(B('Open a brokerage account, step by step · 5 checks before you buy', 'เปิดบัญชีหุ้นทีละขั้น · และ 5 เรื่องเช็กก่อนซื้อ'));
+    more.querySelector('.spzg-tt small').textContent = T(B('Extra reading: documents, the 5 steps to open an account online, well-known broker apps — and, in the second tab, five numbers to check before any stock.', 'อ่านเสริม: เอกสารที่ต้องใช้ 5 ขั้นเปิดบัญชีออนไลน์ แอปโบรกเกอร์ที่คนไทยรู้จัก และแท็บที่ 2 ตัวเลข 5 ตัวที่ต้องเช็กก่อนซื้อหุ้นทุกตัว'));
+    more.querySelector('.spzg-tc em').textContent = T(open ? B('Hide', 'ย่อ') : B('Open', 'เปิดอ่าน'));
+  }
+  var bt = 0, biv = setInterval(function(){ if(basicsArrange() || ++bt > 120) clearInterval(biv); }, 400);
+  function glossTitle(){
+    var g = document.getElementById('glossary'); if(!g) return false;
+    var box = g.querySelector(':scope > .spzc[data-ch="glossary"]'); if(!box) return false;
+    var h = g.querySelector(':scope > .spzc-libh');
+    if(!h){ h = document.createElement('div'); h.className = 'spzc-libh'; g.insertBefore(h, box.nextSibling); }
+    h.innerHTML = '<i>' + ico('doc') + '</i><div><b>' + esc(T(B('Every term, one at a time', 'คำศัพท์ครบทุกตัว · กดเลือกดูทีละคำ'))) + '</b><span>' + esc(T(B('Filter by group or level, then pick a term on the left — each one has a formula, a worked example and a what-if you can change.', 'กรองตามกลุ่มหรือระดับ แล้วเลือกคำทางซ้าย แต่ละคำมีสูตร ตัวอย่าง และตัวเลขลองเปลี่ยนเล่นได้'))) + '</span></div>';
+    return true;
+  }
+  var gtt = 0, gtiv = setInterval(function(){ if(glossTitle() || ++gtt > 120) clearInterval(gtiv); }, 400);
+  new MutationObserver(function(){ glossTitle(); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+
+  new MutationObserver(function(){ morePaint(); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
+
   new MutationObserver(function(){ tourPaint(); }).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
   var ht = 0, hiv = setInterval(function(){ if(hubMount() || ++ht > 120) clearInterval(hiv); }, 400);
 

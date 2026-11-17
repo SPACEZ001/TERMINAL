@@ -110,7 +110,7 @@
     ov.innerHTML =
       '<div class="spzq-back" data-x></div>' +
       '<div class="spzq-box" role="dialog" aria-modal="true">' +
-        '<div class="spzq-in">' + ICO.s + '<input type="search" autocomplete="off" spellcheck="false" enterkeyhint="go"><button type="button" class="spzq-esc" data-x>Esc</button></div>' +
+        '<div class="spzq-in">' + ICO.s + '<input type="search" autocomplete="off" spellcheck="false" enterkeyhint="go"><button type="button" class="spzq-esc" data-x>Esc</button><button type="button" class="spzq-x" data-x aria-label="close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
         '<div class="spzq-list" role="listbox"></div>' +
         '<div class="spzq-foot"><span class="spzq-keys"></span><button type="button" class="spzq-inst" data-install>' + ICO.dl + '<span></span></button></div>' +
       '</div>';
@@ -328,15 +328,33 @@
   /* ---------------- 2026-11-16: search opens on hover (mouse) ---------------- */
   (function(){
     var t = 0;
-    document.addEventListener('pointerover', function(e){
-      var b = e.target && e.target.closest && e.target.closest('.spzq-btn');
-      if(!b || e.pointerType !== 'mouse') return;
-      clearTimeout(t); t = setTimeout(function(){ if(!ov || ov.hidden) open(); }, 260);
-    });
     document.addEventListener('pointerout', function(e){
       var b = e.target && e.target.closest && e.target.closest('.spzq-btn');
       if(b && (!e.relatedTarget || !b.contains(e.relatedTarget))) clearTimeout(t);
     });
+    /* 2026-11-17 (user request): a search opened only by hovering is a "peek" — it closes again when the pointer leaves the
+       button and the search box. Clicking the button, clicking inside the box or typing keeps it open (then Esc, the ✕
+       button or a click outside closes it, as before). */
+    var peek = false, pt = 0;
+    var oldOpen = open;
+    function unpeek(){ peek = false; clearTimeout(pt); if(ov) ov.classList.remove('peek'); }
+    document.addEventListener('pointerover', function(e){
+      var b = e.target && e.target.closest && e.target.closest('.spzq-btn');
+      if(!b || e.pointerType !== 'mouse') return;
+      clearTimeout(t); t = setTimeout(function(){ if(!ov || ov.hidden){ oldOpen(); peek = true; ov.classList.add('peek'); } }, 260);
+    }, true);
+    document.addEventListener('pointermove', function(e){
+      if(!peek || !ov || ov.hidden || e.pointerType !== 'mouse') return;
+      var inside = e.target && e.target.closest && (e.target.closest('.spzq-box') || e.target.closest('.spzq-btn'));
+      if(inside){ clearTimeout(pt); return; }
+      clearTimeout(pt); pt = setTimeout(function(){ if(peek) { close(); unpeek(); } }, 380);
+    }, { passive:true });
+    document.addEventListener('pointerdown', function(e){
+      if(!peek) return;
+      if(e.target && e.target.closest && (e.target.closest('.spzq-box') || e.target.closest('.spzq-btn'))) unpeek();
+    }, true);
+    document.addEventListener('keydown', function(e){ if(peek && ov && !ov.hidden && e.key !== 'Escape') unpeek(); }, true);
+    document.documentElement.addEventListener('mouseleave', function(){ if(peek){ close(); unpeek(); } });
   })();
 
   /* ---------------- 2026-11-16: bottom-right dock (sign-in + system status) ----------------
@@ -427,4 +445,18 @@
     });
     document.addEventListener('click', function(e){ if(card && cur && !card.contains(e.target)) hide(true); }, true);
   })();
+})();
+/* 2026-11-17 (b) — the page footer ("SPACEZ TERMINAL © 2026 — Educational Use Only · Back to Hub") must sit after every page.
+   Some screens append their <section> to the end of <body>, which put them AFTER the footer, so on those pages the footer
+   showed up at the top, right under the menu bar (user report on the Membership page). Keep the footer last. */
+(function(){
+  'use strict';
+  function fix(){
+    var f = document.querySelector('body > footer'); if(!f) return;
+    var secs = document.querySelectorAll('body > section[data-route]'), last = secs[secs.length - 1];
+    if(last && (f.compareDocumentPosition(last) & 4)) last.parentNode.insertBefore(f, last.nextSibling);
+  }
+  var busy = false;
+  new MutationObserver(function(){ if(busy) return; busy = true; fix(); busy = false; }).observe(document.body, { childList:true });
+  fix(); setTimeout(fix, 1500); setTimeout(fix, 5000);
 })();
