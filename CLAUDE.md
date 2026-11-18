@@ -439,4 +439,18 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   consent-to-quote ticks; short tick-box issue log (3 rows); Thai formal signature block (ลงชื่อ / ( ) / ตำแหน่ง / วันที่) lower on the
   page, result + signatures kept on one page. Optional sign-in code to print is memory-only (never saved). ~4 A4 pages, checked for
   overflow. Menu numbers in `SCOPE` (01, 08, 10, 31, 35) must follow part-15 if the menu order changes.
-- Paused idea (not built): restyle the Stock Universe (#/universe, part-77) as an Interstellar-style black hole "second brain" graph.
+
+## Added 2026-11-19
+
+- **Stock Universe v2** (`assets/js/part-77.js` + `css/part-77.css`, rewritten; old v1 is in git history): the owner's "Second Brain"
+  look. Black-and-white star map: sectors = labelled clusters ("Technology · 75 stocks") on a ring around an Interstellar-style black
+  hole (cached sprite `bhSprite(R·DPR, tilt)`: glow, back disk, lensed halo, shadow, photon rings, front disk, lens flare + moving disk
+  specks), constellation lines = correlation of ~6 months of daily returns (`corr()`, 2 per stock inside a sector + up to 70 strong
+  cross-sector pairs), grey smoke clouds, 5 faint orbit rings with comets, background sky. UI: title + live fps (top left) / back pill
+  in a sector, "Overview" pill (top centre), "Stocks" pill (top right) → side panel (search, picker, All/US/TH, white vs 1M colour,
+  card for a stock: price, 6-month chart + 50-day avg, plain-words summary, "moves together with" links, key numbers, 52w range,
+  "Count its waves" → `__SPZ_AUTOWAVE_OPEN`; card for a sector; "how to read" card), small bottom toolbar (− + ↺ ⏸ ⛶), hover tooltip.
+  Click a star → fly into its sector (camera aims 64% of the way so the hole stays in view) and light up its 6 closest movers.
+  Opening move: edge-on view → full map. The loop runs only while the page is shown (500 ms watcher); it rebuilds once when the full
+  market.json (with closes) replaces the light file. Stage has `data-nolc` (light-theme guard skips it). Test helpers:
+  `__SPZ_UNI_POS(sym)`, `__SPZ_UNI_DBG()`. Route is still locked for basic visitors as before.
