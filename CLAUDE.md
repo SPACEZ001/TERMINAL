@@ -433,4 +433,10 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   note / focus text, optional developer name (empty = her name in the page language), reviewer prefill, toggles (issue log, QR, sign-in
   code box, developer signature). A4 form: work info, reviewer info, 5-level + N/A rating table, issue log, comments, score box with
   the usual Thai mean bands (4.51–5.00 …), overall / recommendation ticks, signatures. Settings in localStorage `spz.review.form`.
+- **Reviewer form v2 (later 2026-11-18):** class `.pr-rv2`, localStorage `spz.review.form.v2`. Default set `full` ("ฉบับสมบูรณ์", 7 groups /
+  28 items, N/A for anything outside the reviewer's field); site address = `terminal.spacezblack.workers.dev` (QR too); part "how to use
+  the site" (4 sign-in steps, code box, tips, table of each part + how to reach it by menu number); terms + PDPA B.E. 2562 notice +
+  consent-to-quote ticks; short tick-box issue log (3 rows); Thai formal signature block (ลงชื่อ / ( ) / ตำแหน่ง / วันที่) lower on the
+  page, result + signatures kept on one page. Optional sign-in code to print is memory-only (never saved). ~4 A4 pages, checked for
+  overflow. Menu numbers in `SCOPE` (01, 08, 10, 31, 35) must follow part-15 if the menu order changes.
 - Paused idea (not built): restyle the Stock Universe (#/universe, part-77) as an Interstellar-style black hole "second brain" graph.
