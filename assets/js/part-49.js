@@ -2601,6 +2601,13 @@
     }
     return h;
   }
+  function revMount(force){
+    var w = sec && sec.querySelector('[data-pr="revWrap"]');
+    if(!w || !window.__SPZ_REVIEWFORM) return;
+    var a = document.activeElement;
+    if(!force && a && w.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+    w.innerHTML = window.__SPZ_REVIEWFORM.formHTML();
+  }
   function certMount(force){
     var w = sec && sec.querySelector('[data-pr="certWrap"]');
     if(!w) return;
@@ -3123,6 +3130,8 @@
       host.innerHTML = '<div class="qrp-locked">' + esc(T(UI.adminOnly)) + '</div>';
       return;
     }
+    /* the reviewer form is a blank printed form -- it needs no server data */
+    if(reportType === 'review' && window.__SPZ_REVIEWFORM){ host.innerHTML = window.__SPZ_REVIEWFORM.sheetHTML({ serial:serial(), logo:PR_LOGO, qr:evQrSvg }); return; }
     if(!getAdminKey()){ host.innerHTML = analysisKeyGateHTML(); wireAnalysisGate(host); return; }
     if(analysisLoading){ host.innerHTML = '<div class="ewv-content-loading">' + esc(T(UI.analysisLoading)) + '</div>'; return; }
     if(analysisErr === 'net'){ host.innerHTML = analysisNetErrorHTML(); wireAnalysisGate(host); return; }
@@ -3198,10 +3207,14 @@
     if(evWrap){ evWrap.style.display = reportType === 'eval' ? '' : 'none'; if(reportType === 'eval') evMountForm(); }
     var certWrap = q('certWrap');
     if(certWrap){ certWrap.style.display = reportType === 'cert' ? '' : 'none'; if(reportType === 'cert') certMount(); }
-    if(evWrap && evWrap.closest){ var evCtl = evWrap.closest('.pr-controls'); if(evCtl) evCtl.classList.toggle('pr-ev-on', reportType === 'eval' || reportType === 'cert'); }
+    /* 2026-11-18: reviewer evaluation form (part-95, window.__SPZ_REVIEWFORM) */
+    var revWrap = q('revWrap'), RF = window.__SPZ_REVIEWFORM;
+    if(revWrap){ revWrap.style.display = reportType === 'review' ? '' : 'none'; if(reportType === 'review') revMount(); }
+    var typeRevBtn = q('typeReview'); if(typeRevBtn){ typeRevBtn.textContent = RF ? RF.label() : 'Reviewer form'; typeRevBtn.style.display = RF ? '' : 'none'; typeRevBtn.classList.toggle('on', reportType === 'review'); }
+    if(evWrap && evWrap.closest){ var evCtl = evWrap.closest('.pr-controls'); if(evCtl) evCtl.classList.toggle('pr-ev-on', reportType === 'eval' || reportType === 'cert' || reportType === 'review'); }
     var typeCertBtn = q('typeCert'); if(typeCertBtn){ typeCertBtn.textContent = T(CT.type); typeCertBtn.classList.toggle('on', reportType === 'cert'); }
-    var lineB = q('lineBtn'); if(lineB) lineB.style.display = (reportType === 'eval' || reportType === 'cert') ? 'none' : '';
-    var lineS = q('lineStatus'); if(lineS) lineS.style.display = (reportType === 'eval' || reportType === 'cert') ? 'none' : '';
+    var lineB = q('lineBtn'); if(lineB) lineB.style.display = (reportType === 'eval' || reportType === 'cert' || reportType === 'review') ? 'none' : '';
+    var lineS = q('lineStatus'); if(lineS) lineS.style.display = (reportType === 'eval' || reportType === 'cert' || reportType === 'review') ? 'none' : '';
     var typeEvalBtn = q('typeEval'); if(typeEvalBtn){ typeEvalBtn.textContent = T(EV_TXT.typeEval); typeEvalBtn.classList.toggle('on', reportType === 'eval'); }
     var annTplWrap = q('annTplWrap');
     var annTpl = ANNOUNCEMENT_TEMPLATES[annTopic];
@@ -3248,7 +3261,7 @@
     if(typeBubbleBtn) typeBubbleBtn.classList.toggle('on', reportType === 'bubble');
     var modeWrap = q('modeWrap');
     if(modeWrap) modeWrap.style.display =
-      (reportType === 'gold' || reportType === 'idea' || reportType === 'announcement' || reportType === 'bubble' || reportType === 'eval' || reportType === 'cert') ? 'none' : '';
+      (reportType === 'gold' || reportType === 'idea' || reportType === 'announcement' || reportType === 'bubble' || reportType === 'eval' || reportType === 'cert' || reportType === 'review') ? 'none' : '';
     var modeFullBtn = q('modeFull'), modeSelectBtn = q('modeSelect'), pickHost = q('picklist');
     if(modeFullBtn) modeFullBtn.classList.toggle('on', mode === 'full');
     if(modeSelectBtn) modeSelectBtn.classList.toggle('on', mode === 'select');
@@ -3271,6 +3284,8 @@
       if(t.closest('[data-pr="zoomFit"]')){ setZoom(1); return; }
       if(t.closest('[data-pr="typeEval"]')){ reportType = 'eval'; paint(); return; }
       if(t.closest('[data-pr="typeCert"]')){ reportType = 'cert'; paint(); return; }
+      if(t.closest('[data-pr="typeReview"]')){ reportType = 'review'; paint(); return; }
+      if(reportType === 'review' && window.__SPZ_REVIEWFORM){ var rvc = window.__SPZ_REVIEWFORM.handleClick(t); if(rvc){ if(rvc === 'form') revMount(true); renderReport(); return; } }
       if(evHandleClick(t)) return;
       if(certHandleClick(t)) return;
       if(t.closest('[data-pr="typeBrief"]')){ if(window.__SPZ_BRIEFING && window.__SPZ_BRIEFING.open) window.__SPZ_BRIEFING.open(); return; }
@@ -3307,6 +3322,7 @@
       var t = ev.target;
       if(t && t.hasAttribute && evHandleInput(t)){ renderReport(); return; }
       if(t && certHandleInput(t)){ renderReport(); return; }
+      if(t && window.__SPZ_REVIEWFORM && window.__SPZ_REVIEWFORM.handleInput(t)){ renderReport(); return; }
       if(t && t.getAttribute && t.getAttribute('data-pr') === 'pickSearch'){
         pickQuery = t.value;
         var pickHost = sec.querySelector('[data-pr="picklist"]');
@@ -3392,9 +3408,11 @@
             '<button type="button" class="pr-modebtn" data-pr="typeBrief"></button>' +
             '<button type="button" class="pr-modebtn" data-pr="typeEval"></button>' +
             '<button type="button" class="pr-modebtn" data-pr="typeCert"></button>' +
+            '<button type="button" class="pr-modebtn" data-pr="typeReview"></button>' +
           '</div>' +
           '<div data-pr="evWrap" style="display:none;"></div>' +
           '<div data-pr="certWrap" style="display:none;"></div>' +
+          '<div data-pr="revWrap" style="display:none;"></div>' +
           '<div data-pr="annWrap" style="display:none;">' +
             '<div class="pr-row" style="display:block;">' +
               '<span class="pr-label" data-pr="annTopicLbl" style="display:block;margin-bottom:6px;"></span>' +

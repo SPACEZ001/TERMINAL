@@ -423,3 +423,14 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   (brief, weekly, handbook, custom) and `PR_OPEN_SECS` (sum, over, cal, hb); red notice `.bz-prlim`; no .md button; preview + print
   frame get `withMark`; the PDF gets a canvas watermark per page (`prMarkPng`). The px tab one-click report bar is admin-only.
   Print Report (`#/printreport`) stays admin-only (it needs the admin key).
+
+## Added 2026-11-18
+
+- **Reviewer evaluation form** (`assets/js/part-95.js` + `css/part-95.css`, loaded after part-94): Print Report (#/printreport, part-49)
+  type `review` (button `typeReview`, panel `revWrap`, `revMount()`; renders before the admin-key gate because it needs no server data;
+  code `RV` in part-70 `PR_CODES`). `window.__SPZ_REVIEWFORM` = label / formHTML / sheetHTML({serial, logo, qr}) / handleInput / handleClick.
+  Six sets (`SETS`: expert finance, teaching, UX/UI, technology, general, custom) + the owner's own items, pages to review (`SCOPE`),
+  note / focus text, optional developer name (empty = her name in the page language), reviewer prefill, toggles (issue log, QR, sign-in
+  code box, developer signature). A4 form: work info, reviewer info, 5-level + N/A rating table, issue log, comments, score box with
+  the usual Thai mean bands (4.51–5.00 …), overall / recommendation ticks, signatures. Settings in localStorage `spz.review.form`.
+- Paused idea (not built): restyle the Stock Universe (#/universe, part-77) as an Interstellar-style black hole "second brain" graph.
