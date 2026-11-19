@@ -454,3 +454,16 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   Opening move: edge-on view → full map. The loop runs only while the page is shown (500 ms watcher); it rebuilds once when the full
   market.json (with closes) replaces the light file. Stage has `data-nolc` (light-theme guard skips it). Test helpers:
   `__SPZ_UNI_POS(sym)`, `__SPZ_UNI_DBG()`. Route is still locked for basic visitors as before.
+- **Pro skin** (`assets/js/part-96.js` + `css/part-96.css`, loaded after part-95): the Market Brain look (navy glass, spinning
+  cyan → violet → pink → amber edge) on (1) the top-bar cycle pill `#spzCyc` — fixed-width label viewport `.cyc-vp` (the date
+  scrolls inside it, `.cyc-mq`), a light that runs round the edge, and a glass chooser with a colour dot + one-line meaning per phase
+  (`.cyc-bi/.cyc-bt/.cyc-bd`, `PH_DESC`); (2) a "30-second summary" hero `.pzx-hero[data-pzx=…]` at the top of #daily, #outlook
+  (menu 11), #flow (menu 12) and #bubble (live snapshot: breadth, VIX, yields, curve, sector flows, risk-on vs safe havens);
+  (3) Bubble "brain": which signals push / hold the score, points to the next level, triggers (VIX, credit, breadth, S&P 1M) and a
+  valuation × trigger verdict; (4) new SVG infographics for the four stock types in #types (`VIZ`, swapped into `.arch-viz`);
+  (5) card restyles for #daily, #outlook, #flow, #desk, #bubble (CSS only). part-91 now skips `.pzx-hero` when it looks for the
+  Bubble body.
+- **Decision Desk engine (part-22):** names not in `META` now take market from the live currency and sector bucket from Yahoo
+  sector/industry (`bucketOf`), live fundamentals replace the typed ones, a fifth leg `t` = live price trend (3-month move rank,
+  200-day line, RSI) is in every preset, `whyText` warns when the trend is weak, the 5-name summary keeps at most 2 per sector,
+  and the desk repaints on `spz:snapshot` once live data arrives.

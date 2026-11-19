@@ -61,7 +61,7 @@
     var sec = document.getElementById('bubble'); if(!sec) return null;
     var wrap = sec.querySelector('.bb-wrap'); if(!wrap) return null;
     var body = null;
-    Array.prototype.forEach.call(wrap.children, function(c){ if(!body && !c.classList.contains('section-head') && !c.classList.contains('bb-disclaimer')) body = c; });
+    Array.prototype.forEach.call(wrap.children, function(c){ if(!body && !c.classList.contains('section-head') && !c.classList.contains('bb-disclaimer') && !c.classList.contains('pzx-hero')) body = c; });
     return body;
   }
   var watched = null, mo = null;

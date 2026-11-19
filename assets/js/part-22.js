@@ -95,15 +95,16 @@ var PICKUI = {
 
   weightH:{en:'What matters most to you',th:'คุณให้น้ำหนักอะไรมากที่สุด'},
   presets:[
-    {id:'bal',  l:{en:'Balanced',th:'สมดุล'},        w:{f:35,c:25,fl:30,m:10}},
-    {id:'fund', l:{en:'Fundamentals',th:'เน้นพื้นฐาน'}, w:{f:60,c:15,fl:15,m:10}},
-    {id:'flow', l:{en:'Follow the money',th:'ตามกระแสเงิน'}, w:{f:20,c:20,fl:50,m:10}},
-    {id:'cyc',  l:{en:'Cycle first',th:'เน้นวัฏจักร'},  w:{f:25,c:50,fl:20,m:5}},
-    {id:'def',  l:{en:'Sleep well',th:'นอนหลับสบาย'},  w:{f:45,c:20,fl:10,m:25}}
+    /* 2026-11-19: a fifth leg, t = the live price trend (200-day line, 3-month move, RSI) */
+    {id:'bal',  l:{en:'Balanced',th:'สมดุล'},        w:{f:30,c:20,fl:25,m:10,t:15}},
+    {id:'fund', l:{en:'Fundamentals',th:'เน้นพื้นฐาน'}, w:{f:55,c:10,fl:10,m:10,t:15}},
+    {id:'flow', l:{en:'Follow the money',th:'ตามกระแสเงิน'}, w:{f:15,c:15,fl:45,m:10,t:15}},
+    {id:'cyc',  l:{en:'Cycle first',th:'เน้นวัฏจักร'},  w:{f:20,c:45,fl:15,m:5,t:15}},
+    {id:'def',  l:{en:'Sleep well',th:'นอนหลับสบาย'},  w:{f:40,c:20,fl:10,m:20,t:10}}
   ],
 
   legs:{f:{en:'Fundamentals',th:'พื้นฐาน'}, c:{en:'Cycle fit',th:'เข้ากับวัฏจักร'},
-        fl:{en:'Flow',th:'กระแสเงิน'}, m:{en:'Macro',th:'มหภาค'}},
+        fl:{en:'Flow',th:'กระแสเงิน'}, m:{en:'Macro',th:'มหภาค'}, t:{en:'Price trend',th:'แนวโน้มราคา'}},
 
   showH:{en:'Showing top',th:'แสดงอันดับต้น'},
   metricH:{en:'P/E · Yield · ROE · D/E · Margin · P/B',th:'P/E · ปันผล · ROE · D/E · มาร์จิ้น · P/B'},
@@ -147,6 +148,8 @@ var PICKUI = {
     mg:{en:'wide margin',th:'อัตรากำไรกว้าง'},
     pb:{en:'cheap on book',th:'ถูกเมื่อวัดด้วยมูลค่าทางบัญชี'},
     flow:{en:'sector receiving flow',th:'อยู่ในกลุ่มที่เงินกำลังเข้า'},
+    trend:{en:'price still in an uptrend',th:'ราคายังเป็นขาขึ้น'},
+    weak:{en:'price trend is weak — wait for it to turn',th:'ราคากำลังอ่อนแรง ควรรอให้กลับตัวก่อน'},
     cyc:{en:'archetype suits this phase',th:'ประเภทหุ้นเข้ากับช่วงนี้'},
     mac:{en:'friendly macro backdrop',th:'ภาพมหภาคเป็นใจ'}
   },
@@ -171,23 +174,55 @@ var PICKUI = {
   var S = { phase:NOWP(), mkt:'all', preset:'bal', top:12, ev:null, flowBoost:null };
 
   /* ---------------- build the universe from the app's own directory ---------------- */
-  var UNI = null;
+  var UNI = null, UNI_LIVE = false;
+  /* 2026-11-19: the directory holds 553 names but META only maps ~90 of them, so every other name was being
+     treated as a US industrial with stale typed figures. Now the live snapshot fills in the market (from the
+     currency), the sector bucket (from Yahoo sector + industry) and the latest fundamentals. */
+  function liveSnap(){ try { var sn = window.__SPZ_LIVE && window.__SPZ_LIVE.snapshot(); return sn && sn.stocks ? sn : null; } catch(e){ return null; } }
+  function bucketOf(x){
+    var sec = String(x.sector || ''), ind = String(x.industry || '');
+    if(/Semiconductor/i.test(ind)) return 'semis';
+    if(sec === 'Technology') return 'cloud';
+    if(sec === 'Communication Services') return /Internet|Entertainment|Interactive/i.test(ind) ? 'cloud' : 'telecom';
+    if(sec === 'Financial Services') return /Insurance/i.test(ind) ? 'insurance' : 'bank';
+    if(sec === 'Energy') return 'energy';
+    if(sec === 'Utilities') return 'power';
+    if(sec === 'Healthcare') return /Drug|Pharma|Biotech/i.test(ind) ? 'pharma' : 'health';
+    if(sec === 'Consumer Defensive') return /Discount|Grocery/i.test(ind) ? 'retail' : 'staples';
+    if(sec === 'Consumer Cyclical') return /Auto/i.test(ind) ? 'auto' : 'retail';
+    if(sec === 'Basic Materials') return 'materials';
+    if(sec === 'Real Estate') return 'reit';
+    if(sec === 'Industrials') return 'industrial';
+    return null;
+  }
   function universe(){
-    if(UNI) return UNI;
+    var sn = liveSnap();
+    if(UNI && (UNI_LIVE || !sn)) return UNI;
     var dir = window.__SPZ_DIR;
     if(!dir) return null;
-    UNI = [];
+    UNI = []; FUND = null; UNI_LIVE = !!sn;
     var cats = ['value', 'growth', 'dividend', 'defensive'];
     for(var c = 0; c < cats.length; c++){
       var list = dir[cats[c]] || [];
       for(var i = 0; i < list.length; i++){
-        var s = list[i], m = META[s.ticker] || ['US', 'industrial'];
-        UNI.push({
+        var s = list[i], lv = sn && sn.stocks[s.ticker], m = META[s.ticker];
+        if(!m) m = [lv && lv.ccy === 'THB' ? 'TH' : 'US', (lv && bucketOf(lv)) || 'industrial'];
+        var o = {
           tk:s.ticker, arch:cats[c], mkt:m[0], sec:m[1],
           nm:{ en:s.name_en, th:s.name_th },
           pe:num(s.pe), div:num(s.div != null ? s.div : (s.div_en || 0)),
-          roe:num(s.roe), de:num(s.de_ratio), mg:num(s.net_margin), pb:num(s.pb_ratio)
-        });
+          roe:num(s.roe), de:num(s.de_ratio), mg:num(s.net_margin), pb:num(s.pb_ratio), lv:lv || null
+        };
+        if(lv){
+          var r2 = function(v, d){ v = +v; return isFinite(v) ? +v.toFixed(d) : NaN; };
+          if(isFinite(+lv.pe) && +lv.pe > 0) o.pe = r2(lv.pe, 1);
+          if(isFinite(+lv.div)) o.div = r2(lv.div, 2);
+          if(isFinite(+lv.roe)) o.roe = r2(lv.roe, 1);
+          if(isFinite(+lv.de)) o.de = r2(lv.de, 2);
+          if(isFinite(+lv.margin)) o.mg = r2(lv.margin, 1);
+          if(isFinite(+lv.pb) && +lv.pb > 0) o.pb = r2(lv.pb, 2);
+        }
+        UNI.push(o);
       }
     }
     return UNI;
@@ -218,9 +253,20 @@ var PICKUI = {
         pct[key][u[i].tk] = dir > 0 ? p : 100 - p;
       }
     }
+    /* live trend: 3-month move ranked across the list, the 200-day line and a healthy RSI */
+    var m3s = u.map(function(x){ return x.lv && isFinite(+x.lv.m3) ? +x.lv.m3 : null; }).filter(function(v){ return v != null; }).sort(function(a, b){ return a - b; });
+    function trendOf(x){
+      var lv = x.lv; if(!lv || !isFinite(+lv.m3)) return 50;
+      var lo = 0; for(var q = 0; q < m3s.length; q++) if(m3s[q] < +lv.m3) lo++;
+      var pm = m3s.length > 1 ? lo / (m3s.length - 1) * 100 : 50;
+      var ma = lv.above_ma200 === true ? 100 : lv.above_ma200 === false ? 12 : 50;
+      var rsi = isFinite(+lv.rsi) ? 100 - Math.min(100, Math.abs(+lv.rsi - 56) * 2.6) : 50;
+      return pm * 0.45 + ma * 0.35 + rsi * 0.20;
+    }
     for(i = 0; i < u.length; i++){
       var t = u[i].tk;
       FUND[t] = {
+        tr:trendOf(u[i]),
         pe:pct.pe[t], div:pct.div[t], roe:pct.roe[t],
         de:pct.de[t], mg:pct.mg[t], pb:pct.pb[t],
         total:(pct.pe[t] * 1.1 + pct.div[t] * 0.8 + pct.roe[t] * 1.2 +
@@ -259,11 +305,12 @@ var PICKUI = {
       var real = mac.rate - mac.cpi;
       var fMac = Math.max(10, 100 - Math.abs(real - 1.2) * 22);
 
-      var total = (fFund * w.f + fCyc * w.c + fFlow * w.fl + fMac * w.m) / 100;
+      var fTr = F[s.tk].tr, wt = w.t || 0;
+      var total = (fFund * w.f + fCyc * w.c + fFlow * w.fl + fMac * w.m + fTr * wt) / 100;
       out.push({
         s:s, total:total,
-        legs:{ f:fFund * w.f / 100, c:fCyc * w.c / 100, fl:fFlow * w.fl / 100, m:fMac * w.m / 100 },
-        raw:{ f:fFund, c:fCyc, fl:fFlow, m:fMac }
+        legs:{ f:fFund * w.f / 100, c:fCyc * w.c / 100, fl:fFlow * w.fl / 100, m:fMac * w.m / 100, t:fTr * wt / 100 },
+        raw:{ f:fFund, c:fCyc, fl:fFlow, m:fMac, t:fTr }
       });
     }
     out.sort(function(a, b){ return b.total - a.total; });
@@ -278,8 +325,11 @@ var PICKUI = {
     if(r.raw.fl >= 72) bits.push(T(PICKUI.why.flow));
     if(r.raw.c >= 80) bits.push(T(PICKUI.why.cyc));
     if(r.raw.m >= 80) bits.push(T(PICKUI.why.mac));
+    if(r.raw.t >= 75) bits.push(T(PICKUI.why.trend));
     if(!bits.length) bits.push(T(PICKUI.why[fm[0][0]]));
-    return bits.slice(0, 3);
+    bits = bits.slice(0, 3);
+    if(r.raw.t != null && r.raw.t < 35) bits.push(T(PICKUI.why.weak));
+    return bits;
   }
 
   function jumpTicker(tk){
@@ -425,14 +475,16 @@ var PICKUI = {
         '<span class="dk-mx f"  style="width:' + w.f  + '%"></span>' +
         '<span class="dk-mx c"  style="width:' + w.c  + '%"></span>' +
         '<span class="dk-mx fl" style="width:' + w.fl + '%"></span>' +
-        '<span class="dk-mx m"  style="width:' + w.m  + '%"></span>'));
+        '<span class="dk-mx m"  style="width:' + w.m  + '%"></span>' +
+        '<span class="dk-mx t"  style="width:' + (w.t || 0) + '%;background:#f472b6"></span>'));
       bar.appendChild(mix);
 
       var key = el('div', 'dk-key',
         '<span class="dk-k"><span class="dk-sw" style="background:var(--neon)"></span>' + esc(T(PICKUI.legs.f)) + ' ' + w.f + '%</span>' +
         '<span class="dk-k"><span class="dk-sw" style="background:#4dd8ff"></span>' + esc(T(PICKUI.legs.c)) + ' ' + w.c + '%</span>' +
         '<span class="dk-k"><span class="dk-sw" style="background:#ff9f45"></span>' + esc(T(PICKUI.legs.fl)) + ' ' + w.fl + '%</span>' +
-        '<span class="dk-k"><span class="dk-sw" style="background:#b98cff"></span>' + esc(T(PICKUI.legs.m)) + ' ' + w.m + '%</span>');
+        '<span class="dk-k"><span class="dk-sw" style="background:#b98cff"></span>' + esc(T(PICKUI.legs.m)) + ' ' + w.m + '%</span>' +
+        '<span class="dk-k"><span class="dk-sw" style="background:#f472b6"></span>' + esc(T(PICKUI.legs.t)) + ' ' + (w.t || 0) + '%</span>');
       bar.appendChild(key);
     }
 
@@ -446,7 +498,7 @@ var PICKUI = {
           var mv = Math.max(1, r.total);
           var seg2 = function(v, cls){
             return '<span class="rk-sg ' + cls + '" style="width:' + (v / mv * 100).toFixed(1) +
-                   '%;background:' + ({f:'var(--neon)', c:'#4dd8ff', fl:'#ff9f45', m:'#b98cff'}[cls]) + '"></span>';
+                   '%;background:' + ({f:'var(--neon)', c:'#4dd8ff', fl:'#ff9f45', m:'#b98cff', t:'#f472b6'}[cls]) + '"></span>';
           };
           var d = prev[s.tk] != null ? (prev[s.tk] - idx) : 0;
           var diff = S.ev && d !== 0
@@ -459,7 +511,7 @@ var PICKUI = {
               '<span class="rk-tag">' + esc(s.mkt) + ' · ' + esc(s.sec) + '</span></span>' +
               '<span class="rk-why">' + why + '</span></span>' +
             '<span class="rk-stackwrap"><span class="rk-stack">' +
-              seg2(r.legs.f, 'f') + seg2(r.legs.c, 'c') + seg2(r.legs.fl, 'fl') + seg2(r.legs.m, 'm') +
+              seg2(r.legs.f, 'f') + seg2(r.legs.c, 'c') + seg2(r.legs.fl, 'fl') + seg2(r.legs.m, 'm') + seg2(r.legs.t || 0, 't') +
             '</span><span class="rk-met">P/E ' + (isFinite(s.pe) ? s.pe : '—') +
               ' · ' + (isFinite(s.div) ? s.div + '%' : '—') +
               ' · ROE ' + (isFinite(s.roe) ? s.roe + '%' : '—') +
@@ -493,16 +545,18 @@ var PICKUI = {
       var g = q('sum');
       g.innerHTML = '';
       var phName = phLabel(S.phase);
-      var top = rows.slice(0, 5);
+      /* 2026-11-19: the short list keeps at most two names per sector bucket, so the five are not one bet */
+      var top = [], perSec = {};
+      for(var k = 0; k < rows.length && top.length < 5; k++){ var b = rows[k].s.sec; if((perSec[b] || 0) >= 2) continue; perSec[b] = (perSec[b] || 0) + 1; top.push(rows[k]); }
       if(!top.length){ g.innerHTML = '<div class="dr-empty">—</div>'; return; }
 
       var lead = el('p', 'lede');
       lead.style.marginBottom = '16px';
       lead.textContent = L() === 'th'
         ? 'อ่านจากช่วง' + phName + ' + ตัวเลขพื้นฐานของหุ้น ' + universe().length +
-          ' ตัว + ทิศทางกระแสเงินตอนนี้ ห้าอันดับแรกที่คะแนนรวมออกมาสูงสุดคือ'
+          ' ตัว + ทิศทางกระแสเงิน + แนวโน้มราคาล่าสุด ห้าตัวที่คะแนนรวมสูงสุด (ไม่เกิน 2 ตัวต่อกลุ่ม เพื่อไม่ให้กระจุกที่เดียว) คือ'
         : 'Reading ' + phName + ' against the fundamentals of ' + universe().length +
-          ' names and where the money is currently flowing, the five highest total scores are';
+          ' names, where the money is flowing and the latest price trend, the five highest scores (at most two per sector, so the list is not one bet) are';
       g.appendChild(lead);
 
       var list = el('div', 'sm-list');
@@ -700,6 +754,8 @@ var PICKUI = {
       S.phase = NOWP(); S.ev = null; S.flowBoost = null;
       try { paint(); } catch(err){}
     });
+    /* repaint when live prices / fundamentals arrive (the list was built from typed figures until then) */
+    document.addEventListener('spz:snapshot', function(){ var had = UNI_LIVE; universe(); if(!had && UNI_LIVE){ try { paint(); } catch(err){} } });
     paint();
     return sec;
   }
