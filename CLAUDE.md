@@ -488,6 +488,14 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   the urgent stamp is now the Thai speed class (`urg`: ไม่ระบุ / ด่วน / ด่วนมาก / ด่วนที่สุด) in red bold above "ที่", no letter-spacing
   (it pushed the tone mark off its letter); the "modern" look is white paper with a navy → gold top bar, logo + name on the left
   (gold divider) and a light footer, not the dark navy band.
+  Later still (c): the faint watermark ring is gone; new purpose `brain` (expert review of the Market Brain's graduate-level
+  content) which turns on **page 2** (`page2()`, D.guide): how to sign in (site → Sign in bottom right → Reviewer tab → menu →
+  Executive suite → Market Brain), an optional sign-in box (D.acc; user name saved, the code `ACC_CODE` is memory-only) and a
+  table of the parts to review. Page 2 is never in the PNGs. Letter date can be typed (`D.date`, empty = today). **Signature**:
+  upload a picture (white paper removed + cropped by `sigClean`) or draw it (`sigPad`); stored ONLY in this browser
+  (localStorage `spz.sign.v1`, `window.__SPZ_SIGN` get/set — never in the repo: the repo is public); hidden on the story picture
+  unless `D.sigStory`. part-95's developer signature line uses it too. Ten signature designs for the owner were made as PNGs
+  (Mac private folder `🔒 …/ลายเซ็น (SIGNATURES)/`), not committed.
 - **Market Brain** (sources archive `brain-sources-2026-11-21.tgz`):
   - print covers: the "Market score 30/100" box is now a "market weather" card (`wxCard` / `wxDial` in k_print.js: half-dial whose
     arcs follow the real bands 0–30–44–56–70–100, weather in words + icon, what to do); band bar has weather icons.

@@ -55,6 +55,18 @@
     qrCap:I('Scan to open the website', 'สแกนเพื่อเปิดเว็บไซต์'),
     footL:I('Document issued by SPACEZ TERMINAL', 'เอกสารออกโดย SPACEZ TERMINAL'),
     storyKind:I('Official letter', 'หนังสือทางการ'),
+    /* 2026-11-21 (c): signature, letter date, enclosure page (site guide + sign-in details) */
+    sigL:I('Signature', 'ลายเซ็น'), sigUp:I('Upload a picture (PNG / JPG)', 'อัปโหลดรูปลายเซ็น (PNG / JPG)'), sigDraw:I('Sign with finger / mouse', 'เซ็นเองด้วยนิ้ว / เมาส์'), sigClear:I('Remove', 'ลบลายเซ็น'),
+    sigNone:I('No signature yet — the letter keeps an empty space to sign by hand.', 'ยังไม่มีลายเซ็น — หนังสือจะเว้นที่ว่างไว้ให้เซ็นด้วยมือ'),
+    sigNote:I('Kept only in this browser on this device — never uploaded to the website. A white paper background in a photo is removed automatically.', 'เก็บไว้ในเบราว์เซอร์ของเครื่องนี้เท่านั้น ไม่อัปขึ้นเว็บไซต์ ถ้าถ่ายรูปลายเซ็นบนกระดาษขาว ระบบจะลบพื้นขาวออกให้เอง'),
+    sigStory:I('Show the signature on the story picture too', 'แสดงลายเซ็นในรูปสตอรี่ด้วย (ปกติซ่อนไว้ เพื่อกันคนนำลายเซ็นไปใช้)'),
+    padH:I('Sign in the box', 'เซ็นชื่อในกรอบ'), padUse:I('Use this signature', 'ใช้ลายเซ็นนี้'), padAgain:I('Clear', 'ล้าง'), padCancel:I('Cancel', 'ยกเลิก'),
+    dateL:I('Date on the letter — leave empty for today (changes by itself)', 'วันที่ในหนังสือ — เว้นว่าง = วันนี้ (เปลี่ยนเองอัตโนมัติ)'), datePh:I('e.g. 1 December 2026', 'เช่น 1 ธันวาคม 2569'),
+    encL:I('7 · Enclosure page (page 2)', '7 · หน้าสิ่งที่ส่งมาด้วย (หน้า 2)'),
+    oGuide:I('Add page 2: how to open the website and the Market Brain', 'เพิ่มหน้า 2: คู่มือการเข้าใช้งานเว็บไซต์และสมองตลาด'),
+    oAcc:I('Include a sign-in box on page 2', 'ใส่กล่องข้อมูลเข้าระบบในหน้า 2'),
+    accUser:I('User name (optional)', 'ชื่อผู้ใช้ (ถ้ามี)'), accCode:I('Sign-in code — not saved, type it each time (empty = a line to write by hand)', 'รหัสเข้าระบบ — ไม่บันทึก ต้องพิมพ์ใหม่ทุกครั้ง (เว้นว่าง = เว้นเส้นให้เขียนด้วยมือ)'),
+    accWarn:I('Page 2 is never part of the story picture, so the code never goes on a story.', 'หน้า 2 ไม่อยู่ในรูปสตอรี่ รหัสจึงไม่หลุดไปในสตอรี่'),
     defFrom:I('Mr. Noraset Boikaw', 'นายนรเศรษฐ์ บ่อแก้ว'), defPos:I('Founder and Developer, SPACEZ TERMINAL', 'ผู้ก่อตั้งและผู้พัฒนา SPACEZ TERMINAL')
   };
   var TITLES = [I('Lecturer', 'อาจารย์'), I('Asst. Prof.', 'ผู้ช่วยศาสตราจารย์'), I('Assoc. Prof.', 'รองศาสตราจารย์'), I('Prof.', 'ศาสตราจารย์'), I('Dr.', 'ดร.'),
@@ -117,13 +129,22 @@
       p3:I('', ''),
       close:I('We look forward to welcoming you, and thank you in advance.', 'จึงเรียนมาเพื่อโปรดพิจารณาเข้าร่วมกิจกรรมตามวัน เวลา และสถานที่ดังกล่าว และขอขอบคุณมา ณ โอกาสนี้'),
       att:I('Programme, 1 copy', 'กำหนดการ จำนวน 1 ฉบับ') },
+    { id:'brain', t:I('Expert review of advanced content (Market Brain)', 'เชิญผู้เชี่ยวชาญตรวจเนื้อหาขั้นสูง (สมองตลาด)'), d:I('graduate-level models; with a site guide and sign-in details', 'เนื้อหาระดับบัณฑิตศึกษา แนบคู่มือเข้าเว็บและข้อมูลเข้าระบบ'),
+      subj:I('Request for an expert review of the advanced academic content of the “Market Brain” system', 'ขอความอนุเคราะห์ผู้ทรงคุณวุฒิตรวจสอบเนื้อหาเชิงวิชาการขั้นสูงของระบบ “สมองตลาด” (Market Brain)'),
+      p1:I('SPACEZ TERMINAL has developed the “Market Brain”, the advanced analysis part of the website: an economic-cycle model with a market-condition score, forecasting models for macro variables (inflation, jobs, interest rates) with their own track records, price-forecast models for eight assets, and walk-forward back-tests with calibrated confidence ranges — content at graduate level.',
+           'ด้วย SPACEZ TERMINAL ได้พัฒนาระบบ “สมองตลาด” (Market Brain) ซึ่งเป็นส่วนวิเคราะห์ขั้นสูงของเว็บไซต์ ประกอบด้วยแบบจำลองวัฏจักรเศรษฐกิจและคะแนนภาวะตลาด แบบจำลองพยากรณ์ตัวแปรเศรษฐกิจมหภาค (เงินเฟ้อ การจ้างงาน อัตราดอกเบี้ย) พร้อมประวัติความแม่นยำ แบบจำลองคาดการณ์ราคาสินทรัพย์ 8 ประเภท และการทดสอบย้อนหลังแบบเดินหน้า (walk-forward) พร้อมการปรับเทียบช่วงความเชื่อมั่น ซึ่งเป็นเนื้อหาในระดับบัณฑิตศึกษา'),
+      p2:I('So that the content and methods are academically sound, we would be most grateful if you, as an expert in economics, finance and statistics, could review the concepts, assumptions, statistical methods, back-tests and interpretation of results, and suggest improvements.',
+           'เพื่อให้เนื้อหาและวิธีการมีความถูกต้องตามหลักวิชาการ จึงใคร่ขอความอนุเคราะห์จากท่านในฐานะผู้ทรงคุณวุฒิด้านเศรษฐศาสตร์ การเงิน และสถิติ ช่วยตรวจสอบความถูกต้องของแนวคิด สมมติฐาน วิธีการทางสถิติ การทดสอบย้อนหลัง และการตีความผล พร้อมให้ข้อเสนอแนะเพื่อการปรับปรุง'),
+      p3:I('A guide to the website and the sign-in details are enclosed. Please keep the sign-in details confidential. Your review will be used only to improve the system.', 'ทั้งนี้ ได้แนบคู่มือการเข้าใช้งานเว็บไซต์และข้อมูลสำหรับเข้าระบบมาพร้อมนี้ ขอความกรุณาเก็บข้อมูลเข้าระบบไว้เป็นความลับ ผลการตรวจสอบจะนำไปใช้เพื่อการพัฒนาระบบเท่านั้น'),
+      close:I('We would therefore be grateful for your kind consideration, and thank you sincerely in advance.', 'จึงเรียนมาเพื่อโปรดพิจารณาให้ความอนุเคราะห์ และขอขอบพระคุณเป็นอย่างสูงมา ณ โอกาสนี้'),
+      att:I('1. Guide to the website, 1 copy\n2. Sign-in details (user name and code), 1 sheet\n3. Expert evaluation form, 1 copy', '1. คู่มือการเข้าใช้งานเว็บไซต์ จำนวน 1 ชุด\n2. ข้อมูลสำหรับเข้าระบบ (ชื่อผู้ใช้และรหัสผ่าน) จำนวน 1 ฉบับ\n3. แบบประเมินสำหรับผู้ทรงคุณวุฒิ จำนวน 1 ชุด') },
     { id:'blank', t:I('Write my own', 'เขียนเอง'), d:I('empty letter with the formal layout', 'หนังสือเปล่าตามรูปแบบทางการ'),
       subj:I('', ''), p1:I('', 'ด้วย '), p2:I('', 'ในการนี้ '), p3:I('', ''), close:I('', 'จึงเรียนมาเพื่อโปรดพิจารณา'), att:I('', '') }
   ];
   function tplOf(id){ for(var i = 0; i < TPL.length; i++) if(TPL[i].id === id) return TPL[i]; return TPL[0]; }
 
   /* ---------- state: texts are kept per language so EN / TH can differ ---------- */
-  function blank(){ return { tpl:'eval', look:'classic', toTitle:1, toName:'', toPos:'', toOrg:'', from:'', fromPos:'', contact:'', qr:1, urgent:0, seal:1, tx:{ en:null, th:null } }; }
+  function blank(){ return { tpl:'eval', look:'classic', toTitle:1, toName:'', toPos:'', toOrg:'', from:'', fromPos:'', contact:'', qr:1, urgent:0, seal:0, date:'', guide:0, acc:0, accUser:'', sigStory:0, tx:{ en:null, th:null } }; }
   var D = blank();
   try { var sv = JSON.parse(localStorage.getItem(LS) || 'null'); if(sv && typeof sv === 'object') Object.keys(sv).forEach(function(k){ if(k in D) D[k] = sv[k]; }); } catch(e){}
   if(!D.tx || typeof D.tx !== 'object') D.tx = { en:null, th:null };
@@ -140,7 +161,52 @@
   function toSub(){ return [String(D.toPos || '').trim(), String(D.toOrg || '').trim()].filter(Boolean).join(L() === 'th' ? ' ' : ', '); }
   function fromName(){ return String(D.from || '').trim() || T(TX.defFrom); }
   function fromPos(){ return String(D.fromPos || '').trim() || T(TX.defPos); }
-  function dateStr(){ var d = new Date(), l = L(); return l === 'th' ? d.getDate() + ' ' + MTH.th[d.getMonth()] + ' ' + (d.getFullYear() + 543) : d.getDate() + ' ' + MTH.en[d.getMonth()] + ' ' + d.getFullYear(); }
+  var ACC_CODE = ''; /* sign-in code to print — memory only, never saved */
+  function dateStr(){ var own = String(D.date || '').trim(); if(own) return own; var d = new Date(), l = L(); return l === 'th' ? d.getDate() + ' ' + MTH.th[d.getMonth()] + ' ' + (d.getFullYear() + 543) : d.getDate() + ' ' + MTH.en[d.getMonth()] + ' ' + d.getFullYear(); }
+
+  /* ---------- signature: kept in this browser only (localStorage spz.sign.v1), shared with part-95 ---------- */
+  var SG_LS = 'spz.sign.v1';
+  var SIGN = {
+    get:function(){ try { var v = localStorage.getItem(SG_LS); return v && /^data:image\//.test(v) ? v : ''; } catch(e){ return ''; } },
+    set:function(v){ try { if(v) localStorage.setItem(SG_LS, v); else localStorage.removeItem(SG_LS); } catch(e){} }
+  };
+  window.__SPZ_SIGN = SIGN;
+  /* crop to the ink and make paper-white pixels transparent (for a photo of a signature on paper) */
+  function sigClean(img, cb){
+    var W = img.naturalWidth || img.width, H = img.naturalHeight || img.height, k = Math.min(1, 1400 / W);
+    var c = document.createElement('canvas'); c.width = Math.max(1, Math.round(W * k)); c.height = Math.max(1, Math.round(H * k));
+    var x = c.getContext('2d'); x.drawImage(img, 0, 0, c.width, c.height);
+    var d = x.getImageData(0, 0, c.width, c.height), p = d.data, x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
+    for(var i = 0; i < p.length; i += 4){
+      var lum = 0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2];
+      if(lum > 200) p[i + 3] = 0; else if(lum > 150) p[i + 3] = Math.min(p[i + 3], Math.round((200 - lum) / 50 * 255));
+      if(p[i + 3] > 40){ var n = i / 4, px = n % c.width, py = (n - px) / c.width; if(px < x0) x0 = px; if(px > x1) x1 = px; if(py < y0) y0 = py; if(py > y1) y1 = py; }
+    }
+    if(x1 < 0){ cb(''); return; }
+    x.putImageData(d, 0, 0);
+    var m = 8, o = document.createElement('canvas'); o.width = x1 - x0 + 1 + m * 2; o.height = y1 - y0 + 1 + m * 2;
+    o.getContext('2d').drawImage(c, x0 - m, y0 - m, o.width, o.height, 0, 0, o.width, o.height);
+    cb(o.toDataURL('image/png'));
+  }
+  /* tell part-49 to redraw the sheet: fire an input event on the hidden field in the form */
+  function poke(){ var e = document.querySelector('[data-lt="sigv"]'); if(e){ e.value = String(Date.now()); e.dispatchEvent(new Event('input', { bubbles:true })); } }
+  function sigPreview(){ var v = SIGN.get(); document.querySelectorAll('[data-lt-sigprev]').forEach(function(b){ b.innerHTML = v ? '<img src="' + v + '" alt="">' : '<span>' + esc(T(TX.sigNone)) + '</span>'; }); }
+  function sigPad(){
+    var ov = document.createElement('div'); ov.className = 'lt-pad';
+    ov.innerHTML = '<div class="lt-padc"><b>' + esc(T(TX.padH)) + '</b><canvas width="1200" height="440"></canvas><div class="lt-padb"><button type="button" data-p="again">' + esc(T(TX.padAgain)) + '</button><button type="button" data-p="cancel">' + esc(T(TX.padCancel)) + '</button><button type="button" class="on" data-p="use">' + esc(T(TX.padUse)) + '</button></div></div>';
+    document.body.appendChild(ov);
+    var cv = ov.querySelector('canvas'), cx = cv.getContext('2d'), down = false, last = null, inked = false;
+    cx.lineCap = 'round'; cx.lineJoin = 'round'; cx.strokeStyle = '#14213d';
+    var pos = function(e){ var r = cv.getBoundingClientRect(); return { x:(e.clientX - r.left) * cv.width / r.width, y:(e.clientY - r.top) * cv.height / r.height, t:Date.now() }; };
+    cv.addEventListener('pointerdown', function(e){ down = true; last = pos(e); cv.setPointerCapture(e.pointerId); e.preventDefault(); });
+    cv.addEventListener('pointermove', function(e){ if(!down) return; var q = pos(e), dt = Math.max(1, q.t - last.t), v = Math.hypot(q.x - last.x, q.y - last.y) / dt;
+      cx.lineWidth = Math.max(3, Math.min(9, 9 - v * 2.2)); cx.beginPath(); cx.moveTo(last.x, last.y); cx.lineTo(q.x, q.y); cx.stroke(); last = q; inked = true; e.preventDefault(); });
+    var up = function(){ down = false; }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+    ov.addEventListener('click', function(e){ var b = e.target.closest('[data-p]'); if(!b) return; var k = b.getAttribute('data-p');
+      if(k === 'again'){ cx.clearRect(0, 0, cv.width, cv.height); inked = false; return; }
+      if(k === 'use' && inked){ var im = new Image(); im.onload = function(){ sigClean(im, function(v){ SIGN.set(v); sigPreview(); poke(); }); }; im.src = cv.toDataURL('image/png'); }
+      ov.parentNode.removeChild(ov); });
+  }
 
   /* ---------- form (left panel) ---------- */
   var status = '';
@@ -158,12 +224,18 @@
     h += '<div class="pr-ev-h2">' + esc(T(TX.subjL)) + '</div>' + tin('subj', TX.subj) + tin('refTo', TX.refTo) + tin('att', TX.att, 2) +
       tin('p1', TX.p1, 4) + tin('p2', TX.p2, 4) + tin('p3', TX.p3, 3) + tin('close', TX.close, 2) + tin('cc', TX.cc) +
       '<button type="button" class="pr-ev-bigbtn ghost" data-lt-reset="1" style="margin:2px 0 6px;">' + esc(T(TX.reset)) + '</button>';
-    h += '<div class="pr-ev-h2">' + esc(T(TX.fromL)) + '</div><div class="pr-ev-grid2">' + inp('from', TX.from, D.from, T(TX.defFrom)) + inp('fromPos', TX.fromPos, D.fromPos, T(TX.defPos)) + '</div>' + inp('contact', TX.contact, D.contact);
+    h += '<div class="pr-ev-h2">' + esc(T(TX.fromL)) + '</div><div class="pr-ev-grid2">' + inp('from', TX.from, D.from, T(TX.defFrom)) + inp('fromPos', TX.fromPos, D.fromPos, T(TX.defPos)) + '</div>' + inp('contact', TX.contact, D.contact) + inp('date', TX.dateL, D.date, T(TX.datePh)) +
+      '<div class="pr-lt-sig"><div class="pr-lt-sigh">' + esc(T(TX.sigL)) + '</div><div class="pr-lt-sigprev" data-lt-sigprev></div>' +
+        '<div class="pr-lt-sigb"><label class="pr-lt-sbtn">' + esc(T(TX.sigUp)) + '<input type="file" accept="image/png,image/jpeg,image/webp" data-lt-sigfile hidden></label>' +
+        '<button type="button" class="pr-lt-sbtn" data-lt-sigdraw="1">' + esc(T(TX.sigDraw)) + '</button><button type="button" class="pr-lt-sbtn ghost" data-lt-sigclear="1">' + esc(T(TX.sigClear)) + '</button></div>' +
+        '<div class="pr-hint">' + esc(T(TX.sigNote)) + '</div>' + chk('sigStory', TX.sigStory) + '<input type="hidden" data-lt="sigv" value=""></div>';
     h += '<div class="pr-ev-h2">' + esc(T(TX.lookL)) + '</div><div class="pr-lt-looks">' +
       '<button type="button" class="pr-rv-set' + (D.look !== 'modern' ? ' on' : '') + '" data-lt-look="classic"><b>' + esc(T(TX.lkClassic)) + '</b></button>' +
       '<button type="button" class="pr-rv-set' + (D.look === 'modern' ? ' on' : '') + '" data-lt-look="modern"><b>' + esc(T(TX.lkModern)) + '</b></button></div>' +
       chk('qr', TX.oQr) +
       '<label class="pr-ev-in"><span>' + esc(T(TX.oUrgent)) + '</span><select data-lt="urgent">' + TX.urg.map(function(o, i){ return '<option value="' + i + '"' + (+D.urgent === i ? ' selected' : '') + '>' + esc(T(o)) + '</option>'; }).join('') + '</select></label>';
+    h += '<div class="pr-ev-h2">' + esc(T(TX.encL)) + '</div>' + chk('guide', TX.oGuide) + (D.guide ? chk('acc', TX.oAcc) +
+      (D.acc ? '<div class="pr-ev-grid2">' + inp('accUser', TX.accUser, D.accUser) + '<label class="pr-ev-in"><span>' + esc(T(TX.accCode)) + '</span><input type="text" data-lt-code="1" value="' + esc(ACC_CODE) + '" autocomplete="off" spellcheck="false"></label></div><div class="pr-hint">' + esc(T(TX.accWarn)) + '</div>' : '') : '');
     h += '<div class="pr-ev-h2">' + esc(T(TX.saveL)) + '</div><div class="pr-lt-save">' +
       '<button type="button" class="pr-lt-png" data-lt-png="a4"><i></i>' + esc(T(TX.pngA4)) + '</button>' +
       '<button type="button" class="pr-lt-png story" data-lt-png="story"><i></i>' + esc(T(TX.pngStory)) + '</button></div>' +
@@ -172,12 +244,19 @@
   }
   function handleInput(t){
     if(!t || !t.getAttribute) return false;
+    if(t.hasAttribute('data-lt-code')){ ACC_CODE = t.value; return true; }
+    if(t.hasAttribute('data-lt-sigfile')){
+      var f = t.files && t.files[0]; if(!f) return false;
+      var rd = new FileReader();
+      rd.onload = function(){ var im = new Image(); im.onload = function(){ sigClean(im, function(v){ SIGN.set(v); sigPreview(); poke(); }); }; im.src = rd.result; };
+      rd.readAsDataURL(f); t.value = ''; return false;
+    }
     var k = t.getAttribute('data-lt');
     if(k){ D[k] = t.value; save(); return true; }
     var k2 = t.getAttribute('data-ltx');
     if(k2){ X()[k2] = t.value; save(); return true; }
     var c = t.getAttribute('data-lt-ck');
-    if(c){ D[c] = t.checked ? 1 : 0; save(); return true; }
+    if(c){ D[c] = t.checked ? 1 : 0; save(); if(c === 'guide' || c === 'acc') setTimeout(function(){ var w = document.querySelector('[data-pr="ltWrap"]'); if(w){ var st = w.scrollTop; w.innerHTML = formHTML(); w.scrollTop = st; sigPreview(); } }, 0); return true; }
     return false;
   }
   function setStatus(s){ status = s; document.querySelectorAll('[data-lt-status]').forEach(function(e){ e.textContent = s; }); }
@@ -185,10 +264,12 @@
   function handleClick(t){
     if(!t || !t.closest) return false;
     var a = t.closest('[data-lt-tpl]');
-    if(a){ D.tpl = a.getAttribute('data-lt-tpl'); D.tx = { en:null, th:null }; save(); return 'form'; }
+    if(a){ D.tpl = a.getAttribute('data-lt-tpl'); D.tx = { en:null, th:null }; if(D.tpl === 'brain'){ D.guide = 1; D.acc = 1; } save(); return 'form'; }
     var b = t.closest('[data-lt-look]');
     if(b){ D.look = b.getAttribute('data-lt-look'); save(); return 'form'; }
     if(t.closest('[data-lt-reset]')){ fill(L()); save(); return 'form'; }
+    if(t.closest('[data-lt-sigdraw]')){ sigPad(); return 'none'; }
+    if(t.closest('[data-lt-sigclear]')){ SIGN.set(''); sigPreview(); return true; }
     var p = t.closest('[data-lt-png]');
     if(p){ png(p.getAttribute('data-lt-png')); return 'none'; }
     return false;
@@ -198,7 +279,7 @@
   var lastCtx = {};
   function para(s, cls){ return lines(s).length ? '<p class="' + (cls || 'lt-p') + '">' + esc(String(s).trim()).replace(/\n/g, '<br>') + '</p>' : ''; }
   function sheetHTML(ctx){
-    ctx = ctx || {}; lastCtx = ctx;
+    ctx = ctx || {}; if(!ctx.noSig) lastCtx = ctx;
     var x = X(), th = L() === 'th', att = lines(x.att), sub = toSub();
     var h = '<div class="pr-sheet pr-lt' + (D.look === 'modern' ? ' modern' : '') + '" lang="' + L() + '"><div class="lt-page">';
     /* header */
@@ -221,7 +302,7 @@
     h += '<div class="lt-body">' + para(x.p1) + para(x.p2) + para(x.p3) + para(x.close, 'lt-p lt-close') + '</div>';
     /* signature */
     h += '<div class="lt-signwrap">' + '' + /* 2026-11-21 (b): the round 'seal' was removed — SPACEZ has no registered company seal */
-      '<div class="lt-sign"><div class="lt-yours">' + esc(T(TX.yours)) + '</div><div class="lt-sigsp"></div>' +
+      '<div class="lt-sign"><div class="lt-yours">' + esc(T(TX.yours)) + '</div><div class="lt-sigsp">' + (SIGN.get() && !ctx.noSig ? '<img class="lt-sigimg" src="' + SIGN.get() + '" alt="">' : '') + '</div>' +
       '<div class="lt-sname">( ' + esc(fromName()) + ' )</div><div class="lt-spos">' + esc(fromPos()) + '</div></div></div>';
     /* foot */
     h += '<div class="lt-foot">' +
@@ -229,21 +310,65 @@
         (lines(x.cc).length ? '<span class="lt-cc">' + esc(T(TX.ccW)) + ' ' + esc(x.cc) + '</span>' : '') + '</div>' +
       (D.qr && ctx.qr ? '<div class="lt-qr"><div class="qb">' + ctx.qr(SITE) + '</div><span>' + esc(T(TX.qrCap)) + '</span></div>' : '') +
     '</div><div class="lt-strip"><span>' + esc(T(TX.footL)) + '</span><b>' + esc(ctx.serial || '') + '</b></div>';
-    h += '</div></div>';
+    h += '</div>' + (D.guide ? page2(ctx) : '') + '</div>';
+    return h;
+  }
+  /* page 2 — enclosure: how to open the website and the Market Brain, an optional sign-in box, what to review */
+  function page2(ctx){
+    var th = L() === 'th', code = String(ACC_CODE || '').trim(), user = String(D.accUser || '').trim();
+    var steps = [
+      I('Open <b>' + SITE_SHOW + '</b> (or scan the QR code). A computer screen shows everything best.', 'เปิดเว็บไซต์ <b>' + SITE_SHOW + '</b> (หรือสแกนคิวอาร์โค้ด) แนะนำให้ใช้คอมพิวเตอร์ จะเห็นข้อมูลครบที่สุด'),
+      I('Press <b>Sign in</b> at the bottom right of the screen.', 'กดปุ่ม <b>เข้าสู่ระบบ</b> ที่มุมขวาล่างของหน้าจอ'),
+      I('Choose the <b>Reviewer</b> tab and type the code from the box below.', 'เลือกแท็บ <b>ผู้ประเมิน</b> แล้วใส่รหัสจากกล่องข้อมูลเข้าระบบด้านล่าง'),
+      I('Press the menu button (☰) in the top bar → <b>Executive suite</b> → the <b>Market Brain</b> card.', 'กดปุ่มเมนู (☰) บนแถบด้านบน → ส่วน <b>พื้นที่ผู้บริหาร</b> → การ์ด <b>สมองตลาด</b>'),
+      I('The tabs across the top of the Market Brain hold each part. The <b>Print / PDF</b> tab saves any part as a document.', 'แท็บด้านบนของสมองตลาดคือแต่ละส่วนของเนื้อหา แท็บ <b>พิมพ์ / PDF</b> บันทึกส่วนใดก็ได้เป็นเอกสาร')
+    ];
+    var parts = [
+      [I('Summary', 'สรุปทุกอย่าง'), I('Market-condition score 0–100 from weighted indicators; market "weather" bands', 'คะแนนภาวะตลาด 0–100 จากตัวชี้วัดถ่วงน้ำหนัก และช่วง “สภาพอากาศตลาด”'), I('Choice of indicators, weights and thresholds', 'การเลือกตัวชี้วัด น้ำหนัก และเกณฑ์ตัดสิน')],
+      [I('Forecast', 'พยากรณ์ล่วงหน้า'), I('Macro forecasts 1–12 months with track record (error vs “no change”) and calibrated ranges', 'พยากรณ์ตัวแปรมหภาค 1–12 เดือน พร้อมประวัติความแม่น (เทียบกับ “ไม่เปลี่ยนแปลง”) และช่วงที่ปรับเทียบแล้ว'), I('Back-test design, look-ahead bias, calibration', 'การออกแบบการทดสอบย้อนหลัง การใช้ข้อมูลล่วงหน้า และการปรับเทียบ')],
+      [I('Asset price forecast', 'คาดการณ์ราคาสินทรัพย์'), I('8 assets: drift, momentum, mean reversion, seasonality; walk-forward test since 2008', '8 สินทรัพย์: แนวโน้มระยะยาว โมเมนตัม การกลับสู่ค่าเฉลี่ย ฤดูกาล ทดสอบแบบเดินหน้าตั้งแต่ปี 2008'), I('Model assumptions, over-fitting, uncertainty ranges', 'สมมติฐานของแบบจำลอง การ over-fit และช่วงความไม่แน่นอน')],
+      [I('Inflation & rates · Economy & jobs', 'เงินเฟ้อ & ดอกเบี้ย · เศรษฐกิจ & การจ้างงาน'), I('US macro series (FRED) and how they are read', 'ข้อมูลเศรษฐกิจมหภาคสหรัฐฯ (FRED) และวิธีตีความ'), I('Variable choice and interpretation', 'การเลือกตัวแปรและการตีความ')],
+      [I('My portfolio', 'พอร์ตของฉัน'), I('Stock-selection rules tested over 12 years against an equal-weight benchmark; stop-loss study', 'กฎการเลือกหุ้นที่ทดสอบย้อนหลัง 12 ปี เทียบดัชนีถ่วงน้ำหนักเท่ากัน และการศึกษาจุดตัดขาดทุน'), I('Survivorship bias, costs, robustness', 'อคติจากหุ้นที่อยู่รอด ต้นทุน และความทนทานของผล')],
+      [I('How to read', 'วิธีดูหน้านี้'), I('The full method behind every number', 'คำอธิบายวิธีคิดของตัวเลขทุกตัว'), I('Clarity and correctness of explanations', 'ความชัดเจนและความถูกต้องของคำอธิบาย')]
+    ];
+    var h = '<div class="lt-page lt-p2"><div class="lt-p2h">' + (ctx.logo ? '<img class="lt-logo s" src="' + ctx.logo + '" alt="">' : '') +
+      '<div><small>' + esc(T({ en:'Enclosure', th:'สิ่งที่ส่งมาด้วย' })) + ' · ' + esc(T(TX.no)) + ' ' + esc(ctx.serial || '') + '</small><b>' + esc(T({ en:'Guide to the website SPACEZ TERMINAL', th:'คู่มือการเข้าใช้งานเว็บไซต์ SPACEZ TERMINAL' })) + '</b></div></div><div class="lt-rule"><i></i></div>';
+    h += '<h4 class="lt-h4">' + esc(T({ en:'1. How to sign in', th:'1. ขั้นตอนการเข้าใช้งาน' })) + '</h4><ol class="lt-steps">' + steps.map(function(x){ return '<li>' + T(x) + '</li>'; }).join('') + '</ol>';
+    if(D.acc){
+      var line = '<i class="lt-wline"></i>';
+      h += '<h4 class="lt-h4">' + esc(T({ en:'2. Sign-in details (confidential — for the addressee only)', th:'2. ข้อมูลเข้าระบบ (เป็นความลับ เฉพาะผู้รับหนังสือ)' })) + '</h4><table class="lt-acc">' +
+        '<tr><th>' + esc(T({ en:'Website', th:'เว็บไซต์' })) + '</th><td>' + esc(SITE_SHOW) + '</td></tr>' +
+        '<tr><th>' + esc(T({ en:'Sign-in tab', th:'แท็บที่เลือก' })) + '</th><td>' + esc(T({ en:'Reviewer', th:'ผู้ประเมิน' })) + '</td></tr>' +
+        '<tr><th>' + esc(T({ en:'User name', th:'ชื่อผู้ใช้' })) + '</th><td>' + (user ? esc(user) : esc(T({ en:'— not needed —', th:'— ไม่ต้องใช้ —' }))) + '</td></tr>' +
+        '<tr><th>' + esc(T({ en:'Code', th:'รหัสเข้าระบบ' })) + '</th><td class="cd">' + (code ? esc(code) : line) + '</td></tr></table>' +
+        '<p class="lt-note">' + esc(T({ en:'Please do not pass the code on. It can be changed after the review.', th:'โปรดอย่าส่งต่อรหัสนี้ให้ผู้อื่น และสามารถเปลี่ยนรหัสได้หลังการตรวจเสร็จสิ้น' })) + '</p>';
+    }
+    h += '<h4 class="lt-h4">' + esc(T(D.acc ? { en:'3. Parts to review in the Market Brain', th:'3. ส่วนที่ขอให้ตรวจในสมองตลาด' } : { en:'2. Parts to review in the Market Brain', th:'2. ส่วนที่ขอให้ตรวจในสมองตลาด' })) + '</h4>' +
+      '<table class="lt-parts"><thead><tr><th>' + esc(T({ en:'Tab', th:'แท็บ' })) + '</th><th>' + esc(T({ en:'What is inside', th:'เนื้อหา' })) + '</th><th>' + esc(T({ en:'Please check', th:'ประเด็นที่ขอให้ตรวจ' })) + '</th></tr></thead><tbody>' +
+      parts.map(function(r){ return '<tr><td><b>' + esc(T(r[0])) + '</b></td><td>' + esc(T(r[1])) + '</td><td>' + esc(T(r[2])) + '</td></tr>'; }).join('') + '</tbody></table>';
+    h += '<div class="lt-foot"><div class="lt-contact"><b>SPACEZ TERMINAL</b><span>' + esc(SITE_SHOW) + ' · IG @spczterminal</span>' + (String(D.contact || '').trim() ? '<span>' + esc(D.contact) + '</span>' : '') + '</div>' +
+      (D.qr && ctx.qr ? '<div class="lt-qr"><div class="qb">' + ctx.qr(SITE) + '</div><span>' + esc(T(TX.qrCap)) + '</span></div>' : '') +
+      '</div><div class="lt-strip"><span>' + esc(T(TX.footL)) + ' · ' + esc(T({ en:'page 2', th:'หน้า 2' })) + '</span><b>' + esc(ctx.serial || '') + '</b></div></div>';
     return h;
   }
   /* shrink the type a little when the text is long, so the letter stays on one A4 page */
   function fit(host){
     var s = host && host.querySelector('.pr-lt'); if(!s) return;
-    var pg = s.querySelector('.lt-page'); if(!pg) return;
+    var pages = s.querySelectorAll('.lt-page'); if(!pages.length) return;
     /* the preview column can be narrower than A4: scale the whole page down to fit, never reflow it */
-    var hw = host.clientWidth || 794; pg.style.zoom = hw < 800 ? Math.max(.4, (hw - 4) / 794).toFixed(3) : '';
-    var steps = [1, .96, .92, .88, .85, .82], i = 0;
-    s.style.setProperty('--ltk', 1);
-    function over(){ return pg.scrollHeight > pg.clientHeight + 1; }
-    while(i < steps.length - 1 && over()){ i++; s.style.setProperty('--ltk', steps[i]); }
-    var st = over() ? T(TX.overflow) : (i > 0 ? T(TX.tooLong) : '');
-    s.classList.toggle('lt-over', over());
+    var hw = host.clientWidth || 794, z = hw < 790 ? Math.max(.4, (hw - 4) / 794).toFixed(3) : '';
+    var shrunk = false, still = false;
+    Array.prototype.forEach.call(pages, function(pg){
+      pg.style.zoom = z;
+      var steps = [1, .96, .92, .88, .85, .82], i = 0;
+      pg.style.setProperty('--ltk', 1);
+      var over = function(){ return pg.scrollHeight > pg.clientHeight + 1; };
+      while(i < steps.length - 1 && over()){ i++; pg.style.setProperty('--ltk', steps[i]); }
+      if(i > 0) shrunk = true; if(over()) still = true;
+      pg.classList.toggle('lt-over', over());
+    });
+    var st = still ? T(TX.overflow) : (shrunk ? T(TX.tooLong) : '');
+    setTimeout(sigPreview, 0);
     if(st) setStatus(st); else if(status === T(TX.tooLong) || status === T(TX.overflow)) setStatus(T(TX.pdfHint));
   }
 
@@ -259,14 +384,14 @@
     s.onerror = function(){ var c = h2cWait; h2cWait = null; c.forEach(function(f){ f('err'); }); };
     document.head.appendChild(s);
   }
-  function a4Canvas(cb){
+  function a4Canvas(cb, story){
     var box = document.createElement('div');
     box.className = 'pr-lt-render';
     box.style.cssText = 'position:fixed;left:-12000px;top:0;width:794px;z-index:-1;pointer-events:none;';
-    box.innerHTML = sheetHTML(lastCtx);
+    box.innerHTML = sheetHTML(story && !D.sigStory ? Object.assign({}, lastCtx, { noSig:1 }) : lastCtx);
     document.body.appendChild(box);
     fit(box);
-    var el = box.querySelector('.pr-lt');
+    var el = box.querySelector('.lt-page');
     var done = function(c){ if(box.parentNode) box.parentNode.removeChild(box); cb(c); };
     (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function(){
       window.html2canvas(el, { scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false, width:794, height:1123, windowWidth:1200 })
@@ -341,7 +466,7 @@
         if(!a4){ setStatus(T(TX.fail)); return; }
         if(kind === 'story') story(a4, function(cv){ download(cv, fname('story')); });
         else download(a4, fname('A4'));
-      });
+      }, kind === 'story');
     });
   }
 
