@@ -36,7 +36,7 @@
     from:I('Name', 'ชื่อผู้ลงนาม'), fromPos:I('Position', 'ตำแหน่ง'), contact:I('Contact line (optional) — phone / e-mail', 'ช่องทางติดต่อเพิ่มเติม (ถ้ามี) — โทร / อีเมล'),
     lookL:I('5 · Look and options', '5 · รูปแบบและตัวเลือก'),
     lkClassic:I('Classic · white paper, navy + gold lines', 'คลาสสิก · กระดาษขาว เส้นน้ำเงิน–ทอง'), lkModern:I('Modern · navy header band', 'โมเดิร์น · แถบหัวกระดาษสีน้ำเงิน'),
-    oQr:I('QR code to the website', 'คิวอาร์โค้ดไปที่เว็บไซต์'), oUrgent:I('"Urgent" stamp', 'ตราประทับ "ด่วน"'), oSeal:I('Round SPACEZ seal next to the signature', 'ตราวงกลม SPACEZ ข้างลายเซ็น'),
+    oQr:I('QR code to the website', 'คิวอาร์โค้ดไปที่เว็บไซต์'), oUrgent:I('Speed class (red, top left)', 'ชั้นความเร็ว (ตัวแดง มุมซ้ายบน)'), oSeal:I('Round SPACEZ seal next to the signature', 'ตราวงกลม SPACEZ ข้างลายเซ็น'),
     saveL:I('6 · Save', '6 · บันทึก'),
     pngA4:I('Save as picture · A4 (PNG)', 'บันทึกเป็นรูป · A4 (PNG)'), pngStory:I('Save as story picture · 9:16 (PNG)', 'บันทึกเป็นรูปสตอรี่ · 9:16 (PNG)'),
     pdfHint:I('For a PDF use the Print button below → "Save as PDF".', 'ถ้าต้องการ PDF กดปุ่มพิมพ์ด้านล่าง → เลือก "บันทึกเป็น PDF"'),
@@ -50,6 +50,8 @@
     org:I('SPACEZ TERMINAL', 'SPACEZ TERMINAL'), orgSub:I('Financial education platform', 'แพลตฟอร์มการเรียนรู้การเงินและการลงทุน'),
     dept:I('Office of the Founder', 'สำนักงานผู้ก่อตั้ง'),
     urgent:I('URGENT', 'ด่วน'), seal:I('OFFICIAL', 'ทางการ'),
+    /* 2026-11-21 (b): the three speed classes of a Thai official letter */
+    urg:[I('None', 'ไม่ระบุ'), I('URGENT', 'ด่วน'), I('VERY URGENT', 'ด่วนมาก'), I('MOST URGENT', 'ด่วนที่สุด')],
     qrCap:I('Scan to open the website', 'สแกนเพื่อเปิดเว็บไซต์'),
     footL:I('Document issued by SPACEZ TERMINAL', 'เอกสารออกโดย SPACEZ TERMINAL'),
     storyKind:I('Official letter', 'หนังสือทางการ'),
@@ -160,7 +162,8 @@
     h += '<div class="pr-ev-h2">' + esc(T(TX.lookL)) + '</div><div class="pr-lt-looks">' +
       '<button type="button" class="pr-rv-set' + (D.look !== 'modern' ? ' on' : '') + '" data-lt-look="classic"><b>' + esc(T(TX.lkClassic)) + '</b></button>' +
       '<button type="button" class="pr-rv-set' + (D.look === 'modern' ? ' on' : '') + '" data-lt-look="modern"><b>' + esc(T(TX.lkModern)) + '</b></button></div>' +
-      chk('qr', TX.oQr) + chk('seal', TX.oSeal) + chk('urgent', TX.oUrgent);
+      chk('qr', TX.oQr) +
+      '<label class="pr-ev-in"><span>' + esc(T(TX.oUrgent)) + '</span><select data-lt="urgent">' + TX.urg.map(function(o, i){ return '<option value="' + i + '"' + (+D.urgent === i ? ' selected' : '') + '>' + esc(T(o)) + '</option>'; }).join('') + '</select></label>';
     h += '<div class="pr-ev-h2">' + esc(T(TX.saveL)) + '</div><div class="pr-lt-save">' +
       '<button type="button" class="pr-lt-png" data-lt-png="a4"><i></i>' + esc(T(TX.pngA4)) + '</button>' +
       '<button type="button" class="pr-lt-png story" data-lt-png="story"><i></i>' + esc(T(TX.pngStory)) + '</button></div>' +
@@ -199,11 +202,12 @@
     var x = X(), th = L() === 'th', att = lines(x.att), sub = toSub();
     var h = '<div class="pr-sheet pr-lt' + (D.look === 'modern' ? ' modern' : '') + '" lang="' + L() + '"><div class="lt-page">';
     /* header */
+    var urg = +D.urgent > 0 && TX.urg[+D.urgent] ? T(TX.urg[+D.urgent]) : '';
     h += '<div class="lt-head">' +
-      '<div class="lt-no"><span>' + esc(T(TX.no)) + '</span><b>' + esc(ctx.serial || '') + '</b></div>' +
-      '<div class="lt-crest">' + (ctx.logo ? '<span class="lt-logo"><img src="' + ctx.logo + '" alt=""></span>' : '') + '<b>SPACEZ TERMINAL</b><em>' + esc(T(TX.orgSub)) + '</em></div>' +
-      '<div class="lt-addr"><b>' + esc(T(TX.dept)) + '</b><span>' + esc(SITE_SHOW) + '</span><span>IG @spczterminal</span></div>' +
-    '</div>' + (D.urgent ? '<div class="lt-urgent">' + esc(T(TX.urgent)) + '</div>' : '');
+      '<div class="lt-no">' + (urg ? '<em class="lt-urgent">' + esc(urg) + '</em>' : '') + '<span>' + esc(T(TX.no)) + '</span><b>' + esc(ctx.serial || '') + '</b></div>' +
+      '<div class="lt-crest">' + (ctx.logo ? '<img class="lt-logo" src="' + ctx.logo + '" alt="">' : '') + '</div>' +
+      '<div class="lt-addr"><b>SPACEZ TERMINAL</b><em>' + esc(T(TX.orgSub)) + '</em><span>' + esc(SITE_SHOW) + '</span><span>IG @spczterminal</span></div>' +
+    '</div>';
     h += '<div class="lt-rule"><i></i></div>';
     h += '<div class="lt-date">' + esc(dateStr()) + '</div>';
     /* subject block */
@@ -216,15 +220,12 @@
     /* body */
     h += '<div class="lt-body">' + para(x.p1) + para(x.p2) + para(x.p3) + para(x.close, 'lt-p lt-close') + '</div>';
     /* signature */
-    h += '<div class="lt-signwrap">' + (D.seal ? '<div class="lt-seal"><svg viewBox="0 0 120 120" aria-hidden="true"><defs><path id="ltsc" d="M60,60 m-44,0 a44,44 0 1,1 88,0 a44,44 0 1,1 -88,0"/></defs>' +
-        '<circle cx="60" cy="60" r="56" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="60" cy="60" r="50" fill="none" stroke="currentColor" stroke-width=".9"/><circle cx="60" cy="60" r="31" fill="none" stroke="currentColor" stroke-width=".9"/>' +
-        '<text font-size="10.5" font-weight="700" letter-spacing="3.2" fill="currentColor"><textPath href="#ltsc" startOffset="0">SPACEZ TERMINAL · ' + esc(T(TX.seal)) + ' · </textPath></text>' +
-        '<text x="60" y="57" text-anchor="middle" font-size="15" font-weight="800" fill="currentColor">SPZ</text><text x="60" y="73" text-anchor="middle" font-size="8" font-weight="600" fill="currentColor">' + new Date().getFullYear() + '</text></svg></div>' : '') +
+    h += '<div class="lt-signwrap">' + '' + /* 2026-11-21 (b): the round 'seal' was removed — SPACEZ has no registered company seal */
       '<div class="lt-sign"><div class="lt-yours">' + esc(T(TX.yours)) + '</div><div class="lt-sigsp"></div>' +
       '<div class="lt-sname">( ' + esc(fromName()) + ' )</div><div class="lt-spos">' + esc(fromPos()) + '</div></div></div>';
     /* foot */
     h += '<div class="lt-foot">' +
-      '<div class="lt-contact"><b>SPACEZ TERMINAL · ' + esc(T(TX.dept)) + '</b><span>' + esc(SITE_SHOW) + ' · IG @spczterminal</span>' + (String(D.contact || '').trim() ? '<span>' + esc(D.contact) + '</span>' : '') +
+      '<div class="lt-contact"><b>SPACEZ TERMINAL</b><span>' + esc(SITE_SHOW) + ' · IG @spczterminal</span>' + (String(D.contact || '').trim() ? '<span>' + esc(D.contact) + '</span>' : '') +
         (lines(x.cc).length ? '<span class="lt-cc">' + esc(T(TX.ccW)) + ' ' + esc(x.cc) + '</span>' : '') + '</div>' +
       (D.qr && ctx.qr ? '<div class="lt-qr"><div class="qb">' + ctx.qr(SITE) + '</div><span>' + esc(T(TX.qrCap)) + '</span></div>' : '') +
     '</div><div class="lt-strip"><span>' + esc(T(TX.footL)) + '</span><b>' + esc(ctx.serial || '') + '</b></div>';

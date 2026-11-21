@@ -483,6 +483,11 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   kept per language in localStorage `spz.letter.v1`. Thai official-letter layout on one A4 page (794×1123 px, own margins; doPrint
   adds `@page{margin:0}` + `body.spz-print-letter`), looks classic / modern, seal, QR, "ด่วน" stamp. `fit()` shrinks the type
   (`--ltk`) when the text is long and zooms the preview to the column. Pictures: A4 PNG (html2canvas) and a 1080×1920 story PNG.
+  Later 2026-11-21: logo shown plain in the centre (no ring); the organisation block (name, what it is, website, IG) is top right
+  (the made-up "Office of the Founder" line is gone); the round "SPACEZ · OFFICIAL" seal was removed (no registered company seal);
+  the urgent stamp is now the Thai speed class (`urg`: ไม่ระบุ / ด่วน / ด่วนมาก / ด่วนที่สุด) in red bold above "ที่", no letter-spacing
+  (it pushed the tone mark off its letter); the "modern" look is white paper with a navy → gold top bar, logo + name on the left
+  (gold divider) and a light footer, not the dark navy band.
 - **Market Brain** (sources archive `brain-sources-2026-11-21.tgz`):
   - print covers: the "Market score 30/100" box is now a "market weather" card (`wxCard` / `wxDial` in k_print.js: half-dial whose
     arcs follow the real bands 0–30–44–56–70–100, weather in words + icon, what to do); band bar has weather icons.
