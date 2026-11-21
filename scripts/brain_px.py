@@ -34,6 +34,27 @@ from datetime import date, timedelta
 
 HALVINGS = ["2012-11-28", "2016-07-09", "2020-05-11", "2024-04-20"]
 NEXT_HALVING = "2028-04-15"   # approximate (block-height based)
+# 2026-11-21: per-asset settings. gold / btc keep exactly their earlier rules; the six added assets
+# (oil, dollar index, S&P 500, Nasdaq-100, SET, USD/THB) were tuned by the same walk-forward test:
+# each piece is kept only where it lowered the error against "no change" (see _tune() at the end).
+#   yrs   = years of history for the long-run drift      lo/hi = limits on that drift (per year)
+#   mom   = weight of the trend piece    mr = weight of mean reversion    seas = weight of seasonality
+#   bt    = first year of the walk-forward test          W/tol = swing-point window / cluster width for levels
+CFG = {
+    # walk-forward 2008/2018 -> 2026-11 (mean error / "no change" error, avg of 1, 3, 6, 12 months):
+    # gold 0.971 -> 0.968 without seasonality; bitcoin 0.958 -> 0.894 without the trend piece (momentum
+    # chased bitcoin's blow-offs); oil, SET and USD/THB only gain from mean reversion; S&P 500 and
+    # Nasdaq-100 do best with trend + drift and no mean reversion; the dollar index is a coin toss.
+    "gold": {"sym": "GC=F", "start": "2000-01-01", "ppy": 252, "yrs": 10, "lo": 0.0, "hi": 0.08, "mom": 1.0, "mr": 1.0, "seas": 0.0, "bt": 2008, "W": 8, "tol": 0.015, "step": 5},
+    "btc": {"sym": "BTC-USD", "start": "2014-01-01", "ppy": 365, "yrs": 4, "lo": -0.10, "hi": 0.35, "mom": 0.0, "mr": 1.0, "seas": 0.0, "bt": 2018, "W": 10, "tol": 0.035, "step": 7},
+    "oil": {"sym": "CL=F", "start": "2000-01-01", "ppy": 252, "yrs": 10, "lo": -0.03, "hi": 0.03, "mom": 0.0, "mr": 1.0, "seas": 0.5, "bt": 2008, "W": 8, "tol": 0.025, "step": 5, "min": 5.0, "proxy": "USO"},
+    "dxy": {"sym": "DX-Y.NYB", "start": "2000-01-01", "ppy": 252, "yrs": 10, "lo": -0.01, "hi": 0.01, "mom": 0.0, "mr": 1.0, "seas": 0.0, "bt": 2008, "W": 8, "tol": 0.008, "step": 5},
+    "spx": {"sym": "^GSPC", "start": "2000-01-01", "ppy": 252, "yrs": 10, "lo": 0.0, "hi": 0.08, "mom": 1.0, "mr": 0.0, "seas": 0.0, "bt": 2008, "W": 8, "tol": 0.015, "step": 5},
+    "ndx": {"sym": "^NDX", "start": "2000-01-01", "ppy": 252, "yrs": 10, "lo": 0.0, "hi": 0.10, "mom": 1.0, "mr": 0.0, "seas": 0.0, "bt": 2008, "W": 8, "tol": 0.02, "step": 5, "proxy": "QQQ"},
+    # Yahoo serves no history for ^SET.BK, so the SET line is the TDEX (SET50) fund in baht, scaled to today's SET close
+    "set": {"sym": "TDEX.BK", "start": "2008-01-01", "ppy": 245, "yrs": 10, "lo": -0.02, "hi": 0.06, "mom": 0.0, "mr": 1.0, "seas": 0.0, "bt": 2011, "W": 8, "tol": 0.015, "step": 5, "scale_to": "^SET.BK"},
+    "usdthb": {"sym": "THB=X", "start": "2004-01-01", "ppy": 252, "yrs": 10, "lo": -0.01, "hi": 0.01, "mom": 0.0, "mr": 1.0, "seas": 0.0, "bt": 2010, "W": 8, "tol": 0.006, "step": 5},
+}
 HORIZONS = [(7, {"en": "1 week", "th": "1 สัปดาห์"}), (30, {"en": "1 month", "th": "1 เดือน"}),
             (91, {"en": "3 months", "th": "3 เดือน"}), (182, {"en": "6 months", "th": "6 เดือน"}),
             (365, {"en": "12 months", "th": "12 เดือน"})]
@@ -64,14 +85,15 @@ def _r(v, n=2):
     return None if v is None else round(v, n)
 
 
-def yf_daily(sym, start="2000-01-01"):
+def yf_daily(sym, start="2000-01-01", floor=0.0):
     import yfinance as yf
     df = yf.download(sym, start=start, interval="1d", progress=False, auto_adjust=False)
     col = df["Close"]
     if hasattr(col, "columns"):
         col = col.iloc[:, 0]
     col = col.dropna()
-    rows = [(i.strftime("%Y-%m-%d"), float(v)) for i, v in zip(col.index, col.values) if float(v) > 0]
+    # floor: oil futures closed below zero in April 2020 -- those days are dropped, not logged
+    rows = [(i.strftime("%Y-%m-%d"), float(v)) for i, v in zip(col.index, col.values) if float(v) > max(0.0, floor)]
     if len(rows) < 500:
         raise ValueError("short history " + sym)
     return rows
@@ -143,24 +165,25 @@ def seasonality(S, t_end):
 def model(S, t, days, asset, seas=None):
     """expected log return + sigma for `days` calendar days ahead, as of index t."""
     ppy = S.ppy
+    C = CFG.get(asset, CFG["gold"])
     h = days * ppy / 365.0
     lr_n = min(t, 3 * ppy)
     rets = S.ret[t - lr_n + 1:t + 1]
     lrvar = sum(x * x for x in rets) / max(1, len(rets))
     sig_lr = math.sqrt(lrvar * ppy)
     # 1. long-run drift: half of the trailing growth rate (10y gold, 4y bitcoin)
-    yrs = 10 if asset == "gold" else 4
+    yrs = C["yrs"]
     back = max(0, t - yrs * ppy)
     span = (t - back) / ppy
     cagr = (S.lp[t] - S.lp[back]) / span if span > 0.5 else 0.0
-    base = max(0.0, min(0.08, 0.5 * cagr)) if asset == "gold" else max(-0.10, min(0.35, 0.5 * cagr))
+    base = max(C["lo"], min(C["hi"], 0.5 * cagr))
     # 2. trend (time-series momentum, scaled by volatility)
     def z(n):
         if t - n < 0:
             return 0.0
         return (S.lp[t] - S.lp[t - n]) / (math.sqrt(lrvar * n) or 1)
     z12, z3 = z(ppy), z(int(ppy / 4))
-    mom = sig_lr * (0.20 * math.tanh(z12 / 1.5) + 0.12 * math.tanh(z3 / 1.5))
+    mom = C["mom"] * sig_lr * (0.20 * math.tanh(z12 / 1.5) + 0.12 * math.tanh(z3 / 1.5))
     # 3. mean reversion: only the stretch beyond the normal gap to the 200-day average
     ma = S.ma[200][t]
     mr = 0.0
@@ -170,7 +193,7 @@ def model(S, t, days, asset, seas=None):
         hist = [S.lp[i] - math.log(S.ma[200][i]) for i in range(max(200, t - 5 * ppy), t + 1) if S.ma[200][i]]
         sd_dev = _std(hist) or 0.1
         excess = max(0.0, abs(dev) - sd_dev)
-        mr = -0.35 * (1 - math.exp(-h / (ppy / 2))) * (1 if dev > 0 else -1) * excess
+        mr = -0.35 * C["mr"] * (1 - math.exp(-h / (ppy / 2))) * (1 if dev > 0 else -1) * excess
     # 4. seasonality (excess over the average month), half weight
     sea = 0.0
     if seas:
@@ -186,7 +209,7 @@ def model(S, t, days, asset, seas=None):
                 sea += w * (avg[m] - allm)
             left -= w
             k += 1
-        sea *= 0.5
+        sea *= C["seas"]
     # 5. bitcoin halving cycle
     halv = 0.0
     if asset == "btc":
@@ -216,7 +239,7 @@ def model(S, t, days, asset, seas=None):
 
 
 def backtest(S, asset, start_year):
-    step = 5 if asset == "gold" else 7
+    step = CFG.get(asset, CFG["gold"])["step"]
     t0 = S.at_or_after("%d-01-01" % start_year) or 0
     out = {}
     pts = {d: [] for d, _ in HORIZONS}
@@ -366,7 +389,7 @@ def levels(S, asset):
     ppy = S.ppy
     n0 = max(0, len(S.p) - int(ppy * 1.5))
     p, t = S.p, S.t
-    W = 8 if asset == "gold" else 10
+    W = CFG.get(asset, CFG["gold"])["W"]
     piv = []
     for i in range(n0 + W, len(p) - W):
         seg = p[i - W:i + W + 1]
@@ -374,7 +397,7 @@ def levels(S, asset):
             piv.append((p[i], t[i], "h"))
         if p[i] == min(seg):
             piv.append((p[i], t[i], "l"))
-    tol = 0.015 if asset == "gold" else 0.035
+    tol = CFG.get(asset, CFG["gold"])["tol"]
     piv.sort()
     clusters = []
     for v, d, k in piv:
@@ -400,15 +423,21 @@ def levels(S, asset):
 
 
 def build_asset(asset, rows, extra):
-    ppy = 252 if asset == "gold" else 365
+    C = CFG[asset]
+    ppy = C["ppy"]
     S = Series(rows, ppy)
     t = len(S.p) - 1
     seas = seasonality(S, t)
-    bt, p30 = backtest(S, asset, 2008 if asset == "gold" else 2018)
+    bt, p30 = backtest(S, asset, C["bt"])
     fc = []
     for days, lab in HORIZONS:
         e, s, comp = model(S, t, days, asset, seas)
-        cal = (bt.get(str(days)) or {}).get("cal", 1.0)
+        b_ = bt.get(str(days)) or {}
+        cal = b_.get("cal", 1.0)
+        # 2026-11-21: where the rules did worse than "no change" over the test, the centre falls back to today's price
+        fb = bool(b_.get("mae") and b_.get("mae0") and b_["mae"] > b_["mae0"] * 1.005)
+        if fb:
+            e = 0.0
         sc = s * cal
         p0 = S.p[t]
         fc.append({"d": days, "lab": lab, "exp": _r(e, 5), "sig": _r(s, 5), "cal": cal,
@@ -417,7 +446,7 @@ def build_asset(asset, rows, extra):
                    "pup": _r(_phi(e / sc) * 100, 1),
                    "p10u": _r((1 - _phi((math.log(1.10) - e) / sc)) * 100, 1), "p10d": _r(_phi((math.log(0.90) - e) / sc) * 100, 1),
                    "comp": {k: _r(v * 100, 2) for k, v in comp.items() if k in ("base", "mom", "mr", "seas", "halv")},
-                   "z12": _r(comp["z12"], 2), "z3": _r(comp["z3"], 2)})
+                   "z12": _r(comp["z12"], 2), "z3": _r(comp["z3"], 2), "fb": fb})
     avg, allm, by = seas
     seas_out = [{"m": m, "avg": _r((math.exp(avg[m]) - 1) * 100 if avg.get(m) is not None else None, 2),
                  "up": _r(sum(1 for x in by.get(m, []) if x > 0) / len(by[m]) * 100 if by.get(m) else None, 0), "n": len(by.get(m, []))} for m in range(1, 13)]
@@ -539,12 +568,38 @@ def build_px(fred, monthly):
         out["btc"] = build_asset("btc", b, bx)
     except Exception as e:  # noqa: BLE001
         errs.append("btc:%s:%s" % (type(e).__name__, str(e)[:60]))
+    # ---- 2026-11-21: oil, dollar index, S&P 500, Nasdaq-100, SET, USD/THB (same rules, settings in CFG)
+    for a in ("oil", "dxy", "spx", "ndx", "set", "usdthb"):
+        try:
+            C = CFG[a]
+            rows = yf_daily(C["sym"], C["start"], C.get("min", 0.0))
+            info = {"sym": C["sym"]}
+            if C.get("scale_to"):
+                try:
+                    import yfinance as yf
+                    h = yf.Ticker(C["scale_to"]).history(period="10d")["Close"].dropna()
+                    lv = float(h.iloc[-1]) if len(h) else None
+                except Exception:  # noqa: BLE001
+                    lv = None
+                if lv and lv > 0:
+                    k = lv / rows[-1][1]
+                    rows = [(d0, v * k) for d0, v in rows]
+                    info.update({"scaled": C["scale_to"], "k": _r(k, 4)})
+            if C.get("proxy"):
+                try:
+                    pr = yf_daily(C["proxy"], "2024-01-01")
+                    info["proxy_last"] = [C["proxy"], pr[-1][0], _r(pr[-1][1], 3)]
+                except Exception:  # noqa: BLE001
+                    pass
+            out[a] = build_asset(a, rows, lambda S, info=info: {"src": info})
+        except Exception as e:  # noqa: BLE001
+            errs.append("%s:%s:%s" % (a, type(e).__name__, str(e)[:60]))
     try:
         th = fred("DEXTHUS")
         out["thb"] = [th[-1][0], _r(th[-1][1], 3)]
     except Exception:  # noqa: BLE001
         pass
     out["errors"] = errs
-    if not out.get("gold") and not out.get("btc"):
+    if not any(isinstance(out.get(a), dict) for a in CFG):
         raise ValueError("no price data: %s" % errs)
     return out

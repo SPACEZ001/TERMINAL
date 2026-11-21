@@ -2037,11 +2037,19 @@
         document.body.appendChild(pageCss);   /* last in document order, so it beats the A4-portrait @page rules in the stylesheets */
         document.body.classList.add('spz-print-cert');
       }
+      /* 2026-11-21: the official letter draws its own A4 margins */
+      if(reportType === 'letter'){
+        pageCss = document.createElement('style');
+        pageCss.textContent = '@media print{@page{size:A4 portrait;margin:0;}}';
+        document.body.appendChild(pageCss);
+        document.body.classList.add('spz-print-letter');
+      }
       var done = false;
       function cleanup(){
         if(done) return; done = true;
         if(pageCss && pageCss.parentNode) pageCss.parentNode.removeChild(pageCss);
         document.body.classList.remove('spz-print-cert');
+        document.body.classList.remove('spz-print-letter');
         document.body.classList.remove('spz-printing-report');
         window.removeEventListener('afterprint', cleanup);
       }
@@ -2601,6 +2609,13 @@
     }
     return h;
   }
+  function ltMount(force){
+    var w = sec && sec.querySelector('[data-pr="ltWrap"]');
+    if(!w || !window.__SPZ_LETTER) return;
+    var a = document.activeElement;
+    if(!force && a && w.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+    var st = w.scrollTop; w.innerHTML = window.__SPZ_LETTER.formHTML(); w.scrollTop = st;
+  }
   function revMount(force){
     var w = sec && sec.querySelector('[data-pr="revWrap"]');
     if(!w || !window.__SPZ_REVIEWFORM) return;
@@ -3132,6 +3147,8 @@
     }
     /* the reviewer form is a blank printed form -- it needs no server data */
     if(reportType === 'review' && window.__SPZ_REVIEWFORM){ host.innerHTML = window.__SPZ_REVIEWFORM.sheetHTML({ serial:serial(), logo:PR_LOGO, qr:evQrSvg }); return; }
+    /* 2026-11-21: official letter (part-98) -- also needs no server data */
+    if(reportType === 'letter' && window.__SPZ_LETTER){ host.innerHTML = window.__SPZ_LETTER.sheetHTML({ serial:serial(), logo:PR_LOGO, qr:evQrSvg }); window.__SPZ_LETTER.fit(host); return; }
     if(!getAdminKey()){ host.innerHTML = analysisKeyGateHTML(); wireAnalysisGate(host); return; }
     if(analysisLoading){ host.innerHTML = '<div class="ewv-content-loading">' + esc(T(UI.analysisLoading)) + '</div>'; return; }
     if(analysisErr === 'net'){ host.innerHTML = analysisNetErrorHTML(); wireAnalysisGate(host); return; }
@@ -3210,11 +3227,14 @@
     /* 2026-11-18: reviewer evaluation form (part-95, window.__SPZ_REVIEWFORM) */
     var revWrap = q('revWrap'), RF = window.__SPZ_REVIEWFORM;
     if(revWrap){ revWrap.style.display = reportType === 'review' ? '' : 'none'; if(reportType === 'review') revMount(); }
+    var ltWrap = q('ltWrap'), LT = window.__SPZ_LETTER;
+    if(ltWrap){ ltWrap.style.display = reportType === 'letter' ? '' : 'none'; if(reportType === 'letter') ltMount(); }
+    var typeLtBtn = q('typeLetter'); if(typeLtBtn){ typeLtBtn.textContent = LT ? LT.label() : 'Letter'; typeLtBtn.style.display = LT ? '' : 'none'; typeLtBtn.classList.toggle('on', reportType === 'letter'); }
     var typeRevBtn = q('typeReview'); if(typeRevBtn){ typeRevBtn.textContent = RF ? RF.label() : 'Reviewer form'; typeRevBtn.style.display = RF ? '' : 'none'; typeRevBtn.classList.toggle('on', reportType === 'review'); }
-    if(evWrap && evWrap.closest){ var evCtl = evWrap.closest('.pr-controls'); if(evCtl) evCtl.classList.toggle('pr-ev-on', reportType === 'eval' || reportType === 'cert' || reportType === 'review'); }
+    if(evWrap && evWrap.closest){ var evCtl = evWrap.closest('.pr-controls'); if(evCtl) evCtl.classList.toggle('pr-ev-on', reportType === 'eval' || reportType === 'cert' || reportType === 'review' || reportType === 'letter'); }
     var typeCertBtn = q('typeCert'); if(typeCertBtn){ typeCertBtn.textContent = T(CT.type); typeCertBtn.classList.toggle('on', reportType === 'cert'); }
-    var lineB = q('lineBtn'); if(lineB) lineB.style.display = (reportType === 'eval' || reportType === 'cert' || reportType === 'review') ? 'none' : '';
-    var lineS = q('lineStatus'); if(lineS) lineS.style.display = (reportType === 'eval' || reportType === 'cert' || reportType === 'review') ? 'none' : '';
+    var lineB = q('lineBtn'); if(lineB) lineB.style.display = (reportType === 'eval' || reportType === 'cert' || reportType === 'review' || reportType === 'letter') ? 'none' : '';
+    var lineS = q('lineStatus'); if(lineS) lineS.style.display = (reportType === 'eval' || reportType === 'cert' || reportType === 'review' || reportType === 'letter') ? 'none' : '';
     var typeEvalBtn = q('typeEval'); if(typeEvalBtn){ typeEvalBtn.textContent = T(EV_TXT.typeEval); typeEvalBtn.classList.toggle('on', reportType === 'eval'); }
     var annTplWrap = q('annTplWrap');
     var annTpl = ANNOUNCEMENT_TEMPLATES[annTopic];
@@ -3261,7 +3281,7 @@
     if(typeBubbleBtn) typeBubbleBtn.classList.toggle('on', reportType === 'bubble');
     var modeWrap = q('modeWrap');
     if(modeWrap) modeWrap.style.display =
-      (reportType === 'gold' || reportType === 'idea' || reportType === 'announcement' || reportType === 'bubble' || reportType === 'eval' || reportType === 'cert' || reportType === 'review') ? 'none' : '';
+      (reportType === 'gold' || reportType === 'idea' || reportType === 'announcement' || reportType === 'bubble' || reportType === 'eval' || reportType === 'cert' || reportType === 'review' || reportType === 'letter') ? 'none' : '';
     var modeFullBtn = q('modeFull'), modeSelectBtn = q('modeSelect'), pickHost = q('picklist');
     if(modeFullBtn) modeFullBtn.classList.toggle('on', mode === 'full');
     if(modeSelectBtn) modeSelectBtn.classList.toggle('on', mode === 'select');
@@ -3285,6 +3305,8 @@
       if(t.closest('[data-pr="typeEval"]')){ reportType = 'eval'; paint(); return; }
       if(t.closest('[data-pr="typeCert"]')){ reportType = 'cert'; paint(); return; }
       if(t.closest('[data-pr="typeReview"]')){ reportType = 'review'; paint(); return; }
+      if(t.closest('[data-pr="typeLetter"]')){ reportType = 'letter'; paint(); return; }
+      if(reportType === 'letter' && window.__SPZ_LETTER){ var ltc = window.__SPZ_LETTER.handleClick(t); if(ltc){ if(ltc === 'none') return; if(ltc === 'form') ltMount(true); renderReport(); return; } }
       if(reportType === 'review' && window.__SPZ_REVIEWFORM){ var rvc = window.__SPZ_REVIEWFORM.handleClick(t); if(rvc){ if(rvc === 'form') revMount(true); renderReport(); return; } }
       if(evHandleClick(t)) return;
       if(certHandleClick(t)) return;
@@ -3323,6 +3345,7 @@
       if(t && t.hasAttribute && evHandleInput(t)){ renderReport(); return; }
       if(t && certHandleInput(t)){ renderReport(); return; }
       if(t && window.__SPZ_REVIEWFORM && window.__SPZ_REVIEWFORM.handleInput(t)){ renderReport(); return; }
+      if(t && reportType === 'letter' && window.__SPZ_LETTER && window.__SPZ_LETTER.handleInput(t)){ renderReport(); return; }
       if(t && t.getAttribute && t.getAttribute('data-pr') === 'pickSearch'){
         pickQuery = t.value;
         var pickHost = sec.querySelector('[data-pr="picklist"]');
@@ -3409,10 +3432,12 @@
             '<button type="button" class="pr-modebtn" data-pr="typeEval"></button>' +
             '<button type="button" class="pr-modebtn" data-pr="typeCert"></button>' +
             '<button type="button" class="pr-modebtn" data-pr="typeReview"></button>' +
+            '<button type="button" class="pr-modebtn" data-pr="typeLetter"></button>' +
           '</div>' +
           '<div data-pr="evWrap" style="display:none;"></div>' +
           '<div data-pr="certWrap" style="display:none;"></div>' +
           '<div data-pr="revWrap" style="display:none;"></div>' +
+          '<div data-pr="ltWrap" style="display:none;"></div>' +
           '<div data-pr="annWrap" style="display:none;">' +
             '<div class="pr-row" style="display:block;">' +
               '<span class="pr-label" data-pr="annTopicLbl" style="display:block;margin-bottom:6px;"></span>' +

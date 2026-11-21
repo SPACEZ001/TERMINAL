@@ -467,3 +467,35 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   sector/industry (`bucketOf`), live fundamentals replace the typed ones, a fifth leg `t` = live price trend (3-month move rank,
   200-day line, RSI) is in every preset, `whyText` warns when the trend is weak, the 5-name summary keeps at most 2 per sector,
   and the desk repaints on `spz:snapshot` once live data arrives.
+
+## Added 2026-11-21
+
+- **Top bar:** the cycle / date pill has no running light any more; neutral glass colours (the phase shows only in its dot,
+  `--cycc` set by part-96 `chipCol()`); every control in the nav pill is 34px high with an even 6px gap to the pill edge
+  ("2026-11-21 top bar tidy" block at the end of part-96.css).
+- **Announcements v2** (`assets/js/part-97.js` + `css/part-97.css`, after part-96): decorates the three surfaces part-03 / part-39
+  build — centre popup (`.spz-ann-modal.ann2`), strip under the top bar (`#spzAnnounceBar.ann2`), card over the portfolio popup
+  (`#spzShockPopup.ann2`): Brain glass + spinning edge, icon tile, "SPACEZ TERMINAL · ประกาศอย่างเป็นทางการ", posted date,
+  "รับทราบ" button (clicks the original close = dismiss). Opening / dismiss logic is untouched.
+- **Official letter** (`assets/js/part-98.js` + `css/part-98.css`, after part-97): Print Report type `letter` (button `typeLetter`,
+  panel `ltWrap`, `ltMount()`, code `LT` in part-70). `window.__SPZ_LETTER` = label / formHTML / sheetHTML(ctx) / handleInput /
+  handleClick / fit / png. 7 purposes (`TPL`: eval, expert, trial, thanks, intro, invite, blank) fill subject + body; texts are
+  kept per language in localStorage `spz.letter.v1`. Thai official-letter layout on one A4 page (794×1123 px, own margins; doPrint
+  adds `@page{margin:0}` + `body.spz-print-letter`), looks classic / modern, seal, QR, "ด่วน" stamp. `fit()` shrinks the type
+  (`--ltk`) when the text is long and zooms the preview to the column. Pictures: A4 PNG (html2canvas) and a 1080×1920 story PNG.
+- **Market Brain** (sources archive `brain-sources-2026-11-21.tgz`):
+  - print covers: the "Market score 30/100" box is now a "market weather" card (`wxCard` / `wxDial` in k_print.js: half-dial whose
+    arcs follow the real bands 0–30–44–56–70–100, weather in words + icon, what to do); band bar has weather icons.
+  - **Asset price forecast** (was "Gold & bitcoin"): `o_px.js` handles 8 assets — gold, btc, oil, dxy, spx, ndx, set, usdthb
+    (`PX_ORDER`, `PXN`, `pxLive` per asset, `pxDay`, `pxNote`); pieces the walk-forward test switched off are listed instead of zero
+    rows; S&P / oil / dollar show a "second opinion" from the Brain's macro forecast; "PDF · this asset" / "PDF · all assets"
+    (`PX_ONE`); the price-only cover is one compact table (`pxc-all`). `scripts/brain_px.py` has a per-asset `CFG` (tuned by the
+    same walk-forward: gold no seasonality, bitcoin no momentum, oil/SET/THB mean reversion only, S&P/Nasdaq trend + drift) and a
+    fallback: a horizon whose rules lost to "no change" gets centre = today's price (`fb`). SET history = TDEX.BK scaled to ^SET.BK
+    (Yahoo serves no SET history). The new asset key for USD/THB is `usdthb` (`px.thb` stays the FRED rate for baht conversion).
+- **Telegram alerts v2** (Worker, Mac copy only — backup `line-qr-worker.before-2026-11-21.js` next to it): `brainAlertRun` now also
+  sends market moves (`BA_MKT`, two levels per session), econ heads-up + market reaction (snapshot of ES=F / ^TNX / DXY / gold),
+  news (4 RSS feeds, keyword + holdings score ≥3, max 3 an hour, seen list in KV `brain:alert:news`), US close wrap (05–09 Thai,
+  Tue–Sat) and Thai close wrap (17–20, Mon–Fri); one message per chat per run; 23:00–07:00 silent. Per-chat switches in KV
+  `brain:alert:prefs` via `/alerts`, `/moves|econ|news|wrap on|off` (`baCommand`, called from the Telegram webhook). Quotes use
+  `range=1d` so the day change is vs the previous close. The user must paste the new Worker into the Cloudflare dashboard.

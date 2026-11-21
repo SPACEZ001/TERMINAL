@@ -35,7 +35,13 @@
     rec:I('Economy shrinking — defensives and bonds hold up', 'เศรษฐกิจหดตัว หุ้นตั้งรับและพันธบัตรเด่น')
   };
   var PH_KEYS = ['early', 'mid', 'late', 'rec'];
+  var PH_COL = { early:'#34d399', mid:'#22d3ee', late:'#fbbf24', rec:'#fb7185' };
+  function chipCol(){
+    var box = document.getElementById('spzCyc'), C = window.SPZ_CYCLE; if(!box || !C) return;
+    var ph = C.phase || 'mid'; box.style.setProperty('--cycc', PH_COL[ph] || '#22d3ee'); box.setAttribute('data-ph', ph);
+  }
   function chip(){
+    chipCol();
     var box = document.getElementById('spzCyc'); if(!box || box.__pzx) return !!box;
     var lbl = box.querySelector('[data-c="lbl"]'); if(!lbl) return false;
     box.__pzx = 1; box.classList.add('pzx-cyc');
