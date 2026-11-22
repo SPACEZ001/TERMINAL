@@ -515,3 +515,28 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   Tue–Sat) and Thai close wrap (17–20, Mon–Fri); one message per chat per run; 23:00–07:00 silent. Per-chat switches in KV
   `brain:alert:prefs` via `/alerts`, `/moves|econ|news|wrap on|off` (`baCommand`, called from the Telegram webhook). Quotes use
   `range=1d` so the day change is vs the previous close. The user must paste the new Worker into the Cloudflare dashboard.
+
+## Added 2026-11-22 (Market Brain, sources archive `brain-sources-2026-11-22.tgz`)
+
+- **Macro Lab tab** (`macro`, after World outlook; new source `y_macro.js`, built between `x_smart` and `f_pf`; CSS block
+  "2026-11-22 (c)" at the end of part-83.css, class prefix `bz-mx-` — plain `ml-` collided with part-81/part-69). Everything is
+  computed in the browser: NY Fed yield-curve probit, Sahm → logistic, Chauvet–Piger, warning checklist and a factor probit blended
+  30/20/15/15/20 into 12-month recession odds; dynamic factor model = PC1 of 8 monthly FRED series (ragged edge by least squares) +
+  bridge equation to GDP vs GDPNow; local-linear-trend Kalman filter on core PCE (variances by MLE grid) with a 12-month path;
+  Taylor (1993) / balanced / inertial rules (r* 1.0, u* 4.2, Okun ×2) vs the Fed rate; NFCI + stress gauges by percentile;
+  2-state Gaussian HMM (Baum–Welch) on weekly S&P 500 returns; CAPE, excess CAPE yield, cap-weighted forward E/P (US, Thai vs BOT);
+  world diffusion indices + phase odds. Top hero: composite score −100..+100 (dial), verdict, 6 KPI tiles, rule-based asset-mix
+  tilt (`mlAlloc`), 6M/12M price table from `px`, sectors and stocks from the World outlook engine. Added to print types
+  all / full / forecast and to `GUIDE` (appended at the end — vGuide uses fixed GUIDE indices).
+- **World outlook scenario cards:** each signal shows a plain name, the rule ("เกณฑ์: …"), today's value and ผ่าน / ยังไม่ถึง
+  (`watchList` returns [name, value, met, rule, key]; meanings in `WSIG`); 5 groups / 3 stocks per market / 3 trims; new
+  "จากรายชื่อขั้นที่ 2" chips (`s2Link`: the step-2 main list checked against each scenario with `stockEdge`); a shared
+  "วิธีอ่านการ์ดฉากทัศน์" fold (`sigHelp`). Copy bar has a second row "คัดลอกแบบมีคาดการณ์" (`fcCopyText`: top 10 overall / US /
+  Thai / both, with world phase, scenario odds, index 6M/12M from `px`, lean toward/away, per-stock expected lead, rough 6M
+  estimate incl. the market, how it earns, stop-loss, grades) + a preview `<pre>`.
+- **Track record tab:** model cards on a balanced 12-column grid (`trSpan`: 7 → 4 + 3 wide, 3 + 2 + 2 medium); the lone last
+  chart (oil) is full width (`.bz-trwide`).
+- **Tabs:** `.bz-tabs` buttons are round pills (active looks like hover).
+- Mac REPORTS folder re-organised (not in repo): new review / letter (+ รูปภาพ) / company-structure / whole-site / drafts folders,
+  market-brain split into 1 MB · 2 PX · 3 SP · 4 HB · 5 MG; `จัดรายงานเข้าโฟลเดอร์.command` knows RV, LT, OR, AL, PX, SP, HB,
+  SPZ-XX-DRAFT and SPACEZ-letter-*.png.
