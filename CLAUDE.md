@@ -540,3 +540,16 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
 - Mac REPORTS folder re-organised (not in repo): new review / letter (+ รูปภาพ) / company-structure / whole-site / drafts folders,
   market-brain split into 1 MB · 2 PX · 3 SP · 4 HB · 5 MG; `จัดรายงานเข้าโฟลเดอร์.command` knows RV, LT, OR, AL, PX, SP, HB,
   SPZ-XX-DRAFT and SPACEZ-letter-*.png.
+
+## Added 2026-11-22 (later, sources archive `brain-sources-2026-11-22b.tgz`)
+
+- **"Print this page / PDF" on every Brain tab** (`f_pf.js` meta row, button `[data-bzprint=<tab>]`, class `.bz-prthis`): sets
+  `PR.type = 'custom'`, `PR.secs = {<tab>:1}` and opens the Print tab, so the preview / PDF is the cover + that one page. Shown only
+  for tabs in `prSecs()` (limited roles see it only on their open sections).
+- **Cover score is no longer a dial.** `wxCard()` in `k_print.js` now returns a minimal "score plate" (`.sp`: small-caps label,
+  thin 56px numeral, weather word + icon, hairline five-band scale with a tick, advice line) and both covers use it (formal
+  `coverFormal` and light/dark `coverHTML` → `.cv-score.sp-host`). `wxDial()` is kept but unused. Plate CSS lives in the doc CSS
+  string next to the old `.wx-*` rules.
+- **Macro Lab in documents:** `vMacro(pr)` sets `ML_PR`; in print the hero shows `mlPlate()` instead of the dial, "How it is
+  calculated" folds and the model table are open, and the doc CSS strips the animated mesh / dot grid / gradient-clipped heading
+  (html2canvas can't draw them), flattens the hero and makes the plan grid 2 columns (`grid-auto-flow:dense`). PDF tested (10 pages).
