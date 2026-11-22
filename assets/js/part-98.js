@@ -77,7 +77,7 @@
   /* ---------- ready-made purposes ---------- */
   var SITEW = 'SPACEZ TERMINAL (' + SITE_SHOW + ')';
   var TPL = [
-    { id:'eval', t:I('Ask to evaluate the website', 'ขอความอนุเคราะห์ประเมินเว็บไซต์'), d:I('to a lecturer, teacher or expert, with the evaluation form', 'ส่งถึงอาจารย์ ครู หรือผู้เชี่ยวชาญ พร้อมแบบประเมิน'),
+    { id:'eval', g:'ask', t:I('Ask to evaluate the website', 'ขอความอนุเคราะห์ประเมินเว็บไซต์'), d:I('to a lecturer, teacher or expert, with the evaluation form', 'ส่งถึงอาจารย์ ครู หรือผู้เชี่ยวชาญ พร้อมแบบประเมิน'),
       subj:I('Request for an evaluation of the SPACEZ TERMINAL website', 'ขอความอนุเคราะห์ประเมินคุณภาพเว็บไซต์ SPACEZ TERMINAL'),
       p1:I('SPACEZ TERMINAL has developed a website for learning about finance and investing — beginner lessons, market analysis tools, an Elliott Wave classroom and exam practice — available at ' + SITEW + '.',
            'ด้วย SPACEZ TERMINAL ได้พัฒนาเว็บไซต์เพื่อการเรียนรู้ด้านการเงินและการลงทุน ประกอบด้วยบทเรียนสำหรับผู้เริ่มต้น เครื่องมือวิเคราะห์ตลาด ห้องเรียนคลื่นเอลเลียต และแบบฝึกหัดเตรียมสอบ เปิดให้ใช้งานผ่านเว็บไซต์ ' + SITEW),
@@ -86,7 +86,7 @@
       p3:I('The sign-in steps and the access code are printed on the evaluation form. Your answers will be used only to improve the website.', 'ทั้งนี้ วิธีเข้าใช้งานและรหัสสำหรับผู้ประเมินได้ระบุไว้ในแบบประเมินแล้ว ผลการประเมินจะนำไปใช้เพื่อการปรับปรุงเว็บไซต์เท่านั้น'),
       close:I('We would therefore be grateful for your kind consideration, and thank you sincerely in advance.', 'จึงเรียนมาเพื่อโปรดพิจารณาให้ความอนุเคราะห์ และขอขอบพระคุณเป็นอย่างสูงมา ณ โอกาสนี้'),
       att:I('Website evaluation form, 1 copy', 'แบบประเมินคุณภาพเว็บไซต์ จำนวน 1 ชุด') },
-    { id:'expert', t:I('Invite as an expert reviewer', 'เชิญเป็นผู้ทรงคุณวุฒิตรวจเครื่องมือ'), d:I('for checking a learning tool or research instrument (IOC)', 'ตรวจความเที่ยงตรงของสื่อหรือเครื่องมือวิจัย (IOC)'),
+    { id:'expert', g:'invite', t:I('Invite as an expert reviewer', 'เชิญเป็นผู้ทรงคุณวุฒิตรวจเครื่องมือ'), d:I('for checking a learning tool or research instrument (IOC)', 'ตรวจความเที่ยงตรงของสื่อหรือเครื่องมือวิจัย (IOC)'),
       subj:I('Invitation to serve as an expert reviewer', 'ขอเรียนเชิญเป็นผู้ทรงคุณวุฒิตรวจสอบคุณภาพเครื่องมือ'),
       p1:I('I am developing SPACEZ TERMINAL, an online learning platform for finance and investing, and the tools used with it must be checked for content validity before they are used.',
            'ด้วยข้าพเจ้ากำลังดำเนินการพัฒนาสื่อการเรียนรู้ออนไลน์ SPACEZ TERMINAL ด้านการเงินและการลงทุน ซึ่งจำเป็นต้องตรวจสอบความเที่ยงตรงเชิงเนื้อหาของเครื่องมือที่ใช้ก่อนนำไปใช้จริง'),
@@ -95,7 +95,7 @@
       p3:I('', ''),
       close:I('I hope very much for your kind help, and thank you sincerely in advance.', 'จึงเรียนมาเพื่อโปรดพิจารณา หวังเป็นอย่างยิ่งว่าจะได้รับความอนุเคราะห์จากท่าน และขอขอบพระคุณมา ณ โอกาสนี้'),
       att:I('1. The tools to be reviewed, 1 set\n2. Item–objective congruence (IOC) form, 1 set', '1. เครื่องมือที่ใช้ในการตรวจสอบ จำนวน 1 ชุด\n2. แบบประเมินความสอดคล้อง (IOC) จำนวน 1 ชุด') },
-    { id:'trial', t:I('Ask for a trial / data collection', 'ขอทดลองใช้และเก็บข้อมูล'), d:I('to a school or organisation, with a PDPA note', 'ส่งถึงโรงเรียนหรือหน่วยงาน พร้อมข้อความคุ้มครองข้อมูลส่วนบุคคล'),
+    { id:'trial', g:'ask', t:I('Ask for a trial / data collection', 'ขอทดลองใช้และเก็บข้อมูล'), d:I('to a school or organisation, with a PDPA note', 'ส่งถึงโรงเรียนหรือหน่วยงาน พร้อมข้อความคุ้มครองข้อมูลส่วนบุคคล'),
       subj:I('Request to trial the website and collect feedback', 'ขอความอนุเคราะห์ทดลองใช้งานเว็บไซต์และเก็บรวบรวมข้อมูล'),
       p1:I('SPACEZ TERMINAL has developed a website for learning about finance and investing (' + SITE_SHOW + ') and would like to try it with real learners so it can be improved.',
            'ด้วย SPACEZ TERMINAL ได้พัฒนาเว็บไซต์เพื่อการเรียนรู้ด้านการเงินและการลงทุน (' + SITE_SHOW + ') และประสงค์จะนำไปทดลองใช้กับผู้เรียนจริง เพื่อนำผลมาปรับปรุงให้มีประสิทธิภาพยิ่งขึ้น'),
@@ -104,7 +104,7 @@
       p3:I('The information collected will be used only to develop the website and will be kept confidential under the Personal Data Protection Act B.E. 2562 (2019).', 'ทั้งนี้ ข้อมูลที่ได้จะนำไปใช้เพื่อการพัฒนาเว็บไซต์เท่านั้น และจะเก็บรักษาเป็นความลับตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562'),
       close:I('We would therefore be grateful for your kind permission, and thank you sincerely.', 'จึงเรียนมาเพื่อโปรดพิจารณาอนุญาต และขอขอบพระคุณมา ณ โอกาสนี้'),
       att:I('Opinion survey, 1 copy', 'แบบสอบถามความคิดเห็น จำนวน 1 ชุด') },
-    { id:'thanks', t:I('Thank-you letter', 'หนังสือขอบคุณ'), d:I('after someone reviewed, advised or helped', 'หลังได้รับการประเมิน คำแนะนำ หรือความช่วยเหลือ'),
+    { id:'thanks', g:'notice', t:I('Thank-you letter', 'หนังสือขอบคุณ'), d:I('after someone reviewed, advised or helped', 'หลังได้รับการประเมิน คำแนะนำ หรือความช่วยเหลือ'),
       subj:I('Letter of thanks', 'ขอขอบคุณ'),
       p1:I('Thank you for kindly evaluating and advising on the SPACEZ TERMINAL website.', 'ตามที่ท่านได้กรุณาให้ความอนุเคราะห์ประเมินและให้คำแนะนำเว็บไซต์ SPACEZ TERMINAL ความละเอียดแจ้งแล้ว นั้น'),
       p2:I('SPACEZ TERMINAL is deeply grateful for the valuable time you gave. Your suggestions are of great use in improving the website for its learners, and we hope for your kind support again in the future.',
@@ -112,7 +112,7 @@
       p3:I('', ''),
       close:I('With sincere thanks.', 'จึงเรียนมาเพื่อโปรดทราบ และขอขอบพระคุณมา ณ โอกาสนี้'),
       att:I('', '') },
-    { id:'intro', t:I('Introduce the platform', 'แนะนำแพลตฟอร์ม / ขอความร่วมมือ'), d:I('to a school, club or partner — ask to share it', 'ส่งถึงโรงเรียน ชมรม หรือพันธมิตร ขอช่วยประชาสัมพันธ์'),
+    { id:'intro', g:'work', t:I('Introduce the platform', 'แนะนำแพลตฟอร์ม / ขอความร่วมมือ'), d:I('to a school, club or partner — ask to share it', 'ส่งถึงโรงเรียน ชมรม หรือพันธมิตร ขอช่วยประชาสัมพันธ์'),
       subj:I('Introducing the SPACEZ TERMINAL learning platform', 'ขอแนะนำแพลตฟอร์มการเรียนรู้ SPACEZ TERMINAL และขอความร่วมมือประชาสัมพันธ์'),
       p1:I('SPACEZ TERMINAL is a free bilingual (Thai / English) platform for learning about finance and investing: step-by-step beginner lessons, live market dashboards, an Elliott Wave classroom and practice exams for the IC licence.',
            'ด้วย SPACEZ TERMINAL เป็นแพลตฟอร์มการเรียนรู้ด้านการเงินและการลงทุนสองภาษา (ไทย / อังกฤษ) ประกอบด้วยบทเรียนพื้นฐานแบบทีละขั้น แผงข้อมูลตลาดแบบเรียลไทม์ ห้องเรียนคลื่นเอลเลียต และแบบฝึกหัดเตรียมสอบใบอนุญาต IC'),
@@ -121,7 +121,7 @@
       p3:I('The platform can be opened at ' + SITE_SHOW + ' or by scanning the QR code on this letter.', 'ทั้งนี้ สามารถเข้าใช้งานได้ที่ ' + SITE_SHOW + ' หรือสแกนคิวอาร์โค้ดท้ายหนังสือนี้'),
       close:I('We would be grateful for your kind cooperation, and thank you in advance.', 'จึงเรียนมาเพื่อโปรดพิจารณาให้ความร่วมมือ และขอขอบคุณมา ณ โอกาสนี้'),
       att:I('', '') },
-    { id:'invite', t:I('Invite to an event', 'เชิญเข้าร่วมกิจกรรม'), d:I('workshop, talk or class — fill in date, time, place', 'อบรม บรรยาย หรือคลาสเรียน — เติมวัน เวลา สถานที่'),
+    { id:'invite', g:'invite', t:I('Invite to an event', 'เชิญเข้าร่วมกิจกรรม'), d:I('workshop, talk or class — fill in date, time, place', 'อบรม บรรยาย หรือคลาสเรียน — เติมวัน เวลา สถานที่'),
       subj:I('Invitation to attend "........................"', 'ขอเรียนเชิญเข้าร่วมกิจกรรม "........................"'),
       p1:I('SPACEZ TERMINAL will hold "........................" on ........................ at ........................ (place / online), to ........................',
            'ด้วย SPACEZ TERMINAL กำหนดจัดกิจกรรม "........................" ในวันที่ ........................ เวลา ........................ ณ ........................ (หรือทางออนไลน์) โดยมีวัตถุประสงค์เพื่อ ........................'),
@@ -129,7 +129,7 @@
       p3:I('', ''),
       close:I('We look forward to welcoming you, and thank you in advance.', 'จึงเรียนมาเพื่อโปรดพิจารณาเข้าร่วมกิจกรรมตามวัน เวลา และสถานที่ดังกล่าว และขอขอบคุณมา ณ โอกาสนี้'),
       att:I('Programme, 1 copy', 'กำหนดการ จำนวน 1 ฉบับ') },
-    { id:'brain', t:I('Expert review of advanced content (Market Brain)', 'เชิญผู้เชี่ยวชาญตรวจเนื้อหาขั้นสูง (สมองตลาด)'), d:I('graduate-level models; with a site guide and sign-in details', 'เนื้อหาระดับบัณฑิตศึกษา แนบคู่มือเข้าเว็บและข้อมูลเข้าระบบ'),
+    { id:'brain', g:'invite', t:I('Expert review of advanced content (Market Brain)', 'เชิญผู้เชี่ยวชาญตรวจเนื้อหาขั้นสูง (สมองตลาด)'), d:I('graduate-level models; with a site guide and sign-in details', 'เนื้อหาระดับบัณฑิตศึกษา แนบคู่มือเข้าเว็บและข้อมูลเข้าระบบ'),
       subj:I('Request for an expert review of the advanced academic content of the “Market Brain” system', 'ขอความอนุเคราะห์ผู้ทรงคุณวุฒิตรวจสอบเนื้อหาเชิงวิชาการขั้นสูงของระบบ “สมองตลาด” (Market Brain)'),
       p1:I('SPACEZ TERMINAL has developed the “Market Brain”, the advanced analysis part of the website: an economic-cycle model with a market-condition score, forecasting models for macro variables (inflation, jobs, interest rates) with their own track records, price-forecast models for eight assets, and walk-forward back-tests with calibrated confidence ranges — content at graduate level.',
            'ด้วย SPACEZ TERMINAL ได้พัฒนาระบบ “สมองตลาด” (Market Brain) ซึ่งเป็นส่วนวิเคราะห์ขั้นสูงของเว็บไซต์ ประกอบด้วยแบบจำลองวัฏจักรเศรษฐกิจและคะแนนภาวะตลาด แบบจำลองพยากรณ์ตัวแปรเศรษฐกิจมหภาค (เงินเฟ้อ การจ้างงาน อัตราดอกเบี้ย) พร้อมประวัติความแม่นยำ แบบจำลองคาดการณ์ราคาสินทรัพย์ 8 ประเภท และการทดสอบย้อนหลังแบบเดินหน้า (walk-forward) พร้อมการปรับเทียบช่วงความเชื่อมั่น ซึ่งเป็นเนื้อหาในระดับบัณฑิตศึกษา'),
@@ -138,13 +138,111 @@
       p3:I('A guide to the website and the sign-in details are enclosed. Please keep the sign-in details confidential. Your review will be used only to improve the system.', 'ทั้งนี้ ได้แนบคู่มือการเข้าใช้งานเว็บไซต์และข้อมูลสำหรับเข้าระบบมาพร้อมนี้ ขอความกรุณาเก็บข้อมูลเข้าระบบไว้เป็นความลับ ผลการตรวจสอบจะนำไปใช้เพื่อการพัฒนาระบบเท่านั้น'),
       close:I('We would therefore be grateful for your kind consideration, and thank you sincerely in advance.', 'จึงเรียนมาเพื่อโปรดพิจารณาให้ความอนุเคราะห์ และขอขอบพระคุณเป็นอย่างสูงมา ณ โอกาสนี้'),
       att:I('1. Guide to the website, 1 copy\n2. Sign-in details (user name and code), 1 sheet\n3. Expert evaluation form, 1 copy', '1. คู่มือการเข้าใช้งานเว็บไซต์ จำนวน 1 ชุด\n2. ข้อมูลสำหรับเข้าระบบ (ชื่อผู้ใช้และรหัสผ่าน) จำนวน 1 ฉบับ\n3. แบบประเมินสำหรับผู้ทรงคุณวุฒิ จำนวน 1 ชุด') },
-    { id:'blank', t:I('Write my own', 'เขียนเอง'), d:I('empty letter with the formal layout', 'หนังสือเปล่าตามรูปแบบทางการ'),
+    /* ---------- 2026-11-22: more purposes (grouped in the panel by `g`) ---------- */
+    { id:'school', g:'ask', t:I('Use the site in class', 'ขอใช้เว็บไซต์เป็นสื่อการสอน'), d:I('to a school director or head of department', 'ส่งถึงผู้อำนวยการโรงเรียนหรือหัวหน้ากลุ่มสาระ'),
+      subj:I('Request to use SPACEZ TERMINAL as a learning resource', 'ขอความอนุเคราะห์ใช้เว็บไซต์ SPACEZ TERMINAL เป็นสื่อประกอบการเรียนการสอน'),
+      p1:I('SPACEZ TERMINAL is a free bilingual website for learning about money, saving and investing, with step-by-step lessons, drawings, calculators and quick checks suitable for students (' + SITE_SHOW + ').', 'ด้วย SPACEZ TERMINAL เป็นเว็บไซต์การเรียนรู้ด้านการเงิน การออม และการลงทุน สองภาษา ไม่มีค่าใช้จ่าย มีบทเรียนแบบทีละขั้น ภาพประกอบ เครื่องคำนวณ และแบบทดสอบสั้น ที่เหมาะกับผู้เรียน (' + SITE_SHOW + ')'),
+      p2:I('We would be grateful for your permission to use the website as a learning resource in ........................ for ........................ during ........................', 'ในการนี้ จึงใคร่ขอความอนุเคราะห์จากท่านอนุญาตให้ใช้เว็บไซต์ดังกล่าวเป็นสื่อประกอบการเรียนการสอนในรายวิชา ........................ ระดับชั้น ........................ ในช่วง ........................'),
+      p3:I('No personal data of students is collected, and the content can be adjusted to the school\'s curriculum.', 'ทั้งนี้ การใช้งานไม่มีการเก็บข้อมูลส่วนบุคคลของนักเรียน และสามารถปรับเนื้อหาให้สอดคล้องกับหลักสูตรของสถานศึกษาได้'),
+      close:I('We would be grateful for your kind permission.', 'จึงเรียนมาเพื่อโปรดพิจารณาอนุญาต และขอขอบพระคุณมา ณ โอกาสนี้'), att:I('Overview of the lessons, 1 copy', 'รายละเอียดเนื้อหาบทเรียน จำนวน 1 ชุด') },
+    { id:'research', g:'ask', t:I('Ask people to answer a survey', 'ขอความร่วมมือตอบแบบสอบถาม'), d:I('research or development survey, with a PDPA note', 'แบบสอบถามเพื่อการวิจัยหรือพัฒนา พร้อมข้อความ PDPA'),
+      subj:I('Request for cooperation in answering a questionnaire', 'ขอความร่วมมือตอบแบบสอบถาม'),
+      p1:I('SPACEZ TERMINAL is studying ........................ to improve its learning website for finance and investing.', 'ด้วย SPACEZ TERMINAL กำลังศึกษาเรื่อง ........................ เพื่อนำผลไปพัฒนาเว็บไซต์การเรียนรู้ด้านการเงินและการลงทุนให้ตรงกับความต้องการของผู้เรียน'),
+      p2:I('We would be grateful if you could answer the enclosed questionnaire (about ...... minutes) by ........................', 'ในการนี้ จึงใคร่ขอความร่วมมือจากท่านตอบแบบสอบถามที่แนบมาพร้อมนี้ ใช้เวลาประมาณ ...... นาที ภายในวันที่ ........................'),
+      p3:I('Answers are anonymous, used only for this study and kept confidential under the Personal Data Protection Act B.E. 2562 (2019).', 'ทั้งนี้ คำตอบของท่านไม่ระบุตัวตน จะนำไปใช้เพื่อการศึกษาครั้งนี้เท่านั้น และเก็บรักษาเป็นความลับตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562'),
+      close:I('Thank you for your kind cooperation.', 'จึงเรียนมาเพื่อโปรดให้ความร่วมมือ และขอขอบคุณมา ณ โอกาสนี้'), att:I('Questionnaire, 1 copy', 'แบบสอบถาม จำนวน 1 ชุด') },
+    { id:'data', g:'ask', t:I('Ask permission to use data / material', 'ขออนุญาตใช้ข้อมูลหรือผลงาน'), d:I('charts, figures, articles or pictures of another owner', 'กราฟ ตัวเลข บทความ หรือรูปภาพของเจ้าของอื่น'),
+      subj:I('Request for permission to use data', 'ขออนุญาตใช้ข้อมูลและเผยแพร่โดยอ้างอิงแหล่งที่มา'),
+      p1:I('SPACEZ TERMINAL publishes free learning material about finance and investing for the public.', 'ด้วย SPACEZ TERMINAL จัดทำสื่อการเรียนรู้ด้านการเงินและการลงทุนเผยแพร่แก่ผู้สนใจโดยไม่มีค่าใช้จ่าย'),
+      p2:I('We would like permission to use ........................ from ........................ in ........................, with the source credited in full.', 'ในการนี้ จึงใคร่ขออนุญาตใช้ ........................ ของ ........................ ประกอบเนื้อหาเรื่อง ........................ โดยจะระบุแหล่งที่มาอย่างครบถ้วน'),
+      p3:I('The material will be used for education only, not for sale, and will be removed at once if you so request.', 'ทั้งนี้ จะใช้เพื่อการศึกษาเท่านั้น ไม่นำไปใช้ในเชิงพาณิชย์ และพร้อมนำออกทันทีหากท่านประสงค์'),
+      close:I('We would be grateful for your kind permission.', 'จึงเรียนมาเพื่อโปรดพิจารณาอนุญาต และขอขอบคุณมา ณ โอกาสนี้'), att:I('', '') },
+    { id:'sponsor', g:'ask', t:I('Ask for support / sponsorship', 'ขอรับการสนับสนุน'), d:I('for an event, prizes, server costs or a project', 'สำหรับกิจกรรม ของรางวัล ค่าเซิร์ฟเวอร์ หรือโครงการ'),
+      subj:I('Request for support for "........................"', 'ขอความอนุเคราะห์สนับสนุนโครงการ “........................”'),
+      p1:I('SPACEZ TERMINAL plans "........................" on ........................ to ........................ for about ...... participants.', 'ด้วย SPACEZ TERMINAL มีกำหนดจัดโครงการ “........................” ในวันที่ ........................ โดยมีวัตถุประสงค์เพื่อ ........................ มีผู้เข้าร่วมประมาณ ...... คน'),
+      p2:I('We would be grateful for your support in the form of ........................', 'ในการนี้ จึงใคร่ขอความอนุเคราะห์จากท่านสนับสนุน ........................ เพื่อให้โครงการดำเนินไปได้อย่างมีประสิทธิภาพ'),
+      p3:I('Your support will be acknowledged on the website, in the event materials and in the closing report.', 'ทั้งนี้ จะประชาสัมพันธ์และขอบคุณการสนับสนุนของท่านบนเว็บไซต์ ในเอกสารประกอบกิจกรรม และในรายงานสรุปผลโครงการ'),
+      close:I('We would be grateful for your kind support.', 'จึงเรียนมาเพื่อโปรดพิจารณาให้การสนับสนุน และขอขอบพระคุณเป็นอย่างสูงมา ณ โอกาสนี้'), att:I('Project details and budget, 1 copy', 'รายละเอียดโครงการและงบประมาณ จำนวน 1 ชุด') },
+    { id:'interview', g:'ask', t:I('Ask for an interview', 'ขอสัมภาษณ์ / ขอคำแนะนำ'), d:I('learn from an investor, teacher or professional', 'ขอความรู้จากนักลงทุน ครู หรือผู้เชี่ยวชาญ'),
+      subj:I('Request for an interview', 'ขอความอนุเคราะห์สัมภาษณ์เพื่อเป็นข้อมูลในการพัฒนาเนื้อหา'),
+      p1:I('SPACEZ TERMINAL is preparing learning content on ........................ and would value the experience of practitioners.', 'ด้วย SPACEZ TERMINAL กำลังจัดทำเนื้อหาการเรียนรู้เรื่อง ........................ และต้องการข้อมูลจากประสบการณ์จริงของผู้มีความรู้ในด้านนี้'),
+      p2:I('We would be grateful if you could spare about ...... minutes for an interview on ........................ (in person or online).', 'ในการนี้ จึงใคร่ขอความอนุเคราะห์สัมภาษณ์ท่าน ใช้เวลาประมาณ ...... นาที ในวันที่ ........................ (พบตัวหรือทางออนไลน์ตามที่ท่านสะดวก)'),
+      p3:I('Questions will be sent in advance; nothing will be published under your name without your approval.', 'ทั้งนี้ จะส่งประเด็นคำถามให้ท่านล่วงหน้า และจะไม่เผยแพร่ข้อมูลในนามของท่านโดยไม่ได้รับอนุญาต'),
+      close:I('We would be grateful for your kind help.', 'จึงเรียนมาเพื่อโปรดพิจารณาให้ความอนุเคราะห์ และขอขอบพระคุณมา ณ โอกาสนี้'), att:I('Interview questions, 1 copy', 'ประเด็นคำถามการสัมภาษณ์ จำนวน 1 ชุด') },
+    { id:'promo', g:'ask', t:I('Ask a page / media to share', 'ขอความอนุเคราะห์ประชาสัมพันธ์'), d:I('to a page, club, media or school office', 'ส่งถึงเพจ ชมรม สื่อ หรือฝ่ายประชาสัมพันธ์'),
+      subj:I('Request for help in publicising ........................', 'ขอความอนุเคราะห์ประชาสัมพันธ์ ........................'),
+      p1:I('SPACEZ TERMINAL will ........................ on ........................, free of charge for everyone interested.', 'ด้วย SPACEZ TERMINAL จะ ........................ ในวันที่ ........................ โดยเปิดให้ผู้สนใจเข้าร่วมได้โดยไม่มีค่าใช้จ่าย'),
+      p2:I('We would be grateful if you could share the news through your channels between ........................', 'ในการนี้ จึงใคร่ขอความอนุเคราะห์จากท่านช่วยประชาสัมพันธ์ผ่านช่องทางของท่าน ในช่วงวันที่ ........................'),
+      p3:I('A ready-to-post picture and text are enclosed.', 'ทั้งนี้ ได้แนบภาพและข้อความสำหรับประชาสัมพันธ์มาพร้อมนี้แล้ว'),
+      close:I('Thank you for your kind help.', 'จึงเรียนมาเพื่อโปรดพิจารณาให้ความอนุเคราะห์ และขอขอบคุณมา ณ โอกาสนี้'), att:I('Picture and text for posting, 1 set', 'ภาพและข้อความประชาสัมพันธ์ จำนวน 1 ชุด') },
+    { id:'speaker', g:'invite', t:I('Invite a guest speaker', 'เชิญเป็นวิทยากร'), d:I('talk, workshop or class', 'บรรยาย อบรม หรือคลาสเรียน'),
+      subj:I('Invitation to be a guest speaker', 'ขอเรียนเชิญเป็นวิทยากรบรรยายหัวข้อ “........................”'),
+      p1:I('SPACEZ TERMINAL will hold "........................" on ........................ at ........................ for about ...... participants.', 'ด้วย SPACEZ TERMINAL กำหนดจัดกิจกรรม “........................” ในวันที่ ........................ เวลา ........................ ณ ........................ มีผู้เข้าร่วมประมาณ ...... คน'),
+      p2:I('Given your knowledge and experience, we would be honoured if you could speak on "........................" for about ...... minutes.', 'ในการนี้ พิจารณาแล้วเห็นว่าท่านเป็นผู้มีความรู้และประสบการณ์เป็นอย่างดี จึงใคร่ขอเรียนเชิญท่านเป็นวิทยากรบรรยายหัวข้อ “........................” ใช้เวลาประมาณ ...... นาที'),
+      p3:I('Details of the programme and the audience are enclosed.', 'ทั้งนี้ ได้แนบกำหนดการและรายละเอียดผู้เข้าร่วมมาพร้อมนี้'),
+      close:I('We would be grateful for your kind acceptance.', 'จึงเรียนมาเพื่อโปรดพิจารณาให้ความอนุเคราะห์ และขอขอบพระคุณเป็นอย่างสูงมา ณ โอกาสนี้'), att:I('Programme, 1 copy', 'กำหนดการ จำนวน 1 ฉบับ') },
+    { id:'meeting', g:'invite', t:I('Invite to a meeting', 'เชิญประชุม'), d:I('team, advisors or partners — with an agenda', 'ทีมงาน ที่ปรึกษา หรือพันธมิตร พร้อมระเบียบวาระ'),
+      subj:I('Invitation to a meeting', 'ขอเรียนเชิญประชุม ........................'),
+      p1:I('SPACEZ TERMINAL will hold a meeting on ........................ on ........................ at ........................ (place / online link).', 'ด้วย SPACEZ TERMINAL กำหนดประชุมเรื่อง ........................ ในวันที่ ........................ เวลา ........................ ณ ........................ (หรือทางออนไลน์)'),
+      p2:I('We would be pleased if you could attend. The agenda is enclosed.', 'ในการนี้ จึงขอเรียนเชิญท่านเข้าร่วมประชุมตามวัน เวลา และสถานที่ดังกล่าว รายละเอียดระเบียบวาระการประชุมตามสิ่งที่ส่งมาด้วย'),
+      p3:I('Please confirm your attendance by ........................', 'ทั้งนี้ ขอความกรุณาแจ้งการเข้าร่วมประชุมภายในวันที่ ........................'),
+      close:I('Thank you.', 'จึงเรียนมาเพื่อโปรดทราบและเข้าร่วมประชุมตามวัน เวลา และสถานที่ดังกล่าว'), att:I('Agenda, 1 copy', 'ระเบียบวาระการประชุม จำนวน 1 ฉบับ') },
+    { id:'class', g:'invite', t:I('Invite to try a class', 'เชิญทดลองเรียน'), d:I('Elliott Wave classroom or beginner course', 'ห้องเรียนคลื่นเอลเลียต หรือคอร์สผู้เริ่มต้น'),
+      subj:I('Invitation to try the ........................ class', 'ขอเรียนเชิญทดลองเรียน ........................'),
+      p1:I('SPACEZ TERMINAL has opened ........................, a step-by-step online class with practice exams.', 'ด้วย SPACEZ TERMINAL ได้เปิด ........................ เป็นห้องเรียนออนไลน์แบบทีละขั้น พร้อมแบบทดสอบท้ายบท'),
+      p2:I('We would like to invite you to try the class free of charge between ........................ and share your opinion.', 'ในการนี้ จึงขอเรียนเชิญท่านทดลองเรียนโดยไม่มีค่าใช้จ่าย ในช่วงวันที่ ........................ และร่วมแสดงความคิดเห็นเพื่อการพัฒนา'),
+      p3:I('', ''),
+      close:I('We hope to welcome you.', 'จึงเรียนมาเพื่อโปรดพิจารณา และหวังเป็นอย่างยิ่งว่าจะได้รับเกียรติจากท่าน'), att:I('', '') },
+    { id:'partner', g:'work', t:I('Propose a partnership', 'เสนอความร่วมมือ / MOU'), d:I('to a school, club, company or organisation', 'ส่งถึงสถานศึกษา ชมรม บริษัท หรือองค์กร'),
+      subj:I('Proposal for cooperation', 'ขอเสนอความร่วมมือด้านการส่งเสริมความรู้ทางการเงินและการลงทุน'),
+      p1:I('SPACEZ TERMINAL is a bilingual learning platform for finance and investing (' + SITE_SHOW + ') that aims to help people build sound financial knowledge.', 'ด้วย SPACEZ TERMINAL เป็นแพลตฟอร์มการเรียนรู้ด้านการเงินและการลงทุนสองภาษา (' + SITE_SHOW + ') มีเป้าหมายส่งเสริมให้ผู้เรียนมีความรู้ทางการเงินที่ถูกต้องและนำไปใช้ได้จริง'),
+      p2:I('We would like to propose cooperation with your organisation on ........................, for example ........................', 'ในการนี้ จึงใคร่ขอเสนอความร่วมมือกับหน่วยงานของท่านในด้าน ........................ เช่น ........................'),
+      p3:I('If you agree in principle, we would be glad to meet and agree the details together.', 'ทั้งนี้ หากท่านเห็นชอบในหลักการ ยินดีนัดหมายเพื่อหารือรายละเอียดร่วมกันต่อไป'),
+      close:I('We look forward to your consideration.', 'จึงเรียนมาเพื่อโปรดพิจารณา และหวังเป็นอย่างยิ่งว่าจะได้รับความร่วมมือจากท่าน'), att:I('Cooperation proposal, 1 copy', 'ข้อเสนอความร่วมมือ จำนวน 1 ชุด') },
+    { id:'appoint', g:'work', t:I('Appoint an advisor', 'แต่งตั้งที่ปรึกษา'), d:I('ask someone to be an advisor of SPACEZ', 'ขอเรียนเชิญเป็นที่ปรึกษาของ SPACEZ'),
+      subj:I('Invitation to serve as an advisor', 'ขอเรียนเชิญเป็นที่ปรึกษา SPACEZ TERMINAL'),
+      p1:I('SPACEZ TERMINAL is developing its learning content and systems and wishes to be guided by people of knowledge and experience.', 'ด้วย SPACEZ TERMINAL อยู่ระหว่างพัฒนาเนื้อหาและระบบการเรียนรู้ และต้องการคำแนะนำจากผู้มีความรู้และประสบการณ์ เพื่อให้การดำเนินงานเป็นไปอย่างถูกต้องและมีคุณภาพ'),
+      p2:I('We would be honoured if you would serve as an advisor on ........................ for a term of ........................', 'ในการนี้ จึงใคร่ขอเรียนเชิญท่านเป็นที่ปรึกษาด้าน ........................ ระยะเวลา ........................'),
+      p3:I('The role is to give advice when asked, about ...... times a year; it carries no legal or financial obligation.', 'ทั้งนี้ บทบาทของท่านคือให้คำแนะนำตามที่ได้รับการปรึกษา ประมาณปีละ ...... ครั้ง โดยไม่มีภาระผูกพันทางกฎหมายหรือการเงิน'),
+      close:I('We would be grateful for your kind acceptance.', 'จึงเรียนมาเพื่อโปรดพิจารณาให้ความอนุเคราะห์ และขอขอบพระคุณเป็นอย่างสูงมา ณ โอกาสนี้'), att:I('', '') },
+    { id:'followup', g:'work', t:I('Follow up politely', 'ติดตามเรื่องที่ส่งไป'), d:I('a gentle reminder about an earlier letter', 'เตือนความจำอย่างสุภาพ เรื่องหนังสือฉบับก่อน'),
+      subj:I('Follow-up on our letter of ........................', 'ขอติดตามเรื่อง ........................'),
+      p1:I('Further to our letter no. ........................ of ........................ about ........................', 'ตามหนังสือที่ ........................ ลงวันที่ ........................ เรื่อง ........................ ความละเอียดแจ้งแล้ว นั้น'),
+      p2:I('As the matter is due on ........................, we would be grateful to know your consideration, or whether we can help in any way.', 'เนื่องจากใกล้ถึงกำหนดวันที่ ........................ จึงใคร่ขอทราบผลการพิจารณาของท่าน หรือหากมีสิ่งใดที่ต้องการเพิ่มเติม ยินดีดำเนินการให้'),
+      p3:I('If you have already replied, please disregard this letter.', 'ทั้งนี้ หากท่านได้ดำเนินการแล้ว ขออภัยมา ณ ที่นี้'),
+      close:I('Thank you for your kind attention.', 'จึงเรียนมาเพื่อโปรดพิจารณา และขอขอบพระคุณมา ณ โอกาสนี้'), att:I('', '') },
+    { id:'report', g:'work', t:I('Report changes made from feedback', 'รายงานผลการปรับปรุงตามข้อเสนอแนะ'), d:I('tell reviewers what was improved', 'แจ้งผู้ประเมินว่าปรับปรุงอะไรไปแล้ว'),
+      subj:I('Report on improvements made from your suggestions', 'รายงานผลการปรับปรุงเว็บไซต์ตามข้อเสนอแนะ'),
+      p1:I('Thank you for your suggestions on SPACEZ TERMINAL of ........................', 'ตามที่ท่านได้กรุณาให้ข้อเสนอแนะเกี่ยวกับเว็บไซต์ SPACEZ TERMINAL เมื่อวันที่ ........................ นั้น'),
+      p2:I('We have improved the website as follows: 1) ........................ 2) ........................ 3) ........................', 'SPACEZ TERMINAL ได้ดำเนินการปรับปรุงตามข้อเสนอแนะของท่านแล้ว ดังนี้ 1) ........................ 2) ........................ 3) ........................'),
+      p3:I('You are welcome to look again at ' + SITE_SHOW + ' and give further advice at any time.', 'ทั้งนี้ ท่านสามารถตรวจสอบผลการปรับปรุงได้ที่ ' + SITE_SHOW + ' และยินดีรับข้อเสนอแนะเพิ่มเติมทุกเมื่อ'),
+      close:I('With sincere thanks.', 'จึงเรียนมาเพื่อโปรดทราบ และขอขอบพระคุณมา ณ โอกาสนี้'), att:I('Summary of changes, 1 copy', 'สรุปรายการปรับปรุง จำนวน 1 ฉบับ') },
+    { id:'certify', g:'notice', t:I('Certificate of participation', 'หนังสือรับรองการมีส่วนร่วม'), d:I('certify that someone reviewed, taught or helped', 'รับรองว่าบุคคลนี้ได้ประเมิน สอน หรือช่วยงาน'),
+      subj:I('Certificate of participation', 'หนังสือรับรองการปฏิบัติงาน'),
+      p1:I('This is to certify that ........................ served as ........................ for SPACEZ TERMINAL from ........................ to ........................', 'หนังสือฉบับนี้ให้ไว้เพื่อรับรองว่า ........................ ได้ปฏิบัติหน้าที่เป็น ........................ ให้แก่ SPACEZ TERMINAL ตั้งแต่วันที่ ........................ ถึงวันที่ ........................'),
+      p2:I('Their work included ........................ and was carried out with care and responsibility.', 'โดยมีหน้าที่ ........................ และได้ปฏิบัติงานด้วยความตั้งใจ มีความรับผิดชอบ และเป็นประโยชน์ต่อการพัฒนาอย่างยิ่ง'),
+      p3:I('', ''),
+      close:I('Issued for use as evidence as appropriate.', 'ให้ไว้เพื่อใช้เป็นหลักฐานตามความเหมาะสม'), att:I('', '') },
+    { id:'launch', g:'notice', t:I('Announce something new', 'แจ้งเปิดตัว / ฟีเจอร์ใหม่'), d:I('new lessons, tools or a new section', 'บทเรียน เครื่องมือ หรือส่วนใหม่ของเว็บ'),
+      subj:I('Announcing ........................ on SPACEZ TERMINAL', 'แจ้งเปิดให้บริการ ........................ บนเว็บไซต์ SPACEZ TERMINAL'),
+      p1:I('SPACEZ TERMINAL has launched ........................, which helps learners ........................', 'ด้วย SPACEZ TERMINAL ได้เปิดให้บริการ ........................ ซึ่งช่วยให้ผู้เรียน ........................'),
+      p2:I('It is available now at ' + SITE_SHOW + ' at no cost.', 'ท่านสามารถเข้าใช้งานได้แล้วที่ ' + SITE_SHOW + ' โดยไม่มีค่าใช้จ่าย'),
+      p3:I('We would welcome your feedback.', 'ทั้งนี้ ยินดีรับฟังความคิดเห็นและข้อเสนอแนะจากท่าน เพื่อนำไปพัฒนาต่อไป'),
+      close:I('For your information.', 'จึงเรียนมาเพื่อโปรดทราบ'), att:I('', '') },
+    { id:'maint', g:'notice', t:I('Notice of maintenance', 'แจ้งปิดปรับปรุงระบบ'), d:I('downtime with an apology', 'แจ้งช่วงปิดระบบ พร้อมขออภัย'),
+      subj:I('Notice of system maintenance', 'แจ้งปิดปรับปรุงระบบชั่วคราว'),
+      p1:I('SPACEZ TERMINAL will carry out maintenance on ........................ from ........................ to ........................', 'ด้วย SPACEZ TERMINAL มีกำหนดปิดปรับปรุงระบบในวันที่ ........................ ตั้งแต่เวลา ........................ ถึง ........................'),
+      p2:I('During this time ........................ will be unavailable.', 'ในช่วงเวลาดังกล่าว ........................ จะไม่สามารถใช้งานได้ชั่วคราว'),
+      p3:I('We apologise for any inconvenience.', 'จึงขออภัยในความไม่สะดวกมา ณ ที่นี้'),
+      close:I('For your information.', 'จึงเรียนมาเพื่อโปรดทราบ'), att:I('', '') },
+    { id:'blank', g:'own', t:I('Write my own', 'เขียนเอง'), d:I('empty letter with the formal layout', 'หนังสือเปล่าตามรูปแบบทางการ'),
       subj:I('', ''), p1:I('', 'ด้วย '), p2:I('', 'ในการนี้ '), p3:I('', ''), close:I('', 'จึงเรียนมาเพื่อโปรดพิจารณา'), att:I('', '') }
   ];
+  var TPL_G = [['ask', I('Requests', 'ขอความอนุเคราะห์')], ['invite', I('Invitations', 'เชิญ')], ['work', I('Working together', 'ความร่วมมือ / ติดตาม')], ['notice', I('Notices & thanks', 'แจ้ง / ขอบคุณ / รับรอง')], ['own', I('Write my own', 'เขียนเอง')]];
   function tplOf(id){ for(var i = 0; i < TPL.length; i++) if(TPL[i].id === id) return TPL[i]; return TPL[0]; }
 
   /* ---------- state: texts are kept per language so EN / TH can differ ---------- */
-  function blank(){ return { tpl:'eval', look:'classic', toTitle:1, toName:'', toPos:'', toOrg:'', from:'', fromPos:'', contact:'', qr:1, urgent:0, seal:0, date:'', guide:0, acc:0, accUser:'', sigStory:0, tx:{ en:null, th:null } }; }
+  function blank(){ return { tpl:'eval', look:'classic', toTitle:1, toName:'', toPos:'', toOrg:'', from:'', fromPos:'', contact:'', qr:1, urgent:0, seal:0, grp:'', date:'', guide:0, acc:0, accUser:'', sigStory:0, tx:{ en:null, th:null } }; }
   var D = blank();
   try { var sv = JSON.parse(localStorage.getItem(LS) || 'null'); if(sv && typeof sv === 'object') Object.keys(sv).forEach(function(k){ if(k in D) D[k] = sv[k]; }); } catch(e){}
   if(!D.tx || typeof D.tx !== 'object') D.tx = { en:null, th:null };
@@ -216,7 +314,12 @@
     function tin(k, lbl, rows){ return '<label class="pr-ev-in"><span>' + esc(T(lbl)) + '</span>' + (rows ? '<textarea rows="' + rows + '" data-ltx="' + k + '">' + esc(x[k] || '') + '</textarea>' : '<input type="text" data-ltx="' + k + '" value="' + esc(x[k] || '') + '" autocomplete="off">') + '</label>'; }
     function chk(k, lbl){ return '<label class="pr-rv-ck"><input type="checkbox" data-lt-ck="' + k + '"' + (D[k] ? ' checked' : '') + '><span>' + esc(T(lbl)) + '</span></label>'; }
     var h = '<div class="pr-hint" style="margin-bottom:10px;">' + esc(T(TX.hint)) + '</div>';
-    h += '<div class="pr-ev-h2" style="margin-top:0">' + esc(T(TX.tplL)) + '</div><div class="pr-lt-tpls">' + TPL.map(function(t){
+    /* 2026-11-22: 23 purposes, shown in groups; the open group is remembered (D.grp) */
+    var cur = tplOf(D.tpl).g || 'ask', og = D.grp || cur;
+    h += '<div class="pr-ev-h2" style="margin-top:0">' + esc(T(TX.tplL)) + '</div><div class="pr-lt-grps">' + TPL_G.map(function(g){
+      var n = TPL.filter(function(t){ return t.g === g[0]; }).length;
+      return '<button type="button" class="pr-lt-grp' + (og === g[0] ? ' on' : '') + (cur === g[0] ? ' has' : '') + '" data-lt-grp="' + g[0] + '">' + esc(T(g[1])) + (n > 1 ? ' <i>' + n + '</i>' : '') + '</button>'; }).join('') + '</div>' +
+      '<div class="pr-lt-tpls">' + TPL.filter(function(t){ return t.g === og; }).map(function(t){
       return '<button type="button" class="pr-rv-set' + (D.tpl === t.id ? ' on' : '') + '" data-lt-tpl="' + t.id + '"><b>' + esc(T(t.t)) + '</b><span>' + esc(T(t.d)) + '</span></button>'; }).join('') + '</div>';
     h += '<div class="pr-ev-h2">' + esc(T(TX.toL)) + '</div><div class="pr-ev-grid2"><label class="pr-ev-in"><span>' + esc(T(TX.toTitle)) + '</span><select data-lt="toTitle">' +
       TITLES.map(function(o, i){ return '<option value="' + i + '"' + (+D.toTitle === i ? ' selected' : '') + '>' + esc(T(o) || '—') + '</option>'; }).join('') + '</select></label>' + inp('toName', TX.toName, D.toName) + '</div>' +
@@ -263,8 +366,10 @@
   /* 'form' = redraw the panel too; true = only the sheet changed */
   function handleClick(t){
     if(!t || !t.closest) return false;
+    var gq = t.closest('[data-lt-grp]');
+    if(gq){ D.grp = gq.getAttribute('data-lt-grp'); save(); return 'form'; }
     var a = t.closest('[data-lt-tpl]');
-    if(a){ D.tpl = a.getAttribute('data-lt-tpl'); D.tx = { en:null, th:null }; if(D.tpl === 'brain'){ D.guide = 1; D.acc = 1; } save(); return 'form'; }
+    if(a){ D.tpl = a.getAttribute('data-lt-tpl'); D.tx = { en:null, th:null }; D.guide = D.acc = D.tpl === 'brain' ? 1 : 0; /* page 2 is about the Market Brain — on for that purpose only (it can still be ticked by hand) */ save(); return 'form'; }
     var b = t.closest('[data-lt-look]');
     if(b){ D.look = b.getAttribute('data-lt-look'); save(); return 'form'; }
     if(t.closest('[data-lt-reset]')){ fill(L()); save(); return 'form'; }

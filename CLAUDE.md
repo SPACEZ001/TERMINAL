@@ -496,6 +496,9 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   (localStorage `spz.sign.v1`, `window.__SPZ_SIGN` get/set — never in the repo: the repo is public); hidden on the story picture
   unless `D.sigStory`. part-95's developer signature line uses it too. Ten signature designs for the owner were made as PNGs
   (Mac private folder `🔒 …/ลายเซ็น (SIGNATURES)/`), not committed.
+  2026-11-22: 16 more purposes (23 + blank) — school, research, data, sponsor, interview, promo, speaker, meeting, class, partner,
+  appoint, followup, report, certify, launch, maint — each with a group `g` (ask / invite / work / notice / own); the panel shows
+  group pills (`TPL_G`, open group `D.grp`) and only that group's cards. Picking a purpose turns page 2 on only for `brain`.
 - **Market Brain** (sources archive `brain-sources-2026-11-21.tgz`):
   - print covers: the "Market score 30/100" box is now a "market weather" card (`wxCard` / `wxDial` in k_print.js: half-dial whose
     arcs follow the real bands 0–30–44–56–70–100, weather in words + icon, what to do); band bar has weather icons.
