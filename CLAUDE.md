@@ -553,3 +553,24 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
 - **Macro Lab in documents:** `vMacro(pr)` sets `ML_PR`; in print the hero shows `mlPlate()` instead of the dial, "How it is
   calculated" folds and the model table are open, and the doc CSS strips the animated mesh / dot grid / gradient-clipped heading
   (html2canvas can't draw them), flattens the hero and makes the plan grid 2 columns (`grid-auto-flow:dense`). PDF tested (10 pages).
+
+## Added 2026-11-23 (sources archive `brain-sources-2026-11-23.tgz` — saved to the Mac once it is online)
+
+- **Turn-signal popup** (`#spzAlertBar`, part-30.js `buildBar` / `paintBar` + end of part-12.css): always-visible ✕ (`.ab-x`),
+  a little smaller on desktop, and on phones (≤760px, class `cmp`) a slim one-line bar — tap it for the full text + buttons
+  (`open`, pauses the auto-hide). Dismiss / auto-hide logic unchanged.
+- **Macro Lab back-test** (section 9 of `y_macro.js`, `mlBacktest`): the composite score rebuilt month by month from each piece's
+  value at that month (checklist left out; missing pieces skipped, weights re-normalised), S&P 500 forward 1/3/6/12-month returns,
+  table by score band, rank IC of the score and of each piece, and a "follow the model" test (S&P share = the Balanced stock weight
+  of `mlAlloc`, rest in cash at the Fed rate) vs fixed 55% and 100% S&P. Finding on 2012-01…2026-09: score IC ≈ −0.37 (6M) /
+  −0.47 (12M) — low scores came before rebounds; only inflation had a positive IC. The page says so plainly ("describes the
+  economy, not a sell signal"), and the hero verdict now has a "History" line for today's band. The model itself was NOT re-tuned
+  (in-sample, 1 recession) — ask the owner before changing its weights or sign.
+- **One-stock report tab** (`stk`, after Macro Lab; new source `z_stock.js` built between `y_macro` and `f_pf`; `wireStk(slot)` in
+  f_pf; CSS "2026-11-23 (e)" at the end of part-83.css, prefix `bz-sk-`): ticker box with a datalist of all 555 stocks + today's top
+  picks, header (price, 1M/3M, 52-week range, rank in the World outlook main list), Brain score plate 0–100 (same mix as the world
+  picks), 1-year chart with 50/200-day averages + stop + analyst target (fetches the full market.json once when the Brain got the
+  light file), key numbers, report card stars (`card()` from d_port), five factor grades, edge by world phase (`stockEdge`) with
+  today's odds, rough 6/12-month estimate (index forecast from `px` + expected lead, ± its own volatility), trailing stop, 1%-risk
+  position size, "Count its Elliott waves" (`__SPZ_AUTOWAVE_OPEN`). Selected ticker in localStorage `spz.brain.stk`. Printable via
+  "Print this page / PDF" (in `PR_SECS`) and in `GUIDE`.

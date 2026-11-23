@@ -1227,14 +1227,24 @@
         '<circle class="ab-ring-fg" data-ab="ringfg" cx="13" cy="13" r="10.5"></circle>' +
       '</svg><span class="ab-dot"></span></div>' +
       '<div class="ab-body">' +
-        '<div class="ab-head" data-ab="t"></div>' +
+        '<div class="ab-headrow"><div class="ab-head" data-ab="t"></div><span class="ab-more" data-ab="more"></span></div>' +
         '<p class="ab-txt" data-ab="d"></p>' +
         '<div class="ab-actions">' +
           '<button type="button" class="ab-go" data-ab="go"></button>' +
           '<button type="button" data-ab="ack"></button>' +
         '</div>' +
-      '</div>';
+      '</div>' +
+      /* 2026-11-23: a close button that is always there, and a slim one-line mode on phones */
+      '<button type="button" class="ab-x" data-ab="x" aria-label="Close">×</button>';
     document.body.appendChild(bar);
+    bar.querySelector('[data-ab="x"]').addEventListener('click', function(ev){ ev.stopPropagation(); dismissBar(); });
+    bar.addEventListener('click', function(ev){
+      if (!bar.classList.contains('cmp') || ev.target.closest('button')) return;
+      var op = !bar.classList.contains('open');
+      bar.classList.toggle('open', op);
+      if (op) pauseAuto(); else resumeAuto();
+    });
+    window.addEventListener('resize', setCmp);
 
     bar.querySelector('[data-ab="go"]').addEventListener('click', function(){
       dismissBar();
@@ -1249,8 +1259,15 @@
     return true;
   }
 
+  function setCmp(){
+    if (!bar) return;
+    var m = false; try { m = window.matchMedia('(max-width: 760px)').matches; } catch(e){}
+    bar.classList.toggle('cmp', m);
+    if (!m) bar.classList.remove('open');
+  }
   function paintBar(){
     if (!buildBar()) return;
+    setCmp();
     var st = alertState();
     if (!st || lsGet(ACK_KEY) === st.sig) {
       clearAutoTimer();
@@ -1265,6 +1282,8 @@
     bar.querySelector('[data-ab="d"]').textContent = st.text;
     bar.querySelector('[data-ab="go"]').textContent = tx(COPY.abGo);
     bar.querySelector('[data-ab="ack"]').textContent = tx(COPY.abAck);
+    bar.querySelector('[data-ab="more"]').textContent = tx({ en:'tap for details', th:'แตะเพื่อดูรายละเอียด' });
+    if (isNew) bar.classList.remove('open');
     bar.classList.add('show');
     if (isNew) startAuto();
     try { window.dispatchEvent(new Event('resize')); } catch(e){}
