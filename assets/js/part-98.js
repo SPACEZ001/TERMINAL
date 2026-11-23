@@ -87,6 +87,20 @@
     annT:I('Announcement of SPACEZ TERMINAL', 'ประกาศ SPACEZ TERMINAL'), ordT:I('Order of SPACEZ TERMINAL', 'คำสั่ง SPACEZ TERMINAL'), betw:I('between SPACEZ TERMINAL and', 'ระหว่าง SPACEZ TERMINAL กับ'),
     sgn:I('Signed', 'ลงชื่อ'), p1W:I('Party One', 'ฝ่ายที่หนึ่ง'), p2W:I('Party Two', 'ฝ่ายที่สอง'), rcvW:I('Recipient', 'ผู้รับข้อมูล'), witW:I('Witness', 'พยาน'),
     flowed:I('The document is longer than one A4 page, so it continues on the next page.', 'เอกสารยาวเกิน 1 หน้า ระบบต่อเนื้อความไปหน้าถัดไปให้แล้ว'),
+    othL:I('Other people who sign', 'ช่องเซ็นของคนอื่น'),
+    othHint:I('Add a box for everyone else who has to sign — leave a name empty to get a dotted line they fill in by hand.', 'เพิ่มช่องให้คนอื่นที่ต้องเซ็นด้วย — เว้นชื่อว่างไว้ ระบบจะเว้นเส้นประให้เขียนด้วยมือ'),
+    coL:I('Co-signers next to you', 'ผู้ลงนามร่วม (เซ็นคู่กับคุณ)'), coNone:I('None', 'ไม่มี'), coOne:I('1 person', '1 คน'), coTwo:I('2 people', '2 คน'),
+    coName:I('Name', 'ชื่อ–สกุล'), coPos:I('Position', 'ตำแหน่ง'), coN:I('Co-signer', 'ผู้ลงนามร่วม'),
+    rsTick:{ approve:I('Box for the approver (approve / not approve + signature)', 'ช่องผู้มีอำนาจอนุมัติ (อนุมัติ / ไม่อนุมัติ + ลงนาม)'), seen:I('Box for the person who receives the report', 'ช่องผู้รับรายงานลงนามรับทราบ'),
+      ack:I('Box for the person assigned to sign', 'ช่องผู้ได้รับมอบหมายลงนามรับทราบ'), ackList:I('Sign-off table for everyone named', 'ตารางให้ทุกคนในรายชื่อลงนามรับทราบ') },
+    apName:I('Their name (optional)', 'ชื่อ–สกุล (ถ้ามี)'), apPos:I('Their position (optional)', 'ตำแหน่ง (ถ้ามี)'),
+    rpTick:I('Add page: reply form for the addressee to sign and send back', 'เพิ่มหน้า "แบบตอบรับ" ให้ผู้รับเซ็นแล้วส่งกลับ'), rpDue:I('Send back by (optional)', 'ส่งแบบตอบรับกลับภายในวันที่ (ถ้ามี)'),
+    wL:I('Witnesses', 'พยาน'), w1:I('Witness 1 (optional)', 'พยานคนที่ 1 (ถ้ามี)'), w2:I('Witness 2 (optional)', 'พยานคนที่ 2 (ถ้ามี)'),
+    rpT:I('Reply form', 'แบบตอบรับ'), rpRe:I('In reply to letter no.', 'ตอบหนังสือที่'), rpOf:I('dated', 'ลงวันที่'), rpTo:I('To', 'เรียน'),
+    rpI:I('I,', 'ข้าพเจ้า'), rpPos:I('position', 'ตำแหน่ง'), rpOrg:I('organisation', 'หน่วยงาน'), rpTel:I('phone / e-mail', 'โทรศัพท์ / อีเมล'),
+    rpChoose:I('Please tick one', 'โปรดทำเครื่องหมาย ✓ ในช่องที่ต้องการ'), rpOther:I('Other: ', 'อื่น ๆ '), rpNote:I('Notes / suggestions', 'หมายเหตุ / ข้อเสนอแนะ'),
+    rpWho:I('Replying', 'ผู้ตอบรับ'), rpBack:I('Please send this form back', 'กรุณาส่งแบบตอบรับกลับ'), rpBy:I('by', 'ภายในวันที่'), rpVia:I('to', 'ทาง'),
+    dateLine:I('Date ......../......../........', 'วันที่ ......../......../........'),
     defFrom:I('Mr. Noraset Boikaw', 'นายนรเศรษฐ์ บ่อแก้ว'), defPos:I('Founder and Developer, SPACEZ TERMINAL', 'ผู้ก่อตั้งและผู้พัฒนา SPACEZ TERMINAL')
   };
   var TITLES = [I('Lecturer', 'อาจารย์'), I('Asst. Prof.', 'ผู้ช่วยศาสตราจารย์'), I('Assoc. Prof.', 'รองศาสตราจารย์'), I('Prof.', 'ศาสตราจารย์'), I('Dr.', 'ดร.'),
@@ -626,16 +640,59 @@
   function tplOf(id){ for(var i = 0; i < TPL.length; i++) if(TPL[i].id === id) return TPL[i]; return TPL[0]; }
   function fmtOf(t){ return (t || tplOf(D.tpl)).fmt || 'letter'; }
 
+  /* ---------- 2026-11-23 (b): signatures of other people ----------
+     RS = a block on page 1 for the person who decides / acknowledges (memos, orders);
+     RP = a reply-form page (แบบตอบรับ) the addressee fills in, signs and sends back (invitations, requests).
+     Both are on by default for these kinds and can be switched off per kind (D.rsOff / D.rpOff). */
+  var RS = { m_approve:'approve', m_budget:'approve', m_assign:'ack', m_report:'seen', m_incident:'seen', o_assign:'ack', o_team:'ackList', o_review:'ackList' };
+  var RP = { invite:'attend', meeting:'attend', webinar:'attend', 'class':'attend', speaker:'speak', judge:'judge', preside:'preside', appoint:'advisor', expert:'expert', brain:'expert',
+    compete:'team', trial:'permit', school:'permit', venue:'permit', data:'permit', testimonial:'consent', interview:'interview', eval:'evaluate', promo:'promo', partner:'partner', sponsor:'sponsor', proofread:'proof' };
+  var DOT2 = '........................';
+  var RSX = {
+    approve:{ h:I('Decision of the person who approves', 'ความเห็น / คำสั่งของผู้มีอำนาจอนุมัติ'), role:I('Approver', 'ผู้มีอำนาจอนุมัติ'), o:[I('Approved', 'อนุมัติ'), I('Not approved', 'ไม่อนุมัติ'), I('Other ' + DOT2, 'อื่น ๆ ' + DOT2)] },
+    seen:{ h:I('Received by', 'ผู้รับรายงาน'), role:I('Receiver of the report', 'ผู้รับรายงาน'), o:[I('Noted', 'รับทราบ'), I('Further comments ' + DOT2, 'มีความเห็นเพิ่มเติม ' + DOT2)] },
+    ack:{ h:I('Acknowledged by the person assigned', 'ผู้ได้รับมอบหมาย ลงนามรับทราบ'), role:I('Person assigned', 'ผู้ได้รับมอบหมาย'), t:I('I have read this and will carry out the work assigned.', 'ข้าพเจ้าได้รับทราบ และจะดำเนินการตามที่ได้รับมอบหมาย') },
+    ackList:{ h:I('Acknowledged by the people named', 'ลงนามรับทราบคำสั่ง'), c:[I('No.', 'ลำดับ'), I('Name and role', 'ชื่อ–สกุล / หน้าที่'), I('Signature', 'ลายมือชื่อ'), I('Date', 'วันที่')] }
+  };
+  var RPX = {
+    attend:[I('I will attend.', 'ยินดีเข้าร่วม'), I('I will send someone in my place: ' + DOT2, 'ขอส่งผู้แทน คือ ' + DOT2), I('I cannot attend this time.', 'ไม่สะดวกเข้าร่วมในครั้งนี้')],
+    speak:[I('I am glad to speak on the date, time and topic given.', 'ยินดีเป็นวิทยากรตามวัน เวลา และหัวข้อที่กำหนด'), I('I suggest another date / time: ' + DOT2, 'ขอเสนอวันเวลาอื่น คือ ' + DOT2), I('I cannot this time.', 'ไม่สะดวกในครั้งนี้')],
+    judge:[I('I am glad to be a judge.', 'ยินดีเป็นกรรมการตัดสิน'), I('I cannot this time.', 'ไม่สะดวกในครั้งนี้')],
+    preside:[I('I am glad to preside over the opening.', 'ยินดีให้เกียรติเป็นประธานในพิธีเปิด'), I('I will send someone in my place: ' + DOT2, 'ขอมอบหมายผู้แทน คือ ' + DOT2), I('I cannot this time.', 'ไม่สะดวกในครั้งนี้')],
+    advisor:[I('I am glad to serve as an advisor.', 'ยินดีรับเป็นที่ปรึกษา'), I('I cannot this time.', 'ไม่สะดวกในครั้งนี้')],
+    expert:[I('I am glad to serve as an expert reviewer.', 'ยินดีเป็นผู้ทรงคุณวุฒิตรวจสอบ'), I('I can do it by: ' + DOT2, 'ยินดี โดยจะส่งผลภายในวันที่ ' + DOT2), I('I cannot this time.', 'ไม่สะดวกในครั้งนี้')],
+    team:[I('We will send ...... participants.', 'ยินดีส่งผู้แทนเข้าร่วม จำนวน ...... คน'), I('We cannot take part this time.', 'ไม่สะดวกส่งผู้แทนในครั้งนี้')],
+    permit:[I('Permission granted.', 'อนุญาต'), I('Permission granted on condition that: ' + DOT2, 'อนุญาต โดยมีเงื่อนไข ' + DOT2), I('Permission not granted.', 'ไม่อนุญาต')],
+    consent:[I('I agree to the text being published as enclosed.', 'ยินยอมให้เผยแพร่ตามข้อความที่แนบมา'), I('I agree with these changes: ' + DOT2, 'ยินยอม โดยขอแก้ไขข้อความ ' + DOT2), I('I do not agree.', 'ไม่ยินยอม')],
+    interview:[I('I am glad to be interviewed on: ' + DOT2, 'ยินดีให้สัมภาษณ์ ในวันที่ ' + DOT2), I('I cannot this time.', 'ไม่สะดวกในครั้งนี้')],
+    evaluate:[I('I am glad to evaluate the website.', 'ยินดีประเมินเว็บไซต์'), I('I will return the form by: ' + DOT2, 'จะส่งแบบประเมินคืนภายในวันที่ ' + DOT2), I('I cannot this time.', 'ไม่สะดวกในครั้งนี้')],
+    promo:[I('I am glad to help publicise it.', 'ยินดีช่วยประชาสัมพันธ์'), I('I cannot this time.', 'ไม่สะดวกในครั้งนี้')],
+    partner:[I('We agree in principle and would like to meet.', 'เห็นชอบในหลักการ และยินดีนัดหารือรายละเอียด'), I('Please send more information first.', 'ขอข้อมูลเพิ่มเติมก่อนพิจารณา'), I('We cannot cooperate at present.', 'ยังไม่สะดวกร่วมมือในขณะนี้')],
+    sponsor:[I('We are glad to support with: ' + DOT2, 'ยินดีสนับสนุน ได้แก่ ' + DOT2), I('We cannot support this time.', 'ไม่สะดวกสนับสนุนในครั้งนี้')],
+    proof:[I('I am glad to check it.', 'ยินดีตรวจทาน'), I('I cannot this time.', 'ไม่สะดวกในครั้งนี้')]
+  };
+  function rsKind(t){ t = t || tplOf(D.tpl); return RS[t.id] || ''; }
+  function rpKind(t){ t = t || tplOf(D.tpl); return RP[t.id] || ''; }
+  function rsOn(t){ t = t || tplOf(D.tpl); return !!RS[t.id] && !(D.rsOff && D.rsOff[t.id]); }
+  function rpOn(t){ t = t || tplOf(D.tpl); return !!RP[t.id] && !(D.rpOff && D.rpOff[t.id]); }
+  /* how many co-signers is remembered per kind of document (D.coT), so one memo's co-signer does not appear on every letter */
+  function coCount(t){ t = t || tplOf(D.tpl); return Math.max(0, Math.min(2, +(D.coT && D.coT[t.id]) || 0)); }
+  function coList(){ return (Array.isArray(D.co) ? D.co : []).slice(0, coCount()); }
+
   /* ---------- state: texts are kept per language so EN / TH can differ ---------- */
   var DOTS = '........................';
   var FIELDS = ['subj', 'att', 'p1', 'p2', 'p3', 'close'];
-  function blank(){ return { tpl:'eval', look:'classic', toTitle:1, toName:'', toPos:'', toOrg:'', dept:'', from:'', fromPos:'', contact:'', qr:1, urgent:0, seal:0, grp:'', date:'', guide:0, acc:0, accUser:'', sigStory:0, sv:{}, ed:{ en:{}, th:{} }, tx:{ en:null, th:null } }; }
+  function blank(){ return { tpl:'eval', look:'classic', toTitle:1, toName:'', toPos:'', toOrg:'', dept:'', from:'', fromPos:'', contact:'', qr:1, urgent:0, seal:0, grp:'', date:'', guide:0, acc:0, accUser:'', sigStory:0, sv:{}, ed:{ en:{}, th:{} }, tx:{ en:null, th:null },
+    coT:{}, co:[{ n:'', p:'' }, { n:'', p:'' }], apN:'', apP:'', rpDue:'', w1:'', w2:'', rsOff:{}, rpOff:{} }; }
   var D = blank();
   try { var sv = JSON.parse(localStorage.getItem(LS) || 'null'); if(sv && typeof sv === 'object') Object.keys(sv).forEach(function(k){ if(k in D) D[k] = sv[k]; }); } catch(e){}
   if(!D.tx || typeof D.tx !== 'object') D.tx = { en:null, th:null };
   if(!D.sv || typeof D.sv !== 'object' || Array.isArray(D.sv)) D.sv = {};
   if(!D.ed || typeof D.ed !== 'object') D.ed = {};
   ['en', 'th'].forEach(function(l){ if(!D.ed[l] || typeof D.ed[l] !== 'object') D.ed[l] = {}; });
+  if(!Array.isArray(D.co)) D.co = [];
+  for(var ci = 0; ci < 2; ci++){ if(!D.co[ci] || typeof D.co[ci] !== 'object') D.co[ci] = { n:'', p:'' }; }
+  ['rsOff', 'rpOff', 'coT'].forEach(function(k){ if(!D[k] || typeof D[k] !== 'object' || Array.isArray(D[k])) D[k] = {}; });
   function save(){ try { localStorage.setItem(LS, JSON.stringify(D)); } catch(e){} }
   function fromName(l){ return String(D.from || '').trim() || TX.defFrom[l || L()]; }
   function fromPos(l){ return String(D.fromPos || '').trim() || TX.defPos[l || L()]; }
@@ -796,6 +853,23 @@
         '<div class="pr-lt-sigb"><label class="pr-lt-sbtn">' + esc(T(TX.sigUp)) + '<input type="file" accept="image/png,image/jpeg,image/webp" data-lt-sigfile hidden></label>' +
         '<button type="button" class="pr-lt-sbtn" data-lt-sigdraw="1">' + esc(T(TX.sigDraw)) + '</button><button type="button" class="pr-lt-sbtn ghost" data-lt-sigclear="1">' + esc(T(TX.sigClear)) + '</button></div>' +
         '<div class="pr-hint">' + esc(T(TX.sigNote)) + '</div>' + chk('sigStory', TX.sigStory) + '<input type="hidden" data-lt="sigv" value=""></div>';
+    /* 2026-11-23 (b): everyone else who has to sign */
+    h += H(TX.othL) + '<div class="pr-hint" style="margin:-2px 0 8px;">' + esc(T(TX.othHint)) + '</div>';
+    if(f === 'mou'){
+      h += '<div class="pr-lt-oth"><div class="pr-lt-othh">' + esc(T(TX.wL)) + '</div><div class="pr-ev-grid2">' + inp('w1', TX.w1, D.w1) + inp('w2', TX.w2, D.w2) + '</div></div>';
+    } else {
+      var cn = coCount(t);
+      h += '<div class="pr-lt-oth"><div class="pr-lt-othh">' + esc(T(TX.coL)) + '</div><div class="pr-lt-cos">' + [TX.coNone, TX.coOne, TX.coTwo].map(function(o, i){
+          return '<button type="button" class="pr-lt-grp' + (cn === i ? ' on' : '') + '" data-lt-con="' + i + '">' + esc(T(o)) + '</button>'; }).join('') + '</div>' +
+        (cn ? D.co.slice(0, cn).map(function(c, i){ return '<div class="pr-ev-grid2">' +
+          '<label class="pr-ev-in"><span>' + esc(T(TX.coN)) + ' ' + (i + 1) + ' · ' + esc(T(TX.coName)) + '</span><input type="text" data-lt-co="' + i + 'n" value="' + esc(c.n || '') + '" autocomplete="off"></label>' +
+          '<label class="pr-ev-in"><span>' + esc(T(TX.coPos)) + '</span><input type="text" data-lt-co="' + i + 'p" value="' + esc(c.p || '') + '" autocomplete="off"></label></div>'; }).join('') : '') + '</div>';
+    }
+    var rk = rsKind(t);
+    if(rk) h += '<div class="pr-lt-oth"><label class="pr-rv-ck"><input type="checkbox" data-lt-rs="1"' + (rsOn(t) ? ' checked' : '') + '><span>' + esc(T(TX.rsTick[rk])) + '</span></label>' +
+      (rsOn(t) && rk !== 'ackList' ? '<div class="pr-ev-grid2">' + inp('apN', TX.apName, D.apN) + inp('apP', TX.apPos, D.apP, T(RSX[rk].role)) + '</div>' : '') + '</div>';
+    if(rpKind(t)) h += '<div class="pr-lt-oth"><label class="pr-rv-ck"><input type="checkbox" data-lt-rp="1"' + (rpOn(t) ? ' checked' : '') + '><span>' + esc(T(TX.rpTick)) + '</span></label>' +
+      (rpOn(t) ? inp('rpDue', TX.rpDue, D.rpDue, T(TX.datePh)) : '') + '</div>';
     h += H(TX.lookL) + '<div class="pr-lt-looks">' +
       '<button type="button" class="pr-rv-set' + (D.look !== 'modern' ? ' on' : '') + '" data-lt-look="classic"><b>' + esc(T(TX.lkClassic)) + '</b></button>' +
       '<button type="button" class="pr-rv-set' + (D.look === 'modern' ? ' on' : '') + '" data-lt-look="modern"><b>' + esc(T(TX.lkModern)) + '</b></button></div>' +
@@ -830,6 +904,14 @@
     if(window.__SPZ_CRED && window.__SPZ_CRED.handleInput(t)) return true;
     var so = t.getAttribute('data-lt-sown');
     if(so){ var tp = tplOf(D.tpl), val = t.value; slotSet(tp, so, function(){ var v = svGet(tp, so); if(!v.o || typeof v.o !== 'object') v.o = {}; v.o[L()] = val; }); syncForm(so); return true; }
+    var co = t.getAttribute('data-lt-co');
+    if(co){ var ix = +co.charAt(0); if(D.co[ix]) D.co[ix][co.charAt(1) === 'n' ? 'n' : 'p'] = t.value; save(); return true; }
+    if(t.hasAttribute('data-lt-rs') || t.hasAttribute('data-lt-rp')){
+      var tid = tplOf(D.tpl).id, mk = t.hasAttribute('data-lt-rs') ? 'rsOff' : 'rpOff';
+      if(t.checked) delete D[mk][tid]; else D[mk][tid] = 1; save();
+      setTimeout(function(){ var w = document.querySelector('[data-pr="ltWrap"]'); if(w){ var st = w.scrollTop; w.innerHTML = formHTML(); w.scrollTop = st; sigPreview(); } }, 0);
+      return true;
+    }
     var k = t.getAttribute('data-lt');
     if(k === 'from' || k === 'fromPos'){ var tq = tplOf(D.tpl), nv = t.value; slotSet(tq, k === 'from' ? 'A' : 'Apos', function(){ D[k] = nv; }); syncForm(); return true; }
     if(k){ D[k] = t.value; save(); return true; }
@@ -857,6 +939,8 @@
       return 'form';
     }
     if(window.__SPZ_CRED){ var cr = window.__SPZ_CRED.handleClick(t); if(cr) return cr; }
+    var cq = t.closest('[data-lt-con]');
+    if(cq){ var cqn = Math.max(0, Math.min(2, +cq.getAttribute('data-lt-con') || 0)), cid = tplOf(D.tpl).id; if(cqn) D.coT[cid] = cqn; else delete D.coT[cid]; save(); return 'form'; }
     var b = t.closest('[data-lt-look]');
     if(b){ D.look = b.getAttribute('data-lt-look'); save(); return 'form'; }
     if(t.closest('[data-lt-reset]')){ fill(L()); save(); return 'form'; }
@@ -889,8 +973,48 @@
     '</div><div class="lt-rule"><i></i></div>';
   }
   function signHTML(ctx, yours){
-    return '<div class="lt-signwrap"><div class="lt-sign">' + (yours ? '<div class="lt-yours">' + esc(T(TX.yours)) + '</div>' : '') +
-      '<div class="lt-sigsp">' + sigImg(ctx) + '</div><div class="lt-sname">( ' + esc(fromName()) + ' )</div><div class="lt-spos">' + esc(fromPos()) + '</div>' + credHTML() + '</div></div>';
+    var main = '<div class="lt-sign">' + (yours ? '<div class="lt-yours">' + esc(T(TX.yours)) + '</div>' : '') +
+      '<div class="lt-sigsp">' + sigImg(ctx) + '</div><div class="lt-sname">( ' + esc(fromName()) + ' )</div><div class="lt-spos">' + esc(fromPos()) + '</div>' + credHTML() + '</div>';
+    var co = coList();
+    if(!co.length) return '<div class="lt-signwrap">' + main + '</div>';
+    /* 2026-11-23 (b): co-signers sit to the left, the owner's own signature stays on the right */
+    var dn = '..................................';
+    return '<div class="lt-signs n' + (co.length + 1) + (yours ? ' y' : '') + '">' + co.map(function(c){
+      var n = String(c.n || '').trim(), ps = String(c.p || '').trim();
+      return '<div class="lt-sign co">' + (yours ? '<div class="lt-yours">&nbsp;</div>' : '') + '<div class="lt-sigsp"><i class="lt-sgl"></i></div><div class="lt-sname">( ' + esc(n || dn) + ' )</div><div class="lt-spos">' + esc(ps || (L() === 'th' ? 'ตำแหน่ง ' + dn : 'Position ' + dn)) + '</div></div>';
+    }).join('') + main + '</div>';
+  }
+  /* the approver / receiver / person assigned (memos and orders) */
+  function rsHTML(t, x){
+    var k = rsOn(t) ? rsKind(t) : ''; if(!k) return '';
+    var R = RSX[k], dn = '..................................', nm = String(D.apN || '').trim(), ps = String(D.apP || '').trim() || T(R.role || I('', ''));
+    if(k === 'ackList'){
+      var rows = lines(x.p2); if(!rows.length) rows = ['', '', '', ''];
+      return '<div class="lt-rs list"><div class="lt-rsh">' + esc(T(R.h)) + '</div><table class="lt-rst"><thead><tr>' + R.c.map(function(c){ return '<th>' + esc(T(c)) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+        rows.map(function(r, i){ return '<tr><td>' + (i + 1) + '</td><td>' + esc(r.replace(/^\d+[.)]\s*/, '')) + '</td><td></td><td></td></tr>'; }).join('') + '</tbody></table></div>';
+    }
+    var sig = '<div class="lt-rss"><div class="lt-sigsp"><i class="lt-sgl"></i></div><div class="lt-sname">( ' + esc(nm || dn) + ' )</div><div class="lt-spos">' + esc(ps) + '</div><div class="lt-spos">' + esc(T(TX.dateLine)) + '</div></div>';
+    var left = k === 'ack' ? '<p class="lt-rsx">' + esc(T(R.t)) + '</p>' :
+      '<div class="lt-rso">' + R.o.map(function(o){ return '<span><i class="lt-box"></i>' + esc(T(o)) + '</span>'; }).join('') + '</div><i class="lt-rsl"></i><i class="lt-rsl"></i>';
+    return '<div class="lt-rs"><div class="lt-rsh">' + esc(T(R.h)) + '</div><div class="lt-rsg"><div>' + left + '</div>' + sig + '</div></div>';
+  }
+  /* reply form page (แบบตอบรับ): the addressee ticks, signs and sends it back */
+  function rpPage(ctx, t, x){
+    var k = rpOn(t) ? rpKind(t) : ''; if(!k) return '';
+    var dl = '<i class="lt-dl"></i>', nm = String(D.toName || '').trim() ? toLine() : '', sub = [String(D.toPos || '').trim(), String(D.toOrg || '').trim()];
+    function fl(lbl, v){ return '<div class="lt-rpf"><b>' + esc(T(lbl)) + '</b>' + (v ? '<span>' + esc(v) + '</span>' : dl) + '</div>'; }
+    var due = String(D.rpDue || '').trim(), via = [SITE_SHOW, 'IG @spczterminal'].concat(String(D.contact || '').trim() ? [String(D.contact).trim()] : []).join(' · ');
+    var h = '<div class="lt-page lt-rp">';
+    h += '<div class="lt-rph">' + (ctx.logo ? '<img class="lt-logo s" src="' + ctx.logo + '" alt="">' : '') + '<div><b>' + esc(T(TX.rpT)) + '</b><small>' + esc(T(TX.rpRe)) + ' ' + esc(ctx.serial || '') + ' · ' + esc(T(TX.rpOf)) + ' ' + esc(dateStr()) + '</small></div></div><div class="lt-rule"><i></i></div>';
+    h += '<div class="lt-rpbody"><div class="lt-rpf w"><b>' + esc(T(TX.subjW)) + '</b><span>' + esc(x.subj || '') + '</span></div><div class="lt-rpf w"><b>' + esc(T(TX.rpTo)) + '</b><span>' + esc(fromName()) + ' · ' + esc(fromPos()) + '</span></div>';
+    h += '<div class="lt-rpg">' + fl(TX.rpI, nm) + fl(TX.rpPos, sub[0]) + fl(TX.rpOrg, sub[1]) + fl(TX.rpTel, '') + '</div>';
+    h += '<div class="lt-rpc"><small>' + esc(T(TX.rpChoose)) + '</small>' + RPX[k].map(function(o){ return '<div><i class="lt-box"></i><span>' + esc(T(o)) + '</span></div>'; }).join('') +
+      '<div><i class="lt-box"></i><span>' + esc(T(TX.rpOther)) + '</span>' + dl + '</div></div>';
+    h += '<div class="lt-rpn"><b>' + esc(T(TX.rpNote)) + '</b><i class="lt-rsl"></i><i class="lt-rsl"></i><i class="lt-rsl"></i></div>';
+    h += '<div class="lt-rps"><div class="lt-sigsp"><i class="lt-sgl"></i></div><div class="lt-sname">( ' + esc(nm || '..................................') + ' )</div><div class="lt-spos">' + esc(T(TX.rpWho)) + '</div><div class="lt-spos">' + esc(T(TX.dateLine)) + '</div></div>';
+    h += '<p class="lt-rpback">' + esc(T(TX.rpBack)) + (due ? ' ' + esc(T(TX.rpBy)) + ' <b>' + esc(due) + '</b>' : '') + ' ' + esc(T(TX.rpVia)) + ' ' + esc(via) + '</p></div>';
+    h += '<div class="lt-strip"><span>' + esc(T(TX.footL)) + ' · ' + esc(T(TX.rpT)) + '</span><b>' + esc(ctx.serial || '') + '</b></div></div>';
+    return h;
   }
   function footHTML(ctx, x){
     return '<div class="lt-foot"><div class="lt-contact"><b>SPACEZ TERMINAL</b><span>' + esc(SITE_SHOW) + ' · IG @spczterminal</span>' + (String(D.contact || '').trim() ? '<span>' + esc(D.contact) + '</span>' : '') +
@@ -905,7 +1029,7 @@
     return '<div class="lt-mousign">' +
       cell(sigImg(ctx), T(TX.p1W), fromName(), fromPos()).replace(/<\/div>$/, credHTML() + '</div>') +
       cell('', T(t.id === 'nda' ? TX.rcvW : TX.p2W), p2n == null ? dn : p2n, p2p == null || /^[.\s]+$/.test(p2p) ? '' : p2p) +
-      cell('', T(TX.witW), dn, '') + cell('', T(TX.witW), dn, '') + '</div>';
+      cell('', T(TX.witW), String(D.w1 || '').trim() || dn, '') + cell('', T(TX.witW), String(D.w2 || '').trim() || dn, '') + '</div>';
   }
   function sheetHTML(ctx){
     ctx = ctx || {}; if(!ctx.noSig) lastCtx = ctx;
@@ -926,20 +1050,20 @@
         '<div class="r two"><b>' + esc(T(TX.no)) + '</b><span class="dl mono">' + esc(ctx.serial || '') + '</span><b>' + esc(T(TX.dateW)) + '</b><span class="dl">' + esc(dateStr()) + '</span></div>' +
         '<div class="r"><b>' + esc(T(TX.subjW)) + '</b><span class="dl">' + (esc(x.subj) || '&nbsp;') + '</span></div></div>' +
         '<div class="lt-mto"><b>' + esc(T(TX.toW)) + '</b>' + esc(toLine()) + (sub ? ' <span class="lt-sub i">' + esc(sub) + '</span>' : '') + '</div>';
-      h += '<div class="lt-body">' + paraL(x.p1) + paraL(x.p2) + paraL(x.p3) + para(x.close, 'lt-p lt-close') + '</div>' + signHTML(ctx, false) + footHTML(ctx, null);
+      h += '<div class="lt-body">' + paraL(x.p1) + paraL(x.p2) + paraL(x.p3) + para(x.close, 'lt-p lt-close') + '</div>' + signHTML(ctx, false) + rsHTML(t, x) + footHTML(ctx, null);
     } else if(f === 'cert'){
       h += headHTML(ctx, '') + '<div class="lt-ctitle">' + (esc(x.subj) || '&nbsp;') + '</div>';
       h += '<div class="lt-body">' + paraL(x.p1) + paraL(x.p2) + paraL(x.p3) + para(x.close, 'lt-p lt-close') + '<p class="lt-given">' + esc(T(TX.givenCert)) + ' ' + esc(dateStr()) + '</p></div>' + signHTML(ctx, false) + footHTML(ctx, null);
     } else if(f === 'ann' || f === 'order'){
       h += '<div class="lt-annh">' + logo + '<b>' + esc(T(f === 'ann' ? TX.annT : TX.ordT)) + '</b>' + (f === 'order' ? '<span class="no">' + esc(T(TX.no)) + ' ' + esc(ctx.serial || '') + '</span>' : '') +
         '<span>' + esc(T(TX.subjW)) + ' ' + (esc(x.subj) || '........................') + '</span><i class="lt-dash"></i></div>';
-      h += '<div class="lt-body">' + paraL(x.p1) + paraL(x.p2) + paraL(x.p3) + para(x.close, 'lt-p lt-close') + '<p class="lt-given">' + esc(T(f === 'ann' ? TX.givenAnn : TX.givenOrd)) + ' ' + esc(dateStr()) + '</p></div>' + signHTML(ctx, false) + footHTML(ctx, null);
+      h += '<div class="lt-body">' + paraL(x.p1) + paraL(x.p2) + paraL(x.p3) + para(x.close, 'lt-p lt-close') + '<p class="lt-given">' + esc(T(f === 'ann' ? TX.givenAnn : TX.givenOrd)) + ' ' + esc(dateStr()) + '</p></div>' + signHTML(ctx, false) + rsHTML(t, x) + footHTML(ctx, null);
     } else { /* mou */
       var ob = slotVal(t, 'orgB', L());
       h += '<div class="lt-annh">' + logo + '<b>' + (esc(x.subj) || '&nbsp;') + '</b><span>' + esc(T(TX.betw)) + ' ' + esc(ob == null ? '........................' : ob) + '</span><i class="lt-dash"></i></div>';
       h += '<div class="lt-body">' + paraL(x.p1) + paraL(x.p2, 'lt-p lt-cl') + paraL(x.p3) + '</div>' + mouSign(ctx, t) + footHTML(ctx, null);
     }
-    h += stripHTML(ctx) + '</div>' + (f === 'letter' && D.guide ? page2(ctx) : '') + '</div>';
+    h += stripHTML(ctx) + '</div>' + rpPage(ctx, t, x) + (f === 'letter' && D.guide ? page2(ctx) : '') + '</div>';
     return h;
   }
   /* page 2 — enclosure: how to open the website and the Market Brain, an optional sign-in box, what to review */

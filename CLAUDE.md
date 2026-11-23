@@ -605,3 +605,18 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   (end of part-83.css "2026-11-23 tabs").
 - **Journal admin row buttons (end of part-39.css):** round pills; TP/SL and right/wrong pairs in one tray. A global `.sl` rule from
   part-84 (stock classroom list row: display:grid 28px 1fr auto) used to hit the "โดน SL แล้ว" button — it is reset under `.jed-row-actions`.
+
+## Added 2026-11-23 (night) — other people's signatures
+
+- **Official documents (part-98):** "ช่องเซ็นของคนอื่น" section in the form. (1) Co-signers next to the owner: 0 / 1 / 2 people,
+  count remembered per kind (`D.coT[tplId]`), names / positions shared (`D.co[0..1]`, empty = dotted line); on the sheet they sit left of
+  the owner's own signature (`.lt-signs.n2/.n3`). (2) `RS` kinds get a box on page 1 for the other party: `approve` (m_approve,
+  m_budget: อนุมัติ / ไม่อนุมัติ + signature), `seen` (m_report, m_incident), `ack` (m_assign, o_assign), `ackList` (o_team, o_review:
+  sign-off table built from the p2 lines); name / position `D.apN` / `D.apP`; switch off per kind `D.rsOff`. (3) `RP` kinds (22
+  invitations / requests) add a **reply-form page** (แบบตอบรับ, `rpPage`): reply-to ref + date, respondent lines (prefilled from the
+  recipient fields), tick options per kind (`RPX`), notes, signature, "send back by" (`D.rpDue`) + contact; switch off per kind
+  `D.rpOff`. (4) MOU / NDA witness names `D.w1` / `D.w2`. All styles at the end of part-98.css ("2026-11-23 (b)").
+- **Certificate (part-49):** optional second signature column (e.g. school director), kept only in this browser
+  (localStorage `spz.cert.co`, not sent to the certificate server); class `.pr-cert.co2`.
+- **Student evaluation (part-49):** new option `parSign` = parent / guardian signature line (`.pr-ev-signs.three` when the student
+  line is on too).

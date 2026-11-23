@@ -2139,7 +2139,7 @@
     readyT:{en:'CEWA exam readiness', th:'ความพร้อมสอบ CEWA'},
     ready:[{k:'no',en:'Not ready',th:'ยังไม่พร้อม',c:'#d8473d'},{k:'near',en:'Almost ready',th:'ใกล้พร้อม',c:'#e8a417'},{k:'yes',en:'Ready',th:'พร้อม',c:'#2fa66a'},{k:'na',en:'Learning to analyse only — not taking the CEWA exam',th:'เรียนเพื่อวิเคราะห์เป็น — ไม่สอบ CEWA',c:'#3b6fd8'}],
     optT:{en:'Sections to include', th:'ส่วนที่จะแสดงในใบประเมิน'}, optHint:{en:'Ticked sections appear on the sheet and get their fields here. Unticked sections are left out completely.', th:'ติ๊กส่วนไหน ส่วนนั้นจะขึ้นในใบประเมินและมีช่องให้กรอกด้านล่าง ถ้าไม่ติ๊กจะไม่แสดงเลย'},
-    optSecs:[{k:'prac',en:'Live-chart practice',th:'ผลฝึกอ่านกราฟจริง'},{k:'plan',en:'Improvement plan',th:'แผนพัฒนา'},{k:'sched',en:'Study schedule',th:'ตารางเรียนต่อ'},{k:'homework',en:'Homework',th:'การบ้าน'},{k:'resources',en:'Recommended resources',th:'แหล่งเรียนแนะนำ'},{k:'next',en:'Recommendation for next step',th:'ข้อแนะนำขั้นต่อไป'},{k:'stuSign',en:'Student signature line',th:'ช่องลงชื่อนักเรียน'}],
+    optSecs:[{k:'prac',en:'Live-chart practice',th:'ผลฝึกอ่านกราฟจริง'},{k:'plan',en:'Improvement plan',th:'แผนพัฒนา'},{k:'sched',en:'Study schedule',th:'ตารางเรียนต่อ'},{k:'homework',en:'Homework',th:'การบ้าน'},{k:'resources',en:'Recommended resources',th:'แหล่งเรียนแนะนำ'},{k:'next',en:'Recommendation for next step',th:'ข้อแนะนำขั้นต่อไป'},{k:'stuSign',en:'Student signature line',th:'ช่องลงชื่อนักเรียน'},{k:'parSign',en:'Parent / guardian signature line',th:'ช่องลงชื่อผู้ปกครอง'}],
     nextT:{en:'Recommendation for the next step', th:'ข้อแนะนำขั้นต่อไป'},
     nextOpts:[{k:'repeat',en:'Review the current level again',th:'ทบทวนระดับเดิมอีกรอบ'},{k:'cont',en:'Continue at the current level',th:'เรียนต่อในระดับเดิม'},{k:'up',en:'Move up to the next level',th:'ขึ้นระดับถัดไป'},{k:'cert',en:'Eligible for the certificate',th:'พร้อมรับเกียรติบัตร'}],
     reviewL:{en:'Needs review', th:'ควรทบทวน'},
@@ -2153,7 +2153,7 @@
     schedT:{en:'Study schedule — what comes next', th:'ตารางเรียนต่อ — เรียนอะไร เมื่อไหร่'}, schedFrom:{en:'From', th:'ตั้งแต่'}, schedTo:{en:'To', th:'ถึง'}, schedTopic:{en:'Lesson / topic', th:'บทเรียน / หัวข้อ'}, schedAdd:{en:'+ Add week', th:'+ เพิ่มช่วงเวลา'},
     showExam:{en:'Include the next-exam section', th:'แสดงส่วนการสอบครั้งถัดไป'}, exWin:{en:'Self-study exam window', th:'ช่วงเวลาสอบด้วยตนเอง'}, exFrom:{en:'Window opens', th:'เปิดให้สอบตั้งแต่'}, exTo:{en:'Window closes', th:'ปิดสอบวันที่'},
     exQr:{en:'Scan to open the exam page', th:'สแกนเพื่อเปิดหน้าสอบ'}, exQrNote:{en:'Log in with the username and password below.', th:'ล็อกอินด้วยชื่อผู้ใช้และรหัสผ่านด้านล่าง'},
-    stuSign:{en:'Student acknowledgement', th:'ลงชื่อนักเรียน (รับทราบผล)'}, docT:{en:'Student Progress & Evaluation Report', th:'รายงานผลการเรียนและการประเมิน'},
+    stuSign:{en:'Student acknowledgement', th:'ลงชื่อนักเรียน (รับทราบผล)'}, parSign:{en:'Parent / guardian acknowledgement', th:'ลงชื่อผู้ปกครอง (รับทราบผล)'}, docT:{en:'Student Progress & Evaluation Report', th:'รายงานผลการเรียนและการประเมิน'},
     issued:{en:'Issued', th:'ออกเมื่อ'}, confidential:{en:'Prepared individually for the student named below', th:'จัดทำเฉพาะสำหรับนักเรียนที่ระบุชื่อด้านล่าง'},
     sealTop:{en:'SPACEZ TERMINAL', th:'SPACEZ TERMINAL'}, sealBot:{en:'ELLIOTT WAVE CLASSROOM', th:'ELLIOTT WAVE CLASSROOM'},
     coveredNote:{en:'Notes on lessons covered', th:'บันทึกเพิ่มเติมเรื่องที่เรียน'}, planTask:{en:'Task', th:'สิ่งที่ต้องทำ'}, planDue:{en:'Due', th:'กำหนด'},
@@ -2452,7 +2452,9 @@
       (evOpt('homework') ? evBlk('<div class="pr-ev-h">' + esc(T(EV_TXT.homework)) + '</div>' + evBlankLine(d.homework, 2)) : '') +
       (evOpt('resources') ? evBlk('<div class="pr-ev-h">' + esc(T(EV_TXT.resources)) + '</div>' + evBlankLine(d.resources, 2)) : '') +
       evBlk('<div class="pr-ev-h">' + esc(T(EV_TXT.comment)) + '</div>' + evBlankLine(d.comment, 4) +
-      '<div class="pr-ev-signs' + (evOpt('stuSign') ? '' : ' one') + '">' + (evOpt('stuSign') ? '<div class="pr-ev-sign2"><div></div><b>' + esc(d.name || '') + '&nbsp;</b><span>' + esc(T(EV_TXT.stuSign)) + '</span></div>' : '') +
+      /* 2026-11-23 (b): optional parent / guardian line next to the student and the evaluator */
+      '<div class="pr-ev-signs' + ((evOpt('stuSign') ? 1 : 0) + (evOpt('parSign') ? 1 : 0) === 2 ? ' three' : (evOpt('stuSign') || evOpt('parSign') ? '' : ' one')) + '">' + (evOpt('stuSign') ? '<div class="pr-ev-sign2"><div></div><b>' + esc(d.name || '') + '&nbsp;</b><span>' + esc(T(EV_TXT.stuSign)) + '</span></div>' : '') +
+      (evOpt('parSign') ? '<div class="pr-ev-sign2"><div></div><b>( ..................................... )</b><span>' + esc(T(EV_TXT.parSign)) + '</span></div>' : '') +
       '<div class="pr-ev-sign2"><div></div><b>' + esc(d.by || '') + '</b><span>' + esc(T(EV_TXT.sign)) + '</span></div></div>') +
       evShareBlock() +
     '</div>';
@@ -2550,10 +2552,15 @@
       '</svg>';
   }
   function certURL(){ return EV_VIEW_BASE + '#/cert/' + encodeURIComponent(certData.id); }
+  /* 2026-11-23 (b): a second signature on the certificate (e.g. a school director or a co-teacher).
+     Kept in this browser only (localStorage spz.cert.co) — the certificate record on the server is unchanged. */
+  var certCo = { on:0, n:'', r:'' };
+  try { var cco = JSON.parse(localStorage.getItem('spz.cert.co') || 'null'); if(cco && typeof cco === 'object'){ certCo.on = cco.on ? 1 : 0; certCo.n = String(cco.n || ''); certCo.r = String(cco.r || ''); } } catch(e){}
+  function certCoSave(){ try { localStorage.setItem('spz.cert.co', JSON.stringify(certCo)); } catch(e){} }
   function certificateHTML(){
     var d = certData, issued = !!d.id;
     var body = T(CT.body).replace('{c}', esc(d.course || '')).replace('{l}', esc(certLevel()));
-    return '<div class="pr-sheet pr-cert' + (certIsPort() ? ' port' : '') + '">' + certSecurityBg() +
+    return '<div class="pr-sheet pr-cert' + (certIsPort() ? ' port' : '') + (certCo.on ? ' co2' : '') + '">' + certSecurityBg() +
       '<div class="pr-cert-in">' +
         '<div class="pr-cert-brand"><img src="' + PR_LOGO + '" alt=""><div><b>SPACEZ TERMINAL</b><span>' + esc(T(CT.orgShort)) + '</span></div></div>' +
         '<div class="pr-cert-eyebrow"><i></i>' + esc(T(CT.eyebrow)) + '<i></i></div>' +
@@ -2568,6 +2575,7 @@
         '<div class="pr-cert-foot">' +
           '<div class="pr-cert-qr">' + (issued ? '<div class="qb">' + evQrSvg(certURL()) + '</div>' : '<div class="pr-cert-noqr">QR</div>') +
             '<div class="ids"><span>' + esc(T(CT.idL)) + '</span><b>' + esc(d.id || '—') + '</b><span>' + esc(T(CT.codeL)) + '</span><b>' + esc(certCode()) + '</b><em>' + esc(T(CT.verify)) + '</em></div></div>' +
+          (certCo.on ? '<div class="pr-cert-sign co"><div class="ln"></div><b>' + (esc(certCo.n) || '&nbsp;') + '</b><span>' + (esc(certCo.r) || '&nbsp;') + '</span></div>' : '') +
           '<div class="pr-cert-sign"><div class="ln"></div><b>' + esc(d.issuedBy || '') + '</b><span>' + esc(T(CT.issuerRole)) + '</span></div>' +
           '<div class="pr-cert-sign"><div class="ln dt">' + esc(certFmtDate(d.date)) + '</div><b>' + esc(T(CT.givenL)) + '</b><span>' + esc(T(CT.org)) + '</span></div>' +
         '</div>' +
@@ -2587,6 +2595,9 @@
     h += inp('name', CT.nameTh) + inp('nameEn', CT.nameEn) + inp('course', CT.course) +
       '<div class="pr-ev-in"><span>' + esc(T(CT.level)) + '</span><div class="pr-ann-chips">' + CT.lvls.map(function(o){ return '<button type="button" class="pr-ann-chip' + (d.level === o.en ? ' on' : '') + '" data-ct-level="' + esc(o.en) + '">' + esc(T(o)) + '</button>'; }).join('') + '</div></div>' +
       '<div class="pr-ev-grid2">' + inp('score', CT.score) + inp('date', CT.date, 'date') + '</div>' + inp('issuedBy', CT.issuer) +
+      '<div class="pr-ct-co"><label class="pr-rv-ck"><input type="checkbox" data-ctco="on"' + (certCo.on ? ' checked' : '') + '><span>' + esc(T({ en:'Add a second signature (e.g. director, co-teacher)', th:'เพิ่มช่องลงนามคนที่ 2 (เช่น ผู้อำนวยการ ครูร่วมสอน)' })) + '</span></label>' +
+        (certCo.on ? '<div class="pr-ev-grid2"><label class="pr-ev-in"><span>' + esc(T({ en:'Name (empty = a line to sign)', th:'ชื่อ (เว้นว่าง = เว้นเส้นให้เซ็น)' })) + '</span><input type="text" data-ctco="n" value="' + esc(certCo.n) + '"></label>' +
+          '<label class="pr-ev-in"><span>' + esc(T({ en:'Position', th:'ตำแหน่ง' })) + '</span><input type="text" data-ctco="r" value="' + esc(certCo.r) + '" placeholder="' + esc(T({ en:'e.g. School director', th:'เช่น ผู้อำนวยการโรงเรียน' })) + '"></label></div>' : '') + '</div>' +
       '<div class="pr-ev-in"><span>' + esc(T(CT.layoutL)) + '</span><div class="pr-ann-chips">' + ['land', 'port'].map(function(o){ return '<button type="button" class="pr-ann-chip' + ((d.layout || 'land') === o ? ' on' : '') + '" data-ct-layout="' + o + '">' + esc(T(CT[o])) + '</button>'; }).join('') + '</div></div>';
     if(d.id) h = '<div class="pr-ct-editing">' + esc(T(CT.editing)) + ' · <b>' + esc(d.id) + '</b></div>' + h;
     h += '<button type="button" class="pr-ev-bigbtn" data-ct-issue="1"' + (certUi.busy ? ' disabled' : '') + '>' + esc(T(d.id ? CT.update : CT.issue)) + '</button>';
@@ -2673,6 +2684,11 @@
     });
   }
   function certHandleInput(t){
+    if(t.hasAttribute && t.hasAttribute('data-ctco')){
+      var ck = t.getAttribute('data-ctco');
+      if(ck === 'on'){ certCo.on = t.checked ? 1 : 0; certCoSave(); setTimeout(function(){ certMount(true); }, 0); return true; }
+      certCo[ck === 'n' ? 'n' : 'r'] = t.value; certCoSave(); return true;
+    }
     if(!t.hasAttribute || !t.hasAttribute('data-ct')) return false;
     certData[t.getAttribute('data-ct')] = t.value; return true;
   }
