@@ -2609,6 +2609,32 @@
     }
     return h;
   }
+  /* 2026-11-23: report types added by part-99 -- { label, sheetHTML(ctx), formHTML?, handleClick?, handleInput?, after?, line? } */
+  function extOf(t){ var X = window.__SPZ_PR_EXT; return X && Object.prototype.hasOwnProperty.call(X, t) ? X[t] : null; }
+  function extCtx(){
+    return { serial:serial(), logo:PR_LOGO, qr:evQrSvg, styleId:styleId, T:T, L:L, esc:esc, fmtPx:fmtPx, fmtChg:fmtChg, chgCls:chgCls, stocks:allStocks, qrPage:qrContactPageHTML,
+      head:function(title, sub, meta){
+        var now = new Date();
+        return '<div class="pr-head"><img class="pr-logo" src="' + PR_LOGO + '" alt=""><div class="pr-brand">' + esc(T(UI.brand)) + '</div>' +
+          '<div class="pr-title">' + esc(title) + '</div>' + (sub ? '<div class="pr-sub">' + esc(sub) + '</div>' : '') +
+          '<div class="pr-meta"><span>' + esc(T(UI.generated)) + ': ' + esc(now.toLocaleString(L() === 'th' ? 'th-TH' : 'en-US')) + '</span>' + (meta || '') +
+          '<span>' + esc(T(UI.serial)) + ': ' + esc(serial()) + '</span></div></div>';
+      },
+      foot:function(txt){ return '<div class="pr-foot">' + esc(txt || T(UI.disclaimer)) + '</div>'; },
+      repaint:function(){ renderReport(); }, form:function(){ extMount(true); } };
+  }
+  /* part-99 (type chooser) drives the page through this */
+  window.__SPZ_PR = {
+    type:function(v){ if(v && v !== reportType){ reportType = v; paint(); } return reportType; },
+    repaint:function(force){ if(force){ if(reportType === 'letter') ltMount(true); if(reportType === 'review') revMount(true); extMount(true); } paint(); }
+  };
+  function extMount(force){
+    var w = sec && sec.querySelector('[data-pr="extWrap"]'), EX = extOf(reportType);
+    if(!w || !EX || !EX.formHTML) return;
+    var a = document.activeElement;
+    if(!force && a && w.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+    var st = w.scrollTop; w.innerHTML = EX.formHTML(extCtx()); w.scrollTop = st;
+  }
   function ltMount(force){
     var w = sec && sec.querySelector('[data-pr="ltWrap"]');
     if(!w || !window.__SPZ_LETTER) return;
@@ -3149,6 +3175,9 @@
     if(reportType === 'review' && window.__SPZ_REVIEWFORM){ host.innerHTML = window.__SPZ_REVIEWFORM.sheetHTML({ serial:serial(), logo:PR_LOGO, qr:evQrSvg }); return; }
     /* 2026-11-21: official letter (part-98) -- also needs no server data */
     if(reportType === 'letter' && window.__SPZ_LETTER){ host.innerHTML = window.__SPZ_LETTER.sheetHTML({ serial:serial(), logo:PR_LOGO, qr:evQrSvg }); window.__SPZ_LETTER.fit(host); return; }
+    /* 2026-11-23: extra report types from part-99 (window.__SPZ_PR_EXT) -- built from data already on the page, no admin key */
+    var EXT = extOf(reportType);
+    if(EXT){ try { host.innerHTML = EXT.sheetHTML(extCtx()); if(EXT.after) EXT.after(host); } catch(e){ host.innerHTML = '<div class="pr-empty">' + esc(String(e && e.message || e)) + '</div>'; } return; }
     if(!getAdminKey()){ host.innerHTML = analysisKeyGateHTML(); wireAnalysisGate(host); return; }
     if(analysisLoading){ host.innerHTML = '<div class="ewv-content-loading">' + esc(T(UI.analysisLoading)) + '</div>'; return; }
     if(analysisErr === 'net'){ host.innerHTML = analysisNetErrorHTML(); wireAnalysisGate(host); return; }
@@ -3229,12 +3258,15 @@
     if(revWrap){ revWrap.style.display = reportType === 'review' ? '' : 'none'; if(reportType === 'review') revMount(); }
     var ltWrap = q('ltWrap'), LT = window.__SPZ_LETTER;
     if(ltWrap){ ltWrap.style.display = reportType === 'letter' ? '' : 'none'; if(reportType === 'letter') ltMount(); }
+    var EXT = extOf(reportType), extWrap = q('extWrap');
+    if(extWrap){ extWrap.style.display = EXT && EXT.formHTML ? '' : 'none'; if(EXT && EXT.formHTML) extMount(); }
     var typeLtBtn = q('typeLetter'); if(typeLtBtn){ typeLtBtn.textContent = LT ? LT.label() : 'Letter'; typeLtBtn.style.display = LT ? '' : 'none'; typeLtBtn.classList.toggle('on', reportType === 'letter'); }
     var typeRevBtn = q('typeReview'); if(typeRevBtn){ typeRevBtn.textContent = RF ? RF.label() : 'Reviewer form'; typeRevBtn.style.display = RF ? '' : 'none'; typeRevBtn.classList.toggle('on', reportType === 'review'); }
     if(evWrap && evWrap.closest){ var evCtl = evWrap.closest('.pr-controls'); if(evCtl) evCtl.classList.toggle('pr-ev-on', reportType === 'eval' || reportType === 'cert' || reportType === 'review' || reportType === 'letter'); }
     var typeCertBtn = q('typeCert'); if(typeCertBtn){ typeCertBtn.textContent = T(CT.type); typeCertBtn.classList.toggle('on', reportType === 'cert'); }
-    var lineB = q('lineBtn'); if(lineB) lineB.style.display = (reportType === 'eval' || reportType === 'cert' || reportType === 'review' || reportType === 'letter') ? 'none' : '';
-    var lineS = q('lineStatus'); if(lineS) lineS.style.display = (reportType === 'eval' || reportType === 'cert' || reportType === 'review' || reportType === 'letter') ? 'none' : '';
+    var noLine = reportType === 'eval' || reportType === 'cert' || reportType === 'review' || reportType === 'letter' || (EXT && !EXT.line);
+    var lineB = q('lineBtn'); if(lineB) lineB.style.display = noLine ? 'none' : '';
+    var lineS = q('lineStatus'); if(lineS) lineS.style.display = noLine ? 'none' : '';
     var typeEvalBtn = q('typeEval'); if(typeEvalBtn){ typeEvalBtn.textContent = T(EV_TXT.typeEval); typeEvalBtn.classList.toggle('on', reportType === 'eval'); }
     var annTplWrap = q('annTplWrap');
     var annTpl = ANNOUNCEMENT_TEMPLATES[annTopic];
@@ -3281,13 +3313,14 @@
     if(typeBubbleBtn) typeBubbleBtn.classList.toggle('on', reportType === 'bubble');
     var modeWrap = q('modeWrap');
     if(modeWrap) modeWrap.style.display =
-      (reportType === 'gold' || reportType === 'idea' || reportType === 'announcement' || reportType === 'bubble' || reportType === 'eval' || reportType === 'cert' || reportType === 'review' || reportType === 'letter') ? 'none' : '';
+      (reportType === 'gold' || reportType === 'idea' || reportType === 'announcement' || reportType === 'bubble' || reportType === 'eval' || reportType === 'cert' || reportType === 'review' || reportType === 'letter' || EXT) ? 'none' : '';
     var modeFullBtn = q('modeFull'), modeSelectBtn = q('modeSelect'), pickHost = q('picklist');
     if(modeFullBtn) modeFullBtn.classList.toggle('on', mode === 'full');
     if(modeSelectBtn) modeSelectBtn.classList.toggle('on', mode === 'select');
     if(pickHost) pickHost.classList.toggle('on', mode === 'select');
     if(pickHost) pickHost.innerHTML = pickListHTML();
     renderReport();
+    try { document.dispatchEvent(new CustomEvent('spz:prpaint', { detail:{ type:reportType } })); } catch(e){}
   }
 
   function bind(){
@@ -3306,11 +3339,15 @@
       if(t.closest('[data-pr="typeCert"]')){ reportType = 'cert'; paint(); return; }
       if(t.closest('[data-pr="typeReview"]')){ reportType = 'review'; paint(); return; }
       if(t.closest('[data-pr="typeLetter"]')){ reportType = 'letter'; paint(); return; }
+      var xbt = t.closest('[data-pr-ext]');
+      if(xbt && extOf(xbt.getAttribute('data-pr-ext'))){ reportType = xbt.getAttribute('data-pr-ext'); paint(); return; }
+      var EXc = extOf(reportType);
+      if(EXc && EXc.handleClick){ var xr = EXc.handleClick(t, extCtx()); if(xr){ if(xr === 'none') return; if(xr === 'form') extMount(true); renderReport(); return; } }
       if(reportType === 'letter' && window.__SPZ_LETTER){ var ltc = window.__SPZ_LETTER.handleClick(t); if(ltc){ if(ltc === 'none') return; if(ltc === 'form') ltMount(true); renderReport(); return; } }
       if(reportType === 'review' && window.__SPZ_REVIEWFORM){ var rvc = window.__SPZ_REVIEWFORM.handleClick(t); if(rvc){ if(rvc === 'form') revMount(true); renderReport(); return; } }
       if(evHandleClick(t)) return;
       if(certHandleClick(t)) return;
-      if(t.closest('[data-pr="typeBrief"]')){ if(window.__SPZ_BRIEFING && window.__SPZ_BRIEFING.open) window.__SPZ_BRIEFING.open(); return; }
+      if(t.closest('[data-pr="typeBrief"]')){ if(extOf('brief')){ reportType = 'brief'; paint(); return; } if(window.__SPZ_BRIEFING && window.__SPZ_BRIEFING.open) window.__SPZ_BRIEFING.open(); return; }
       if(t.closest('[data-pr="modeFull"]')){ mode = 'full'; paint(); return; }
       if(t.closest('[data-pr="modeSelect"]')){ mode = 'select'; paint(); return; }
       if(t.closest('[data-pr="selAll"]')){
@@ -3346,6 +3383,8 @@
       if(t && certHandleInput(t)){ renderReport(); return; }
       if(t && window.__SPZ_REVIEWFORM && window.__SPZ_REVIEWFORM.handleInput(t)){ renderReport(); return; }
       if(t && reportType === 'letter' && window.__SPZ_LETTER && window.__SPZ_LETTER.handleInput(t)){ renderReport(); return; }
+      var EXi = extOf(reportType);
+      if(t && EXi && EXi.handleInput && EXi.handleInput(t, extCtx())){ renderReport(); return; }
       if(t && t.getAttribute && t.getAttribute('data-pr') === 'pickSearch'){
         pickQuery = t.value;
         var pickHost = sec.querySelector('[data-pr="picklist"]');
@@ -3438,6 +3477,7 @@
           '<div data-pr="certWrap" style="display:none;"></div>' +
           '<div data-pr="revWrap" style="display:none;"></div>' +
           '<div data-pr="ltWrap" style="display:none;"></div>' +
+          '<div data-pr="extWrap" style="display:none;"></div>' +
           '<div data-pr="annWrap" style="display:none;">' +
             '<div class="pr-row" style="display:block;">' +
               '<span class="pr-label" data-pr="annTopicLbl" style="display:block;margin-bottom:6px;"></span>' +

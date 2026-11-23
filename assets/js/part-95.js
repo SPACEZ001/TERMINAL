@@ -339,11 +339,11 @@
       '<div class="rv-cm"><div class="h">' + esc(T(TX.more)) + '</div>' + lns(2) + '</div></div>';
 
     /* part: result + consent + signatures (kept together on one page) */
-    function sign(role, name, pos, img){
+    function sign(role, name, pos, img, cred){
       /* 2026-11-21: the developer's own signature picture (kept on this device by part-98, window.__SPZ_SIGN) sits on the line */
       return '<div class="rv-sign"><div class="l1"><span>' + esc(T(TX.signWord)) + '</span><i>' + (img ? '<img class="rv-sigimg" src="' + img + '" alt="">' : '') + '</i></div>' +
         '<div class="l2">( ' + (name ? '<b>' + esc(name) + '</b>' : '<i></i>') + ' )</div>' +
-        '<div class="l3">' + esc(T(role)) + '</div>' +
+        '<div class="l3">' + esc(T(role)) + '</div>' + (cred ? '<div class="l3 rv-cred">' + esc(cred) + '</div>' : '') +
         '<div class="l4"><span>' + esc(T(TX.signPos)) + '</span>' + (pos ? '<b>' + esc(pos) + '</b>' : '<i></i>') + '</div>' +
         '<div class="l4"><span>' + esc(T(TX.signDate)) + '</span><i></i></div></div>';
     }
@@ -357,7 +357,7 @@
         '<div><div class="h">' + esc(T(TX.recH)) + '</div><div class="rv-col">' + TX.recs.map(function(o){ return box() + esc(T(o)) + '</span>'; }).join('') + '</div></div>' +
         (D.terms ? '<div><div class="h">' + esc(T(TX.conH)) + '</div><div class="rv-col">' + TX.cons.map(function(o){ return box() + esc(T(o)) + '</span>'; }).join('') + '</div></div>' : '') +
       '</div>' +
-      '<div class="rv-signs' + (D.devSign ? '' : ' one') + '">' + sign(TX.signRev, D.rev, D.revPos) + (D.devSign ? sign(TX.signDev, D.devShow ? devName() : '', '', window.__SPZ_SIGN && window.__SPZ_SIGN.get()) : '') + '</div>' +
+      '<div class="rv-signs' + (D.devSign ? '' : ' one') + '">' + sign(TX.signRev, D.rev, D.revPos) + (D.devSign ? sign(TX.signDev, D.devShow ? devName() : '', '', window.__SPZ_SIGN && window.__SPZ_SIGN.get(), /* 2026-11-23: CEWA line when ticked (part-70) */ window.__SPZ_CRED && window.__SPZ_CRED.on() ? window.__SPZ_CRED.title() : '') : '') + '</div>' +
       '<div class="rv-foot"><span>' + esc(T(TX.foot)) + '</span><b>' + esc(ctx.serial || '') + '</b></div>' +
     '</div>';
     h += '</div>';

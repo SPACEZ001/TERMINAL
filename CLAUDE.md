@@ -574,3 +574,34 @@ remote URL through `sed 's/github_pat_[A-Za-z0-9_]*/***/g'`.
   today's odds, rough 6/12-month estimate (index forecast from `px` + expected lead, ± its own volatility), trailing stop, 1%-risk
   position size, "Count its Elliott waves" (`__SPZ_AUTOWAVE_OPEN`). Selected ticker in localStorage `spz.brain.stk`. Printable via
   "Print this page / PDF" (in `PR_SECS`) and in `GUIDE`.
+
+## Added 2026-11-23 (later, sources archive `brain-sources-2026-11-23b.tgz`)
+
+- **Official documents v2 (part-98, `__SPZ_LETTER.v` = 2):** 64 kinds in 9 groups (`TPL_G`: ask, invite, work, notice, memo, cert,
+  ann, mou, own) and six layouts (`fmt`): external letter (default), `memo` บันทึกข้อความ, `cert` หนังสือรับรอง, `ann` ประกาศ,
+  `order` คำสั่ง, `mou` (MOU / NDA: two parties + two witnesses, `mouSign`). Blanks are **slots**: `{key}` tokens in a template's
+  texts, defined in `sl` (`S(k, label, options, {m multi, num numbered, def, ph, dots})`, shared option sets `O`); `{A}` / `{Apos}`
+  = the signer's name / position. Choices live in `D.sv['<tpl>:<key>']` ({i, m, o:{en,th}}); `slotSet()` rebuilds texts not edited
+  by hand (`D.ed[lang][field]`) and swaps old→new words in edited ones. A text with several lines becomes one paragraph per line
+  (`paraL`), and a document longer than one A4 page flows onto page 2, 3 … (`flowFrom`, "- 2 -" at the top). `openGroup(g)` is used
+  by part-99. Templates marked `legal:1` show a "not legal advice" note.
+- **CEWA credential (part-70 `window.__SPZ_CRED`, localStorage `spz.cred.v1`, OFF by default):** CEWA (all three EWI exams passed) or
+  CEWA-M (Master: Exams II and III ≥ 90%), optional year + number. Ticked → the analyst card (Print Report, Before/After, analysis,
+  briefing, comparison, watch card) shows "Name, CEWA" + a badge line; letters (`credHTML`), the reviewer form (part-95 developer
+  signature) and the Market Brain print analyst block (k_print `analystBlock`) show the line too. The switch sits next to "ใส่ชื่อ
+  นักวิเคราะห์" everywhere (`makeCredToggle`) and as a fuller box in the letter form (`formHTML`). Turning it on also turns the analyst
+  card on. The analyst card is never appended after letter / reviewer-form sheets (`prepPrintReport` skips `.pr-lt`, `.pr-rv2`).
+- **Print Report v2 (`assets/js/part-99.js` + `css/part-99.css`, after part-98):** the old row of type buttons is hidden (`.p99-old`)
+  and replaced by a chooser card (current type + "เปลี่ยน ▾" → 4 tabs of cards: market / official documents / classroom / elsewhere;
+  catalogue `CAT`). New report types through part-49's new hook `window.__SPZ_PR_EXT` (rendered before the admin-key gate;
+  part-49 also exposes `window.__SPZ_PR` = { type(v), repaint(force) } and fires `spz:prpaint`): `brief` (Institutional Brief inline —
+  part-57 `__SPZ_BRIEFING.data/label`), `cycle` (SPZ_CYCLE + `__SPZ_OUTLOOK` + sector flows), `compare` (2–5 stocks, 20 numbers, best
+  per row), `stock` (fact sheet: 52-week range, 1-year chart with 50/200-day lines from `c` closes — fetches data/market.json once if
+  only the lite file is loaded — key numbers, plain words). Codes BR / CY / CP / SF in part-70 `PR_CODES`. Settings localStorage `spz.pr99.v1`.
+  CSS class names in the new sheets start with `p99-` (watch out: `.p99-ct` is the chooser's text box).
+- **Admin panel Reports group:** the "Compare Stocks PDF" and "Institutional Brief" tiles were removed (both are Print Report types
+  now); the Print Report tile reads "พิมพ์รายงาน · เอกสาร (ทุกแบบ)".
+- **Market Brain tabs:** no tab keeps its own border any more (the Macro Lab one did); hover and the open tab share one ring
+  (end of part-83.css "2026-11-23 tabs").
+- **Journal admin row buttons (end of part-39.css):** round pills; TP/SL and right/wrong pairs in one tray. A global `.sl` rule from
+  part-84 (stock classroom list row: display:grid 28px 1fr auto) used to hit the "โดน SL แล้ว" button — it is reset under `.jed-row-actions`.

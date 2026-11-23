@@ -1443,7 +1443,8 @@
     document.body.appendChild(ov);
   }
 
-  window.__SPZ_BRIEFING = { open: buildInstitutionalBriefingReport };
+  /* 2026-11-23: Print Report (part-99 type "brief") builds the same briefing inline from these */
+  window.__SPZ_BRIEFING = { open: buildInstitutionalBriefingReport, data: gatherBriefingData, label: function(k){ return UI[k] ? T(UI[k]) : ''; } };
 
   function buildJournalReport(entry){
     var existing = document.querySelector('.jrp-overlay');

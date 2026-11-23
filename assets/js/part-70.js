@@ -9,6 +9,7 @@
         MK/GD/ID/AN/BB = Print Report (market / gold / idea / announcement / bubble)
         JR = analysis report   BA = Before/After   BR = Institutional Briefing
         CP = stock comparison  WL = watchlist share card
+        (2026-11-23) BR / CP / SF / CY = Print Report brief / comparison / stock fact sheet / economic cycle
    2) A "Show analyst" checkbox on every report adds a closing block: photo,
       "Noraset Boikaw", "Elliott Wave Analyst . SPACEZ TERMINAL" and a web QR code.
       The choice is remembered in localStorage.
@@ -22,7 +23,7 @@
 
   var ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   /* no I / O / 0 / 1 -- easy to read aloud */
   var REF_RE = /SPZ-[A-Z]{2}-\d{6}-\d{4}-[A-Z0-9]{4,10}/;
-  var PR_CODES = { market:'MK', gold:'GD', idea:'ID', announcement:'AN', bubble:'BB', eval:'EV', cert:'CT', gradebook:'GB', review:'RV', letter:'LT' };
+  var PR_CODES = { market:'MK', gold:'GD', idea:'ID', announcement:'AN', bubble:'BB', eval:'EV', cert:'CT', gradebook:'GB', review:'RV', letter:'LT', brief:'BR', compare:'CP', stock:'SF', cycle:'CY' };
   var WEB_URL = 'https://terminal.spacezblack.workers.dev/';
   var LS_KEY = 'spz.report.analyst';
   var NAME = 'Noraset Boikaw';
@@ -72,6 +73,96 @@
 
   window.__SPZ_REPORTREF = { make:make, forPrintReport:forPrintReport, pattern:REF_RE };
 
+  /* ------------------------------------- 2026-11-23: analyst credential (CEWA / CEWA-M)
+     Elliott Wave International awards two designations: CEWA (all three exams passed) and CEWA-M
+     (Master: Exams II and III with 90% or more); holders write them after the name ("Name, CEWA").
+     OFF until the owner ticks it — never claim a credential that has not been earned.
+     One switch (localStorage spz.cred.v1) for every document: the analyst block below (Print Report,
+     Before/After, analysis, briefing, comparison), the official letters (part-98) and the reviewer form
+     (part-95). Turning it on also turns the analyst name on, since the credential sits under the name. */
+  var CR_LS = 'spz.cred.v1';
+  var cred = { on:0, lv:'cewa', yr:'', no:'' };
+  try { var cs = JSON.parse(localStorage.getItem(CR_LS) || 'null'); if(cs && typeof cs === 'object'){ cred.on = cs.on ? 1 : 0; cred.lv = cs.lv === 'cewam' ? 'cewam' : 'cewa'; cred.yr = String(cs.yr || '').slice(0, 16); cred.no = String(cs.no || '').slice(0, 40); } } catch(e){}
+  var CR = {
+    cewa: { tag:'CEWA', en:'Certified Elliott Wave Analyst', th:'นักวิเคราะห์คลื่นเอลเลียตที่ได้รับการรับรอง' },
+    cewam:{ tag:'CEWA-M', en:'Certified Elliott Wave Analyst — Master', th:'นักวิเคราะห์คลื่นเอลเลียตที่ได้รับการรับรอง ระดับมาสเตอร์' }
+  };
+  var CR_UI = {
+    tick:{ en:'Show my CEWA credential', th:'แสดงคุณวุฒิ CEWA' },
+    head:{ en:'Analyst credential', th:'คุณวุฒินักวิเคราะห์' },
+    note:{ en:'Tick only after you have passed — CEWA: all three exams; CEWA-M: Exams II and III with 90% or more (Elliott Wave International). The line then appears on every report, Before/After, letter and form.',
+           th:'ติ๊กเมื่อสอบผ่านแล้วเท่านั้น — CEWA = ผ่านครบทั้ง 3 ชุด · CEWA-M = ผ่านชุดที่ 2 และ 3 ด้วยคะแนน 90% ขึ้นไป (Elliott Wave International) เมื่อติ๊กแล้ว บรรทัดนี้จะขึ้นในทุกรายงาน Before/After จดหมาย และแบบฟอร์ม' },
+    lv:{ en:'Level', th:'ระดับ' }, yr:{ en:'Year awarded (optional)', th:'ปีที่ได้รับ (ถ้ามี)' }, no:{ en:'Credential no. (optional)', th:'เลขที่ใบรับรอง (ถ้ามี)' },
+    by:{ en:'awarded by Elliott Wave International', th:'รับรองโดย Elliott Wave International' },
+    shows:{ en:'It will read:', th:'จะแสดงในเอกสารว่า:' }
+  };
+  function credOn(){ return !!cred.on; }
+  function crTitle(l){ var c = CR[cred.lv]; return c[l] + ' (' + c.tag + ')'; }
+  function crBy(l){ return CR_UI.by[l] + (cred.yr ? (l === 'th' ? ' · ปี ' : ' · ') + cred.yr : '') + (cred.no ? (l === 'th' ? ' · เลขที่ ' : ' · No. ') + cred.no : ''); }
+  function crSave(){
+    try { localStorage.setItem(CR_LS, JSON.stringify(cred)); } catch(e){}
+    if(cred.on && !analystOn){ analystOn = true; try { localStorage.setItem(LS_KEY, '1'); } catch(e){} }
+    applyAnalyst();
+    try { document.dispatchEvent(new CustomEvent('spz:cred', { detail:{ on:cred.on, lv:cred.lv } })); } catch(e){}
+  }
+  function applyCred(){
+    if(!document.body) return;
+    document.body.classList.toggle('spz-cred-on', !!cred.on);
+    var l = L(), tag = CR[cred.lv].tag;
+    qa('.spz70-ab-post').forEach(function(e){ e.textContent = cred.on ? ', ' + tag : ''; });
+    qa('.spz70-ab-badge').forEach(function(e){ e.textContent = tag; });
+    qa('.spz70-ab-cred span').forEach(function(e){ e.textContent = crTitle(l) + ' · ' + crBy(l); });
+    qa('input[data-spz70-cr]').forEach(function(c){ c.checked = !!cred.on; });
+    qa('select[data-spz70-crlv]').forEach(function(c){ c.value = cred.lv; c.hidden = !cred.on; });
+    qa('input[data-cred="on"]').forEach(function(c){ c.checked = !!cred.on; var b = c.closest('.spz-cred-box'); if(b) b.classList.toggle('on', !!cred.on); });
+    qa('[data-cred-prev]').forEach(function(e){ e.textContent = crTitle(l) + ' · ' + crBy(l); });
+    qa('[data-cred-lv]').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-cred-lv') === cred.lv); });
+  }
+  /* the fuller panel used inside the letter / reviewer forms */
+  function credFormHTML(){
+    var l = L();
+    return '<div class="spz-cred-box' + (cred.on ? ' on' : '') + '">' +
+      '<label class="spz-cred-tick"><input type="checkbox" data-cred="on"' + (cred.on ? ' checked' : '') + '><span>' + esc(T(CR_UI.tick)) + '</span><em>EWI</em></label>' +
+      '<div class="spz-cred-more"><div class="spz-cred-lv"><span>' + esc(T(CR_UI.lv)) + '</span>' +
+        '<button type="button" data-cred-lv="cewa"' + (cred.lv === 'cewa' ? ' class="on"' : '') + '>CEWA</button><button type="button" data-cred-lv="cewam"' + (cred.lv === 'cewam' ? ' class="on"' : '') + '>CEWA-M</button></div>' +
+        '<div class="spz-cred-g"><input type="text" data-cred="yr" value="' + esc(cred.yr) + '" placeholder="' + esc(T(CR_UI.yr)) + '" autocomplete="off"><input type="text" data-cred="no" value="' + esc(cred.no) + '" placeholder="' + esc(T(CR_UI.no)) + '" autocomplete="off"></div>' +
+        '<div class="spz-cred-prev"><small>' + esc(T(CR_UI.shows)) + '</small><b data-cred-prev>' + esc(crTitle(l) + ' · ' + crBy(l)) + '</b></div></div>' +
+      '<div class="spz-cred-note">' + esc(T(CR_UI.note)) + '</div></div>';
+  }
+  function credInput(t){
+    var k = t && t.getAttribute && t.getAttribute('data-cred'); if(!k) return false;
+    if(k === 'on') cred.on = t.checked ? 1 : 0;
+    else if(k === 'yr') cred.yr = String(t.value || '').slice(0, 16);
+    else if(k === 'no') cred.no = String(t.value || '').slice(0, 40);
+    else return false;
+    crSave(); return true;
+  }
+  function credClick(t){
+    var b = t && t.closest && t.closest('[data-cred-lv]'); if(!b) return false;
+    cred.lv = b.getAttribute('data-cred-lv') === 'cewam' ? 'cewam' : 'cewa'; crSave(); return true;
+  }
+  window.__SPZ_CRED = {
+    on:credOn, tag:function(){ return CR[cred.lv].tag; },
+    title:function(l){ return crTitle(l || L()); },
+    line:function(l){ l = l || L(); return crTitle(l) + ' · ' + crBy(l); },
+    docHTML:function(l){ l = l || L(); return '<b>' + esc(crTitle(l)) + '</b><br>' + esc(crBy(l)); },
+    get:function(){ return { on:cred.on, lv:cred.lv, yr:cred.yr, no:cred.no }; },
+    formHTML:credFormHTML, handleInput:credInput, handleClick:credClick
+  };
+  /* small switch next to "Include analyst name" */
+  function makeCredToggle(){
+    var lab = document.createElement('label');
+    lab.className = 'spz70-tg spz70-cr';
+    lab.innerHTML = '<input type="checkbox" data-spz70-cr><span></span><select data-spz70-crlv><option value="cewa">CEWA</option><option value="cewam">CEWA-M</option></select>';
+    lab.querySelector('span').textContent = T(CR_UI.tick);
+    lab.title = T(CR_UI.note);
+    var cb = lab.querySelector('input'), sel = lab.querySelector('select');
+    cb.checked = !!cred.on; sel.value = cred.lv; sel.hidden = !cred.on;
+    cb.addEventListener('change', function(){ cred.on = cb.checked ? 1 : 0; crSave(); });
+    sel.addEventListener('change', function(){ cred.lv = sel.value === 'cewam' ? 'cewam' : 'cewa'; crSave(); });
+    return lab;
+  }
+
   /* --------------------------------------------------------- analyst block */
   var analystOn = false;
   try { analystOn = localStorage.getItem(LS_KEY) === '1'; } catch(e){}
@@ -91,8 +182,10 @@
       (ava ? '<img class="spz70-ab-ava" src="' + esc(ava) + '" alt="">' : '') +
       '<div class="spz70-ab-txt">' +
         '<div class="spz70-ab-cap">' + esc(T(UI.by)) + '</div>' +
-        '<div class="spz70-ab-name">' + esc(NAME) + '</div>' +
+        '<div class="spz70-ab-name">' + esc(NAME) + '<span class="spz70-ab-post">' + esc(credOn() ? ', ' + CR[cred.lv].tag : '') + '</span></div>' +
         '<div class="spz70-ab-role">' + esc(ROLE) + '</div>' +
+        /* 2026-11-23: the CEWA credential line — present in every block, shown only while it is ticked (body.spz-cred-on) */
+        '<div class="spz70-ab-cred"><i class="spz70-ab-badge">' + esc(CR[cred.lv].tag) + '</i><span>' + esc(crTitle(L()) + ' · ' + crBy(L())) + '</span></div>' +
       '</div>' +
       '<div class="spz70-ab-qr"><div class="spz70-ab-qrbox">' + qrSvg() + '</div>' +
         '<span>' + esc(T(UI.scan)) + '</span></div>' +
@@ -112,6 +205,7 @@
   function applyAnalyst(){
     document.body.classList.toggle('spz-analyst-on', analystOn);
     qa('input[data-spz70-tg]').forEach(function(c){ c.checked = analystOn; });
+    applyCred();
   }
   function makeToggle(){
     var lab = document.createElement('label');
@@ -128,7 +222,8 @@
     return lab;
   }
   function refreshToggleText(){
-    qa('.spz70-tg span').forEach(function(s){ s.textContent = T(UI.toggle); });
+    qa('.spz70-tg:not(.spz70-cr) span').forEach(function(s){ s.textContent = T(UI.toggle); });
+    qa('.spz70-cr span').forEach(function(s){ s.textContent = T(CR_UI.tick); });
   }
 
   /* ----------------------------------------------------------- decorating */
@@ -153,11 +248,14 @@
     addRefSpan(q1('.jrp-meta', sheet), ref);
     putBlock(sheet, '.jrp-foot', false);
     var actions = q1('.jrp-actions', ov);
-    if(actions && !q1('.spz70-tg', actions)) actions.appendChild(makeToggle());
+    if(actions && !q1('.spz70-tg', actions)){ actions.appendChild(makeToggle()); actions.appendChild(makeCredToggle()); }
   }
   function prepPrintReport(sheet){
     var meta = q1('.pr-meta', sheet);
     var m = meta ? meta.textContent.match(REF_RE) : null;
+    /* 2026-11-23: official documents (part-98) and the reviewer form (part-95) carry their own signature block --
+       never append the analyst card after their A4 pages (the CEWA switch turns the analyst card on) */
+    if(sheet.classList.contains('pr-lt') || sheet.classList.contains('pr-rv') || sheet.classList.contains('pr-rv2')){ mark(sheet, ''); return; }
     if(sheet.classList.contains('pr-cert')){            /* the certificate carries its own signature + QR */
       mark(sheet, m ? m[0] : forPrintReport('cert'));   /* PDF file name SPZ-CT-... so the REPORTS sorter can file it */
       return;
@@ -189,18 +287,19 @@
     var qrCb = q1('[data-pr="qrToggle"]');
     if(qrCb){
       var row = qrCb.closest('.pr-row');
-      if(row && !q1('.spz70-tg', row)) row.appendChild(makeToggle());
+      if(row && !q1('.spz70-tg', row)){ row.appendChild(makeToggle()); row.appendChild(makeCredToggle()); }
     }
     /* Stock comparison: next to the Download PDF button */
     var cmpRow = q1('.compare-pdf-row');
     if(cmpRow && !q1('.spz70-tg', cmpRow)){
       var btn = q1('#compareDownloadBtn', cmpRow);
-      var t = makeToggle();
+      var t = makeToggle(), tc = makeCredToggle();
       if(btn && btn.nextSibling) cmpRow.insertBefore(t, btn.nextSibling); else cmpRow.appendChild(t);
+      cmpRow.insertBefore(tc, t.nextSibling);
     }
     /* Watchlist share card: in the modal's action row */
     var wl = q1('.wlshare-actions');
-    if(wl && !q1('.spz70-tg', wl)) wl.appendChild(makeToggle());
+    if(wl && !q1('.spz70-tg', wl)){ wl.appendChild(makeToggle()); wl.appendChild(makeCredToggle()); }
   }
 
   function tierClass(){

@@ -491,7 +491,7 @@
     loggedS:{en:'You are signed in.',th:'คุณเข้าสู่ระบบแล้ว'},
     logoutBtn:{en:'Log out',th:'ออกจากระบบ'},
     adminAddAnalysis:{en:'Add Analysis',th:'เพิ่มบทวิเคราะห์'},
-    adminPrintReport:{en:'Print Report',th:'พิมพ์รายงาน'},
+    adminPrintReport:{en:'Print reports & documents · all kinds',th:'พิมพ์รายงาน · เอกสาร (ทุกแบบ)'},
     adminPrintAll:{en:'Print the whole site · one file',th:'พิมพ์ทั้งเว็บ · รวมเป็นไฟล์เดียว'},
     adminBoard:{en:'Executive board',th:'บอร์ดบริหาร'},
     adminCompareDownload:{en:'Compare Stocks PDF',th:'ดาวน์โหลด PDF เปรียบเทียบหุ้น'},
@@ -730,14 +730,8 @@
                     '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9V3.5h11V9"/><path d="M5.5 17.5h-2a1 1 0 01-1-1v-6a1 1 0 011-1h17a1 1 0 011 1v6a1 1 0 01-1 1h-2"/><path d="M6.5 14h11v6.5h-11z"/></svg>' +
                     '<span data-x="adminPrintReport"></span>' +
                   '</button>' +
-                  '<button class="cag-admin-link" type="button" id="cagBtnCompareDownload">' +
-                    '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M20 19H2"/><path d="M17.5 5l2.5 2.5L22.5 5"/></svg>' +
-                    '<span data-x="adminCompareDownload"></span>' +
-                  '</button>' +
-                  '<button class="cag-admin-link" type="button" id="cagBtnBriefing">' +
-                    '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>' +
-                    '<span data-x="adminBriefing"></span>' +
-                  '</button>' +
+                  /* 2026-11-23: "Compare Stocks PDF" and "Institutional Brief" tiles removed — both are report types inside
+                     Print Report now (part-99: compare / brief), so the panel no longer has two doors to the same thing */
                   '<button class="cag-admin-link" type="button" id="cagBtnConnectedUsers">' +
                     '<svg class="cag-admin-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>' +
                     '<span data-x="adminConnectedUsers"></span>' +
@@ -997,7 +991,8 @@
     // Compare Stocks PDF is admin-only (see cmpIsAdmin()/cmpPaintDownloadGate()
     // in the comparator module) -- this shortcut just gets an already-logged-in
     // admin to the picker; the actual download still needs stocks selected there.
-    gate.querySelector('#cagBtnCompareDownload').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/directory'; });
+    var cagCmp = gate.querySelector('#cagBtnCompareDownload');
+    if(cagCmp) cagCmp.addEventListener('click', function(){ gate.hidden = true; location.hash = '#/directory'; });
     gate.querySelector('#cagBtnConnectedUsers').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/connectedusers'; });
     gate.querySelector('#cagBtnAnnouncements').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/announcements'; });
     gate.querySelector('#cagBtnPro').addEventListener('click', function(){ gate.hidden = true; location.hash = '#/pro'; });
@@ -1006,7 +1001,8 @@
        directly instead of navigating. Falls back to Cockpit, where the
        trigger card also lives, on the very unlikely chance part-57.js
        hasn't finished loading yet. */
-    gate.querySelector('#cagBtnBriefing').addEventListener('click', function(){
+    var cagBrief = gate.querySelector('#cagBtnBriefing');
+    if(cagBrief) cagBrief.addEventListener('click', function(){
       gate.hidden = true;
       if(window.__SPZ_BRIEFING && typeof window.__SPZ_BRIEFING.open === 'function') window.__SPZ_BRIEFING.open();
       /* Round S5: Institutional Briefing's own trigger card lives on the
